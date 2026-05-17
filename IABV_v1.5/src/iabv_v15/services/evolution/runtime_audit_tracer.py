@@ -513,6 +513,40 @@ class RuntimeAuditTracer:
             dispatch_id=dispatch_id,
         )
 
+    # ------------------------------------------------------------------
+    # P0.32: User browser bridge + external session selection
+    # ------------------------------------------------------------------
+
+    def trace_user_browser_bridge(
+        self,
+        event_type: str,
+        *,
+        assistant_kind: str = '',
+        cdp_available: bool = False,
+        session_selected: str = '',
+        reason: str = '',
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Record a user-browser-bridge lifecycle event.
+
+        ``event_type`` should be one of:
+        - ``permission_requested``
+        - ``permission_granted``
+        - ``permission_denied``
+        - ``cdp_probe_attempted``
+        - ``cdp_probe_result``
+        - ``session_selected``
+        - ``bridge_result``
+        """
+        return self.trace(
+            f'user_browser_bridge_{event_type}',
+            assistant_kind=assistant_kind,
+            cdp_available=cdp_available,
+            session_selected=session_selected,
+            reason=reason[:200] if reason else '',
+            **extra,
+        )
+
     def current_elapsed_ms(self) -> float:
         """Return milliseconds since tracer boot (process-relative)."""
         return round((time.perf_counter() - self._t0) * 1000.0, 1)

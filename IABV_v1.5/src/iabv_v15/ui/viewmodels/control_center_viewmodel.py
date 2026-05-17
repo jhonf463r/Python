@@ -2,6 +2,7 @@
 
 import atexit
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+import os
 from datetime import datetime, timezone
 import json
 import logging
@@ -3531,6 +3532,20 @@ class ControlCenterViewModel(QObject):
         # Each branch now tells the user: WHAT tool, WHAT block, WHAT evidence,
         # WHAT human action is needed, and whether local fallback is viable.
         if 'browser_security_verification' in lowered:
+            # P0.32: probe CDP availability to offer session selection
+            try:
+                cdp_probe = self._detect_cdp_available()
+            except Exception:
+                cdp_probe = {'available': False, 'error': 'probe_failed'}
+            cdp_ok = cdp_probe.get('available', False)
+            cdp_option = (
+                'Tambien puedes escribir "usar mi chrome" '
+                'para que IABV observe tu Chrome normal via CDP '
+                '(sin leer cookies ni tokens).'
+            ) if cdp_ok else (
+                'Si prefieres usar tu Chrome normal, abre Chrome con '
+                '"--remote-debugging-port=9222" y escribe "usar mi chrome".'
+            )
             message = (
                 f'Herramienta: {assistant_title}. '
                 f'Bloqueo: verificacion de seguridad del sitio (captcha / challenge). '
@@ -3543,23 +3558,31 @@ class ControlCenterViewModel(QObject):
                 f'Accion humana: '
                 f'1) Inicia sesion o resuelve la verificacion en la ventana que abrio IABV. '
                 f'2) Cuando este lista, escribe "ya lo hice" para un retest gobernado. '
-                f'Si prefieres usar tu Chrome normal, esa opcion requiere permiso '
-                f'de observacion (CDP) que aun no esta disponible. '
+                f'{cdp_option} '
+                f'3) Pegado manual: copia la respuesta y pegala aqui. '
                 'Sigo con la mejor via local disponible.'
             )
             if external_notice:
                 message = f'{message} {external_notice}'
             meta = f'{assistant_title}: blocked_by_security_verification'
             busy = f'Verificacion de seguridad pendiente para {assistant_title}.'
-            # P0.30 Task E/G: trace that isolated profile context was reported
+            # P0.32: trace with CDP availability + session selection state
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                get_runtime_tracer().trace(
+                tracer = get_runtime_tracer()
+                tracer.trace(
                     'assistant_profile_context_reported',
                     assistant_title=assistant_title,
                     profile_label='chatgpt_program_session/browser_profile',
                     block_type='browser_security_verification',
-                    user_chrome_bridge='governed_user_chrome_bridge_missing',
+                    user_chrome_bridge='cdp_available' if cdp_ok else 'governed_user_chrome_bridge_missing',
+                    cdp_available=cdp_ok,
+                )
+                tracer.trace_user_browser_bridge(
+                    'cdp_probe_attempted',
+                    assistant_kind=assistant_title.lower().replace(' ', '_'),
+                    cdp_available=cdp_ok,
+                    reason=cdp_probe.get('error', '') or 'ok',
                 )
             except Exception:
                 pass
@@ -5193,6 +5216,249 @@ class ControlCenterViewModel(QObject):
                 self.taskFailed.emit('security_retest', str(exc))
 
         self._bg_pool.submit(_retest_worker)
+        return True
+
+    # ══════════════════════════════════════════════════════════════════
+    # P0.32 — Governed User Chrome Bridge / External Session Selection
+    # ══════════════════════════════════════════════════════════════════
+
+    _CHROME_BRIDGE_PATTERNS: tuple[str, ...] = (
+        'usar mi chrome', 'use my chrome', 'mi navegador', 'my browser',
+        'chrome normal', 'usar chrome', 'mi sesion', 'my session',
+    )
+    _CDP_REVOKE_PATTERNS: tuple[str, ...] = (
+        'revocar permiso cdp', 'revocar cdp', 'revoke cdp',
+        'desactivar cdp', 'disable cdp', 'no usar mi chrome',
+    )
+
+    @staticmethod
+    def _detect_cdp_available(
+        cdp_url: str = '',
+        timeout: float = 2.0,
+    ) -> dict[str, Any]:
+        """Probe CDP endpoint without reading cookies/tokens/credentials.
+
+        Returns ``{'available': True/False, 'browser_version': ..., ...}``.
+        Only reads ``/json/version`` — never accesses page content,
+        cookies, localStorage, or any user data.
+        """
+        import urllib.request
+        import urllib.error
+
+        url = cdp_url or os.environ.get(
+            'IABV_SHARED_CDP_URL', 'http://localhost:9222',
+        )
+        version_url = f'{url}/json/version'
+        result: dict[str, Any] = {
+            'available': False,
+            'cdp_url': url,
+            'browser_version': '',
+            'error': '',
+        }
+        try:
+            req = urllib.request.Request(version_url, method='GET')
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                import json
+                data = json.loads(resp.read().decode('utf-8', errors='replace'))
+                result['available'] = True
+                result['browser_version'] = str(
+                    data.get('Browser', data.get('browser', '')),
+                )[:100]
+        except urllib.error.URLError as exc:
+            result['error'] = f'connection_failed: {exc.reason}'
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    def _build_session_selection_message(
+        self,
+        assistant_title: str,
+        cdp_probe: dict[str, Any],
+    ) -> str:
+        """Build a user-facing message explaining the available session options.
+
+        Options depend on CDP availability:
+        - If CDP is available: isolated profile, user Chrome (with permission), manual pasteback.
+        - If CDP is not available: isolated profile, manual pasteback, instructions to enable CDP.
+        """
+        cdp_ok = cdp_probe.get('available', False)
+        browser_ver = cdp_probe.get('browser_version', '')
+
+        options = [
+            '1) Perfil aislado de IABV: la sesion controlada por IABV '
+            '(puede requerir login/captcha separado).',
+        ]
+        if cdp_ok:
+            ver_note = f' (detecte: {browser_ver})' if browser_ver else ''
+            options.append(
+                f'2) Tu Chrome normal{ver_note}: IABV observaria tu navegador '
+                f'(requiere tu permiso explicito). Escribe "usar mi chrome" '
+                f'para activar esta opcion. No leere cookies ni tokens, '
+                f'solo observare el contenido visible de la pagina.'
+            )
+            options.append(
+                '3) Pegado manual: copia la respuesta de ChatGPT y pegala '
+                'aqui, o escribe lo que dijo.'
+            )
+        else:
+            options.append(
+                '2) Tu Chrome normal: no esta disponible ahora. '
+                'Para activarla, abre Chrome con '
+                '"--remote-debugging-port=9222" y reinicia la consulta.'
+            )
+            options.append(
+                '3) Pegado manual: copia la respuesta de ChatGPT y pegala '
+                'aqui, o escribe lo que dijo.'
+            )
+
+        return (
+            f'Herramienta: {assistant_title}.\n'
+            f'IABV esta usando un perfil aislado '
+            f'(chatgpt_program_session/browser_profile) '
+            f'que no comparte tu sesion de Chrome normal. '
+            f'Por eso la verificacion de seguridad te bloquea a ti pero no al perfil real.\n\n'
+            f'Opciones disponibles:\n'
+            + '\n'.join(options)
+        )
+
+    _USER_CHROME_BRIDGE_PATTERNS: tuple[str, ...] = (
+        'usar mi chrome', 'use my chrome', 'usar chrome normal',
+    )
+
+    def _try_handle_user_chrome_bridge_selection(self, message: str) -> bool:
+        """Handle user request to switch to their Chrome via CDP.
+
+        Gates on explicit permission. Never reads cookies/tokens.
+        Sets IABV_PREFER_CDP_SESSION=1 so the next consultation
+        uses the shared CDP controller.
+        """
+        lowered = message.strip().lower()
+        if not any(p in lowered for p in self._CHROME_BRIDGE_PATTERNS):
+            return False
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace_user_browser_bridge(
+                'permission_requested',
+                assistant_kind='chatgpt',
+                reason='user_requested_chrome_bridge',
+            )
+        except Exception:
+            pass
+
+        cdp_probe = self._detect_cdp_available()
+
+        try:
+            tracer.trace_user_browser_bridge(
+                'cdp_probe_result',
+                assistant_kind='chatgpt',
+                cdp_available=cdp_probe.get('available', False),
+                reason=cdp_probe.get('error', '') or 'ok',
+            )
+        except Exception:
+            pass
+
+        if not cdp_probe.get('available', False):
+            msg = (
+                'No puedo conectarme a tu Chrome. '
+                'Para usar tu sesion activa, abre Chrome con: '
+                '"chrome.exe --remote-debugging-port=9222" '
+                'y despues escribe "usar mi chrome" otra vez. '
+                'Mientras tanto, puedes pegar la respuesta manualmente.'
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = 'user_chrome_bridge: cdp_unavailable'
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'user_chrome_bridge_cdp_unavailable',
+                reasoning_path='governed_chrome_bridge',
+            )
+            try:
+                tracer.trace_user_browser_bridge(
+                    'bridge_result',
+                    assistant_kind='chatgpt',
+                    cdp_available=False,
+                    session_selected='none',
+                    reason='cdp_unavailable',
+                )
+            except Exception:
+                pass
+            self.dataChanged.emit()
+            return True
+
+        os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+
+        try:
+            tracer.trace_user_browser_bridge(
+                'permission_granted',
+                assistant_kind='chatgpt',
+                cdp_available=True,
+                session_selected='user_chrome_cdp',
+            )
+            tracer.trace_user_browser_bridge(
+                'session_selected',
+                assistant_kind='chatgpt',
+                cdp_available=True,
+                session_selected='user_chrome_cdp',
+                reason='user_explicit_permission',
+            )
+        except Exception:
+            pass
+
+        msg = (
+            'Activado: IABV usara tu Chrome normal para la proxima consulta '
+            'a ChatGPT (via CDP). No leere cookies, tokens ni credenciales — '
+            'solo observare el contenido visible de la pagina. '
+            'Puedes escribir "revocar permiso cdp" en cualquier momento para '
+            'volver al perfil aislado.'
+        )
+        self._latest_response_text = msg
+        self._latest_response_meta = 'user_chrome_bridge: cdp_activated'
+        self._append_message(
+            'assistant', 'IABV', msg,
+            'user_chrome_bridge_activated',
+            reasoning_path='governed_chrome_bridge',
+        )
+        self.dataChanged.emit()
+        return True
+
+    def _try_handle_cdp_permission_revoke(self, message: str) -> bool:
+        """Handle user request to revoke CDP permission.
+
+        Clears IABV_PREFER_CDP_SESSION so subsequent consultations
+        return to the isolated profile.
+        """
+        lowered = message.strip().lower()
+        if not any(p in lowered for p in self._CDP_REVOKE_PATTERNS):
+            return False
+
+        os.environ.pop('IABV_PREFER_CDP_SESSION', None)
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_user_browser_bridge(
+                'permission_denied',
+                assistant_kind='chatgpt',
+                cdp_available=False,
+                session_selected='isolated_profile',
+                reason='user_revoked_cdp_permission',
+            )
+        except Exception:
+            pass
+
+        msg = (
+            'CDP desactivado. IABV vuelve al perfil aislado para consultas externas. '
+            'Si necesitas usar tu Chrome otra vez, escribe "usar mi chrome".'
+        )
+        self._latest_response_text = msg
+        self._latest_response_meta = 'user_chrome_bridge: cdp_revoked'
+        self._append_message(
+            'assistant', 'IABV', msg,
+            'user_chrome_bridge_revoked',
+            reasoning_path='governed_chrome_bridge',
+        )
+        self.dataChanged.emit()
         return True
 
     # ══════════════════════════════════════════════════════════════════
@@ -10383,6 +10649,13 @@ class ControlCenterViewModel(QObject):
                 self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
             else:
                 self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.32: governed user Chrome bridge — session selection
+        if self._try_handle_user_chrome_bridge_selection(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_cdp_permission_revoke(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_external_failure_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')

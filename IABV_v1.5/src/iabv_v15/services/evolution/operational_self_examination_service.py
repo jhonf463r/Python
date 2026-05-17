@@ -854,6 +854,9 @@ class OperationalSelfExaminationService:
         # P0.30 Task F: detect metacognitive maintenance starvation.
         findings.extend(self._metacognitive_starvation_findings())
 
+        # P0.32: detect repeated isolated profile blocks.
+        findings.extend(self._isolated_profile_block_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -8752,6 +8755,68 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        return findings
+
+    # -- P0.32: isolated profile blocks user's logged-in browser --
+    def _isolated_profile_block_findings(self) -> list[SelfExaminationFinding]:
+        """Detect when the isolated browser profile repeatedly blocks consultations.
+
+        If ``assistant_profile_context_reported`` with
+        ``block_type=browser_security_verification`` appears >= 2 times
+        in recent audit events, the user is likely logged into their
+        own Chrome but IABV keeps hitting the isolated profile wall.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+        block_count = 0
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    if kind == 'assistant_profile_context_reported':
+                        data = entry.get('data', {})
+                        if data.get('block_type') == 'browser_security_verification':
+                            block_count += 1
+        except Exception:
+            pass
+        if block_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='isolated_profile_blocks_user_logged_in_browser',
+                severity=IssueSeverity.MEDIUM,
+                title='Perfil aislado bloquea repetidamente consultas externas',
+                summary=(
+                    f'{block_count} bloqueos por verificacion de seguridad en perfil aislado. '
+                    'El usuario probablemente tiene sesion activa en su Chrome normal '
+                    'pero IABV no puede usarla sin CDP/permiso. '
+                    'Considerar: escribir "usar mi chrome" o abrir Chrome con '
+                    '"--remote-debugging-port=9222".'
+                ),
+                recommendation=(
+                    'Activar CDP bridge: usuario escribe "usar mi chrome" '
+                    'o abre Chrome con --remote-debugging-port=9222. '
+                    'IABV no leera cookies ni tokens, solo observara contenido visible.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'block_count': block_count,
+                    'pattern': 'isolated_profile_blocks_user_logged_in_browser',
+                },
+            ))
         return findings
 
     # -- P0.30 Task F: metacognitive maintenance starvation --
