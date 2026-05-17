@@ -53,8 +53,17 @@ class PlatformPendingQueue:
 
     def upsert(self, task: PlatformPendingTask) -> PlatformPendingTask:
         """Insert or update a pending task.  Returns the persisted copy."""
-        task = task.model_copy(update={'updated_at': utc_now()})
         path = self._task_path(task.id)
+        existing = self.get(task.id) if path.exists() else None
+        update: dict[str, Any] = {'updated_at': utc_now()}
+        if existing is not None:
+            existing_metadata = dict(existing.metadata or {})
+            incoming_metadata = dict(task.metadata or {})
+            update['metadata'] = {**existing_metadata, **incoming_metadata}
+            update['created_at'] = existing.created_at
+            if not task.resume_hint and existing.resume_hint:
+                update['resume_hint'] = existing.resume_hint
+        task = task.model_copy(update=update)
         path.write_text(
             task.model_dump_json(indent=2),
             encoding='utf-8',

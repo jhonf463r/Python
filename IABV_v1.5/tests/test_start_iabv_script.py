@@ -52,6 +52,7 @@ def test_declares_start_ui_switch(start_iabv_src: str) -> None:
         "[switch]$SkipHealthChecks",
         "[switch]$HotReload",
         "[switch]$Quiet",
+        "[switch]$UiOnly",
         # Comment-based help para StartUI (paso 4 del issue).
         ".PARAMETER StartUI",
         # Guardia del flag.
@@ -127,6 +128,22 @@ def test_start_ui_documented_in_header(start_iabv_src: str) -> None:
     assert "-StartUI" in header, (
         "El flag -StartUI debe aparecer tambien en el header de ayuda rapida"
     )
+    assert "-UiOnly" in header
+
+
+def test_ui_only_skips_mcp_and_tunnel_for_daily_shortcut(start_iabv_src: str) -> None:
+    """El doble clic diario no necesita Cloudflare tunnel.
+
+    El tunnel queda disponible para auditoria remota, pero el acceso directo
+    local debe poder arrancar la ventana sin levantar MCP/cloudflared.
+    """
+
+    assert "if ($UiOnly)" in start_iabv_src
+    assert "Write-StartupAudit 'mcp_tunnel_skipped'" in start_iabv_src
+    assert "reason = 'ui_only'" in start_iabv_src
+    ui_only_idx = start_iabv_src.index("if ($UiOnly)")
+    bridge_idx = start_iabv_src.rindex("& powershell -ExecutionPolicy Bypass -File $bridge")
+    assert ui_only_idx < bridge_idx
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +293,14 @@ def test_autopull_birth_audit_records_non_interactive_lifecycle(script_text: str
     assert "Write-StartupAudit 'autopull_started'" in script_text
     assert "Write-StartupAudit 'autopull_completed'" in script_text
     assert "non_interactive = $true" in script_text
+
+
+def test_non_main_branch_ahead_of_main_is_not_marked_stale(script_text: str) -> None:
+    assert "merge-base --is-ancestor $originMainHead $currentHead" in script_text
+    assert "$originMainIsAncestor" in script_text
+    assert "-not $originMainIsAncestor" in script_text
+    assert "Write-StartupAudit 'non_main_runtime_allowed'" in script_text
+    assert "Write-StartupAudit 'autopull_skipped'" in script_text
 
 
 def test_aborts_on_pull_failure_without_forcing(script_text: str) -> None:

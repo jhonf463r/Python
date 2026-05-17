@@ -151,8 +151,10 @@ def test_start_iabv_writes_startup_audit_and_releases_birth_lock() -> None:
     assert "Write-StartupAudit 'python_launch_attempt'" in script
     assert "Write-StartupAudit 'python_launch_spawned'" in script
     assert "Write-StartupAudit 'python_launch_failed'" in script
+    assert "Write-StartupAudit 'mcp_tunnel_skipped'" in script
     assert "Write-StartupAudit 'startup_lock_released'" in script
     assert "birth_phase_done_before_long_running_bridge" in script
+    assert "ui_only_birth_phase_done" in script
 
 
 def test_vbs_delegates_lock_decision_to_powershell() -> None:
@@ -161,6 +163,7 @@ def test_vbs_delegates_lock_decision_to_powershell() -> None:
     assert 'FileExists(lockPath)' not in vbs
     assert 'WScript.Quit 0' not in vbs
     assert 'start_iabv.ps1' in vbs
+    assert '-UiOnly' in vbs
     assert 'PowerShell owns lock validation' in vbs
 
 

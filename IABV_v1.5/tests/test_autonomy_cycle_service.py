@@ -427,3 +427,29 @@ class TestMissingToolsBridge:
         queue.upsert(task)
         existing = queue.get('tool_claude')
         assert existing.status == PendingTaskStatus.COMPLETED
+
+    def test_upsert_preserves_existing_evolution_metadata(self, queue: PlatformPendingQueue):
+        original = PlatformPendingTask(
+            id='inv_phase_b_visual_metacognition',
+            title='Fase B',
+            status=PendingTaskStatus.READY_FOR_NEXT_SLICE,
+            category='investigation',
+            resume_hint='preserve this handoff',
+            metadata={'p05_fix': 'shared reality learned', 'remaining': ['qml']},
+        )
+        queue.upsert(original)
+
+        seeded_again = PlatformPendingTask(
+            id='inv_phase_b_visual_metacognition',
+            title='Fase B',
+            status=PendingTaskStatus.READY_FOR_NEXT_SLICE,
+            category='investigation',
+            metadata={},
+        )
+        queue.upsert(seeded_again)
+
+        existing = queue.get('inv_phase_b_visual_metacognition')
+        assert existing is not None
+        assert existing.resume_hint == 'preserve this handoff'
+        assert existing.metadata['p05_fix'] == 'shared reality learned'
+        assert existing.metadata['remaining'] == ['qml']

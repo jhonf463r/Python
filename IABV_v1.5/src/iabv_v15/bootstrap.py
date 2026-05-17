@@ -439,14 +439,14 @@ class AppBootstrap:
         configure_global_timeline(Path(self.config.logs_dir))
         # Configure runtime tracer with the same logs dir.
         configure_runtime_tracer(Path(self.config.logs_dir))
+        self._tracer.trace('boot_start', workspace=workspace_root or '')
+        _fp_event = self._tracer.trace_build_fingerprint(workspace=workspace_root or '.')
         try:
             self._tracer.trace_startup_handoff_received(
                 workspace=workspace_root or self.config.workspace_root,
             )
         except Exception:
             logger.debug('startup handoff trace failed', exc_info=True)
-        self._tracer.trace('boot_start', workspace=workspace_root or '')
-        _fp_event = self._tracer.trace_build_fingerprint(workspace=workspace_root or '.')
         _fp_data = _fp_event.get('data', {})
         if _fp_data.get('stale'):
             self._tracer.trace_stale_build_detected(

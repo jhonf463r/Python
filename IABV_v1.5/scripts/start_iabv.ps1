@@ -3,7 +3,8 @@
 # Un solo comando para arrancar IABV v1.5 end-to-end:
 #   1. Carga secretos desde $HOME\.iabv_secrets.ps1 si existe.
 #   2. Corre validaciones rapidas (token shapes, API reachability opcional).
-#   3. Delega en scripts\run_mcp_bridge.ps1 (MCP + Cloudflare tunnel).
+#   3. Opcionalmente delega en scripts\run_mcp_bridge.ps1 (MCP + Cloudflare
+#      tunnel) cuando no se usa -UiOnly.
 #
 # Goal: el usuario no tiene que recordar 6 comandos distintos ni re-exportar
 # tokens cada sesion. Simplemente:
@@ -17,6 +18,10 @@
 #   -Quiet                  Menos output en consola.
 #   -StartUI                Ademas de MCP+tunel, lanza ControlCenter
 #                           (python -m iabv_v15 app) en proceso aparte.
+#   -UiOnly                 Arranca solo la ventana local. No levanta MCP ni
+#                           Cloudflare tunnel. Es el modo correcto para el
+#                           acceso directo diario; el tunnel queda para
+#                           auditoria remota/Devin cuando se necesite.
 #   -AutoPull               Corre 'git pull --rebase=false' en el workspace
 #                           antes de cualquier otra cosa (default ON). Si hubo
 #                           commits nuevos, invoca summarize_updates para
@@ -45,6 +50,8 @@
     Ademas de MCP+tunel, lanza la ventana ControlCenter (python -m iabv_v15 app)
     en un proceso aparte no bloqueante. Si la UI falla en arrancar, se loguea
     el error pero NO se mata el MCP (el MCP sigue vivo).
+.PARAMETER UiOnly
+    Arranca solo la ventana ControlCenter local y no levanta MCP/tunnel.
 #>
 [CmdletBinding()]
 param(
@@ -55,7 +62,8 @@ param(
     [int]$McpPort = 8000,
     [switch]$AutoPull = $true,
     [switch]$NoAutoPull,
-    [switch]$AllowNonMain
+    [switch]$AllowNonMain,
+    [switch]$UiOnly
 )
 
 if ($NoAutoPull) {
@@ -186,6 +194,7 @@ Write-StartupAudit 'startup_attempt' @{
     quiet = [bool]$Quiet
     autopull = [bool]$AutoPull
     no_autopull = [bool]$NoAutoPull
+    ui_only = [bool]$UiOnly
 }
 if (Test-Path $lockFile) {
     $lockAge = (Get-Date) - (Get-Item $lockFile).LastWriteTime
@@ -318,6 +327,12 @@ if ($AutoPull) {
         $currentBranch = (& git -C $repoRoot rev-parse --abbrev-ref HEAD 2>$null).Trim()
         $currentHead = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
         $originMainHead = (& git -C $repoRoot rev-parse origin/main 2>$null).Trim()
+        $originMainIsAncestor = $false
+        if ($originMainHead -and $currentHead) {
+            & git -C $repoRoot merge-base --is-ancestor $originMainHead $currentHead 2>$null
+            $originMainIsAncestor = ($LASTEXITCODE -eq 0)
+        }
+        $skipPull = $false
         $allowNonMainRuntime = $AllowNonMain -or ($env:IABV_ALLOW_NON_MAIN_RUNTIME -eq '1')
         if (
             -not $allowNonMainRuntime -and
@@ -325,7 +340,8 @@ if ($AutoPull) {
             $currentBranch -ne 'main' -and
             $originMainHead -and
             $currentHead -and
-            $originMainHead -ne $currentHead
+            $originMainHead -ne $currentHead -and
+            -not $originMainIsAncestor
         ) {
             $shortCurrent = if ($currentHead.Length -ge 8) { $currentHead.Substring(0, 8) } else { $currentHead }
             $shortMain = if ($originMainHead.Length -ge 8) { $originMainHead.Substring(0, 8) } else { $originMainHead }
@@ -348,6 +364,26 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
             }
             exit 1
         }
+        if ($currentBranch -and $currentBranch -ne 'main') {
+            $skipPull = $true
+            $nonMainReason = 'allow_non_main_runtime'
+            if ($originMainIsAncestor) { $nonMainReason = 'branch_contains_origin_main' }
+            Write-StartupAudit 'non_main_runtime_allowed' @{
+                branch = $currentBranch
+                current_head = $currentHead
+                origin_main_head = $originMainHead
+                origin_main_is_ancestor = [bool]$originMainIsAncestor
+                reason = $nonMainReason
+            }
+            Write-StartupAudit 'autopull_skipped' @{
+                reason = 'non_main_branch'
+                branch = $currentBranch
+                current_head = $currentHead
+                origin_main_head = $originMainHead
+            }
+            Write-Info "Auto-pull : skipped en rama $currentBranch (no-main runtime)."
+        }
+        if (-not $skipPull) {
         Write-Info "Auto-pull : git pull --rebase=false --no-edit en $repoRoot"
         $oldSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
         & git -C $repoRoot -c core.editor=true -c sequence.editor=true pull --rebase=false --no-edit
@@ -422,6 +458,7 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
             }
         } else {
             Write-Info "Sin cambios nuevos (HEAD ya estaba actualizado)."
+        }
         }
         $env:GIT_TERMINAL_PROMPT = $prevGitTerminalPrompt
         $env:GIT_EDITOR = $prevGitEditor
@@ -591,6 +628,21 @@ if ($StartUI) {
         Write-Warn "         python -m iabv_v15 app"
     }
     }
+}
+
+if ($UiOnly) {
+    Write-Info ""
+    Write-Info "Modo UI local: MCP + Cloudflare tunnel no se arrancan."
+    Write-StartupAudit 'mcp_tunnel_skipped' @{
+        reason = 'ui_only'
+        tunnel_required = $false
+        mcp_required = $false
+    }
+    Write-StartupAudit 'startup_lock_released' @{
+        reason = 'ui_only_birth_phase_done'
+    }
+    Remove-Item -Path $lockFile -Force -ErrorAction SilentlyContinue
+    exit 0
 }
 
 # M7: limpiar directorios pytest-cache-files huerfanos que se acumulan
