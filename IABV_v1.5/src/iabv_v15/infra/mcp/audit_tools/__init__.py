@@ -537,6 +537,9 @@ def run_pytest(
     runner: SubprocessRunner | None = None,
     timeout_s: float = PYTEST_TIMEOUT_SECONDS,
     output_tail_chars: int = 4000,
+    persist_evidence: bool = False,
+    linked_pending_task: str = "",
+    changed_files: Iterable[str] | None = None,
 ) -> dict[str, Any]:
     """Ejecuta la batería oficial y resume resultados.
 
@@ -545,6 +548,10 @@ def run_pytest(
 
     Devuelve `{passed, failed, errors, returncode, duration_s, timed_out,
     suite, keyword, output_tail}`.
+
+    P0.29: when ``persist_evidence=True``, writes a compact
+    ``TestEvidence`` JSON to ``data/evolution/test_evidence/latest.json``
+    (no logs, no PII).
     """
 
     normalized_suite = validate_pytest_suite(suite)
@@ -598,7 +605,7 @@ def run_pytest(
     output = result.stdout + ("\n" + result.stderr if result.stderr else "")
     passed, failed, errors = _parse_pytest_counts(output)
     tail = output[-int(max(0, output_tail_chars)):] if output_tail_chars > 0 else ""
-    return {
+    payload = {
         "suite": normalized_suite,
         "keyword": normalized_keyword,
         "passed": passed,
@@ -609,6 +616,90 @@ def run_pytest(
         "timed_out": bool(result.timed_out),
         "output_tail": tail,
     }
+
+    if persist_evidence:
+        _persist_test_evidence(
+            workspace_root=root,
+            payload=payload,
+            command=" ".join(cmd),
+            linked_pending_task=linked_pending_task,
+            changed_files=list(changed_files or []),
+        )
+
+    return payload
+
+
+# -- P0.29 helpers ----------------------------------------------------------
+
+
+_TEST_EVIDENCE_SUBDIR = "data/evolution/test_evidence"
+_TEST_EVIDENCE_MAX_AGE_S = 86400.0  # 24 h
+
+
+def _persist_test_evidence(
+    *,
+    workspace_root: Path,
+    payload: dict[str, Any],
+    command: str,
+    linked_pending_task: str,
+    changed_files: list[str],
+) -> None:
+    """Best-effort persistence — never raises."""
+    try:
+        import json as _json
+        from datetime import datetime as _dt, timezone as _tz
+        evidence_dir = workspace_root / _TEST_EVIDENCE_SUBDIR
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        evidence = {
+            "evidence_id": str(time.time()),
+            "command": command,
+            "suite": str(payload.get("suite") or ""),
+            "keyword": str(payload.get("keyword") or ""),
+            "passed": int(payload.get("passed") or 0),
+            "failed": int(payload.get("failed") or 0),
+            "errors": int(payload.get("errors") or 0),
+            "duration_s": float(payload.get("duration_s") or 0.0),
+            "returncode": int(payload.get("returncode") or 0),
+            "timed_out": bool(payload.get("timed_out")),
+            "timestamp": _dt.now(_tz.utc).isoformat(),
+            "linked_pending_task": linked_pending_task,
+            "changed_files": changed_files[:20],
+            "metadata": {},
+        }
+        latest = evidence_dir / "latest.json"
+        latest.write_text(
+            _json.dumps(evidence, indent=2, default=str),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+
+
+def load_latest_test_evidence(
+    workspace_root: str | os.PathLike[str],
+    *,
+    max_age_s: float = _TEST_EVIDENCE_MAX_AGE_S,
+) -> dict[str, Any] | None:
+    """Load latest TestEvidence if fresh enough. Returns None otherwise."""
+    import json as _json
+    from datetime import datetime as _dt, timezone as _tz
+    try:
+        root = Path(workspace_root).resolve()
+        latest = root / _TEST_EVIDENCE_SUBDIR / "latest.json"
+        if not latest.exists():
+            return None
+        data = _json.loads(latest.read_text(encoding="utf-8"))
+        ts_str = data.get("timestamp", "")
+        if ts_str:
+            ts = _dt.fromisoformat(ts_str)
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=_tz.utc)
+            age = (_dt.now(_tz.utc) - ts).total_seconds()
+            if age > max_age_s:
+                return None
+        return data
+    except Exception:
+        return None
 
 
 # ----------------------------------------------------------------------
