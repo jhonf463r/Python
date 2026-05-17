@@ -255,6 +255,29 @@ def test_pull_lives_inside_autopull_branch(script_text: str) -> None:
     assert off_pos > pull_pos
 
 
+def test_autopull_is_non_interactive(script_text: str) -> None:
+    """El acceso directo nunca debe quedarse atrapado en Git/Vim.
+
+    El bug vivo fue un ``git pull`` que abrio ``MERGE_MSG`` en Vim antes de
+    que Python arrancara. Eso deja a IABV sin runtime audit ni UI. El launcher
+    debe desactivar prompts/editores y pasar ``--no-edit`` al pull.
+    """
+
+    assert "$env:GIT_TERMINAL_PROMPT = '0'" in script_text
+    assert "$env:GIT_EDITOR = 'true'" in script_text
+    assert "$env:VISUAL = 'true'" in script_text
+    assert "$env:EDITOR = 'true'" in script_text
+    assert "core.editor=true" in script_text
+    assert "sequence.editor=true" in script_text
+    assert "pull --rebase=false --no-edit" in script_text
+
+
+def test_autopull_birth_audit_records_non_interactive_lifecycle(script_text: str) -> None:
+    assert "Write-StartupAudit 'autopull_started'" in script_text
+    assert "Write-StartupAudit 'autopull_completed'" in script_text
+    assert "non_interactive = $true" in script_text
+
+
 def test_aborts_on_pull_failure_without_forcing(script_text: str) -> None:
     # Si el pull falla, abortamos. No hay rastro de --force ni reset --hard.
     assert re.search(r"git pull --rebase=false", script_text), "debe usar --rebase=false"

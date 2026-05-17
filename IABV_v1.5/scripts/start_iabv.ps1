@@ -21,9 +21,10 @@
 #                           antes de cualquier otra cosa (default ON). Si hubo
 #                           commits nuevos, invoca summarize_updates para
 #                           imprimir un resumen humano en espanol de los
-#                           cambios. Usa --rebase=false para tolerar ramas
-#                           divergentes (e.g. auto-merge local). Si el pull
-#                           falla, aborta con mensaje claro (NO fuerza merge).
+#                           cambios. Usa --rebase=false --no-edit para tolerar
+#                           ramas divergentes sin abrir un editor interactivo.
+#                           Si el pull falla, aborta con mensaje claro (NO
+#                           fuerza merge).
 #   -NoAutoPull             Desactiva el auto-pull (p.ej. cuando ya lo
 #                           corriste a mano o estas en una rama intencional).
 #
@@ -283,8 +284,8 @@ $env:PYTHONDONTWRITEBYTECODE = '1'
 # --- Auto pull (default ON) -------------------------------------------------
 # Mantiene el workspace sincronizado con origin/main antes de arrancar el MCP,
 # para que el usuario no termine corriendo una version vieja despues de que
-# Devin mergeo fixes automaticos. Usa --rebase=false para tolerar divergencia
-# local (e.g. auto-merge commits). Si falla, abortamos con mensaje claro.
+# Devin mergeo fixes automaticos. Usa --rebase=false --no-edit para tolerar
+# divergencia local sin abrir Git/Vim; si falla, abortamos con mensaje claro.
 if ($AutoPull) {
     $repoRoot = $null
     try {
@@ -295,6 +296,20 @@ if ($AutoPull) {
     if (-not $repoRoot) {
         Write-Warn "[auto-pull] No pude resolver la raiz del repo git desde $PSScriptRoot; salto pull."
     } else {
+        $prevGitTerminalPrompt = $env:GIT_TERMINAL_PROMPT
+        $prevGitEditor = $env:GIT_EDITOR
+        $prevVisual = $env:VISUAL
+        $prevEditor = $env:EDITOR
+        $env:GIT_TERMINAL_PROMPT = '0'
+        $env:GIT_EDITOR = 'true'
+        $env:VISUAL = 'true'
+        $env:EDITOR = 'true'
+        Write-StartupAudit 'autopull_started' @{
+            repo_root = $repoRoot
+            non_interactive = $true
+            git_terminal_prompt = '0'
+            git_editor = 'true'
+        }
         try {
             & git -C $repoRoot fetch origin main | Out-Null
         } catch {
@@ -333,12 +348,12 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
             }
             exit 1
         }
-        Write-Info "Auto-pull : git pull --rebase=false en $repoRoot"
+        Write-Info "Auto-pull : git pull --rebase=false --no-edit en $repoRoot"
         $oldSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
-        & git -C $repoRoot pull --rebase=false
+        & git -C $repoRoot -c core.editor=true -c sequence.editor=true pull --rebase=false --no-edit
         $pullExit = $LASTEXITCODE
         if ($pullExit -ne 0) {
-            Write-Err "[auto-pull] git pull --rebase=false fallo (exit $pullExit)."
+            Write-Err "[auto-pull] git pull --rebase=false --no-edit fallo (exit $pullExit)."
             Write-Err "  Verifica el estado del repo y corregilo a mano,"
             Write-Err "  o corre con -NoAutoPull si sabes lo que haces."
             Write-StartupAudit 'startup_script_error' @{
@@ -347,10 +362,19 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
                 branch = $currentBranch
                 current_head = $currentHead
                 origin_main_head = $originMainHead
+                non_interactive = $true
             }
             exit 1
         }
         $newSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
+        Write-StartupAudit 'autopull_completed' @{
+            repo_root = $repoRoot
+            branch = $currentBranch
+            old_head = $oldSha
+            new_head = $newSha
+            changed = [bool]($oldSha -and $newSha -and $oldSha -ne $newSha)
+            non_interactive = $true
+        }
         if ($oldSha -and $newSha -and $oldSha -ne $newSha) {
             Write-Info "Cambios   : $oldSha -> $newSha"
             $iabvRoot = Split-Path -Parent $PSScriptRoot
@@ -399,6 +423,10 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
         } else {
             Write-Info "Sin cambios nuevos (HEAD ya estaba actualizado)."
         }
+        $env:GIT_TERMINAL_PROMPT = $prevGitTerminalPrompt
+        $env:GIT_EDITOR = $prevGitEditor
+        $env:VISUAL = $prevVisual
+        $env:EDITOR = $prevEditor
     }
 } else {
     Write-Info "Auto-pull : OFF (-NoAutoPull activo)."
