@@ -113,6 +113,26 @@ def test_run_pytest_persists_evidence_when_requested() -> None:
         assert "file_a.py" in data["changed_files"]
         assert data["timestamp"]  # must be non-empty
 
+        control_master = Path(tmpdir) / "data" / "evolution" / "control_master"
+        cm_latest = control_master / "latest.json"
+        cm_markdown = control_master / "latest.md"
+        assert cm_latest.exists(), "ControlMaster latest.json must mirror tests state"
+        assert cm_markdown.exists(), "ControlMaster latest.md must mirror tests state"
+
+        cm_data = json.loads(cm_latest.read_text(encoding="utf-8"))
+        tests_state = cm_data["current_tests_state"]
+        assert tests_state["passed"] == 8
+        assert tests_state["failed"] == 1
+        assert tests_state["errors"] == 0
+        assert tests_state["total"] == 9
+        assert tests_state["health"] == "red"
+        assert tests_state["linked_pending_task"] == "p029_test"
+        assert "data/evolution/test_evidence/latest.json" in cm_data["evidence_links"]
+        md = cm_markdown.read_text(encoding="utf-8")
+        assert "## Estado de tests" in md
+        assert "passed: 8" in md
+        assert "failed: 1" in md
+
 
 def test_run_pytest_does_not_persist_without_flag() -> None:
     """run_pytest() without persist_evidence must NOT write latest.json."""
