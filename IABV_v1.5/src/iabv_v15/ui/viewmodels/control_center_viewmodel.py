@@ -238,6 +238,7 @@ class ControlCenterViewModel(QObject):
         self._latest_response_meta = 'Cuando completes una consulta, aqui veras el rol detectado, el pack usado y si hubo aprobaciones.'
         self._last_external_failure_payload: dict[str, Any] = {}
         self._last_external_failure_ts: float = 0.0
+        self._external_consultation_browser_override: dict[str, Any] = {}
         self._dock_skip_last_trace: dict[str, float] = {}
         self._approval_dialog_visible = False
         self._approval_dialog_title = 'Aprobacion requerida'
@@ -4183,11 +4184,24 @@ class ControlCenterViewModel(QObject):
         'verificacion', 'verificación', 'seguridad', 'captcha', 'challenge',
         'desbloquear', 'bloqueo', 'bloqueado', 'ayuda', 'ayudar',
         'requiere ayuda', 'necesitas ayuda', 'te ayudo',
+        'autentique', 'autenticado', 'autentiqué', 'logueado', 'loguee',
+        'inicie sesion', 'inicié sesión', 'sesion iniciada', 'sesión iniciada',
+        'mi chrome', 'mi navegador', 'ventana que no era', 'otra ventana',
+        'perfil incorrecto', 'perfil aislado',
     )
     _SECURITY_HELP_OPEN_WINDOW_PATTERNS: tuple[str, ...] = (
         'abre', 'abrir', 'muestra', 'mostrar', 'ventana', 'pantalla',
         'yo te ayudo', 'te ayudo', 'me ayudas', 'ayudas', 'ayudo con eso',
         'mi ayuda', 'solucionar', 'soluciona', 'resolver',
+    )
+    _SECURITY_PROFILE_MISMATCH_PATTERNS: tuple[str, ...] = (
+        'ya me autentique', 'ya me autentiqué', 'ya estoy autenticado',
+        'ya inicie sesion', 'ya inicié sesión', 'ya incie seccion',
+        'ya inicio sesion', 'ya inició sesión', 'ya me loguee', 'ya me logueé',
+        'a mi si me funciona', 'a mí sí me funciona', 'a mi me funciona',
+        'mi chrome', 'mi navegador', 'mi perfil', 'chrome normal',
+        'ventana que no era', 'otra ventana', 'perfil incorrecto',
+        'perfil aislado', 'que estas usando tu', 'qué estás usando tú',
     )
 
     def _remember_external_failure(
@@ -4240,6 +4254,10 @@ class ControlCenterViewModel(QObject):
         text = str(lowered_message or '').strip().lower()
         return any(pattern in text for pattern in self._SECURITY_HELP_OPEN_WINDOW_PATTERNS)
 
+    def _security_followup_requests_user_browser(self, lowered_message: str) -> bool:
+        text = str(lowered_message or '').strip().lower()
+        return any(pattern in text for pattern in self._SECURITY_PROFILE_MISMATCH_PATTERNS)
+
     def _security_verification_assistant_kind(self, assistant_title: str, payload: dict[str, Any]) -> str:
         haystack = ' '.join(
             str(item or '')
@@ -4256,7 +4274,13 @@ class ControlCenterViewModel(QObject):
             return 'chatgpt'
         return 'chatgpt'
 
-    def _open_security_verification_window(self, *, assistant_title: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def _open_security_verification_window(
+        self,
+        *,
+        assistant_title: str,
+        payload: dict[str, Any],
+        prefer_user_browser: bool = False,
+    ) -> dict[str, Any]:
         """Open a visible browser window so the user can complete security checks.
 
         This does not bypass CAPTCHA/challenges. It only bridges the shared
@@ -4288,6 +4312,36 @@ class ControlCenterViewModel(QObject):
                 r'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
                 r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
             ]
+            if prefer_user_browser:
+                for candidate in candidates:
+                    exe = str(candidate or '').strip()
+                    if exe and Path(exe).exists():
+                        subprocess.Popen(
+                            [
+                                exe,
+                                '--new-window',
+                                url,
+                            ],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+                        return {
+                            'opened': True,
+                            'mode': 'visible_user_browser',
+                            'assistant_kind': assistant_kind,
+                            'url': url,
+                            'profile_dir': '',
+                            'isolated_profile_skipped': True,
+                        }
+                opened = bool(webbrowser.open(url))
+                return {
+                    'opened': opened,
+                    'mode': 'default_user_browser',
+                    'assistant_kind': assistant_kind,
+                    'url': url,
+                    'profile_dir': '',
+                    'isolated_profile_skipped': True,
+                }
             for candidate in candidates:
                 exe = str(candidate or '').strip()
                 if exe and Path(exe).exists():
@@ -4325,6 +4379,112 @@ class ControlCenterViewModel(QObject):
                 'error': str(exc)[:240],
             }
 
+    def _remember_user_browser_external_override(self, *, assistant_kind: str) -> None:
+        """Prefer the user's visible browser after a profile-mismatch handoff.
+
+        This is a temporary routing hint for the current UI session. It does
+        not bypass governance and does not automate observation of the user's
+        browser; it only prevents the next explicit ChatGPT retry from blindly
+        repeating the same blocked isolated profile.
+        """
+        self._external_consultation_browser_override = {
+            'assistant_kind': str(assistant_kind or 'chatgpt').strip().lower() or 'chatgpt',
+            'mode': 'user_browser_manual',
+            'created_at': time.time(),
+            'reason': 'security_profile_mismatch',
+        }
+
+    def _active_user_browser_external_override(self, assistant_kind: str) -> dict[str, Any]:
+        override = dict(getattr(self, '_external_consultation_browser_override', {}) or {})
+        if not override:
+            return {}
+        if str(override.get('mode') or '') != 'user_browser_manual':
+            return {}
+        target = str(override.get('assistant_kind') or '').strip().lower()
+        requested = str(assistant_kind or '').strip().lower()
+        if target and requested and target != requested:
+            return {}
+        created = float(override.get('created_at') or 0.0)
+        if created and (time.time() - created) <= 1800:
+            return override
+        return {}
+
+    def _external_consultation_goal_overrides(self, assistant_kind: str) -> dict[str, Any]:
+        if not self._active_user_browser_external_override(assistant_kind):
+            return {}
+        return {
+            'prefer_user_browser_session': True,
+            'response_capture_mode': 'manual_pasteback',
+            'background_capture_mode': '',
+            'requires_manual_pasteback': True,
+            'isolated_session_required': False,
+            'session_scope': 'user_browser',
+            'session_label': f'{self._assistant_display_name(assistant_kind)} en navegador del usuario',
+            'profile_mismatch_resolution': 'user_browser_manual_handoff',
+        }
+
+    def _user_browser_manual_consultation_result(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        context_pack: str,
+        preflight: dict[str, Any],
+    ) -> dict[str, Any]:
+        self._copy_text(context_pack, f'Prompt para {assistant_title} copiado al portapapeles.')
+        open_result = self._open_security_verification_window(
+            assistant_title=assistant_title,
+            payload={'assistant_title': assistant_title, 'meta': 'profile_mismatch_manual_handoff'},
+            prefer_user_browser=True,
+        )
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'external_consultation_user_browser_handoff',
+                assistant_kind=assistant_kind,
+                assistant_title=assistant_title,
+                opened=bool(open_result.get('opened')),
+                mode=str(open_result.get('mode') or ''),
+                preflight_reason=str(preflight.get('reason') or '')[:240],
+            )
+        except Exception:
+            pass
+        message = (
+            f'{assistant_title} sigue bloqueado en el perfil aislado de IABV, '
+            'pero detecte que tu sesion autenticada esta en el navegador del usuario. '
+            'Por eso no repeti la consulta automatica en la sesion equivocada. '
+            f'Intente abrir {assistant_title} en tu navegador normal y copie el prompt al portapapeles. '
+            'Pega ese prompt alli y luego usa "respuesta externa: ..." o "ingerir respuesta" '
+            'para que IABV integre el resultado. '
+            'UNRESOLVED:automatic_user_browser_capture_requires_cdp_or_observation_permission.'
+        )
+        return {
+            'success': False,
+            'message': message,
+            'meta': f'{assistant_title}: user_browser_manual_handoff',
+            'terminal_state': 'needs_human_handoff',
+            'assistant_title': assistant_title,
+            'assistant_kind': assistant_kind,
+            'external_state_flags': ['capture_unverified'],
+            'payload': {
+                'metadata': {
+                    'external_consultation': {
+                        'status': 'user_browser_manual_handoff',
+                        'assistant_kind': assistant_kind,
+                        'requested_assistant_kind': assistant_kind,
+                        'profile_mismatch_resolution': 'user_browser_manual_handoff',
+                        'manual_pasteback_required': True,
+                        'response_capture_mode': 'manual_pasteback',
+                        'browser_override_mode': 'user_browser_manual',
+                        'open_result': {
+                            'opened': bool(open_result.get('opened')),
+                            'mode': str(open_result.get('mode') or ''),
+                        },
+                    },
+                },
+            },
+        }
+
     def _try_handle_external_failure_followup(self, message: str) -> bool:
         """Answer immediate follow-ups about a recent external failure cheaply.
 
@@ -4341,25 +4501,33 @@ class ControlCenterViewModel(QObject):
             return False
         lowered = message.strip().lower()
         is_security_verification = self._external_failure_indicates_security_verification(payload)
+        profile_mismatch = (
+            is_security_verification
+            and self._security_followup_requests_user_browser(lowered)
+        )
         asks_about_failure = any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS)
         asks_security_help = (
             is_security_verification
             and any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS)
         )
-        if not asks_about_failure and not asks_security_help:
+        if not asks_about_failure and not asks_security_help and not profile_mismatch:
             return False
 
         assistant_title = str(payload.get('assistant_title') or 'Asistente externo')
         previous_message = str(payload.get('message') or 'No hubo respuesta externa util.').strip()
         previous_meta = str(payload.get('meta') or 'sin metadata').strip()
         outcome = str(payload.get('outcome') or 'failed').strip()
+        assistant_kind = self._security_verification_assistant_kind(assistant_title, payload)
         open_window_result: dict[str, Any] | None = None
         if is_security_verification:
-            if self._security_help_requests_visible_window(lowered):
+            if self._security_help_requests_visible_window(lowered) or profile_mismatch:
                 open_window_result = self._open_security_verification_window(
                     assistant_title=assistant_title,
                     payload=payload,
+                    prefer_user_browser=profile_mismatch,
                 )
+                if profile_mismatch:
+                    self._remember_user_browser_external_override(assistant_kind=assistant_kind)
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                     get_runtime_tracer().trace(
@@ -4368,16 +4536,26 @@ class ControlCenterViewModel(QObject):
                         opened=bool(open_window_result.get('opened')),
                         mode=str(open_window_result.get('mode') or ''),
                         assistant_kind=str(open_window_result.get('assistant_kind') or ''),
+                        profile_mismatch_detected=bool(profile_mismatch),
+                        isolated_profile_skipped=bool(open_window_result.get('isolated_profile_skipped')),
                     )
                 except Exception:
                     pass
             open_note = ''
             if open_window_result is not None:
                 if open_window_result.get('opened'):
-                    open_note = (
-                        f" Intente abrir una ventana visible de {assistant_title} "
-                        f"({open_window_result.get('mode')}) para que puedas completar la verificacion."
-                    )
+                    if profile_mismatch:
+                        open_note = (
+                            f" Detecte un conflicto de perfiles: tu sesion parece estar en tu Chrome/navegador normal, "
+                            f"pero IABV venia intentando el perfil aislado del programa. Intente abrir {assistant_title} "
+                            f"en el navegador del usuario ({open_window_result.get('mode')}) y dejare la proxima consulta "
+                            "en modo handoff/manual seguro para no repetir la sesion aislada bloqueada."
+                        )
+                    else:
+                        open_note = (
+                            f" Intente abrir una ventana visible de {assistant_title} "
+                            f"({open_window_result.get('mode')}) para que puedas completar la verificacion."
+                        )
                 else:
                     open_note = (
                         f" No pude abrir automaticamente la ventana visible de {assistant_title}; "
@@ -4390,8 +4568,10 @@ class ControlCenterViewModel(QObject):
                 f"Evidencia tecnica: {previous_meta[:260]}. "
                 "No puedo desbloquear un captcha o challenge de seguridad por mi cuenta: "
                 "esa parte exige accion humana en la ventana/perfil donde ChatGPT esta abierto. "
-                "Lo correcto es que completes la verificacion en esa ventana y luego escribas "
-                "'ya lo hice' para ejecutar un unico retest gobernado. "
+                "Lo correcto es que completes la verificacion en la ventana que realmente usa esa sesion. "
+                "Si es el perfil aislado de IABV, escribe 'ya lo hice' para ejecutar un unico retest gobernado. "
+                "Si es tu Chrome normal, IABV no debe repetir el perfil aislado: dejare el prompt copiado "
+                "y la ruta en handoff/manual hasta que exista CDP/observacion aprobada para esa ventana. "
                 "No voy a lanzar razonamiento local pesado para esta explicacion, "
                 "porque el estado real ya esta en la evidencia del fallo externo."
                 f"{open_note}"
@@ -4430,6 +4610,10 @@ class ControlCenterViewModel(QObject):
                 outcome=outcome,
                 previous_meta=previous_meta[:240],
                 user_message=message[:240],
+                profile_mismatch_detected=bool(profile_mismatch),
+                browser_override_mode=str(
+                    (getattr(self, '_external_consultation_browser_override', {}) or {}).get('mode') or ''
+                ),
             )
         except Exception:
             pass
@@ -4456,11 +4640,26 @@ class ControlCenterViewModel(QObject):
         lowered = message.strip().lower()
         if not any(p in lowered for p in self._SECURITY_RETEST_PATTERNS):
             return False
+        if self._security_followup_requests_user_browser(lowered):
+            # Let the external-failure follow-up path handle profile mismatch
+            # instead of blindly retesting the same isolated browser profile.
+            return False
         payload = dict(self._last_adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
         ext_meta = metadata.get('external_consultation') or {}
         if not isinstance(ext_meta, dict):
-            return False
+            failure_payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+            if self._external_failure_indicates_security_verification(failure_payload):
+                ext_meta = {
+                    'status': 'blocked_external',
+                    'assistant_kind': self._security_verification_assistant_kind(
+                        str(failure_payload.get('assistant_title') or 'ChatGPT'),
+                        failure_payload,
+                    ),
+                    'detail': str(failure_payload.get('meta') or ''),
+                }
+            else:
+                return False
         last_meta = str(ext_meta.get('detail') or ext_meta.get('status') or '')
         if 'browser_security_verification' not in last_meta and ext_meta.get('status') != 'blocked_external':
             flags = ext_meta.get('external_state_flags') or []
@@ -7376,11 +7575,23 @@ class ControlCenterViewModel(QObject):
             }
         requested_assistant_kind = str(assistant_kind or '').strip().lower()
         assistant_title = self._assistant_display_name(requested_assistant_kind)
+        goal_overrides = self._external_consultation_goal_overrides(requested_assistant_kind)
         preflight = self.adaptive_orchestrator.preflight_external_assistant(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_kind=requested_assistant_kind,
         )
         if bool(preflight.get('blocked')):
+            if (
+                goal_overrides.get('prefer_user_browser_session')
+                and str(preflight.get('diagnostic_category') or '').strip().lower() == 'browser_security_verification'
+            ):
+                context_pack = self._build_external_context_pack(assistant_kind)
+                return self._user_browser_manual_consultation_result(
+                    assistant_kind=requested_assistant_kind,
+                    assistant_title=assistant_title,
+                    context_pack=context_pack,
+                    preflight=preflight,
+                )
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                 get_runtime_tracer().trace_permission(
@@ -7410,6 +7621,7 @@ class ControlCenterViewModel(QObject):
             diagnostic_category=diagnostic_category,
             incident_kind=incident_kind,
             launch_dry_run=False,
+            goal_parameters=goal_overrides or None,
         )
         tool_card = dict(preview.get('tool_card') or {})
         tool_task = dict(preview.get('tool_task') or {})
@@ -7452,6 +7664,7 @@ class ControlCenterViewModel(QObject):
             incident_kind=incident_kind,
             approved=True,
             launch_dry_run=False,
+            goal_parameters=goal_overrides or None,
         )
         launch_mode = str(result.execution_state.metadata.get('launch_mode') or tool_card.get('metadata', {}).get('launch_mode') or '')
         response_capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or tool_card.get('metadata', {}).get('response_capture_mode') or '')

@@ -29,6 +29,10 @@ def _followup_stub() -> SimpleNamespace:
         _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS,
         _EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS,
         _SECURITY_HELP_OPEN_WINDOW_PATTERNS=ControlCenterViewModel._SECURITY_HELP_OPEN_WINDOW_PATTERNS,
+        _SECURITY_PROFILE_MISMATCH_PATTERNS=ControlCenterViewModel._SECURITY_PROFILE_MISMATCH_PATTERNS,
+        _SECURITY_RETEST_PATTERNS=ControlCenterViewModel._SECURITY_RETEST_PATTERNS,
+        _external_consultation_browser_override={},
+        _last_adaptive_payload={},
         _append_message=lambda *args, **kwargs: messages.append((args, kwargs)),
         _set_live_status=lambda value: setattr(stub, '_live_status', value),
         _clear_autonomy_activity_override=lambda: setattr(stub, '_autonomy_activity_override', {}),
@@ -40,6 +44,15 @@ def _followup_stub() -> SimpleNamespace:
     )
     stub._security_help_requests_visible_window = (
         lambda lowered_message: ControlCenterViewModel._security_help_requests_visible_window(stub, lowered_message)
+    )
+    stub._security_followup_requests_user_browser = (
+        lambda lowered_message: ControlCenterViewModel._security_followup_requests_user_browser(stub, lowered_message)
+    )
+    stub._security_verification_assistant_kind = (
+        lambda assistant_title, payload: ControlCenterViewModel._security_verification_assistant_kind(stub, assistant_title, payload)
+    )
+    stub._remember_user_browser_external_override = (
+        lambda assistant_kind: ControlCenterViewModel._remember_user_browser_external_override(stub, assistant_kind=assistant_kind)
     )
     stub._open_security_verification_window = MagicMock(return_value={
         'opened': True,
@@ -170,6 +183,58 @@ def test_security_window_open_failure_is_reported_as_unresolved() -> None:
     assert handled is True
     assert vm._open_security_verification_window.called
     assert 'UNRESOLVED:security_verification_window_open_failed' in vm._latest_response_text
+
+
+def test_security_profile_mismatch_opens_user_browser_not_isolated_profile() -> None:
+    vm = _followup_stub()
+    vm._open_security_verification_window = MagicMock(return_value={
+        'opened': True,
+        'mode': 'visible_user_browser',
+        'assistant_kind': 'chatgpt',
+        'url': 'https://chatgpt.com/',
+        'isolated_profile_skipped': True,
+    })
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='No pude consultar ChatGPT todavia por verificacion de seguridad.',
+        meta='ChatGPT: blocked_by_security_verification',
+        outcome='blocked',
+        success=False,
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'pero ya me autentique en mi Chrome, esa ventana que abriste no era',
+    )
+
+    assert handled is True
+    vm._open_security_verification_window.assert_called_once()
+    assert vm._open_security_verification_window.call_args.kwargs['prefer_user_browser'] is True
+    assert vm._external_consultation_browser_override['mode'] == 'user_browser_manual'
+    assert 'conflicto de perfiles' in vm._latest_response_text
+    assert 'perfil aislado' in vm._latest_response_text
+    assert 'handoff/manual' in vm._latest_response_text
+
+
+def test_security_retest_defers_profile_mismatch_to_followup_path() -> None:
+    vm = _followup_stub()
+    vm._last_adaptive_payload = {
+        'metadata': {
+            'external_consultation': {
+                'status': 'blocked_external',
+                'detail': 'browser_security_verification',
+                'assistant_kind': 'chatgpt',
+            }
+        }
+    }
+
+    handled = ControlCenterViewModel._try_handle_security_verification_retest(
+        vm,
+        'a mi si me funciona en mi chrome',
+    )
+
+    assert handled is False
 
 
 def test_external_failure_followup_ignores_stale_failure_memory() -> None:

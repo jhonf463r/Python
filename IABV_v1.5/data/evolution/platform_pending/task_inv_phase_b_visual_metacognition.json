@@ -10,6 +10,27 @@
   "category": "investigation",
   "created_at": "2026-05-17T03:41:53.602708Z",
   "updated_at": "2026-05-17T03:41:53.602728Z",
-  "resume_hint": "",
-  "metadata": {}
+  "resume_hint": "Visual metacognition remains the next slice after runtime stability: expose what IABV can actually see in its own UI and external windows before deciding capture/retry routes.",
+  "metadata": {
+    "covered_by_pr": "#377-#388",
+    "verification_status": "READY_FOR_NEXT_SLICE",
+    "p03_fix": "black/offscreen visual evidence is rejected instead of reported as success",
+    "p04_fix": "shared reality handoff explains user view vs IABV view",
+    "p05_fix": "OSES learns repeated shared-reality visual mismatch patterns",
+    "p06_fix": "window target remediation can restore valid hwnd before giving up",
+    "p07_fix": "OSES learns repeated visual remediation outcomes",
+    "p08_fix": "post-remediation recapture verifies whether the image improved",
+    "p09_fix": "post-recapture state distinguishes observable window from captured response",
+    "p10_fix": "response retry uses existing session reingest when available",
+    "p26_profile_extension": "profile identity must be treated as part of visual/shared reality: user Chrome session and IABV isolated session are not equivalent",
+    "remaining": [
+      "QML introspection layer for IABV's own UI tree",
+      "window/profile selector for external browser sessions",
+      "governed CDP path for user-browser capture after explicit observation permission"
+    ],
+    "unresolved": [
+      "UNRESOLVED:qml_introspection_layer_missing",
+      "UNRESOLVED:user_browser_cdp_capture_requires_permission"
+    ]
+  }
 }

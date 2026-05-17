@@ -101,7 +101,13 @@ def _make_external_failure_followup_event(seq: int, *, previous_meta: str = 'Cha
     }
 
 
-def _make_security_window_handoff_event(seq: int, *, opened: bool = True) -> dict[str, Any]:
+def _make_security_window_handoff_event(
+    seq: int,
+    *,
+    opened: bool = True,
+    mode: str | None = None,
+    profile_mismatch: bool = False,
+) -> dict[str, Any]:
     return {
         'ts': f'2026-05-15T09:01:{seq:02d}.000Z',
         'elapsed_ms': 200.0 * seq,
@@ -111,7 +117,8 @@ def _make_security_window_handoff_event(seq: int, *, opened: bool = True) -> dic
             'assistant_title': 'ChatGPT',
             'assistant_kind': 'chatgpt',
             'opened': opened,
-            'mode': 'visible_isolated_profile' if opened else 'failed',
+            'mode': mode or ('visible_isolated_profile' if opened else 'failed'),
+            'profile_mismatch_detected': profile_mismatch,
         },
     }
 
@@ -205,6 +212,23 @@ class TestOSESExternalFailureContextContinuity:
         f = next(f for f in findings if f.category == 'security_verification_window_open_failed_repeated')
         assert f.metadata['frequency'] == 2
         assert f.metadata['recommended_action'] == 'repair_visible_security_handoff_launcher'
+
+    def test_profile_mismatch_handoff_produces_learning_finding(self, tmp_path: Path) -> None:
+        events = [
+            _make_security_window_handoff_event(
+                1,
+                opened=True,
+                mode='visible_user_browser',
+                profile_mismatch=True,
+            ),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._external_failure_context_findings()
+
+        f = next(f for f in findings if f.category == 'external_assistant_profile_mismatch')
+        assert f.metadata['recommended_action'] == 'prefer_user_browser_manual_or_governed_cdp'
+        assert 'profile_mismatch_handoffs=1' in f.evidence_refs
 
 
 class TestOSESSingleEventNoFinding:

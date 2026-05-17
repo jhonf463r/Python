@@ -8153,6 +8153,11 @@ class OperationalSelfExaminationService:
             e for e in events
             if e.get('kind') == 'security_verification_user_handoff_window'
         ]
+        profile_mismatch_handoffs = [
+            e for e in handoff_windows
+            if bool(e.get('profile_mismatch_detected'))
+            or str(e.get('mode') or '').strip().lower() in {'visible_user_browser', 'default_user_browser'}
+        ]
         local_timeouts = [
             e for e in events
             if e.get('kind') == 'dispatch_terminal'
@@ -8214,6 +8219,33 @@ class OperationalSelfExaminationService:
                     'frequency': len(handoff_windows),
                     'recommended_action': 'repair_visible_security_handoff_launcher',
                     'priority': 'medium',
+                },
+            ))
+        if profile_mismatch_handoffs:
+            findings.append(SelfExaminationFinding(
+                category='external_assistant_profile_mismatch',
+                severity=IssueSeverity.HIGH,
+                title='Sesion autenticada del usuario no coincide con el perfil usado por IABV',
+                summary=(
+                    'El usuario indico que ChatGPT funcionaba o estaba autenticado en su navegador, '
+                    'mientras IABV venia intentando una sesion aislada bloqueada por verificacion. '
+                    'Esto es un desajuste de realidad compartida por perfil, no una falta de razonamiento local.'
+                ),
+                confidence=0.91,
+                recommendation=(
+                    'Cuando aparezca este patron, no repetir el perfil aislado. Usar handoff/manual en el '
+                    'navegador del usuario o una ruta CDP gobernada con permiso explicito de observacion.'
+                ),
+                evidence_refs=[
+                    f'profile_mismatch_handoffs={len(profile_mismatch_handoffs)}',
+                    f'handoff_windows={len(handoff_windows)}',
+                ],
+                source_refs=['runtime_audit', 'security_verification_user_handoff_window'],
+                metadata={
+                    'pattern': 'external_assistant_profile_mismatch',
+                    'frequency': len(profile_mismatch_handoffs),
+                    'recommended_action': 'prefer_user_browser_manual_or_governed_cdp',
+                    'priority': 'high',
                 },
             ))
         return findings

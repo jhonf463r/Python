@@ -15,6 +15,62 @@ def _workspace(name: str) -> Path:
     return root
 
 
+def test_external_assistant_adapter_allows_task_manual_browser_override(monkeypatch) -> None:
+    from iabv_v15.domain.models import TaskRole, ToolAction, ToolActionType, ToolTask
+    import iabv_v15.services.tools.tool_adapters as adapters_mod
+
+    opened: list[str] = []
+    monkeypatch.setattr(adapters_mod.webbrowser, 'open', lambda url: opened.append(url) or True)
+
+    card = ToolCard(
+        tool_id='chatgpt_web_assisted',
+        title='ChatGPT web asistido',
+        tool_type=ToolType.LLM_WEB_UI,
+        adapter_key='external_assistant',
+        metadata={
+            'assistant_kind': 'chatgpt',
+            'launch_mode': 'web_assisted',
+            'web_url': 'https://chatgpt.com/',
+            'response_capture_mode': 'dom_capture',
+            'background_capture_mode': 'browser_dom',
+            'requires_manual_pasteback': False,
+            'isolated_session_required': True,
+        },
+    )
+    task = ToolTask(
+        tool_id='chatgpt_web_assisted',
+        title='Consultar ChatGPT',
+        objective='consulta',
+        requested_by_role=TaskRole.TOOL_USE,
+        actions=[
+            ToolAction(
+                action_type=ToolActionType.LLM_QUERY,
+                label='Prompt',
+                value='responde S',
+            )
+        ],
+        metadata={
+            'goal_parameters': {
+                'response_capture_mode': 'manual_pasteback',
+                'background_capture_mode': '',
+                'requires_manual_pasteback': True,
+            },
+            'response_capture_mode': 'manual_pasteback',
+            'requires_manual_pasteback': True,
+            'background_capture_mode': '',
+            'isolated_session_required': False,
+        },
+    )
+
+    result = ExternalAssistantToolAdapter().run(card, task)
+
+    assert opened == ['https://chatgpt.com/']
+    assert result['success'] is True
+    assert result['metadata']['response_capture_mode'] == 'manual_pasteback'
+    assert result['metadata']['manual_pasteback_required'] is True
+    assert result['metadata']['response_capture_pending'] is True
+
+
 def test_external_assistant_adapter_resolves_wildcard_candidate_path(monkeypatch) -> None:
     root = _workspace('external_assistant_wildcard')
     openai_root = root / 'OpenAI'

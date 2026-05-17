@@ -530,10 +530,21 @@ class ToolAdapter:
         start = time.perf_counter()
         launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
         assistant_kind = str(card.metadata.get('assistant_kind') or card.tool_id)
-        response_capture_mode = str(card.metadata.get('response_capture_mode') or task.metadata.get('response_capture_mode') or 'manual_pasteback').strip().lower()
+        task_goal_parameters = dict(task.metadata.get('goal_parameters') or {})
+        response_capture_value = (
+            task_goal_parameters.get('response_capture_mode')
+            if 'response_capture_mode' in task_goal_parameters
+            else task.metadata.get('response_capture_mode') or card.metadata.get('response_capture_mode') or 'manual_pasteback'
+        )
+        response_capture_mode = str(response_capture_value or 'manual_pasteback').strip().lower()
         direct_response_text = str(card.metadata.get('direct_response_text') or task.metadata.get('direct_response_text') or '').strip()
         direct_capture = response_capture_mode in {'direct_text', 'tool_result'} and bool(direct_response_text)
-        requires_manual_pasteback = False if direct_capture else bool(card.metadata.get('requires_manual_pasteback', task.metadata.get('requires_manual_pasteback', True)))
+        if direct_capture:
+            requires_manual_pasteback = False
+        elif 'requires_manual_pasteback' in task_goal_parameters:
+            requires_manual_pasteback = bool(task_goal_parameters.get('requires_manual_pasteback'))
+        else:
+            requires_manual_pasteback = bool(card.metadata.get('requires_manual_pasteback', task.metadata.get('requires_manual_pasteback', True)))
         prompt_text = next((action.value for action in task.actions if action.action_type == ToolActionType.LLM_QUERY and action.value), task.objective)
         prompt_preview = prompt_text[:400]
         launch_target = str(card.metadata.get('web_url') or '') if launch_mode == 'web_assisted' else self._resolve_launch_target(card)
@@ -542,10 +553,15 @@ class ToolAdapter:
             launch_target = str(card.metadata.get('command_name') or assistant_kind)
             process_detected_running = True
         clipboard_capture = response_capture_mode == 'clipboard_capture' and launch_mode == 'desktop_app'
-        background_capture_mode = str(card.metadata.get('background_capture_mode') or task.metadata.get('background_capture_mode') or '').strip().lower()
+        background_capture_value = (
+            task_goal_parameters.get('background_capture_mode')
+            if 'background_capture_mode' in task_goal_parameters
+            else task.metadata.get('background_capture_mode') or card.metadata.get('background_capture_mode') or ''
+        )
+        background_capture_mode = str(background_capture_value or '').strip().lower()
         # Auto-promote web_assisted to browser_dom when running autonomously
         # to avoid opening visible browser tabs that interrupt the user
-        if launch_mode == 'web_assisted' and not background_capture_mode and response_capture_mode not in {'dom_capture', 'browser_dom'}:
+        if launch_mode == 'web_assisted' and not requires_manual_pasteback and not background_capture_mode and response_capture_mode not in {'dom_capture', 'browser_dom'}:
             background_capture_mode = 'browser_dom'
         browser_dom_capture = (response_capture_mode in {'dom_capture', 'browser_dom'} or background_capture_mode == 'browser_dom') and launch_mode == 'web_assisted'
         workspace_root = str(task.metadata.get('workspace_root') or card.metadata.get('workspace_root') or Path.cwd())

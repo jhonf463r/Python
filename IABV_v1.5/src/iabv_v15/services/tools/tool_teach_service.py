@@ -1507,6 +1507,12 @@ class ToolTeachService:
             requires_manual_pasteback = bool(preferred_metadata.get('requires_manual_pasteback', False if desktop_capture else True))
             session_scope = str(preferred_metadata.get('session_scope') or ('program_chat' if preferred_tool_id.endswith('_web_assisted') else 'external_app'))
             isolated_session_required = bool(preferred_metadata.get('isolated_session_required', False))
+            if bool(goal_payload.get('prefer_user_browser_session')):
+                response_capture_mode = 'manual_pasteback'
+                background_capture_mode = ''
+                requires_manual_pasteback = True
+                session_scope = 'user_browser'
+                isolated_session_required = False
             if response_capture_mode in {'clipboard_capture', 'dom_capture'} and not requires_manual_pasteback:
                 expected_outcome = 'Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.'
             else:
@@ -1522,7 +1528,7 @@ class ToolTeachService:
             response_capture_mode=response_capture_mode,
             background_capture_mode=background_capture_mode,
             session_scope=session_scope,
-            session_label=f'{assistant_title} especial de IABV' if isolated_session_required else assistant_title,
+            session_label=str(goal_payload.get('session_label') or (f'{assistant_title} especial de IABV' if isolated_session_required else assistant_title)),
             isolated_session_required=isolated_session_required,
         )
         return InferenceRequest(
@@ -1563,6 +1569,8 @@ class ToolTeachService:
                 'last_capture_attempt_utc': '',
                 'reused_thread': consultation_metadata['reused_thread'],
                 'session_profile_dir': consultation_metadata['session_profile_dir'],
+                'prefer_user_browser_session': bool(goal_payload.get('prefer_user_browser_session')),
+                'profile_mismatch_resolution': str(goal_payload.get('profile_mismatch_resolution') or ''),
             },
             metadata={'external_consultation': True},
         )
