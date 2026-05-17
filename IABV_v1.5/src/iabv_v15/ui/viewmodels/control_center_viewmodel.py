@@ -4178,6 +4178,32 @@ class ControlCenterViewModel(QObject):
         'que paso', 'qué paso', 'que pasó', 'qué pasó', 'por que', 'por qué',
         'no pudo', 'no pudo hacer', 'fallo', 'falló', 'error', 'chatgpt',
         'a mi si', 'a mi sí', 'a mí si', 'a mí sí',
+        # P0.27: deictic follow-up patterns after external failure
+        'solucionar eso', 'soluciona eso', 'arregla eso', 'arreglalo',
+        'ayudame con eso', 'ayúdame con eso',
+        'pueddes solucionar', 'puedes solucionar',
+        'ese problema', 'ese fallo', 'ese error',
+        'eso de chatgpt', 'eso de chat gpt',
+        'no pudo consultar', 'sigue sin consultar',
+        'porque sigue fallando', 'por qué sigue fallando',
+        'por que no consulta', 'por qué no consulta',
+        'hazlo con la ventana', 'hazlo con mi ventana',
+    )
+    # P0.27: deictic references that only match within recent external failure window.
+    # Short tokens like 'eso' are too broad without external failure context.
+    _EXTERNAL_FAILURE_DEICTIC_TOKENS: tuple[str, ...] = (
+        'solucionar eso', 'soluciona eso', 'arregla eso',
+        'ayudame con eso', 'ayúdame con eso',
+        'pueddes solucionar eso', 'puedes solucionar eso',
+    )
+    # P0.27: patterns where the user says they see ChatGPT in their own browser
+    _USER_BROWSER_HANDOFF_PATTERNS: tuple[str, ...] = (
+        'yo veo chatgpt', 'yo veo chat gpt',
+        'yo veo bien la ventana', 'yo veo la ventana',
+        'yo si veo chatgpt', 'yo si veo chat gpt',
+        'a mi si me abre', 'a mi me abre',
+        'yo ya inicie sesion', 'yo ya inicié sesión',
+        'ya inicie sesion en chatgpt', 'ya inicié sesión en chatgpt',
     )
 
     def _remember_external_failure(
@@ -4188,6 +4214,9 @@ class ControlCenterViewModel(QObject):
         meta: str,
         outcome: str = 'failed',
         success: bool = False,
+        assistant_kind: str = '',
+        terminal_state: str = '',
+        dispatch_id: str = '',
     ) -> None:
         """Keep the latest external failure as local evidence for follow-up chat.
 
@@ -4202,6 +4231,9 @@ class ControlCenterViewModel(QObject):
             'outcome': str(outcome or 'failed'),
             'success': bool(success),
             'at': time.time(),
+            'assistant_kind': str(assistant_kind or ''),
+            'terminal_state': str(terminal_state or ''),
+            'dispatch_id': str(dispatch_id or ''),
         }
         self._last_external_failure_ts = time.time()
 
@@ -4212,10 +4244,13 @@ class ControlCenterViewModel(QObject):
     def _try_handle_external_failure_followup(self, message: str) -> bool:
         """Answer immediate follow-ups about a recent external failure cheaply.
 
-        Live evidence showed that after a ChatGPT timeout the next message
-        ("try again / analyze the error") entered normal local inference and
-        froze the UI. This guard keeps that explanation on the GUI path and
-        uses only the already recorded failure payload.
+        P0.16: after a ChatGPT timeout the next message entered normal local
+        inference and froze the UI.  This guard keeps that explanation on the
+        GUI path and uses only the already recorded failure payload.
+
+        P0.27: extended with deictic binding ("solucionar eso", "arregla eso")
+        and user-browser handoff ("yo veo chatgpt") so follow-ups never fall
+        through to Adaptive local orchestrator.
         """
         payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
         last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
@@ -4231,6 +4266,28 @@ class ControlCenterViewModel(QObject):
         previous_message = str(payload.get('message') or 'No hubo respuesta externa util.').strip()
         previous_meta = str(payload.get('meta') or 'sin metadata').strip()
         outcome = str(payload.get('outcome') or 'failed').strip()
+        previous_terminal = str(payload.get('terminal_state') or '').strip()
+        previous_kind = str(payload.get('assistant_kind') or '').strip()
+        previous_dispatch = str(payload.get('dispatch_id') or '').strip()
+
+        # P0.27 Task D: user says they see ChatGPT in their own browser →
+        # offer manual handoff instead of repeating the isolated profile.
+        is_handoff = any(p in lowered for p in self._USER_BROWSER_HANDOFF_PATTERNS)
+        if is_handoff:
+            return self._handle_user_browser_manual_handoff(
+                message=message,
+                assistant_title=assistant_title,
+                assistant_kind=previous_kind,
+                previous_terminal=previous_terminal,
+                previous_dispatch=previous_dispatch,
+            )
+
+        # P0.27 Task A/B: deictic or keyword follow-up — explain without
+        # heavy local inference.
+        followup_path = 'external_failure_followup'
+        if any(p in lowered for p in self._EXTERNAL_FAILURE_DEICTIC_TOKENS):
+            followup_path = 'external_failure_followup_deictic'
+
         summary = (
             f"Revise el fallo reciente de {assistant_title}. No quedo sin cierre: "
             f"el ciclo externo termino como {outcome}. "
@@ -4243,27 +4300,121 @@ class ControlCenterViewModel(QObject):
             "despues de dejar esa ventana lista."
         )
         self._latest_response_text = summary
-        self._latest_response_meta = f'{assistant_title}: external_failure_followup'
+        self._latest_response_meta = f'{assistant_title}: {followup_path}'
         self._busy_label = 'Fallo externo explicado desde evidencia reciente.'
         self._working = False
         self._append_message(
             'assistant',
             'IABV',
             summary,
-            'external_failure_followup',
-            reasoning_path='external_failure_followup',
+            followup_path,
+            reasoning_path=followup_path,
             evidence_tag='observed',
         )
         self._set_live_status('idle')
         self._clear_autonomy_activity_override()
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            get_runtime_tracer().trace(
+            tracer = get_runtime_tracer()
+            tracer.trace(
                 'external_failure_followup_answered',
                 assistant_title=assistant_title,
                 outcome=outcome,
                 previous_meta=previous_meta[:240],
                 user_message=message[:240],
+                followup_path=followup_path,
+                previous_assistant_kind=previous_kind,
+                previous_terminal_state=previous_terminal,
+                dispatch_id=previous_dispatch,
+            )
+            # P0.27 Task E: trace that local fallback was suppressed
+            tracer.trace(
+                'local_fallback_suppressed_for_external_failure',
+                previous_assistant_kind=previous_kind,
+                previous_terminal_state=previous_terminal,
+                user_message_excerpt=message[:120],
+                selected_followup_path=followup_path,
+                dispatch_id=previous_dispatch,
+                interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            )
+        except Exception:
+            pass
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
+    def _handle_user_browser_manual_handoff(
+        self,
+        *,
+        message: str,
+        assistant_title: str,
+        assistant_kind: str,
+        previous_terminal: str,
+        previous_dispatch: str,
+    ) -> bool:
+        """P0.27 Task D: user says they see ChatGPT — offer manual pasteback.
+
+        IABV cannot verify the user's browser session without CDP/permission.
+        Instead of repeating the isolated profile, copy the prompt to clipboard
+        and explain the limitation.
+        """
+        user_goal = str(getattr(self, '_last_user_goal', '') or '')
+        prompt_text = user_goal[:500] if user_goal else ''
+        if prompt_text:
+            try:
+                self._copy_text(prompt_text, 'Prompt copiado al portapapeles para pegado manual.')
+            except Exception:
+                pass
+
+        clipboard_note = (
+            ' Ya copie el prompt al portapapeles para que lo pegues directamente.'
+            if prompt_text else ''
+        )
+        summary = (
+            f'Entendido — tu ves {assistant_title} en tu navegador, pero IABV '
+            'no puede comprobar esa sesion sin CDP/permiso de observacion. '
+            'Por eso la consulta anterior fallo con perfil aislado. '
+            f'{clipboard_note} '
+            'Pega el prompt en la ventana de ChatGPT que ves, '
+            'obtiene la respuesta y escribeme lo que dijo, '
+            'o escribe "ya lo hice" para que IABV intente un retest gobernado. '
+            'No voy a fingir que recibí respuesta.'
+        )
+        self._latest_response_text = summary
+        self._latest_response_meta = f'{assistant_title}: user_browser_manual_handoff'
+        self._busy_label = ''
+        self._working = False
+        self._append_message(
+            'assistant', 'IABV', summary,
+            'user_browser_manual_handoff',
+            reasoning_path='user_browser_manual_handoff',
+            evidence_tag='observed',
+        )
+        self._set_live_status('idle')
+        self._clear_autonomy_activity_override()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'user_browser_handoff_required',
+                previous_assistant_kind=assistant_kind,
+                previous_terminal_state=previous_terminal,
+                user_message_excerpt=message[:120],
+                selected_followup_path='user_browser_manual_handoff',
+                dispatch_id=previous_dispatch,
+                interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+                prompt_copied=bool(prompt_text),
+            )
+            tracer.trace(
+                'local_fallback_suppressed_for_external_failure',
+                previous_assistant_kind=assistant_kind,
+                previous_terminal_state=previous_terminal,
+                user_message_excerpt=message[:120],
+                selected_followup_path='user_browser_manual_handoff',
+                dispatch_id=previous_dispatch,
+                interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
             )
         except Exception:
             pass
@@ -10148,6 +10299,9 @@ class ControlCenterViewModel(QObject):
                     meta=meta,
                     outcome=_external_consultation_outcome,
                     success=_ext_success,
+                    assistant_kind=str(external_payload.get('assistant_kind') or ''),
+                    terminal_state=str(external_payload.get('terminal_state') or ''),
+                    dispatch_id=str(self._active_dispatch_ids.get('external_consultation', '') or ''),
                 )
             self._set_external_consultation_activity(
                 external_payload=external_payload,
@@ -10341,6 +10495,7 @@ class ControlCenterViewModel(QObject):
                 meta=visible_meta,
                 outcome='failed',
                 success=False,
+                dispatch_id=str(self._active_dispatch_ids.get(task_name, '') or ''),
             )
         # P0.23 Task E: preserve the active dispatch_id so the terminal trace
         # carries the same id that dispatch_started recorded.

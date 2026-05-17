@@ -691,6 +691,8 @@ class OperationalSelfExaminationService:
         # P0.22: dispatch lifecycle anomaly detection — resource_pressure
         # repeated blocks, permission-grant-then-block, orphan interaction_id.
         findings.extend(self._dispatch_lifecycle_anomaly_findings())
+        # P0.27: detect external_consultation blocked → local chat misroute.
+        findings.extend(self._external_failure_followup_misrouted_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -2362,6 +2364,98 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        return findings
+
+    def _external_failure_followup_misrouted_findings(self) -> list[SelfExaminationFinding]:
+        """P0.27: detect external_consultation blocked → next message local chat.
+
+        OSES only observes and reports. It does NOT correct or execute.
+        Emits a finding only when >=2 occurrences of the pattern are found:
+          1. dispatch_terminal for external_consultation with a blocked/failed state
+          2. Next dispatch_started is task_name=chat (local heavy inference)
+        Category: external_failure_followup_misrouted_to_local
+        """
+        import json as _json
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+        except OSError:
+            return []
+
+        _BLOCKED_STATES = {
+            'blocked_by_resource_pressure', 'blocked_by_security_verification',
+            'blocked_by_permission', 'failed_with_actionable_reason',
+            'timeout', 'needs_human_handoff',
+        }
+        misroute_pairs: list[dict[str, str]] = []
+        last_external_block: dict[str, str] | None = None
+
+        for line in lines[-500:]:
+            if not line.strip():
+                continue
+            try:
+                event = _json.loads(line)
+            except Exception:
+                continue
+            kind = event.get('kind', '')
+            data = dict(event.get('data') or {})
+
+            if kind == 'dispatch_terminal':
+                task = data.get('task_name', '')
+                terminal_state = data.get('terminal_state', '')
+                if task == 'external_consultation' and terminal_state in _BLOCKED_STATES:
+                    last_external_block = {
+                        'dispatch_id': data.get('dispatch_id', ''),
+                        'terminal_state': terminal_state,
+                    }
+            elif kind == 'dispatch_started':
+                task = data.get('task_name', '')
+                if task == 'chat' and last_external_block is not None:
+                    misroute_pairs.append({
+                        'external_dispatch_id': last_external_block.get('dispatch_id', ''),
+                        'external_terminal_state': last_external_block.get('terminal_state', ''),
+                        'local_dispatch_id': data.get('dispatch_id', ''),
+                    })
+                    last_external_block = None
+                elif task != 'chat':
+                    last_external_block = None
+
+        findings: list[SelfExaminationFinding] = []
+        if len(misroute_pairs) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='external_failure_followup_misrouted_to_local',
+                title=(
+                    f'External consultation blocked then local chat dispatched '
+                    f'({len(misroute_pairs)}x)'
+                ),
+                summary=(
+                    f'{len(misroute_pairs)} time(s) an external_consultation was '
+                    f'blocked/failed and the very next user message fell to local '
+                    f'chat inference instead of being handled as a follow-up. '
+                    f'This wastes CPU and freezes the UI.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.90,
+                recommendation=(
+                    'Expand _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS to capture deictic '
+                    'references (\"eso\", \"solucionar eso\") and ensure '
+                    '_try_handle_external_failure_followup runs before local dispatch.'
+                ),
+                evidence_refs=[
+                    p.get('external_dispatch_id', '')[:12] for p in misroute_pairs[:5]
+                ],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'external_failure_followup_misrouted_to_local',
+                    'count': len(misroute_pairs),
+                    'pairs': misroute_pairs[:5],
+                },
+            ))
         return findings
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:
