@@ -443,13 +443,13 @@ class AppBootstrap:
         _fp_event = self._tracer.trace_build_fingerprint(workspace=workspace_root or '.')
         _fp_data = _fp_event.get('data', {})
         if _fp_data.get('stale'):
-            self._tracer.trace(
-                'runtime_build_stale_detected',
-                branch=_fp_data.get('branch', ''),
+            self._tracer.trace_stale_build_detected(
                 head=_fp_data.get('head', ''),
+                branch=_fp_data.get('branch', ''),
                 missing_markers=_fp_data.get('missing_markers', []),
             )
         self._build_stale = bool(_fp_data.get('stale'))
+        self._build_fingerprint_data = _fp_data
         self._window_lifecycle_recent: list[float] = []
         self._window_lifecycle_last: dict[str, tuple[float, object]] = {}
         self._window_lifecycle_storm_until = 0.0

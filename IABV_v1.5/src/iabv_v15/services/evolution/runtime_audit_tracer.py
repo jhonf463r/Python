@@ -52,13 +52,16 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------
-# Feature markers expected from P0 slices #381-#389
+# Feature markers expected from P0 slices #381-#389 + P0.22/P0.23
 # ------------------------------------------------------------------
 _REQUIRED_FEATURE_MARKERS: dict[str, str] = {
     'has_post_remediation_recapture': '_attempt_post_remediation_recapture',
     'has_post_recapture_response_retry': '_attempt_post_recapture_response_retry',
     'has_shared_reality_handoff': 'shared_reality_handoff',
     'has_dispatch_lifecycle_tracing': 'trace_dispatch_started',
+    # P0.24: markers for P0.22 (consultation state) and P0.23 (external intent security)
+    'has_p022_consultation_state': '_should_defer_heavy_work',
+    'has_p023_external_intent_security': '_ASSISTANT_ALIASES',
 }
 
 
@@ -82,7 +85,22 @@ _MARKER_FILES: tuple[str, ...] = (
     'services/evolution/runtime_audit_tracer.py',
     'services/evolution/freeze_incident_reporter.py',
     'services/capture/browser_session_controller.py',
+    # P0.24: also scan the assistant preference resolver for P0.23 markers
+    'services/adaptive/assistant_preference_resolver.py',
 )
+
+# P0.24: terminal states considered acceptable for live-proof validation.
+_LIVE_PROOF_VALID_TERMINALS: frozenset[str] = frozenset({
+    'response_captured',
+    'blocked_by_security_verification',
+    'blocked_by_resource_pressure',
+})
+
+# P0.24: terminal states that indicate the live proof failed.
+_LIVE_PROOF_INVALID_TERMINALS: frozenset[str] = frozenset({
+    'local_chat',
+    'operational_status',
+})
 
 _FINGERPRINT_BUDGET_MS: float = 250.0
 
@@ -413,6 +431,55 @@ class RuntimeAuditTracer:
             )
         return event
 
+    # ------------------------------------------------------------------
+    # P0.24: Build-State Sovereignty trace helpers
+    # ------------------------------------------------------------------
+
+    def trace_stale_build_detected(
+        self,
+        *,
+        head: str = '',
+        branch: str = '',
+        missing_markers: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Record that the running build is missing expected feature markers."""
+        return self.trace(
+            'stale_build_detected',
+            head=head,
+            branch=branch,
+            missing_markers=missing_markers or [],
+        )
+
+    def trace_live_proof_started(
+        self,
+        *,
+        input_message: str = '',
+        expected_terminals: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Record the start of a live-proof validation attempt."""
+        return self.trace(
+            'live_proof_started',
+            input_message=input_message,
+            expected_terminals=expected_terminals or list(_LIVE_PROOF_VALID_TERMINALS),
+        )
+
+    def trace_live_proof_result(
+        self,
+        *,
+        terminal_state: str = '',
+        valid: bool = False,
+        detail: str = '',
+        dispatch_id: str = '',
+    ) -> dict[str, Any]:
+        """Record the outcome of a live-proof validation."""
+        return self.trace(
+            'live_proof_result',
+            terminal_state=terminal_state,
+            valid=valid,
+            detail=detail,
+            dispatch_id=dispatch_id,
+        )
+
     def current_elapsed_ms(self) -> float:
         """Return milliseconds since tracer boot (process-relative)."""
         return round((time.perf_counter() - self._t0) * 1000.0, 1)
@@ -608,6 +675,58 @@ class RuntimeAuditTracer:
 
 _GLOBAL: RuntimeAuditTracer | None = None
 _GLOBAL_LOCK = threading.Lock()
+
+
+def validate_live_proof_terminal(
+    terminal_state: str,
+    *,
+    dispatch_id: str = '',
+    error_message: str = '',
+) -> dict[str, Any]:
+    """Validate whether a dispatch terminal state passes the live-proof contract.
+
+    Returns a dict with:
+    - ``valid``: True if the terminal is an acceptable outcome.
+    - ``terminal_state``: the state that was evaluated.
+    - ``reason``: human-readable explanation.
+    - ``dispatch_id``: echoed back for traceability.
+    """
+    ts = (terminal_state or '').strip()
+    if not ts:
+        return {
+            'valid': False,
+            'terminal_state': '',
+            'reason': 'empty terminal state',
+            'dispatch_id': dispatch_id,
+        }
+    if ts in _LIVE_PROOF_VALID_TERMINALS:
+        return {
+            'valid': True,
+            'terminal_state': ts,
+            'reason': f'accepted terminal: {ts}',
+            'dispatch_id': dispatch_id,
+        }
+    if ts in _LIVE_PROOF_INVALID_TERMINALS:
+        return {
+            'valid': False,
+            'terminal_state': ts,
+            'reason': f'invalid terminal: {ts} — should have been routed to external_consultation',
+            'dispatch_id': dispatch_id,
+        }
+    err = (error_message or '').lower()
+    if "'get'" in err or 'nonetype' in err:
+        return {
+            'valid': False,
+            'terminal_state': ts,
+            'reason': 'NoneType.get exception — unstructured error instead of causal handoff',
+            'dispatch_id': dispatch_id,
+        }
+    return {
+        'valid': False,
+        'terminal_state': ts,
+        'reason': f'unknown terminal: {ts}',
+        'dispatch_id': dispatch_id,
+    }
 
 
 def get_runtime_tracer() -> RuntimeAuditTracer:
