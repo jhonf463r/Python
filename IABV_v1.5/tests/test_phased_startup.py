@@ -59,6 +59,7 @@ def _make_bootstrap():
         bs.ui_bridge_server = None
         bs.ui_screenshot_provider = None
         bs.chat_capability_ingestion_service = None
+        bs.chat_message_repository = MagicMock()
         # Theme
         bs.theme = SimpleNamespace()
         # Splash
@@ -113,6 +114,10 @@ def _make_bootstrap():
         bs.live_audit_supervisor = _m()
         bs.audit_teach_verification_service = _m()
         bs.resource_metacognition_service = _m()
+        bs.decision_audit_trail = _m()
+        bs.freeze_incident_reporter = _m()
+        bs.ui_heartbeat_watchdog = _m()
+        bs.chat_interaction_lifecycle = _m()
         bs.execution_dossier_repository = _m()
         bs.incident_packet_service = _m()
         bs.self_check_orchestrator = _m()
@@ -364,6 +369,37 @@ class TestPhasedBuildMethods:
         # Deferred VMs must still be None
         assert bs.control_center_viewmodel is None
         assert bs.evolution_center_viewmodel is None
+
+    def test_lazy_control_bridge_preserves_shell_ready_after_vm_wiring(self):
+        bs = _make_bootstrap()
+        bs.ui_bridge_server = MagicMock(name='early_bridge')
+        bs._shell_loader_ready_handled = True
+        bs.freeze_incident_reporter = MagicMock()
+        bs.ui_heartbeat_watchdog = MagicMock()
+        bs.chat_interaction_lifecycle = MagicMock()
+        bs.chat_message_repository = MagicMock()
+        bs.decision_audit_trail = MagicMock()
+        built_bridge = MagicMock(name='wired_bridge')
+
+        class InlineThread:
+            def __init__(self, target, *args, **kwargs):
+                self._target = target
+
+            def start(self):
+                self._target()
+
+        with patch('iabv_v15.bootstrap.ControlCenterViewModel', return_value=MagicMock()), \
+             patch('iabv_v15.bootstrap.threading.Thread', InlineThread), \
+             patch(
+                 'iabv_v15.services.ui_bridge_service.build_ui_bridge_server',
+                 return_value=built_bridge,
+             ):
+            bs._build_control_center_vm()
+
+        built_bridge.start.assert_called_once()
+        built_bridge.mark_shell_ready.assert_called_once_with(
+            'control_vm_wired_after_shell_ready'
+        )
 
     def test_build_deferred_1_only_services(self):
         """Phase 2 now only builds lightweight services, not VMs."""

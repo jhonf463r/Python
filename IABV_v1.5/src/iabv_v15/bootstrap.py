@@ -3235,6 +3235,14 @@ class AppBootstrap:
                     )
                     self.ui_bridge_server = bridge
                     bridge.start()
+                    if getattr(self, '_shell_loader_ready_handled', False):
+                        try:
+                            bridge.mark_shell_ready('control_vm_wired_after_shell_ready')
+                        except Exception:
+                            logger.debug(
+                                'bridge.mark_shell_ready failed after VM wiring',
+                                exc_info=True,
+                            )
                     logger.info('UIBridgeServer started with ControlCenterViewModel')
                 except Exception:
                     logger.exception('UIBridgeServer failed to start with VM wiring')
