@@ -67,6 +67,163 @@ $ErrorActionPreference = 'Stop'
 $iabvRoot   = Split-Path -Parent $PSScriptRoot
 $logsDir    = Join-Path (Join-Path $iabvRoot 'data') 'logs'
 if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir -Force | Out-Null }
+$startupAudit = Join-Path $logsDir 'startup_audit.jsonl'
+$startupAttemptId = [guid]::NewGuid().ToString()
+
+function Get-RepoHeadSafe {
+    param([string]$Root)
+    try { return (& git -C $Root rev-parse HEAD 2>$null).Trim() } catch { return '' }
+}
+
+function Get-RepoBranchSafe {
+    param([string]$Root)
+    try { return (& git -C $Root rev-parse --abbrev-ref HEAD 2>$null).Trim() } catch { return '' }
+}
+
+function Write-StartupAudit {
+    param(
+        [Parameter(Mandatory=$true)][string]$Event,
+        [hashtable]$Data = @{}
+    )
+    try {
+        if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir -Force | Out-Null }
+        $payload = [ordered]@{
+            timestamp_utc = (Get-Date).ToUniversalTime().ToString('o')
+            event = $Event
+            attempt_id = $script:startupAttemptId
+            pid = $PID
+            script = $MyInvocation.ScriptName
+            cwd = (Get-Location).Path
+            iabv_root = $iabvRoot
+            lock_path = (Join-Path $logsDir 'iabv_start.lock')
+            head_commit = Get-RepoHeadSafe -Root $iabvRoot
+            branch = Get-RepoBranchSafe -Root $iabvRoot
+            data = $Data
+        }
+        $payload | ConvertTo-Json -Compress -Depth 8 | Add-Content -Path $startupAudit -Encoding UTF8
+    } catch {
+        # Startup audit must never block startup.
+    }
+}
+
+function Test-ProcessAlive {
+    param([int]$ProcessId)
+    try { return $null -ne (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue) } catch { return $false }
+}
+
+function Get-IabvStartupProcesses {
+    try {
+        $needle = [regex]::Escape($iabvRoot)
+        return @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+            $cmd = [string]$_.CommandLine
+            $_.ProcessId -ne $PID -and
+            $cmd -match $needle -and
+            ($cmd -like '*start_iabv.ps1*' -or $cmd -like '*run_mcp_bridge.ps1*')
+        } | Select-Object ProcessId, ParentProcessId, Name, CommandLine)
+    } catch {
+        return @()
+    }
+}
+
+function Get-IabvUiProcesses {
+    $matches = @()
+    try {
+        $matches += @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+            $cmd = [string]$_.CommandLine
+            $_.ProcessId -ne $PID -and
+            $_.Name -match '^pythonw?\.exe$' -and
+            $cmd -match '\-m\s+iabv_v15\s+app'
+        } | Select-Object ProcessId, ParentProcessId, Name, CommandLine)
+    } catch {
+    }
+    try {
+        $matches += @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+            $_.Id -ne $PID -and
+            ($_.ProcessName -eq 'python' -or $_.ProcessName -eq 'pythonw') -and
+            [string]$_.MainWindowTitle -like '*IABV*'
+        } | Select-Object @{Name='ProcessId'; Expression={$_.Id}}, @{Name='ParentProcessId'; Expression={0}}, @{Name='Name'; Expression={$_.ProcessName}}, @{Name='CommandLine'; Expression={'window_title:' + $_.MainWindowTitle}})
+    } catch {
+    }
+    return @($matches | Sort-Object ProcessId -Unique)
+}
+
+function Stop-IabvCloudflaredZombies {
+    param([int]$Port)
+    try {
+        $targetUrl = "http://127.0.0.1:$Port"
+        $zombies = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+            $cmd = [string]$_.CommandLine
+            $_.ProcessId -ne $PID -and
+            $_.Name -ieq 'cloudflared.exe' -and
+            $cmd -like '* tunnel *' -and
+            $cmd -like "*--url $targetUrl*"
+        } | Select-Object ProcessId, ParentProcessId, Name, CommandLine)
+        if ($zombies.Count -gt 0) {
+            Write-StartupAudit 'cloudflared_zombies_removed' @{
+                count = $zombies.Count
+                pids = @($zombies | Select-Object -ExpandProperty ProcessId)
+                url = $targetUrl
+            }
+            foreach ($proc in $zombies) {
+                Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } catch {
+        Write-StartupAudit 'cloudflared_zombie_cleanup_failed' @{ reason = "$_" }
+    }
+}
+
+trap {
+    Write-StartupAudit 'startup_script_error' @{ reason = "$_"; stage = 'trap' }
+    Remove-Item -Path (Join-Path $logsDir 'iabv_start.lock') -Force -ErrorAction SilentlyContinue
+    throw
+}
+
+$lockFile = Join-Path $logsDir 'iabv_start.lock'
+Write-StartupAudit 'startup_attempt' @{
+    start_ui = [bool]$StartUI
+    quiet = [bool]$Quiet
+    autopull = [bool]$AutoPull
+    no_autopull = [bool]$NoAutoPull
+}
+if (Test-Path $lockFile) {
+    $lockAge = (Get-Date) - (Get-Item $lockFile).LastWriteTime
+    $rawLock = ''
+    try { $rawLock = (Get-Content -Path $lockFile -Raw -ErrorAction Stop).Trim() } catch {}
+    $lockPid = 0
+    if ($rawLock -match '^\s*(\d+)') { $lockPid = [int]$Matches[1] }
+    $lockPidAlive = $lockPid -gt 0 -and (Test-ProcessAlive -ProcessId $lockPid)
+    if (-not $lockPidAlive) {
+        Write-StartupAudit 'stale_lock_removed' @{
+            lock_pid = $lockPid
+            lock_age_seconds = [math]::Round($lockAge.TotalSeconds, 1)
+            reason = 'pid_not_alive'
+        }
+        Remove-Item -Path $lockFile -Force -ErrorAction SilentlyContinue
+    } elseif ($lockAge.TotalSeconds -lt 45) {
+        Write-StartupAudit 'existing_process_detected' @{
+            lock_pid = $lockPid
+            lock_age_seconds = [math]::Round($lockAge.TotalSeconds, 1)
+            action = 'exit_recent_start_in_progress'
+        }
+        exit 0
+    } else {
+        Write-StartupAudit 'suspected_hung_start' @{
+            lock_pid = $lockPid
+            lock_age_seconds = [math]::Round($lockAge.TotalSeconds, 1)
+            action = 'continue_without_killing_process'
+        }
+        Remove-Item -Path $lockFile -Force -ErrorAction SilentlyContinue
+    }
+}
+$oldStartupProcesses = Get-IabvStartupProcesses
+if ($oldStartupProcesses.Count -gt 0) {
+    Write-StartupAudit 'existing_process_detected' @{
+        count = $oldStartupProcesses.Count
+        action = 'observed_only'
+        pids = @($oldStartupProcesses | Select-Object -ExpandProperty ProcessId)
+    }
+}
 
 # --- Single-instance guard ---------------------------------------------------
 # Prevents zombie processes when the user double-clicks the shortcut rapidly.
@@ -81,7 +238,7 @@ if (Test-Path $lockFile) {
 }
 Set-Content -Path $lockFile -Value "$PID $(Get-Date -Format o)" -Force
 # Clean up the lock when this script exits (normal or error)
-trap { Remove-Item -Path $lockFile -Force -ErrorAction SilentlyContinue }
+# Error handling lives in the startup_audit trap above.
 # ---------------------------------------------------------------------------
 
 # --- Console log capture ---------------------------------------------------
@@ -168,6 +325,12 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
 "@
             Write-Err "[runtime-guard] $msg"
             Show-StaleRuntimePopup $msg
+            Write-StartupAudit 'startup_script_error' @{
+                reason = 'non_main_runtime_stale'
+                branch = $currentBranch
+                current_head = $currentHead
+                origin_main_head = $originMainHead
+            }
             exit 1
         }
         Write-Info "Auto-pull : git pull --rebase=false en $repoRoot"
@@ -178,6 +341,13 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
             Write-Err "[auto-pull] git pull --rebase=false fallo (exit $pullExit)."
             Write-Err "  Verifica el estado del repo y corregilo a mano,"
             Write-Err "  o corre con -NoAutoPull si sabes lo que haces."
+            Write-StartupAudit 'startup_script_error' @{
+                reason = 'git_pull_failed'
+                exit_code = $pullExit
+                branch = $currentBranch
+                current_head = $currentHead
+                origin_main_head = $originMainHead
+            }
             exit 1
         }
         $newSha = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -304,6 +474,20 @@ if (-not (Test-Path $bridge)) {
     exit 1
 }
 
+# Shared startup environment for both the UI and the MCP bridge. This must be
+# set even when an existing UI is detected and the launcher skips spawning a
+# second window; otherwise the bridge can inherit stale workspace values.
+$startupSrcPath = Join-Path $iabvRoot 'src'
+if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$startupSrcPath*") {
+    if ($env:PYTHONPATH) {
+        $env:PYTHONPATH = "$startupSrcPath;$env:PYTHONPATH"
+    } else {
+        $env:PYTHONPATH = $startupSrcPath
+    }
+}
+$env:IABV_WORKSPACE_ROOT = $iabvRoot
+$env:IABV_MCP_BIND_PORT = [string]$McpPort
+
 # Lanzar la UI (ControlCenter/Qt) en paralelo si el usuario lo pidio.
 # Lo hacemos ANTES del `& ... $bridge` porque esa invocacion es bloqueante:
 # la UI arranca en su propio proceso via Start-Process y corre en paralelo
@@ -312,6 +496,15 @@ if (-not (Test-Path $bridge)) {
 if ($StartUI) {
     Write-Info ""
     Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
+    $existingUiProcesses = @(Get-IabvUiProcesses)
+    if ($existingUiProcesses.Count -gt 0) {
+        Write-StartupAudit 'existing_ui_detected' @{
+            count = $existingUiProcesses.Count
+            action = 'skip_ui_spawn'
+            pids = @($existingUiProcesses | Select-Object -ExpandProperty ProcessId)
+        }
+        Write-Info "  UI ya estaba viva; no se lanza una segunda ventana."
+    } else {
     # Tell the UI bootstrap NOT to auto-start MCP+tunnel -- this script
     # manages them externally.  Prevents port-8000 conflict (Errno 10048).
     $env:IABV_SKIP_MCP_AUTOSTART = '1'
@@ -330,6 +523,11 @@ if ($StartUI) {
     try {
         $pythonExe = 'python'
         if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
+        Write-StartupAudit 'python_launch_attempt' @{
+            python = $pythonExe
+            args = '-m iabv_v15 app'
+            working_directory = $iabvRoot
+        }
         # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
         # -WindowStyle Hidden sets STARTUPINFO.wShowWindow = SW_HIDE which
         # causes Windows to override the FIRST ShowWindow() call for EVERY
@@ -352,12 +550,18 @@ if ($StartUI) {
         $psi.UseShellExecute = $false
         $psi.CreateNoWindow = $true
         $uiProc = [System.Diagnostics.Process]::Start($psi)
+        Write-StartupAudit 'python_launch_spawned' @{
+            ui_pid = $uiProc.Id
+            python = $pythonExe
+        }
         Write-Info "  UI PID     : $($uiProc.Id)"
         Write-Info "  PYTHONPATH : $env:PYTHONPATH"
     } catch {
+        Write-StartupAudit 'python_launch_failed' @{ reason = "$_" }
         Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
         Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
         Write-Warn "         python -m iabv_v15 app"
+    }
     }
 }
 
@@ -377,8 +581,13 @@ if ($pytestCacheDirs) {
 
 Write-Info ""
 Write-Info "Libera puerto :$McpPort (kill MCP zombi) ..."
+Stop-IabvCloudflaredZombies -Port $McpPort
 Stop-McpZombies -Port $McpPort
 
 Write-Info ""
 Write-Info "Arrancando MCP + Cloudflare tunnel via $bridge ..."
+Write-StartupAudit 'startup_lock_released' @{
+    reason = 'birth_phase_done_before_long_running_bridge'
+}
+Remove-Item -Path $lockFile -Force -ErrorAction SilentlyContinue
 & powershell -ExecutionPolicy Bypass -File $bridge

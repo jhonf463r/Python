@@ -36,7 +36,7 @@ $pythonBin = $env:IABV_PYTHON
 if (-not $pythonBin) { $pythonBin = 'C:\Users\faber\miniconda3\python.exe' }
 
 $workspaceRoot = $env:IABV_WORKSPACE_ROOT
-if (-not $workspaceRoot) { $workspaceRoot = 'C:\Python\IABV_v1.5' }
+if (-not $workspaceRoot) { $workspaceRoot = Split-Path -Parent $PSScriptRoot }
 
 $transport = $env:IABV_MCP_TRANSPORT
 if (-not $transport) { $transport = 'streamable-http' }

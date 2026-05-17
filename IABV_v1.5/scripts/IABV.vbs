@@ -2,6 +2,10 @@
 ' Double-click this file (or the desktop shortcut) to start IABV.
 ' The MCP server + Cloudflare tunnel run hidden in the background.
 ' Only the IABV UI window is visible.
+'
+' P0.25: this launcher never exits silently because of iabv_start.lock.
+' PowerShell owns lock validation and writes startup_audit.jsonl so the
+' organism can observe failed births before Python/bootstrap exists.
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set WshShell = CreateObject("WScript.Shell")
@@ -11,20 +15,10 @@ Dim scriptDir, iabvRoot, srcIco, dstIco
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
 iabvRoot  = fso.GetParentFolderName(scriptDir)
 
-' --- Single-instance guard: check lock file before launching ---
-Dim logsDir, lockPath
+' Ensure logs dir exists; start_iabv.ps1 writes startup_audit.jsonl there.
+Dim logsDir
 logsDir = fso.BuildPath(fso.BuildPath(iabvRoot, "data"), "logs")
 If Not fso.FolderExists(logsDir) Then fso.CreateFolder(logsDir)
-lockPath = fso.BuildPath(logsDir, "iabv_start.lock")
-If fso.FileExists(lockPath) Then
-    Dim lockFile, lockAge
-    Set lockFile = fso.GetFile(lockPath)
-    lockAge = DateDiff("s", lockFile.DateLastModified, Now)
-    If lockAge < 45 Then
-        ' Another instance is already starting — exit silently
-        WScript.Quit 0
-    End If
-End If
 
 ' Copy BURVE icon to scripts/ if not already there (backward compat)
 srcIco = fso.BuildPath(iabvRoot, "assets\burve.ico")

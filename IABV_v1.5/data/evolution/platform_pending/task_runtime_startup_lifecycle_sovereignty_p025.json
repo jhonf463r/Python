@@ -1,0 +1,46 @@
+{
+  "id": "runtime_startup_lifecycle_sovereignty_p025",
+  "title": "P0.25: Launcher/Startup State Sovereignty",
+  "status": "READY_FOR_NEXT_SLICE",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Extend the universal OBSERVE loop backwards to the launcher. Before P0.25, if VBS/PowerShell/lock handling failed before Python bootstrap, RuntimeAuditTracer never existed and IABV could not learn from a failed birth.",
+  "reason": "Live evidence showed d82cd22a code installed, but double-click startup created iabv_start.lock without a new runtime_build_fingerprint. Old hidden start_iabv.ps1/run_mcp_bridge.ps1 processes existed, and startup_console/runtime_audit did not move. The blind spot was below Python.",
+  "dependency_missing": "",
+  "next_action": "Use the live startup evidence to continue with the next runtime slice: tunnel/process hygiene and external ChatGPT consultation proof. Do not reopen P0.25 unless startup_audit or runtime_handoff regress.",
+  "resume_hint": "P0.25 adds startup_audit.jsonl from start_iabv.ps1, removes silent VBS lock exits, releases iabv_start.lock before the long-running bridge, and connects startup_audit into RuntimeAuditTracer, OSES, and PortableContext.",
+  "metadata": {
+    "verification_status": "LIVE_VERIFIED",
+    "head_expected": "d82cd22a58d5a13443e3cfeca877c474588d777d",
+    "live_proof_required": false,
+    "live_proof": {
+      "verified_at_utc": "2026-05-17T02:52:40Z",
+      "shortcut_path": "C:\\Python\\IABV_v1.5_runtime_main\\IABV_v1.5\\scripts\\IABV.vbs",
+      "head": "d82cd22a58d5a13443e3cfeca877c474588d777d",
+      "branch": "main",
+      "startup_events_verified": [
+        "startup_attempt",
+        "existing_ui_detected",
+        "startup_lock_released"
+      ],
+      "runtime_events_verified": [
+        "startup_handoff_received",
+        "runtime_build_fingerprint"
+      ],
+      "duplicate_ui_guard_verified": true,
+      "workspace_root_verified": "C:\\Python\\IABV_v1.5_runtime_main\\IABV_v1.5",
+      "cloudflared_zombie_cleanup_added": true
+    },
+    "unresolved": [
+      "UNRESOLVED:cloudflare_quick_tunnel_returned_500_external_service",
+      "UNRESOLVED:chatgpt_external_consultation_live_proof_still_needed"
+    ],
+    "success_criteria": [
+      "startup_audit.jsonl has startup_attempt",
+      "startup_audit.jsonl has python_launch_attempt",
+      "startup_audit.jsonl has python_launch_spawned or python_launch_failed",
+      "runtime_audit.jsonl has startup_handoff_received",
+      "runtime_audit.jsonl has runtime_build_fingerprint"
+    ]
+  }
+}

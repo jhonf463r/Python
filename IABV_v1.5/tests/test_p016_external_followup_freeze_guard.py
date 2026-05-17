@@ -27,12 +27,26 @@ def _followup_stub() -> SimpleNamespace:
         _autonomy_activity_override={'active': True},
         _EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S,
         _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS,
+        _EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS,
+        _SECURITY_HELP_OPEN_WINDOW_PATTERNS=ControlCenterViewModel._SECURITY_HELP_OPEN_WINDOW_PATTERNS,
         _append_message=lambda *args, **kwargs: messages.append((args, kwargs)),
         _set_live_status=lambda value: setattr(stub, '_live_status', value),
         _clear_autonomy_activity_override=lambda: setattr(stub, '_autonomy_activity_override', {}),
         dataChanged=SimpleNamespace(emit=MagicMock()),
         _messages=messages,
     )
+    stub._external_failure_indicates_security_verification = (
+        lambda payload: ControlCenterViewModel._external_failure_indicates_security_verification(stub, payload)
+    )
+    stub._security_help_requests_visible_window = (
+        lambda lowered_message: ControlCenterViewModel._security_help_requests_visible_window(stub, lowered_message)
+    )
+    stub._open_security_verification_window = MagicMock(return_value={
+        'opened': True,
+        'mode': 'visible_isolated_profile',
+        'assistant_kind': 'chatgpt',
+        'url': 'https://chatgpt.com/',
+    })
     return stub
 
 
@@ -60,6 +74,102 @@ def test_external_failure_followup_answers_without_heavy_inference() -> None:
     assert 'razonamiento local pesado' in vm._latest_response_text
     assert vm._latest_response_meta == 'ChatGPT: external_failure_followup'
     assert vm.dataChanged.emit.called
+
+
+def test_security_verification_help_followup_uses_failure_memory() -> None:
+    vm = _followup_stub()
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='No pude consultar ChatGPT todavia por verificacion de seguridad.',
+        meta='ChatGPT: blocked_by_security_verification',
+        outcome='blocked',
+        success=False,
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'y puedes desbloquear la verificacion de seguridad o si requieres me ayudas',
+    )
+
+    assert handled is True
+    assert vm._working is False
+    assert vm._live_status == 'idle'
+    assert 'ruta externa si fue elegida' in vm._latest_response_text
+    assert 'captcha' in vm._latest_response_text
+    assert 'ya lo hice' in vm._latest_response_text
+    assert 'razonamiento local pesado' in vm._latest_response_text
+    assert vm._latest_response_meta == 'ChatGPT: external_failure_followup'
+    assert vm._open_security_verification_window.called
+
+
+def test_security_words_do_not_trigger_without_security_failure() -> None:
+    vm = _followup_stub()
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='ChatGPT web asistido: timeout',
+        meta='timeout',
+        outcome='timeout',
+        success=False,
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'puedes desbloquear la seguridad de otra cosa',
+    )
+
+    assert handled is False
+    assert vm._messages == []
+
+
+def test_security_help_without_open_request_does_not_open_window() -> None:
+    vm = _followup_stub()
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='No pude consultar ChatGPT todavia por verificacion de seguridad.',
+        meta='ChatGPT: blocked_by_security_verification',
+        outcome='blocked',
+        success=False,
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'por que esta bloqueado por seguridad?',
+    )
+
+    assert handled is True
+    assert vm._open_security_verification_window.called is False
+    assert 'ya lo hice' in vm._latest_response_text
+
+
+def test_security_window_open_failure_is_reported_as_unresolved() -> None:
+    vm = _followup_stub()
+    vm._open_security_verification_window = MagicMock(return_value={
+        'opened': False,
+        'mode': 'failed',
+        'assistant_kind': 'chatgpt',
+        'url': 'https://chatgpt.com/',
+        'error': 'boom',
+    })
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='No pude consultar ChatGPT todavia por verificacion de seguridad.',
+        meta='ChatGPT: blocked_by_security_verification',
+        outcome='blocked',
+        success=False,
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'ok abre la ventana yo te ayudo con eso',
+    )
+
+    assert handled is True
+    assert vm._open_security_verification_window.called
+    assert 'UNRESOLVED:security_verification_window_open_failed' in vm._latest_response_text
 
 
 def test_external_failure_followup_ignores_stale_failure_memory() -> None:

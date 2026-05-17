@@ -4179,6 +4179,16 @@ class ControlCenterViewModel(QObject):
         'no pudo', 'no pudo hacer', 'fallo', 'falló', 'error', 'chatgpt',
         'a mi si', 'a mi sí', 'a mí si', 'a mí sí',
     )
+    _EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS: tuple[str, ...] = (
+        'verificacion', 'verificación', 'seguridad', 'captcha', 'challenge',
+        'desbloquear', 'bloqueo', 'bloqueado', 'ayuda', 'ayudar',
+        'requiere ayuda', 'necesitas ayuda', 'te ayudo',
+    )
+    _SECURITY_HELP_OPEN_WINDOW_PATTERNS: tuple[str, ...] = (
+        'abre', 'abrir', 'muestra', 'mostrar', 'ventana', 'pantalla',
+        'yo te ayudo', 'te ayudo', 'me ayudas', 'ayudas', 'ayudo con eso',
+        'mi ayuda', 'solucionar', 'soluciona', 'resolver',
+    )
 
     def _remember_external_failure(
         self,
@@ -4209,6 +4219,112 @@ class ControlCenterViewModel(QObject):
         self._last_external_failure_payload = {}
         self._last_external_failure_ts = 0.0
 
+    def _external_failure_indicates_security_verification(self, payload: dict[str, Any]) -> bool:
+        haystack = ' '.join(
+            str(payload.get(key) or '')
+            for key in ('message', 'meta', 'outcome')
+        ).lower()
+        return any(
+            marker in haystack
+            for marker in (
+                'browser_security_verification',
+                'blocked_by_security_verification',
+                'verificacion de seguridad',
+                'verificación de seguridad',
+                'captcha',
+                'challenge',
+            )
+        )
+
+    def _security_help_requests_visible_window(self, lowered_message: str) -> bool:
+        text = str(lowered_message or '').strip().lower()
+        return any(pattern in text for pattern in self._SECURITY_HELP_OPEN_WINDOW_PATTERNS)
+
+    def _security_verification_assistant_kind(self, assistant_title: str, payload: dict[str, Any]) -> str:
+        haystack = ' '.join(
+            str(item or '')
+            for item in (
+                assistant_title,
+                payload.get('assistant_title'),
+                payload.get('message'),
+                payload.get('meta'),
+            )
+        ).lower()
+        if 'claude' in haystack:
+            return 'claude'
+        if 'chatgpt' in haystack or 'openai' in haystack:
+            return 'chatgpt'
+        return 'chatgpt'
+
+    def _open_security_verification_window(self, *, assistant_title: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Open a visible browser window so the user can complete security checks.
+
+        This does not bypass CAPTCHA/challenges. It only bridges the shared
+        reality gap: the user asked to help, so IABV exposes the same assistant
+        target in a visible window instead of repeating the explanation.
+        """
+        assistant_kind = self._security_verification_assistant_kind(assistant_title, payload)
+        url = 'https://claude.ai/' if assistant_kind == 'claude' else 'https://chatgpt.com/'
+        try:
+            import os
+            import subprocess
+            import webbrowser
+
+            workspace = Path(str(getattr(getattr(self, 'config', None), 'workspace_root', '') or Path.cwd()))
+            profile_dir = (
+                workspace
+                / 'data'
+                / 'tool_teaching'
+                / 'external_assistants'
+                / f'{assistant_kind}_program_session'
+                / 'browser_profile'
+            )
+            profile_dir.mkdir(parents=True, exist_ok=True)
+            candidates = [
+                os.environ.get('CHROME_EXE', ''),
+                os.environ.get('CHROME', ''),
+                r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+                r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+                r'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
+                r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            ]
+            for candidate in candidates:
+                exe = str(candidate or '').strip()
+                if exe and Path(exe).exists():
+                    subprocess.Popen(
+                        [
+                            exe,
+                            f'--user-data-dir={profile_dir}',
+                            '--new-window',
+                            url,
+                        ],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                    return {
+                        'opened': True,
+                        'mode': 'visible_isolated_profile',
+                        'assistant_kind': assistant_kind,
+                        'url': url,
+                        'profile_dir': str(profile_dir),
+                    }
+            opened = bool(webbrowser.open(url))
+            return {
+                'opened': opened,
+                'mode': 'default_browser',
+                'assistant_kind': assistant_kind,
+                'url': url,
+                'profile_dir': str(profile_dir),
+            }
+        except Exception as exc:
+            return {
+                'opened': False,
+                'mode': 'failed',
+                'assistant_kind': assistant_kind,
+                'url': url,
+                'error': str(exc)[:240],
+            }
+
     def _try_handle_external_failure_followup(self, message: str) -> bool:
         """Answer immediate follow-ups about a recent external failure cheaply.
 
@@ -4224,24 +4340,74 @@ class ControlCenterViewModel(QObject):
         if (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S:
             return False
         lowered = message.strip().lower()
-        if not any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS):
+        is_security_verification = self._external_failure_indicates_security_verification(payload)
+        asks_about_failure = any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS)
+        asks_security_help = (
+            is_security_verification
+            and any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS)
+        )
+        if not asks_about_failure and not asks_security_help:
             return False
 
         assistant_title = str(payload.get('assistant_title') or 'Asistente externo')
         previous_message = str(payload.get('message') or 'No hubo respuesta externa util.').strip()
         previous_meta = str(payload.get('meta') or 'sin metadata').strip()
         outcome = str(payload.get('outcome') or 'failed').strip()
-        summary = (
-            f"Revise el fallo reciente de {assistant_title}. No quedo sin cierre: "
-            f"el ciclo externo termino como {outcome}. "
-            f"Lo que vio IABV fue: {previous_message[:320]} "
-            f"Evidencia tecnica: {previous_meta[:260]}. "
-            "No voy a lanzar razonamiento local pesado para explicar el mismo bloqueo, "
-            "porque eso fue lo que dejo la UI congelada. "
-            "El siguiente paso correcto es reintentar solo con la ventana de ChatGPT visible y enfocada, "
-            "o completar la verificacion/captcha si aparece. Si quieres, escribe 'reintentar ChatGPT ahora' "
-            "despues de dejar esa ventana lista."
-        )
+        open_window_result: dict[str, Any] | None = None
+        if is_security_verification:
+            if self._security_help_requests_visible_window(lowered):
+                open_window_result = self._open_security_verification_window(
+                    assistant_title=assistant_title,
+                    payload=payload,
+                )
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'security_verification_user_handoff_window',
+                        assistant_title=assistant_title,
+                        opened=bool(open_window_result.get('opened')),
+                        mode=str(open_window_result.get('mode') or ''),
+                        assistant_kind=str(open_window_result.get('assistant_kind') or ''),
+                    )
+                except Exception:
+                    pass
+            open_note = ''
+            if open_window_result is not None:
+                if open_window_result.get('opened'):
+                    open_note = (
+                        f" Intente abrir una ventana visible de {assistant_title} "
+                        f"({open_window_result.get('mode')}) para que puedas completar la verificacion."
+                    )
+                else:
+                    open_note = (
+                        f" No pude abrir automaticamente la ventana visible de {assistant_title}; "
+                        "queda UNRESOLVED:security_verification_window_open_failed."
+                    )
+            summary = (
+                f"Revise el bloqueo reciente de {assistant_title}. La ruta externa si fue elegida, "
+                f"pero termino como {outcome} por verificacion de seguridad del navegador. "
+                f"Lo que vio IABV fue: {previous_message[:320]} "
+                f"Evidencia tecnica: {previous_meta[:260]}. "
+                "No puedo desbloquear un captcha o challenge de seguridad por mi cuenta: "
+                "esa parte exige accion humana en la ventana/perfil donde ChatGPT esta abierto. "
+                "Lo correcto es que completes la verificacion en esa ventana y luego escribas "
+                "'ya lo hice' para ejecutar un unico retest gobernado. "
+                "No voy a lanzar razonamiento local pesado para esta explicacion, "
+                "porque el estado real ya esta en la evidencia del fallo externo."
+                f"{open_note}"
+            )
+        else:
+            summary = (
+                f"Revise el fallo reciente de {assistant_title}. No quedo sin cierre: "
+                f"el ciclo externo termino como {outcome}. "
+                f"Lo que vio IABV fue: {previous_message[:320]} "
+                f"Evidencia tecnica: {previous_meta[:260]}. "
+                "No voy a lanzar razonamiento local pesado para explicar el mismo bloqueo, "
+                "porque eso fue lo que dejo la UI congelada. "
+                "El siguiente paso correcto es reintentar solo con la ventana de ChatGPT visible y enfocada, "
+                "o completar la verificacion/captcha si aparece. Si quieres, escribe 'reintentar ChatGPT ahora' "
+                "despues de dejar esa ventana lista."
+            )
         self._latest_response_text = summary
         self._latest_response_meta = f'{assistant_title}: external_failure_followup'
         self._busy_label = 'Fallo externo explicado desde evidencia reciente.'

@@ -86,6 +86,36 @@ def _write_audit_events(workspace: Path, events: list[dict[str, Any]]) -> None:
             fh.write(json.dumps(event) + '\n')
 
 
+def _make_external_failure_followup_event(seq: int, *, previous_meta: str = 'ChatGPT: blocked_by_security_verification') -> dict[str, Any]:
+    return {
+        'ts': f'2026-05-15T09:00:{seq:02d}.000Z',
+        'elapsed_ms': 100.0 * seq,
+        'kind': 'external_failure_followup_answered',
+        'seq': seq,
+        'data': {
+            'assistant_title': 'ChatGPT',
+            'outcome': 'blocked',
+            'previous_meta': previous_meta,
+            'user_message': 'ok abre la ventana yo te ayudo con eso',
+        },
+    }
+
+
+def _make_security_window_handoff_event(seq: int, *, opened: bool = True) -> dict[str, Any]:
+    return {
+        'ts': f'2026-05-15T09:01:{seq:02d}.000Z',
+        'elapsed_ms': 200.0 * seq,
+        'kind': 'security_verification_user_handoff_window',
+        'seq': seq,
+        'data': {
+            'assistant_title': 'ChatGPT',
+            'assistant_kind': 'chatgpt',
+            'opened': opened,
+            'mode': 'visible_isolated_profile' if opened else 'failed',
+        },
+    }
+
+
 def _make_oses(workspace: Path) -> OperationalSelfExaminationService:
     storage = ArtifactStorage(root=str(workspace / 'data'))
     return OperationalSelfExaminationService(
@@ -124,6 +154,57 @@ class TestOSESRepeatedVisualMismatch:
         findings = oses._shared_reality_handoff_findings()
         f = next(f for f in findings if f.category == 'repeated_visual_mismatch')
         assert f.metadata['frequency'] == 3
+
+
+class TestOSESExternalFailureContextContinuity:
+    """OSES turns repeated security-verification follow-ups into learning."""
+
+    def test_repeated_security_followups_produce_continuity_finding(self, tmp_path: Path) -> None:
+        events = [
+            _make_external_failure_followup_event(1),
+            _make_external_failure_followup_event(2),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._external_failure_context_findings()
+
+        f = next(f for f in findings if f.category == 'external_failure_context_continuity_gap')
+        assert f.metadata['frequency'] == 2
+        assert f.metadata['recommended_action'] == 'causal_failure_context_before_route_selection'
+        assert 'security_followups=2' in f.evidence_refs
+
+    def test_single_security_followup_with_previous_timeout_produces_finding(self, tmp_path: Path) -> None:
+        events = [
+            {
+                'ts': '2026-05-15T09:00:00.000Z',
+                'elapsed_ms': 1.0,
+                'kind': 'dispatch_terminal',
+                'data': {
+                    'task_name': 'chat',
+                    'reason': 'watchdog fired after 120s',
+                    'dispatch_id': 'abc',
+                },
+            },
+            _make_external_failure_followup_event(2),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._external_failure_context_findings()
+
+        assert any(f.category == 'external_failure_context_continuity_gap' for f in findings)
+
+    def test_window_open_failures_are_reported_after_repetition(self, tmp_path: Path) -> None:
+        events = [
+            _make_security_window_handoff_event(1, opened=False),
+            _make_security_window_handoff_event(2, opened=False),
+        ]
+        _write_audit_events(tmp_path, events)
+        oses = _make_oses(tmp_path)
+        findings = oses._external_failure_context_findings()
+
+        f = next(f for f in findings if f.category == 'security_verification_window_open_failed_repeated')
+        assert f.metadata['frequency'] == 2
+        assert f.metadata['recommended_action'] == 'repair_visible_security_handoff_launcher'
 
 
 class TestOSESSingleEventNoFinding:

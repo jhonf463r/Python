@@ -1,34 +1,15 @@
 {
   "id": "inv_phase_b_visual_metacognition",
-  "title": "Visual metacognition — system must know when its own visual evidence is unreliable",
+  "title": "Fase B: Percepción visual del UI propio (metacognición visual)",
+  "description": "El programa \"ve\" su propia interfaz — sabe qué widgets están visibles, su estado, y mapea cada componente visual a su código fuente. Autoconciencia visual integrada, no grabación externa.",
+  "reason": "Necesario para auditoría automática y replay guiado.",
+  "dependency_missing": "inv_phase_a_antifreeze",
+  "priority": "medium",
+  "next_action": "Diseñar QML introspection layer que exponga el árbol de widgets activo a WorldModelSnapshot.",
   "status": "READY_FOR_NEXT_SLICE",
-  "category": "runtime_stability",
-  "priority": "P0",
-  "description": "IABV must detect when its own visual capture is unreliable (black image, offscreen window, low information) and NOT treat it as valid evidence. This is a metacognition capability: the system observes its own observation and classifies it.",
-  "resume_hint": "P0.5 adds OSES metacognition feedback loop: repeated visual mismatches become findings (repeated_visual_mismatch, black_capture_repeated, user_needed_to_explain_same_gap). This closes the loop from observation→detection→explanation→learning. P0.4 causal handoff + P0.3 detection remain foundation.",
-  "next_action": "Extend visual metacognition to cover: partial occlusion, wrong window captured, resolution too low for meaningful content. Add user/IABV mismatch as metacognition signal. Validate with more live scenarios.",
-  "metadata": {
-    "covered_by_pr": "P0.3 visual alignment slice + P0.4 shared reality",
-    "real_failure_case": {
-      "event": "external_assistant_verification_window_opened",
-      "target_window": "ChatGPT - Google Chrome for Testing",
-      "hwnd": 16319628,
-      "rect": [-32000, -32000, 199, 34],
-      "blank_probability": 0.98,
-      "dynamic_range": 0,
-      "unique_color_count": 1,
-      "useful": false,
-      "root_cause": "ControlCenterViewModel accepted offscreen/minimized window as valid target and captured black image as evidence",
-      "user_reaction": "a mí sí me funciona y a él no"
-    },
-    "p03_fix": "_window_rect_is_captureable() rejects rect with left/top <= -30000. _capture_is_low_information() rejects blank_probability >= 0.90. _validate_visual_evidence_result() sets status=visual_unresolved instead of visual_captured. Runtime audit traces visual_evidence_snapshot with status=unresolved.",
-    "p04_fix": "_build_shared_reality_handoff() creates causal package. _detect_user_mismatch_claim() identifies user's 'it works for me' signals. _build_causal_explanation() produces 'Tu vista vs Vista de IABV' comparison. This is metacognition applied to the user/system perception gap: the system knows it cannot see what the user sees and explains why.",
-    "p05_fix": "OSES _shared_reality_handoff_findings() converts repeated visual mismatches into structured findings with evidence, frequency, last case, and recommended action. PortableContext exports compact summary. The metacognition loop is now: detect invalid capture → explain to user → learn from repetition → prioritize fix.",
-    "remaining": [
-      "Partial occlusion detection",
-      "Wrong window captured detection",
-      "Resolution too low detection"
-    ],
-    "unresolved": "Only offscreen/minimized, blank capture, and user/IABV browser mismatch are detected. More visual metacognition scenarios need implementation."
-  }
+  "category": "investigation",
+  "created_at": "2026-05-17T03:41:53.602708Z",
+  "updated_at": "2026-05-17T03:41:53.602728Z",
+  "resume_hint": "",
+  "metadata": {}
 }

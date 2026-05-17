@@ -450,6 +450,39 @@ class RuntimeAuditTracer:
             missing_markers=missing_markers or [],
         )
 
+    def trace_startup_handoff_received(
+        self,
+        *,
+        workspace: str | Path = '',
+    ) -> dict[str, Any]:
+        """Record the pre-Python startup audit handoff.
+
+        This closes the blind spot before bootstrap: PowerShell writes
+        ``startup_audit.jsonl`` and, once Python is alive, bootstrap calls this
+        method so the normal runtime trace can correlate the birth sequence.
+        """
+        latest: dict[str, Any] | None = None
+        summary: dict[str, Any] = {}
+        try:
+            from iabv_v15.infra.startup_audit import (
+                latest_startup_audit_event,
+                startup_audit_snapshot,
+            )
+
+            latest = latest_startup_audit_event(workspace or '.')
+            summary = startup_audit_snapshot(workspace or '.')
+        except Exception as exc:
+            summary = {
+                'status': 'error',
+                'error': str(exc),
+                'unresolved_fields': ['UNRESOLVED:startup_handoff_unreadable'],
+            }
+        return self.trace(
+            'startup_handoff_received',
+            latest_startup_event=latest or {},
+            startup_audit_summary=summary,
+        )
+
     def trace_live_proof_started(
         self,
         *,

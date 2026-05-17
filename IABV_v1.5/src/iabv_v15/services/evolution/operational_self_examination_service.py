@@ -685,6 +685,7 @@ class OperationalSelfExaminationService:
         findings.extend(self._cloud_reasoning_findings())
         startup_findings = self._startup_health_findings()
         findings.extend(startup_findings)
+        findings.extend(self._startup_birth_audit_findings())
         self._auto_capture_startup_freeze(startup_findings)
         findings.extend(self._ui_heartbeat_stall_findings())
         findings.extend(self._interaction_episode_findings())
@@ -844,6 +845,11 @@ class OperationalSelfExaminationService:
         # P0.7: Visual Remediation Learning — detect patterns from
         # visual_remediation_attempted events in runtime_audit.jsonl.
         findings.extend(self._visual_remediation_findings())
+
+        # P0.27: External failure continuity learning. If the user repeatedly
+        # has to explain/help after a security-verification block, surface it
+        # as an algorithmic continuity gap instead of a one-off UI issue.
+        findings.extend(self._external_failure_context_findings())
 
         findings = self._dedupe_findings(findings)
 
@@ -2923,6 +2929,93 @@ class OperationalSelfExaminationService:
     # ------------------------------------------------------------------
     # SQLite lock contention findings — persisted by bootstrap
     # ------------------------------------------------------------------
+
+    def _startup_birth_audit_findings(self) -> list[SelfExaminationFinding]:
+        """Detect startup attempts that never reached RuntimeAuditTracer."""
+        try:
+            from iabv_v15.infra.startup_audit import startup_audit_snapshot
+            snapshot = startup_audit_snapshot(self.workspace_root)
+        except Exception:
+            return []
+        unresolved = set(snapshot.get('unresolved_fields') or [])
+        findings: list[SelfExaminationFinding] = []
+        if 'UNRESOLVED:startup_attempt_without_runtime_fingerprint' in unresolved:
+            findings.append(SelfExaminationFinding(
+                category='startup_birth_blind_spot',
+                title='Startup intento arrancar pero no llego a runtime_fingerprint',
+                summary=(
+                    'El launcher/PowerShell registro un startup_attempt, pero '
+                    'RuntimeAuditTracer no registro runtime_build_fingerprint '
+                    'para ese intento. El sistema no puede probar que Python '
+                    'haya tomado control del arranque.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.9,
+                recommendation=(
+                    'Revisar startup_audit.jsonl, iabv_start.lock y procesos '
+                    'start_iabv.ps1/run_mcp_bridge.ps1 activos antes de asumir '
+                    'que la UI cargo el codigo actual.'
+                ),
+                source_refs=['data/logs/startup_audit.jsonl', 'data/logs/runtime_audit.jsonl'],
+                unresolved_fields=['UNRESOLVED:startup_attempt_without_runtime_fingerprint'],
+                metadata={
+                    'attempt_id': snapshot.get('attempt_id', ''),
+                    'last_event': snapshot.get('last_event', ''),
+                    'events_seen': list(snapshot.get('events_seen') or []),
+                },
+            ))
+        if 'UNRESOLVED:suspected_hung_start' in unresolved:
+            findings.append(SelfExaminationFinding(
+                category='startup_birth_blind_spot',
+                title='Lock de arranque apunta a proceso vivo pero sospechoso',
+                summary=(
+                    'El lock de startup no era claramente removible: el PID '
+                    'seguia vivo despues del periodo de arranque. Esto puede '
+                    'bloquear doble click/reintentos mientras la UI no esta viva.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Mantener el lock solo durante la fase de nacimiento y '
+                    'registrar procesos antiguos sin matarlos automaticamente.'
+                ),
+                source_refs=['data/logs/startup_audit.jsonl'],
+                unresolved_fields=['UNRESOLVED:suspected_hung_start'],
+                metadata={'attempt_id': snapshot.get('attempt_id', '')},
+            ))
+        stale_lock_count = int(snapshot.get('stale_lock_count') or 0)
+        if stale_lock_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='startup_birth_blind_spot',
+                title='Locks de arranque stale repetidos',
+                summary=(
+                    f'Se removieron {stale_lock_count} locks stale en el '
+                    'historial reciente de startup_audit.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation='Auditar por que start_iabv.ps1 no libero el lock al terminar la fase de arranque.',
+                source_refs=['data/logs/startup_audit.jsonl'],
+                metadata={'stale_lock_count': stale_lock_count},
+            ))
+        hidden_process_count = int(snapshot.get('hidden_process_count') or 0)
+        if hidden_process_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='startup_birth_blind_spot',
+                title='Procesos de arranque ocultos repetidos',
+                summary=(
+                    f'startup_audit detecto {hidden_process_count} procesos '
+                    'start_iabv/run_mcp_bridge antiguos. No se mataron '
+                    'automaticamente porque la propiedad del proceso es ambigua.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.8,
+                recommendation='Mostrar esta evidencia al usuario y reiniciar solo procesos con ownership inequivoco.',
+                source_refs=['data/logs/startup_audit.jsonl'],
+                unresolved_fields=['UNRESOLVED:startup_process_ownership_ambiguous'],
+                metadata={'hidden_process_count': hidden_process_count},
+            ))
+        return findings
 
     def _sqlite_lock_contention_findings(self) -> list[SelfExaminationFinding]:
         """Read ``startup_sqlite_incident.json`` if persisted by bootstrap.
@@ -8002,6 +8095,129 @@ class OperationalSelfExaminationService:
             )
 
     # ── P0.5: Shared Reality Learning ──────────────────────────────
+    def _external_failure_context_findings(self) -> list[SelfExaminationFinding]:
+        """Detect repeated follow-up loops after external security blocks."""
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        events: list[dict[str, Any]] = []
+        try:
+            recent_lines: deque[str] = deque(maxlen=5000)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent_lines.append(line)
+            for line in reversed(recent_lines):
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except Exception:
+                    continue
+                kind = str(event.get('kind') or '')
+                if kind not in {
+                    'external_failure_followup_answered',
+                    'security_verification_user_handoff_window',
+                    'dispatch_terminal',
+                }:
+                    continue
+                events.append({'kind': kind, **dict(event.get('data') or {})})
+                if len(events) >= 80:
+                    break
+            events.reverse()
+        except Exception:
+            return []
+        if not events:
+            return []
+
+        security_followups = [
+            e for e in events
+            if e.get('kind') == 'external_failure_followup_answered'
+            and any(
+                marker in ' '.join(
+                    str(e.get(key) or '')
+                    for key in ('previous_meta', 'user_message', 'outcome')
+                ).lower()
+                for marker in (
+                    'blocked_by_security_verification',
+                    'browser_security_verification',
+                    'verificacion',
+                    'verificación',
+                    'captcha',
+                )
+            )
+        ]
+        handoff_windows = [
+            e for e in events
+            if e.get('kind') == 'security_verification_user_handoff_window'
+        ]
+        local_timeouts = [
+            e for e in events
+            if e.get('kind') == 'dispatch_terminal'
+            and str(e.get('task_name') or '') == 'chat'
+            and 'watchdog' in str(e.get('reason') or '').lower()
+        ]
+        findings: list[SelfExaminationFinding] = []
+        if len(security_followups) >= 2 or (security_followups and local_timeouts):
+            last = security_followups[-1] if security_followups else local_timeouts[-1]
+            findings.append(SelfExaminationFinding(
+                category='external_failure_context_continuity_gap',
+                severity=IssueSeverity.HIGH,
+                title='Continuidad causal de fallo externo requiere ajuste',
+                summary=(
+                    f'Se detectaron {len(security_followups)} follow-ups sobre bloqueos '
+                    f'de seguridad externa y {len(local_timeouts)} timeout(s) locales recientes. '
+                    'Esto indica que el sistema debe preservar el contexto causal del fallo '
+                    'antes de elegir un nuevo camino de razonamiento.'
+                ),
+                confidence=0.9,
+                recommendation=(
+                    'Mantener el guard de follow-up externo antes del chat local pesado, '
+                    'abrir una ventana visible cuando el usuario ofrece ayuda, y retestar '
+                    'solo despues de una confirmacion explicita como "ya lo hice".'
+                ),
+                evidence_refs=[
+                    f'security_followups={len(security_followups)}',
+                    f'local_watchdog_timeouts={len(local_timeouts)}',
+                    f'handoff_windows={len(handoff_windows)}',
+                ],
+                source_refs=['runtime_audit', 'external_failure_followup_answered'],
+                metadata={
+                    'pattern': 'external_failure_context_continuity_gap',
+                    'frequency': len(security_followups),
+                    'handoff_window_attempts': len(handoff_windows),
+                    'last_user_message': str(last.get('user_message') or '')[:240],
+                    'recommended_action': 'causal_failure_context_before_route_selection',
+                    'priority': 'high',
+                },
+            ))
+        if len(handoff_windows) >= 2 and not any(e.get('opened') for e in handoff_windows):
+            findings.append(SelfExaminationFinding(
+                category='security_verification_window_open_failed_repeated',
+                severity=IssueSeverity.MEDIUM,
+                title='Ventana visible de verificacion no pudo abrirse repetidamente',
+                summary=(
+                    f'IABV intento abrir una ventana visible de verificacion {len(handoff_windows)} veces, '
+                    'pero ningun intento reporto opened=true.'
+                ),
+                confidence=0.85,
+                recommendation=(
+                    'Revisar deteccion de Chrome/Edge y fallback de navegador por defecto para que '
+                    'el usuario pueda completar verificaciones de seguridad en la sesion correcta.'
+                ),
+                evidence_refs=[f'handoff_window_attempts={len(handoff_windows)}'],
+                source_refs=['runtime_audit', 'security_verification_user_handoff_window'],
+                metadata={
+                    'pattern': 'security_verification_window_open_failed_repeated',
+                    'frequency': len(handoff_windows),
+                    'recommended_action': 'repair_visible_security_handoff_launcher',
+                    'priority': 'medium',
+                },
+            ))
+        return findings
+
     def _shared_reality_handoff_findings(self) -> list[SelfExaminationFinding]:
         """Detect repeated visual-mismatch patterns from ``shared_reality_handoff``
         events in ``runtime_audit.jsonl``.

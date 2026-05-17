@@ -1,0 +1,33 @@
+{
+  "id": "runtime_external_failure_context_continuity_p026",
+  "title": "P0.26: External Failure Context Continuity",
+  "status": "UNRESOLVED",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "When an external consultation is blocked, the next user message about that same block must inherit the failure context before normal route selection. If the user offers to help with verification, IABV must expose a visible handoff window instead of repeating the same explanation.",
+  "reason": "Live runtime evidence showed ChatGPT was correctly selected and blocked by browser security verification. P0.26 prevented the 120s local timeout, but the next live messages ('puedes solucionar eso...' and 'ok abre la ventana yo te ayudo') still got a repeated explanation. The missing step was an operational handoff: open a visible assistant window and let OSES learn from repeated follow-up loops.",
+  "dependency_missing": "LIVE_PROOF: run IABV on Windows, trigger ChatGPT security verification, then ask 'ok abre la ventana yo te ayudo con eso'.",
+  "next_action": "After restarting IABV with this slice loaded, reproduce the follow-up. Expected: immediate evidence-based explanation, visible ChatGPT/assistant window opening attempt, no local heavy chat dispatch, no 120s timeout.",
+  "resume_hint": "P0.26/P0.27 extends the existing P0.16 external failure follow-up guard with security-verification vocabulary, visible window handoff when the user offers help, and OSES findings for repeated external-failure continuity loops.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_proof_required": true,
+    "root_cause": "failure_context_inherited_but_user_help_intent_not_actioned",
+    "observed_runtime_sequence": [
+      "external_consultation:chatgpt",
+      "blocked_by_security_verification",
+      "user_security_help_followup",
+      "chat_local_orchestrator_timeout_120s"
+    ],
+    "fixed_in_files": [
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+      "tests/test_p016_external_followup_freeze_guard.py",
+      "tests/test_shared_reality_learning.py"
+    ],
+    "universal_algorithm_lesson": "Before deciding a new route, preserve the causal context of the immediately previous failure. If the user offers help, convert the explanation into the minimal safe handoff action and record it as metacognitive evidence.",
+    "unresolved": [
+      "UNRESOLVED:live_windows_chatgpt_security_followup_proof_missing"
+    ]
+  }
+}

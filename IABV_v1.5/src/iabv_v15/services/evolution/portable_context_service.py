@@ -612,10 +612,19 @@ class PortableContextService:
             - ``rss_mb_max``: peak RSS recorded across the run
             - ``unresolved_fields``: tags emitted when evidence is missing
         """
+        try:
+            from iabv_v15.infra.startup_audit import startup_audit_snapshot
+            birth_audit = startup_audit_snapshot(self.workspace_root)
+        except Exception:
+            birth_audit = {
+                'status': 'error',
+                'unresolved_fields': ['UNRESOLVED:startup_audit_unreadable'],
+            }
         log_path = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
         if not log_path.exists():
             return {
                 'status': 'no_log',
+                'birth_audit': birth_audit,
                 'unresolved_fields': ['UNRESOLVED:startup_timeline_missing'],
             }
         try:
@@ -637,12 +646,14 @@ class PortableContextService:
         except OSError:
             return {
                 'status': 'error',
+                'birth_audit': birth_audit,
                 'unresolved_fields': ['UNRESOLVED:startup_timeline_unreadable'],
             }
         if not events:
             return {
                 'status': 'no_data',
                 'last_started_at_utc': last_mtime_utc,
+                'birth_audit': birth_audit,
                 'unresolved_fields': ['UNRESOLVED:startup_timeline_empty'],
             }
         # Pick the last contiguous run: walk back from the tail while
@@ -774,6 +785,7 @@ class PortableContextService:
 
         return {
             'status': 'analyzed',
+            'birth_audit': birth_audit,
             'init_ms': init_ms,
             'run_to_window_ms': run_to_window_ms,
             'deferred_ms': deferred_ms,
@@ -2953,6 +2965,18 @@ class PortableContextService:
                     'phase': blk.get('phase'),
                     'ms': blk.get('ms'),
                 })
+        birth_audit = dict(status.get('birth_audit') or {})
+        if birth_audit:
+            items.append({
+                'label': 'startup_birth_audit',
+                'status': birth_audit.get('status', ''),
+                'last_event': birth_audit.get('last_event', ''),
+                'runtime_fingerprint_received': bool(birth_audit.get('runtime_fingerprint_received')),
+                'stale_lock_count': birth_audit.get('stale_lock_count', 0),
+                'hidden_process_count': birth_audit.get('hidden_process_count', 0),
+            })
+            if str(birth_audit.get('status') or '') not in {'no_log', 'no_data'}:
+                unresolved.extend(list(birth_audit.get('unresolved_fields') or []))
         freeze_incidents = self._recent_freeze_incidents()
         for fi in freeze_incidents:
             items.append({
@@ -3005,6 +3029,7 @@ class PortableContextService:
                 'last_started_at_utc': status.get('last_started_at_utc', ''),
                 'phases_seen': list(status.get('phases_seen') or []),
                 'recent_blockers': list(status.get('recent_blockers') or []),
+                'birth_audit': birth_audit,
                 'freeze_incidents': freeze_incidents,
                 'ui_heartbeat': self._ui_heartbeat_summary(),
                 'interaction_lifecycle': self._interaction_lifecycle_summary(),
