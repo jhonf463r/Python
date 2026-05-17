@@ -30,6 +30,7 @@ def _followup_stub() -> SimpleNamespace:
         _EXTERNAL_FAILURE_DEICTIC_TOKENS=ControlCenterViewModel._EXTERNAL_FAILURE_DEICTIC_TOKENS,
         _EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS,
         _SECURITY_HELP_OPEN_WINDOW_PATTERNS=ControlCenterViewModel._SECURITY_HELP_OPEN_WINDOW_PATTERNS,
+        _SECURITY_VERIFICATION_VISIBILITY_DISPUTE_PATTERNS=ControlCenterViewModel._SECURITY_VERIFICATION_VISIBILITY_DISPUTE_PATTERNS,
         _SECURITY_PROFILE_MISMATCH_PATTERNS=ControlCenterViewModel._SECURITY_PROFILE_MISMATCH_PATTERNS,
         _SECURITY_RETEST_PATTERNS=ControlCenterViewModel._SECURITY_RETEST_PATTERNS,
         _external_consultation_browser_override={},
@@ -45,6 +46,9 @@ def _followup_stub() -> SimpleNamespace:
     )
     stub._security_help_requests_visible_window = (
         lambda lowered_message: ControlCenterViewModel._security_help_requests_visible_window(stub, lowered_message)
+    )
+    stub._security_followup_disputes_visible_verification = (
+        lambda lowered_message: ControlCenterViewModel._security_followup_disputes_visible_verification(stub, lowered_message)
     )
     stub._security_followup_requests_user_browser = (
         lambda lowered_message: ControlCenterViewModel._security_followup_requests_user_browser(stub, lowered_message)
@@ -273,6 +277,42 @@ def test_security_profile_mismatch_detects_user_visible_chatgpt_window() -> None
     assert vm._open_security_verification_window.call_args.kwargs['prefer_user_browser'] is True
     assert vm._external_consultation_browser_override['mode'] == 'user_browser_manual'
     assert 'conflicto de perfiles' in vm._latest_response_text
+
+
+def test_security_visibility_dispute_does_not_repeat_unproven_captcha_claim() -> None:
+    vm = _followup_stub()
+    vm._open_security_verification_window = MagicMock(return_value={
+        'opened': True,
+        'mode': 'visible_isolated_profile',
+        'assistant_kind': 'chatgpt',
+        'url': 'https://chatgpt.com/',
+    })
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='ChatGPT web asistido quedo bloqueado por una verificacion de seguridad.',
+        meta='Ruta bloqueada para ChatGPT.',
+        outcome='blocked',
+        success=False,
+        assistant_kind='chatgpt',
+        terminal_state='failed_with_actionable_reason',
+        dispatch_id='external-visual-dispute',
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'no veo la verificacion de seguridad que me dices, muestrame la ventana',
+    )
+
+    assert handled is True
+    assert vm._working is False
+    assert vm._live_status == 'idle'
+    assert vm._latest_response_meta == 'ChatGPT: external_failure_shared_reality_dispute'
+    assert 'no tengo evidencia visual' in vm._latest_response_text
+    assert 'preflight/historial' in vm._latest_response_text
+    assert 'UNRESOLVED:security_verification_visual_proof_missing' in vm._latest_response_text
+    assert vm._external_consultation_browser_override['mode'] == 'user_browser_manual'
+    assert vm._messages[-1][1]['reasoning_path'] == 'external_failure_shared_reality_dispute'
 
 
 def test_metacognitive_cdp_preference_becomes_user_browser_handoff(monkeypatch) -> None:

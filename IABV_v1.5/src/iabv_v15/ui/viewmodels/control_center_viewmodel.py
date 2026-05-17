@@ -4208,6 +4208,17 @@ class ControlCenterViewModel(QObject):
         'yo te ayudo', 'te ayudo', 'me ayudas', 'ayudas', 'ayudo con eso',
         'mi ayuda', 'solucionar', 'soluciona', 'resolver',
     )
+    _SECURITY_VERIFICATION_VISIBILITY_DISPUTE_PATTERNS: tuple[str, ...] = (
+        'no veo la verificacion', 'no veo la verificación',
+        'no veo verificacion', 'no veo verificación',
+        'no aparece la verificacion', 'no aparece la verificación',
+        'no me aparece la verificacion', 'no me aparece la verificación',
+        'no la veo', 'no se ve', 'no veo nada',
+        'muestrame la verificacion', 'muéstrame la verificación',
+        'muestra la verificacion', 'muestra la verificación',
+        'haz visible esa ventana', 'has visible esa ventana',
+        'cual ventana', 'cuál ventana', 'que ventana', 'qué ventana',
+    )
     _SECURITY_PROFILE_MISMATCH_PATTERNS: tuple[str, ...] = (
         'ya me autentique', 'ya me autentiqué', 'ya estoy autenticado',
         'ya inicie sesion', 'ya inicié sesión', 'ya incie seccion',
@@ -4276,6 +4287,13 @@ class ControlCenterViewModel(QObject):
     def _security_help_requests_visible_window(self, lowered_message: str) -> bool:
         text = str(lowered_message or '').strip().lower()
         return any(pattern in text for pattern in self._SECURITY_HELP_OPEN_WINDOW_PATTERNS)
+
+    def _security_followup_disputes_visible_verification(self, lowered_message: str) -> bool:
+        text = str(lowered_message or '').strip().lower()
+        return any(
+            pattern in text
+            for pattern in self._SECURITY_VERIFICATION_VISIBILITY_DISPUTE_PATTERNS
+        )
 
     def _security_followup_requests_user_browser(self, lowered_message: str) -> bool:
         text = str(lowered_message or '').strip().lower()
@@ -4348,7 +4366,7 @@ class ControlCenterViewModel(QObject):
                 for candidate in candidates:
                     exe = str(candidate or '').strip()
                     if exe and Path(exe).exists():
-                        subprocess.Popen(
+                        proc = subprocess.Popen(
                             [
                                 exe,
                                 '--new-window',
@@ -4362,6 +4380,7 @@ class ControlCenterViewModel(QObject):
                             'mode': 'visible_user_browser',
                             'assistant_kind': assistant_kind,
                             'url': url,
+                            'pid': getattr(proc, 'pid', None),
                             'profile_dir': '',
                             'isolated_profile_skipped': True,
                         }
@@ -4377,7 +4396,7 @@ class ControlCenterViewModel(QObject):
             for candidate in candidates:
                 exe = str(candidate or '').strip()
                 if exe and Path(exe).exists():
-                    subprocess.Popen(
+                    proc = subprocess.Popen(
                         [
                             exe,
                             f'--user-data-dir={profile_dir}',
@@ -4392,6 +4411,7 @@ class ControlCenterViewModel(QObject):
                         'mode': 'visible_isolated_profile',
                         'assistant_kind': assistant_kind,
                         'url': url,
+                        'pid': getattr(proc, 'pid', None),
                         'profile_dir': str(profile_dir),
                     }
             opened = bool(webbrowser.open(url))
@@ -4554,13 +4574,23 @@ class ControlCenterViewModel(QObject):
             is_security_verification
             and self._security_followup_requests_user_browser(lowered)
         )
+        visibility_dispute = (
+            is_security_verification
+            and self._security_followup_disputes_visible_verification(lowered)
+        )
         asks_about_failure = any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS)
         is_deictic_followup = any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_DEICTIC_TOKENS)
         asks_security_help = (
             is_security_verification
             and any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS)
         )
-        if not asks_about_failure and not asks_security_help and not profile_mismatch and not is_deictic_followup:
+        if (
+            not asks_about_failure
+            and not asks_security_help
+            and not profile_mismatch
+            and not visibility_dispute
+            and not is_deictic_followup
+        ):
             return False
 
         assistant_title = str(payload.get('assistant_title') or 'Asistente externo')
@@ -4570,16 +4600,23 @@ class ControlCenterViewModel(QObject):
         assistant_kind = str(payload.get('assistant_kind') or '').strip() or self._security_verification_assistant_kind(assistant_title, payload)
         previous_terminal = str(payload.get('terminal_state') or '').strip()
         previous_dispatch = str(payload.get('dispatch_id') or '').strip()
-        followup_path = 'external_failure_followup_deictic' if is_deictic_followup else 'external_failure_followup'
+        if visibility_dispute:
+            followup_path = 'external_failure_shared_reality_dispute'
+        elif is_deictic_followup:
+            followup_path = 'external_failure_followup_deictic'
+        else:
+            followup_path = 'external_failure_followup'
         open_window_result: dict[str, Any] | None = None
         if is_security_verification:
-            if self._security_help_requests_visible_window(lowered) or profile_mismatch:
+            if self._security_help_requests_visible_window(lowered) or profile_mismatch or visibility_dispute:
                 open_window_result = self._open_security_verification_window(
                     assistant_title=assistant_title,
                     payload=payload,
                     prefer_user_browser=profile_mismatch,
                 )
                 if profile_mismatch:
+                    self._remember_user_browser_external_override(assistant_kind=assistant_kind)
+                elif visibility_dispute:
                     self._remember_user_browser_external_override(assistant_kind=assistant_kind)
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -4590,8 +4627,21 @@ class ControlCenterViewModel(QObject):
                         mode=str(open_window_result.get('mode') or ''),
                         assistant_kind=str(open_window_result.get('assistant_kind') or ''),
                         profile_mismatch_detected=bool(profile_mismatch),
+                        visibility_disputed=bool(visibility_dispute),
                         isolated_profile_skipped=bool(open_window_result.get('isolated_profile_skipped')),
                     )
+                    if visibility_dispute:
+                        get_runtime_tracer().trace(
+                            'security_verification_visibility_disputed',
+                            assistant_title=assistant_title,
+                            assistant_kind=assistant_kind,
+                            opened=bool(open_window_result.get('opened')),
+                            mode=str(open_window_result.get('mode') or ''),
+                            source_dispatch_id=previous_dispatch,
+                            reason='user_reports_no_visible_security_verification',
+                            visual_proof='missing',
+                            unresolved='security_verification_visual_proof_missing',
+                        )
                 except Exception:
                     pass
             open_note = ''
@@ -4614,21 +4664,39 @@ class ControlCenterViewModel(QObject):
                         f" No pude abrir automaticamente la ventana visible de {assistant_title}; "
                         "queda UNRESOLVED:security_verification_window_open_failed."
                     )
-            summary = (
-                f"Revise el bloqueo reciente de {assistant_title}. La ruta externa si fue elegida, "
-                f"pero termino como {outcome} por verificacion de seguridad del navegador. "
-                f"Lo que vio IABV fue: {previous_message[:320]} "
-                f"Evidencia tecnica: {previous_meta[:260]}. "
-                "No puedo desbloquear un captcha o challenge de seguridad por mi cuenta: "
-                "esa parte exige accion humana en la ventana/perfil donde ChatGPT esta abierto. "
-                "Lo correcto es que completes la verificacion en la ventana que realmente usa esa sesion. "
-                "Si es el perfil aislado de IABV, escribe 'ya lo hice' para ejecutar un unico retest gobernado. "
-                "Si es tu Chrome normal, IABV no debe repetir el perfil aislado: dejare el prompt copiado "
-                "y la ruta en handoff/manual hasta que exista CDP/observacion aprobada para esa ventana. "
-                "No voy a lanzar razonamiento local pesado para esta explicacion, "
-                "porque el estado real ya esta en la evidencia del fallo externo."
-                f"{open_note}"
-            )
+            if visibility_dispute:
+                summary = (
+                    f"Corrijo el diagnostico de {assistant_title}: no tengo evidencia visual de una "
+                    "verificacion visible ahora mismo. Lo que tengo es una senal de preflight/historial "
+                    f"que bloqueo la ruta externa como {outcome}, con metadata: {previous_meta[:260]}. "
+                    "Eso no prueba que tu estes viendo un captcha en pantalla. "
+                    "Cuando dices que no ves la verificacion, el sistema debe tratarlo como una ruptura "
+                    "de realidad compartida, no repetir la misma explicacion. "
+                    f"Intente abrir la ventana objetivo de {assistant_title}; resultado="
+                    f"{(open_window_result or {}).get('mode', 'not_attempted')}, "
+                    f"opened={bool((open_window_result or {}).get('opened'))}. "
+                    "Si esa ventana no muestra el challenge, el bloqueo probablemente esta stale o en "
+                    "un perfil distinto al que tu estas usando. A partir de esta contradiccion dejo la "
+                    "siguiente consulta en modo navegador del usuario / handoff manual seguro, hasta que "
+                    "exista CDP u observacion aprobada para capturar esa ventana. "
+                    "UNRESOLVED:security_verification_visual_proof_missing."
+                )
+            else:
+                summary = (
+                    f"Revise el bloqueo reciente de {assistant_title}. La ruta externa si fue elegida, "
+                    f"pero termino como {outcome} por verificacion de seguridad del navegador. "
+                    f"Lo que vio IABV fue: {previous_message[:320]} "
+                    f"Evidencia tecnica: {previous_meta[:260]}. "
+                    "No puedo desbloquear un captcha o challenge de seguridad por mi cuenta: "
+                    "esa parte exige accion humana en la ventana/perfil donde ChatGPT esta abierto. "
+                    "Lo correcto es que completes la verificacion en la ventana que realmente usa esa sesion. "
+                    "Si es el perfil aislado de IABV, escribe 'ya lo hice' para ejecutar un unico retest gobernado. "
+                    "Si es tu Chrome normal, IABV no debe repetir el perfil aislado: dejare el prompt copiado "
+                    "y la ruta en handoff/manual hasta que exista CDP/observacion aprobada para esa ventana. "
+                    "No voy a lanzar razonamiento local pesado para esta explicacion, "
+                    "porque el estado real ya esta en la evidencia del fallo externo."
+                    f"{open_note}"
+                )
         else:
             summary = (
                 f"Revise el fallo reciente de {assistant_title}. No quedo sin cierre: "
@@ -4668,6 +4736,7 @@ class ControlCenterViewModel(QObject):
                 previous_terminal_state=previous_terminal,
                 dispatch_id=previous_dispatch,
                 profile_mismatch_detected=bool(profile_mismatch),
+                visibility_disputed=bool(visibility_dispute),
                 browser_override_mode=str(
                     (getattr(self, '_external_consultation_browser_override', {}) or {}).get('mode') or ''
                 ),
