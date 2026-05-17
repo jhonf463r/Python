@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import time
+import types
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -49,6 +50,21 @@ def _followup_stub() -> SimpleNamespace:
         dataChanged=SimpleNamespace(emit=MagicMock()),
         _messages=messages,
     )
+    # Bind methods needed by _try_handle_external_failure_followup
+    from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
+    stub._assistant_preference_resolver = AssistantPreferenceResolver()
+    for method_name in (
+        '_try_handle_external_failure_followup',
+        '_remember_external_failure',
+        '_explicit_assistant_preference',
+        '_human_external_consultation_failure',
+        '_external_state_notice',
+        '_clear_external_failure_memory',
+        '_assistant_display_name',
+    ):
+        method = getattr(ControlCenterViewModel, method_name, None)
+        if method is not None:
+            stub.__dict__[method_name] = types.MethodType(method, stub)
     return stub
 
 

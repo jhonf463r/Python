@@ -8,6 +8,7 @@ froze. These tests keep that follow-up on a cheap evidence-only path.
 from __future__ import annotations
 
 import time
+import types
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -35,6 +36,18 @@ def _followup_stub() -> SimpleNamespace:
         dataChanged=SimpleNamespace(emit=MagicMock()),
         _messages=messages,
     )
+    # Bind methods added by P0.30 that _try_handle_external_failure_followup now calls
+    from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
+    stub._assistant_preference_resolver = AssistantPreferenceResolver()
+    for method_name in (
+        '_explicit_assistant_preference',
+        '_human_external_consultation_failure',
+        '_external_state_notice',
+        '_assistant_display_name',
+    ):
+        method = getattr(ControlCenterViewModel, method_name, None)
+        if method is not None:
+            stub.__dict__[method_name] = types.MethodType(method, stub)
     return stub
 
 
