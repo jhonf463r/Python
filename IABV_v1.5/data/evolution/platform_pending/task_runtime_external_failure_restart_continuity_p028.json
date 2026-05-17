@@ -1,0 +1,42 @@
+{
+  "id": "runtime_external_failure_restart_continuity_p028",
+  "title": "P0.28: External Failure Continuity Across Restart",
+  "status": "COMPLETED",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "After IABV restarted, follow-up messages like 'no veo la verificacion de seguridad' lost the in-memory _last_external_failure_payload and fell into Adaptive local orchestrator / Ollama instead of continuing the ChatGPT external failure context.",
+  "reason": "The external failure guard was correct only while RAM survived. The universal loop was not crossing persisted runtime evidence back into the conversation after restart, so a visible user contradiction was treated as a fresh local chat.",
+  "dependency_missing": "",
+  "next_action": "No further action for this slice unless live runtime evidence shows security-verification follow-ups after restart entering Adaptive local orchestrator again.",
+  "resume_hint": "LIVE_VERIFIED on Windows runtime: after restart, 'no veo la verificacion de seguridad' recovered the previous ChatGPT external_consultation block from runtime_audit.jsonl, emitted external_failure_context_recovered_from_runtime_audit, selected external_failure_shared_reality_dispute, suppressed local fallback, and resolved in ~221ms with live_status idle.",
+  "metadata": {
+    "verification_status": "LIVE_VERIFIED",
+    "root_cause": "In-memory-only external failure continuity. _last_external_failure_payload was lost on restart even though runtime_audit.jsonl still contained the external_consultation block and the user chat still referred to it.",
+    "fixes_applied": {
+      "task_a": "Added narrow recovery gate for security/browser/assistant follow-ups only.",
+      "task_b": "Added _recover_external_failure_from_runtime_audit() to rehydrate the last external_consultation block from runtime_audit.jsonl.",
+      "task_c": "Recovered payload remains explanatory context only; it does not decide routes or bypass governance.",
+      "task_d": "Added focused test for restart recovery: no memory payload + runtime_audit block + 'no veo la verificacion de seguridad' => external_failure_shared_reality_dispute."
+    },
+    "live_proof": {
+      "message": "no veo la verificacion de seguridad",
+      "events": [
+        "external_failure_context_recovered_from_runtime_audit",
+        "security_verification_visibility_disputed",
+        "external_failure_followup_answered followup_path=external_failure_shared_reality_dispute",
+        "local_fallback_suppressed_for_external_failure",
+        "interaction_resolved total_duration_ms=221.6"
+      ],
+      "forbidden_provider_seen": false,
+      "live_status_after": "idle"
+    },
+    "tests": {
+      "focused": "tests/test_p016_external_followup_freeze_guard.py: 16 passed",
+      "regression": "runtime/observability/antifreeze/validation suites: 235 passed"
+    },
+    "remaining_unresolved": [
+      "governed_cdp_user_browser_capture_missing",
+      "startup_truth_refresh delays bridge readiness for ~155s under current runtime conditions"
+    ]
+  }
+}

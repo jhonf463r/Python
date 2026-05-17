@@ -3,6 +3,7 @@
 import atexit
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import datetime, timezone
+import json
 import logging
 from pathlib import Path
 import re
@@ -4267,6 +4268,127 @@ class ControlCenterViewModel(QObject):
         self._last_external_failure_payload = {}
         self._last_external_failure_ts = 0.0
 
+    def _external_failure_followup_can_recover_from_audit(self, lowered_message: str) -> bool:
+        """Return True when a message likely refers to a recent external block.
+
+        The in-memory payload is lost on app restart, but the chat and
+        runtime audit still contain the causal chain. This guard is narrow on
+        purpose: only security/browser/assistant follow-ups are recovered from
+        disk, so unrelated local chat does not inherit stale external state.
+        """
+        text = str(lowered_message or '').strip().lower()
+        if not text:
+            return False
+        if any(pattern in text for pattern in self._SECURITY_VERIFICATION_VISIBILITY_DISPUTE_PATTERNS):
+            return True
+        if any(pattern in text for pattern in self._SECURITY_PROFILE_MISMATCH_PATTERNS):
+            return True
+        if any(pattern in text for pattern in self._EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS):
+            return True
+        external_markers = (
+            'chatgpt', 'claude', 'asistente externo', 'consulta externa',
+            'verificacion', 'verificación', 'seguridad', 'captcha', 'challenge',
+        )
+        return any(marker in text for marker in external_markers) and (
+            any(pattern in text for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS)
+            or any(pattern in text for pattern in self._EXTERNAL_FAILURE_DEICTIC_TOKENS)
+        )
+
+    def _recover_external_failure_from_runtime_audit(self, lowered_message: str) -> bool:
+        """Rehydrate the last external failure after restart from runtime audit.
+
+        This preserves the universal loop across process boundaries:
+        OBSERVE must include persisted runtime evidence, not only RAM. The
+        recovered payload is still only explanatory context; it does not make
+        route decisions or bypass governance.
+        """
+        if not self._external_failure_followup_can_recover_from_audit(lowered_message):
+            return False
+        try:
+            workspace = Path(str(getattr(getattr(self, 'config', None), 'workspace_root', '') or Path.cwd()))
+            audit_path = workspace / 'data' / 'logs' / 'runtime_audit.jsonl'
+            if not audit_path.exists():
+                return False
+            lines = audit_path.read_text(encoding='utf-8', errors='ignore').splitlines()[-320:]
+        except Exception:
+            return False
+
+        latest_permission: dict[str, Any] = {}
+        latest_terminal: dict[str, Any] = {}
+        for raw in reversed(lines):
+            try:
+                event = json.loads(raw)
+            except Exception:
+                continue
+            kind = str(event.get('kind') or '')
+            data = event.get('data') if isinstance(event.get('data'), dict) else {}
+            if (
+                kind == 'dispatch_terminal'
+                and not latest_terminal
+                and str(data.get('task_name') or '') == 'external_consultation'
+            ):
+                terminal_state = str(data.get('terminal_state') or '').lower()
+                reason = str(data.get('reason') or '')
+                provider = str(data.get('provider') or '')
+                haystack = f'{terminal_state} {reason} {provider}'.lower()
+                if any(marker in haystack for marker in (
+                    'blocked', 'failed', 'security', 'seguridad',
+                    'verificacion', 'verificación', 'captcha', 'challenge',
+                )):
+                    latest_terminal = data
+            if kind == 'permission' and not latest_permission:
+                reason = str(data.get('reason') or '')
+                permission_id = str(data.get('permission_id') or '')
+                haystack = f'{permission_id} {reason}'.lower()
+                if str(data.get('action') or '') == 'blocked' and any(
+                    marker in haystack
+                    for marker in ('chatgpt', 'claude', 'seguridad', 'security', 'verificacion', 'verificación')
+                ):
+                    latest_permission = data
+            if latest_terminal and latest_permission:
+                break
+
+        if not latest_terminal and not latest_permission:
+            return False
+
+        provider = str(latest_terminal.get('provider') or latest_permission.get('permission_id') or 'ChatGPT')
+        assistant_kind = 'claude' if 'claude' in provider.lower() else 'chatgpt'
+        assistant_title = 'Claude' if assistant_kind == 'claude' else 'ChatGPT'
+        reason = str(
+            latest_terminal.get('reason')
+            or latest_permission.get('reason')
+            or 'external_consultation_blocked'
+        )
+        terminal_state = str(latest_terminal.get('terminal_state') or 'failed_with_actionable_reason')
+        dispatch_id = str(latest_terminal.get('dispatch_id') or '')
+        self._last_external_failure_payload = {
+            'assistant_title': assistant_title,
+            'message': str(latest_permission.get('reason') or reason or 'Ruta externa bloqueada.')[:1200],
+            'meta': reason[:1200],
+            'outcome': 'blocked' if 'blocked' in terminal_state.lower() or 'bloque' in reason.lower() else 'failed',
+            'success': False,
+            'at': time.time(),
+            'assistant_kind': assistant_kind,
+            'terminal_state': terminal_state,
+            'dispatch_id': dispatch_id,
+            'recovered_from': 'runtime_audit',
+        }
+        self._last_external_failure_ts = time.time()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'external_failure_context_recovered_from_runtime_audit',
+                assistant_kind=assistant_kind,
+                assistant_title=assistant_title,
+                terminal_state=terminal_state,
+                dispatch_id=dispatch_id,
+                reason=reason[:240],
+                user_message_excerpt=str(lowered_message or '')[:120],
+            )
+        except Exception:
+            pass
+        return True
+
     def _external_failure_indicates_security_verification(self, payload: dict[str, Any]) -> bool:
         haystack = ' '.join(
             str(payload.get(key) or '')
@@ -4562,13 +4684,19 @@ class ControlCenterViewModel(QObject):
         froze the UI. This guard keeps that explanation on the GUI path and
         uses only the already recorded failure payload.
         """
+        lowered = message.strip().lower()
         payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
         last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
+        if (
+            (not payload or not last_ts or (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S)
+            and self._recover_external_failure_from_runtime_audit(lowered)
+        ):
+            payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+            last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
         if not payload or not last_ts:
             return False
         if (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S:
             return False
-        lowered = message.strip().lower()
         is_security_verification = self._external_failure_indicates_security_verification(payload)
         profile_mismatch = (
             is_security_verification

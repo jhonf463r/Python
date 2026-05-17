@@ -7,6 +7,7 @@ froze. These tests keep that follow-up on a cheap evidence-only path.
 """
 from __future__ import annotations
 
+import json
 import time
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -35,6 +36,7 @@ def _followup_stub() -> SimpleNamespace:
         _SECURITY_RETEST_PATTERNS=ControlCenterViewModel._SECURITY_RETEST_PATTERNS,
         _external_consultation_browser_override={},
         _last_adaptive_payload={},
+        config=SimpleNamespace(workspace_root=''),
         _append_message=lambda *args, **kwargs: messages.append((args, kwargs)),
         _set_live_status=lambda value: setattr(stub, '_live_status', value),
         _clear_autonomy_activity_override=lambda: setattr(stub, '_autonomy_activity_override', {}),
@@ -43,6 +45,12 @@ def _followup_stub() -> SimpleNamespace:
     )
     stub._external_failure_indicates_security_verification = (
         lambda payload: ControlCenterViewModel._external_failure_indicates_security_verification(stub, payload)
+    )
+    stub._external_failure_followup_can_recover_from_audit = (
+        lambda lowered_message: ControlCenterViewModel._external_failure_followup_can_recover_from_audit(stub, lowered_message)
+    )
+    stub._recover_external_failure_from_runtime_audit = (
+        lambda lowered_message: ControlCenterViewModel._recover_external_failure_from_runtime_audit(stub, lowered_message)
     )
     stub._security_help_requests_visible_window = (
         lambda lowered_message: ControlCenterViewModel._security_help_requests_visible_window(stub, lowered_message)
@@ -315,6 +323,51 @@ def test_security_visibility_dispute_does_not_repeat_unproven_captcha_claim() ->
     assert vm._messages[-1][1]['reasoning_path'] == 'external_failure_shared_reality_dispute'
 
 
+def test_security_visibility_dispute_recovers_external_failure_after_restart(tmp_path) -> None:
+    vm = _followup_stub()
+    vm.config = SimpleNamespace(workspace_root=str(tmp_path))
+    logs = tmp_path / 'data' / 'logs'
+    logs.mkdir(parents=True)
+    audit = logs / 'runtime_audit.jsonl'
+    audit.write_text(
+        '\n'.join([
+            json.dumps({
+                'kind': 'permission',
+                'data': {
+                    'permission_id': 'external_consultation:chatgpt',
+                    'action': 'blocked',
+                    'reason': 'ChatGPT web asistido quedo bloqueado por una verificacion de seguridad del sitio.',
+                },
+            }),
+            json.dumps({
+                'kind': 'dispatch_terminal',
+                'data': {
+                    'task_name': 'external_consultation',
+                    'dispatch_id': 'external-after-restart',
+                    'terminal_state': 'failed_with_actionable_reason',
+                    'provider': 'ChatGPT',
+                    'reason': 'external_consultation_blocked: Ruta bloqueada para ChatGPT.',
+                },
+            }),
+        ]),
+        encoding='utf-8',
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'no veo la verificacion de seguridad',
+    )
+
+    assert handled is True
+    assert vm._working is False
+    assert vm._live_status == 'idle'
+    assert vm._last_external_failure_payload['recovered_from'] == 'runtime_audit'
+    assert vm._latest_response_meta == 'ChatGPT: external_failure_shared_reality_dispute'
+    assert 'no tengo evidencia visual' in vm._latest_response_text
+    assert 'UNRESOLVED:security_verification_visual_proof_missing' in vm._latest_response_text
+    assert vm._messages[-1][1]['reasoning_path'] == 'external_failure_shared_reality_dispute'
+
+
 def test_metacognitive_cdp_preference_becomes_user_browser_handoff(monkeypatch) -> None:
     vm = SimpleNamespace(
         _external_consultation_browser_override={},
@@ -354,8 +407,9 @@ def test_security_retest_defers_profile_mismatch_to_followup_path() -> None:
     assert handled is False
 
 
-def test_external_failure_followup_ignores_stale_failure_memory() -> None:
+def test_external_failure_followup_ignores_stale_failure_memory(tmp_path) -> None:
     vm = _followup_stub()
+    vm.config = SimpleNamespace(workspace_root=str(tmp_path))
     vm._last_external_failure_payload = {
         'assistant_title': 'ChatGPT',
         'message': 'timeout',

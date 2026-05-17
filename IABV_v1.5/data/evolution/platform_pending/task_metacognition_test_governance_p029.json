@@ -1,0 +1,38 @@
+{
+  "id": "metacognition_test_governance_p029",
+  "title": "P0.29: Test Governance Observability and ControlMaster Test State",
+  "status": "READY_FOR_NEXT_SLICE",
+  "category": "metacognition_tests",
+  "priority": "P0",
+  "description": "IABV has runnable test infrastructure and validation services, but the self-audit/control-master layer does not yet have a reliable live test-state feed that proves which focused/regression suites ran for each runtime fix.",
+  "reason": "Audit found good executable test mechanisms (pytest command, MCP audit_tools.run_pytest, AutonomousValidationCycleService, ScenarioAutoTestService), but SelfAuditService._build_cross_source_truth currently reports tests_observed=false and ControlMasterState.current_tests_state is not automatically updated from real pytest results.",
+  "dependency_missing": "",
+  "next_action": "Extend existing SelfAuditService/ControlMasterRepository/MCP audit_tools path so every pytest run can persist a compact TestEvidence record: command, suite, passed/failed/errors, duration, changed files, linked pending task, and verification_status. Do not create a new brain or route decider.",
+  "resume_hint": "Next slice should make test evidence first-class metacognitive input. Keep it read-only/observability-focused: tests inform OSES/PortableContext/ControlMaster; they must not auto-merge or auto-change routes without governance.",
+  "metadata": {
+    "verification_status": "AUDITED_READY_FOR_IMPLEMENTATION",
+    "observed_working": [
+      "Official pytest command works in runtime checkout.",
+      "MCP audit_tools.run_pytest validates suite/keyword/executable and parses pytest counts.",
+      "AutonomousValidationCycleService tracks proposal validation and decision logs.",
+      "PlatformPendingQueue stores pending/completed task state.",
+      "Focused/runtime regression tests passed after P0.28."
+    ],
+    "observed_gap": [
+      "SelfAuditService cross-source truth hardcodes tests_observed=false.",
+      "ControlMasterState has current_tests_state but there is no confirmed automatic update from pytest results.",
+      "Runtime fixes can pass tests without the organism preserving a compact canonical test evidence record linked to the pending task."
+    ],
+    "do_not_do": [
+      "Do not create a new testing brain/service.",
+      "Do not make ViewModels decide test strategy.",
+      "Do not run heavy full-suite tests during UI startup."
+    ],
+    "suggested_tests": [
+      "SelfAuditService reports tests_observed=true when a latest pytest evidence record exists.",
+      "ControlMaster latest.md includes compact tests_state after a recorded pytest run.",
+      "PortableContext pending/unresolved section references latest failed or missing verification without PII.",
+      "audit_tools.run_pytest persists counts only when explicitly requested, not during passive UI startup."
+    ]
+  }
+}
