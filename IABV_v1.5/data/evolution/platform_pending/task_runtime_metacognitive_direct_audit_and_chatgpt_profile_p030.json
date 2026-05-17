@@ -1,0 +1,29 @@
+{
+  "id": "runtime_metacognitive_direct_audit_and_chatgpt_profile_p030",
+  "title": "P0.30: Direct self-audit from artifacts + ChatGPT profile clarity + OSES starvation",
+  "status": "READY_FOR_NEXT_SLICE",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Closes the gap where self-audit questions fell through to the heavy Adaptive local orchestrator (~91s) instead of being answered from structured artifacts (<5s). Also fixes ChatGPT follow-up vs new consultation routing, explains isolated browser profile in handoff messages, and adds OSES starvation detection.",
+  "resume_hint": "All implementation done. Awaiting live Windows run to confirm: (1) autoauditoria answers from artifacts in <5s, (2) nueva consulta ChatGPT routes as new external consultation not follow-up, (3) security_verification handoff mentions isolated profile.",
+  "next_action": "User runs IABV, asks autoauditoria, confirms response is fast and from artifacts. Then asks consulta ChatGPT after a previous failure, confirms it routes as new consultation.",
+  "metadata": {
+    "covered_by_pr": "pending",
+    "tasks_implemented": [
+      "B: _try_handle_structured_self_audit guard reads test_evidence, self_examination, portable_context, control_master, runtime_audit without LLM",
+      "D: _try_handle_external_failure_followup skips when explicit new consultation intent detected",
+      "E: browser_security_verification handoff now mentions isolated profile vs Chrome normal",
+      "F: OSES _metacognitive_starvation_findings detects pressure-skip events + missing test_evidence",
+      "G: RuntimeAuditTracer traces: structured_self_audit_answered, structured_self_audit_missing_evidence, external_consultation_new_request_forced, assistant_profile_context_reported"
+    ],
+    "unresolved": [
+      "governed_user_chrome_bridge_missing: no safe bridge to use user Chrome session for external consultations",
+      "live_chatgpt_success_pending: actual ChatGPT consultation success not tested yet",
+      "metacognitive_idle_budget_policy_pending: starvation finding is reported by OSES but no automatic policy to enforce idle budgets"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "Self-audit via heavy local LLM is architecturally wrong. AGENTS.md says self-awareness questions must be answered from artifacts, not from external/heavy inference.",
+  "created_at": "2026-05-14T01:30:00Z",
+  "updated_at": "2026-05-14T01:30:00Z"
+}
