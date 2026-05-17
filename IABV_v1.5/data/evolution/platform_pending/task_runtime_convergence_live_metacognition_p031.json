@@ -1,0 +1,55 @@
+{
+  "id": "runtime_convergence_live_metacognition_p031",
+  "title": "P0.31: Runtime Convergence + Live Metacognition Proof",
+  "status": "PENDING",
+  "category": "runtime_convergence",
+  "priority": "P0",
+  "description": "Converge the Windows runtime branch (codex/runtime-birth-and-failure-continuity at 9155188b4, 11 ahead / 2 behind origin/main) with origin/main (110c8f06c, contains P0.29 + P0.30). Preserve local fixes (external failure context recovery, disputed ChatGPT security verification, UI bridge readiness). Then prove live: autoauditoria directa <5s, ChatGPT nueva consulta routing, OSES starvation, test_evidence pipeline.",
+  "resume_hint": "All code from P0.30 is merged in origin/main. The runtime at C:\\Python\\IABV_v1.5_runtime_main needs: git fetch origin && git merge origin/main (resolve conflicts preserving local fixes). Then live-verify: (1) autoauditoria <5s, (2) ChatGPT routes as new consultation, (3) test_evidence pipeline populates ControlMaster.",
+  "next_action": "User runs convergence commands on Windows runtime, then opens IABV and tests autoauditoria + ChatGPT routing live.",
+  "metadata": {
+    "depends_on_pr": "#406 (merged)",
+    "runtime_state": {
+      "origin_main": "110c8f06c",
+      "runtime_head": "9155188b4",
+      "runtime_branch": "codex/runtime-birth-and-failure-continuity",
+      "ahead": 11,
+      "behind": 2,
+      "behind_commits": ["4a376049e P0.29", "110c8f06c P0.30"],
+      "local_fixes_to_preserve": [
+        "9155188b4 Recover external failure context after runtime restart",
+        "12c41375a Handle disputed ChatGPT security verification as shared reality gap",
+        "0f3f95580 Mark P0.27 external follow-up live verified",
+        "b3b299f33 Preserve UI bridge readiness after lazy VM wiring"
+      ]
+    },
+    "test_results": {
+      "p030_focused": "24 passed in 0.67s",
+      "p029_governance": "20 passed",
+      "p027_followup": "13 passed",
+      "p023_security_stall": "passed",
+      "p022_consultation": "passed",
+      "portable_context": "passed",
+      "self_audit": "passed",
+      "operational_self_examination": "passed",
+      "control_master": "passed",
+      "total": "156 passed, 0 failed"
+    },
+    "live_proof_pending": [
+      "autoauditoria_directa: user must test in Windows UI",
+      "chatgpt_new_consultation: user must test in Windows UI",
+      "runtime_build_fingerprint: verify in runtime_audit.jsonl after convergence",
+      "test_evidence_pipeline: run_pytest(persist_evidence=True) on Windows"
+    ],
+    "unresolved": [
+      "runtime_not_converged_yet: user must run merge on Windows machine",
+      "live_autoauditoria_not_proven: requires Windows UI test",
+      "live_chatgpt_not_proven: requires Windows UI test",
+      "governed_user_chrome_bridge_missing: no safe bridge to user Chrome session"
+    ]
+  },
+  "dependency_missing": "Windows runtime merge not yet executed",
+  "reason": "Runtime at C:\\Python\\IABV_v1.5_runtime_main is 2 commits behind origin/main, missing P0.29 test governance and P0.30 direct self-audit guard. Live proof requires Windows execution.",
+  "created_at": "2026-05-14T02:30:00Z",
+  "updated_at": "2026-05-14T02:30:00Z"
+}
