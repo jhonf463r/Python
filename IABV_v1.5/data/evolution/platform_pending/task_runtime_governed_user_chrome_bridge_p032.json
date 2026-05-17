@@ -1,0 +1,31 @@
+{
+  "id": "runtime_governed_user_chrome_bridge_p032",
+  "title": "P0.32: Governed User Chrome Bridge / External Session Selection",
+  "status": "UNRESOLVED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Closes the root-cause blocker: IABV uses an isolated browser profile (chatgpt_program_session) while the user is logged into their normal Chrome. This blocks external consultation because IABV cannot access the user's authenticated session. P0.32 adds a governed bridge with explicit permission, CDP detection, and manual fallback.",
+  "resume_hint": "Implementation complete. Awaiting live Windows run with Chrome --remote-debugging-port=9222 to confirm CDP bridge works end-to-end.",
+  "next_action": "User runs IABV on Windows, opens Chrome with --remote-debugging-port=9222, types 'usar mi chrome', confirms IABV switches to user Chrome session for ChatGPT consultation.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "covered_by_pr": "pending",
+    "root_cause": "isolated_profile_blocks_user_logged_in_browser",
+    "tasks_implemented": [
+      "1: runtime_audit chain confirmed (external_consultation_new_request_forced -> dispatch_started -> blocked/security_verification -> dispatch_terminal)",
+      "2: existing helpers inspected (probe_assistant_login CDP adapter, auto_correction_engine switch_to_cdp, P0.27 manual pasteback)",
+      "3-4: governed session selection with CDP probe (_detect_cdp_available), permission gate (_try_handle_user_chrome_bridge_selection), revoke (_try_handle_cdp_permission_revoke), session selection message (_build_session_selection_message)",
+      "5: traces added (user_browser_bridge_permission_requested/granted/denied, cdp_probe_attempted/result, session_selected, bridge_result)",
+      "6: OSES finding isolated_profile_blocks_user_logged_in_browser when block_count >= 2",
+      "7: PortableContext section user_chrome_bridge with cdp_session_active, bridge_events_total, session_mode (no PII)"
+    ],
+    "unresolved": [
+      "live_cdp_bridge_test_pending: requires IABV on Windows with Chrome --remote-debugging-port=9222",
+      "portable_context_bridge_summary_pending: deferred to live proof"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "IABV uses isolated profile chatgpt_program_session/browser_profile. User is logged into their normal Chrome. No governed bridge existed to connect them. P0.30 identified the gap as governed_user_chrome_bridge_missing.",
+  "created_at": "2026-05-15T01:30:00Z",
+  "updated_at": "2026-05-15T01:30:00Z"
+}
