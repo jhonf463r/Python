@@ -12,6 +12,7 @@ Verifies:
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -279,17 +280,14 @@ def test_no_pytest_auto_run_during_startup() -> None:
         "import iabv_v15.infra.mcp.audit_tools; "
         "print('OK')"
     )
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parent.parent / "src")
     result = subprocess.run(
         [sys.executable, "-c", code],
         capture_output=True,
         text=True,
         timeout=30,
-        env={
-            "PYTHONPATH": str(
-                Path(__file__).resolve().parent.parent / "src"
-            ),
-            "PATH": "/usr/bin:/bin",
-        },
+        env=env,
     )
     assert "OK" in result.stdout
     assert result.returncode == 0
