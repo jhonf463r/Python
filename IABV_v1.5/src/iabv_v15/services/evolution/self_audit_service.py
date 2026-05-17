@@ -442,6 +442,11 @@ class SelfAuditService:
             unresolved.append("UNRESOLVED:requires_observation_permission")
         if world_model is not None:
             unresolved.extend(str(item) for item in list(getattr(world_model, "unresolved_fields", []) or []) if str(item).strip())
+
+        # P0.29: read latest TestEvidence to flip tests_observed
+        test_evidence = self._load_latest_test_evidence()
+        tests_observed = test_evidence is not None
+
         source_order = [
             "WorldModelSnapshot",
             "EnvironmentSelfModel",
@@ -452,14 +457,14 @@ class SelfAuditService:
             "ExperimentLab",
             "external_ia_audit",
         ]
-        return {
+        result: dict[str, Any] = {
             "purpose": "Cruzar como ve IABV la laptop local, como lo audita Devin/IA externa y que evidencian codigo/pruebas.",
             "source_order": source_order,
             "local_laptop_observed": local_laptop_observed,
             "environment_self_model_observed": environment is not None,
             "world_model_observed": world_model is not None,
             "code_contracts_observed": True,
-            "tests_observed": False,
+            "tests_observed": tests_observed,
             "external_ia_audit_observed": False,
             "requires_external_ia": True,
             "requires_local_runtime": True,
@@ -471,6 +476,31 @@ class SelfAuditService:
                 "lo no observable desde la VM debe quedar UNRESOLVED."
             ),
         }
+        if test_evidence is not None:
+            result["test_evidence_summary"] = {
+                "passed": int(test_evidence.get("passed") or 0),
+                "failed": int(test_evidence.get("failed") or 0),
+                "errors": int(test_evidence.get("errors") or 0),
+                "suite": str(test_evidence.get("suite") or ""),
+                "timestamp": str(test_evidence.get("timestamp") or ""),
+            }
+        return result
+
+    def _load_latest_test_evidence(self) -> dict[str, Any] | None:
+        """P0.29: load latest TestEvidence from workspace if recent."""
+        workspace = getattr(self, '_storage_root', None)
+        if workspace is None:
+            return None
+        # _storage_root points to data/evolution/self_audit; go up to workspace
+        try:
+            workspace_root = Path(str(workspace)).resolve()
+            # Navigate from data/evolution/self_audit → workspace root
+            for _ in range(3):
+                workspace_root = workspace_root.parent
+            from iabv_v15.infra.mcp.audit_tools import load_latest_test_evidence
+            return load_latest_test_evidence(workspace_root)
+        except Exception:
+            return None
 
     # ------------------------------------------------------------------
     # Summary markdown (<=1500 chars)

@@ -2950,6 +2950,39 @@ class PlatformResumeHint(BaseModel):
 
 
 # ──────────────────────────────────────────────────────────────
+# Test Evidence — P0.29
+# ──────────────────────────────────────────────────────────────
+
+
+class TestEvidence(BaseModel):
+    """Compact, canonical record of a pytest run.
+
+    Persisted by ``audit_tools.run_pytest()`` when ``persist_evidence=True``
+    to ``data/evolution/test_evidence/latest.json``.  Read by
+    ``SelfAuditService`` (to flip ``tests_observed``), ``ControlMasterState``
+    (``current_tests_state``), and ``PortableContextService`` (compact
+    summary without logs or PII).
+
+    No logs, no PII, no large output — only counts and metadata.
+    """
+
+    evidence_id: str = Field(default_factory=lambda: str(uuid4()))
+    command: str = ""
+    suite: str = ""
+    keyword: str = ""
+    passed: int = 0
+    failed: int = 0
+    errors: int = 0
+    duration_s: float = 0.0
+    returncode: int = 0
+    timed_out: bool = False
+    timestamp: datetime = Field(default_factory=utc_now)
+    linked_pending_task: str = ""
+    changed_files: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ──────────────────────────────────────────────────────────────
 # Account Inventory & Continuity Layer
 # ──────────────────────────────────────────────────────────────
 

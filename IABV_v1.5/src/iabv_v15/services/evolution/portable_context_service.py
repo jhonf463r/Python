@@ -189,6 +189,7 @@ class PortableContextService:
             self._tool_coordination_section(now=now),
             self._boot_profile_section(status=boot_profile, now=now),
             self._evidence_basis_section(evidence=evidence_basis, now=now),
+            self._test_evidence_section(now=now),
             self._task_packet_summary_section(snapshot=task_packet_summary, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
@@ -1371,6 +1372,67 @@ class PortableContextService:
             unresolved_fields=section_unresolved,
             metadata=dict(evidence),
         )
+
+    # ------------------------------------------------------------------
+    # P0.29 — Test evidence compact section
+    # ------------------------------------------------------------------
+
+    def _test_evidence_section(self, *, now) -> PortableContextSection:
+        """Export compact test evidence summary without logs or PII."""
+        evidence = self._load_test_evidence()
+        if evidence is None:
+            return self._section(
+                section_id='test_evidence',
+                title='Evidencia de tests',
+                summary='Sin evidencia de tests reciente.',
+                items=[{'label': 'status', 'value': 'no_recent_evidence'}],
+                source_kind='audit_tools',
+                source_refs=['iabv_v15.infra.mcp.audit_tools'],
+                confidence=0.0,
+                last_updated=now,
+                unresolved_fields=['UNRESOLVED:no_test_evidence'],
+            )
+        passed = int(evidence.get('passed') or 0)
+        failed = int(evidence.get('failed') or 0)
+        errors = int(evidence.get('errors') or 0)
+        suite = str(evidence.get('suite') or '')
+        ts = str(evidence.get('timestamp') or '')
+        total = passed + failed + errors
+        health = 'green' if failed == 0 and errors == 0 else 'red'
+        summary = f'{passed}/{total} passed'
+        if failed:
+            summary += f', {failed} failed'
+        if errors:
+            summary += f', {errors} errors'
+        if suite:
+            summary += f' [{suite}]'
+        items: list[dict[str, Any]] = [
+            {'label': 'health', 'value': health},
+            {'label': 'passed', 'value': passed},
+            {'label': 'failed', 'value': failed},
+            {'label': 'errors', 'value': errors},
+            {'label': 'timestamp', 'value': ts},
+        ]
+        if suite:
+            items.append({'label': 'suite', 'value': suite})
+        return self._section(
+            section_id='test_evidence',
+            title='Evidencia de tests',
+            summary=summary,
+            items=items,
+            source_kind='audit_tools',
+            source_refs=['iabv_v15.infra.mcp.audit_tools'],
+            confidence=0.9 if health == 'green' else 0.5,
+            last_updated=now,
+        )
+
+    def _load_test_evidence(self) -> dict[str, Any] | None:
+        """Load latest TestEvidence from workspace root — best-effort."""
+        try:
+            from iabv_v15.infra.mcp.audit_tools import load_latest_test_evidence
+            return load_latest_test_evidence(self.workspace_root)
+        except Exception:
+            return None
 
     # ------------------------------------------------------------------
     # Task-packet summary — metacognitive digest of recent task_packet
