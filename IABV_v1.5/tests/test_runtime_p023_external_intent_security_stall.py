@@ -148,6 +148,20 @@ class TestExplicitAssistantPreferenceRecognizesChatGptVariants:
         result = resolver.resolve('consulta a chatgo contestame con S')
         assert result == 'chatgpt', f'Expected chatgpt, got {result!r}'
 
+    def test_live_typo_consuta_chat_gpt(self) -> None:
+        from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
+        resolver = AssistantPreferenceResolver()
+        result = resolver.resolve('has una consuta a chat gpt')
+        assert result == 'chatgpt', f'Expected chatgpt, got {result!r}'
+
+    def test_live_typo_consuta_about_pending_tasks(self) -> None:
+        from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
+        resolver = AssistantPreferenceResolver()
+        result = resolver.resolve(
+            'has una consuta a chat gpt de lo que tengas pendiente'
+        )
+        assert result == 'chatgpt', f'Expected chatgpt, got {result!r}'
+
     def test_chatgo_with_haz(self) -> None:
         from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
         resolver = AssistantPreferenceResolver()

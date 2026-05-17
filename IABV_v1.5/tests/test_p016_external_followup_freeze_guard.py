@@ -217,6 +217,55 @@ def test_security_profile_mismatch_opens_user_browser_not_isolated_profile() -> 
     assert 'handoff/manual' in vm._latest_response_text
 
 
+def test_security_profile_mismatch_detects_user_visible_chatgpt_window() -> None:
+    vm = _followup_stub()
+    vm._open_security_verification_window = MagicMock(return_value={
+        'opened': True,
+        'mode': 'visible_user_browser',
+        'assistant_kind': 'chatgpt',
+        'url': 'https://chatgpt.com/',
+        'isolated_profile_skipped': True,
+    })
+    ControlCenterViewModel._remember_external_failure(
+        vm,
+        assistant_title='ChatGPT',
+        message='No pude consultar ChatGPT todavia por verificacion de seguridad.',
+        meta='ChatGPT: blocked_by_security_verification',
+        outcome='blocked',
+        success=False,
+    )
+
+    handled = ControlCenterViewModel._try_handle_external_failure_followup(
+        vm,
+        'yo veo bien la ventana con chatgpt',
+    )
+
+    assert handled is True
+    vm._open_security_verification_window.assert_called_once()
+    assert vm._open_security_verification_window.call_args.kwargs['prefer_user_browser'] is True
+    assert vm._external_consultation_browser_override['mode'] == 'user_browser_manual'
+    assert 'conflicto de perfiles' in vm._latest_response_text
+
+
+def test_metacognitive_cdp_preference_becomes_user_browser_handoff(monkeypatch) -> None:
+    vm = SimpleNamespace(
+        _external_consultation_browser_override={},
+        _assistant_display_name=lambda assistant_kind: 'ChatGPT',
+    )
+    vm._active_user_browser_external_override = (
+        lambda assistant_kind: ControlCenterViewModel._active_user_browser_external_override(vm, assistant_kind)
+    )
+    monkeypatch.setenv('IABV_PREFER_CDP_SESSION', '1')
+
+    overrides = ControlCenterViewModel._external_consultation_goal_overrides(vm, 'chatgpt')
+
+    assert overrides['prefer_user_browser_session'] is True
+    assert overrides['response_capture_mode'] == 'manual_pasteback'
+    assert overrides['isolated_session_required'] is False
+    assert overrides['browser_override_reason'] == 'metacognitive_cdp_preference'
+    assert overrides['browser_override_source'] == 'IABV_PREFER_CDP_SESSION'
+
+
 def test_security_retest_defers_profile_mismatch_to_followup_path() -> None:
     vm = _followup_stub()
     vm._last_adaptive_payload = {

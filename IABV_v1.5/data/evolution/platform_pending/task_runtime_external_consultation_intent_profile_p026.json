@@ -1,0 +1,31 @@
+{
+  "id": "runtime_external_consultation_intent_profile_p026",
+  "title": "P0.26: External Consultation Intent + User Browser Session Continuity",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Live interaction showed two routing gaps: typo-heavy requests such as 'has una consuta a chat gpt' fell back to local chat, and user-visible ChatGPT evidence ('yo veo bien la ventana con chatgpt') did not trigger the user-browser handoff.",
+  "reason": "The universal loop had the evidence, but the intent parser and security follow-up patterns were too literal. A metacognitive CDP preference was also stored only as IABV_PREFER_CDP_SESSION and was not translated into safe goal overrides for the consultation route.",
+  "dependency_missing": "",
+  "next_action": "Run IABV on Windows, ask 'has una consuta a chat gpt', then after any security block say 'yo veo bien la ventana con chatgpt'. Verify the first message starts external_consultation and the second enters user_browser_manual_handoff instead of visible_isolated_profile.",
+  "resume_hint": "P0.26 code fix applied: typo-aware ChatGPT consultation intent, explicit assistant routing before local shortcuts, expanded user-visible ChatGPT profile mismatch detection, and IABV_PREFER_CDP_SESSION mapped to manual user-browser handoff without bypassing observation permission.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "Intent parsing recognized 'consulta' but not the live typo 'consuta', and profile mismatch detection recognized 'mi Chrome' but not the user's natural claim 'yo veo bien la ventana con chatgpt'.",
+    "files_touched": [
+      "src/iabv_v15/services/adaptive/assistant_preference_resolver.py",
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "tests/test_runtime_p023_external_intent_security_stall.py",
+      "tests/test_p016_external_followup_freeze_guard.py"
+    ],
+    "tests": {
+      "focused": "41 passed",
+      "runtime_regression": "183 passed",
+      "tool_teach_regression_note": "2 pre-existing environment-sensitive failures remain in test_tool_teach_service because the live Codex process makes codex_installed available through multi-source detection."
+    },
+    "unresolved": [
+      "LIVE_PROOF pending in Windows UI after restart onto this commit",
+      "Governed CDP capture for the user's existing Chrome session is still not implemented; manual pasteback is the safe fallback."
+    ]
+  }
+}

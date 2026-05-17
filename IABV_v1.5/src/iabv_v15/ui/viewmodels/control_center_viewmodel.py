@@ -4179,6 +4179,8 @@ class ControlCenterViewModel(QObject):
         'que paso', 'qué paso', 'que pasó', 'qué pasó', 'por que', 'por qué',
         'no pudo', 'no pudo hacer', 'fallo', 'falló', 'error', 'chatgpt',
         'a mi si', 'a mi sí', 'a mí si', 'a mí sí',
+        'yo veo', 'yo si veo', 'yo sí veo', 'veo bien',
+        'ventana con chatgpt', 'chatgpt abierto',
     )
     _EXTERNAL_FAILURE_SECURITY_HELP_PATTERNS: tuple[str, ...] = (
         'verificacion', 'verificación', 'seguridad', 'captcha', 'challenge',
@@ -4188,6 +4190,9 @@ class ControlCenterViewModel(QObject):
         'inicie sesion', 'inicié sesión', 'sesion iniciada', 'sesión iniciada',
         'mi chrome', 'mi navegador', 'ventana que no era', 'otra ventana',
         'perfil incorrecto', 'perfil aislado',
+        'yo veo', 'yo si veo', 'yo sí veo', 'veo bien',
+        'ventana con chatgpt', 'chatgpt abierto', 'chatgpt esta abierto',
+        'chatgpt está abierto',
     )
     _SECURITY_HELP_OPEN_WINDOW_PATTERNS: tuple[str, ...] = (
         'abre', 'abrir', 'muestra', 'mostrar', 'ventana', 'pantalla',
@@ -4202,6 +4207,9 @@ class ControlCenterViewModel(QObject):
         'mi chrome', 'mi navegador', 'mi perfil', 'chrome normal',
         'ventana que no era', 'otra ventana', 'perfil incorrecto',
         'perfil aislado', 'que estas usando tu', 'qué estás usando tú',
+        'yo veo bien la ventana', 'yo veo la ventana', 'yo si veo la ventana',
+        'yo sí veo la ventana', 'veo bien la ventana', 'ventana con chatgpt',
+        'chatgpt abierto', 'chatgpt esta abierto', 'chatgpt está abierto',
     )
 
     def _remember_external_failure(
@@ -4256,7 +4264,16 @@ class ControlCenterViewModel(QObject):
 
     def _security_followup_requests_user_browser(self, lowered_message: str) -> bool:
         text = str(lowered_message or '').strip().lower()
-        return any(pattern in text for pattern in self._SECURITY_PROFILE_MISMATCH_PATTERNS)
+        if any(pattern in text for pattern in self._SECURITY_PROFILE_MISMATCH_PATTERNS):
+            return True
+        user_view_markers = (
+            'yo veo', 'yo si veo', 'yo sí veo', 'a mi me aparece',
+            'a mí me aparece', 'a mi si me aparece', 'a mí sí me aparece',
+        )
+        target_markers = ('chatgpt', 'chrome', 'navegador', 'ventana')
+        return any(marker in text for marker in user_view_markers) and any(
+            marker in text for marker in target_markers
+        )
 
     def _security_verification_assistant_kind(self, assistant_title: str, payload: dict[str, Any]) -> str:
         haystack = ' '.join(
@@ -4397,6 +4414,20 @@ class ControlCenterViewModel(QObject):
     def _active_user_browser_external_override(self, assistant_kind: str) -> dict[str, Any]:
         override = dict(getattr(self, '_external_consultation_browser_override', {}) or {})
         if not override:
+            try:
+                import os
+                prefer_cdp = str(os.environ.get('IABV_PREFER_CDP_SESSION') or '').strip().lower()
+            except Exception:
+                prefer_cdp = ''
+            requested = str(assistant_kind or '').strip().lower()
+            if prefer_cdp in {'1', 'true', 'yes', 'on'} and requested in {'chatgpt', 'claude'}:
+                return {
+                    'assistant_kind': requested,
+                    'mode': 'user_browser_manual',
+                    'created_at': time.time(),
+                    'reason': 'metacognitive_cdp_preference',
+                    'source': 'IABV_PREFER_CDP_SESSION',
+                }
             return {}
         if str(override.get('mode') or '') != 'user_browser_manual':
             return {}
@@ -4410,7 +4441,8 @@ class ControlCenterViewModel(QObject):
         return {}
 
     def _external_consultation_goal_overrides(self, assistant_kind: str) -> dict[str, Any]:
-        if not self._active_user_browser_external_override(assistant_kind):
+        override = self._active_user_browser_external_override(assistant_kind)
+        if not override:
             return {}
         return {
             'prefer_user_browser_session': True,
@@ -4421,6 +4453,8 @@ class ControlCenterViewModel(QObject):
             'session_scope': 'user_browser',
             'session_label': f'{self._assistant_display_name(assistant_kind)} en navegador del usuario',
             'profile_mismatch_resolution': 'user_browser_manual_handoff',
+            'browser_override_reason': str(override.get('reason') or ''),
+            'browser_override_source': str(override.get('source') or 'runtime_memory'),
         }
 
     def _user_browser_manual_consultation_result(
@@ -9914,6 +9948,12 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_external_failure_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        explicit_assistant = self._explicit_assistant_preference(message)
+        if explicit_assistant:
+            self._last_user_goal = message
+            self._interaction_has_pending_followup = True
+            self._run_external_consultation(explicit_assistant, announce=True)
+            return
         if self._try_handle_lightweight_chat(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
@@ -9977,12 +10017,6 @@ class ControlCenterViewModel(QObject):
         if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
             self._answer_general_chat(message)
             self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        explicit_assistant = self._explicit_assistant_preference(message)
-        if explicit_assistant:
-            self._last_user_goal = message
-            self._interaction_has_pending_followup = True
-            self._run_external_consultation(explicit_assistant, announce=True)
             return
         import time as _time
         self._working = True

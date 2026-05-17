@@ -46,7 +46,9 @@ class AssistantPreferenceResolver:
     # combined with a target assistant name or typo.
     _EXTERNAL_ACTION_VERBS: tuple[str, ...] = (
         'haz', 'hacer', 'hazle', 'hazla',
+        'has ', 'hasle', 'hasla',
         'consulta', 'consultar',
+        'consuta', 'consutar', 'conslta',
         'pregunta', 'preguntale', 'pregúntale',
         'pidele', 'pídele',
         'envia', 'envía', 'manda',
@@ -60,6 +62,11 @@ class AssistantPreferenceResolver:
         'consulta externa',
         'consulta nueva',
         'consultar',
+        'consuta',
+        'consuta externa',
+        'consuta nueva',
+        'consutar',
+        'conslta',
         'usa ',
         'utiliza ',
         'revisa con',
