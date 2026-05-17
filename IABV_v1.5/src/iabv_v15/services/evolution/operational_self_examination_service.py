@@ -851,6 +851,8 @@ class OperationalSelfExaminationService:
         # as an algorithmic continuity gap instead of a one-off UI issue.
         findings.extend(self._external_failure_context_findings())
         findings.extend(self._external_failure_followup_misrouted_findings())
+        # P0.30 Task F: detect metacognitive maintenance starvation.
+        findings.extend(self._metacognitive_starvation_findings())
 
         findings = self._dedupe_findings(findings)
 
@@ -8747,6 +8749,96 @@ class OperationalSelfExaminationService:
                     },
                     'recommended_action': 'measure_post_restore_improvement',
                     'priority': 'low',
+                },
+            ))
+
+        return findings
+
+    # -- P0.30 Task F: metacognitive maintenance starvation --
+    def _metacognitive_starvation_findings(self) -> list[SelfExaminationFinding]:
+        """Detect when metacognitive maintenance is being starved.
+
+        Symptoms:
+        - Many ``control_autonomy_dock_refresh_skipped_due_to_pressure``
+          events in the recent audit window.
+        - No recent ``test_evidence`` on disk.
+        - Self-audit queries falling through to the heavy local orchestrator
+          instead of being answered from structured artifacts.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+
+        # Count pressure-skip events in last 200 log lines
+        skip_count = 0
+        heavy_self_audit_count = 0
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=200)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    if 'skipped_due_to_pressure' in kind or kind == 'resource_pressure':
+                        skip_count += 1
+                    if kind == 'dispatch_terminal':
+                        data = entry.get('data', {})
+                        if data.get('task_name') == 'chat' and data.get('provider', '') == 'Adaptive local orchestrator':
+                            heavy_self_audit_count += 1
+        except Exception:
+            pass
+
+        # Check test evidence freshness
+        te_path = root / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
+        test_evidence_fresh = False
+        if te_path.exists():
+            try:
+                import json as _json
+                te = _json.loads(te_path.read_text(encoding='utf-8'))
+                from datetime import datetime as _dt, timezone as _tz
+                ts_str = te.get('timestamp', '')
+                if ts_str:
+                    ts = _dt.fromisoformat(ts_str)
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=_tz.utc)
+                    age_h = (_dt.now(_tz.utc) - ts).total_seconds() / 3600
+                    test_evidence_fresh = age_h < 24
+            except Exception:
+                pass
+
+        starved = skip_count >= 5 or (not test_evidence_fresh and skip_count >= 2)
+        if starved:
+            findings.append(SelfExaminationFinding(
+                category='metacognitive_maintenance_starved',
+                severity=IssueSeverity.HIGH,
+                title='Mantenimiento metacognitivo hambreado por presion de recursos',
+                summary=(
+                    f'{skip_count} eventos de omision por presion en ventana reciente. '
+                    f'Test evidence fresco: {"si" if test_evidence_fresh else "no"}. '
+                    'El sistema esta priorizando queries del usuario pero no ejecuta '
+                    'mantenimiento metacognitivo (tests, refresh de autonomia, snapshots).'
+                ),
+                recommendation=(
+                    'Responder estado desde artefactos estructurados, no LLM local. '
+                    'Correr tests focalizados solo bajo comando explicito. '
+                    'Diferir trabajos pesados si query_pending.'
+                ),
+                confidence=0.8,
+                metadata={
+                    'pressure_skip_count': skip_count,
+                    'test_evidence_fresh': test_evidence_fresh,
+                    'heavy_self_audit_dispatches': heavy_self_audit_count,
                 },
             ))
 
