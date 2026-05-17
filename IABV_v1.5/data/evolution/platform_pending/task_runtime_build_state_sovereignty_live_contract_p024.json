@@ -1,0 +1,53 @@
+{
+  "id": "runtime_build_state_sovereignty_live_contract_p024",
+  "title": "P0.24: Build-State Sovereignty + Live Runtime Contract",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "The user tested IABV v1.5 expecting P0.22/P0.23 fixes (#400/#401) to be active, but runtime_audit.jsonl showed HEAD 901fa7629 (P0.21 stale build). This invalidated the live proof: browser_security_verification, NoneType.get, misrouting of 'chat gpt/chatgo' to local chat, and UI stall 36.5s all occurred under stale code that lacked the fixes. P0.24 adds build-state sovereignty gates and a live runtime contract to prevent testing against stale builds.",
+  "reason": "Root cause: the Windows runtime loaded a stale workspace (HEAD 901fa7629 / P0.21) instead of the merged P0.22 code (cdf97a63) or the P0.23 branch. _REQUIRED_FEATURE_MARKERS only checked for P0.21-era markers, not P0.22/_should_defer_heavy_work or P0.23/_ASSISTANT_ALIASES. No typed trace methods existed for stale_build_detected, live_proof_started, or live_proof_result. validate_live_proof_terminal did not exist to validate whether a dispatch terminal was acceptable for live proof.",
+  "dependency_missing": "",
+  "next_action": "Live proof on Windows: (1) merge PR #401 (P0.23) and this PR (P0.24), (2) verify runtime_audit.jsonl shows runtime_build_fingerprint with has_p022_consultation_state=true and has_p023_external_intent_security=true, (3) if stale_build_detected appears, update workspace to correct HEAD, (4) write 'consulta nueva a ChatGPT: responde solo S si entiendes', (5) terminal must be response_captured, blocked_by_security_verification, or blocked_by_resource_pressure.",
+  "resume_hint": "P0.24 code applied: _REQUIRED_FEATURE_MARKERS expanded with has_p022_consultation_state and has_p023_external_intent_security. _MARKER_FILES includes assistant_preference_resolver.py. RuntimeAuditTracer has typed trace_stale_build_detected(), trace_live_proof_started(), trace_live_proof_result(). Module-level validate_live_proof_terminal() validates dispatch terminals against live-proof contract. Bootstrap stores _build_fingerprint_data and calls trace_stale_build_detected() instead of generic trace(). P0.23 trace_event() calls fixed to trace().",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "Stale build: Windows runtime ran HEAD 901fa7629 (P0.21) instead of P0.22 (cdf97a63) or P0.23 branch. Feature markers only checked P0.21-era code. No build-state gate to warn or block live proof on stale builds. No typed trace methods for stale detection or live-proof lifecycle. P0.23 used nonexistent trace_event() method instead of trace().",
+    "evidence": [
+      {
+        "event": "runtime_audit.jsonl showed head=901fa7629 (P0.21) during user live test",
+        "bug": "Workspace not updated to P0.22 merge (cdf97a63) or P0.23 branch; no stale-build gate existed"
+      },
+      {
+        "event": "browser_security_verification + NoneType.get under stale build",
+        "bug": "P0.23 fix for structured handoff was not loaded in stale runtime"
+      },
+      {
+        "event": "'chat gpt' / 'chatgo' misrouted to local chat under stale build",
+        "bug": "P0.23 alias normalization was not loaded in stale runtime"
+      },
+      {
+        "event": "UI stall 36506ms in _set_live_status -> dataChanged.emit under stale build",
+        "bug": "P0.23 heavy-result guard was not loaded in stale runtime"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/services/evolution/runtime_audit_tracer.py",
+      "src/iabv_v15/bootstrap.py",
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "data/evolution/platform_pending/task_runtime_build_state_sovereignty_live_contract_p024.json",
+      "tests/test_runtime_p024_build_state_sovereignty.py"
+    ],
+    "fixes_applied": {
+      "task_c": "_REQUIRED_FEATURE_MARKERS expanded with has_p022_consultation_state ('_should_defer_heavy_work') and has_p023_external_intent_security ('_ASSISTANT_ALIASES'). _MARKER_FILES includes assistant_preference_resolver.py.",
+      "task_e": "RuntimeAuditTracer: added trace_stale_build_detected(), trace_live_proof_started(), trace_live_proof_result() typed trace methods.",
+      "task_f": "validate_live_proof_terminal() module-level function validates terminal states against live-proof contract (response_captured, blocked_by_security_verification, blocked_by_resource_pressure are valid; local_chat, operational_status, NoneType.get are invalid).",
+      "task_bootstrap": "AppBootstrap stores _build_fingerprint_data, calls trace_stale_build_detected() typed method instead of generic trace().",
+      "task_p023_fix": "Fixed P0.23 trace_event() calls in _set_live_status and _apply_task_result to use correct trace() method."
+    },
+    "remaining": [
+      "Live Windows proof: verify runtime_audit shows new fingerprint with P0.22/P0.23 markers",
+      "Live Windows proof: external consultation terminal validation"
+    ],
+    "unresolved": "Live Windows proof pending - user must run app with P0.23+P0.24 merged and verify build fingerprint shows all markers, then test ChatGPT consultation"
+  }
+}

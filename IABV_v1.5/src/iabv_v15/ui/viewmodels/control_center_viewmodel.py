@@ -9151,7 +9151,7 @@ class ControlCenterViewModel(QObject):
             self._heavy_result_guard_active = False
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                get_runtime_tracer().trace_event(
+                get_runtime_tracer().trace(
                     'ui_status_emit_deferred',
                     detail='dataChanged.emit deferred after heavy task result',
                 )
@@ -10306,7 +10306,7 @@ class ControlCenterViewModel(QObject):
                 self._heavy_result_guard_active = True
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                    get_runtime_tracer().trace_event(
+                    get_runtime_tracer().trace(
                         'post_result_ui_update_coalesced',
                         detail=f'chat result took {_task_elapsed:.1f}s, guard activated',
                     )
