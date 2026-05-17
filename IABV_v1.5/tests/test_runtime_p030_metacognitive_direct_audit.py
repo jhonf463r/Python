@@ -77,6 +77,8 @@ def _make_stub_vm(workspace: str | Path | None = None):
         '_clear_external_failure_memory',
         '_humanize_task_failure',
         '_assistant_display_name',
+        '_detect_cdp_available',
+        '_build_session_selection_message',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is not None:

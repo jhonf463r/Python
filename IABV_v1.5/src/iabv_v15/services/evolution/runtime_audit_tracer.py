@@ -480,6 +480,40 @@ class RuntimeAuditTracer:
             dispatch_id=dispatch_id,
         )
 
+    # ------------------------------------------------------------------
+    # P0.32: Governed User Chrome Bridge traces
+    # ------------------------------------------------------------------
+
+    def trace_user_browser_bridge(
+        self,
+        event: str,
+        *,
+        assistant_kind: str = '',
+        session_type: str = '',
+        cdp_available: bool = False,
+        permission_granted: bool = False,
+        block_type: str = '',
+        selected_session: str = '',
+        reason: str = '',
+        dispatch_id: str = '',
+    ) -> dict[str, Any]:
+        """Record a user-browser-bridge lifecycle event.
+
+        ``event`` is one of: ``permission_requested``, ``attempted``,
+        ``result``, ``session_selected``.
+        """
+        return self.trace(
+            f'user_browser_bridge_{event}',
+            assistant_kind=assistant_kind,
+            session_type=session_type,
+            cdp_available=cdp_available,
+            permission_granted=permission_granted,
+            block_type=block_type,
+            selected_session=selected_session,
+            reason=reason[:200] if reason else '',
+            dispatch_id=dispatch_id[:12] if dispatch_id else '',
+        )
+
     def current_elapsed_ms(self) -> float:
         """Return milliseconds since tracer boot (process-relative)."""
         return round((time.perf_counter() - self._t0) * 1000.0, 1)

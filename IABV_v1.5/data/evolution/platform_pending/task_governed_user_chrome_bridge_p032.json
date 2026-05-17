@@ -1,0 +1,31 @@
+{
+  "id": "governed_user_chrome_bridge_p032",
+  "title": "P0.32: Governed User Chrome Bridge / External Session Selection",
+  "status": "READY_FOR_NEXT_SLICE",
+  "category": "runtime_external_consultation",
+  "priority": "P0",
+  "description": "Implements governed session selection when external consultation fails due to browser_security_verification in IABV's isolated profile. The user can now choose between: (1) resolve verification in IABV's isolated window, (2) grant CDP permission to let IABV observe their Chrome normal, (3) paste response manually. Permission is explicit, revocable, and traced.",
+  "resume_hint": "Implementation done. CDP detection, permission grant/revoke, session selection message, OSES finding, and traces all implemented. Awaiting live Windows proof: user opens IABV, triggers external consultation block, writes 'usar mi chrome' to grant CDP permission.",
+  "next_action": "Live proof on Windows: trigger browser_security_verification, confirm session selection message shows 3 options (or 2 if CDP unavailable), test 'usar mi chrome' and 'revocar permiso cdp'.",
+  "metadata": {
+    "covered_by_pr": "pending",
+    "tasks_implemented": [
+      "_detect_cdp_available: lightweight HTTP probe to CDP endpoint without reading cookies/tokens",
+      "_build_session_selection_message: governed 3-option message (resolve isolated, use CDP, paste manual)",
+      "_try_handle_user_chrome_bridge_selection: handles 'usar mi chrome' with CDP availability check, sets IABV_PREFER_CDP_SESSION=1",
+      "_try_handle_cdp_permission_revoke: handles 'revocar permiso cdp', clears IABV_PREFER_CDP_SESSION",
+      "RuntimeAuditTracer.trace_user_browser_bridge: permission_requested, attempted, result, session_selected",
+      "OSES._isolated_profile_block_findings: detects repeated isolated_profile_blocks_user_logged_in_browser pattern",
+      "Hooked into sendChat flow: bridge selection and revoke checked before security retest"
+    ],
+    "unresolved": [
+      "live_cdp_session_handoff_pending: actual CDP consultation not yet routed through ExternalAssistantToolAdapter with use_browser_session=False",
+      "portable_context_bridge_section_pending: PortableContext section for bridge summary deferred to live proof",
+      "live_chatgpt_via_cdp_success_pending: end-to-end ChatGPT consultation via user Chrome not tested on Windows"
+    ]
+  },
+  "dependency_missing": "Windows runtime for live proof",
+  "reason": "IABV uses an isolated browser profile for external consultations. When this profile hits security verification, the user's logged-in Chrome session cannot help because they are separate profiles. A governed bridge lets the user explicitly grant observation permission.",
+  "created_at": "2026-05-14T01:24:00Z",
+  "updated_at": "2026-05-14T01:24:00Z"
+}

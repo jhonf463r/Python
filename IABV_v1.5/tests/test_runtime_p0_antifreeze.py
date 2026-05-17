@@ -60,6 +60,8 @@ def _make_stub_vm():
         '_is_dispatch_active',
         '_invalidate_dispatch',
         '_external_state_notice',
+        '_detect_cdp_available',
+        '_build_session_selection_message',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is not None:
@@ -122,7 +124,9 @@ class TestHumanExternalConsultationFailurePure:
         assert 'Herramienta: ChatGPT' in msg
         assert 'Bloqueo: verificacion de seguridad' in msg
         assert 'Evidencia:' in msg
-        assert 'Accion humana:' in msg
+        # P0.32: now shows governed session selection options instead of
+        # a single "Accion humana" block.
+        assert 'Opciones disponibles:' in msg or 'Accion humana:' in msg
         assert 'via local' in msg.lower()
         assert 'blocked_by_security_verification' in meta
 

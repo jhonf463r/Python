@@ -44,6 +44,8 @@ def _followup_stub() -> SimpleNamespace:
         '_human_external_consultation_failure',
         '_external_state_notice',
         '_assistant_display_name',
+        '_detect_cdp_available',
+        '_build_session_selection_message',
     ):
         method = getattr(ControlCenterViewModel, method_name, None)
         if method is not None:

@@ -53,6 +53,8 @@ def _make_stub_vm():
         '_invalidate_dispatch',
         '_external_state_notice',
         '_trace_dispatch_terminal',
+        '_detect_cdp_available',
+        '_build_session_selection_message',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is None:

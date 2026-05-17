@@ -384,6 +384,8 @@ class TestChatGPTSecurityHandoff:
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
         vm = MagicMock(spec=ControlCenterViewModel)
         vm._external_state_notice = MagicMock(return_value='')
+        vm._detect_cdp_available = MagicMock(return_value=False)
+        vm._build_session_selection_message = ControlCenterViewModel._build_session_selection_message.__get__(vm)
         result = ControlCenterViewModel._human_external_consultation_failure(
             vm, 'ChatGPT', 'browser_security_verification detected', [],
         )
@@ -391,7 +393,8 @@ class TestChatGPTSecurityHandoff:
         assert 'blocked_by_security_verification' in meta
         assert 'captcha' in message.lower() or 'verificacion' in message.lower()
         assert 'Evidencia:' in message
-        assert 'Accion humana:' in message
+        # P0.32: now shows governed session selection options
+        assert 'Opciones disponibles:' in message or 'Accion humana:' in message
         assert 'ya lo hice' in message
 
     def test_terminal_state_blocked_by_security_verification(self) -> None:

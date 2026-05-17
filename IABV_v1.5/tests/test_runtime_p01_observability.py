@@ -47,6 +47,8 @@ def _make_stub_vm():
         '_invalidate_dispatch',
         '_external_state_notice',
         '_trace_dispatch_terminal',
+        '_detect_cdp_available',
+        '_build_session_selection_message',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is not None:
@@ -255,7 +257,8 @@ class TestExternalConsultationFailureStub:
         )
         assert 'blocked_by_security_verification' in meta
         assert 'captcha' in msg.lower() or 'verificacion' in msg.lower()
-        assert 'Accion humana:' in msg
+        # P0.32: now shows governed session selection options
+        assert 'Opciones disponibles:' in msg or 'Accion humana:' in msg
 
     def test_missing_thread_tracking_handoff(self) -> None:
         msg, meta, busy = self.vm._human_external_consultation_failure(

@@ -850,6 +850,9 @@ class OperationalSelfExaminationService:
         # P0.30 Task F: detect metacognitive maintenance starvation.
         findings.extend(self._metacognitive_starvation_findings())
 
+        # P0.32: detect repeated isolated-profile-blocks-user-browser pattern.
+        findings.extend(self._isolated_profile_block_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -8594,6 +8597,74 @@ class OperationalSelfExaminationService:
                     'pressure_skip_count': skip_count,
                     'test_evidence_fresh': test_evidence_fresh,
                     'heavy_self_audit_dispatches': heavy_self_audit_count,
+                },
+            ))
+
+        return findings
+
+    def _isolated_profile_block_findings(self) -> list[SelfExaminationFinding]:
+        """P0.32: Detect repeated isolated-profile-blocks-user-browser pattern.
+
+        Counts ``assistant_profile_context_reported`` and
+        ``user_browser_bridge_result`` events where the isolated IABV
+        profile blocks the user who is logged in on their normal Chrome.
+        When this pattern repeats (>= 2 occurrences), it suggests the
+        governed Chrome bridge is needed.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+
+        profile_block_count = 0
+        bridge_denied_count = 0
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=200)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    if kind == 'assistant_profile_context_reported':
+                        profile_block_count += 1
+                    elif kind == 'user_browser_bridge_result':
+                        data = entry.get('data', {})
+                        if not data.get('permission_granted', False):
+                            bridge_denied_count += 1
+        except Exception:
+            pass
+
+        if profile_block_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='isolated_profile_blocks_user_logged_in_browser',
+                severity=IssueSeverity.HIGH,
+                title='Perfil aislado bloquea consulta externa repetidamente',
+                summary=(
+                    f'{profile_block_count} bloqueos por perfil aislado en ventana reciente. '
+                    f'{bridge_denied_count} intentos de puente denegados. '
+                    'El usuario tiene sesion activa en su Chrome normal pero IABV '
+                    'usa un perfil aislado que no la comparte. Considerar habilitar '
+                    'el puente gobernado (CDP) con permiso explicito del usuario.'
+                ),
+                recommendation=(
+                    'Ofrecer al usuario la opcion de usar su Chrome normal via CDP. '
+                    'El permiso debe ser explicito y revocable. '
+                    'Si CDP no esta disponible, guiar seleccion manual.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'profile_block_count': profile_block_count,
+                    'bridge_denied_count': bridge_denied_count,
                 },
             ))
 
