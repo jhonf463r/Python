@@ -3170,6 +3170,7 @@ class AppBootstrap:
         'runs': 'run_history_viewmodel',
         'centro_vivo': 'centro_vivo_viewmodel',
     }
+    _STARTUP_PREBUILD_ROUTES: tuple[str, ...] = ('control',)
 
     def _ensure_vm_for_route(self, route: str) -> None:
         """Lazily construct the VM for *route* if it hasn't been built yet.
@@ -3701,7 +3702,13 @@ class AppBootstrap:
         Navigation-triggered construction (``_ensure_vm_for_route``)
         is never paused — only the idle prebuild chain.
         """
-        routes = list(self._ROUTE_TO_VM_ATTR.keys())
+        # Bring up the communication organ only. Optional visual panels are
+        # still lazy and will build on navigation; prebuilding them at startup
+        # can trigger heavy refresh timers before the user asks for them.
+        routes = [
+            route for route in self._STARTUP_PREBUILD_ROUTES
+            if route in self._ROUTE_TO_VM_ATTR
+        ]
         self._prebuild_paused = False
         self._prebuild_paused_routes = []
 

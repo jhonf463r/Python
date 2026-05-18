@@ -4,18 +4,20 @@
   "status": "COMPLETED",
   "category": "runtime_observability",
   "priority": "P0",
-  "description": "Live proof after the Control/UIBridge birth fix showed a 44s UI stall while optional lazy VM prebuild repeatedly launched Windows resource probes. Resource telemetry must protect responsiveness, not create more contention than the work it governs.",
-  "resume_hint": "Completed in local Windows runtime. _refresh_prebuild_snapshot_async() now returns whether it spawned work and skips expensive PowerShell/CIM probes when a cached snapshot is fresh or a refresh was recently attempted. The lazy prebuild chain reuses the snapshot between routes.",
-  "next_action": "Restart IABV through the desktop shortcut and verify runtime_audit no longer reports a ~44s stall with snapshot_refresh_in_flight between lazy_vm_prebuild_evolution_done and lazy_vm_prebuild_knowledge_start.",
+  "description": "Live proof after the Control/UIBridge birth fix showed a 42-44s UI stall while optional lazy VM prebuild created visual panels that triggered their refresh timers. Resource telemetry also relaunched expensive Windows probes between routes. Startup must bring up the communication organ first and leave optional panels on demand.",
+  "resume_hint": "Completed in local Windows runtime. _refresh_prebuild_snapshot_async() now returns whether it spawned work and skips expensive PowerShell/CIM probes when a cached snapshot is fresh or a refresh was recently attempted. The startup prebuild chain now builds only route='control' so Evolution/Knowledge/Capture refresh work does not compete with chat during startup.",
+  "next_action": "Restart IABV through the desktop shortcut and verify runtime_audit reaches lazy_vm_prebuild_done after control without lazy_vm_prebuild_evolution_start/knowledge_start during startup, and without a ~42s ui_event_loop_stall.",
   "metadata": {
     "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
     "covered_by_commit": "local_runtime_p034",
-    "root_cause": "optional_prebuild_relaunched_expensive_resource_snapshot_between_routes",
+      "root_cause": "optional_visual_panel_prebuild_triggered_refresh_during_startup",
     "live_evidence": {
       "incident_report": "data/evolution/incident_reports/freeze_20260518_013825_621516.json",
       "stall_duration_ms": 44456,
       "phase_gap": "lazy_vm_prebuild_evolution_done -> lazy_vm_prebuild_knowledge_start",
-      "bootstrap_flags": "snapshot_refresh_in_flight=true"
+      "bootstrap_flags_initial": "snapshot_refresh_in_flight=true",
+      "bootstrap_flags_after_snapshot_budget": "snapshot_refresh_in_flight=false",
+      "confirmed_stack": "EvolutionCenterViewModel.refresh -> dataChanged.emit"
     },
     "unresolved": [
       "live_restart_after_snapshot_budget_fix_pending",

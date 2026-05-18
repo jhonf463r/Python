@@ -811,6 +811,25 @@ class TestDominantPhaseDuringPrebuild:
 
         assert mock_snap.call_count == 0
 
+    def test_startup_prebuild_builds_control_only(self):
+        """Startup prebuild must not build optional visual panels.
+
+        Live proof showed EvolutionCenterViewModel.refresh() could freeze the
+        UI during startup even though the user was trying to chat. Optional
+        panels remain on-demand; only control/UIBridge is prebuilt.
+        """
+        bs = _make_bootstrap()
+        _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
+        built: list[str] = []
+
+        with patch.object(bs, '_ensure_vm_for_route',
+                          side_effect=lambda route: built.append(route)):
+            with patch('iabv_v15.bootstrap.QTimer') as MockQTimer:
+                MockQTimer.singleShot = MagicMock(side_effect=lambda ms, fn: fn())
+                bs._build_all_lazy_vms()
+
+        assert built == ['control']
+
 
 # ------------------------------------------------------------------ #
 # 13. Prebuild pauses when background startup is active
