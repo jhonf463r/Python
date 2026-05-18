@@ -4488,14 +4488,18 @@ class ControlCenterViewModel(QObject):
     )
     _INCIDENT_SHOW_TOKENS: tuple[str, ...] = (
         'abreme la ventana', 'ábreme la ventana', 'abre la ventana',
+        'abreme la venta', 'ábreme la venta', 'abre la venta',
         'muestrame', 'muéstrame', 'donde esta', 'dónde está',
         'donde tienes el problema', 'dónde tienes el problema',
+        'donde se te presenta', 'dónde se te presenta',
         'cual ventana', 'cuál ventana', 'abrelo', 'ábrelo',
         'ensename', 'enséñame',
     )
     _INCIDENT_VISIBILITY_TOKENS: tuple[str, ...] = (
         'no veo', 'no aparece', 'a mi si me funciona', 'a mí sí me funciona',
         'yo si veo', 'yo sí veo', 'no tengo ese problema',
+        'no hay verificacion', 'no hay verificación', 'funciona bien',
+        'se abre bien',
     )
     _INCIDENT_PROFILE_TOKENS: tuple[str, ...] = (
         'ya inicie sesion', 'ya inicié sesión', 'mi chrome',
@@ -4542,6 +4546,11 @@ class ControlCenterViewModel(QObject):
             for name, score in list(scores.items()):
                 if score > 0:
                     scores[name] = score + 0.2
+        if scores.get('retry_done', 0.0) > 0 and any(token in lowered for token in (
+            'ya ', 'done', 'i did it', 'funciona bien',
+            'no hay verificacion', 'no hay verificación',
+        )):
+            scores['retry_done'] += 0.5
         if time.time() - float(incident.get('created_at') or 0.0) < 180:
             for name, score in list(scores.items()):
                 if score > 0:
@@ -4626,7 +4635,20 @@ class ControlCenterViewModel(QObject):
                     'Cuando termines, escribe "ya lo hice".'
                 )
             else:
-                response = self._build_incident_help_response(incident, focus_failed=True)
+                opened = self._open_incident_problem_window(incident)
+                if opened.get('opened'):
+                    action_taken = 'incident_profile_window_opened'
+                    response = (
+                        f'Abrí una ventana del perfil exacto que IABV usa para '
+                        f'{incident.get("assistant_title", "ChatGPT")}: '
+                        f'{opened.get("profile_label", incident.get("profile_label", ""))}. '
+                        'Si en esa ventana no aparece verificacion y ChatGPT funciona normal, '
+                        'el bloqueo anterior probablemente quedo stale. En ese caso escribe '
+                        '"ya funciona" o "ya lo hice" y ejecutare un retest gobernado. '
+                        'No voy a asumir que tu Chrome normal y este perfil son la misma sesion.'
+                    )
+                else:
+                    response = self._build_incident_help_response(incident, focus_failed=True)
         elif intent in {'visibility_dispute', 'profile_mismatch'}:
             action_taken = 'explained_profile_difference'
             response = (
@@ -4713,6 +4735,29 @@ class ControlCenterViewModel(QObject):
             except Exception:
                 continue
         if target_hwnd is None:
+            candidates = self._find_incident_window_candidates(incident)
+            if candidates:
+                selected = candidates[0]
+                try:
+                    target_hwnd = int(selected.get('hwnd') or 0) or None
+                except Exception:
+                    target_hwnd = None
+                try:
+                    incident['hwnd'] = target_hwnd
+                    incident['target_window_title'] = str(selected.get('title') or '')
+                    incident['target_pid'] = int(selected.get('pid') or 0)
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'incident_window_candidate_selected',
+                        incident_id=incident_id,
+                        pid=int(selected.get('pid') or 0),
+                        title=str(selected.get('title') or '')[:120],
+                        profile_match=str(selected.get('profile_match') or '')[:80],
+                        visible=bool(selected.get('visible')),
+                    )
+                except Exception:
+                    pass
+        if target_hwnd is None:
             try:
                 snapshot = self._current_world_model()
                 for win in (snapshot.active_windows or []):
@@ -4742,10 +4787,245 @@ class ControlCenterViewModel(QObject):
             except Exception:
                 pass
         try:
-            self._resolve_incident_frame('unresolved')
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'incident_followup_window_focus_unresolved',
+                incident_id=incident_id,
+                reason='target_window_not_found_for_incident_profile',
+                profile_label=str(incident.get('profile_label') or ''),
+            )
         except Exception:
             pass
         return False
+
+    def _open_incident_problem_window(self, incident: dict[str, Any]) -> dict[str, Any]:
+        """Open the exact browser profile attached to the active incident."""
+        assistant_kind = str(incident.get('assistant_kind') or 'chatgpt').strip().lower() or 'chatgpt'
+        url = 'https://claude.ai/' if assistant_kind == 'claude' else 'https://chatgpt.com/'
+        profile_label = str(incident.get('profile_label') or incident.get('browser_profile') or '').lower()
+        try:
+            import subprocess
+            workspace = Path(str(getattr(getattr(self, 'config', None), 'workspace_root', '') or Path.cwd()))
+            profile_name = (
+                f'{assistant_kind}_user_bridge'
+                if 'user_bridge' in profile_label or 'cdp' in profile_label
+                else f'{assistant_kind}_program_session'
+            )
+            profile_dir = (
+                workspace
+                / 'data'
+                / 'tool_teaching'
+                / 'external_assistants'
+                / profile_name
+                / 'browser_profile'
+            )
+            profile_dir.mkdir(parents=True, exist_ok=True)
+            args = [
+                self._find_chrome_executable(),
+                f'--user-data-dir={profile_dir}',
+                '--no-first-run',
+                '--new-window',
+                url,
+            ]
+            if profile_name.endswith('_user_bridge'):
+                args.insert(1, '--remote-debugging-port=9222')
+            proc = subprocess.Popen(
+                args,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'incident_problem_profile_window_opened',
+                    incident_id=str(incident.get('incident_id') or ''),
+                    assistant_kind=assistant_kind,
+                    profile_label=profile_name,
+                    pid=getattr(proc, 'pid', None),
+                )
+            except Exception:
+                pass
+            return {
+                'opened': True,
+                'assistant_kind': assistant_kind,
+                'profile_label': profile_name,
+                'profile_dir': str(profile_dir),
+                'pid': getattr(proc, 'pid', None),
+                'url': url,
+            }
+        except Exception as exc:
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'incident_problem_profile_window_open_failed',
+                    incident_id=str(incident.get('incident_id') or ''),
+                    assistant_kind=assistant_kind,
+                    error=type(exc).__name__,
+                )
+            except Exception:
+                pass
+            return {
+                'opened': False,
+                'assistant_kind': assistant_kind,
+                'error': f'{type(exc).__name__}: {exc}'[:240],
+            }
+
+    @staticmethod
+    def _normalize_path_fragment(value: str) -> str:
+        return str(value or '').replace('\\\\', '/').replace('\\', '/').lower()
+
+    def _incident_profile_fragments(self, incident: dict[str, Any]) -> list[str]:
+        raw_values = [
+            incident.get('browser_profile'),
+            incident.get('profile_label'),
+            incident.get('selected_browser_or_profile'),
+        ]
+        fragments: list[str] = []
+        for raw in raw_values:
+            normalized = self._normalize_path_fragment(str(raw or ''))
+            if normalized:
+                fragments.append(normalized)
+                name = normalized.rstrip('/').split('/')[-1]
+                if name:
+                    fragments.append(name)
+        assistant_kind = str(incident.get('assistant_kind') or '').lower()
+        if assistant_kind == 'chatgpt':
+            joined = ' '.join(fragments)
+            if 'user_bridge' in joined or 'cdp' in joined:
+                fragments.append('chatgpt_user_bridge')
+            elif 'program_session' in joined:
+                fragments.append('chatgpt_program_session')
+            else:
+                fragments.extend([
+                    'chatgpt_program_session',
+                    'chatgpt_user_bridge',
+                    'external_assistants/chatgpt',
+                ])
+        elif assistant_kind == 'claude':
+            joined = ' '.join(fragments)
+            if 'user_bridge' in joined or 'cdp' in joined:
+                fragments.append('claude_user_bridge')
+            elif 'program_session' in joined:
+                fragments.append('claude_program_session')
+            else:
+                fragments.extend([
+                    'claude_program_session',
+                    'claude_user_bridge',
+                    'external_assistants/claude',
+                ])
+        return [item for item in dict.fromkeys(fragments) if item]
+
+    @staticmethod
+    def _chrome_process_command_lines(timeout: float = 2.0) -> dict[int, str]:
+        if os.name != 'nt':
+            return {}
+        try:
+            import subprocess
+            script = (
+                "Get-CimInstance Win32_Process -Filter \"name='chrome.exe'\" "
+                "| Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress"
+            )
+            completed = subprocess.run(
+                ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script],
+                capture_output=True,
+                text=True,
+                timeout=max(float(timeout or 2.0), 0.5),
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+            if completed.returncode != 0 or not completed.stdout.strip():
+                return {}
+            data = json.loads(completed.stdout)
+            rows = data if isinstance(data, list) else [data]
+            result: dict[int, str] = {}
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    pid = int(row.get('ProcessId') or 0)
+                except Exception:
+                    pid = 0
+                if pid:
+                    result[pid] = str(row.get('CommandLine') or '')
+            return result
+        except Exception:
+            return {}
+
+    def _find_incident_window_candidates(self, incident: dict[str, Any]) -> list[dict[str, Any]]:
+        """Find windows owned by the Chrome profile named in the incident.
+
+        This avoids focusing the user's normal Chrome when the active incident
+        belongs to IABV's isolated or governed bridge profile.
+        """
+        if os.name != 'nt':
+            return []
+        command_lines = self._chrome_process_command_lines(timeout=2.0)
+        if not command_lines:
+            return []
+        profile_fragments = self._incident_profile_fragments(incident)
+        matching_pids: dict[int, str] = {}
+        for pid, cmdline in command_lines.items():
+            normalized_cmd = self._normalize_path_fragment(cmdline)
+            for fragment in profile_fragments:
+                if fragment and fragment in normalized_cmd:
+                    matching_pids[pid] = fragment
+                    break
+        if not matching_pids:
+            return []
+
+        try:
+            import ctypes
+            from ctypes import wintypes
+            user32 = ctypes.windll.user32
+            candidates: list[dict[str, Any]] = []
+
+            @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+            def enum_proc(hwnd, lparam):  # pragma: no cover - Windows only
+                pid = wintypes.DWORD()
+                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                pid_int = int(pid.value or 0)
+                if pid_int not in matching_pids:
+                    return True
+                class_buffer = ctypes.create_unicode_buffer(256)
+                try:
+                    user32.GetClassNameW(hwnd, class_buffer, len(class_buffer))
+                    class_name = str(class_buffer.value or '').strip()
+                except Exception:
+                    class_name = ''
+                length = user32.GetWindowTextLengthW(hwnd)
+                title = ''
+                if length > 0:
+                    buffer = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buffer, len(buffer))
+                    title = str(buffer.value or '').strip()
+                title_lower = title.lower()
+                class_lower = class_name.lower()
+                visible = bool(user32.IsWindowVisible(hwnd))
+                if title_lower in {'default ime', 'msctfime ui'}:
+                    return True
+                if not visible and class_lower != 'chrome_widgetwin_1':
+                    return True
+                if not title and class_lower != 'chrome_widgetwin_1':
+                    return True
+                candidates.append({
+                    'hwnd': int(hwnd),
+                    'pid': pid_int,
+                    'title': title,
+                    'class_name': class_name,
+                    'visible': visible,
+                    'profile_match': matching_pids[pid_int],
+                })
+                return True
+
+            user32.EnumWindows(enum_proc, 0)
+            candidates.sort(key=lambda item: (
+                not bool(item.get('visible')),
+                'chrome_widget' not in str(item.get('class_name') or '').lower(),
+                not bool(str(item.get('title') or '').strip()),
+            ))
+            return candidates
+        except Exception:
+            return []
 
     def _external_failure_followup_can_recover_from_audit(self, lowered_message: str) -> bool:
         """Return True when a message likely refers to a recent external block.
@@ -5575,6 +5855,8 @@ class ControlCenterViewModel(QObject):
         'ya lo hice', 'ya lo hise', 'ya complete', 'a mi si me funciona',
         'a mi me funciona', 'ya pase el captcha', 'ya verifique',
         'ya esta listo', 'ya lo resolvi', 'done', 'i did it',
+        'ya funciona', 'funciona bien', 'no hay verificacion',
+        'no hay verificación', 'no pide verificacion', 'no pide verificación',
     )
 
     def _try_handle_security_verification_retest(self, message: str) -> bool:

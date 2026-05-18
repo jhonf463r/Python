@@ -70,12 +70,16 @@ def _incident_stub(tmp_path: Path | None = None) -> SimpleNamespace:
         '_try_handle_incident_followup',
         '_build_incident_help_response',
         '_try_focus_incident_window',
+        '_open_incident_problem_window',
+        '_incident_profile_fragments',
+        '_find_incident_window_candidates',
         '_external_failure_indicates_security_verification',
         '_security_verification_assistant_kind',
         '_recover_external_failure_from_runtime_audit',
         '_external_failure_followup_can_recover_from_audit',
     )
     stub._describe_user_help_needed = ControlCenterViewModel._describe_user_help_needed
+    stub._normalize_path_fragment = ControlCenterViewModel._normalize_path_fragment
     return stub
 
 
@@ -134,6 +138,146 @@ def test_show_problem_attempts_window_focus(tmp_path: Path) -> None:
 
     stub._try_focus_incident_window.assert_called_once()
     assert 'Abrí o enfoqué' in stub._latest_response_text
+
+
+def test_show_problem_tolerates_venta_typo(tmp_path: Path) -> None:
+    stub = _incident_stub(tmp_path)
+    incident = stub._maybe_create_active_incident_frame(
+        assistant_title='ChatGPT',
+        assistant_kind='chatgpt',
+        terminal_state='blocked_by_security_verification',
+        meta='browser_security_verification',
+        dispatch_id='d-typo',
+    )
+
+    classified = stub._classify_incident_followup_intent(
+        'abre la venta donde se te presenta la verificacion de seguridad',
+        incident,
+    )
+
+    assert classified['intent'] == 'show_problem'
+
+
+def test_focus_uses_profile_specific_candidate_before_generic_world_model(tmp_path: Path) -> None:
+    stub = _incident_stub(tmp_path)
+    incident = stub._maybe_create_active_incident_frame(
+        assistant_title='ChatGPT',
+        assistant_kind='chatgpt',
+        terminal_state='blocked_by_security_verification',
+        meta='browser_security_verification',
+        dispatch_id='d-focus',
+    )
+    stub._find_incident_window_candidates = MagicMock(return_value=[{
+        'hwnd': 4242,
+        'pid': 6376,
+        'title': 'ChatGPT - Google Chrome',
+        'visible': True,
+        'profile_match': 'chatgpt_program_session',
+    }])
+
+    called: list[int] = []
+
+    class FakeUser32:
+        def ShowWindow(self, hwnd, mode):
+            called.append(int(hwnd))
+            return 1
+
+        def SetForegroundWindow(self, hwnd):
+            called.append(int(hwnd))
+            return 1
+
+    class FakeCtypes:
+        windll = SimpleNamespace(user32=FakeUser32())
+
+    import sys
+    original = sys.modules.get('ctypes')
+    sys.modules['ctypes'] = FakeCtypes()
+    try:
+        assert stub._try_focus_incident_window(incident) is True
+    finally:
+        if original is not None:
+            sys.modules['ctypes'] = original
+        else:
+            sys.modules.pop('ctypes', None)
+
+    assert called == [4242, 4242]
+    assert incident['target_pid'] == 6376
+    assert incident['target_window_title'] == 'ChatGPT - Google Chrome'
+
+
+def test_focus_unresolved_keeps_incident_active(tmp_path: Path) -> None:
+    stub = _incident_stub(tmp_path)
+    incident = stub._maybe_create_active_incident_frame(
+        assistant_title='ChatGPT',
+        assistant_kind='chatgpt',
+        terminal_state='blocked_by_security_verification',
+        meta='browser_security_verification',
+        dispatch_id='d-unresolved',
+    )
+    stub._find_incident_window_candidates = MagicMock(return_value=[])
+
+    assert stub._try_focus_incident_window(incident) is False
+    assert stub._get_active_incident() is not None
+    assert not incident.get('resolved')
+
+
+def test_show_problem_opens_exact_profile_when_focus_missing(tmp_path: Path) -> None:
+    stub = _incident_stub(tmp_path)
+    stub._maybe_create_active_incident_frame(
+        assistant_title='ChatGPT',
+        assistant_kind='chatgpt',
+        terminal_state='blocked_by_security_verification',
+        meta='browser_security_verification',
+        dispatch_id='d-open',
+    )
+    stub._try_focus_incident_window = MagicMock(return_value=False)
+    stub._open_incident_problem_window = MagicMock(return_value={
+        'opened': True,
+        'profile_label': 'chatgpt_program_session',
+    })
+
+    assert stub._try_handle_incident_followup('abre la ventana donde tienes el problema') is True
+
+    stub._open_incident_problem_window.assert_called_once()
+    assert 'perfil exacto' in stub._latest_response_text
+    assert 'ya funciona' in stub._latest_response_text
+
+
+def test_ya_funciona_classifies_as_retest_done(tmp_path: Path) -> None:
+    stub = _incident_stub(tmp_path)
+    incident = stub._maybe_create_active_incident_frame(
+        assistant_title='ChatGPT',
+        assistant_kind='chatgpt',
+        terminal_state='blocked_by_security_verification',
+        meta='browser_security_verification',
+        dispatch_id='d-ready',
+    )
+
+    classified = stub._classify_incident_followup_intent('ya funciona, no hay verificacion', incident)
+
+    assert classified['intent'] == 'retry_done'
+
+
+def test_profile_fragments_include_program_session(tmp_path: Path) -> None:
+    stub = _incident_stub(tmp_path)
+    fragments = stub._incident_profile_fragments({
+        'assistant_kind': 'chatgpt',
+        'browser_profile': r'C:\x\external_assistants\chatgpt_program_session\browser_profile',
+    })
+
+    assert 'chatgpt_program_session' in fragments
+    assert 'chatgpt_user_bridge' not in fragments
+
+
+def test_profile_fragments_keep_user_bridge_separate(tmp_path: Path) -> None:
+    stub = _incident_stub(tmp_path)
+    fragments = stub._incident_profile_fragments({
+        'assistant_kind': 'chatgpt',
+        'browser_profile': r'C:\x\external_assistants\chatgpt_user_bridge\browser_profile',
+    })
+
+    assert 'chatgpt_user_bridge' in fragments
+    assert 'chatgpt_program_session' not in fragments
 
 
 def test_bridge_launch_intent_delegates_to_existing_handler(tmp_path: Path) -> None:
