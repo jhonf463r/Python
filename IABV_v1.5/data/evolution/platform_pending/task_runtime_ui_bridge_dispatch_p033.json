@@ -1,0 +1,26 @@
+{
+  "id": "runtime_ui_bridge_dispatch_p033",
+  "title": "P0.33: UIBridge queued message dispatch hardening",
+  "status": "COMPLETED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Live proof after P0.33 showed UIBridge listening but send_message reached bridge_chat_queued without bridge_chat_dispatched. The bridge now uses QMetaObject.invokeMethod with QueuedConnection first and falls back to the existing Qt signal.",
+  "resume_hint": "Completed in local Windows runtime. send_message_from_bridge returns dispatch_method so queued-vs-dispatched issues remain auditable.",
+  "next_action": "After restart, send a UIBridge chat message and verify bridge_chat_queued is followed by bridge_chat_dispatched.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "covered_by_commit": "local_runtime_p033",
+    "root_cause": "bridge_chat_queued_without_qt_dispatch",
+    "tests": {
+      "focused": "20 passed",
+      "regression": "136 passed"
+    },
+    "unresolved": [
+      "live_bridge_dispatch_after_restart_pending"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "A runtime bridge that accepts messages but does not dispatch them creates a blind spot in automated live proof and external audit. This is an observability transport fix, not a routing decision.",
+  "created_at": "2026-05-18T00:30:00Z",
+  "updated_at": "2026-05-18T00:30:00Z"
+}

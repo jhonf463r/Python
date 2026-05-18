@@ -10615,11 +10615,24 @@ class ControlCenterViewModel(QObject):
             )
         except Exception:
             pass
-        self.bridgeChatRequested.emit(message)
+        dispatched = False
+        try:
+            from PySide6.QtCore import Q_ARG, QMetaObject, Qt
+            dispatched = bool(QMetaObject.invokeMethod(
+                self,
+                '_dispatch_bridge_chat',
+                Qt.ConnectionType.QueuedConnection,
+                Q_ARG(str, message),
+            ))
+        except Exception:
+            dispatched = False
+        if not dispatched:
+            self.bridgeChatRequested.emit(message)
         return {
             'status': 'queued',
             'text': message,
             'chat_session_id': self._chat_session_id,
+            'dispatch_method': 'qmetaobject' if dispatched else 'signal',
         }
 
     @Slot(str)
