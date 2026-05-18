@@ -853,6 +853,8 @@ class OperationalSelfExaminationService:
         # P0.32: detect repeated isolated profile blocks.
         findings.extend(self._isolated_profile_block_findings())
 
+        # P0.37: detect incident followup falling to local chat.
+        findings.extend(self._incident_followup_local_fallback_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -8662,6 +8664,72 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        return findings
+
+    # -- P0.37: incident followup falling to local chat --
+    def _incident_followup_local_fallback_findings(self) -> list[SelfExaminationFinding]:
+        """Detect when user help offers after external blocks fall to local chat.
+
+        Reads runtime audit for the pattern:
+        blocked_by_security_verification followed by chat inference
+        without an incident_followup_intent_classified in between.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+        block_then_local = 0
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                saw_block = False
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    if kind == 'dispatch_terminal':
+                        ts = str(entry.get('data', {}).get('terminal_state', ''))
+                        if 'blocked_by_security_verification' in ts:
+                            saw_block = True
+                    elif kind == 'incident_followup_intent_classified':
+                        saw_block = False
+                    elif kind == 'external_failure_followup_answered':
+                        saw_block = False
+                    elif saw_block and kind in ('chat_inference_started', 'orchestrator_inference'):
+                        block_then_local += 1
+                        saw_block = False
+        except Exception:
+            pass
+        if block_then_local >= 2:
+            findings.append(SelfExaminationFinding(
+                category='incident_followup_falls_to_local_chat',
+                severity=IssueSeverity.MEDIUM,
+                title='Help offers after external block fall to local chat',
+                summary=(
+                    f'{block_then_local} veces una pregunta de ayuda post-bloqueo '
+                    'externo cayo al chat local en vez de resolverse con el '
+                    'incident frame. El usuario quiere ayudar a resolver '
+                    'el bloqueo visible pero el sistema no convierte esa '
+                    'ayuda en accion guiada.'
+                ),
+                recommendation=(
+                    'Verificar que _try_handle_incident_followup esta activo '
+                    'en sendChat y que ActiveIncidentFrame se crea en '
+                    '_remember_external_failure para blocked terminal states.'
+                ),
+                confidence=0.85,
+                metadata={'local_fallback_count': block_then_local},
+            ))
         return findings
 
 
