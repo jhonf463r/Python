@@ -1,32 +1,34 @@
 {
   "id": "runtime_security_preflight_classification_p036",
   "title": "P0.36: Security-verification preflight must be a causal terminal state",
-  "status": "UNRESOLVED",
+  "status": "COMPLETED",
   "category": "runtime_observability",
   "priority": "P0",
   "description": "After P0.35 live verification, the external ChatGPT flow advanced past observation permission and reached a browser security verification block. The runtime still emitted terminal_state=failed_with_actionable_reason instead of blocked_by_security_verification, weakening OSES, follow-up continuity, and user guidance.",
   "resume_hint": "Implemented locally in ControlCenterViewModel._blocked_external_consultation_result(): preflight diagnostic_category/external_state_flags/reason containing browser_security_verification now returns terminal_state=blocked_by_security_verification, block_type=browser_security_verification, and the structured security handoff message.",
   "next_action": "Restart IABV so P0.36 is loaded, reproduce the ChatGPT query after observation permission is granted, and verify dispatch_terminal.terminal_state is blocked_by_security_verification unless the user has already resolved the ChatGPT challenge and a response is captured.",
   "metadata": {
-    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
-    "covered_by_commit": "local_pending",
+    "verification_status": "LIVE_VERIFIED",
+    "covered_by_commit": "c984bdfea209009e5f82ebabc84964012da2b139",
     "root_cause": "security_preflight_block_was_classified_as_generic_actionable_failure",
     "live_evidence": {
       "observed_after_p035": "permission grant no longer repeated; next block reason was ChatGPT web asistido quedo bloqueado por una verificacion de seguridad del sitio",
       "incorrect_terminal_before_fix": "failed_with_actionable_reason",
-      "expected_terminal_after_fix": "blocked_by_security_verification"
+      "expected_terminal_after_fix": "blocked_by_security_verification",
+      "verified_runtime_head": "c984bdfea209009e5f82ebabc84964012da2b139",
+      "verified_dispatch_terminal": "blocked_by_security_verification",
+      "verified_bridge_context": "assistant_profile_context_reported with cdp_available=true"
     },
     "tests": {
       "focused": "tests/test_runtime_p036_security_preflight_classification.py + p023/p027 security regression",
       "regression": "P0.22/P0.1/P0 antifreeze + world model permission override"
     },
     "unresolved": [
-      "restart_required_for_live_runtime_to_load_p036",
       "actual_chatgpt_response_capture_pending_after_user_resolves_security_or_login_in_bridge_profile"
     ]
   },
   "dependency_missing": "",
   "reason": "A metacognitive runtime cannot learn from generic failures. Browser security verification is a distinct causal state and must stay distinct from permission, resource pressure, and generic failure.",
   "created_at": "2026-05-18T02:46:00Z",
-  "updated_at": "2026-05-18T02:46:00Z"
+  "updated_at": "2026-05-18T03:01:00Z"
 }
