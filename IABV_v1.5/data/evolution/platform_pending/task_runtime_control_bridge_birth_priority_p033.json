@@ -1,0 +1,26 @@
+{
+  "id": "runtime_control_bridge_birth_priority_p033",
+  "title": "P0.33: Control/UIBridge birth has priority over resource snapshot prebuild gates",
+  "status": "COMPLETED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Live proof after the UiOnly launcher fix showed the Python UI process stayed alive but UIBridge was unavailable because lazy VM prebuild paused on resource_snapshot_refresh_in_flight before constructing the control route. The control route owns the chat surface and bridge, so it must be born before optional resource-gated prebuild continues.",
+  "resume_hint": "Completed in local Windows runtime. _should_pause_prebuild() now bypasses resource snapshot and recent-stall gates only for route='control' after heavy startup phases have cleared. Other routes remain governed.",
+  "next_action": "Restart IABV and verify runtime_audit reaches lazy_vm_prebuild_control_done/UIBridgeServer started even while startup_truth_refresh/resource snapshots are still timing out or refreshing.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "covered_by_commit": "local_runtime_p033",
+    "root_cause": "resource_snapshot_refresh_in_flight_blocked_control_vm_birth",
+    "tests": {
+      "focused": "112 prebuild/start/pr360 tests passed",
+      "regression": "250 passed"
+    },
+    "unresolved": [
+      "live_uibridge_birth_under_snapshot_refresh_pending"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "The universal loop must prioritize its communication organ before optional metacognitive prebuild. If the app cannot receive user input, it cannot explain, remediate, or learn from the failure.",
+  "created_at": "2026-05-18T01:35:00Z",
+  "updated_at": "2026-05-18T01:35:00Z"
+}

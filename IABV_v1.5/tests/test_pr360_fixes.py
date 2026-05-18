@@ -74,13 +74,15 @@ class FakeBootstrap:
         self._startup_followup_active = False
         self._push_bootstrap_flags_to_watchdog()
 
-    def _should_pause_prebuild(self) -> str | None:
+    def _should_pause_prebuild(self, route: str = 'capture') -> str | None:
         if self._deferred_setup_active:
             return 'startup_background_active:deferred_post_window_setup'
         if self._truth_refresh_active:
             return 'startup_background_active:startup_truth_refresh'
         if self._startup_evolution_active:
             return 'startup_background_active:startup_evolution'
+        if route == 'control':
+            return None
         if (self._prebuild_snapshot_refresh_in_flight
                 and self._startup_followup_active):
             return 'resource_snapshot_refresh_in_flight'
@@ -145,8 +147,15 @@ class TestSnapshotRefreshInFlightPause:
         bs = FakeBootstrap()
         bs._prebuild_snapshot_refresh_in_flight = True
         bs._startup_followup_active = True
-        reason = bs._should_pause_prebuild()
+        reason = bs._should_pause_prebuild('capture')
         assert reason == 'resource_snapshot_refresh_in_flight'
+
+    def test_control_route_not_paused_by_refresh_in_flight(self):
+        bs = FakeBootstrap()
+        bs._prebuild_snapshot_refresh_in_flight = True
+        bs._startup_followup_active = True
+        reason = bs._should_pause_prebuild('control')
+        assert reason is None
 
     def test_no_pause_when_refresh_in_flight_but_followup_not_active(self):
         """refresh_in_flight alone (no startup_followup) does NOT pause."""

@@ -3549,6 +3549,13 @@ class AppBootstrap:
         if self._startup_evolution_active:
             return 'startup_background_active:startup_evolution'
 
+        # The control VM owns the local chat surface and UIBridge.  It is the
+        # interaction organ for the one-window contract, so it must be allowed
+        # to come online even when resource snapshots are still refreshing.
+        # Later routes remain governed by resource/stall gates.
+        if route == 'control':
+            return None
+
         # 0b. Snapshot refresh in-flight during extended startup.
         # Even if a cached snapshot exists, a refresh in-flight means
         # resource data may be stale.  During startup_followup_active

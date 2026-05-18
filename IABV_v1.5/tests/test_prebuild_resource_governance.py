@@ -173,7 +173,7 @@ class TestPrebuildPausesHighRAM:
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=80.0))
 
-        reason = bs._should_pause_prebuild('control', ['capture', 'evolution'])
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason is not None
         assert 'ram_pressure' in reason
@@ -182,7 +182,7 @@ class TestPrebuildPausesHighRAM:
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=95.0))
 
-        reason = bs._should_pause_prebuild('control', [])
+        reason = bs._should_pause_prebuild('capture', [])
 
         assert reason is not None
         assert 'ram_pressure:critical' in reason
@@ -340,13 +340,13 @@ class TestTimelineRecordsPaused:
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=85.0))
 
-        reason = bs._should_pause_prebuild('control', ['capture'])
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason is not None
         bs._prebuild_paused = True
-        bs._prebuild_paused_routes = ['control', 'capture']
+        bs._prebuild_paused_routes = ['capture', 'evolution']
         assert bs._prebuild_paused is True
-        assert 'control' in bs._prebuild_paused_routes
+        assert 'capture' in bs._prebuild_paused_routes
 
 
 # ------------------------------------------------------------------ #
@@ -425,7 +425,7 @@ class TestShouldPauseNeverCallsSnapshotSync:
         ):
             import time as _t
             start = _t.time()
-            reason = bs._should_pause_prebuild('control', [])
+            reason = bs._should_pause_prebuild('capture', [])
             elapsed = _t.time() - start
 
         # Must return immediately (< 0.5s) — never blocks
@@ -484,7 +484,7 @@ class TestStaleCacheBehavior:
             'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
             return_value=_make_resource_snapshot(),
         ):
-            reason = bs._should_pause_prebuild('control', [])
+            reason = bs._should_pause_prebuild('capture', [])
 
         assert reason == 'resource_snapshot_unavailable'
 
@@ -500,9 +500,26 @@ class TestStaleCacheBehavior:
         bs._prebuild_snapshot_refresh_in_flight = True
         bs._startup_followup_active = False
 
-        reason = bs._should_pause_prebuild('control', [])
+        reason = bs._should_pause_prebuild('capture', [])
 
         assert reason == 'resource_snapshot_pending'
+
+    def test_control_route_bypasses_snapshot_gate_for_bridge_birth(self):
+        """ControlCenter/UIBridge must come online before optional prebuild.
+
+        Live proof showed resource_snapshot_refresh_in_flight can last long
+        enough to leave the app visible but unable to receive chat/bridge
+        commands. The control route is the interaction organ and must not be
+        paused by the resource snapshot gate.
+        """
+        bs = _make_bootstrap()
+        bs._init_prebuild_snapshot_cache()
+        bs._prebuild_snapshot_refresh_in_flight = True
+        bs._startup_followup_active = True
+
+        reason = bs._should_pause_prebuild('control', [])
+
+        assert reason is None
 
     def test_stale_cache_does_not_pause_by_resources(self):
         bs = _make_bootstrap()
@@ -667,7 +684,7 @@ class TestSnapshotPendingRetry:
         bs._prebuild_snapshot_refresh_in_flight = True
         bs._startup_followup_active = False  # isolate snapshot-pending path
 
-        reason = bs._should_pause_prebuild('control', ['capture'])
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason == 'resource_snapshot_pending'
 
@@ -680,7 +697,7 @@ class TestSnapshotPendingRetry:
             'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
             return_value=_make_resource_snapshot(),
         ) as mock_snap:
-            reason = bs._should_pause_prebuild('control', ['capture'])
+            reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason == 'resource_snapshot_unavailable'
         # Refresh should have been triggered
