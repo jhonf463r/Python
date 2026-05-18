@@ -861,6 +861,9 @@ class OperationalSelfExaminationService:
 
         # P0.32+P0.37: detect capabilities promised but unavailable.
         findings.extend(self._capability_promised_but_unavailable_findings())
+
+        # P0.39: detect repeated readiness failures without proof.
+        findings.extend(self._external_readiness_missing_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -8955,6 +8958,115 @@ class OperationalSelfExaminationService:
                     'promised_count': promised_count,
                     'capabilities': capabilities[:5],
                 },
+            ))
+        return findings
+
+    def _external_readiness_missing_findings(self) -> list[SelfExaminationFinding]:
+        """P0.39: detect repeated readiness failures or capability without proof.
+
+        Scans runtime_audit.jsonl for 'external_readiness_assessed' events
+        where action_possible=False. If this happens repeatedly, the system
+        is declaring availability but cannot actually consult.
+        Also detects: build_stale repeated, CDP unavailable repeated,
+        security_verification repeated without resolution.
+        OSES only reports — does not take action.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+        blocked_count = 0
+        block_reasons: list[str] = []
+        stale_count = 0
+        security_count = 0
+        cdp_unavailable_count = 0
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    data = entry.get('data', {})
+                    if kind == 'external_readiness_assessed':
+                        if not data.get('action_possible'):
+                            blocked_count += 1
+                            reason = data.get('blocking_reason', '')
+                            if reason and reason not in block_reasons:
+                                block_reasons.append(reason)
+                            if 'build_stale' in reason:
+                                stale_count += 1
+                            if 'security' in reason:
+                                security_count += 1
+                    if kind == 'web_skill_profile_built':
+                        if data.get('cdp_status') == 'unavailable':
+                            cdp_unavailable_count += 1
+        except Exception:
+            pass
+        if blocked_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='external_readiness_missing',
+                severity=IssueSeverity.HIGH,
+                title='External consultation repeatedly blocked by readiness check',
+                summary=(
+                    f'{blocked_count} intentos de consulta externa bloqueados '
+                    f'por readiness check. '
+                    f'Razones: {", ".join(block_reasons[:5])}.'
+                ),
+                recommendation=(
+                    'Verificar: build actualizado, presion de recursos baja, '
+                    'sesion de navegador lista. No declarar capacidad disponible '
+                    'sin readiness proof.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'blocked_count': blocked_count,
+                    'block_reasons': block_reasons[:5],
+                    'stale_count': stale_count,
+                    'security_count': security_count,
+                },
+            ))
+        if stale_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='build_stale_repeated',
+                severity=IssueSeverity.HIGH,
+                title='Runtime build stale detected repeatedly',
+                summary=(
+                    f'El build del runtime fue detectado como stale {stale_count} '
+                    f'veces. Esto impide consultas externas confiables.'
+                ),
+                recommendation=(
+                    'Alinear el runtime con origin/main. '
+                    'No intentar consultas externas desde un build stale.'
+                ),
+                confidence=0.9,
+                metadata={'stale_count': stale_count},
+            ))
+        if cdp_unavailable_count >= 3:
+            findings.append(SelfExaminationFinding(
+                category='cdp_unavailable_repeated',
+                severity=IssueSeverity.MEDIUM,
+                title='CDP unavailable detected repeatedly',
+                summary=(
+                    f'CDP fue detectado como no disponible {cdp_unavailable_count} '
+                    f'veces. El puente gobernado a Chrome del usuario no funciona.'
+                ),
+                recommendation=(
+                    'Instruir al usuario a abrir Chrome con '
+                    '--remote-debugging-port=9222 si desea usar el puente CDP.'
+                ),
+                confidence=0.8,
+                metadata={'cdp_unavailable_count': cdp_unavailable_count},
             ))
         return findings
 

@@ -6956,6 +6956,179 @@ class ControlCenterViewModel(QObject):
             pass
         return result
 
+    # ── P0.39: Universal Capability Readiness ──
+
+    def _assess_external_readiness(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """Build a universal readiness contract before external consultation.
+
+        Assembles from existing pieces:
+        WorldModelSnapshot, RuntimeAuditTracer, _build_assistant_web_skill_profile,
+        _evaluate_consultation_quiescence, _detect_cdp_available.
+
+        Returns a dict with action_possible=True/False plus structured
+        blocking_reason and next_human_action when not ready.
+        Does NOT create a new service — read-only assembly from existing sources.
+        """
+        now = time.time()
+        title = self._assistant_display_name(assistant_kind)
+        readiness: dict[str, Any] = {
+            'tool_id': f'external_assistant_{self._normalize_provider(assistant_kind)}',
+            'assistant_kind': assistant_kind,
+            'assistant_title': title,
+            'device_state': 'unknown',
+            'build_state': 'unknown',
+            'resource_pressure': 'none',
+            'session_mode': 'unknown',
+            'session_selected': 'unknown',
+            'auth_state': 'unknown',
+            'security_block_state': 'none',
+            'observation_permission': 'unknown',
+            'action_possible': True,
+            'capture_possible': False,
+            'response_capture_mode': 'manual_pasteback',
+            'confidence': 0.0,
+            'blocking_reason': '',
+            'next_human_action': '',
+            'evidence_refs': [],
+            'last_verified_at': now,
+        }
+        blockers: list[str] = []
+
+        # 1. Build staleness check
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            fp = tracer.trace_build_fingerprint(
+                workspace=str(getattr(self.config, 'workspace_root', '')),
+            )
+            if fp.get('stale'):
+                readiness['build_state'] = 'stale'
+                blockers.append('build_stale')
+                readiness['evidence_refs'].append(f'build_head={fp.get("head", "?")[:12]}')
+            else:
+                readiness['build_state'] = 'current'
+                readiness['evidence_refs'].append(f'build_head={fp.get("head", "?")[:12]}')
+        except Exception:
+            readiness['build_state'] = 'unknown'
+
+        # 2. Resource pressure
+        quiescence = self._evaluate_consultation_quiescence(assistant_kind)
+        readiness['resource_pressure'] = quiescence['pressure_level']
+        if quiescence['decision'] != 'run_now':
+            blockers.append(f'resource_pressure_{quiescence["pressure_level"]}')
+            readiness['evidence_refs'].append(f'quiescence={quiescence["decision"]}')
+            readiness['retry_after_s'] = quiescence.get('retry_after_s', 15)
+
+        # 3. Web skill profile (session, auth, window, CDP)
+        profile = self._build_assistant_web_skill_profile(assistant_kind)
+        readiness['session_mode'] = profile['active_session_mode']
+        readiness['auth_state'] = profile['auth_status']
+
+        # 4. CDP probe
+        cdp_status = profile.get('cdp_status', 'unknown')
+        readiness['evidence_refs'].append(f'cdp={cdp_status}')
+        if cdp_status == 'available':
+            readiness['capture_possible'] = True
+            readiness['response_capture_mode'] = 'cdp'
+            readiness['observation_permission'] = 'cdp_available'
+
+        # 5. Session selected
+        import os as _os
+        if _os.environ.get('IABV_PREFER_CDP_SESSION') == '1' and cdp_status == 'available':
+            readiness['session_selected'] = 'governed_user_chrome_cdp'
+        elif profile['active_session_mode'] == 'isolated_profile':
+            readiness['session_selected'] = 'isolated_profile'
+        elif profile['active_session_mode'] == 'manual_pasteback':
+            readiness['session_selected'] = 'manual_handoff'
+        else:
+            readiness['session_selected'] = profile['active_session_mode']
+
+        # 6. Window / hwnd
+        if profile.get('window_status') == 'found':
+            readiness['device_state'] = 'window_found'
+            readiness['evidence_refs'].append(f'hwnd={profile.get("window_hwnd", "?")}')
+        else:
+            readiness['device_state'] = 'no_window'
+
+        # 7. Security block from recent history
+        if profile.get('last_block_reason'):
+            if 'security_verification' in profile['last_block_reason']:
+                readiness['security_block_state'] = 'security_verification'
+                blockers.append('blocked_by_security_verification')
+            elif 'blocked' in profile['last_block_reason']:
+                readiness['security_block_state'] = profile['last_block_reason']
+                blockers.append(profile['last_block_reason'])
+
+        # 8. Capture possible without CDP
+        if not readiness['capture_possible']:
+            if readiness['auth_state'] == 'authenticated' and readiness['device_state'] == 'window_found':
+                readiness['capture_possible'] = True
+                readiness['response_capture_mode'] = 'dom_observation'
+
+        # 9. Confidence score
+        confidence = 1.0
+        if readiness['build_state'] == 'stale':
+            confidence -= 0.3
+        if readiness['resource_pressure'] in ('high', 'critical'):
+            confidence -= 0.2
+        if readiness['security_block_state'] != 'none':
+            confidence -= 0.3
+        if readiness['auth_state'] in ('security_verification', 'logged_out'):
+            confidence -= 0.2
+        if not readiness['capture_possible']:
+            confidence -= 0.1
+        readiness['confidence'] = max(0.0, round(confidence, 2))
+
+        # 10. Overall action_possible + blocking_reason + next_human_action
+        if blockers:
+            if 'build_stale' in blockers:
+                readiness['action_possible'] = False
+                readiness['blocking_reason'] = 'build_stale'
+                readiness['next_human_action'] = (
+                    'El runtime no esta actualizado. Alinea el runtime con '
+                    'origin/main antes de intentar consultas externas.'
+                )
+            elif any('resource_pressure' in b for b in blockers):
+                readiness['action_possible'] = False
+                readiness['blocking_reason'] = f'resource_pressure_{readiness["resource_pressure"]}'
+                readiness['next_human_action'] = quiescence.get('reason', '')
+            elif 'blocked_by_security_verification' in blockers:
+                readiness['action_possible'] = True  # can still attempt, but will likely fail
+                readiness['blocking_reason'] = 'security_verification_recent'
+                profile_path = profile.get('browser_profile_path', '')
+                profile_label = 'chatgpt_program_session/browser_profile'
+                if profile_path:
+                    parts = str(profile_path).replace('\\', '/').split('/')
+                    if len(parts) >= 2:
+                        profile_label = '/'.join(parts[-2:])
+                readiness['next_human_action'] = (
+                    f'IABV usa un perfil aislado ({profile_label}), '
+                    f'no tu Chrome normal. '
+                    f'Resuelve la verificacion/login en la ventana que abrio IABV '
+                    f'y escribe "ya lo hice". '
+                    f'O escribe "usar mi chrome" si tienes Chrome con '
+                    f'--remote-debugging-port abierto.'
+                )
+
+        # Trace the readiness assessment
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_external_readiness(
+                assistant_kind=assistant_kind,
+                action_possible=readiness['action_possible'],
+                confidence=readiness['confidence'],
+                blocking_reason=readiness['blocking_reason'],
+                session_selected=readiness['session_selected'],
+                security_block=readiness['security_block_state'],
+                capture_mode=readiness['response_capture_mode'],
+            )
+        except Exception:
+            pass
+
+        return readiness
+
     _deferred_retry_generation: int = 0
     _DEFERRED_RETRY_COOLDOWN_S: float = 10.0
     _DEFERRED_RETRY_MAX: int = 3
@@ -9643,6 +9816,44 @@ class ControlCenterViewModel(QObject):
 
     def _run_external_consultation(self, assistant_kind: str, *, announce: bool = True) -> bool:
         assistant_title = self._assistant_display_name(assistant_kind)
+
+        # P0.39: Universal readiness check before attempting consultation
+        readiness = self._assess_external_readiness(assistant_kind)
+        if not readiness['action_possible']:
+            msg = (
+                f'No puedo iniciar la consulta a {assistant_title} ahora.\n'
+                f'Razon: {readiness["blocking_reason"]}\n'
+            )
+            if readiness['next_human_action']:
+                msg += f'Accion requerida: {readiness["next_human_action"]}\n'
+            msg += (
+                f'Sesion: {readiness["session_selected"]} | '
+                f'Build: {readiness["build_state"]} | '
+                f'Presion: {readiness["resource_pressure"]} | '
+                f'Confianza: {readiness["confidence"]}'
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = f'readiness_blocked:{readiness["blocking_reason"]}'
+            self._working = False
+            if announce:
+                self._append_message(
+                    'assistant', 'IABV', msg,
+                    f'readiness_blocked:{readiness["blocking_reason"]}',
+                    reasoning_path='capability_readiness',
+                    evidence_tag='observed',
+                )
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            if readiness['blocking_reason'].startswith('resource_pressure'):
+                self._schedule_deferred_consultation_retry(
+                    assistant_kind,
+                    readiness.get('retry_after_s', 15),
+                )
+            return False
+
         self._working = True
         self._busy_label = f'Voy a preparar una consulta con {assistant_title}.'
         self._latest_response_text = (

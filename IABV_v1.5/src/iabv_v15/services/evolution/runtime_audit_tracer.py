@@ -592,6 +592,29 @@ class RuntimeAuditTracer:
             disk_free_gb=disk_free_gb,
         )
 
+    def trace_external_readiness(
+        self,
+        *,
+        assistant_kind: str = '',
+        action_possible: bool = False,
+        confidence: float = 0.0,
+        blocking_reason: str = '',
+        session_selected: str = '',
+        security_block: str = 'none',
+        capture_mode: str = 'manual_pasteback',
+    ) -> dict[str, Any]:
+        """Record P0.39 universal capability readiness assessment."""
+        return self.trace(
+            'external_readiness_assessed',
+            assistant_kind=assistant_kind,
+            action_possible=action_possible,
+            confidence=confidence,
+            blocking_reason=blocking_reason,
+            session_selected=session_selected,
+            security_block=security_block,
+            capture_mode=capture_mode,
+        )
+
     def current_elapsed_ms(self) -> float:
         """Return milliseconds since tracer boot (process-relative)."""
         return round((time.perf_counter() - self._t0) * 1000.0, 1)

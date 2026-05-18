@@ -206,6 +206,7 @@ class PortableContextService:
             self._active_incident_frame_section(now=now),
             self._web_skill_status_section(now=now),
             self._devin_repair_status_section(now=now),
+            self._capability_readiness_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3733,6 +3734,53 @@ class PortableContextService:
             source_refs=['RuntimeAuditTracer'],
             confidence=0.8 if items else 0.3,
             last_updated=now,
+        )
+
+    def _capability_readiness_section(self, *, now) -> PortableContextSection:
+        """P0.39: Export latest capability readiness per assistant. No PII."""
+        items: list[dict[str, Any]] = []
+        seen_assistants: set[str] = set()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            readiness_events = tracer.events(kind='external_readiness_assessed', limit=20)
+            for ev in reversed(readiness_events):
+                data = ev.get('data', {})
+                ak = data.get('assistant_kind', '')
+                if ak in seen_assistants:
+                    continue
+                seen_assistants.add(ak)
+                items.append({
+                    'assistant_kind': ak,
+                    'action_possible': data.get('action_possible', False),
+                    'confidence': data.get('confidence', 0.0),
+                    'blocking_reason': str(data.get('blocking_reason', ''))[:80],
+                    'session_selected': data.get('session_selected', ''),
+                    'security_block': data.get('security_block', 'none'),
+                    'capture_mode': data.get('capture_mode', ''),
+                })
+        except Exception:
+            pass
+        has_ready = any(i.get('action_possible') for i in items)
+        summary = (
+            f'{len(items)} herramientas evaluadas; '
+            + ('al menos 1 lista' if has_ready else 'ninguna lista actualmente')
+        )
+        unresolved: list[str] = []
+        if not items:
+            unresolved.append('no_readiness_data')
+        elif not has_ready:
+            unresolved.append('no_tool_action_possible')
+        return self._section(
+            section_id='capability_readiness',
+            title='External Tool Capability Readiness (P0.39)',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_readiness',
+            source_refs=['RuntimeAuditTracer', '_assess_external_readiness'],
+            confidence=0.8 if items else 0.3,
+            last_updated=now,
+            unresolved_fields=unresolved if unresolved else None,
         )
 
     def _section(
