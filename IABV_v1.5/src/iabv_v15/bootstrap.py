@@ -1778,6 +1778,15 @@ class AppBootstrap:
         self._metacognition_scan_started = True
 
         def _bg_metacognition() -> None:
+            # P0.40 Task F: if user query is pending, defer metacognition
+            watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+            if watchdog is not None and getattr(watchdog, '_query_pending', False):
+                self._tracer.trace(
+                    'startup_heavy_work_deferred_due_to_user_or_stall',
+                    phase='deferred_metacognition',
+                    reason='query_pending',
+                )
+                return
             try:
                 self._timeline.mark(
                     'deferred_metacognition_start', rss_mb=_rss_mb(),
@@ -1981,26 +1990,53 @@ class AppBootstrap:
             daemon=True,
         ).start()
 
+    # P0.40 Task F: startup freeze budget — max ms a single startup
+    # step may block the event loop before being deferred.
+    _STARTUP_FREEZE_BUDGET_MS: float = 1500.0
+
     def _final_startup_truth_refresh(self) -> None:
         """Re-persist OSES and PortableContext after boot is truly complete.
 
-        The early ``_startup_self_examination()`` runs before
-        ``populate_ui_done`` / ``page_loader_ready`` are recorded, so
-        its snapshots freeze a partial view.  This method re-runs the
-        persistence *after* those milestones exist in the timeline JSONL,
-        producing honest ``latest.md`` / ``latest.json`` files.
-
-        Additionally checks if the latest artifacts are stale (>24h) and
-        forces regeneration — this prevents sessions that run for weeks
-        from accumulating 17-day-old metacognition data.
+        P0.40 Task F additions:
+        - If a user query is pending (watchdog.query_pending), skip refresh
+          entirely and trace startup_heavy_work_deferred_due_to_user_or_stall.
+        - If recent UI stall detected (>1500 ms), defer refresh and trace.
+        - OSES finding if truth refresh causes repeated stalls.
 
         Order matters: OSES must refresh FIRST so its review reflects
         the final boot state.  Then PortableContext persists with the
         up-to-date OSES summary — not a stale one.
         """
+        # P0.40: check if user query is pending — defer heavy work
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        query_pending = False
+        recent_stall = False
+        if watchdog is not None:
+            query_pending = getattr(watchdog, '_query_pending', False)
+            recent_stall = self._has_recent_ui_stall(watchdog)
+
+        if query_pending or recent_stall:
+            defer_reason = 'query_pending' if query_pending else 'recent_ui_stall'
+            logger.info(
+                'startup_truth_refresh: deferred due to %s', defer_reason,
+            )
+            self._tracer.trace(
+                'startup_heavy_work_deferred_due_to_user_or_stall',
+                phase='truth_refresh',
+                reason=defer_reason,
+            )
+            self._truth_refresh_active = False
+            self._push_bootstrap_flags_to_watchdog()
+            self._check_startup_followup_done()
+            return
+
         force_refresh = self._metacognition_data_is_stale()
         if force_refresh:
             logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
+
+        import time as _time_budget
+        t0 = _time_budget.perf_counter()
+
         try:
             oses = getattr(self, 'operational_self_examination_service', None)
             if oses is not None:
@@ -2008,6 +2044,21 @@ class AppBootstrap:
                 logger.info('startup_truth_refresh: OSES re-persisted')
         except Exception as exc:
             logger.debug('startup_truth_refresh: OSES failed: %s', exc)
+
+        elapsed_ms = (_time_budget.perf_counter() - t0) * 1000.0
+        if elapsed_ms > self._STARTUP_FREEZE_BUDGET_MS:
+            self._tracer.trace(
+                'startup_truth_refresh_stall_detected',
+                phase='oses_build_review',
+                elapsed_ms=round(elapsed_ms, 1),
+                budget_ms=self._STARTUP_FREEZE_BUDGET_MS,
+            )
+            logger.warning(
+                'startup_truth_refresh: OSES took %.0f ms (budget=%.0f ms)',
+                elapsed_ms, self._STARTUP_FREEZE_BUDGET_MS,
+            )
+
+        t1 = _time_budget.perf_counter()
         try:
             pcs = getattr(self, 'portable_context_service', None)
             if pcs is not None:
@@ -2015,11 +2066,38 @@ class AppBootstrap:
                 logger.info('startup_truth_refresh: PortableContext re-persisted')
         except Exception as exc:
             logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
+
+        elapsed_ms_pcs = (_time_budget.perf_counter() - t1) * 1000.0
+        if elapsed_ms_pcs > self._STARTUP_FREEZE_BUDGET_MS:
+            self._tracer.trace(
+                'startup_truth_refresh_stall_detected',
+                phase='portable_context_build',
+                elapsed_ms=round(elapsed_ms_pcs, 1),
+                budget_ms=self._STARTUP_FREEZE_BUDGET_MS,
+            )
+
         if force_refresh:
             self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
         self._truth_refresh_active = False
         self._push_bootstrap_flags_to_watchdog()
         self._check_startup_followup_done()
+
+    def _has_recent_ui_stall(self, watchdog: Any, threshold_ms: float = 1500.0) -> bool:
+        """P0.40 Task F: check if watchdog recorded a recent UI stall."""
+        try:
+            recent_stalls = getattr(watchdog, '_recent_stalls', [])
+            if not recent_stalls:
+                return False
+            import time as _t
+            now = _t.time()
+            for stall in recent_stalls[-5:]:
+                stall_at = stall.get('at', 0)
+                stall_ms = stall.get('duration_ms', 0)
+                if now - stall_at < 30 and stall_ms > threshold_ms:
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
         """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
