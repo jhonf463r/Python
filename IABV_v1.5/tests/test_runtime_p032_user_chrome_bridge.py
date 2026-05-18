@@ -17,6 +17,7 @@ import json
 import os
 import textwrap
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -157,23 +158,33 @@ class TestCDPLaunchFromUI:
         with patch('subprocess.run', return_value=completed):
             assert viewmodel_cls._chrome_process_running() is True
 
-    def test_launch_request_refuses_to_close_existing_chrome(self, viewmodel_cls):
+    def test_launch_request_uses_governed_bridge_profile(self, viewmodel_cls, tmp_path):
         vm = MagicMock(spec=viewmodel_cls)
         vm._CDP_LAUNCH_PATTERNS = viewmodel_cls._CDP_LAUNCH_PATTERNS
-        vm._chrome_process_running = MagicMock(return_value=True)
+        vm.config = SimpleNamespace(workspace_root=str(tmp_path))
+        vm._find_chrome_executable = MagicMock(return_value='chrome.exe')
+        vm._detect_cdp_available = MagicMock(return_value={
+            'available': True,
+            'browser_version': 'Chrome/125',
+            'error': '',
+        })
         vm.dataChanged = MagicMock()
+        os.environ.pop('IABV_PREFER_CDP_SESSION', None)
 
-        result = viewmodel_cls._try_handle_cdp_launch_request(vm, 'abrir chrome con puente')
+        with patch('subprocess.Popen') as popen:
+            result = viewmodel_cls._try_handle_cdp_launch_request(vm, 'abrir chrome con puente')
 
         assert result is True
-        assert 'Chrome ya esta abierto' in vm._latest_response_text
-        assert 'PowerShell' not in vm._latest_response_text
-        assert 'remote-debugging-port' not in vm._latest_response_text
+        args = popen.call_args.args[0]
+        assert any(str(arg).startswith('--user-data-dir=') for arg in args)
+        assert 'chatgpt_user_bridge' in ' '.join(map(str, args))
+        assert os.environ.get('IABV_PREFER_CDP_SESSION') == '1'
+        assert 'perfil puente' in vm._latest_response_text
 
-    def test_launch_request_sets_preference_when_probe_succeeds(self, viewmodel_cls):
+    def test_launch_request_sets_preference_when_probe_succeeds(self, viewmodel_cls, tmp_path):
         vm = MagicMock(spec=viewmodel_cls)
         vm._CDP_LAUNCH_PATTERNS = viewmodel_cls._CDP_LAUNCH_PATTERNS
-        vm._chrome_process_running = MagicMock(return_value=False)
+        vm.config = SimpleNamespace(workspace_root=str(tmp_path))
         vm._find_chrome_executable = MagicMock(return_value='chrome.exe')
         vm._detect_cdp_available = MagicMock(return_value={
             'available': True,
@@ -189,7 +200,7 @@ class TestCDPLaunchFromUI:
         assert result is True
         assert popen.called
         assert os.environ.get('IABV_PREFER_CDP_SESSION') == '1'
-        assert 'puente CDP' in vm._latest_response_text
+        assert 'perfil puente CDP' in vm._latest_response_text
 
 
 # ---------------------------------------------------------------------------

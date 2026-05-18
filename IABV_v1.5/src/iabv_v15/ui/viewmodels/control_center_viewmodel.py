@@ -5308,8 +5308,10 @@ class ControlCenterViewModel(QObject):
         else:
             options.append(
                 '2) Tu Chrome normal: no esta disponible ahora. '
-                'Para activarla desde IABV, escribe '
-                '"abrir chrome con puente". No necesitas abrir PowerShell.'
+                'Chrome moderno no permite depurar el perfil normal por '
+                'seguridad. Escribe "abrir chrome con puente" para que IABV '
+                'abra un perfil puente gobernado y persistente; si hace falta, '
+                'inicias sesion ahi una sola vez.'
             )
             options.append(
                 '3) Pegado manual: copia la respuesta de ChatGPT y pegala '
@@ -5380,12 +5382,11 @@ class ControlCenterViewModel(QObject):
         return 'chrome.exe'
 
     def _try_handle_cdp_launch_request(self, message: str) -> bool:
-        """Launch Chrome with CDP from the UI after explicit user request.
+        """Launch a governed CDP Chrome profile from the UI after permission.
 
-        This never reads cookies/tokens and never closes an existing Chrome
-        process. If Chrome is already running, the safe action is to ask the
-        user to close it or use manual pasteback; forcing a restart could lose
-        work and would violate the governed handoff.
+        Chrome can reject remote-debugging against the default user data
+        directory. The safe governed path is a separate persistent bridge
+        profile owned by IABV, not the user's normal Chrome profile.
         """
         lowered = message.strip().lower()
         if not any(p in lowered for p in self._CDP_LAUNCH_PATTERNS):
@@ -5402,41 +5403,21 @@ class ControlCenterViewModel(QObject):
         except Exception:
             tracer = None
 
-        if self._chrome_process_running():
-            msg = (
-                'Chrome ya esta abierto. Por seguridad no voy a cerrarlo ni '
-                'reiniciarlo automaticamente, porque podrias perder trabajo. '
-                'Cierra Chrome normalmente y luego escribe "abrir chrome con puente"; '
-                'si prefieres no cerrar nada, pega aqui la respuesta de ChatGPT.'
-            )
-            self._latest_response_text = msg
-            self._latest_response_meta = 'user_chrome_bridge: chrome_already_running'
-            self._append_message(
-                'assistant', 'IABV', msg,
-                'user_chrome_bridge_chrome_already_running',
-                reasoning_path='governed_chrome_bridge',
-            )
-            try:
-                if tracer is not None:
-                    tracer.trace_user_browser_bridge(
-                        'cdp_launch_result',
-                        assistant_kind='chatgpt',
-                        cdp_available=False,
-                        session_selected='none',
-                        reason='chrome_already_running',
-                    )
-            except Exception:
-                pass
-            self.dataChanged.emit()
-            return True
-
         try:
             import subprocess
             chrome = self._find_chrome_executable()
+            workspace = Path(str(getattr(getattr(self, 'config', None), 'workspace_root', '') or Path.cwd()))
+            bridge_profile = (
+                workspace / 'data' / 'tool_teaching' / 'external_assistants'
+                / 'chatgpt_user_bridge' / 'browser_profile'
+            )
+            bridge_profile.mkdir(parents=True, exist_ok=True)
             subprocess.Popen(
                 [
                     chrome,
                     '--remote-debugging-port=9222',
+                    f'--user-data-dir={bridge_profile}',
+                    '--no-first-run',
                     '--new-window',
                     'https://chatgpt.com/',
                 ],
@@ -5475,15 +5456,17 @@ class ControlCenterViewModel(QObject):
         if cdp_probe.get('available', False):
             os.environ['IABV_PREFER_CDP_SESSION'] = '1'
             msg = (
-                'Chrome quedo abierto con puente CDP y permiso gobernado activo. '
+                'Chrome quedo abierto con perfil puente CDP gobernado. '
                 'Ahora IABV puede intentar la proxima consulta a ChatGPT usando '
-                'esa ventana. No leo cookies, tokens ni credenciales.'
+                'esa ventana. No leo cookies, tokens ni credenciales. '
+                'Si ChatGPT pide iniciar sesion, hazlo en esa ventana puente; '
+                'quedara persistida para proximas sesiones.'
             )
             meta = 'user_chrome_bridge: cdp_launched'
             session = 'user_chrome_cdp'
         else:
             msg = (
-                'Intente abrir Chrome con puente CDP, pero todavia no responde '
+                'Intente abrir el perfil puente de Chrome con CDP, pero todavia no responde '
                 'en 127.0.0.1:9222. Mantengo el handoff manual: pega aqui la '
                 'respuesta de ChatGPT o vuelve a intentar en unos segundos.'
             )
@@ -5551,8 +5534,9 @@ class ControlCenterViewModel(QObject):
         if not cdp_probe.get('available', False):
             msg = (
                 'No puedo conectarme a tu Chrome. '
-                'Para usar tu sesion activa sin abrir PowerShell, escribe '
-                '"abrir chrome con puente". '
+                'Por seguridad de Chrome no puedo adjuntarme al perfil normal. '
+                'Escribe "abrir chrome con puente" y abrire un perfil gobernado '
+                'desde IABV; si hace falta, inicia sesion ahi una vez. '
                 'Mientras tanto, puedes pegar la respuesta manualmente.'
             )
             self._latest_response_text = msg

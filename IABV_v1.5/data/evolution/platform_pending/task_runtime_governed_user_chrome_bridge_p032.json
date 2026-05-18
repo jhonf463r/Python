@@ -5,8 +5,8 @@
   "category": "runtime_observability",
   "priority": "P0",
   "description": "Closes the root-cause blocker: IABV uses an isolated browser profile (chatgpt_program_session) while the user is logged into their normal Chrome. This blocks external consultation because IABV cannot access the user's authenticated session. P0.32 adds a governed bridge with explicit permission, CDP detection, and manual fallback.",
-  "resume_hint": "Implementation complete and loaded in the Windows runtime. P0.33 follow-up removed the PowerShell/command handoff: if CDP is unavailable, the UI now tells the user to type 'abrir chrome con puente' and can launch Chrome with CDP from inside IABV when Chrome is not already running.",
-  "next_action": "User types 'usar mi chrome'. If CDP is unavailable, type 'abrir chrome con puente'. If Chrome is already running, close Chrome normally first or use manual pasteback. Then retry the ChatGPT consultation.",
+  "resume_hint": "Implementation complete and loaded in the Windows runtime. P0.33 follow-up removed the PowerShell/command handoff and corrected the bridge model: IABV must not attach to the user's normal Chrome profile. It now launches a governed persistent bridge profile from the UI when the user types 'abrir chrome con puente'.",
+  "next_action": "User types 'abrir chrome con puente'. If ChatGPT requests login in that bridge window, the user logs in there once. Then type 'usar mi chrome' and retry the ChatGPT consultation. If CDP remains unavailable, keep manual pasteback and inspect runtime_audit user_browser_bridge events.",
   "metadata": {
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
     "covered_by_pr": "#409 + local_runtime_p033",
@@ -19,15 +19,17 @@
       "6: OSES finding isolated_profile_blocks_user_logged_in_browser when block_count >= 2",
       "7: PortableContext section user_chrome_bridge with cdp_session_active, bridge_events_total, session_mode (no PII)",
       "8: P0.33 local runtime follow-up: removed terminal-command handoff and added governed 'abrir chrome con puente' UI command",
-      "9: P0.33 local runtime follow-up: Chrome process detection now ignores IABV isolated assistant profiles and only blocks on a real user Chrome session"
+      "9: P0.33 local runtime follow-up: Chrome process detection now ignores IABV isolated assistant profiles and only blocks on a real user Chrome session",
+      "10: P0.33 local runtime follow-up: CDP launch uses data/tool_teaching/external_assistants/chatgpt_user_bridge/browser_profile as a governed persistent profile instead of the default Chrome profile"
     ],
     "unresolved": [
-      "live_cdp_bridge_test_pending: requires IABV on Windows with a CDP-enabled Chrome session",
+      "bridge_profile_login_live_proof_pending: ChatGPT may require the user to log in once inside the governed bridge profile",
+      "cdp_listener_live_proof_pending: requires retry after closing any previous default-profile Chrome launch that did not expose 127.0.0.1:9222",
       "portable_context_bridge_summary_pending: deferred to live proof"
     ]
   },
   "dependency_missing": "",
   "reason": "IABV uses isolated profile chatgpt_program_session/browser_profile. User is logged into their normal Chrome. No governed bridge existed to connect them. P0.30 identified the gap as governed_user_chrome_bridge_missing.",
   "created_at": "2026-05-15T01:30:00Z",
-  "updated_at": "2026-05-18T00:36:00Z"
+  "updated_at": "2026-05-18T01:15:00Z"
 }
