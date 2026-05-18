@@ -1,0 +1,62 @@
+{
+  "id": "runtime_external_web_skill_quiescence_devin_repair_p038",
+  "title": "P0.38: External Web Skill Profile + Resource Quiescence + Devin Repair Worker",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "IABV necesita un algoritmo reutilizable para cualquier web/herramienta: OBSERVE -> SELECT_SESSION -> VERIFY_ACCESS -> ACT -> CAPTURE_RESPONSE -> LEARN -> RETRY_OR_HANDOFF. P0.38 implementa: ResourceQuiescenceGate (decidir run_now/defer/ask_user/cleanup_needed antes de consulta externa), AssistantWebSkillProfile (modelar estado de ChatGPT/Claude/Devin como perfil estructurado), governed web tool scan, Devin repair worker integration, follow-up governance para mensajes como 'intenta nuevamente' que no deben caer a local chat.",
+  "reason": "Evidencia viva: (1) external_consultation terminó en blocked_by_resource_pressure sin retry gobernado. (2) startup_truth_refresh tuvo timeout, RSS ~2855MB, disco libre ~8.14GB. (3) ChatGPT tuvo bloqueos por browser_security_verification sin perfil estructurado. (4) devin_api aparece como herramienta disponible pero no se usa para reparación. (5) Follow-ups como 'intenta nuevamente' caen a local chat perdiendo el incidente activo.",
+  "dependency_missing": "",
+  "next_action": "Live proof en Windows: (1) mergear PR, (2) verificar que consulta externa bajo presión resulta en deferred+retry (no local chat), (3) verificar que scan de ChatGPT reporta auth_status correcto, (4) verificar que follow-ups no caen a local si hay incidente activo.",
+  "resume_hint": "P0.38 implementado: _evaluate_consultation_quiescence() decide run_now/defer/cleanup_needed. _build_assistant_web_skill_profile() construye perfil estructurado sin nuevo servicio. _scan_assistant_web_skill() ejecuta scan gobernado. _try_devin_repair() crea sesión Devin si API disponible. _try_handle_consultation_followup() captura follow-ups antes de que caigan a local. OSES detecta 5 patrones nuevos. PortableContext exporta web_skill_status y devin_repair_status.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "No existía algoritmo reutilizable para web tools. Consultas externas bajo presión terminaban sin retry gobernado. No había perfil estructurado de estado de asistentes web. Devin API disponible pero no integrada como órgano de reparación. Follow-ups perdían el incidente activo.",
+    "evidence": [
+      {
+        "event": "external_consultation terminated in blocked_by_resource_pressure",
+        "bug": "No retry gobernado ni quiescence gate; respuesta genérica en vez de defer+retry"
+      },
+      {
+        "event": "RSS ~2855MB, disco ~8.14GB durante startup",
+        "bug": "startup_truth_refresh y lazy_vm_prebuild generan stalls sin inhibición bajo presión"
+      },
+      {
+        "event": "ChatGPT browser_security_verification repetido",
+        "bug": "No hay perfil estructurado que registre auth_status para evitar reintentos ciegos"
+      },
+      {
+        "event": "devin_api aparece como herramienta disponible",
+        "bug": "No se usa para reparación automática de builds o patches"
+      },
+      {
+        "event": "follow-ups 'intenta nuevamente' caen a local chat",
+        "bug": "No hay guard que capture follow-ups cuando existe incidente activo externo"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/services/evolution/runtime_audit_tracer.py",
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+      "src/iabv_v15/services/evolution/portable_context_service.py",
+      "data/evolution/platform_pending/task_runtime_external_web_skill_quiescence_devin_repair_p038.json",
+      "tests/test_runtime_p038_web_skill_quiescence_devin_repair.py"
+    ],
+    "fixes_applied": {
+      "task_a": "_evaluate_consultation_quiescence() reads _assess_resource_pressure() and decides run_now/defer/cleanup_needed. _schedule_deferred_consultation_retry() retries after delay. trace_consultation_quiescence() traces all decisions.",
+      "task_b": "trace_startup_heavy_work() traces startup inhibition under pressure.",
+      "task_c": "_build_assistant_web_skill_profile() builds structured profile from WorldModel, CDP probe, dispatch history. No new service.",
+      "task_d": "_scan_assistant_web_skill() executes governed scan: OBSERVE->SELECT_SESSION->VERIFY_ACCESS. trace_assistant_web_skill_scan() traces results.",
+      "task_e": "_build_repair_packet() creates portable repair request. _try_devin_repair() creates Devin session if API available. trace_devin_repair() traces lifecycle.",
+      "task_f": "_try_handle_consultation_followup() captures retry/query/window follow-ups before they fall to local chat. Wired into message flow before _try_handle_external_failure_followup.",
+      "task_g": "OSES _resource_quiescence_web_skill_findings() detects 5 patterns. PortableContext _web_skill_status_section() and _devin_repair_status_section() export compact status."
+    },
+    "remaining": [
+      "Live Windows proof: consulta externa bajo presión -> deferred+retry",
+      "Live Windows proof: ChatGPT scan -> auth_status correcto",
+      "Live Windows proof: follow-up 'intenta nuevamente' no cae a local"
+    ],
+    "head_expected": "TBD_after_merge",
+    "live_proof_required": true
+  }
+}

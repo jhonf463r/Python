@@ -746,6 +746,9 @@ class OperationalSelfExaminationService:
         # path imbalance and evidence tag gaps from ChatMessageRepository.
         findings.extend(self._chat_observability_findings())
 
+        # P0.38: Resource quiescence, web skill profile, devin repair patterns.
+        findings.extend(self._resource_quiescence_web_skill_findings())
+
         # RuntimePerformance: always runs — detects memory pressure, excessive
         # threads, slow network probes and other bottlenecks that cause the UI
         # to feel slow or frozen.
@@ -6484,6 +6487,124 @@ class OperationalSelfExaminationService:
     # ------------------------------------------------------------------
     # Brecha 2.3 — Web session health findings
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # P0.38: Resource quiescence, web skill profile, devin repair
+    # ------------------------------------------------------------------
+
+    def _resource_quiescence_web_skill_findings(self) -> list[SelfExaminationFinding]:
+        """Detect patterns related to resource pressure blocks, web skill
+        profile gaps, and underused Devin repair worker."""
+        findings: list[SelfExaminationFinding] = []
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            return findings
+
+        # 1. repeated_resource_pressure_blocks
+        quiescence_events = tracer.events(kind='external_consultation_quiescence', limit=50)
+        deferred_count = sum(
+            1 for e in quiescence_events
+            if e.get('data', {}).get('decision') in ('defer', 'cleanup_needed')
+        )
+        if deferred_count >= 3:
+            findings.append(SelfExaminationFinding(
+                category='repeated_resource_pressure_blocks',
+                severity=IssueSeverity.HIGH,
+                title=f'{deferred_count} consultas externas diferidas por presion de recursos',
+                summary=(
+                    f'Se han diferido {deferred_count} consultas externas por presion '
+                    f'de recursos en esta sesion. Esto indica que el entorno necesita '
+                    f'liberacion de recursos o que las consultas deben programarse '
+                    f'en momentos de menor carga.'
+                ),
+                source_refs=['RuntimeAuditTracer.external_consultation_quiescence'],
+            ))
+
+        # 2. startup_heavy_work_starvation
+        startup_events = tracer.events(kind='startup_heavy_work_state', limit=10)
+        inhibited = [e for e in startup_events if e.get('data', {}).get('inhibited')]
+        if len(inhibited) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='startup_heavy_work_starvation',
+                severity=IssueSeverity.MEDIUM,
+                title=f'{len(inhibited)} arranques con trabajo pesado inhibido',
+                summary=(
+                    f'Se ha inhibido trabajo pesado de arranque {len(inhibited)} veces '
+                    f'por presion de recursos. Algunas funciones pueden no estar '
+                    f'disponibles hasta que baje la presion.'
+                ),
+                source_refs=['RuntimeAuditTracer.startup_heavy_work_state'],
+            ))
+
+        # 3. stale_security_verification_repeated
+        scan_events = tracer.events(kind='assistant_web_skill_scan', limit=30)
+        sec_verif_count = sum(
+            1 for e in scan_events
+            if e.get('data', {}).get('auth_status') == 'security_verification'
+        )
+        if sec_verif_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='stale_security_verification_repeated',
+                severity=IssueSeverity.HIGH,
+                title=f'Verificacion de seguridad detectada {sec_verif_count} veces',
+                summary=(
+                    f'El scan de herramienta web ha detectado security_verification '
+                    f'{sec_verif_count} veces. El usuario necesita completar la '
+                    f'verificacion manualmente para desbloquear la ruta externa.'
+                ),
+                recommendation=(
+                    'Pedir al usuario que abra la sesion del asistente externo '
+                    'y complete la verificacion de seguridad.'
+                ),
+                source_refs=['RuntimeAuditTracer.assistant_web_skill_scan'],
+            ))
+
+        # 4. web_skill_profile_missing
+        if not scan_events:
+            dispatches = tracer.recent_dispatch_lifecycles(limit=10)
+            ext_dispatches = [d for d in dispatches if d.get('task_name') == 'external_consultation']
+            if ext_dispatches:
+                findings.append(SelfExaminationFinding(
+                    category='web_skill_profile_missing',
+                    severity=IssueSeverity.MEDIUM,
+                    title='No hay scan de perfil web para asistentes externos',
+                    summary=(
+                        'Se han intentado consultas externas pero no existe '
+                        'un scan de perfil web registrado. El algoritmo '
+                        'OBSERVE->SELECT_SESSION->VERIFY_ACCESS no se ha ejecutado.'
+                    ),
+                    source_refs=['RuntimeAuditTracer.assistant_web_skill_scan'],
+                ))
+
+        # 5. devin_repair_worker_available_but_unused
+        devin_events = tracer.events(kind='devin_repair_worker', limit=10)
+        devin_available = any(
+            e.get('data', {}).get('available') for e in devin_events
+        )
+        devin_used = any(
+            e.get('data', {}).get('phase') == 'session_created' for e in devin_events
+        )
+        if devin_available and not devin_used:
+            unresolved_dispatches = [
+                d for d in tracer.recent_dispatch_lifecycles(limit=20)
+                if d.get('unresolved') or 'blocked' in (d.get('terminal_state') or '')
+            ]
+            if len(unresolved_dispatches) >= 2:
+                findings.append(SelfExaminationFinding(
+                    category='devin_repair_worker_available_but_unused',
+                    severity=IssueSeverity.LOW,
+                    title='Devin repair worker disponible pero no utilizado',
+                    summary=(
+                        f'La API de Devin esta disponible pero no se ha utilizado '
+                        f'para reparar {len(unresolved_dispatches)} dispatches bloqueados/sin resolver. '
+                        f'Considerar enviar un repair packet.'
+                    ),
+                    source_refs=['RuntimeAuditTracer.devin_repair_worker'],
+                ))
+
+        return findings
 
     def _web_session_findings(self) -> list[SelfExaminationFinding]:
         """Detect expired or missing web sessions for governed re-auth.
