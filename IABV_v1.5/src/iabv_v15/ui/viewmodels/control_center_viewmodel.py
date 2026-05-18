@@ -5230,6 +5230,11 @@ class ControlCenterViewModel(QObject):
         'revocar permiso cdp', 'revocar cdp', 'revoke cdp',
         'desactivar cdp', 'disable cdp', 'no usar mi chrome',
     )
+    _CDP_LAUNCH_PATTERNS: tuple[str, ...] = (
+        'abrir chrome con puente', 'activar puente chrome',
+        'preparar mi chrome', 'iniciar chrome con cdp',
+        'abrir mi chrome con cdp',
+    )
 
     @staticmethod
     def _detect_cdp_available(
@@ -5303,8 +5308,8 @@ class ControlCenterViewModel(QObject):
         else:
             options.append(
                 '2) Tu Chrome normal: no esta disponible ahora. '
-                'Para activarla, abre Chrome con '
-                '"--remote-debugging-port=9222" y reinicia la consulta.'
+                'Para activarla desde IABV, escribe '
+                '"abrir chrome con puente". No necesitas abrir PowerShell.'
             )
             options.append(
                 '3) Pegado manual: copia la respuesta de ChatGPT y pegala '
@@ -5320,6 +5325,167 @@ class ControlCenterViewModel(QObject):
             f'Opciones disponibles:\n'
             + '\n'.join(options)
         )
+
+    @staticmethod
+    def _chrome_process_running() -> bool:
+        """Return whether Chrome is already running, without inspecting content."""
+        try:
+            import subprocess
+            proc = subprocess.run(
+                ['tasklist', '/FI', 'IMAGENAME eq chrome.exe'],
+                capture_output=True,
+                text=True,
+                timeout=3,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+            output = (proc.stdout or '').lower()
+            return 'chrome.exe' in output
+        except Exception:
+            return False
+
+    @staticmethod
+    def _find_chrome_executable() -> str:
+        """Find a local Chrome executable path without touching browser data."""
+        candidates = [
+            os.path.join(os.environ.get('PROGRAMFILES', ''), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            os.path.join(os.environ.get('PROGRAMFILES(X86)', ''), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+        ]
+        for candidate in candidates:
+            if candidate and os.path.exists(candidate):
+                return candidate
+        return 'chrome.exe'
+
+    def _try_handle_cdp_launch_request(self, message: str) -> bool:
+        """Launch Chrome with CDP from the UI after explicit user request.
+
+        This never reads cookies/tokens and never closes an existing Chrome
+        process. If Chrome is already running, the safe action is to ask the
+        user to close it or use manual pasteback; forcing a restart could lose
+        work and would violate the governed handoff.
+        """
+        lowered = message.strip().lower()
+        if not any(p in lowered for p in self._CDP_LAUNCH_PATTERNS):
+            return False
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace_user_browser_bridge(
+                'cdp_launch_requested',
+                assistant_kind='chatgpt',
+                reason='user_requested_cdp_launch',
+            )
+        except Exception:
+            tracer = None
+
+        if self._chrome_process_running():
+            msg = (
+                'Chrome ya esta abierto. Por seguridad no voy a cerrarlo ni '
+                'reiniciarlo automaticamente, porque podrias perder trabajo. '
+                'Cierra Chrome normalmente y luego escribe "abrir chrome con puente"; '
+                'si prefieres no cerrar nada, pega aqui la respuesta de ChatGPT.'
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = 'user_chrome_bridge: chrome_already_running'
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'user_chrome_bridge_chrome_already_running',
+                reasoning_path='governed_chrome_bridge',
+            )
+            try:
+                if tracer is not None:
+                    tracer.trace_user_browser_bridge(
+                        'cdp_launch_result',
+                        assistant_kind='chatgpt',
+                        cdp_available=False,
+                        session_selected='none',
+                        reason='chrome_already_running',
+                    )
+            except Exception:
+                pass
+            self.dataChanged.emit()
+            return True
+
+        try:
+            import subprocess
+            chrome = self._find_chrome_executable()
+            subprocess.Popen(
+                [
+                    chrome,
+                    '--remote-debugging-port=9222',
+                    '--new-window',
+                    'https://chatgpt.com/',
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+        except Exception as exc:
+            msg = (
+                'No pude abrir Chrome con el puente CDP desde IABV. '
+                f'Bloqueo tecnico: {type(exc).__name__}. '
+                'Puedes seguir con pegado manual de la respuesta.'
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = 'user_chrome_bridge: cdp_launch_failed'
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'user_chrome_bridge_cdp_launch_failed',
+                reasoning_path='governed_chrome_bridge',
+            )
+            try:
+                if tracer is not None:
+                    tracer.trace_user_browser_bridge(
+                        'cdp_launch_result',
+                        assistant_kind='chatgpt',
+                        cdp_available=False,
+                        session_selected='none',
+                        reason='launch_failed',
+                    )
+            except Exception:
+                pass
+            self.dataChanged.emit()
+            return True
+
+        cdp_probe = self._detect_cdp_available(timeout=5.0)
+        if cdp_probe.get('available', False):
+            os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+            msg = (
+                'Chrome quedo abierto con puente CDP y permiso gobernado activo. '
+                'Ahora IABV puede intentar la proxima consulta a ChatGPT usando '
+                'esa ventana. No leo cookies, tokens ni credenciales.'
+            )
+            meta = 'user_chrome_bridge: cdp_launched'
+            session = 'user_chrome_cdp'
+        else:
+            msg = (
+                'Intente abrir Chrome con puente CDP, pero todavia no responde '
+                'en 127.0.0.1:9222. Mantengo el handoff manual: pega aqui la '
+                'respuesta de ChatGPT o vuelve a intentar en unos segundos.'
+            )
+            meta = 'user_chrome_bridge: cdp_launch_unverified'
+            session = 'none'
+        self._latest_response_text = msg
+        self._latest_response_meta = meta
+        self._append_message(
+            'assistant', 'IABV', msg,
+            meta.replace(': ', '_'),
+            reasoning_path='governed_chrome_bridge',
+        )
+        try:
+            if tracer is not None:
+                tracer.trace_user_browser_bridge(
+                    'cdp_launch_result',
+                    assistant_kind='chatgpt',
+                    cdp_available=bool(cdp_probe.get('available', False)),
+                    session_selected=session,
+                    reason=cdp_probe.get('error', '') or 'ok',
+                )
+        except Exception:
+            pass
+        self.dataChanged.emit()
+        return True
 
     _USER_CHROME_BRIDGE_PATTERNS: tuple[str, ...] = (
         'usar mi chrome', 'use my chrome', 'usar chrome normal',
@@ -5362,9 +5528,8 @@ class ControlCenterViewModel(QObject):
         if not cdp_probe.get('available', False):
             msg = (
                 'No puedo conectarme a tu Chrome. '
-                'Para usar tu sesion activa, abre Chrome con: '
-                '"chrome.exe --remote-debugging-port=9222" '
-                'y despues escribe "usar mi chrome" otra vez. '
+                'Para usar tu sesion activa sin abrir PowerShell, escribe '
+                '"abrir chrome con puente". '
                 'Mientras tanto, puedes pegar la respuesta manualmente.'
             )
             self._latest_response_text = msg
@@ -10650,7 +10815,10 @@ class ControlCenterViewModel(QObject):
             else:
                 self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        # P0.32: governed user Chrome bridge — session selection
+        # P0.32/P0.33: governed user Chrome bridge — launch + session selection
+        if self._try_handle_cdp_launch_request(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
         if self._try_handle_user_chrome_bridge_selection(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
