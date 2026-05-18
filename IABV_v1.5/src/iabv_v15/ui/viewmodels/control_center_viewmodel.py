@@ -4881,16 +4881,51 @@ class ControlCenterViewModel(QObject):
         'usar mi chrome', 'use my chrome', 'usar chrome normal',
     )
 
+    def _verify_chrome_bridge_capability(self) -> bool:
+        """P0.32+P0.37 metacognitive guard: verify Chrome bridge is wired."""
+        return (
+            hasattr(self, '_try_handle_user_chrome_bridge_selection')
+            and hasattr(self, '_detect_cdp_available')
+            and callable(getattr(self, '_try_handle_user_chrome_bridge_selection', None))
+            and callable(getattr(self, '_detect_cdp_available', None))
+        )
+
     def _try_handle_user_chrome_bridge_selection(self, message: str) -> bool:
         """Handle user request to switch to their Chrome via CDP.
 
         Gates on explicit permission. Never reads cookies/tokens.
         Sets IABV_PREFER_CDP_SESSION=1 so the next consultation
         uses the shared CDP controller.
+
+        Includes metacognitive guard: if P0.32 handlers are not wired,
+        responds with UNRESOLVED instead of promising the capability.
         """
         lowered = message.strip().lower()
         if not any(p in lowered for p in self._CHROME_BRIDGE_PATTERNS):
             return False
+
+        if not self._verify_chrome_bridge_capability():
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'capability_promised_but_unavailable',
+                    capability='user_chrome_bridge',
+                    reason='p032_handlers_not_wired',
+                )
+            except Exception:
+                pass
+            msg = (
+                'La ruta de Chrome del usuario no esta disponible '
+                'en este build; queda UNRESOLVED.'
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = 'capability_promised_but_unavailable'
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'capability_promised_but_unavailable',
+                reasoning_path='metacognitive_capability_guard',
+            )
+            return True
 
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -5102,13 +5137,16 @@ class ControlCenterViewModel(QObject):
             return 'Verificar que la ventana del asistente esta visible y responde.'
         return 'Revisar el estado de la herramienta externa.'
 
-    @staticmethod
-    def _describe_available_actions(block_type: str, cdp_available: bool) -> list[str]:
+    def _describe_available_actions(self, block_type: str, cdp_available: bool) -> list[str]:
         actions = []
+        bridge_wired = (
+            hasattr(self, '_try_handle_user_chrome_bridge_selection')
+            and hasattr(self, '_detect_cdp_available')
+        )
         if block_type == 'browser_security_verification':
             actions.append('retest_after_user_confirms')
             actions.append('show_problem_window')
-            if cdp_available:
+            if cdp_available and bridge_wired:
                 actions.append('switch_to_user_chrome_cdp')
             actions.append('manual_pasteback')
         elif block_type == 'visible_timeout':
