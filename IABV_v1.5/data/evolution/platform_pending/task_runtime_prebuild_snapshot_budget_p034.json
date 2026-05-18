@@ -8,8 +8,8 @@
   "resume_hint": "Completed in local Windows runtime. _refresh_prebuild_snapshot_async() now returns whether it spawned work and skips expensive PowerShell/CIM probes when a cached snapshot is fresh or a refresh was recently attempted. The startup prebuild chain now builds only route='control' so Evolution/Knowledge/Capture refresh work does not compete with chat during startup.",
   "next_action": "Restart IABV through the desktop shortcut and verify runtime_audit reaches lazy_vm_prebuild_done after control without lazy_vm_prebuild_evolution_start/knowledge_start during startup, and without a ~42s ui_event_loop_stall.",
   "metadata": {
-    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
-    "covered_by_commit": "local_runtime_p034",
+    "verification_status": "LIVE_VERIFIED",
+    "covered_by_commit": "2a90d48fdfaa174562d52e68fc61f742cc93ad82",
       "root_cause": "optional_visual_panel_prebuild_triggered_refresh_during_startup",
     "live_evidence": {
       "incident_report": "data/evolution/incident_reports/freeze_20260518_013825_621516.json",
@@ -17,15 +17,16 @@
       "phase_gap": "lazy_vm_prebuild_evolution_done -> lazy_vm_prebuild_knowledge_start",
       "bootstrap_flags_initial": "snapshot_refresh_in_flight=true",
       "bootstrap_flags_after_snapshot_budget": "snapshot_refresh_in_flight=false",
-      "confirmed_stack": "EvolutionCenterViewModel.refresh -> dataChanged.emit"
+      "confirmed_stack": "EvolutionCenterViewModel.refresh -> dataChanged.emit",
+      "verified_runtime_head": "2a90d48fdfaa174562d52e68fc61f742cc93ad82",
+      "verified_runtime_observation": "startup prebuild built control only and reached lazy_vm_prebuild_done without evolution/knowledge prebuild or a repeated 42-44s stall in the observed window"
     },
     "unresolved": [
-      "live_restart_after_snapshot_budget_fix_pending",
       "actual_chatgpt_response_capture_pending_after_user_logs_into_bridge_profile"
     ]
   },
   "dependency_missing": "",
   "reason": "A universal metacognitive loop must budget its own sensors. If observation consumes the UI event loop, the organism loses communication and cannot learn from the user's corrections.",
   "created_at": "2026-05-18T01:55:00Z",
-  "updated_at": "2026-05-18T01:55:00Z"
+  "updated_at": "2026-05-18T02:04:00Z"
 }
