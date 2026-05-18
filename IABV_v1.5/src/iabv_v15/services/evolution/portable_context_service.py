@@ -3563,6 +3563,52 @@ class PortableContextService:
             last_updated=now,
         )
 
+    def _active_incident_frame_section(
+        self,
+        *,
+        now,
+    ) -> PortableContextSection:
+        """P0.37: Export compact summary of active incident state (no PII)."""
+        items: list[dict[str, Any]] = []
+        incident_events = 0
+        last_incident_state = 'none'
+        unresolved_handoff = False
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            for ev in tracer.events(limit=200):
+                kind = ev.get('kind', '')
+                if kind == 'active_incident_frame_created':
+                    incident_events += 1
+                    last_incident_state = ev.get('data', {}).get('block_type', 'unknown')
+                elif kind == 'incident_followup_resolved_or_unresolved':
+                    resolution = ev.get('data', {}).get('resolution', '')
+                    if resolution != 'resolved':
+                        unresolved_handoff = True
+        except Exception:
+            pass
+        items.append({
+            'last_incident_state': last_incident_state,
+            'unresolved_external_handoff': unresolved_handoff,
+            'incident_frame_count': incident_events,
+            'user_assistance_loop_status': 'active' if incident_events > 0 and not unresolved_handoff else 'idle',
+        })
+        summary = (
+            f'Ultimo incidente: {last_incident_state}. '
+            f'{incident_events} frames creados. '
+            f'Handoff sin resolver: {"si" if unresolved_handoff else "no"}.'
+        )
+        return self._section(
+            section_id='active_incident_frame',
+            title='Active Incident Frame (P0.37)',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit',
+            source_refs=['RuntimeAuditTracer', 'ActiveIncidentFrame'],
+            confidence=0.9 if incident_events > 0 else 0.5,
+            last_updated=now,
+        )
+
     def _section(
         self,
         *,

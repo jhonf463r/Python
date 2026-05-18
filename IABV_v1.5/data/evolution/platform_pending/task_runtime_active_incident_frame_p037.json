@@ -1,0 +1,33 @@
+{
+  "id": "runtime_active_incident_frame_p037",
+  "title": "P0.37: Active Incident Frame + Guided Human Assistance Resolver",
+  "status": "UNRESOLVED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "When an external consultation fails (blocked_by_security_verification, visible_timeout), IABV now maintains an ActiveIncidentFrame that remembers what happened, what's needed, and what actions are available. Subsequent user messages like 'como te puedo ayudar' or 'abreme la ventana' are classified semantically and resolved against the incident instead of falling to local chat.",
+  "resume_hint": "Implementation complete. Awaiting live Windows run to confirm: (1) help-offer after security block triggers incident followup, not local chat, (2) show-problem attempts window focus, (3) retry_done delegates to retest handler.",
+  "next_action": "User runs IABV on Windows, triggers ChatGPT consultation that blocks, then asks 'como te puedo ayudar'. Verify incident_followup_intent_classified event in runtime_audit.jsonl.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "covered_by_pr": "pending",
+    "root_cause": "user_help_offers_fall_to_local_chat_after_external_block",
+    "tasks_implemented": [
+      "1: audited _try_handle_external_failure_followup, _try_handle_security_verification_retest, sendChat dispatch",
+      "2: ActiveIncidentFrame as dict in ControlCenterViewModel (not a new service)",
+      "3: _classify_incident_followup_intent() with token scoring + contextual boosts",
+      "4: guided actions per intent: help_offer, show_problem, visibility_dispute, profile_mismatch, retry_done",
+      "5: traces: active_incident_frame_created, incident_followup_intent_classified, incident_followup_action_selected, incident_followup_window_open_attempted, incident_followup_retest_started, incident_followup_resolved_or_unresolved",
+      "6: UI responses: 'lo que yo veo / lo que necesito de ti / cuando lo hagas escribe ya lo hice'",
+      "7: OSES finding incident_followup_falls_to_local_chat when block_then_local >= 2",
+      "8: PortableContext _active_incident_frame_section (no PII)"
+    ],
+    "unresolved": [
+      "live_incident_frame_test_pending: requires IABV on Windows with ChatGPT consultation that blocks",
+      "window_focus_pending: _try_focus_incident_window uses ctypes.windll (Windows only)"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "User help offers ('como te puedo ayudar', 'abreme la ventana') after an external block fall to local chat instead of being resolved against the active incident. This breaks shared reality: the user wants to help resolve the visible block but the system doesn't convert that help into guided action.",
+  "created_at": "2026-05-15T02:00:00Z",
+  "updated_at": "2026-05-15T02:00:00Z"
+}
