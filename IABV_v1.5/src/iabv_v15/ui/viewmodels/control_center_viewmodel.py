@@ -5097,7 +5097,10 @@ class ControlCenterViewModel(QObject):
             'cdp_available': cdp_available,
             'last_user_goal': last_user_goal[:300],
             'user_help_needed': self._describe_user_help_needed(block_type),
-            'available_actions': self._describe_available_actions(block_type, cdp_available),
+            'available_actions': self._describe_available_actions(
+                block_type, cdp_available,
+                bridge_wired=self._verify_chrome_bridge_capability(),
+            ),
             'created_at': time.time(),
             'expires_at': time.time() + self._INCIDENT_FRAME_TTL_S,
             'dispatch_id': dispatch_id,
@@ -5137,12 +5140,14 @@ class ControlCenterViewModel(QObject):
             return 'Verificar que la ventana del asistente esta visible y responde.'
         return 'Revisar el estado de la herramienta externa.'
 
-    def _describe_available_actions(self, block_type: str, cdp_available: bool) -> list[str]:
+    @staticmethod
+    def _describe_available_actions(
+        block_type: str,
+        cdp_available: bool,
+        *,
+        bridge_wired: bool = True,
+    ) -> list[str]:
         actions = []
-        bridge_wired = (
-            hasattr(self, '_try_handle_user_chrome_bridge_selection')
-            and hasattr(self, '_detect_cdp_available')
-        )
         if block_type == 'browser_security_verification':
             actions.append('retest_after_user_confirms')
             actions.append('show_problem_window')
