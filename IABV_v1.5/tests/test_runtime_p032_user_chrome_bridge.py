@@ -141,6 +141,22 @@ class TestManualSelectionRequired:
 class TestCDPLaunchFromUI:
     """The bridge should not ask the user to run PowerShell commands."""
 
+    def test_chrome_process_running_ignores_iabv_isolated_profile(self, viewmodel_cls):
+        completed = MagicMock()
+        completed.stdout = (
+            r'"C:\Program Files\Google\Chrome\Application\chrome.exe" '
+            r'--user-data-dir=C:\Python\IABV_v1.5\data\tool_teaching'
+            r'\external_assistants\chatgpt_program_session\browser_profile'
+        )
+        with patch('subprocess.run', return_value=completed):
+            assert viewmodel_cls._chrome_process_running() is False
+
+    def test_chrome_process_running_detects_user_chrome(self, viewmodel_cls):
+        completed = MagicMock()
+        completed.stdout = r'"C:\Program Files\Google\Chrome\Application\chrome.exe" --profile-directory=Default'
+        with patch('subprocess.run', return_value=completed):
+            assert viewmodel_cls._chrome_process_running() is True
+
     def test_launch_request_refuses_to_close_existing_chrome(self, viewmodel_cls):
         vm = MagicMock(spec=viewmodel_cls)
         vm._CDP_LAUNCH_PATTERNS = viewmodel_cls._CDP_LAUNCH_PATTERNS

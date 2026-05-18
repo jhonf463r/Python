@@ -5328,18 +5328,41 @@ class ControlCenterViewModel(QObject):
 
     @staticmethod
     def _chrome_process_running() -> bool:
-        """Return whether Chrome is already running, without inspecting content."""
+        """Return whether a non-IABV Chrome is already running.
+
+        IABV may keep its isolated assistant profile open under
+        ``data/tool_teaching/external_assistants/...``.  That process should
+        not block launching a governed user Chrome bridge, because it is not
+        the user's normal browser session.
+        """
         try:
             import subprocess
             proc = subprocess.run(
-                ['tasklist', '/FI', 'IMAGENAME eq chrome.exe'],
+                [
+                    'powershell.exe',
+                    '-NoProfile',
+                    '-Command',
+                    (
+                        "Get-CimInstance Win32_Process -Filter \"Name = 'chrome.exe'\" "
+                        "| ForEach-Object { $_.CommandLine }"
+                    ),
+                ],
                 capture_output=True,
                 text=True,
-                timeout=3,
+                timeout=4,
                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
             )
             output = (proc.stdout or '').lower()
-            return 'chrome.exe' in output
+            if not output.strip():
+                return False
+            lines = [line.strip() for line in output.splitlines() if line.strip()]
+            for line in lines:
+                if 'chrome.exe' not in line:
+                    continue
+                if 'chatgpt_program_session' in line or 'external_assistants' in line:
+                    continue
+                return True
+            return False
         except Exception:
             return False
 

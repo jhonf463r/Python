@@ -18,7 +18,8 @@
       "5: traces added (user_browser_bridge_permission_requested/granted/denied, cdp_probe_attempted/result, session_selected, bridge_result)",
       "6: OSES finding isolated_profile_blocks_user_logged_in_browser when block_count >= 2",
       "7: PortableContext section user_chrome_bridge with cdp_session_active, bridge_events_total, session_mode (no PII)",
-      "8: P0.33 local runtime follow-up: removed terminal-command handoff and added governed 'abrir chrome con puente' UI command"
+      "8: P0.33 local runtime follow-up: removed terminal-command handoff and added governed 'abrir chrome con puente' UI command",
+      "9: P0.33 local runtime follow-up: Chrome process detection now ignores IABV isolated assistant profiles and only blocks on a real user Chrome session"
     ],
     "unresolved": [
       "live_cdp_bridge_test_pending: requires IABV on Windows with a CDP-enabled Chrome session",
@@ -28,5 +29,5 @@
   "dependency_missing": "",
   "reason": "IABV uses isolated profile chatgpt_program_session/browser_profile. User is logged into their normal Chrome. No governed bridge existed to connect them. P0.30 identified the gap as governed_user_chrome_bridge_missing.",
   "created_at": "2026-05-15T01:30:00Z",
-  "updated_at": "2026-05-18T00:12:00Z"
+  "updated_at": "2026-05-18T00:36:00Z"
 }
