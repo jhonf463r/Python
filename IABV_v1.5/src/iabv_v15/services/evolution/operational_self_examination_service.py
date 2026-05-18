@@ -9068,6 +9068,74 @@ class OperationalSelfExaminationService:
                 confidence=0.8,
                 metadata={'cdp_unavailable_count': cdp_unavailable_count},
             ))
+        # P0.40: detect external intent misrouted to local
+        external_intent_local_count = 0
+        startup_stall_count = 0
+        try:
+            if audit_path.exists():
+                recent2: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh2:
+                    for line2 in fh2:
+                        recent2.append(line2)
+                for line2 in recent2:
+                    line2_s = line2.strip()
+                    if not line2_s:
+                        continue
+                    try:
+                        entry2 = json.loads(line2_s)
+                    except Exception:
+                        continue
+                    kind2 = entry2.get('kind', '')
+                    data2 = entry2.get('data', {})
+                    if kind2 == 'interaction_resolved':
+                        provider = data2.get('provider', '')
+                        msg_ex = str(data2.get('message_excerpt', '')).lower()
+                        if provider == 'local' and any(
+                            t in msg_ex for t in (
+                                'consulta a chatgpt', 'preguntale a chatgpt',
+                                'usa claude', 'consulta devin', 'consulta codex',
+                            )
+                        ):
+                            external_intent_local_count += 1
+                    if kind2 == 'startup_truth_refresh_stall_detected':
+                        startup_stall_count += 1
+        except Exception:
+            pass
+        if external_intent_local_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='external_intent_misrouted_local',
+                severity=IssueSeverity.HIGH,
+                title='External intent resolved locally without readiness gate',
+                summary=(
+                    f'{external_intent_local_count} mensaje(s) con intencion '
+                    f'explicita de consulta externa fueron resueltos por '
+                    f'provider=local sin pasar por readiness gate.'
+                ),
+                recommendation=(
+                    'P0.40 sovereignty guard debe interceptar estas frases '
+                    'antes de _try_handle_lightweight_chat.'
+                ),
+                confidence=0.9,
+                metadata={
+                    'external_intent_local_count': external_intent_local_count,
+                },
+            ))
+        if startup_stall_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='startup_truth_refresh_stall_repeated',
+                severity=IssueSeverity.MEDIUM,
+                title='Startup truth refresh causes repeated stalls',
+                summary=(
+                    f'truth_refresh excedio el freeze budget {startup_stall_count} '
+                    f'veces. Esto puede congelar la UI durante el arranque.'
+                ),
+                recommendation=(
+                    'Considerar reducir la complejidad de OSES.build_review() '
+                    'o diferir refresh si hay query_pending.'
+                ),
+                confidence=0.8,
+                metadata={'startup_stall_count': startup_stall_count},
+            ))
         return findings
 
 

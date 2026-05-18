@@ -207,6 +207,7 @@ class PortableContextService:
             self._web_skill_status_section(now=now),
             self._devin_repair_status_section(now=now),
             self._capability_readiness_section(now=now),
+            self._next_time_policy_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3781,6 +3782,50 @@ class PortableContextService:
             confidence=0.8 if items else 0.3,
             last_updated=now,
             unresolved_fields=unresolved if unresolved else None,
+        )
+
+    def _next_time_policy_section(self, *, now) -> PortableContextSection:
+        """P0.40 Task E: Export learned next-time policies from runtime audit.
+
+        Scans for 'incident_human_assistance_requested' events and builds
+        compact policies without PII.
+        """
+        policies: list[dict[str, Any]] = []
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            events = tracer.events(kind='incident_human_assistance_requested', limit=20)
+            seen: set[str] = set()
+            for ev in reversed(events):
+                data = ev.get('data', {})
+                policy_key = data.get('policy', '')
+                if policy_key and policy_key not in seen:
+                    seen.add(policy_key)
+                    policies.append({
+                        'policy': policy_key,
+                        'trigger': data.get('block_type', ''),
+                        'action': data.get('user_action', ''),
+                    })
+        except Exception:
+            pass
+        summary = f'{len(policies)} next-time policies recorded'
+        if not policies:
+            policies.append({
+                'policy': 'when_security_verification_show_window_first',
+                'trigger': 'security_verification',
+                'action': 'focus/open problem window before generic explanation',
+                'source': 'default_from_P0.40',
+            })
+            summary = '1 default policy (no runtime events yet)'
+        return self._section(
+            section_id='next_time_policies',
+            title='Next-Time Policies (P0.40)',
+            summary=summary,
+            items=policies,
+            source_kind='runtime_audit_learning',
+            source_refs=['RuntimeAuditTracer', '_record_show_window_learning'],
+            confidence=0.7 if policies else 0.3,
+            last_updated=now,
         )
 
     def _section(

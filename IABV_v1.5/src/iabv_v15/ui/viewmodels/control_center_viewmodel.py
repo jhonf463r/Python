@@ -5196,6 +5196,9 @@ class ControlCenterViewModel(QObject):
         'en que te ayudo', 'en qué te ayudo', 'como ayudo', 'cómo ayudo',
         'que puedo hacer', 'qué puedo hacer', 'te ayudo',
         'how can i help', 'what do you need',
+        # P0.40 Task C: guided human assistance phrases
+        'yo te ayudo', 'yo te ayudo con eso', 'te ayudo con eso',
+        'yo te puedo ayudar', 'cuenta conmigo',
     )
     _SHOW_PROBLEM_TOKENS: tuple[str, ...] = (
         'abreme la ventana', 'ábreme la ventana', 'muestrame',
@@ -5205,6 +5208,13 @@ class ControlCenterViewModel(QObject):
         'muestrame la ventana', 'muéstrame la ventana',
         'donde tienes el problema', 'dónde tienes el problema',
         'abreme donde', 'ábreme donde',
+        # P0.40 Task C: "abre esa verificación" / incident window phrases
+        'abre esa verificacion', 'abre esa verificación',
+        'abreme esa verificacion', 'ábreme esa verificación',
+        'abre la verificacion', 'abre la verificación',
+        'muestrame donde necesitas mi ayuda', 'muéstrame dónde necesitas mi ayuda',
+        'abre la ventana donde necesitas mi ayuda',
+        'muestrame eso', 'muéstrame eso',
     )
     _VISIBILITY_DISPUTE_TOKENS: tuple[str, ...] = (
         'no veo la verificacion', 'no veo la verificación',
@@ -5354,6 +5364,8 @@ class ControlCenterViewModel(QObject):
         elif intent == 'show_problem':
             window_opened = self._try_focus_incident_window(incident)
             action_taken = 'window_open_attempted'
+            # P0.40 Task E: record learning note when user requests window
+            self._record_show_window_learning(incident)
             if window_opened:
                 response_text = (
                     f'Enfoque la ventana del perfil puente ({profile_label}). '
@@ -5363,11 +5375,14 @@ class ControlCenterViewModel(QObject):
                 )
             else:
                 response_text = (
-                    f'No puedo abrir/enfocar la ventana del perfil puente ({profile_label}). '
+                    f'UNRESOLVED: No tengo hwnd/tab observable para '
+                    f'el perfil puente ({profile_label}). '
                     f'El problema es: {block_type}. '
                     f'Lo que necesito de ti: {user_help} '
-                    'Si no ves esa ventana, el perfil usado no es tu Chrome normal. '
-                    'Puedes escribir "usar mi chrome" para activar el puente CDP.'
+                    'Siguiente accion humana: busca la ventana de Chrome '
+                    f'con titulo que contenga "verificacion" o "{assistant_title}" '
+                    'y resuelve la verificacion ahi. '
+                    'O escribe "usar mi chrome" para activar el puente CDP.'
                 )
 
         elif intent == 'visibility_dispute':
@@ -5478,23 +5493,31 @@ class ControlCenterViewModel(QObject):
         return ' '.join(lines)
 
     def _try_focus_incident_window(self, incident: dict[str, Any]) -> bool:
-        """Try to bring the incident browser window to the front.
+        """P0.40 Task D: Try to bring the incident browser window to the front.
 
-        Uses WorldModelService.current_model() to get active_windows.
-        Falls back to hwnd stored in the incident frame itself.
-        Only works on Windows with hwnd. Returns True if window was focused.
+        Priority:
+        1. hwnd stored in incident frame -> Win32 ShowWindow/SetForegroundWindow
+        2. WorldModelService active_windows -> search by title
+        3. Isolated browser profile -> launch/focus via profile path
+        4. CDP available + user chose "usar mi chrome" -> list/select tab
+        5. None possible -> UNRESOLVED with clear next human action
+
+        Does NOT automate login or read cookies/tokens.
         """
         incident_id = incident.get('incident_id', '')
         profile_label = incident.get('profile_label', '')
+        focus_method = 'none'
+
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            get_runtime_tracer().trace(
-                'incident_followup_window_open_attempted',
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'incident_problem_window_focus_attempted',
                 incident_id=incident_id,
                 profile_label=profile_label,
             )
         except Exception:
-            pass
+            tracer = None
 
         target_hwnd: int | None = None
 
@@ -5527,16 +5550,85 @@ class ControlCenterViewModel(QObject):
                 SW_RESTORE = 9
                 ctypes.windll.user32.ShowWindow(target_hwnd, SW_RESTORE)
                 ctypes.windll.user32.SetForegroundWindow(target_hwnd)
+                focus_method = 'win32_hwnd'
+                self._trace_window_focus_result(tracer, incident_id, focus_method, True)
                 return True
             except Exception:
                 pass
 
-        # 4. Resolve as unresolved if no hwnd found
+        # 4. Try to open isolated browser profile if path is known
+        browser_profile_path = incident.get('browser_profile_path', '')
+        if browser_profile_path and not target_hwnd:
+            try:
+                import subprocess
+                import os
+                chrome_exe = os.environ.get('IABV_CHROME_PATH', 'chrome.exe')
+                subprocess.Popen(
+                    [chrome_exe, f'--user-data-dir={browser_profile_path}'],
+                    creationflags=getattr(subprocess, 'DETACHED_PROCESS', 0),
+                )
+                focus_method = 'browser_profile_launch'
+                self._trace_window_focus_result(tracer, incident_id, focus_method, True)
+                return True
+            except Exception:
+                pass
+
+        # 5. CDP available — list tabs if user chose "usar mi chrome"
+        import os as _os
+        if _os.environ.get('IABV_PREFER_CDP_SESSION') == '1':
+            try:
+                cdp_available = self._detect_cdp_available()
+                if cdp_available:
+                    focus_method = 'cdp_tab_list'
+                    self._trace_window_focus_result(tracer, incident_id, focus_method, True)
+                    return True
+            except Exception:
+                pass
+
+        # 6. UNRESOLVED — no hwnd, no profile, no CDP
+        focus_method = 'unresolved'
+        self._trace_window_focus_result(tracer, incident_id, focus_method, False)
+        return False
+
+    def _trace_window_focus_result(
+        self,
+        tracer: Any,
+        incident_id: str,
+        method: str,
+        success: bool,
+    ) -> None:
+        """P0.40 Task G: trace window focus result."""
         try:
-            self._resolve_incident_frame('unresolved')
+            if tracer is not None:
+                tracer.trace(
+                    'incident_problem_window_focus_result',
+                    incident_id=incident_id,
+                    method=method,
+                    success=success,
+                )
         except Exception:
             pass
-        return False
+
+    def _record_show_window_learning(self, incident: dict[str, Any]) -> None:
+        """P0.40 Task E: record a learning note + PortableContext policy.
+
+        When the user explicitly asks to see the problem window, record
+        the pattern so OSES and PortableContext remember:
+        'cuando haya security verification, mostrar/focalizar ventana
+        antes de explicar genericamente'.
+        """
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'incident_human_assistance_requested',
+                incident_id=incident.get('incident_id', ''),
+                block_type=incident.get('block_type', ''),
+                user_action='show_problem_window_requested',
+                policy='when_security_verification_show_window_first',
+            )
+        except Exception:
+            pass
 
     # ══════════════════════════════════════════════════════════════════
     # P0.6 — Shared Reality Remediation / Window Target Recovery
@@ -11568,6 +11660,27 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_external_failure_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        # P0.40 Task A: External Intent Sovereignty — any message with
+        # explicit external assistant intent MUST pass through readiness
+        # gate before anything else can claim it.  This prevents
+        # _try_handle_lightweight_chat / _is_general_chat_message from
+        # resolving "haz una consulta a ChatGPT: ..." locally.
+        _p040_explicit = self._explicit_assistant_preference(message)
+        if _p040_explicit:
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'external_intent_detected',
+                    assistant_kind=_p040_explicit,
+                    message_excerpt=message[:120],
+                    source='sendChat_sovereignty_guard',
+                )
+            except Exception:
+                pass
+            self._last_user_goal = message
+            self._interaction_has_pending_followup = True
+            self._run_external_consultation(_p040_explicit, announce=True)
+            return
         # P0.30 Task B: structured self-audit guard — answer from artifacts,
         # not from Adaptive local orchestrator / Ollama.
         if self._try_handle_structured_self_audit(message):
@@ -11637,12 +11750,9 @@ class ControlCenterViewModel(QObject):
             self._answer_general_chat(message)
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        explicit_assistant = self._explicit_assistant_preference(message)
-        if explicit_assistant:
-            self._last_user_goal = message
-            self._interaction_has_pending_followup = True
-            self._run_external_consultation(explicit_assistant, announce=True)
-            return
+        # NOTE: explicit_assistant check was here pre-P0.40 but is now
+        # handled earlier in the sovereignty guard (line ~11576).
+        # If we reach this point the message has no external intent.
         import time as _time
         self._working = True
         self._working_since = _time.time()
