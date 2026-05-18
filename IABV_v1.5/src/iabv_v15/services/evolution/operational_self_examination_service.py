@@ -8606,17 +8606,23 @@ class OperationalSelfExaminationService:
     def _incident_followup_local_fallback_findings(self) -> list[SelfExaminationFinding]:
         """Detect when user help offers after external blocks fall to local chat.
 
-        Reads runtime audit for the pattern:
-        blocked_by_security_verification followed by chat inference
+        Uses two evidence sources:
+        1. RuntimeAuditTracer events (dispatch_terminal + chat routing)
+        2. DecisionAuditTrail chat_routing records (reasoning_path)
+
+        Pattern detected:
+        blocked_by_security_verification followed by local chat routing
         without an incident_followup_intent_classified in between.
         """
         workspace = getattr(self, 'workspace_root', None)
         if not workspace:
             return []
         root = Path(str(workspace))
-        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
         findings: list[SelfExaminationFinding] = []
         block_then_local = 0
+
+        # Source 1: RuntimeAuditTracer events
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
         try:
             if audit_path.exists():
                 recent: deque[str] = deque(maxlen=300)
@@ -8641,11 +8647,48 @@ class OperationalSelfExaminationService:
                         saw_block = False
                     elif kind == 'external_failure_followup_answered':
                         saw_block = False
-                    elif saw_block and kind in ('chat_inference_started', 'orchestrator_inference'):
+                    elif saw_block and kind in (
+                        'chat_inference_started', 'orchestrator_inference',
+                    ):
                         block_then_local += 1
                         saw_block = False
         except Exception:
             pass
+
+        # Source 2: DecisionAuditTrail chat_routing records
+        try:
+            decisions_path = root / 'data' / 'evolution' / 'decision_audit' / 'decisions.jsonl'
+            if decisions_path.exists():
+                recent_d: deque[str] = deque(maxlen=200)
+                with decisions_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent_d.append(line)
+                saw_block_d = False
+                for line in recent_d:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    phase = entry.get('phase', '')
+                    meta = entry.get('metadata', {})
+                    if phase == 'chat_routing':
+                        rp = str(meta.get('reasoning_path', ''))
+                        if 'blocked_by_security_verification' in rp or 'external_failure' in rp:
+                            saw_block_d = True
+                        elif rp.startswith('incident_followup_'):
+                            saw_block_d = False
+                        elif saw_block_d and rp in (
+                            'general_chat', 'inference', 'local_inference',
+                            'orchestrator_inference',
+                        ):
+                            block_then_local += 1
+                            saw_block_d = False
+        except Exception:
+            pass
+
         if block_then_local >= 2:
             findings.append(SelfExaminationFinding(
                 category='incident_followup_falls_to_local_chat',

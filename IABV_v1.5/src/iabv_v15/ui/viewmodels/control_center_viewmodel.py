@@ -4264,6 +4264,14 @@ class ControlCenterViewModel(QObject):
             elif 'blocked' in ts:
                 block_type = ts
             if block_type:
+                # Extract real payload context from latest adaptive payload
+                _ap = getattr(self, '_last_adaptive_payload', None) or {}
+                _handoff = dict((_ap.get('metadata') or {}).get('shared_reality_handoff') or {})
+                _tw_title = str(_handoff.get('target_window_title', '') or '')
+                _hwnd_raw = _handoff.get('hwnd')
+                _hwnd = int(_hwnd_raw) if _hwnd_raw is not None else None
+                _browser_label = str(_handoff.get('selected_browser_or_profile', '') or '')
+                _browser_profile = str(_handoff.get('browser_profile', '') or '')
                 self._create_active_incident_frame(
                     assistant_kind=str(assistant_kind or ''),
                     assistant_title=str(assistant_title or 'Asistente externo'),
@@ -4271,6 +4279,11 @@ class ControlCenterViewModel(QObject):
                     block_type=block_type,
                     last_user_goal=str(getattr(self, '_last_user_goal', '') or ''),
                     dispatch_id=str(dispatch_id or ''),
+                    browser_profile=_browser_profile,
+                    selected_browser_or_profile=_browser_label,
+                    browser_label=_browser_label,
+                    target_window_title=_tw_title,
+                    hwnd=_hwnd,
                 )
         except Exception:
             pass
@@ -4755,12 +4768,23 @@ class ControlCenterViewModel(QObject):
         cdp_available: bool = False,
         last_user_goal: str = '',
         dispatch_id: str = '',
+        browser_profile: str = '',
+        selected_browser_or_profile: str = '',
+        browser_label: str = '',
+        target_window_title: str = '',
+        hwnd: int | None = None,
     ) -> dict[str, Any]:
         """Build and store an active incident frame (read-only metadata).
 
         Not a new service — just structured metadata in the ViewModel so
         subsequent user messages can be resolved against the real incident.
         """
+        # Resolve cdp_available from live probe if not explicitly set
+        if not cdp_available:
+            try:
+                cdp_available = bool(self._detect_cdp_available())
+            except Exception:
+                pass
         frame: dict[str, Any] = {
             'incident_id': f'inc_{uuid.uuid4().hex[:8]}',
             'assistant_kind': assistant_kind,
@@ -4776,6 +4800,11 @@ class ControlCenterViewModel(QObject):
             'expires_at': time.time() + self._INCIDENT_FRAME_TTL_S,
             'dispatch_id': dispatch_id,
             'resolved': False,
+            'browser_profile': browser_profile or profile_label,
+            'selected_browser_or_profile': selected_browser_or_profile or browser_label,
+            'browser_label': browser_label,
+            'target_window_title': target_window_title,
+            'hwnd': hwnd,
         }
         self._active_incident_frame = frame
         try:
@@ -4787,6 +4816,8 @@ class ControlCenterViewModel(QObject):
                 block_type=block_type,
                 assistant_kind=assistant_kind,
                 cdp_available=cdp_available,
+                target_window_title=target_window_title,
+                hwnd_available=hwnd is not None,
             )
         except Exception:
             pass
@@ -5138,30 +5169,60 @@ class ControlCenterViewModel(QObject):
     def _try_focus_incident_window(self, incident: dict[str, Any]) -> bool:
         """Try to bring the incident browser window to the front.
 
+        Uses WorldModelService.current_model() to get active_windows.
+        Falls back to hwnd stored in the incident frame itself.
         Only works on Windows with hwnd. Returns True if window was focused.
         """
+        incident_id = incident.get('incident_id', '')
+        profile_label = incident.get('profile_label', '')
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
             get_runtime_tracer().trace(
                 'incident_followup_window_open_attempted',
-                incident_id=incident.get('incident_id', ''),
-                profile_label=incident.get('profile_label', ''),
+                incident_id=incident_id,
+                profile_label=profile_label,
             )
         except Exception:
             pass
-        # Attempt to find and focus the browser window via WorldModelService
+
+        target_hwnd: int | None = None
+
+        # 1. Try hwnd stored directly in the incident frame
+        stored_hwnd = incident.get('hwnd')
+        if stored_hwnd is not None:
+            try:
+                target_hwnd = int(stored_hwnd)
+            except (ValueError, TypeError):
+                pass
+
+        # 2. If no stored hwnd, search WorldModelService.current_model()
+        if target_hwnd is None:
+            try:
+                snapshot = self._current_world_model()
+                for win in (snapshot.active_windows or []):
+                    title = str(win.title or '').lower()
+                    if 'chatgpt' in title or 'chrome' in title or 'verificat' in title:
+                        win_hwnd = win.metadata.get('hwnd')
+                        if win_hwnd is not None:
+                            target_hwnd = int(win_hwnd)
+                            break
+            except Exception:
+                pass
+
+        # 3. Attempt focus via Win32 API
+        if target_hwnd is not None:
+            try:
+                import ctypes
+                SW_RESTORE = 9
+                ctypes.windll.user32.ShowWindow(target_hwnd, SW_RESTORE)
+                ctypes.windll.user32.SetForegroundWindow(target_hwnd)
+                return True
+            except Exception:
+                pass
+
+        # 4. Resolve as unresolved if no hwnd found
         try:
-            wm = getattr(self, '_world_model_service', None)
-            if wm and hasattr(wm, 'get_windows'):
-                windows = wm.get_windows()
-                for w in (windows or []):
-                    title = str(w.get('title', '')).lower()
-                    if 'chatgpt' in title or 'chrome' in title:
-                        hwnd = w.get('hwnd')
-                        if hwnd:
-                            import ctypes
-                            ctypes.windll.user32.SetForegroundWindow(int(hwnd))
-                            return True
+            self._resolve_incident_frame('unresolved')
         except Exception:
             pass
         return False
@@ -10964,6 +11025,10 @@ class ControlCenterViewModel(QObject):
             _external_consultation_outcome = self._derive_external_consultation_outcome(external_payload)
             if _ext_success and _external_consultation_outcome != 'blocked':
                 self._clear_external_failure_memory()
+                try:
+                    self._resolve_incident_frame('resolved')
+                except Exception:
+                    pass
             else:
                 self._remember_external_failure(
                     assistant_title=assistant_title,
