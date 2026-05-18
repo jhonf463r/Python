@@ -6894,6 +6894,580 @@ class ControlCenterViewModel(QObject):
         except Exception:
             return False
 
+    # ── P0.38: Resource Quiescence Gate ──
+
+    def _evaluate_consultation_quiescence(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """Decide whether an external consultation can run now.
+
+        Returns dict with:
+        - decision: run_now | defer | ask_user | cleanup_needed
+        - pressure_level: none | high | critical
+        - reason: human-readable explanation
+        - retry_after_s: suggested delay before retry (0 if run_now)
+        """
+        result: dict[str, Any] = {
+            'decision': 'run_now',
+            'pressure_level': 'none',
+            'reason': '',
+            'retry_after_s': 0,
+        }
+        try:
+            pressure = self.adaptive_orchestrator._assess_resource_pressure()
+        except Exception:
+            return result
+        if not pressure.get('under_pressure'):
+            return result
+        critical = bool(pressure.get('critical'))
+        result['pressure_level'] = 'critical' if critical else 'high'
+        signals = list(pressure.get('active_signals') or [])
+        if critical:
+            if any(s in signals for s in ('disk_critical', 'disk_space_critical')):
+                result['decision'] = 'cleanup_needed'
+                result['reason'] = (
+                    'Disco critico. No puedo abrir herramientas externas '
+                    'hasta liberar espacio.'
+                )
+                result['retry_after_s'] = 60
+            else:
+                result['decision'] = 'defer'
+                result['reason'] = (
+                    'Presion critica de recursos (RAM/CPU). '
+                    'Diferire la consulta hasta que baje la presion.'
+                )
+                result['retry_after_s'] = 30
+        else:
+            result['decision'] = 'defer'
+            result['reason'] = (
+                'Presion alta de recursos. Diferire brevemente '
+                'la consulta externa.'
+            )
+            result['retry_after_s'] = 15
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_consultation_quiescence(
+                decision=result['decision'],
+                assistant_kind=assistant_kind,
+                pressure_level=result['pressure_level'],
+                reason=result['reason'],
+            )
+        except Exception:
+            pass
+        return result
+
+    _deferred_retry_generation: int = 0
+    _DEFERRED_RETRY_COOLDOWN_S: float = 10.0
+    _DEFERRED_RETRY_MAX: int = 3
+    _deferred_retry_count: int = 0
+    _deferred_retry_last_ts: float = 0.0
+
+    def _schedule_deferred_consultation_retry(
+        self, assistant_kind: str, delay_s: float,
+        *, dispatch_id: str = '',
+    ) -> None:
+        """Schedule a background retry — Qt-safe: never mutates UI from thread."""
+        now = time.time()
+        if now - self._deferred_retry_last_ts < self._DEFERRED_RETRY_COOLDOWN_S:
+            return
+        if self._deferred_retry_count >= self._DEFERRED_RETRY_MAX:
+            return
+        self._deferred_retry_generation += 1
+        gen = self._deferred_retry_generation
+        self._deferred_retry_count += 1
+        self._deferred_retry_last_ts = now
+
+        def _retry() -> None:
+            import time as _t
+            _t.sleep(max(delay_s, 5.0))
+            if gen != self._deferred_retry_generation:
+                return
+            quiescence = self._evaluate_consultation_quiescence(assistant_kind)
+            if quiescence['decision'] == 'run_now':
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_consultation_quiescence(
+                        decision='retry_triggered',
+                        assistant_kind=assistant_kind,
+                        pressure_level='none',
+                        reason='quiescence retry after deferred',
+                    )
+                except Exception:
+                    pass
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                QMetaObject.invokeMethod(
+                    self, '_on_deferred_retry_ready',
+                    Qt.ConnectionType.QueuedConnection,
+                    Q_ARG(str, assistant_kind),
+                )
+            else:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_consultation_quiescence(
+                        decision='retry_still_deferred',
+                        assistant_kind=assistant_kind,
+                        pressure_level=quiescence['pressure_level'],
+                        reason=quiescence['reason'],
+                    )
+                except Exception:
+                    pass
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                QMetaObject.invokeMethod(
+                    self, '_on_deferred_retry_still_blocked',
+                    Qt.ConnectionType.QueuedConnection,
+                    Q_ARG(str, assistant_kind),
+                )
+        threading.Thread(target=_retry, daemon=True, name='quiescence-retry').start()
+
+    @Slot(str)
+    def _on_deferred_retry_ready(self, assistant_kind: str) -> None:
+        """Qt main-thread slot: retry consultation after quiescence cleared."""
+        self._run_external_consultation(assistant_kind, announce=True)
+
+    @Slot(str)
+    def _on_deferred_retry_still_blocked(self, assistant_kind: str) -> None:
+        """Qt main-thread slot: inform user retry still deferred."""
+        msg = (
+            f'Intente reintentar la consulta a '
+            f'{self._assistant_display_name(assistant_kind)} '
+            f'pero la presion de recursos sigue alta. '
+            f'Puedes intentar de nuevo cuando baje la presion.'
+        )
+        self._latest_response_text = msg
+        self._latest_response_meta = 'consultation_retry_still_deferred'
+        self._append_message('assistant', 'IABV', msg, 'consultation_retry_still_deferred')
+        self._working = False
+        self.dataChanged.emit()
+
+    # ── P0.38: AssistantWebSkillProfile ──
+
+    _PROVIDER_ALIASES: dict[str, str] = {
+        'chatgpt': 'chatgpt', 'ChatGPT': 'chatgpt',
+        'chatgpt_web': 'chatgpt', 'openai': 'chatgpt',
+        'claude': 'claude', 'Claude': 'claude',
+        'gemini': 'gemini', 'Gemini': 'gemini',
+    }
+
+    @staticmethod
+    def _normalize_provider(provider: str) -> str:
+        """Normalize provider/assistant_kind to canonical lowercase form."""
+        if not provider:
+            return ''
+        canonical = ControlCenterViewModel._PROVIDER_ALIASES.get(provider)
+        if canonical:
+            return canonical
+        return provider.strip().lower().replace(' ', '_')
+
+    _WEB_SKILL_SESSION_MODES = (
+        'isolated_profile', 'governed_user_bridge',
+        'manual_pasteback', 'api_if_available',
+    )
+    _WEB_SKILL_AUTH_STATES = (
+        'unknown', 'authenticated', 'security_verification', 'logged_out',
+    )
+
+    def _build_assistant_web_skill_profile(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """Build a structured web skill profile for an assistant.
+
+        Not a new service — structured metadata built from existing sources:
+        ToolRegistry, WorldModel, ExternalAssistantToolAdapter, RuntimeAuditTracer.
+        """
+        title = self._assistant_display_name(assistant_kind)
+        profile: dict[str, Any] = {
+            'assistant_kind': assistant_kind,
+            'assistant_title': title,
+            'session_modes': list(self._WEB_SKILL_SESSION_MODES),
+            'active_session_mode': 'unknown',
+            'browser_profile_path': '',
+            'cdp_status': 'unknown',
+            'window_status': 'unknown',
+            'auth_status': 'unknown',
+            'capture_modes': ['manual_pasteback'],
+            'last_scan_ts': 0.0,
+            'last_block_reason': '',
+            'action_grammar': [
+                'open_profile', 'focus_window', 'ask_question',
+                'wait_for_response', 'capture_response', 'verify_response',
+                'retry_after_user_done', 'fallback_manual',
+            ],
+        }
+        # Enrich from WorldModel — use active_windows contract, not wm.windows
+        try:
+            wm = self._current_world_model()
+            if wm:
+                windows = list(wm.active_windows or [])
+                kind_lower = self._normalize_provider(assistant_kind)
+                for w in windows:
+                    w_title = str(getattr(w, 'title', '') or '').lower()
+                    if kind_lower in w_title or title.lower() in w_title:
+                        profile['window_status'] = 'found'
+                        meta = getattr(w, 'metadata', None) or {}
+                        profile['window_hwnd'] = meta.get('hwnd') or getattr(w, 'hwnd', None)
+                        break
+        except Exception:
+            pass
+        # Enrich from CDP probe
+        try:
+            if hasattr(self, '_detect_cdp_available'):
+                cdp_result = self._detect_cdp_available()
+                if isinstance(cdp_result, dict):
+                    profile['cdp_status'] = 'available' if cdp_result.get('available') else 'unavailable'
+                    if cdp_result.get('available'):
+                        profile['capture_modes'].insert(0, 'cdp')
+                        profile['active_session_mode'] = 'governed_user_bridge'
+        except Exception:
+            pass
+        # Enrich from recent dispatch history
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            lifecycles = tracer.recent_dispatch_lifecycles(limit=10)
+            for lc in lifecycles:
+                if lc.get('provider') == assistant_kind:
+                    ts = lc.get('terminal_state', '')
+                    if ts == 'blocked_by_security_verification':
+                        profile['auth_status'] = 'security_verification'
+                        profile['last_block_reason'] = 'security_verification'
+                    elif ts == 'response_captured':
+                        profile['auth_status'] = 'authenticated'
+                    elif 'blocked' in ts:
+                        profile['last_block_reason'] = ts
+                    break
+        except Exception:
+            pass
+        # Browser profile path
+        try:
+            profile['browser_profile_path'] = str(
+                Path(self.config.workspace_root)
+                / 'data' / 'tool_teaching' / 'external_assistants'
+                / f'{assistant_kind}_program_session' / 'browser_profile'
+            )
+        except Exception:
+            pass
+        if profile['active_session_mode'] == 'unknown':
+            if profile['window_status'] == 'found':
+                profile['active_session_mode'] = 'isolated_profile'
+            else:
+                profile['active_session_mode'] = 'manual_pasteback'
+        profile['last_scan_ts'] = time.time()
+        return profile
+
+    def _scan_assistant_web_skill(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """P0.38 Task D: Governed scan of a web tool's availability.
+
+        OBSERVE → SELECT_SESSION → VERIFY_ACCESS → report result.
+        Does not ACT — only observes and reports. Never reads cookies/tokens.
+        """
+        profile = self._build_assistant_web_skill_profile(assistant_kind)
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_assistant_web_skill_scan(
+                assistant_kind=assistant_kind,
+                phase='scan_complete',
+                auth_status=profile['auth_status'],
+                session_mode=profile['active_session_mode'],
+                cdp_available=profile['cdp_status'] == 'available',
+                window_found=profile['window_status'] == 'found',
+                detail=profile.get('last_block_reason', ''),
+            )
+        except Exception:
+            pass
+        return profile
+
+    # ── P0.38: Devin Repair Worker ──
+
+    def _build_repair_packet(self, issue_summary: str) -> dict[str, Any]:
+        """Build a structured repair request packet from PortableContext cache.
+
+        Uses latest cache/latest.json — never calls build_package() synchronously
+        to avoid freezing the UI thread.
+        No PII, no cookies, no tokens.
+        """
+        packet: dict[str, Any] = {
+            'type': 'repair_request',
+            'issue_summary': issue_summary[:500],
+            'timestamp': time.time(),
+            'portable_context_excerpt': {},
+            'recent_failures': [],
+            'recommended_action': '',
+        }
+        try:
+            pcs = getattr(self, 'portable_context_service', None)
+            if pcs:
+                # Use cached package — never heavy rebuild in UI path
+                pkg = getattr(pcs, 'current_package', None)
+                if pkg is None and hasattr(pcs, 'latest_cache'):
+                    pkg = pcs.latest_cache
+                if pkg is None:
+                    latest_path = Path(self.config.workspace_root) / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+                    if latest_path.exists():
+                        import json as _json
+                        try:
+                            raw = _json.loads(latest_path.read_text(encoding='utf-8'))
+                            pkg = raw
+                        except Exception:
+                            pass
+                if pkg is not None:
+                    ctx = pkg.get('context', None) if isinstance(pkg, dict) else (getattr(pkg, 'context', None) or {})
+                    if isinstance(ctx, dict):
+                        packet['portable_context_excerpt'] = {
+                            k: v for k, v in ctx.items()
+                            if k in (
+                                'cloud_reasoning', 'external_consultation',
+                                'startup_health', 'web_skill_status',
+                                'devin_repair_status',
+                            )
+                        }
+                    else:
+                        packet['portable_context_excerpt'] = {'status': 'UNRESOLVED_no_fresh_context'}
+                else:
+                    packet['portable_context_excerpt'] = {'status': 'UNRESOLVED_no_cached_context'}
+        except Exception:
+            pass
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            lifecycles = tracer.recent_dispatch_lifecycles(limit=5)
+            failed = [
+                {
+                    'task': lc['task_name'],
+                    'terminal': lc['terminal_state'],
+                    'provider': lc['provider'],
+                }
+                for lc in lifecycles
+                if lc.get('terminal_state') and 'blocked' in lc.get('terminal_state', '')
+            ]
+            packet['recent_failures'] = failed[:3]
+        except Exception:
+            pass
+        return packet
+
+    @staticmethod
+    def _sanitize_for_repair(text: str) -> str:
+        """Strip potential PII/tokens from repair packet text."""
+        import re
+        sanitized = re.sub(r'[A-Za-z0-9_\-]{20,}', '<REDACTED>', text)
+        sanitized = re.sub(r'[\w.+-]+@[\w-]+\.[\w.-]+', '<EMAIL>', sanitized)
+        return sanitized[:500]
+
+    def _try_devin_repair(
+        self, issue_summary: str, *, user_confirmed: bool = False,
+    ) -> dict[str, Any]:
+        """Attempt to create a Devin repair task if the API is available.
+
+        Returns result dict with phase/available/session_id.
+        Does not use browser credentials — only the Devin REST API.
+        Requires user_confirmed=True to actually create the session.
+        """
+        result: dict[str, Any] = {
+            'phase': 'check_availability',
+            'available': False,
+            'session_id': '',
+            'detail': '',
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            tracer = None
+        try:
+            devin_adapter = self.tool_adapters.get('devin_api')
+            if devin_adapter is None or not getattr(devin_adapter, 'api_key', ''):
+                result['detail'] = 'devin_api adapter not available or no API key'
+                result['phase'] = 'unavailable'
+                if tracer:
+                    tracer.trace_devin_repair(
+                        phase='devin_repair_unavailable',
+                        available=False,
+                        detail=result['detail'],
+                    )
+                return result
+            result['available'] = True
+            # Trace the request
+            if tracer:
+                tracer.trace_devin_repair(
+                    phase='devin_repair_requested',
+                    available=True,
+                    detail=self._sanitize_for_repair(issue_summary),
+                )
+            if not user_confirmed:
+                result['phase'] = 'awaiting_confirmation'
+                result['detail'] = 'Devin repair available but requires user confirmation'
+                return result
+            result['phase'] = 'preparing_packet'
+            packet = self._build_repair_packet(issue_summary)
+            prompt = (
+                f'IABV v1.5 Repair Request:\n'
+                f'Issue: {self._sanitize_for_repair(issue_summary)}\n'
+                f'Recent failures: {packet.get("recent_failures", [])}\n'
+                f'Context: {json.dumps(packet.get("portable_context_excerpt", {}), default=str)[:500]}'
+            )
+            result['phase'] = 'creating_session'
+            try:
+                from iabv_v15.bootstrap import _devin_create_session
+                session_id = _devin_create_session(devin_adapter, prompt)
+                if session_id:
+                    result['session_id'] = session_id
+                    result['phase'] = 'session_created'
+                    result['detail'] = f'Devin session {session_id[:12]} created'
+                    if tracer:
+                        tracer.trace_devin_repair(
+                            phase='devin_repair_created',
+                            available=True,
+                            session_id=session_id[:12],
+                            detail=result['detail'],
+                        )
+                else:
+                    result['phase'] = 'session_creation_failed'
+                    result['detail'] = 'Devin API returned empty session_id'
+                    if tracer:
+                        tracer.trace_devin_repair(
+                            phase='devin_repair_failed',
+                            available=True,
+                            detail=result['detail'],
+                        )
+            except Exception as exc:
+                result['phase'] = 'session_creation_failed'
+                result['detail'] = str(exc)[:200]
+                if tracer:
+                    tracer.trace_devin_repair(
+                        phase='devin_repair_failed',
+                        available=True,
+                        detail=result['detail'],
+                    )
+        except Exception as exc:
+            result['phase'] = 'error'
+            result['detail'] = str(exc)[:200]
+        return result
+
+    # ── P0.38: Follow-up intent classification for active incidents ──
+
+    _FOLLOWUP_RETRY_PATTERNS: tuple[str, ...] = (
+        'intenta nuevamente', 'intenta de nuevo', 'intentalo de nuevo',
+        'intentalo otra vez', 'reintenta', 'vuelve a intentar',
+        'prueba otra vez', 'prueba de nuevo', 'retry',
+        'hazlo otra vez', 'hazlo de nuevo',
+    )
+    _FOLLOWUP_QUERY_PATTERNS: tuple[str, ...] = (
+        'puedes hacer la consulta', 'puedes consultar',
+        'si o no', 'sí o no', 'puedes o no',
+        'que necesitas', 'qué necesitas',
+        'que te falta', 'qué te falta',
+        'por que no puedes', 'por qué no puedes',
+    )
+    _FOLLOWUP_WINDOW_PATTERNS: tuple[str, ...] = (
+        'abre la ventana', 'abreme la ventana', 'ábreme la ventana',
+        'muestra la ventana', 'muestrame la ventana', 'muéstrame la ventana',
+        'enfoca la ventana', 'focus window',
+    )
+
+    def _try_handle_consultation_followup(self, message: str) -> bool:
+        """P0.38 Task F: Handle follow-up messages for active consultations.
+
+        Messages like 'intenta nuevamente', 'puedes hacer la consulta',
+        'abre la ventana' should NOT fall to local chat if there is an
+        active external incident or recent failure memory.
+        Integrates with ActiveIncidentFrame (P0.37) when available.
+        """
+        lowered = message.strip().lower()
+        # Check both ActiveIncidentFrame (P0.37) and failure memory
+        incident = getattr(self, '_active_incident_frame', None)
+        failure_memory = getattr(self, '_external_failure_memory', None)
+        if not failure_memory and not incident:
+            return False
+        if incident and not incident.get('resolved') and time.time() < incident.get('expires_at', 0):
+            assistant_kind = str(incident.get('assistant_kind', ''))
+            assistant_title = str(incident.get('assistant_title', ''))
+        elif failure_memory:
+            assistant_kind = str(failure_memory.get('assistant_kind', ''))
+            assistant_title = str(failure_memory.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        else:
+            return False
+        # Retry patterns
+        if any(p in lowered for p in self._FOLLOWUP_RETRY_PATTERNS):
+            profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
+            quiescence = self._evaluate_consultation_quiescence(assistant_kind or 'chatgpt')
+            if quiescence['decision'] != 'run_now':
+                msg = (
+                    f'Quiero reintentar la consulta a {assistant_title}, '
+                    f'pero {quiescence["reason"]} '
+                    f'Programare un reintento automatico.'
+                )
+                self._latest_response_text = msg
+                self._latest_response_meta = 'consultation_retry_deferred'
+                self._append_message('assistant', 'IABV', msg, 'consultation_retry_deferred')
+                self._schedule_deferred_consultation_retry(
+                    assistant_kind or 'chatgpt',
+                    quiescence['retry_after_s'],
+                )
+                self.dataChanged.emit()
+                return True
+            self._run_external_consultation(assistant_kind or 'chatgpt', announce=True)
+            return True
+        # Query patterns — explain state, don't fall to local
+        if any(p in lowered for p in self._FOLLOWUP_QUERY_PATTERNS):
+            profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
+            lines = [f'Estado actual de {assistant_title}:']
+            lines.append(f'- Sesion: {profile["active_session_mode"]}')
+            lines.append(f'- Autenticacion: {profile["auth_status"]}')
+            lines.append(f'- Ventana: {profile["window_status"]}')
+            lines.append(f'- CDP: {profile["cdp_status"]}')
+            if profile['last_block_reason']:
+                lines.append(f'- Ultimo bloqueo: {profile["last_block_reason"]}')
+            quiescence = self._evaluate_consultation_quiescence(assistant_kind or 'chatgpt')
+            if quiescence['decision'] == 'run_now':
+                lines.append('Puedo intentar la consulta ahora. Escribe "intenta nuevamente".')
+            else:
+                lines.append(f'Debo esperar: {quiescence["reason"]}')
+            msg = '\n'.join(lines)
+            self._latest_response_text = msg
+            self._latest_response_meta = 'consultation_status_report'
+            self._append_message('assistant', 'IABV', msg, 'consultation_status_report')
+            self.dataChanged.emit()
+            return True
+        # Window patterns — use ActiveIncidentFrame hwnd when available
+        if any(p in lowered for p in self._FOLLOWUP_WINDOW_PATTERNS):
+            # Prefer hwnd from ActiveIncidentFrame (P0.37), fall back to web skill profile
+            hwnd = None
+            if incident and incident.get('hwnd') is not None:
+                hwnd = incident['hwnd']
+            if hwnd is None:
+                profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
+                hwnd = profile.get('window_hwnd')
+            if hwnd is not None:
+                try:
+                    import ctypes
+                    user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+                    user32.ShowWindow(hwnd, 9)
+                    user32.SetForegroundWindow(hwnd)
+                    msg = f'Enfoque la ventana de {assistant_title}.'
+                    self._latest_response_text = msg
+                    self._latest_response_meta = 'window_focused'
+                    self._append_message('assistant', 'IABV', msg, 'window_focused')
+                except Exception:
+                    msg = (
+                        f'No pude enfocar la ventana de {assistant_title}. '
+                        f'Busca la ventana manualmente.'
+                    )
+                    self._latest_response_text = msg
+                    self._latest_response_meta = 'window_focus_failed'
+                    self._append_message('assistant', 'IABV', msg, 'window_focus_failed')
+            else:
+                msg = (
+                    f'No encontre una ventana activa de {assistant_title}. '
+                    f'Abre {assistant_title} manualmente y luego escribe "intenta nuevamente".'
+                )
+                self._latest_response_text = msg
+                self._latest_response_meta = 'window_not_found'
+                self._append_message('assistant', 'IABV', msg, 'window_not_found')
+            self.dataChanged.emit()
+            return True
+        return False
+
     @staticmethod
     def _derive_external_consultation_outcome(payload: Any) -> str:
         """Derive semantic outcome from external_consultation payload.
@@ -10728,6 +11302,13 @@ class ControlCenterViewModel(QObject):
             return
         if self._try_handle_cdp_permission_revoke(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.38 Task F: consultation follow-ups must not fall to local chat.
+        if self._try_handle_consultation_followup(message):
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_external_failure_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
