@@ -65,6 +65,40 @@ def active_incident():
         'expires_at': time.time() + 870,
         'dispatch_id': 'disp_abc123',
         'resolved': False,
+        'browser_profile': 'chatgpt_program_session',
+        'selected_browser_or_profile': 'Chrome for Testing (sesión aislada de IABV)',
+        'browser_label': 'Chrome for Testing (sesión aislada de IABV)',
+        'target_window_title': 'ChatGPT - Chrome for Testing',
+        'hwnd': 12345,
+    }
+
+
+@pytest.fixture()
+def active_incident_cdp():
+    """Incident frame with cdp_available=True."""
+    return {
+        'incident_id': 'inc_cdp_test',
+        'assistant_kind': 'chatgpt',
+        'assistant_title': 'ChatGPT',
+        'terminal_state': 'blocked_by_security_verification',
+        'block_type': 'browser_security_verification',
+        'profile_label': 'chatgpt_program_session',
+        'cdp_available': True,
+        'last_user_goal': 'consulta a chatgpt',
+        'user_help_needed': 'Completar verificacion o usar CDP.',
+        'available_actions': [
+            'retest_after_user_confirms', 'show_problem_window',
+            'manual_pasteback', 'switch_to_user_chrome_cdp',
+        ],
+        'created_at': time.time() - 30,
+        'expires_at': time.time() + 870,
+        'dispatch_id': 'disp_cdp',
+        'resolved': False,
+        'browser_profile': 'chatgpt_program_session',
+        'selected_browser_or_profile': 'Chrome for Testing',
+        'browser_label': 'Chrome for Testing',
+        'target_window_title': 'ChatGPT',
+        'hwnd': 54321,
     }
 
 
@@ -376,6 +410,17 @@ class TestCreateIncidentFrame:
         vm._create_active_incident_frame = viewmodel_cls._create_active_incident_frame.__get__(vm)
         vm._describe_user_help_needed = viewmodel_cls._describe_user_help_needed
         vm._describe_available_actions = viewmodel_cls._describe_available_actions
+        vm._detect_cdp_available = lambda: False
+        vm._last_adaptive_payload = {
+            'metadata': {
+                'shared_reality_handoff': {
+                    'target_window_title': 'ChatGPT - Chrome for Testing',
+                    'hwnd': 99999,
+                    'selected_browser_or_profile': 'Chrome for Testing (sesión aislada)',
+                    'browser_profile': 'chatgpt_program_session',
+                }
+            }
+        }
 
         viewmodel_cls._remember_external_failure(
             vm,
@@ -391,6 +436,10 @@ class TestCreateIncidentFrame:
         assert vm._active_incident_frame is not None
         assert vm._active_incident_frame['block_type'] == 'browser_security_verification'
         assert vm._active_incident_frame['assistant_kind'] == 'chatgpt'
+        # Real payload context should be carried through
+        assert vm._active_incident_frame['hwnd'] == 99999
+        assert vm._active_incident_frame['target_window_title'] == 'ChatGPT - Chrome for Testing'
+        assert vm._active_incident_frame['browser_profile'] == 'chatgpt_program_session'
 
     def test_no_frame_for_non_blocked_failure(self, viewmodel_cls):
         vm = MagicMock(spec=viewmodel_cls)
@@ -439,3 +488,169 @@ class TestIncidentLifecycle:
         result = viewmodel_cls._get_active_incident(vm)
         assert result is not None
         assert result['incident_id'] == 'inc_active'
+
+    def test_resolve_marks_frame_resolved(self, viewmodel_cls):
+        vm = MagicMock(spec=viewmodel_cls)
+        frame = {
+            'incident_id': 'inc_to_resolve',
+            'resolved': False,
+            'terminal_state': 'blocked_by_security_verification',
+            'expires_at': time.time() + 100,
+        }
+        vm._active_incident_frame = frame
+        viewmodel_cls._resolve_incident_frame(vm, 'resolved')
+        assert frame['resolved'] is True
+        assert frame['resolution'] == 'resolved'
+        # After resolve, get_active_incident should return None
+        result = viewmodel_cls._get_active_incident(vm)
+        assert result is None
+
+    def test_resolve_unresolved_marks_unresolved(self, viewmodel_cls):
+        vm = MagicMock(spec=viewmodel_cls)
+        frame = {
+            'incident_id': 'inc_unresolved',
+            'resolved': False,
+            'terminal_state': 'blocked_by_security_verification',
+            'expires_at': time.time() + 100,
+        }
+        vm._active_incident_frame = frame
+        viewmodel_cls._resolve_incident_frame(vm, 'unresolved')
+        assert frame['resolved'] is True
+        assert frame['resolution'] == 'unresolved'
+
+
+# ---------------------------------------------------------------------------
+# 13. Focus window uses current_model() and hwnd from incident
+# ---------------------------------------------------------------------------
+
+class TestFocusWindowWithWorldModel:
+    def test_focus_uses_hwnd_from_incident(self, viewmodel_cls, active_incident):
+        """_try_focus_incident_window should try hwnd from the incident frame."""
+        vm = MagicMock(spec=viewmodel_cls)
+        vm._active_incident_frame = active_incident
+        from iabv_v15.domain.models import WorldModelSnapshot
+        vm._current_world_model = lambda: WorldModelSnapshot()
+        vm._resolve_incident_frame = lambda res: None
+
+        import ctypes
+        mock_windll = MagicMock()
+        mock_windll.user32.ShowWindow.return_value = True
+        mock_windll.user32.SetForegroundWindow.return_value = True
+        with patch.object(ctypes, 'windll', mock_windll, create=True):
+            result = viewmodel_cls._try_focus_incident_window(vm, active_incident)
+            assert result is True
+            mock_windll.user32.ShowWindow.assert_called_once_with(12345, 9)  # SW_RESTORE=9
+            mock_windll.user32.SetForegroundWindow.assert_called_once_with(12345)
+
+    def test_focus_searches_world_model_when_no_hwnd(self, viewmodel_cls):
+        """When incident has no hwnd, search WorldModelService.current_model()."""
+        incident = {
+            'incident_id': 'inc_no_hwnd',
+            'profile_label': 'chatgpt_program_session',
+            'hwnd': None,
+            'resolved': False,
+        }
+        from iabv_v15.domain.models import WorldModelSnapshot, WindowObservation
+        snapshot = WorldModelSnapshot(
+            active_windows=[
+                WindowObservation(
+                    title='ChatGPT - Google Chrome',
+                    app_name='chrome.exe',
+                    metadata={'hwnd': 77777},
+                ),
+            ]
+        )
+        vm = MagicMock(spec=viewmodel_cls)
+        vm._active_incident_frame = incident
+        vm._current_world_model = lambda: snapshot
+        vm._resolve_incident_frame = lambda res: None
+
+        import ctypes
+        mock_windll = MagicMock()
+        mock_windll.user32.ShowWindow.return_value = True
+        mock_windll.user32.SetForegroundWindow.return_value = True
+        with patch.object(ctypes, 'windll', mock_windll, create=True):
+            result = viewmodel_cls._try_focus_incident_window(vm, incident)
+            assert result is True
+            mock_windll.user32.SetForegroundWindow.assert_called_once_with(77777)
+
+    def test_focus_resolves_unresolved_when_no_hwnd(self, viewmodel_cls):
+        """When no hwnd found at all, resolve as unresolved."""
+        incident = {
+            'incident_id': 'inc_no_hwnd',
+            'profile_label': 'chatgpt_program_session',
+            'hwnd': None,
+            'resolved': False,
+        }
+        from iabv_v15.domain.models import WorldModelSnapshot
+        vm = MagicMock(spec=viewmodel_cls)
+        vm._active_incident_frame = incident
+        vm._current_world_model = lambda: WorldModelSnapshot()
+        resolve_calls = []
+        vm._resolve_incident_frame = lambda res: resolve_calls.append(res)
+
+        result = viewmodel_cls._try_focus_incident_window(vm, incident)
+        assert result is False
+        assert resolve_calls == ['unresolved']
+
+
+# ---------------------------------------------------------------------------
+# 14. cdp_available=True in payload offers switch_to_user_chrome_cdp
+# ---------------------------------------------------------------------------
+
+class TestCDPAvailableActions:
+    def test_cdp_offers_switch(self, viewmodel_cls, active_incident_cdp):
+        result = viewmodel_cls._classify_incident_followup_intent(
+            'yo ya inicié sesión en Chrome', active_incident_cdp,
+        )
+        assert result['intent'] == 'profile_mismatch'
+        # The incident should have CDP action available
+        assert 'switch_to_user_chrome_cdp' in active_incident_cdp['available_actions']
+
+
+# ---------------------------------------------------------------------------
+# 15. PortableContext exports active_incident_frame section
+# ---------------------------------------------------------------------------
+
+class TestPortableContextSection:
+    def test_build_package_contains_incident_section(self, tmp_path):
+        from iabv_v15.services.evolution.portable_context_service import PortableContextService
+        storage = MagicMock()
+        svc = PortableContextService(workspace_root=str(tmp_path), storage=storage)
+        pkg = svc.build_package()
+        section_ids = [s.section_id for s in pkg.sections]
+        assert 'active_incident_frame' in section_ids
+
+
+# ---------------------------------------------------------------------------
+# 16. OSES detects fallback using DecisionAuditTrail records
+# ---------------------------------------------------------------------------
+
+class TestOSESDecisionAuditSource:
+    def test_finding_from_decision_audit_trail(self, tmp_path):
+        """OSES should detect fallback from DecisionAuditTrail chat_routing."""
+        decisions_path = tmp_path / 'data' / 'evolution' / 'decision_audit' / 'decisions.jsonl'
+        decisions_path.parent.mkdir(parents=True)
+        entries = [
+            {'phase': 'chat_routing', 'metadata': {'reasoning_path': 'external_failure_blocked_by_security_verification'}},
+            {'phase': 'chat_routing', 'metadata': {'reasoning_path': 'general_chat'}},
+            {'phase': 'chat_routing', 'metadata': {'reasoning_path': 'external_failure_blocked_by_security_verification'}},
+            {'phase': 'chat_routing', 'metadata': {'reasoning_path': 'general_chat'}},
+        ]
+        decisions_path.write_text(
+            '\n'.join(json.dumps(e) for e in entries),
+            encoding='utf-8',
+        )
+        # Also create empty runtime_audit to avoid that source counting
+        audit_path = tmp_path / 'data' / 'logs' / 'runtime_audit.jsonl'
+        audit_path.parent.mkdir(parents=True, exist_ok=True)
+        audit_path.write_text('', encoding='utf-8')
+
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        svc = MagicMock(spec=OperationalSelfExaminationService)
+        svc.workspace_root = str(tmp_path)
+        findings = OperationalSelfExaminationService._incident_followup_local_fallback_findings(svc)
+        assert len(findings) == 1
+        assert findings[0].metadata['local_fallback_count'] >= 2

@@ -203,6 +203,7 @@ class PortableContextService:
             self._canonical_work_queue_section(now=now),
             self._shared_reality_section(review=self_examination, now=now),
             self._user_chrome_bridge_section(now=now),
+            self._active_incident_frame_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
