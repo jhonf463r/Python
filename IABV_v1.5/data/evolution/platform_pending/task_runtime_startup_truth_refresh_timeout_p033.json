@@ -1,0 +1,26 @@
+{
+  "id": "runtime_startup_truth_refresh_timeout_p033",
+  "title": "P0.33: Startup truth refresh bounded by timeout",
+  "status": "COMPLETED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Live runtime showed UIBridge unavailable after restart because startup_truth_refresh stayed active while PortableContextService.build_package() was still running. That flag paused lazy VM prebuild and prevented runtime wiring from converging. The fix bounds each truth-refresh step and clears _truth_refresh_active in finally.",
+  "resume_hint": "Completed in local Windows runtime. _final_startup_truth_refresh now runs OSES and PortableContext steps with a daemon-thread timeout and always clears _truth_refresh_active.",
+  "next_action": "Run IABV from the desktop shortcut and confirm runtime_audit no longer accumulates lazy_vm_prebuild_paused with reason startup_background_active:startup_truth_refresh after the timeout window.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "covered_by_commit": "local_runtime_p033",
+    "root_cause": "startup_truth_refresh_can_block_runtime_wiring",
+    "tests": {
+      "focused": "20 passed",
+      "regression": "136 passed"
+    },
+    "unresolved": [
+      "live_bridge_after_timeout_proof_pending"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "Metacognitive refresh must be observable and bounded. A stuck PortableContext rebuild should be recorded and degraded, not block bridge wiring or lazy VM prebuild.",
+  "created_at": "2026-05-18T00:20:00Z",
+  "updated_at": "2026-05-18T00:20:00Z"
+}

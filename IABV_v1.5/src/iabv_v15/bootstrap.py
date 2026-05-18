@@ -1987,6 +1987,56 @@ class AppBootstrap:
             daemon=True,
         ).start()
 
+    _STARTUP_TRUTH_STEP_TIMEOUT_S: float = 8.0
+
+    def _run_startup_truth_step(
+        self,
+        label: str,
+        func: Any,
+        *,
+        timeout_s: float | None = None,
+    ) -> bool:
+        """Run one startup truth-refresh step with a bounded wait.
+
+        This method intentionally uses a daemon thread + Event instead of a
+        ThreadPoolExecutor context manager.  A context manager would wait for a
+        stuck worker on shutdown and recreate the freeze we are trying to avoid.
+        """
+        done = threading.Event()
+        error: dict[str, BaseException] = {}
+
+        def worker() -> None:
+            try:
+                func()
+            except BaseException as exc:  # noqa: BLE001 - keep startup alive
+                error['exc'] = exc
+            finally:
+                done.set()
+
+        wait_s = float(timeout_s if timeout_s is not None else getattr(
+            self, '_STARTUP_TRUTH_STEP_TIMEOUT_S', 8.0,
+        ))
+        threading.Thread(
+            target=worker,
+            name=f'iabv-startup-truth-{label}',
+            daemon=True,
+        ).start()
+        if not done.wait(timeout=wait_s):
+            logger.warning('startup_truth_refresh: %s timed out after %.1fs', label, wait_s)
+            try:
+                self._tracer.trace(
+                    'startup_truth_refresh_step_timeout',
+                    step=label,
+                    timeout_s=wait_s,
+                )
+            except Exception:
+                pass
+            return False
+        if 'exc' in error:
+            logger.debug('startup_truth_refresh: %s failed: %s', label, error['exc'])
+            return False
+        return True
+
     def _final_startup_truth_refresh(self) -> None:
         """Re-persist OSES and PortableContext after boot is truly complete.
 
@@ -2004,28 +2054,24 @@ class AppBootstrap:
         the final boot state.  Then PortableContext persists with the
         up-to-date OSES summary — not a stale one.
         """
-        force_refresh = self._metacognition_data_is_stale()
-        if force_refresh:
-            logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
         try:
+            force_refresh = self._metacognition_data_is_stale()
+            if force_refresh:
+                logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
             oses = getattr(self, 'operational_self_examination_service', None)
             if oses is not None:
-                oses.build_review()
-                logger.info('startup_truth_refresh: OSES re-persisted')
-        except Exception as exc:
-            logger.debug('startup_truth_refresh: OSES failed: %s', exc)
-        try:
+                if self._run_startup_truth_step('oses', oses.build_review):
+                    logger.info('startup_truth_refresh: OSES re-persisted')
             pcs = getattr(self, 'portable_context_service', None)
             if pcs is not None:
-                pcs.build_package()
-                logger.info('startup_truth_refresh: PortableContext re-persisted')
-        except Exception as exc:
-            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
-        if force_refresh:
-            self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
-        self._truth_refresh_active = False
-        self._push_bootstrap_flags_to_watchdog()
-        self._check_startup_followup_done()
+                if self._run_startup_truth_step('portable_context', pcs.build_package):
+                    logger.info('startup_truth_refresh: PortableContext re-persisted')
+            if force_refresh:
+                self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
+        finally:
+            self._truth_refresh_active = False
+            self._push_bootstrap_flags_to_watchdog()
+            self._check_startup_followup_done()
 
     def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
         """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
