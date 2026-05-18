@@ -857,6 +857,11 @@ class OperationalSelfExaminationService:
         # P0.32: detect repeated isolated profile blocks.
         findings.extend(self._isolated_profile_block_findings())
 
+        # Active incident frame: verify user help after an external block is
+        # routed through the causal incident loop instead of local chat.
+        findings.extend(self._incident_followup_local_fallback_findings())
+        findings.extend(self._capability_promised_but_unavailable_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -8756,6 +8761,126 @@ class OperationalSelfExaminationService:
             ))
 
         return findings
+
+    def _incident_followup_local_fallback_findings(self) -> list[SelfExaminationFinding]:
+        """Detect blocked external incidents followed by local chat fallback.
+
+        OSES only observes and reports. It does not trigger UI actions.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+
+        block_then_local = 0
+        saw_block = False
+        try:
+            recent: deque[str] = deque(maxlen=320)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent.append(line)
+            for raw in recent:
+                try:
+                    entry = json.loads(raw)
+                except Exception:
+                    continue
+                kind = str(entry.get('kind') or '')
+                data = entry.get('data') if isinstance(entry.get('data'), dict) else {}
+                if kind == 'dispatch_terminal' and str(data.get('task_name') or '') == 'external_consultation':
+                    terminal = str(data.get('terminal_state') or '').lower()
+                    reason = str(data.get('reason') or '').lower()
+                    saw_block = (
+                        'blocked_by_security_verification' in terminal
+                        or 'browser_security_verification' in reason
+                    )
+                elif kind in {
+                    'active_incident_frame_created',
+                    'incident_followup_intent_classified',
+                    'external_failure_followup_answered',
+                    'local_fallback_suppressed_for_external_failure',
+                }:
+                    saw_block = False
+                elif saw_block and kind in {
+                    'dispatch_started',
+                    'chat_inference_started',
+                    'orchestrator_inference',
+                }:
+                    task_name = str(data.get('task_name') or '')
+                    provider = str(data.get('provider') or '').lower()
+                    if kind != 'dispatch_started' or task_name == 'chat' or 'local' in provider:
+                        block_then_local += 1
+                        saw_block = False
+        except Exception:
+            return []
+
+        if block_then_local < 2:
+            return []
+        return [SelfExaminationFinding(
+            category='incident_followup_falls_to_local_chat',
+            severity=IssueSeverity.MEDIUM,
+            title='Ayuda del usuario post-bloqueo cae al chat local',
+            summary=(
+                f'{block_then_local} veces un bloqueo externo fue seguido por '
+                'chat local sin clasificar un incidente activo. El sistema pierde '
+                'la continuidad causal de la herramienta externa.'
+            ),
+            recommendation=(
+                'Mantener ActiveIncidentFrame activo tras blocked_by_security_verification '
+                'y enrutar "como te ayudo / abre la ventana" por '
+                '_try_handle_incident_followup antes del fallback local.'
+            ),
+            confidence=0.85,
+            metadata={'local_fallback_count': block_then_local},
+        )]
+
+    def _capability_promised_but_unavailable_findings(self) -> list[SelfExaminationFinding]:
+        """Report when UI promises a capability that is not wired in this build."""
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        promised_count = 0
+        capabilities: list[str] = []
+        try:
+            recent: deque[str] = deque(maxlen=300)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent.append(line)
+            for raw in recent:
+                try:
+                    entry = json.loads(raw)
+                except Exception:
+                    continue
+                if str(entry.get('kind') or '') != 'capability_promised_but_unavailable':
+                    continue
+                data = entry.get('data') if isinstance(entry.get('data'), dict) else {}
+                promised_count += 1
+                cap = str(data.get('capability') or '')
+                if cap and cap not in capabilities:
+                    capabilities.append(cap)
+        except Exception:
+            return []
+        if promised_count < 1:
+            return []
+        return [SelfExaminationFinding(
+            category='capability_promised_but_unavailable',
+            severity=IssueSeverity.MEDIUM,
+            title='Capacidad prometida no disponible en runtime',
+            summary=(
+                f'{promised_count} evento(s) indican que una capacidad se prometio '
+                f'pero no estaba cableada: {", ".join(capabilities[:5]) or "unknown"}.'
+            ),
+            recommendation=(
+                'Antes de ofrecer acciones al usuario, verificar hasattr/callable '
+                'del handler y reportar UNRESOLVED si no existe.'
+            ),
+            confidence=0.9,
+            metadata={'promised_count': promised_count, 'capabilities': capabilities[:5]},
+        )]
 
     # -- P0.32: isolated profile blocks user's logged-in browser --
     def _isolated_profile_block_findings(self) -> list[SelfExaminationFinding]:

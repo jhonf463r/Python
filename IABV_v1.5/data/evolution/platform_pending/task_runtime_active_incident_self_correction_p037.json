@@ -1,0 +1,37 @@
+{
+  "id": "runtime_active_incident_self_correction_p037",
+  "title": "P0.37-runtime: Active Incident Frame + Guided Human Assistance",
+  "status": "UNRESOLVED",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "When external ChatGPT consultation is blocked by security verification, IABV must keep a structured active incident so follow-up messages such as 'como te puedo ayudar' and 'abreme la ventana' are resolved against the external failure instead of falling to local chat.",
+  "reason": "Live runtime showed blocked_by_security_verification in runtime_audit.jsonl, but the runtime loaded by the desktop shortcut did not have ActiveIncidentFrame wiring. The program could explain the old failure but could not focus/open the relevant window or guide the user through the current incident.",
+  "dependency_missing": "",
+  "next_action": "Run IABV from the desktop shortcut, trigger ChatGPT consultation, then type 'como te puedo ayudar' and 'abreme la ventana'. Expected: incident_followup_intent_classified appears in runtime_audit.jsonl, local chat is suppressed, and IABV either focuses the target window or reports UNRESOLVED with a bridge/manual action.",
+  "resume_hint": "Implemented in the runtime workspace loaded by the desktop shortcut. Code is verified by focused tests; live Windows proof remains pending.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "active_incident_frame_missing_from_runtime_shortcut_build",
+    "evidence": [
+      "runtime_audit showed external_consultation -> blocked_by_security_verification",
+      "runtime branch lacked _try_handle_incident_followup / _active_incident_frame wiring",
+      "user asked how to help or open the problem window, but runtime could only repeat local/failure explanation"
+    ],
+    "implemented": [
+      "Create active incident frame from external failure memory and runtime audit recovery",
+      "Classify incident follow-ups semantically: help_offer, show_problem, visibility_dispute, profile_mismatch, launch_bridge, switch_bridge, retry_done",
+      "Route incident follow-up before local chat and before stale external-failure explanation",
+      "Attempt to focus the target window via hwnd from incident metadata or WorldModel active windows",
+      "Clear stale IABV_PREFER_CDP_SESSION when CDP probe is unavailable",
+      "Export compact active incident summary to PortableContext",
+      "OSES reports blocked external incident followed by local fallback"
+    ],
+    "unresolved": [
+      "LIVE_PROOF: requires Windows runtime execution with ChatGPT security block",
+      "window_focus depends on live hwnd availability from WorldModel",
+      "CDP bridge requires user login once in governed bridge profile if ChatGPT asks"
+    ]
+  },
+  "created_at": "2026-05-17T00:00:00Z",
+  "updated_at": "2026-05-17T00:00:00Z"
+}

@@ -203,6 +203,7 @@ class PortableContextService:
             self._canonical_work_queue_section(now=now),
             self._shared_reality_section(review=self_examination, now=now),
             self._user_chrome_bridge_section(now=now),
+            self._active_incident_frame_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3625,6 +3626,56 @@ class PortableContextService:
             source_kind='runtime_audit',
             source_refs=['RuntimeAuditTracer', 'IABV_PREFER_CDP_SESSION'],
             confidence=0.9 if bridge_events > 0 else 0.5,
+            last_updated=now,
+        )
+
+    def _active_incident_frame_section(
+        self,
+        *,
+        now,
+    ) -> PortableContextSection:
+        """Export compact active-incident continuity from runtime audit."""
+        incident_events = 0
+        followup_events = 0
+        unresolved = False
+        last_state = 'none'
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            for ev in tracer.events(limit=200):
+                kind = str(ev.get('kind') or '')
+                data = ev.get('data') if isinstance(ev.get('data'), dict) else {}
+                if kind == 'active_incident_frame_created':
+                    incident_events += 1
+                    last_state = str(data.get('block_type') or data.get('terminal_state') or 'unknown')
+                elif kind == 'incident_followup_intent_classified':
+                    followup_events += 1
+                elif kind == 'incident_followup_resolved_or_unresolved':
+                    unresolved = str(data.get('resolution') or '') != 'resolved'
+        except Exception:
+            pass
+
+        items = [{
+            'incident_frame_count': incident_events,
+            'incident_followup_count': followup_events,
+            'last_incident_state': last_state,
+            'unresolved_external_handoff': unresolved,
+            'status': 'active_or_recent' if incident_events else 'none',
+        }]
+        summary = (
+            f'Frames de incidente: {incident_events}. '
+            f'Follow-ups clasificados: {followup_events}. '
+            f'Ultimo estado: {last_state}. '
+            f'Unresolved: {"si" if unresolved else "no"}.'
+        )
+        return self._section(
+            section_id='active_incident_frame',
+            title='Active Incident Frame',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit',
+            source_refs=['RuntimeAuditTracer', 'ControlCenterViewModel'],
+            confidence=0.9 if incident_events else 0.5,
             last_updated=now,
         )
 

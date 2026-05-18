@@ -241,6 +241,7 @@ class ControlCenterViewModel(QObject):
         self._last_external_failure_payload: dict[str, Any] = {}
         self._last_external_failure_ts: float = 0.0
         self._external_consultation_browser_override: dict[str, Any] = {}
+        self._active_incident_frame: dict[str, Any] | None = None
         self._dock_skip_last_trace: dict[str, float] = {}
         self._approval_dialog_visible = False
         self._approval_dialog_title = 'Aprobacion requerida'
@@ -4301,10 +4302,450 @@ class ControlCenterViewModel(QObject):
             'dispatch_id': str(dispatch_id or ''),
         }
         self._last_external_failure_ts = time.time()
+        try:
+            self._maybe_create_active_incident_frame(
+                assistant_title=assistant_title,
+                assistant_kind=assistant_kind,
+                terminal_state=terminal_state,
+                meta=meta,
+                dispatch_id=dispatch_id,
+            )
+        except Exception:
+            pass
 
     def _clear_external_failure_memory(self) -> None:
         self._last_external_failure_payload = {}
         self._last_external_failure_ts = 0.0
+
+    _INCIDENT_FRAME_TTL_S: float = 900.0
+
+    def _maybe_create_active_incident_frame(
+        self,
+        *,
+        assistant_title: str,
+        assistant_kind: str = '',
+        terminal_state: str = '',
+        meta: str = '',
+        dispatch_id: str = '',
+    ) -> dict[str, Any] | None:
+        """Create a live incident frame for external blocks needing human help.
+
+        This is structured UI memory, not a new route decider. It keeps the
+        causal context alive so the next user message can be interpreted as
+        assistance for the active external block instead of falling to local
+        chat.
+        """
+        ts = str(terminal_state or '')
+        meta_lower = str(meta or '').lower()
+        block_type = ''
+        if 'blocked_by_security_verification' in ts or 'browser_security_verification' in meta_lower:
+            block_type = 'browser_security_verification'
+        elif 'visible_timeout' in ts or 'visible_timeout' in meta_lower:
+            block_type = 'visible_timeout'
+        elif 'blocked' in ts or 'blocked' in meta_lower:
+            block_type = ts or 'blocked_external'
+        if not block_type:
+            return None
+
+        handoff: dict[str, Any] = {}
+        try:
+            payload = dict(getattr(self, '_last_adaptive_payload', {}) or {})
+            handoff_raw = (payload.get('metadata') or {}).get('shared_reality_handoff') or {}
+            if isinstance(handoff_raw, dict):
+                handoff = dict(handoff_raw)
+        except Exception:
+            handoff = {}
+
+        hwnd: int | None = None
+        for raw in (
+            handoff.get('hwnd'),
+            handoff.get('target_hwnd'),
+            handoff.get('window_hwnd'),
+        ):
+            if raw in (None, ''):
+                continue
+            try:
+                candidate = int(raw)
+                if candidate > 0:
+                    hwnd = candidate
+                    break
+            except Exception:
+                continue
+
+        target_title = str(
+            handoff.get('target_window_title')
+            or handoff.get('window_title')
+            or handoff.get('target_window')
+            or ''
+        )
+        browser_label = str(
+            handoff.get('selected_browser_or_profile')
+            or handoff.get('browser_label')
+            or handoff.get('browser_profile')
+            or 'chatgpt_program_session/browser_profile'
+        )
+        cdp_available = False
+        try:
+            cdp_available = bool(self._detect_cdp_available(timeout=0.35).get('available', False))
+        except Exception:
+            cdp_available = False
+
+        frame: dict[str, Any] = {
+            'incident_id': f'inc_{uuid.uuid4().hex[:8]}',
+            'assistant_kind': str(assistant_kind or self._security_verification_assistant_kind(assistant_title, {})),
+            'assistant_title': str(assistant_title or 'Asistente externo'),
+            'terminal_state': ts,
+            'block_type': block_type,
+            'profile_label': browser_label,
+            'browser_profile': str(handoff.get('browser_profile') or browser_label),
+            'selected_browser_or_profile': browser_label,
+            'target_window_title': target_title,
+            'hwnd': hwnd,
+            'cdp_available': cdp_available,
+            'last_user_goal': str(getattr(self, '_last_user_goal', '') or '')[:300],
+            'user_help_needed': self._describe_user_help_needed(block_type),
+            'available_actions': self._describe_incident_actions(block_type, cdp_available),
+            'created_at': time.time(),
+            'expires_at': time.time() + self._INCIDENT_FRAME_TTL_S,
+            'dispatch_id': str(dispatch_id or ''),
+            'resolved': False,
+        }
+        self._active_incident_frame = frame
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'active_incident_frame_created',
+                incident_id=frame['incident_id'],
+                assistant_kind=frame['assistant_kind'],
+                terminal_state=frame['terminal_state'],
+                block_type=frame['block_type'],
+                cdp_available=frame['cdp_available'],
+                target_window_title=frame['target_window_title'][:120],
+                hwnd_available=bool(hwnd),
+            )
+        except Exception:
+            pass
+        return frame
+
+    @staticmethod
+    def _describe_user_help_needed(block_type: str) -> str:
+        if block_type == 'browser_security_verification':
+            return (
+                'Completar la verificacion de seguridad, login o captcha en '
+                'la ventana/perfil que realmente usa IABV, o activar el '
+                'puente gobernado de Chrome desde la UI.'
+            )
+        if block_type == 'visible_timeout':
+            return 'Hacer visible la ventana objetivo y confirmar que responde.'
+        return 'Revisar la herramienta externa y pegar la respuesta si IABV no puede observarla.'
+
+    def _describe_incident_actions(self, block_type: str, cdp_available: bool) -> list[str]:
+        actions: list[str] = []
+        if block_type == 'browser_security_verification':
+            actions.extend(['show_problem_window', 'launch_governed_chrome_bridge', 'retest_after_user_confirms'])
+            if cdp_available and hasattr(self, '_try_handle_user_chrome_bridge_selection'):
+                actions.append('switch_to_user_chrome_cdp')
+            actions.append('manual_pasteback')
+        elif block_type == 'visible_timeout':
+            actions.extend(['show_problem_window', 'retest_after_user_confirms', 'manual_pasteback'])
+        else:
+            actions.append('manual_pasteback')
+        return list(dict.fromkeys(actions))
+
+    def _get_active_incident(self) -> dict[str, Any] | None:
+        frame = getattr(self, '_active_incident_frame', None)
+        if not frame:
+            return None
+        if frame.get('resolved'):
+            return None
+        if time.time() > float(frame.get('expires_at') or 0.0):
+            return None
+        return frame
+
+    def _resolve_incident_frame(self, resolution: str = 'resolved') -> None:
+        frame = getattr(self, '_active_incident_frame', None)
+        if not frame:
+            return
+        frame['resolved'] = True
+        frame['resolution'] = str(resolution or 'resolved')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'incident_followup_resolved_or_unresolved',
+                incident_id=str(frame.get('incident_id') or ''),
+                resolution=str(resolution or 'resolved'),
+                terminal_state=str(frame.get('terminal_state') or ''),
+                block_type=str(frame.get('block_type') or ''),
+            )
+        except Exception:
+            pass
+
+    _INCIDENT_HELP_TOKENS: tuple[str, ...] = (
+        'como te ayudo', 'cómo te ayudo', 'como te puedo ayudar',
+        'cómo te puedo ayudar', 'que necesitas de mi', 'qué necesitas de mí',
+        'que hago', 'qué hago', 'en que te ayudo', 'en qué te ayudo',
+        'que necesitas', 'qué necesitas', 'te ayudo',
+    )
+    _INCIDENT_SHOW_TOKENS: tuple[str, ...] = (
+        'abreme la ventana', 'ábreme la ventana', 'abre la ventana',
+        'muestrame', 'muéstrame', 'donde esta', 'dónde está',
+        'donde tienes el problema', 'dónde tienes el problema',
+        'cual ventana', 'cuál ventana', 'abrelo', 'ábrelo',
+        'ensename', 'enséñame',
+    )
+    _INCIDENT_VISIBILITY_TOKENS: tuple[str, ...] = (
+        'no veo', 'no aparece', 'a mi si me funciona', 'a mí sí me funciona',
+        'yo si veo', 'yo sí veo', 'no tengo ese problema',
+    )
+    _INCIDENT_PROFILE_TOKENS: tuple[str, ...] = (
+        'ya inicie sesion', 'ya inicié sesión', 'mi chrome',
+        'chrome normal', 'mi navegador', 'mi sesion', 'mi sesión',
+        'perfil incorrecto', 'otra ventana',
+    )
+    _INCIDENT_BRIDGE_LAUNCH_TOKENS: tuple[str, ...] = (
+        'abrir chrome con puente', 'abre chrome con puente',
+        'abrir el puente', 'activa el puente', 'activar puente',
+    )
+    _INCIDENT_BRIDGE_SWITCH_TOKENS: tuple[str, ...] = (
+        'usar mi chrome', 'usa mi chrome', 'usar chrome normal',
+        'usa mi navegador', 'usar mi navegador',
+    )
+
+    def _classify_incident_followup_intent(self, message: str, incident: dict[str, Any]) -> dict[str, Any]:
+        lowered = ' '.join(str(message or '').strip().lower().split())
+        explicit_new = self._explicit_assistant_preference(message)
+        if explicit_new and any(token in lowered for token in ('consulta', 'pregunta', 'haz una consulta')):
+            return {'intent': 'new_request', 'score': 1.0, 'tokens_matched': [explicit_new]}
+
+        buckets: dict[str, tuple[str, ...]] = {
+            'help_offer': self._INCIDENT_HELP_TOKENS,
+            'show_problem': self._INCIDENT_SHOW_TOKENS,
+            'visibility_dispute': self._INCIDENT_VISIBILITY_TOKENS,
+            'profile_mismatch': self._INCIDENT_PROFILE_TOKENS,
+            'launch_bridge': self._INCIDENT_BRIDGE_LAUNCH_TOKENS,
+            'switch_bridge': self._INCIDENT_BRIDGE_SWITCH_TOKENS,
+            'retry_done': self._SECURITY_RETEST_PATTERNS,
+        }
+        scores: dict[str, float] = {name: 0.0 for name in buckets}
+        matched: dict[str, list[str]] = {name: [] for name in buckets}
+        for name, tokens in buckets.items():
+            for token in tokens:
+                if token in lowered:
+                    scores[name] += 1.0
+                    matched[name].append(token)
+
+        if any(token in lowered for token in ('eso', 'esa', 'ese', 'ahi', 'ahí', 'problema', 'ventana')):
+            for name, score in list(scores.items()):
+                if score > 0:
+                    scores[name] = score + 0.3
+        if str(incident.get('assistant_kind') or '').lower() in lowered or 'chatgpt' in lowered or 'chrome' in lowered:
+            for name, score in list(scores.items()):
+                if score > 0:
+                    scores[name] = score + 0.2
+        if time.time() - float(incident.get('created_at') or 0.0) < 180:
+            for name, score in list(scores.items()):
+                if score > 0:
+                    scores[name] = score + 0.2
+
+        intent = max(scores, key=lambda item: scores[item])
+        score = scores[intent]
+        if score < 0.5:
+            return {'intent': 'unrelated', 'score': 0.0, 'tokens_matched': []}
+        return {'intent': intent, 'score': round(score, 2), 'tokens_matched': matched[intent]}
+
+    def _try_handle_incident_followup(self, message: str) -> bool:
+        lowered = str(message or '').strip().lower()
+        incident = self._get_active_incident()
+        if incident is None and self._recover_external_failure_from_runtime_audit(lowered):
+            failure = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+            if self._external_failure_indicates_security_verification(failure):
+                incident = self._maybe_create_active_incident_frame(
+                    assistant_title=str(failure.get('assistant_title') or 'ChatGPT'),
+                    assistant_kind=str(failure.get('assistant_kind') or 'chatgpt'),
+                    terminal_state=str(failure.get('terminal_state') or 'blocked_by_security_verification'),
+                    meta=str(failure.get('meta') or ''),
+                    dispatch_id=str(failure.get('dispatch_id') or ''),
+                )
+        if not incident:
+            return False
+
+        classification = self._classify_incident_followup_intent(message, incident)
+        intent = str(classification.get('intent') or 'unrelated')
+        if intent in {'unrelated', 'new_request'}:
+            return False
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'incident_followup_intent_classified',
+                incident_id=str(incident.get('incident_id') or ''),
+                intent=intent,
+                score=float(classification.get('score') or 0.0),
+                tokens_matched=list(classification.get('tokens_matched') or [])[:5],
+                block_type=str(incident.get('block_type') or ''),
+                terminal_state=str(incident.get('terminal_state') or ''),
+            )
+        except Exception:
+            tracer = None
+
+        if intent == 'launch_bridge':
+            handled = self._try_handle_cdp_launch_request(message)
+            if handled:
+                self._working = False
+                self._set_live_status('idle')
+                return True
+        if intent == 'switch_bridge':
+            handled = self._try_handle_user_chrome_bridge_selection(message)
+            if handled:
+                self._working = False
+                self._set_live_status('idle')
+                return True
+        if intent == 'retry_done':
+            handled = self._try_handle_security_verification_retest(message)
+            if handled:
+                try:
+                    if tracer is not None:
+                        tracer.trace(
+                            'incident_followup_retest_started',
+                            incident_id=str(incident.get('incident_id') or ''),
+                        )
+                except Exception:
+                    pass
+                return True
+
+        action_taken = 'explained_help_needed'
+        if intent == 'show_problem':
+            focused = self._try_focus_incident_window(incident)
+            action_taken = 'window_focus_attempted' if focused else 'window_focus_unresolved'
+            if focused:
+                response = (
+                    f'Abrí o enfoqué la ventana relacionada con {incident.get("assistant_title", "ChatGPT")}. '
+                    f'Lo que yo tengo registrado: {incident.get("block_type", "bloqueo externo")}. '
+                    f'Lo que necesito de ti: {incident.get("user_help_needed", "")} '
+                    'Cuando termines, escribe "ya lo hice".'
+                )
+            else:
+                response = self._build_incident_help_response(incident, focus_failed=True)
+        elif intent in {'visibility_dispute', 'profile_mismatch'}:
+            action_taken = 'explained_profile_difference'
+            response = (
+                f'Tu vista y la vista de IABV no son la misma. IABV venia usando '
+                f'{incident.get("profile_label", "un perfil aislado")} para '
+                f'{incident.get("assistant_title", "ChatGPT")}. Si tu Chrome normal ya funciona, '
+                'eso no desbloquea automaticamente el perfil que IABV estaba observando. '
+                'Lo correcto ahora es usar una de estas rutas dentro de IABV: escribe '
+                '"abrir chrome con puente" para que abra un perfil puente gobernado, '
+                'o pega manualmente la respuesta de ChatGPT aqui. No voy a fingir que vi tu Chrome normal.'
+            )
+        else:
+            response = self._build_incident_help_response(incident)
+
+        try:
+            if tracer is not None:
+                tracer.trace(
+                    'incident_followup_action_selected',
+                    incident_id=str(incident.get('incident_id') or ''),
+                    intent=intent,
+                    action_taken=action_taken,
+                )
+        except Exception:
+            pass
+
+        self._latest_response_text = response
+        self._latest_response_meta = f'incident_followup: {intent}/{action_taken}'
+        self._busy_label = ''
+        self._working = False
+        self._append_message(
+            'assistant', 'IABV', response,
+            f'incident_followup_{intent}',
+            reasoning_path=f'incident_followup_{intent}',
+            evidence_tag='observed',
+        )
+        self._set_live_status('idle')
+        self._clear_autonomy_activity_override()
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
+    def _build_incident_help_response(self, incident: dict[str, Any], *, focus_failed: bool = False) -> str:
+        assistant_title = str(incident.get('assistant_title') or 'Asistente externo')
+        block_type = str(incident.get('block_type') or 'bloqueo externo')
+        profile = str(incident.get('profile_label') or incident.get('browser_profile') or 'perfil no identificado')
+        actions = list(incident.get('available_actions') or [])
+        lines = [
+            f'El problema activo esta en la consulta a {assistant_title}.',
+            f'Lo que yo veo: {block_type} usando {profile}.',
+            f'Lo que necesito de ti: {incident.get("user_help_needed", "")}',
+        ]
+        if focus_failed:
+            lines.append('No pude enfocar una ventana concreta porque no tengo hwnd/ventana viva confiable en el WorldModel.')
+        if 'launch_governed_chrome_bridge' in actions:
+            lines.append('Puedo ayudarte abriendo una ventana controlada: escribe "abrir chrome con puente".')
+        if 'show_problem_window' in actions:
+            lines.append('Si quieres ver la ventana que intento usar, escribe "ábreme la ventana".')
+        lines.append('Cuando completes login/captcha/verificacion, escribe "ya lo hice" para un retest gobernado.')
+        return ' '.join(part for part in lines if part)
+
+    def _try_focus_incident_window(self, incident: dict[str, Any]) -> bool:
+        incident_id = str(incident.get('incident_id') or '')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'incident_followup_window_open_attempted',
+                incident_id=incident_id,
+                profile_label=str(incident.get('profile_label') or ''),
+            )
+        except Exception:
+            pass
+
+        target_hwnd: int | None = None
+        for raw in (incident.get('hwnd'),):
+            if raw in (None, ''):
+                continue
+            try:
+                candidate = int(raw)
+                if candidate > 0:
+                    target_hwnd = candidate
+                    break
+            except Exception:
+                continue
+        if target_hwnd is None:
+            try:
+                snapshot = self._current_world_model()
+                for win in (snapshot.active_windows or []):
+                    title = str(getattr(win, 'title', '') or '').lower()
+                    app_name = str(getattr(win, 'app_name', '') or '').lower()
+                    haystack = f'{title} {app_name}'
+                    if not any(token in haystack for token in ('chatgpt', 'chrome', 'edge', 'verificat', 'security')):
+                        continue
+                    metadata = getattr(win, 'metadata', {}) or {}
+                    raw = metadata.get('hwnd') or metadata.get('window_handle')
+                    try:
+                        candidate = int(raw)
+                    except Exception:
+                        candidate = 0
+                    if candidate > 0:
+                        target_hwnd = candidate
+                        break
+            except Exception:
+                pass
+        if target_hwnd:
+            try:
+                import ctypes
+                SW_RESTORE = 9
+                ctypes.windll.user32.ShowWindow(int(target_hwnd), SW_RESTORE)
+                ctypes.windll.user32.SetForegroundWindow(int(target_hwnd))
+                return True
+            except Exception:
+                pass
+        try:
+            self._resolve_incident_frame('unresolved')
+        except Exception:
+            pass
+        return False
 
     def _external_failure_followup_can_recover_from_audit(self, lowered_message: str) -> bool:
         """Return True when a message likely refers to a recent external block.
@@ -4412,6 +4853,16 @@ class ControlCenterViewModel(QObject):
             'recovered_from': 'runtime_audit',
         }
         self._last_external_failure_ts = time.time()
+        try:
+            self._maybe_create_active_incident_frame(
+                assistant_title=assistant_title,
+                assistant_kind=assistant_kind,
+                terminal_state=terminal_state,
+                meta=reason,
+                dispatch_id=dispatch_id,
+            )
+        except Exception:
+            pass
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
             get_runtime_tracer().trace(
@@ -5465,6 +5916,7 @@ class ControlCenterViewModel(QObject):
             meta = 'user_chrome_bridge: cdp_launched'
             session = 'user_chrome_cdp'
         else:
+            os.environ.pop('IABV_PREFER_CDP_SESSION', None)
             msg = (
                 'Intente abrir el perfil puente de Chrome con CDP, pero todavia no responde '
                 'en 127.0.0.1:9222. Mantengo el handoff manual: pega aqui la '
@@ -5479,6 +5931,8 @@ class ControlCenterViewModel(QObject):
             meta.replace(': ', '_'),
             reasoning_path='governed_chrome_bridge',
         )
+        self._working = False
+        self._set_live_status('idle')
         try:
             if tracer is not None:
                 tracer.trace_user_browser_bridge(
@@ -5532,6 +5986,7 @@ class ControlCenterViewModel(QObject):
             pass
 
         if not cdp_probe.get('available', False):
+            os.environ.pop('IABV_PREFER_CDP_SESSION', None)
             msg = (
                 'No puedo conectarme a tu Chrome. '
                 'Por seguridad de Chrome no puedo adjuntarme al perfil normal. '
@@ -5546,6 +6001,8 @@ class ControlCenterViewModel(QObject):
                 'user_chrome_bridge_cdp_unavailable',
                 reasoning_path='governed_chrome_bridge',
             )
+            self._working = False
+            self._set_live_status('idle')
             try:
                 tracer.trace_user_browser_bridge(
                     'bridge_result',
@@ -5592,6 +6049,8 @@ class ControlCenterViewModel(QObject):
             'user_chrome_bridge_activated',
             reasoning_path='governed_chrome_bridge',
         )
+        self._working = False
+        self._set_live_status('idle')
         self.dataChanged.emit()
         return True
 
@@ -5630,6 +6089,8 @@ class ControlCenterViewModel(QObject):
             'user_chrome_bridge_revoked',
             reasoning_path='governed_chrome_bridge',
         )
+        self._working = False
+        self._set_live_status('idle')
         self.dataChanged.emit()
         return True
 
@@ -10870,6 +11331,9 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_shared_reality_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        if self._try_handle_incident_followup(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
         if self._try_handle_security_verification_retest(message):
             # P0.22: security retest spawns a background worker — keep
             # interaction open until the worker reaches terminal state.
@@ -11502,6 +11966,9 @@ class ControlCenterViewModel(QObject):
             _external_consultation_outcome = self._derive_external_consultation_outcome(external_payload)
             if _ext_success and _external_consultation_outcome != 'blocked':
                 self._clear_external_failure_memory()
+                resolver = getattr(self, '_resolve_incident_frame', None)
+                if callable(resolver):
+                    resolver('resolved')
             else:
                 self._remember_external_failure(
                     assistant_title=assistant_title,
