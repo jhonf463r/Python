@@ -4951,6 +4951,7 @@ class ControlCenterViewModel(QObject):
             pass
 
         if not cdp_probe.get('available', False):
+            os.environ.pop('IABV_PREFER_CDP_SESSION', None)
             msg = (
                 'No puedo conectarme a tu Chrome. '
                 'Para usar tu sesion activa, abre Chrome con: '
