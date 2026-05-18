@@ -70,6 +70,12 @@ if ($NoAutoPull) {
     $AutoPull = $false
 }
 
+if ($UiOnly) {
+    # The daily shortcut contract is "one local window".  UiOnly skips
+    # MCP/tunnel, but it must still launch the UI process.
+    $StartUI = $true
+}
+
 $ErrorActionPreference = 'Stop'
 
 # --- Paths used throughout ---
@@ -451,7 +457,9 @@ Arranca desde main o ejecuta con -AllowNonMain solo si estas probando una rama a
                 # Re-invoke ourselves with -NoAutoPull to avoid infinite loop
                 $relaunchArgs = @('-ExecutionPolicy', 'Bypass', '-File', $MyInvocation.MyCommand.Path)
                 if ($StartUI)  { $relaunchArgs += '-StartUI' }
+                if ($UiOnly)   { $relaunchArgs += '-UiOnly' }
                 if ($Quiet)    { $relaunchArgs += '-Quiet' }
+                if ($AllowNonMain) { $relaunchArgs += '-AllowNonMain' }
                 $relaunchArgs += '-NoAutoPull'
                 Start-Process powershell.exe -ArgumentList $relaunchArgs -WindowStyle Hidden
                 exit 0

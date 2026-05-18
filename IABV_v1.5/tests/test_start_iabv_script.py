@@ -146,6 +146,35 @@ def test_ui_only_skips_mcp_and_tunnel_for_daily_shortcut(start_iabv_src: str) ->
     assert ui_only_idx < bridge_idx
 
 
+def test_ui_only_implies_start_ui_for_daily_shortcut(start_iabv_src: str) -> None:
+    """``-UiOnly`` must not be a no-op launcher path.
+
+    The desktop shortcut uses UiOnly because the user should not need MCP or a
+    tunnel for daily use. That path still has to spawn ``python -m iabv_v15
+    app``; otherwise the launcher writes startup audit records and exits
+    without creating the UI process.
+    """
+
+    pattern = re.compile(
+        r"if\s*\(\s*\$UiOnly\s*\)\s*\{[^}]*\$StartUI\s*=\s*\$true",
+        re.DOTALL,
+    )
+    assert pattern.search(start_iabv_src), (
+        "-UiOnly debe activar $StartUI antes del bloque que lanza la ventana"
+    )
+
+
+def test_autopull_relaunch_preserves_ui_only_mode(start_iabv_src: str) -> None:
+    """If autopull relaunches the script, it must preserve shortcut semantics."""
+
+    relaunch_idx = start_iabv_src.index("$relaunchArgs = @(")
+    relaunch_block = start_iabv_src[relaunch_idx : relaunch_idx + 700]
+    assert "if ($UiOnly)" in relaunch_block
+    assert "$relaunchArgs += '-UiOnly'" in relaunch_block
+    assert "if ($AllowNonMain)" in relaunch_block
+    assert "$relaunchArgs += '-AllowNonMain'" in relaunch_block
+
+
 # ---------------------------------------------------------------------------
 # Capa 2.1.1: kill MCP zombi antes del bridge (PR #132 + PR #133)
 # ---------------------------------------------------------------------------

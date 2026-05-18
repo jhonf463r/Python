@@ -1,0 +1,26 @@
+{
+  "id": "runtime_ui_only_launcher_contract_p033",
+  "title": "P0.33: UiOnly launcher must spawn the local UI",
+  "status": "COMPLETED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Live proof showed start_iabv.ps1 -UiOnly wrote startup_attempt and mcp_tunnel_skipped but never emitted python_launch_attempt, leaving no IABV UI process. The script documentation says UiOnly is the daily shortcut mode, so UiOnly must imply StartUI before the launch block.",
+  "resume_hint": "Completed in local Windows runtime. -UiOnly now sets $StartUI = $true before startup audit and autopull relaunch preserves -UiOnly and -AllowNonMain.",
+  "next_action": "Launch IABV through the desktop shortcut or start_iabv.ps1 -UiOnly and verify startup_audit contains python_launch_attempt/python_launch_spawned followed by runtime_build_fingerprint.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
+    "covered_by_commit": "local_runtime_p033",
+    "root_cause": "ui_only_skipped_mcp_but_did_not_enable_start_ui",
+    "tests": {
+      "focused": "35 start_iabv_script + 22 runtime p032/p033 passed",
+      "regression": "173 passed"
+    },
+    "unresolved": [
+      "live_desktop_shortcut_ui_spawn_proof_pending"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "The universal loop cannot observe or remediate runtime failures if the birth path records startup audit but never creates the UI process. The daily one-window launcher must be a real birth path, not a no-op.",
+  "created_at": "2026-05-18T01:25:00Z",
+  "updated_at": "2026-05-18T01:25:00Z"
+}
