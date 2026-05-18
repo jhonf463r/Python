@@ -1340,6 +1340,33 @@ class WorldModelService:
 
     def _decorate_snapshot(self, snapshot: WorldModelSnapshot) -> WorldModelSnapshot:
         model = snapshot.model_copy(deep=True)
+        permission_state = {
+            str(item.get('scope') or '').strip().lower(): dict(item)
+            for item in self.permission_snapshot()
+            if str(item.get('scope') or '').strip()
+        }
+        granted_scopes = {
+            scope for scope, payload in permission_state.items()
+            if bool(payload.get('granted'))
+        }
+        if granted_scopes:
+            model.tool_live_status = self._apply_permission_overrides_to_tools(
+                model.tool_live_status,
+                granted_scopes=granted_scopes,
+            )
+            model.permission_gates = self._apply_permission_overrides_to_gates(
+                model.permission_gates,
+                permission_state=permission_state,
+                granted_scopes=granted_scopes,
+            )
+            model.detected_blocks = self._filter_granted_permission_blocks(
+                model.detected_blocks,
+                granted_scopes=granted_scopes,
+            )
+            model.block_records = self._filter_granted_permission_records(
+                model.block_records,
+                granted_scopes=granted_scopes,
+            )
         freshness_ms = 0
         if model.last_updated is not None:
             freshness_ms = max(
@@ -1348,6 +1375,114 @@ class WorldModelService:
             )
         model.freshness_ms = freshness_ms
         return model
+
+    def _apply_permission_overrides_to_tools(
+        self,
+        tools: list[ToolLiveStatus],
+        *,
+        granted_scopes: set[str],
+    ) -> list[ToolLiveStatus]:
+        decorated: list[ToolLiveStatus] = []
+        for tool in tools:
+            scope = str(tool.metadata.get('permission_scope') or self._content_permission_scope(tool.assistant_kind)).strip().lower()
+            if scope not in granted_scopes:
+                decorated.append(tool)
+                continue
+            blocks = [
+                block for block in list(tool.detected_blocks or [])
+                if not str(block or '').strip().lower().startswith('permission_required')
+            ]
+            metadata = {**dict(tool.metadata or {}), 'permission_granted_live_override': True}
+            probe_status = str(tool.probe_status or '')
+            if probe_status == 'permiso_requerido':
+                probe_status = 'permiso_concedido_esperando_probe'
+            decorated.append(
+                tool.model_copy(
+                    update={
+                        'permission_state': 'concedido',
+                        'probe_status': probe_status,
+                        'detected_blocks': blocks,
+                        'metadata': metadata,
+                    }
+                )
+            )
+        return decorated
+
+    def _apply_permission_overrides_to_gates(
+        self,
+        gates: list[ObservationPermissionGate],
+        *,
+        permission_state: dict[str, dict[str, Any]],
+        granted_scopes: set[str],
+    ) -> list[ObservationPermissionGate]:
+        decorated: list[ObservationPermissionGate] = []
+        for gate in gates:
+            scope = str(gate.scope or '').strip().lower()
+            if scope not in granted_scopes:
+                decorated.append(gate)
+                continue
+            permission = dict(permission_state.get(scope) or {})
+            metadata = {**dict(gate.metadata or {}), 'permission_granted_live_override': True}
+            detail = str(permission.get('detail') or gate.detail or '').strip()
+            decorated.append(
+                gate.model_copy(
+                    update={
+                        'status': 'concedido',
+                        'granted': True,
+                        'detail': detail,
+                        'metadata': metadata,
+                    }
+                )
+            )
+        return decorated
+
+    def _filter_granted_permission_blocks(
+        self,
+        blocks: list[str],
+        *,
+        granted_scopes: set[str],
+    ) -> list[str]:
+        filtered: list[str] = []
+        for block in blocks:
+            text = str(block or '').strip()
+            lower = text.lower()
+            if lower.startswith('permission_required') and any(scope in lower for scope in granted_scopes):
+                continue
+            filtered.append(block)
+        return filtered
+
+    def _filter_granted_permission_records(
+        self,
+        records: list[OperationalBlockRecord],
+        *,
+        granted_scopes: set[str],
+    ) -> list[OperationalBlockRecord]:
+        filtered: list[OperationalBlockRecord] = []
+        granted_assistants = {
+            scope.split(':', 1)[1]
+            for scope in granted_scopes
+            if scope.startswith('observe_window_content:') and ':' in scope
+        }
+        for record in records:
+            if str(record.block_type or '').strip().lower() != 'permission_required':
+                filtered.append(record)
+                continue
+            haystack = ' '.join(
+                [
+                    str(record.target_scope or ''),
+                    str(record.assistant_kind or ''),
+                    str(record.reason or ''),
+                    str(record.detail or ''),
+                ]
+            ).lower()
+            if any(scope in haystack for scope in granted_scopes):
+                continue
+            if str(record.assistant_kind or '').strip().lower() in granted_assistants:
+                continue
+            if any(f'consult_{assistant}' in haystack for assistant in granted_assistants):
+                continue
+            filtered.append(record)
+        return filtered
 
     def _confidence(
         self,

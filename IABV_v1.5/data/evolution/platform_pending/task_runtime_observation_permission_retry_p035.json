@@ -1,0 +1,36 @@
+{
+  "id": "runtime_observation_permission_retry_p035",
+  "title": "P0.35: Observation permission grant must unblock the immediate retry",
+  "status": "UNRESOLVED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Live runtime proof showed that after the user granted ChatGPT observation permission, the next external consultation still blocked on the old permission_required snapshot. The permission registry was updated, but current_model() decorated and returned stale permission gates, detected_blocks, and block_records until a later full scan.",
+  "resume_hint": "Implemented locally in WorldModelService._decorate_snapshot(): live granted observation scopes now override stale permission gates, tool permission_state, permission_required detected_blocks, and permission_required block_records without waiting for a full rescan.",
+  "next_action": "Restart IABV so the new WorldModelService code is loaded, open the governed ChatGPT bridge, grant observation permission if prompted, and verify the next dispatch advances past blocked_by_permission to either response_captured, blocked_by_security_verification, or a guided login/session handoff.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "covered_by_commit": "local_pending",
+    "root_cause": "permission_registry_update_not_reflected_in_decorated_world_model_snapshot",
+    "live_evidence": {
+      "observed_sequence": "permission granted -> external_consultation restarted -> permission blocked again",
+      "runtime_events": [
+        "permission observe_window_content:chatgpt granted",
+        "dispatch_started external_consultation",
+        "permission external_consultation:chatgpt blocked",
+        "dispatch_terminal failed_with_actionable_reason"
+      ]
+    },
+    "tests": {
+      "focused": "tests/test_world_model_service.py::test_world_model_current_model_applies_live_permission_grant_without_full_rescan + tests/test_runtime_p022_consultation_state.py",
+      "regression": "runtime antifreeze/observability/follow-up + world model/preflight permission tests"
+    },
+    "unresolved": [
+      "restart_required_for_live_runtime_to_load_p035",
+      "actual_chatgpt_response_capture_pending_after_bridge_profile_login_or_security_resolution"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "A universal metacognitive loop must not repeatedly ask for the same permission after the user grants it. The live permission registry is the fresher truth and must dominate stale world-model permission blocks.",
+  "created_at": "2026-05-18T02:25:00Z",
+  "updated_at": "2026-05-18T02:25:00Z"
+}

@@ -10,10 +10,13 @@ from iabv_v15.domain.models import (
     EnvironmentSelfModel,
     IssueSeverity,
     NetworkStatusSnapshot,
+    ObservationPermissionGate,
+    OperationalBlockRecord,
     ToolCard,
     ToolLiveStatus,
     ToolType,
     WindowObservation,
+    WorldModelSnapshot,
 )
 from iabv_v15.services.evolution.world_model_service import WorldModelService
 
@@ -203,6 +206,73 @@ def test_world_model_service_emits_permission_gate_and_route_block_for_codex_pro
         assert any(item.block_type == 'permission_required' and item.target_scope == 'consult_codex' for item in snapshot.block_records)
         assert 'permission_required:observe_window_content:codex' in snapshot.detected_blocks
         assert 'permission_registry' in snapshot.observation_sources
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_world_model_current_model_applies_live_permission_grant_without_full_rescan() -> None:
+    workspace = _workspace('world_model_permission_live_override')
+    try:
+        service = WorldModelService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        service._current_snapshot = WorldModelSnapshot(
+            tool_live_status=[
+                ToolLiveStatus(
+                    tool_id='chatgpt_web_assisted',
+                    title='ChatGPT web',
+                    assistant_kind='chatgpt',
+                    available=True,
+                    status='abierto',
+                    detail='Necesito permiso para observar ChatGPT.',
+                    window_open=True,
+                    session_status='abierta',
+                    messages_status='desconocidos',
+                    probe_status='permiso_requerido',
+                    permission_state='requerido',
+                    detected_blocks=['permission_required'],
+                    metadata={'permission_scope': 'observe_window_content:chatgpt'},
+                )
+            ],
+            detected_blocks=['permission_required:observe_window_content:chatgpt'],
+            block_records=[
+                OperationalBlockRecord(
+                    block_type='permission_required',
+                    target_scope='consult_chatgpt',
+                    assistant_kind='chatgpt',
+                    reason='Falta permiso para observar ChatGPT.',
+                )
+            ],
+            permission_gates=[
+                ObservationPermissionGate(
+                    scope='observe_window_content:chatgpt',
+                    assistant_kind='chatgpt',
+                    title='Observar ChatGPT',
+                    detail='Necesito permiso para observar ChatGPT.',
+                    status='requerido',
+                    required_for=['consult_chatgpt'],
+                    granted=False,
+                )
+            ],
+        )
+        service.request_refresh = lambda **_: service.current_model()  # type: ignore[method-assign]
+
+        model = service.grant_observation_permission(
+            scope='observe_window_content:chatgpt',
+            assistant_kind='chatgpt',
+            detail='Permiso concedido por el usuario.',
+        )
+
+        assert model.permission_gates[0].status == 'concedido'
+        assert model.permission_gates[0].granted is True
+        assert model.tool_live_status[0].permission_state == 'concedido'
+        assert model.tool_live_status[0].probe_status == 'permiso_concedido_esperando_probe'
+        assert model.tool_live_status[0].detected_blocks == []
+        assert 'permission_required:observe_window_content:chatgpt' not in model.detected_blocks
+        assert not any(item.block_type == 'permission_required' for item in model.block_records)
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
