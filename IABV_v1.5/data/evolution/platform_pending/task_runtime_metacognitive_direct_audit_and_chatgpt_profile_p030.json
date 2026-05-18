@@ -17,7 +17,7 @@
       "G: RuntimeAuditTracer traces: structured_self_audit_answered, structured_self_audit_missing_evidence, external_consultation_new_request_forced, assistant_profile_context_reported"
     ],
     "unresolved": [
-      "governed_user_chrome_bridge_missing: no safe bridge to use user Chrome session for external consultations",
+      "governed_user_chrome_bridge_missing: CLOSED by P0.32 — CDP probe + permission gate + manual fallback implemented",
       "live_chatgpt_success_pending: actual ChatGPT consultation success not tested yet",
       "metacognitive_idle_budget_policy_pending: starvation finding is reported by OSES but no automatic policy to enforce idle budgets"
     ]

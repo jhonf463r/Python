@@ -853,6 +853,11 @@ class OperationalSelfExaminationService:
         # P0.32: detect repeated isolated-profile-blocks-user-browser pattern.
         findings.extend(self._isolated_profile_block_findings())
 
+        # P0.37: detect incident followup falling to local chat.
+        findings.extend(self._incident_followup_local_fallback_findings())
+
+        # P0.32+P0.37: detect capabilities promised but unavailable.
+        findings.extend(self._capability_promised_but_unavailable_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -8512,6 +8517,68 @@ class OperationalSelfExaminationService:
 
         return findings
 
+    # -- P0.32: isolated profile blocks user's logged-in browser --
+    def _isolated_profile_block_findings(self) -> list[SelfExaminationFinding]:
+        """Detect when the isolated browser profile repeatedly blocks consultations.
+
+        If ``assistant_profile_context_reported`` with
+        ``block_type=browser_security_verification`` appears >= 2 times
+        in recent audit events, the user is likely logged into their
+        own Chrome but IABV keeps hitting the isolated profile wall.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+        block_count = 0
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    if kind == 'assistant_profile_context_reported':
+                        data = entry.get('data', {})
+                        if data.get('block_type') == 'browser_security_verification':
+                            block_count += 1
+        except Exception:
+            pass
+        if block_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='isolated_profile_blocks_user_logged_in_browser',
+                severity=IssueSeverity.MEDIUM,
+                title='Perfil aislado bloquea repetidamente consultas externas',
+                summary=(
+                    f'{block_count} bloqueos por verificacion de seguridad en perfil aislado. '
+                    'El usuario probablemente tiene sesion activa en su Chrome normal '
+                    'pero IABV no puede usarla sin CDP/permiso. '
+                    'Considerar: escribir "usar mi chrome" o abrir Chrome con '
+                    '"--remote-debugging-port=9222".'
+                ),
+                recommendation=(
+                    'Activar CDP bridge: usuario escribe "usar mi chrome" '
+                    'o abre Chrome con --remote-debugging-port=9222. '
+                    'IABV no leera cookies ni tokens, solo observara contenido visible.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'block_count': block_count,
+                    'pattern': 'isolated_profile_blocks_user_logged_in_browser',
+                },
+            ))
+        return findings
+
     # -- P0.30 Task F: metacognitive maintenance starvation --
     def _metacognitive_starvation_findings(self) -> list[SelfExaminationFinding]:
         """Detect when metacognitive maintenance is being starved.
@@ -8668,6 +8735,174 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        return findings
+
+    # -- P0.37: incident followup falling to local chat --
+    def _incident_followup_local_fallback_findings(self) -> list[SelfExaminationFinding]:
+        """Detect when user help offers after external blocks fall to local chat.
+
+        Uses two evidence sources:
+        1. RuntimeAuditTracer events (dispatch_terminal + chat routing)
+        2. DecisionAuditTrail chat_routing records (reasoning_path)
+
+        Pattern detected:
+        blocked_by_security_verification followed by local chat routing
+        without an incident_followup_intent_classified in between.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        findings: list[SelfExaminationFinding] = []
+        block_then_local = 0
+
+        # Source 1: RuntimeAuditTracer events
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                saw_block = False
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    if kind == 'dispatch_terminal':
+                        ts = str(entry.get('data', {}).get('terminal_state', ''))
+                        if 'blocked_by_security_verification' in ts:
+                            saw_block = True
+                    elif kind == 'incident_followup_intent_classified':
+                        saw_block = False
+                    elif kind == 'external_failure_followup_answered':
+                        saw_block = False
+                    elif saw_block and kind in (
+                        'chat_inference_started', 'orchestrator_inference',
+                    ):
+                        block_then_local += 1
+                        saw_block = False
+        except Exception:
+            pass
+
+        # Source 2: DecisionAuditTrail chat_routing records
+        try:
+            decisions_path = root / 'data' / 'evolution' / 'decision_audit' / 'decisions.jsonl'
+            if decisions_path.exists():
+                recent_d: deque[str] = deque(maxlen=200)
+                with decisions_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent_d.append(line)
+                saw_block_d = False
+                for line in recent_d:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    phase = entry.get('phase', '')
+                    meta = entry.get('metadata', {})
+                    if phase == 'chat_routing':
+                        rp = str(meta.get('reasoning_path', ''))
+                        if 'blocked_by_security_verification' in rp or 'external_failure' in rp:
+                            saw_block_d = True
+                        elif rp.startswith('incident_followup_'):
+                            saw_block_d = False
+                        elif saw_block_d and rp in (
+                            'general_chat', 'inference', 'local_inference',
+                            'orchestrator_inference',
+                        ):
+                            block_then_local += 1
+                            saw_block_d = False
+        except Exception:
+            pass
+
+        if block_then_local >= 2:
+            findings.append(SelfExaminationFinding(
+                category='incident_followup_falls_to_local_chat',
+                severity=IssueSeverity.MEDIUM,
+                title='Help offers after external block fall to local chat',
+                summary=(
+                    f'{block_then_local} veces una pregunta de ayuda post-bloqueo '
+                    'externo cayo al chat local en vez de resolverse con el '
+                    'incident frame. El usuario quiere ayudar a resolver '
+                    'el bloqueo visible pero el sistema no convierte esa '
+                    'ayuda en accion guiada.'
+                ),
+                recommendation=(
+                    'Verificar que _try_handle_incident_followup esta activo '
+                    'en sendChat y que ActiveIncidentFrame se crea en '
+                    '_remember_external_failure para blocked terminal states.'
+                ),
+                confidence=0.85,
+                metadata={'local_fallback_count': block_then_local},
+            ))
+        return findings
+
+    def _capability_promised_but_unavailable_findings(self) -> list[SelfExaminationFinding]:
+        """P0.32+P0.37: detect when a capability was promised but unavailable.
+
+        Scans runtime_audit.jsonl for 'capability_promised_but_unavailable'
+        events emitted by the metacognitive guard.
+        OSES only reports — does not take action.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+        promised_count = 0
+        capabilities: list[str] = []
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    if entry.get('kind') == 'capability_promised_but_unavailable':
+                        promised_count += 1
+                        cap = entry.get('data', {}).get('capability', '')
+                        if cap and cap not in capabilities:
+                            capabilities.append(cap)
+        except Exception:
+            pass
+        if promised_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='capability_promised_but_unavailable',
+                severity=IssueSeverity.MEDIUM,
+                title='Capability promised but not wired in build',
+                summary=(
+                    f'{promised_count} veces se prometio una capacidad que '
+                    f'no esta disponible en el build actual. '
+                    f'Capacidades: {", ".join(capabilities[:5])}.'
+                ),
+                recommendation=(
+                    'Verificar que los handlers requeridos estan presentes '
+                    'en el build. No prometer acciones sin verificar '
+                    'hasattr primero.'
+                ),
+                confidence=0.9,
+                metadata={
+                    'promised_count': promised_count,
+                    'capabilities': capabilities[:5],
+                },
+            ))
         return findings
 
 

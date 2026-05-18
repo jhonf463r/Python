@@ -2,6 +2,7 @@
 
 import atexit
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+import os
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
@@ -246,6 +247,7 @@ class ControlCenterViewModel(QObject):
         self._assistant_guidance_text = 'Describe una tarea y te dire si me falta ensenanza, aprobacion, revision evolutiva o apoyo de Codex.'
         self._assistant_action_buttons: list[dict[str, str]] = []
         self._last_adaptive_payload: dict[str, Any] = {}
+        self._active_incident_frame: dict[str, Any] | None = None
         self._autonomy_activity_override: dict[str, Any] = {}
         self._live_process_summary: dict[str, Any] = {}
         self._live_work_items: list[dict[str, Any]] = []
@@ -4249,6 +4251,41 @@ class ControlCenterViewModel(QObject):
             'dispatch_id': str(dispatch_id or ''),
         }
         self._last_external_failure_ts = time.time()
+        # P0.37: create active incident frame for blocked terminal states
+        try:
+            ts = str(terminal_state or '')
+            meta_lower = str(meta or '').lower()
+            block_type = ''
+            if 'blocked_by_security_verification' in ts or 'browser_security_verification' in meta_lower:
+                block_type = 'browser_security_verification'
+            elif 'visible_timeout' in ts or 'visible_timeout' in meta_lower:
+                block_type = 'visible_timeout'
+            elif 'blocked' in ts:
+                block_type = ts
+            if block_type:
+                # Extract real payload context from latest adaptive payload
+                _ap = getattr(self, '_last_adaptive_payload', None) or {}
+                _handoff = dict((_ap.get('metadata') or {}).get('shared_reality_handoff') or {})
+                _tw_title = str(_handoff.get('target_window_title', '') or '')
+                _hwnd_raw = _handoff.get('hwnd')
+                _hwnd = int(_hwnd_raw) if _hwnd_raw is not None else None
+                _browser_label = str(_handoff.get('selected_browser_or_profile', '') or '')
+                _browser_profile = str(_handoff.get('browser_profile', '') or '')
+                self._create_active_incident_frame(
+                    assistant_kind=str(assistant_kind or ''),
+                    assistant_title=str(assistant_title or 'Asistente externo'),
+                    terminal_state=ts,
+                    block_type=block_type,
+                    last_user_goal=str(getattr(self, '_last_user_goal', '') or ''),
+                    dispatch_id=str(dispatch_id or ''),
+                    browser_profile=_browser_profile,
+                    selected_browser_or_profile=_browser_label,
+                    browser_label=_browser_label,
+                    target_window_title=_tw_title,
+                    hwnd=_hwnd,
+                )
+        except Exception:
+            pass
 
     def _clear_external_failure_memory(self) -> None:
         self._last_external_failure_payload = {}
@@ -4859,6 +4896,15 @@ class ControlCenterViewModel(QObject):
             pass
         return True
 
+    def _verify_chrome_bridge_capability(self) -> bool:
+        """P0.32+P0.37 metacognitive guard: verify Chrome bridge is wired."""
+        return (
+            hasattr(self, '_try_handle_user_chrome_bridge_selection')
+            and hasattr(self, '_detect_cdp_available')
+            and callable(getattr(self, '_try_handle_user_chrome_bridge_selection', None))
+            and callable(getattr(self, '_detect_cdp_available', None))
+        )
+
     # ── P0.12: Security verification retest handler ──
     _SECURITY_RETEST_PATTERNS: tuple[str, ...] = (
         'ya lo hice', 'ya lo hise', 'ya complete', 'a mi si me funciona',
@@ -4942,6 +4988,491 @@ class ControlCenterViewModel(QObject):
 
         self._bg_pool.submit(_retest_worker)
         return True
+
+    # ══════════════════════════════════════════════════════════════════
+
+    # P0.37 — Active Incident Frame + Guided Human Assistance Resolver
+    # ══════════════════════════════════════════════════════════════════
+
+    _INCIDENT_FRAME_TTL_S: float = 900.0  # 15 min
+
+    def _create_active_incident_frame(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        terminal_state: str,
+        block_type: str,
+        profile_label: str = 'chatgpt_program_session',
+        cdp_available: bool = False,
+        last_user_goal: str = '',
+        dispatch_id: str = '',
+        browser_profile: str = '',
+        selected_browser_or_profile: str = '',
+        browser_label: str = '',
+        target_window_title: str = '',
+        hwnd: int | None = None,
+    ) -> dict[str, Any]:
+        """Build and store an active incident frame (read-only metadata).
+
+        Not a new service — just structured metadata in the ViewModel so
+        subsequent user messages can be resolved against the real incident.
+        """
+        # Resolve cdp_available from live probe if not explicitly set
+        if not cdp_available:
+            try:
+                cdp_available = bool(self._detect_cdp_available())
+            except Exception:
+                pass
+        frame: dict[str, Any] = {
+            'incident_id': f'inc_{uuid.uuid4().hex[:8]}',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'terminal_state': terminal_state,
+            'block_type': block_type,
+            'profile_label': profile_label,
+            'cdp_available': cdp_available,
+            'last_user_goal': last_user_goal[:300],
+            'user_help_needed': self._describe_user_help_needed(block_type),
+            'available_actions': self._describe_available_actions(
+                block_type, cdp_available,
+                bridge_wired=self._verify_chrome_bridge_capability(),
+            ),
+            'created_at': time.time(),
+            'expires_at': time.time() + self._INCIDENT_FRAME_TTL_S,
+            'dispatch_id': dispatch_id,
+            'resolved': False,
+            'browser_profile': browser_profile or profile_label,
+            'selected_browser_or_profile': selected_browser_or_profile or browser_label,
+            'browser_label': browser_label,
+            'target_window_title': target_window_title,
+            'hwnd': hwnd,
+        }
+        self._active_incident_frame = frame
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'active_incident_frame_created',
+                incident_id=frame['incident_id'],
+                terminal_state=terminal_state,
+                block_type=block_type,
+                assistant_kind=assistant_kind,
+                cdp_available=cdp_available,
+                target_window_title=target_window_title,
+                hwnd_available=hwnd is not None,
+            )
+        except Exception:
+            pass
+        return frame
+
+    @staticmethod
+    def _describe_user_help_needed(block_type: str) -> str:
+        if block_type == 'browser_security_verification':
+            return (
+                'Completar la verificacion de seguridad (captcha/login) '
+                'en la ventana del perfil puente de IABV, o activar '
+                'CDP para usar tu Chrome normal.'
+            )
+        if block_type == 'visible_timeout':
+            return 'Verificar que la ventana del asistente esta visible y responde.'
+        return 'Revisar el estado de la herramienta externa.'
+
+    @staticmethod
+    def _describe_available_actions(
+        block_type: str,
+        cdp_available: bool,
+        *,
+        bridge_wired: bool = True,
+    ) -> list[str]:
+        actions = []
+        if block_type == 'browser_security_verification':
+            actions.append('retest_after_user_confirms')
+            actions.append('show_problem_window')
+            if cdp_available and bridge_wired:
+                actions.append('switch_to_user_chrome_cdp')
+            actions.append('manual_pasteback')
+        elif block_type == 'visible_timeout':
+            actions.append('retest_after_user_confirms')
+            actions.append('manual_pasteback')
+        else:
+            actions.append('manual_pasteback')
+        return actions
+
+    def _get_active_incident(self) -> dict[str, Any] | None:
+        """Return active incident frame if still valid, else None."""
+        frame = getattr(self, '_active_incident_frame', None)
+        if not frame:
+            return None
+        if frame.get('resolved'):
+            return None
+        if time.time() > frame.get('expires_at', 0):
+            return None
+        return frame
+
+    def _resolve_incident_frame(self, resolution: str = 'resolved') -> None:
+        frame = getattr(self, '_active_incident_frame', None)
+        if frame:
+            frame['resolved'] = True
+            frame['resolution'] = resolution
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'incident_followup_resolved_or_unresolved',
+                    incident_id=frame.get('incident_id', ''),
+                    resolution=resolution,
+                    terminal_state=frame.get('terminal_state', ''),
+                )
+            except Exception:
+                pass
+
+    # -- Intent tokens with weights for semantic scoring --
+    _HELP_OFFER_TOKENS: tuple[str, ...] = (
+        'como te ayudo', 'cómo te ayudo', 'como te puedo ayudar',
+        'cómo te puedo ayudar', 'que necesitas de mi', 'qué necesitas de mí',
+        'en que te ayudo', 'en qué te ayudo', 'como ayudo', 'cómo ayudo',
+        'que puedo hacer', 'qué puedo hacer', 'te ayudo',
+        'how can i help', 'what do you need',
+    )
+    _SHOW_PROBLEM_TOKENS: tuple[str, ...] = (
+        'abreme la ventana', 'ábreme la ventana', 'muestrame',
+        'muéstrame', 'donde esta', 'dónde está', 'donde esta el problema',
+        'dónde está el problema', 'abrelo', 'ábrelo', 'ensenname',
+        'enséñame', 'show me', 'open the window',
+        'muestrame la ventana', 'muéstrame la ventana',
+        'donde tienes el problema', 'dónde tienes el problema',
+        'abreme donde', 'ábreme donde',
+    )
+    _VISIBILITY_DISPUTE_TOKENS: tuple[str, ...] = (
+        'no veo la verificacion', 'no veo la verificación',
+        'no veo esa ventana', 'no veo eso', 'no veo el problema',
+        'yo no veo', 'a mi no me aparece', 'a mí no me aparece',
+        'yo si veo chatgpt', 'yo sí veo chatgpt',
+        'a mi si me funciona', 'a mí sí me funciona',
+        'yo no tengo ese problema',
+    )
+    _PROFILE_MISMATCH_TOKENS: tuple[str, ...] = (
+        'yo ya inicie sesion', 'yo ya inicié sesión',
+        'ya inicie sesion en chrome', 'ya inicié sesión en chrome',
+        'yo estoy logueado', 'yo estoy logeado',
+        'en mi chrome si funciona', 'en mi chrome sí funciona',
+        'mi chrome esta bien', 'mi chrome está bien',
+        'mi navegador si funciona', 'mi navegador sí funciona',
+    )
+    _RETRY_DONE_TOKENS: tuple[str, ...] = (
+        'ya lo hice', 'ya lo hise', 'ya complete', 'ya completé',
+        'ya pase la verificacion', 'ya pasé la verificación',
+        'ya verifique', 'ya verifiqué', 'ya esta listo', 'ya está listo',
+        'ya lo resolvi', 'ya lo resolví', 'done', 'i did it',
+        'ya pase el captcha', 'ya pasé el captcha',
+    )
+
+    @staticmethod
+    def _classify_incident_followup_intent(
+        message: str,
+        active_incident: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Classify user intent relative to an active incident frame.
+
+        Returns ``{'intent': <str>, 'score': <float>, 'tokens_matched': [...]}``
+        where intent is one of: help_offer, show_problem, visibility_dispute,
+        profile_mismatch, retry_done, new_request, unrelated.
+        """
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel as _Cls
+
+        lowered = message.strip().lower()
+        scores: dict[str, float] = {
+            'help_offer': 0.0,
+            'show_problem': 0.0,
+            'visibility_dispute': 0.0,
+            'profile_mismatch': 0.0,
+            'retry_done': 0.0,
+        }
+        matched: dict[str, list[str]] = {k: [] for k in scores}
+
+        token_map: dict[str, tuple[str, ...]] = {
+            'help_offer': _Cls._HELP_OFFER_TOKENS,
+            'show_problem': _Cls._SHOW_PROBLEM_TOKENS,
+            'visibility_dispute': _Cls._VISIBILITY_DISPUTE_TOKENS,
+            'profile_mismatch': _Cls._PROFILE_MISMATCH_TOKENS,
+            'retry_done': _Cls._RETRY_DONE_TOKENS,
+        }
+
+        for intent_name, tokens in token_map.items():
+            for tok in tokens:
+                if tok in lowered:
+                    scores[intent_name] += 1.0
+                    matched[intent_name].append(tok)
+
+        # Boost scores for contextual signals
+        has_deictic = any(d in lowered for d in (
+            'eso', 'ese', 'ahi', 'ahí', 'esa ventana', 'ese problema',
+        ))
+        assistant_ref = any(a in lowered for a in (
+            'chatgpt', 'chat gpt', 'chrome', 'navegador', 'ventana', 'browser',
+        ))
+
+        if has_deictic:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.3
+        if assistant_ref:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.2
+
+        # Recency boost: more recent incidents get stronger classification
+        age = time.time() - active_incident.get('created_at', 0)
+        if age < 120:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.3
+        elif age < 300:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.1
+
+        best_intent = max(scores, key=lambda k: scores[k])
+        best_score = scores[best_intent]
+
+        if best_score < 0.5:
+            return {'intent': 'unrelated', 'score': 0.0, 'tokens_matched': []}
+
+        return {
+            'intent': best_intent,
+            'score': round(best_score, 2),
+            'tokens_matched': matched[best_intent],
+        }
+
+    def _try_handle_incident_followup(self, message: str) -> bool:
+        """P0.37: Handle user messages in context of an active incident frame.
+
+        This catches help-offer, show-problem, visibility-dispute, and
+        profile-mismatch intents that the older pattern-based handlers
+        miss, preventing them from falling to local chat.
+        """
+        incident = self._get_active_incident()
+        if not incident:
+            return False
+
+        classification = self._classify_incident_followup_intent(message, incident)
+        intent = classification['intent']
+        if intent == 'unrelated':
+            return False
+
+        # Trace the classification
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'incident_followup_intent_classified',
+                incident_id=incident.get('incident_id', ''),
+                intent=intent,
+                score=classification['score'],
+                block_type=incident.get('block_type', ''),
+                terminal_state=incident.get('terminal_state', ''),
+            )
+        except Exception:
+            tracer = None
+
+        # Dispatch to action
+        action_taken = 'none'
+        response_text = ''
+
+        assistant_title = incident.get('assistant_title', 'Asistente externo')
+        block_type = incident.get('block_type', '')
+        profile_label = incident.get('profile_label', '')
+        user_help = incident.get('user_help_needed', '')
+
+        if intent == 'help_offer':
+            response_text = self._build_incident_help_response(incident)
+            action_taken = 'explained_help_needed'
+
+        elif intent == 'show_problem':
+            window_opened = self._try_focus_incident_window(incident)
+            action_taken = 'window_open_attempted'
+            if window_opened:
+                response_text = (
+                    f'Enfoque la ventana del perfil puente ({profile_label}). '
+                    f'Lo que yo veo: {block_type}. '
+                    f'Lo que necesito de ti: {user_help} '
+                    'Cuando lo hagas, escribe "ya lo hice".'
+                )
+            else:
+                response_text = (
+                    f'No puedo abrir/enfocar la ventana del perfil puente ({profile_label}). '
+                    f'El problema es: {block_type}. '
+                    f'Lo que necesito de ti: {user_help} '
+                    'Si no ves esa ventana, el perfil usado no es tu Chrome normal. '
+                    'Puedes escribir "usar mi chrome" para activar el puente CDP.'
+                )
+
+        elif intent == 'visibility_dispute':
+            response_text = (
+                f'Es normal que tu Chrome funcione pero IABV no pueda usarlo. '
+                f'IABV usa un perfil aislado ({profile_label}) que no comparte '
+                f'tu sesion de {assistant_title}. '
+                'Por eso tu ves todo bien pero IABV ve verificacion de seguridad. '
+                'Opciones: (1) completar verificacion en la ventana puente de IABV, '
+                '(2) escribir "usar mi chrome" para que IABV use tu Chrome via CDP, '
+                '(3) copiar la respuesta y pegarla aqui.'
+            )
+            action_taken = 'explained_profile_difference'
+
+        elif intent == 'profile_mismatch':
+            cdp_available = incident.get('cdp_available', False)
+            if cdp_available:
+                response_text = (
+                    'Perfecto — tu Chrome tiene sesion activa pero IABV usa un perfil aislado. '
+                    'Escribe "usar mi chrome" y IABV usara tu Chrome normal via CDP '
+                    'sin leer cookies ni tokens. '
+                    'Eso deberia resolver el bloqueo.'
+                )
+            else:
+                response_text = (
+                    'Tu Chrome tiene sesion pero IABV usa un perfil aislado diferente. '
+                    'Para que IABV use tu Chrome, abrelo con: '
+                    '"chrome.exe --remote-debugging-port=9222" '
+                    'y luego escribe "usar mi chrome". '
+                    'Mientras tanto, puedes pegar la respuesta manualmente.'
+                )
+            action_taken = 'offered_cdp_bridge'
+
+        elif intent == 'retry_done':
+            # Delegate to existing retest handler
+            if self._try_handle_security_verification_retest(message):
+                action_taken = 'retest_delegated'
+                try:
+                    if tracer:
+                        tracer.trace(
+                            'incident_followup_retest_started',
+                            incident_id=incident.get('incident_id', ''),
+                        )
+                except Exception:
+                    pass
+                return True
+            response_text = (
+                'No puedo ejecutar un retest ahora. '
+                f'Verificacion necesaria: {user_help}'
+            )
+            action_taken = 'retest_unavailable'
+
+        # Trace the action selected
+        try:
+            if tracer:
+                tracer.trace(
+                    'incident_followup_action_selected',
+                    incident_id=incident.get('incident_id', ''),
+                    intent=intent,
+                    action_taken=action_taken,
+                )
+        except Exception:
+            pass
+
+        if response_text:
+            self._latest_response_text = response_text
+            self._latest_response_meta = f'incident_followup: {intent}/{action_taken}'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', response_text,
+                f'incident_followup_{intent}',
+                reasoning_path=f'incident_followup_{intent}',
+                evidence_tag='observed',
+            )
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+
+        return True
+
+    def _build_incident_help_response(self, incident: dict[str, Any]) -> str:
+        """Build a structured help response for the active incident."""
+        block_type = incident.get('block_type', 'unknown')
+        assistant_title = incident.get('assistant_title', 'Asistente externo')
+        profile_label = incident.get('profile_label', '')
+        user_help = incident.get('user_help_needed', '')
+        actions = incident.get('available_actions', [])
+
+        lines = [
+            f'El problema esta en la consulta a {assistant_title}.',
+            f'Lo que yo veo: {block_type} en el perfil {profile_label}.',
+            f'Lo que necesito de ti: {user_help}',
+        ]
+        if 'switch_to_user_chrome_cdp' in actions:
+            lines.append(
+                'Opcion rapida: escribe "usar mi chrome" para usar tu Chrome normal.'
+            )
+        if 'show_problem_window' in actions:
+            lines.append(
+                'Puedo intentar abrir/enfocar la ventana del perfil puente '
+                'si escribes "ábreme la ventana".'
+            )
+        lines.append('Cuando lo hayas resuelto, escribe "ya lo hice".')
+        return ' '.join(lines)
+
+    def _try_focus_incident_window(self, incident: dict[str, Any]) -> bool:
+        """Try to bring the incident browser window to the front.
+
+        Uses WorldModelService.current_model() to get active_windows.
+        Falls back to hwnd stored in the incident frame itself.
+        Only works on Windows with hwnd. Returns True if window was focused.
+        """
+        incident_id = incident.get('incident_id', '')
+        profile_label = incident.get('profile_label', '')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'incident_followup_window_open_attempted',
+                incident_id=incident_id,
+                profile_label=profile_label,
+            )
+        except Exception:
+            pass
+
+        target_hwnd: int | None = None
+
+        # 1. Try hwnd stored directly in the incident frame
+        stored_hwnd = incident.get('hwnd')
+        if stored_hwnd is not None:
+            try:
+                target_hwnd = int(stored_hwnd)
+            except (ValueError, TypeError):
+                pass
+
+        # 2. If no stored hwnd, search WorldModelService.current_model()
+        if target_hwnd is None:
+            try:
+                snapshot = self._current_world_model()
+                for win in (snapshot.active_windows or []):
+                    title = str(win.title or '').lower()
+                    if 'chatgpt' in title or 'chrome' in title or 'verificat' in title:
+                        win_hwnd = win.metadata.get('hwnd')
+                        if win_hwnd is not None:
+                            target_hwnd = int(win_hwnd)
+                            break
+            except Exception:
+                pass
+
+        # 3. Attempt focus via Win32 API
+        if target_hwnd is not None:
+            try:
+                import ctypes
+                SW_RESTORE = 9
+                ctypes.windll.user32.ShowWindow(target_hwnd, SW_RESTORE)
+                ctypes.windll.user32.SetForegroundWindow(target_hwnd)
+                return True
+            except Exception:
+                pass
+
+        # 4. Resolve as unresolved if no hwnd found
+        try:
+            self._resolve_incident_frame('unresolved')
+        except Exception:
+            pass
+        return False
 
     # ══════════════════════════════════════════════════════════════════
     # P0.6 — Shared Reality Remediation / Window Target Recovery
@@ -10117,6 +10648,15 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_user_chrome_bridge_selection(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        # P0.37: Active Incident Frame resolver — catches help-offer,
+        # show-problem, visibility-dispute, and profile-mismatch intents
+        # that the older pattern-based handlers would miss.
+        if self._try_handle_incident_followup(message):
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
         if self._try_handle_security_verification_retest(message):
             # P0.22: security retest spawns a background worker — keep
             # interaction open until the worker reaches terminal state.
@@ -10124,6 +10664,13 @@ class ControlCenterViewModel(QObject):
                 self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
             else:
                 self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.32: governed user Chrome bridge — session selection
+        if self._try_handle_user_chrome_bridge_selection(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_cdp_permission_revoke(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_external_failure_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
@@ -10739,6 +11286,10 @@ class ControlCenterViewModel(QObject):
             _external_consultation_outcome = self._derive_external_consultation_outcome(external_payload)
             if _ext_success and _external_consultation_outcome != 'blocked':
                 self._clear_external_failure_memory()
+                try:
+                    self._resolve_incident_frame('resolved')
+                except Exception:
+                    pass
             else:
                 self._remember_external_failure(
                     assistant_title=assistant_title,
