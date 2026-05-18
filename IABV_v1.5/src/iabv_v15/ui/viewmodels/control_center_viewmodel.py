@@ -8967,13 +8967,42 @@ class ControlCenterViewModel(QObject):
 
         # P0.22: detect resource_pressure to set correct preflight metadata.
         is_resource_pressure = self._is_resource_pressure_block(preflight)
+        external_state_flags = list(governance.get('external_state_flags') or preflight.get('external_state_flags') or [])
+        diagnostic_category = str(
+            preflight.get('diagnostic_category')
+            or governance.get('diagnostic_category')
+            or ''
+        ).strip().lower()
+        reason_text = str(preflight.get('reason') or governance.get('reason') or '').strip()
+        security_haystack = ' '.join(
+            [
+                diagnostic_category,
+                reason_text,
+                ' '.join(str(item or '') for item in external_state_flags),
+            ]
+        ).lower()
+        is_security_verification = any(
+            marker in security_haystack
+            for marker in (
+                'browser_security_verification',
+                'blocked_by_security_verification',
+                'verificacion de seguridad',
+                'verificación de seguridad',
+                'captcha',
+                'challenge',
+            )
+        )
 
         metadata['external_consultation_preflight'] = {
             'assistant_kind': assistant_kind,
-            'reason': str(preflight.get('reason') or governance.get('reason') or ''),
+            'reason': reason_text,
             'blocked': True,
             'world_model_summary': world_model_summary,
-            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'block_type': (
+                'resource_pressure' if is_resource_pressure
+                else 'browser_security_verification' if is_security_verification
+                else 'governance'
+            ),
             'requires_observation_permission': False if is_resource_pressure else bool(approval_checkpoints),
             'retry_when_pressure_clears': is_resource_pressure,
         }
@@ -8998,6 +9027,13 @@ class ControlCenterViewModel(QObject):
             )
             meta = f'Consulta diferida por presion de recursos ({assistant_title}).'
             terminal_state = 'blocked_by_resource_pressure'
+        elif is_security_verification:
+            message, meta, failure_busy = self._human_external_consultation_failure(
+                assistant_title,
+                f'browser_security_verification: {reason or "verificacion de seguridad detectada por preflight"}',
+                external_state_flags,
+            )
+            terminal_state = 'blocked_by_security_verification'
         elif approval_checkpoints:
             message = (
                 f'No voy a lanzar {assistant_title} todavia. '
@@ -9014,16 +9050,23 @@ class ControlCenterViewModel(QObject):
             terminal_state = 'failed_with_actionable_reason'
         self._latest_response_text = message
         self._latest_response_meta = meta
-        self._busy_label = reason or f'Consulta externa bloqueada para {assistant_title}.'
+        self._busy_label = (
+            failure_busy if is_security_verification
+            else reason or f'Consulta externa bloqueada para {assistant_title}.'
+        )
         return {
             'success': False,
             'message': message,
             'meta': meta,
             'payload': payload,
             'assistant_title': assistant_title,
-            'external_state_flags': list(governance.get('external_state_flags') or []),
+            'external_state_flags': external_state_flags,
             'terminal_state': terminal_state,
-            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'block_type': (
+                'resource_pressure' if is_resource_pressure
+                else 'browser_security_verification' if is_security_verification
+                else 'governance'
+            ),
         }
 
     def _guidance_for_external_preflight_block(
