@@ -3404,6 +3404,11 @@ class AppBootstrap:
     _PREBUILD_STALL_LOOKBACK_S: float = 30.0
     # Cached snapshot is considered stale after this many seconds.
     _PREBUILD_SNAPSHOT_MAX_AGE_S: float = 60.0
+    # Resource snapshots are protective telemetry, not work. On Windows the
+    # underlying PowerShell/CIM probes can take tens of seconds, so optional
+    # prebuild must reuse a fresh snapshot instead of relaunching probes
+    # between every VM route.
+    _PREBUILD_SNAPSHOT_REFRESH_MIN_INTERVAL_S: float = 45.0
 
     # -- Background startup phase tracking --
     # These flags track whether heavy background startup tasks are still
@@ -3470,10 +3475,11 @@ class AppBootstrap:
             import threading
             self._prebuild_resource_snapshot: Any | None = None
             self._prebuild_resource_snapshot_at: float = 0.0
+            self._prebuild_snapshot_refresh_started_at: float = 0.0
             self._prebuild_resource_snapshot_lock = threading.Lock()
             self._prebuild_snapshot_refresh_in_flight: bool = False
 
-    def _refresh_prebuild_snapshot_async(self) -> None:
+    def _refresh_prebuild_snapshot_async(self, *, force: bool = False) -> bool:
         """Kick off a background thread to refresh the cached snapshot.
 
         The thread calls ``take_resource_snapshot()`` (which may be slow
@@ -3482,10 +3488,29 @@ class AppBootstrap:
 
         **Coalescing:** If a refresh thread is already in-flight, this
         method returns immediately without spawning another thread.
+
+        Returns ``True`` when a refresh was spawned. When ``force`` is
+        false, a fresh cached snapshot or a recent refresh attempt is
+        enough to skip the expensive probe.
         """
         self._init_prebuild_snapshot_cache()
         if self._prebuild_snapshot_refresh_in_flight:
-            return  # coalesce: already refreshing
+            return False  # coalesce: already refreshing
+        import time as _t
+        if not force:
+            snap, age = self._get_cached_snapshot()
+            if snap is not None and age < self._PREBUILD_SNAPSHOT_MAX_AGE_S:
+                return False
+            last_started = getattr(
+                self,
+                '_prebuild_snapshot_refresh_started_at',
+                0.0,
+            )
+            if (last_started
+                    and _t.time() - last_started
+                    < self._PREBUILD_SNAPSHOT_REFRESH_MIN_INTERVAL_S):
+                return False
+        self._prebuild_snapshot_refresh_started_at = _t.time()
         self._prebuild_snapshot_refresh_in_flight = True
         self._push_bootstrap_flags_to_watchdog()
         import threading
@@ -3511,6 +3536,7 @@ class AppBootstrap:
         t = threading.Thread(target=_worker, daemon=True,
                              name='prebuild-snap-refresh')
         t.start()
+        return True
 
     def _get_cached_snapshot(self) -> tuple[Any | None, float]:
         """Read the cached snapshot and its age in seconds.
@@ -3769,8 +3795,10 @@ class AppBootstrap:
             if wd is not None:
                 wd.set_dominant_phase('')
 
-            # Refresh snapshot asynchronously between routes so the
-            # next gate decision has up-to-date data.
+            # Refresh only when the cached snapshot has gone stale. Live
+            # proof showed that relaunching Windows PowerShell/CIM probes
+            # between fast optional routes can create a larger UI stall than
+            # the prebuild itself.
             self._refresh_prebuild_snapshot_async()
 
             QTimer.singleShot(0, lambda: _build_next(idx + 1))

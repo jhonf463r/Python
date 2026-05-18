@@ -657,6 +657,24 @@ class TestRefreshCoalescing:
 
         assert bs._prebuild_snapshot_refresh_in_flight is False
 
+    def test_fresh_snapshot_skips_expensive_refresh(self):
+        """A fresh cached snapshot is enough for optional prebuild gates.
+
+        Live Windows proof showed that launching PowerShell/CIM resource
+        probes between every lazy VM can freeze the UI. The refresh helper
+        must reuse fresh telemetry unless explicitly forced.
+        """
+        bs = _make_bootstrap()
+        _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=40.0))
+
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+        ) as mock_snap:
+            started = bs._refresh_prebuild_snapshot_async()
+
+        assert started is False
+        assert mock_snap.call_count == 0
+
     def test_in_flight_flag_cleared_on_failure(self):
         bs = _make_bootstrap()
 
@@ -773,6 +791,25 @@ class TestDominantPhaseDuringPrebuild:
         assert 'lazy_vm_prebuild' in phase_calls
         # Should clear phase at end
         assert '' in phase_calls
+
+    def test_prebuild_reuses_fresh_snapshot_between_routes(self):
+        """The idle chain must not spawn a fresh OS probe between routes.
+
+        This protects startup from the observed Windows freeze where optional
+        prebuild repeatedly launched slow resource probes while the UI was
+        already responsive enough for user interaction.
+        """
+        bs = _make_bootstrap()
+        _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
+
+        with patch(
+            'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
+        ) as mock_snap:
+            with patch('iabv_v15.bootstrap.QTimer') as MockQTimer:
+                MockQTimer.singleShot = MagicMock(side_effect=lambda ms, fn: fn())
+                bs._build_all_lazy_vms()
+
+        assert mock_snap.call_count == 0
 
 
 # ------------------------------------------------------------------ #

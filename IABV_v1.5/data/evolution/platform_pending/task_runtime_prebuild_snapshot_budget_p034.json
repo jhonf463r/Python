@@ -1,0 +1,29 @@
+{
+  "id": "runtime_prebuild_snapshot_budget_p034",
+  "title": "P0.34: Optional prebuild must reuse fresh resource snapshots",
+  "status": "COMPLETED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Live proof after the Control/UIBridge birth fix showed a 44s UI stall while optional lazy VM prebuild repeatedly launched Windows resource probes. Resource telemetry must protect responsiveness, not create more contention than the work it governs.",
+  "resume_hint": "Completed in local Windows runtime. _refresh_prebuild_snapshot_async() now returns whether it spawned work and skips expensive PowerShell/CIM probes when a cached snapshot is fresh or a refresh was recently attempted. The lazy prebuild chain reuses the snapshot between routes.",
+  "next_action": "Restart IABV through the desktop shortcut and verify runtime_audit no longer reports a ~44s stall with snapshot_refresh_in_flight between lazy_vm_prebuild_evolution_done and lazy_vm_prebuild_knowledge_start.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "covered_by_commit": "local_runtime_p034",
+    "root_cause": "optional_prebuild_relaunched_expensive_resource_snapshot_between_routes",
+    "live_evidence": {
+      "incident_report": "data/evolution/incident_reports/freeze_20260518_013825_621516.json",
+      "stall_duration_ms": 44456,
+      "phase_gap": "lazy_vm_prebuild_evolution_done -> lazy_vm_prebuild_knowledge_start",
+      "bootstrap_flags": "snapshot_refresh_in_flight=true"
+    },
+    "unresolved": [
+      "live_restart_after_snapshot_budget_fix_pending",
+      "actual_chatgpt_response_capture_pending_after_user_logs_into_bridge_profile"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "A universal metacognitive loop must budget its own sensors. If observation consumes the UI event loop, the organism loses communication and cannot learn from the user's corrections.",
+  "created_at": "2026-05-18T01:55:00Z",
+  "updated_at": "2026-05-18T01:55:00Z"
+}
