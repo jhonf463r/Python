@@ -693,6 +693,8 @@ class OperationalSelfExaminationService:
         findings.extend(self._dispatch_lifecycle_anomaly_findings())
         # P0.27: detect external_consultation blocked → local chat misroute.
         findings.extend(self._external_failure_followup_misrouted_findings())
+        # P0.30: detect metacognitive maintenance starvation.
+        findings.extend(self._metacognitive_starvation_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -2454,6 +2456,86 @@ class OperationalSelfExaminationService:
                     'pattern': 'external_failure_followup_misrouted_to_local',
                     'count': len(misroute_pairs),
                     'pairs': misroute_pairs[:5],
+                },
+            ))
+        return findings
+
+    def _metacognitive_starvation_findings(self) -> list[SelfExaminationFinding]:
+        """P0.30: detect metacognitive maintenance starvation.
+
+        OSES only observes and reports. It does NOT correct or execute.
+        Emits a finding when:
+          - No test_evidence/latest.json exists (tests never persisted)
+          - self_audit/latest.json missing or stale (>24h)
+          - structured_self_audit queries fell to local chat (no structured evidence)
+        Category: metacognitive_maintenance_starved
+        """
+        import json as _json
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        base = Path(str(workspace)) / 'data' / 'evolution'
+        signals: list[str] = []
+
+        te_path = base / 'test_evidence' / 'latest.json'
+        if not te_path.exists():
+            signals.append('no_test_evidence')
+
+        sa_path = base / 'self_examination' / 'latest.json'
+        if not sa_path.exists():
+            signals.append('no_self_examination')
+        else:
+            try:
+                sa_data = _json.loads(sa_path.read_text(encoding='utf-8'))
+                ts_str = sa_data.get('timestamp', '')
+                if ts_str:
+                    from datetime import datetime as _dt
+                    sa_ts = _dt.fromisoformat(ts_str.replace('Z', '+00:00'))
+                    age_h = (utc_now() - sa_ts).total_seconds() / 3600
+                    if age_h > 24:
+                        signals.append('self_examination_stale_24h')
+            except Exception:
+                pass
+
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        missing_evidence_count = 0
+        if audit_path.exists():
+            try:
+                lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+                for line in lines[-200:]:
+                    try:
+                        ev = _json.loads(line)
+                        if ev.get('kind') == 'structured_self_audit_missing_evidence':
+                            missing_evidence_count += 1
+                    except Exception:
+                        pass
+            except OSError:
+                pass
+        if missing_evidence_count >= 2:
+            signals.append(f'structured_audit_missing_evidence_{missing_evidence_count}x')
+
+        findings: list[SelfExaminationFinding] = []
+        if len(signals) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='metacognitive_maintenance_starved',
+                title=f'Metacognitive maintenance starved ({len(signals)} signals)',
+                summary=(
+                    f'Multiple metacognitive subsystems lack recent evidence: '
+                    f'{", ".join(signals)}. Self-audit queries may fall to '
+                    f'heavy local chat instead of structured evidence.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Run persist_evidence=True on next pytest execution. '
+                    'Ensure SelfAuditService and PortableContextService are '
+                    'building snapshots on their maintenance cycles.'
+                ),
+                evidence_refs=signals[:5],
+                source_refs=['test_evidence', 'self_examination', 'runtime_audit'],
+                metadata={
+                    'pattern': 'metacognitive_maintenance_starved',
+                    'signals': signals,
                 },
             ))
         return findings

@@ -551,7 +551,7 @@ def run_pytest(
 
     P0.29: when ``persist_evidence=True``, writes a compact
     ``TestEvidence`` JSON to ``data/evolution/test_evidence/latest.json``
-    (no logs, no PII).
+    (no logs, no PII) and updates ControlMaster ``current_tests_state``.
     """
 
     normalized_suite = validate_pytest_suite(suite)
@@ -670,6 +670,69 @@ def _persist_test_evidence(
         latest.write_text(
             _json.dumps(evidence, indent=2, default=str),
             encoding="utf-8",
+        )
+        _sync_control_master_tests_state(
+            workspace_root=workspace_root,
+            evidence=evidence,
+        )
+    except Exception:
+        pass
+
+
+def _sync_control_master_tests_state(
+    *,
+    workspace_root: Path,
+    evidence: dict[str, Any],
+) -> None:
+    """Mirror compact test evidence into ControlMaster.
+
+    This is intentionally best-effort and only runs after an explicit
+    ``persist_evidence=True`` test run.  It does not execute tests, infer
+    results, or create another analyzer; it keeps the existing ControlMaster
+    projection aligned with the canonical TestEvidence artifact.
+    """
+    try:
+        from iabv_v15.domain.models import ControlMasterState, utc_now
+        from iabv_v15.infra.persistence.control_master_repository import (
+            ControlMasterRepository,
+        )
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+        passed = int(evidence.get("passed") or 0)
+        failed = int(evidence.get("failed") or 0)
+        errors = int(evidence.get("errors") or 0)
+        total = passed + failed + errors
+        health = "green" if failed == 0 and errors == 0 else "red"
+        tests_state = {
+            "health": health,
+            "passed": passed,
+            "failed": failed,
+            "errors": errors,
+            "total": total,
+            "suite": str(evidence.get("suite") or ""),
+            "timestamp": str(evidence.get("timestamp") or ""),
+            "duration_s": float(evidence.get("duration_s") or 0.0),
+            "returncode": int(evidence.get("returncode") or 0),
+            "timed_out": bool(evidence.get("timed_out")),
+            "linked_pending_task": str(evidence.get("linked_pending_task") or ""),
+            "evidence_id": str(evidence.get("evidence_id") or ""),
+        }
+        repository = ControlMasterRepository(
+            ArtifactStorage(workspace_root / "data" / "evolution")
+        )
+        state = repository.load_latest_state() or ControlMasterState()
+        evidence_links = list(dict.fromkeys([
+            *list(state.evidence_links or []),
+            "data/evolution/test_evidence/latest.json",
+        ]))
+        repository.save_state(
+            state.model_copy(
+                update={
+                    "current_tests_state": tests_state,
+                    "evidence_links": evidence_links,
+                    "last_updated": utc_now(),
+                }
+            )
         )
     except Exception:
         pass

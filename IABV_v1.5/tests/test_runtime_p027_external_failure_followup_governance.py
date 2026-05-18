@@ -43,11 +43,16 @@ def _followup_stub() -> SimpleNamespace:
         _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS=ControlCenterViewModel._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS,
         _EXTERNAL_FAILURE_DEICTIC_TOKENS=ControlCenterViewModel._EXTERNAL_FAILURE_DEICTIC_TOKENS,
         _USER_BROWSER_HANDOFF_PATTERNS=ControlCenterViewModel._USER_BROWSER_HANDOFF_PATTERNS,
+        _NEW_CONSULTATION_PATTERNS=ControlCenterViewModel._NEW_CONSULTATION_PATTERNS,
         _append_message=lambda *args, **kwargs: messages.append((args, kwargs)),
         _set_live_status=lambda value: setattr(stub, '_live_status', value),
         _clear_autonomy_activity_override=lambda: setattr(stub, '_autonomy_activity_override', {}),
         dataChanged=SimpleNamespace(emit=MagicMock()),
         _messages=messages,
+    )
+    import types
+    stub._is_new_chatgpt_consultation = types.MethodType(
+        ControlCenterViewModel._is_new_chatgpt_consultation, stub,
     )
     return stub
 

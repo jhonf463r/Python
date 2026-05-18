@@ -4170,6 +4170,27 @@ class ControlCenterViewModel(QObject):
         self._set_live_status('idle')
         return True
 
+    # -- P0.30: structured self-audit patterns --
+    _DIRECT_SELF_AUDIT_PATTERNS: tuple[str, ...] = (
+        'autoauditoria', 'autoauditoría', 'auto auditoria', 'auto auditoría',
+        'self audit', 'estado de tests', 'estado de pruebas',
+        'portable context', 'control master',
+        'qué evidencia', 'que evidencia',
+        'qué algoritmos', 'que algoritmos',
+        'qué falló', 'que falló', 'que fallo',
+        'dime el estado', 'muestra evidencia',
+        'runtime audit', 'última auditoría', 'ultima auditoria',
+    )
+    # P0.30: patterns that indicate a fresh external consultation request,
+    # not a follow-up about a previous failure.
+    _NEW_CONSULTATION_PATTERNS: tuple[str, ...] = (
+        'consulta nueva', 'nueva consulta',
+        'haz una consulta', 'has una consulta',
+        'hazle una consulta', 'hasle una consulta',
+        'consulta a chatgpt', 'consultar a chatgpt',
+        'preguntale a chatgpt', 'pregúntale a chatgpt',
+    )
+
     # -- P0.16: explain recent external failure without heavy local inference --
     _EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S: float = 600.0
     _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS: tuple[str, ...] = (
@@ -4261,6 +4282,19 @@ class ControlCenterViewModel(QObject):
         lowered = message.strip().lower()
         if not any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS):
             return False
+        # P0.30: if the message requests a NEW consultation explicitly,
+        # skip followup handler — let it go through normal routing.
+        if self._is_new_chatgpt_consultation(message):
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'external_consultation_new_request_forced',
+                    user_message=message[:240],
+                    previous_dispatch_id=payload.get('dispatch_id', '')[:12],
+                )
+            except Exception:
+                pass
+            return False
 
         assistant_title = str(payload.get('assistant_title') or 'Asistente externo')
         previous_message = str(payload.get('message') or 'No hubo respuesta externa util.').strip()
@@ -4288,11 +4322,30 @@ class ControlCenterViewModel(QObject):
         if any(p in lowered for p in self._EXTERNAL_FAILURE_DEICTIC_TOKENS):
             followup_path = 'external_failure_followup_deictic'
 
+        # P0.30: explain isolated profile when browser_security_verification
+        profile_note = ''
+        if 'browser_security_verification' in previous_terminal or 'browser_security_verification' in previous_meta:
+            profile_note = (
+                ' IMPORTANTE: Estoy mirando una ventana/perfil controlado por IABV, '
+                'no necesariamente tu Chrome normal. Si tu ya tienes sesion abierta '
+                'en ChatGPT en tu navegador habitual, IABV no la ve porque usa un '
+                'perfil aislado. Escribe "yo veo chatgpt" para que IABV use tu ventana.'
+            )
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'assistant_profile_context_reported',
+                    assistant_title=assistant_title,
+                    terminal_state=previous_terminal,
+                    dispatch_id=previous_dispatch,
+                )
+            except Exception:
+                pass
         summary = (
             f"Revise el fallo reciente de {assistant_title}. No quedo sin cierre: "
             f"el ciclo externo termino como {outcome}. "
             f"Lo que vio IABV fue: {previous_message[:320]} "
-            f"Evidencia tecnica: {previous_meta[:260]}. "
+            f"Evidencia tecnica: {previous_meta[:260]}.{profile_note} "
             "No voy a lanzar razonamiento local pesado para explicar el mismo bloqueo, "
             "porque eso fue lo que dejo la UI congelada. "
             "El siguiente paso correcto es reintentar solo con la ventana de ChatGPT visible y enfocada, "
@@ -9503,6 +9556,147 @@ class ControlCenterViewModel(QObject):
             pass
         self.sendChat(text)
 
+    def _is_direct_self_audit_query(self, message: str) -> bool:
+        """P0.30: detect metacognitive queries that can be answered from structured evidence."""
+        lowered = message.strip().lower()
+        return any(p in lowered for p in self._DIRECT_SELF_AUDIT_PATTERNS)
+
+    def _is_new_chatgpt_consultation(self, message: str) -> bool:
+        """P0.30: detect when user explicitly requests a fresh external consultation."""
+        lowered = message.strip().lower()
+        return any(p in lowered for p in self._NEW_CONSULTATION_PATTERNS)
+
+    def _answer_direct_self_audit_query(self, message: str) -> bool:
+        """P0.30: answer metacognitive queries from structured evidence, no Ollama.
+
+        Reads test_evidence, self_examination, portable_context, control_master
+        and runtime_audit tail. Responds in <5s from files on disk.
+        """
+        import json as _json
+        from pathlib import Path as _Path
+        workspace = str(getattr(self.config, 'workspace_root', '') or '')
+        if not workspace:
+            return False
+        sections: list[str] = []
+        te_data: dict[str, Any] = {}
+        se_data: dict[str, Any] = {}
+        pc_data: dict[str, Any] = {}
+        cm_data: dict[str, Any] = {}
+
+        te_path = _Path(workspace) / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
+        try:
+            if te_path.exists():
+                te_data = _json.loads(te_path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+        if te_data:
+            passed = te_data.get('passed', 0)
+            failed = te_data.get('failed', 0)
+            errors = te_data.get('errors', 0)
+            duration = te_data.get('duration_s', 0)
+            ts = te_data.get('timestamp', '')
+            sections.append(
+                f"Tests: {passed} passed, {failed} failed, {errors} errors "
+                f"({duration:.1f}s, {ts})"
+            )
+        else:
+            sections.append("Tests: sin evidencia reciente de tests.")
+
+        se_path = _Path(workspace) / 'data' / 'evolution' / 'self_examination' / 'latest.json'
+        try:
+            if se_path.exists():
+                se_data = _json.loads(se_path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+        if se_data:
+            status = se_data.get('status', 'unknown')
+            finding_count = len(se_data.get('findings', []))
+            sections.append(f"Self-examination: status={status}, {finding_count} findings.")
+        else:
+            sections.append("Self-examination: sin snapshot reciente.")
+
+        pc_path = _Path(workspace) / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+        try:
+            if pc_path.exists():
+                pc_data = _json.loads(pc_path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+        if pc_data:
+            version = pc_data.get('version', '')
+            sc = len(pc_data.get('sections', pc_data.get('context', {})))
+            sections.append(f"Portable context: version={version}, {sc} secciones.")
+        else:
+            sections.append("Portable context: sin snapshot reciente.")
+
+        cm_path = _Path(workspace) / 'data' / 'evolution' / 'control_master' / 'latest.json'
+        try:
+            if cm_path.exists():
+                cm_data = _json.loads(cm_path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+        if cm_data:
+            tests_state = cm_data.get('current_tests_state', {})
+            if tests_state:
+                sections.append(f"ControlMaster tests: {tests_state}")
+            else:
+                sections.append("ControlMaster: sin estado de tests en snapshot.")
+        else:
+            sections.append("ControlMaster: sin snapshot reciente.")
+
+        audit_path = _Path(workspace) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        audit_tail: list[str] = []
+        try:
+            if audit_path.exists():
+                lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+                for line in lines[-5:]:
+                    try:
+                        ev = _json.loads(line)
+                        audit_tail.append(ev.get('kind', ''))
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        if audit_tail:
+            sections.append(f"runtime_audit (ultimos 5): {', '.join(audit_tail)}")
+
+        summary = '\n'.join(sections)
+        self._latest_response_text = summary
+        self._latest_response_meta = 'structured_self_audit'
+        self._busy_label = ''
+        self._working = False
+        self._append_message(
+            'assistant', 'IABV', summary,
+            'structured_self_audit',
+            reasoning_path='structured_self_audit',
+            evidence_tag='observed',
+        )
+        self._set_live_status('idle')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            has_evidence = bool(te_data) or bool(se_data) or bool(pc_data) or bool(cm_data)
+            if has_evidence:
+                tracer.trace(
+                    'structured_self_audit_answered',
+                    user_message=message[:240],
+                    has_test_evidence=bool(te_data),
+                    has_self_examination=bool(se_data),
+                    has_portable_context=bool(pc_data),
+                    has_control_master=bool(cm_data),
+                )
+            else:
+                tracer.trace(
+                    'structured_self_audit_missing_evidence',
+                    user_message=message[:240],
+                )
+        except Exception:
+            pass
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
     def _try_handle_lightweight_chat(self, message: str) -> bool:
         if self._is_world_model_question(message):
             self._answer_world_model_question(message)
@@ -9686,6 +9880,12 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_external_failure_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        # P0.30: structured self-audit guard — answer metacognitive queries
+        # from structured evidence files without falling to heavy local chat.
+        if self._is_direct_self_audit_query(message):
+            if self._answer_direct_self_audit_query(message):
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
         if self._try_handle_lightweight_chat(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return

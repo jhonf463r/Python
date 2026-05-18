@@ -1,0 +1,48 @@
+{
+  "id": "runtime_metacognitive_direct_audit_and_chatgpt_profile_p030",
+  "title": "P0.30: Metacognitive Direct Audit + ChatGPT Profile Isolation + Starvation Detection",
+  "status": "COMPLETED",
+  "category": "runtime_metacognition",
+  "priority": "P0",
+  "description": "Three issues: (1) metacognitive queries like 'autoauditoria' or 'estado de tests' fell to heavy local chat instead of being answered from structured evidence files. (2) After a ChatGPT failure, a new consultation request ('haz una consulta a chatgpt') was captured by the follow-up handler instead of routing as a fresh consultation. (3) When browser_security_verification blocked ChatGPT, the user was not told that IABV uses an isolated profile, not their normal Chrome.",
+  "reason": "No guard existed to intercept metacognitive queries before _try_handle_lightweight_chat. _try_handle_external_failure_followup matched 'chatgpt' in its patterns even when the user explicitly requested a new consultation. Failure followup messages did not explain the isolated profile context.",
+  "dependency_missing": "",
+  "next_action": "Validate on Windows: (1) 'dime el estado de tests' responds <5s from evidence, (2) 'haz una consulta a chatgpt' after a failure routes as new consultation, (3) browser_security_verification failure includes isolated profile explanation.",
+  "resume_hint": "P0.30 code fix applied: _is_direct_self_audit_query() detects metacognitive patterns, _answer_direct_self_audit_query() reads structured evidence files, _is_new_chatgpt_consultation() skips followup handler for fresh requests, isolated profile note added when browser_security_verification is involved, OSES _metacognitive_starvation_findings() detects missing evidence.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "Bug 1: sendChat() routing chain had no guard for metacognitive queries before _try_handle_lightweight_chat, so they fell to heavy Ollama inference. Bug 2: _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS included 'chatgpt' which matched new consultation requests. Bug 3: failure followup summary did not mention isolated IABV profile when terminal_state was browser_security_verification.",
+    "evidence": [
+      {
+        "event": "structured_self_audit queries fell to Adaptive local orchestrator (~56s)",
+        "pattern": "autoauditoria, estado de tests, portable context"
+      },
+      {
+        "event": "new consultation request captured by followup handler",
+        "pattern": "haz una consulta a chatgpt after browser_security_verification failure"
+      },
+      {
+        "event": "user not informed about isolated IABV profile vs normal Chrome",
+        "pattern": "browser_security_verification without profile context"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+      "data/evolution/platform_pending/task_runtime_metacognitive_direct_audit_and_chatgpt_profile_p030.json",
+      "tests/test_runtime_p030_direct_self_audit_chatgpt_profile.py"
+    ],
+    "fixes_applied": {
+      "task_a": "_DIRECT_SELF_AUDIT_PATTERNS + _is_direct_self_audit_query() detect metacognitive queries",
+      "task_b": "_answer_direct_self_audit_query() reads test_evidence, self_examination, portable_context, control_master, runtime_audit tail and responds <5s",
+      "task_c": "Guard inserted in sendChat() between external_failure_followup and lightweight_chat",
+      "task_d": "_NEW_CONSULTATION_PATTERNS + _is_new_chatgpt_consultation() skip followup handler for fresh requests",
+      "task_e": "Isolated profile explanation added when browser_security_verification in terminal_state or meta",
+      "task_f": "OSES _metacognitive_starvation_findings() detects no_test_evidence + no_self_examination + missing_evidence audit events"
+    },
+    "remaining": [
+      "Live Windows proof with real user interaction"
+    ],
+    "unresolved": "Live Windows proof pending — user must run app with P0.30 merged and verify: autoauditoria responds fast, new ChatGPT consultation routes correctly, isolated profile is explained"
+  }
+}
