@@ -6956,13 +6956,32 @@ class ControlCenterViewModel(QObject):
             pass
         return result
 
+    _deferred_retry_generation: int = 0
+    _DEFERRED_RETRY_COOLDOWN_S: float = 10.0
+    _DEFERRED_RETRY_MAX: int = 3
+    _deferred_retry_count: int = 0
+    _deferred_retry_last_ts: float = 0.0
+
     def _schedule_deferred_consultation_retry(
         self, assistant_kind: str, delay_s: float,
+        *, dispatch_id: str = '',
     ) -> None:
-        """Schedule a background retry of an external consultation after delay."""
+        """Schedule a background retry — Qt-safe: never mutates UI from thread."""
+        now = time.time()
+        if now - self._deferred_retry_last_ts < self._DEFERRED_RETRY_COOLDOWN_S:
+            return
+        if self._deferred_retry_count >= self._DEFERRED_RETRY_MAX:
+            return
+        self._deferred_retry_generation += 1
+        gen = self._deferred_retry_generation
+        self._deferred_retry_count += 1
+        self._deferred_retry_last_ts = now
+
         def _retry() -> None:
             import time as _t
-            _t.sleep(delay_s)
+            _t.sleep(max(delay_s, 5.0))
+            if gen != self._deferred_retry_generation:
+                return
             quiescence = self._evaluate_consultation_quiescence(assistant_kind)
             if quiescence['decision'] == 'run_now':
                 try:
@@ -6975,7 +6994,12 @@ class ControlCenterViewModel(QObject):
                     )
                 except Exception:
                     pass
-                self._run_external_consultation(assistant_kind, announce=True)
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                QMetaObject.invokeMethod(
+                    self, '_on_deferred_retry_ready',
+                    Qt.ConnectionType.QueuedConnection,
+                    Q_ARG(str, assistant_kind),
+                )
             else:
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -6987,19 +7011,52 @@ class ControlCenterViewModel(QObject):
                     )
                 except Exception:
                     pass
-                msg = (
-                    f'Intente reintentar la consulta a '
-                    f'{self._assistant_display_name(assistant_kind)} '
-                    f'pero la presion de recursos sigue alta. '
-                    f'Puedes intentar de nuevo cuando baje la presion.'
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                QMetaObject.invokeMethod(
+                    self, '_on_deferred_retry_still_blocked',
+                    Qt.ConnectionType.QueuedConnection,
+                    Q_ARG(str, assistant_kind),
                 )
-                self._latest_response_text = msg
-                self._latest_response_meta = 'consultation_retry_still_deferred'
-                self._append_message('assistant', 'IABV', msg, 'consultation_retry_still_deferred')
-                self.dataChanged.emit()
         threading.Thread(target=_retry, daemon=True, name='quiescence-retry').start()
 
+    @Slot(str)
+    def _on_deferred_retry_ready(self, assistant_kind: str) -> None:
+        """Qt main-thread slot: retry consultation after quiescence cleared."""
+        self._run_external_consultation(assistant_kind, announce=True)
+
+    @Slot(str)
+    def _on_deferred_retry_still_blocked(self, assistant_kind: str) -> None:
+        """Qt main-thread slot: inform user retry still deferred."""
+        msg = (
+            f'Intente reintentar la consulta a '
+            f'{self._assistant_display_name(assistant_kind)} '
+            f'pero la presion de recursos sigue alta. '
+            f'Puedes intentar de nuevo cuando baje la presion.'
+        )
+        self._latest_response_text = msg
+        self._latest_response_meta = 'consultation_retry_still_deferred'
+        self._append_message('assistant', 'IABV', msg, 'consultation_retry_still_deferred')
+        self._working = False
+        self.dataChanged.emit()
+
     # ── P0.38: AssistantWebSkillProfile ──
+
+    _PROVIDER_ALIASES: dict[str, str] = {
+        'chatgpt': 'chatgpt', 'ChatGPT': 'chatgpt',
+        'chatgpt_web': 'chatgpt', 'openai': 'chatgpt',
+        'claude': 'claude', 'Claude': 'claude',
+        'gemini': 'gemini', 'Gemini': 'gemini',
+    }
+
+    @staticmethod
+    def _normalize_provider(provider: str) -> str:
+        """Normalize provider/assistant_kind to canonical lowercase form."""
+        if not provider:
+            return ''
+        canonical = ControlCenterViewModel._PROVIDER_ALIASES.get(provider)
+        if canonical:
+            return canonical
+        return provider.strip().lower().replace(' ', '_')
 
     _WEB_SKILL_SESSION_MODES = (
         'isolated_profile', 'governed_user_bridge',
@@ -7036,16 +7093,18 @@ class ControlCenterViewModel(QObject):
                 'retry_after_user_done', 'fallback_manual',
             ],
         }
-        # Enrich from WorldModel
+        # Enrich from WorldModel — use active_windows contract, not wm.windows
         try:
             wm = self._current_world_model()
             if wm:
-                windows = list(getattr(wm, 'windows', None) or [])
+                windows = list(wm.active_windows or [])
+                kind_lower = self._normalize_provider(assistant_kind)
                 for w in windows:
                     w_title = str(getattr(w, 'title', '') or '').lower()
-                    if assistant_kind in w_title or title.lower() in w_title:
+                    if kind_lower in w_title or title.lower() in w_title:
                         profile['window_status'] = 'found'
-                        profile['window_hwnd'] = getattr(w, 'hwnd', None)
+                        meta = getattr(w, 'metadata', None) or {}
+                        profile['window_hwnd'] = meta.get('hwnd') or getattr(w, 'hwnd', None)
                         break
         except Exception:
             pass
@@ -7122,9 +7181,10 @@ class ControlCenterViewModel(QObject):
     # ── P0.38: Devin Repair Worker ──
 
     def _build_repair_packet(self, issue_summary: str) -> dict[str, Any]:
-        """Build a structured repair request packet from PortableContext.
+        """Build a structured repair request packet from PortableContext cache.
 
-        Contains enough context for Devin to understand and fix the issue.
+        Uses latest cache/latest.json — never calls build_package() synchronously
+        to avoid freezing the UI thread.
         No PII, no cookies, no tokens.
         """
         packet: dict[str, Any] = {
@@ -7137,18 +7197,35 @@ class ControlCenterViewModel(QObject):
         }
         try:
             pcs = getattr(self, 'portable_context_service', None)
-            if pcs and hasattr(pcs, 'build_package'):
-                pkg = pcs.build_package()
-                ctx = getattr(pkg, 'context', None) or {}
-                if isinstance(ctx, dict):
-                    packet['portable_context_excerpt'] = {
-                        k: v for k, v in ctx.items()
-                        if k in (
-                            'cloud_reasoning', 'external_consultation',
-                            'startup_health', 'web_skill_status',
-                            'devin_repair_status',
-                        )
-                    }
+            if pcs:
+                # Use cached package — never heavy rebuild in UI path
+                pkg = getattr(pcs, 'current_package', None)
+                if pkg is None and hasattr(pcs, 'latest_cache'):
+                    pkg = pcs.latest_cache
+                if pkg is None:
+                    latest_path = Path(self.config.workspace_root) / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+                    if latest_path.exists():
+                        import json as _json
+                        try:
+                            raw = _json.loads(latest_path.read_text(encoding='utf-8'))
+                            pkg = raw
+                        except Exception:
+                            pass
+                if pkg is not None:
+                    ctx = pkg.get('context', None) if isinstance(pkg, dict) else (getattr(pkg, 'context', None) or {})
+                    if isinstance(ctx, dict):
+                        packet['portable_context_excerpt'] = {
+                            k: v for k, v in ctx.items()
+                            if k in (
+                                'cloud_reasoning', 'external_consultation',
+                                'startup_health', 'web_skill_status',
+                                'devin_repair_status',
+                            )
+                        }
+                    else:
+                        packet['portable_context_excerpt'] = {'status': 'UNRESOLVED_no_fresh_context'}
+                else:
+                    packet['portable_context_excerpt'] = {'status': 'UNRESOLVED_no_cached_context'}
         except Exception:
             pass
         try:
@@ -7169,11 +7246,22 @@ class ControlCenterViewModel(QObject):
             pass
         return packet
 
-    def _try_devin_repair(self, issue_summary: str) -> dict[str, Any]:
+    @staticmethod
+    def _sanitize_for_repair(text: str) -> str:
+        """Strip potential PII/tokens from repair packet text."""
+        import re
+        sanitized = re.sub(r'[A-Za-z0-9_\-]{20,}', '<REDACTED>', text)
+        sanitized = re.sub(r'[\w.+-]+@[\w-]+\.[\w.-]+', '<EMAIL>', sanitized)
+        return sanitized[:500]
+
+    def _try_devin_repair(
+        self, issue_summary: str, *, user_confirmed: bool = False,
+    ) -> dict[str, Any]:
         """Attempt to create a Devin repair task if the API is available.
 
         Returns result dict with phase/available/session_id.
         Does not use browser credentials — only the Devin REST API.
+        Requires user_confirmed=True to actually create the session.
         """
         result: dict[str, Any] = {
             'phase': 'check_availability',
@@ -7182,25 +7270,39 @@ class ControlCenterViewModel(QObject):
             'detail': '',
         }
         try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            tracer = None
+        try:
             devin_adapter = self.tool_adapters.get('devin_api')
             if devin_adapter is None or not getattr(devin_adapter, 'api_key', ''):
                 result['detail'] = 'devin_api adapter not available or no API key'
-                try:
-                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                    get_runtime_tracer().trace_devin_repair(
-                        phase='unavailable',
+                result['phase'] = 'unavailable'
+                if tracer:
+                    tracer.trace_devin_repair(
+                        phase='devin_repair_unavailable',
                         available=False,
                         detail=result['detail'],
                     )
-                except Exception:
-                    pass
                 return result
             result['available'] = True
+            # Trace the request
+            if tracer:
+                tracer.trace_devin_repair(
+                    phase='devin_repair_requested',
+                    available=True,
+                    detail=self._sanitize_for_repair(issue_summary),
+                )
+            if not user_confirmed:
+                result['phase'] = 'awaiting_confirmation'
+                result['detail'] = 'Devin repair available but requires user confirmation'
+                return result
             result['phase'] = 'preparing_packet'
             packet = self._build_repair_packet(issue_summary)
             prompt = (
                 f'IABV v1.5 Repair Request:\n'
-                f'Issue: {issue_summary[:300]}\n'
+                f'Issue: {self._sanitize_for_repair(issue_summary)}\n'
                 f'Recent failures: {packet.get("recent_failures", [])}\n'
                 f'Context: {json.dumps(packet.get("portable_context_excerpt", {}), default=str)[:500]}'
             )
@@ -7212,22 +7314,31 @@ class ControlCenterViewModel(QObject):
                     result['session_id'] = session_id
                     result['phase'] = 'session_created'
                     result['detail'] = f'Devin session {session_id[:12]} created'
+                    if tracer:
+                        tracer.trace_devin_repair(
+                            phase='devin_repair_created',
+                            available=True,
+                            session_id=session_id[:12],
+                            detail=result['detail'],
+                        )
                 else:
                     result['phase'] = 'session_creation_failed'
                     result['detail'] = 'Devin API returned empty session_id'
+                    if tracer:
+                        tracer.trace_devin_repair(
+                            phase='devin_repair_failed',
+                            available=True,
+                            detail=result['detail'],
+                        )
             except Exception as exc:
                 result['phase'] = 'session_creation_failed'
                 result['detail'] = str(exc)[:200]
-            try:
-                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                get_runtime_tracer().trace_devin_repair(
-                    phase=result['phase'],
-                    available=True,
-                    session_id=result['session_id'],
-                    detail=result['detail'],
-                )
-            except Exception:
-                pass
+                if tracer:
+                    tracer.trace_devin_repair(
+                        phase='devin_repair_failed',
+                        available=True,
+                        detail=result['detail'],
+                    )
         except Exception as exc:
             result['phase'] = 'error'
             result['detail'] = str(exc)[:200]
@@ -7260,13 +7371,22 @@ class ControlCenterViewModel(QObject):
         Messages like 'intenta nuevamente', 'puedes hacer la consulta',
         'abre la ventana' should NOT fall to local chat if there is an
         active external incident or recent failure memory.
+        Integrates with ActiveIncidentFrame (P0.37) when available.
         """
         lowered = message.strip().lower()
+        # Check both ActiveIncidentFrame (P0.37) and failure memory
+        incident = getattr(self, '_active_incident_frame', None)
         failure_memory = getattr(self, '_external_failure_memory', None)
-        if not failure_memory:
+        if not failure_memory and not incident:
             return False
-        assistant_kind = str(failure_memory.get('assistant_kind', ''))
-        assistant_title = str(failure_memory.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        if incident and not incident.get('resolved') and time.time() < incident.get('expires_at', 0):
+            assistant_kind = str(incident.get('assistant_kind', ''))
+            assistant_title = str(incident.get('assistant_title', ''))
+        elif failure_memory:
+            assistant_kind = str(failure_memory.get('assistant_kind', ''))
+            assistant_title = str(failure_memory.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        else:
+            return False
         # Retry patterns
         if any(p in lowered for p in self._FOLLOWUP_RETRY_PATTERNS):
             profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
@@ -7309,14 +7429,19 @@ class ControlCenterViewModel(QObject):
             self._append_message('assistant', 'IABV', msg, 'consultation_status_report')
             self.dataChanged.emit()
             return True
-        # Window patterns
+        # Window patterns — use ActiveIncidentFrame hwnd when available
         if any(p in lowered for p in self._FOLLOWUP_WINDOW_PATTERNS):
-            profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
-            if profile.get('window_hwnd'):
+            # Prefer hwnd from ActiveIncidentFrame (P0.37), fall back to web skill profile
+            hwnd = None
+            if incident and incident.get('hwnd') is not None:
+                hwnd = incident['hwnd']
+            if hwnd is None:
+                profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
+                hwnd = profile.get('window_hwnd')
+            if hwnd is not None:
                 try:
                     import ctypes
                     user32 = ctypes.windll.user32  # type: ignore[attr-defined]
-                    hwnd = profile['window_hwnd']
                     user32.ShowWindow(hwnd, 9)
                     user32.SetForegroundWindow(hwnd)
                     msg = f'Enfoque la ventana de {assistant_title}.'

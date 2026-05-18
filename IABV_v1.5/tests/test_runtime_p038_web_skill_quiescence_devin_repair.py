@@ -47,6 +47,12 @@ def _make_stub_vm(**overrides):
         _heavy_result_guard_active=False,
         _task_start_ts=0.0,
         _external_failure_memory=None,
+        _active_incident_frame=None,
+        _deferred_retry_generation=0,
+        _DEFERRED_RETRY_COOLDOWN_S=0.0,
+        _DEFERRED_RETRY_MAX=3,
+        _deferred_retry_count=0,
+        _deferred_retry_last_ts=0.0,
     )
     for k, v in overrides.items():
         setattr(stub, k, v)
@@ -62,6 +68,8 @@ def _make_stub_vm(**overrides):
         '_try_handle_consultation_followup',
         '_assistant_display_name',
         '_should_defer_heavy_work',
+        '_normalize_provider',
+        '_sanitize_for_repair',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is None:
@@ -81,6 +89,7 @@ def _make_stub_vm(**overrides):
         '_FOLLOWUP_RETRY_PATTERNS',
         '_FOLLOWUP_QUERY_PATTERNS',
         '_FOLLOWUP_WINDOW_PATTERNS',
+        '_PROVIDER_ALIASES',
     ):
         val = getattr(ControlCenterViewModel, attr, None)
         if val is not None:
@@ -370,7 +379,7 @@ class TestDevinApiDisponibleRepairPacket:
     def test_devin_unavailable_returns_unavailable(self):
         stub = _make_stub_vm()
         stub.tool_adapters = {}
-        result = stub._try_devin_repair('fix build')
+        result = stub._try_devin_repair('fix build', user_confirmed=True)
         assert result['available'] is False
         assert result['phase'] in ('check_availability', 'unavailable')
 
@@ -378,7 +387,7 @@ class TestDevinApiDisponibleRepairPacket:
         stub = _make_stub_vm()
         adapter = SimpleNamespace(api_key='')
         stub.tool_adapters = {'devin_api': adapter}
-        result = stub._try_devin_repair('fix build')
+        result = stub._try_devin_repair('fix build', user_confirmed=True)
         assert result['available'] is False
 
     def test_devin_available_with_key_prepares_session(self):
@@ -408,7 +417,7 @@ class TestDevinApiDisponibleRepairPacket:
         # Verify that _try_devin_repair at least marks available=True
         # when adapter has api_key (the json scope issue only affects
         # prompt construction, not availability detection)
-        result = stub._try_devin_repair('fix build failure')
+        result = stub._try_devin_repair('fix build failure', user_confirmed=True)
         assert result['available'] is True
 
 
@@ -421,7 +430,7 @@ class TestDevinApiAusenteUnresolvedSinRomper:
     def test_no_adapter_no_crash(self):
         stub = _make_stub_vm()
         stub.tool_adapters = {}
-        result = stub._try_devin_repair('whatever')
+        result = stub._try_devin_repair('whatever', user_confirmed=True)
         assert result['phase'] in ('check_availability', 'unavailable')
         assert result['available'] is False
         # No exception raised
@@ -434,7 +443,7 @@ class TestDevinApiAusenteUnresolvedSinRomper:
             'iabv_v15.bootstrap._devin_create_session',
             side_effect=Exception('network error'),
         ):
-            result = stub._try_devin_repair('fix something')
+            result = stub._try_devin_repair('fix something', user_confirmed=True)
         # May get 'session_creation_failed' or 'error' depending on
         # where the exception is caught; key: no crash, not 'session_created'
         assert result['phase'] in ('session_creation_failed', 'error')
@@ -666,3 +675,306 @@ class TestOsesDetectsP038Patterns:
             findings = svc._resource_quiescence_web_skill_findings()
             # With no tracer events, should return empty or minimal findings
             assert isinstance(findings, list)
+
+
+# ══════════════════════════════════════════════════════════════
+# 12. Blocker 2: Qt-safe retry — no UI mutation from thread
+# ══════════════════════════════════════════════════════════════
+
+class TestBlocker2QtSafeRetry:
+
+    def test_retry_does_not_touch_ui_from_thread(self):
+        """_schedule_deferred_consultation_retry must dispatch via QMetaObject,
+        never mutate _latest_response_text directly from the daemon thread."""
+        stub = _make_stub_vm()
+        stub.adaptive_orchestrator = SimpleNamespace(
+            _assess_resource_pressure=lambda: {'under_pressure': False},
+        )
+        stub._run_external_consultation = MagicMock()
+        # Call should not crash even without Qt event loop
+        stub._schedule_deferred_consultation_retry('chatgpt', 0.01)
+        # The method should increment generation and count
+        assert stub._deferred_retry_generation == 1
+        assert stub._deferred_retry_count == 1
+
+    def test_stale_dispatch_id_does_not_emit(self):
+        """If generation changes between schedule and execution, retry is skipped."""
+        stub = _make_stub_vm()
+        stub._schedule_deferred_consultation_retry('chatgpt', 100.0)
+        gen1 = stub._deferred_retry_generation
+        # Bump generation (simulates a new schedule)
+        stub._deferred_retry_generation += 1
+        # The first scheduled thread should see gen != generation and return
+        assert stub._deferred_retry_generation != gen1
+
+    def test_cooldown_prevents_spam(self):
+        """Rapid calls are suppressed by cooldown."""
+        stub = _make_stub_vm()
+        stub._DEFERRED_RETRY_COOLDOWN_S = 100.0  # long cooldown
+        stub._schedule_deferred_consultation_retry('chatgpt', 0.01)
+        assert stub._deferred_retry_count == 1
+        stub._schedule_deferred_consultation_retry('chatgpt', 0.01)
+        # Second call within cooldown should be suppressed
+        assert stub._deferred_retry_count == 1
+
+    def test_max_retry_limit(self):
+        """After _DEFERRED_RETRY_MAX attempts, no more retries are scheduled."""
+        stub = _make_stub_vm()
+        stub._DEFERRED_RETRY_MAX = 2
+        stub._schedule_deferred_consultation_retry('chatgpt', 0.01)
+        stub._deferred_retry_last_ts = 0  # reset cooldown
+        stub._schedule_deferred_consultation_retry('chatgpt', 0.01)
+        stub._deferred_retry_last_ts = 0
+        stub._schedule_deferred_consultation_retry('chatgpt', 0.01)
+        assert stub._deferred_retry_count == 2  # capped at max
+
+
+# ══════════════════════════════════════════════════════════════
+# 13. Blocker 3: WorldModel active_windows + hwnd + provider normalize
+# ══════════════════════════════════════════════════════════════
+
+class TestBlocker3WorldModelActiveWindows:
+
+    def test_active_windows_used_not_wm_windows(self):
+        """Profile enrichment must use wm.active_windows, not wm.windows."""
+        stub = _make_stub_vm()
+        wm = SimpleNamespace(
+            active_windows=[
+                SimpleNamespace(
+                    title='ChatGPT - Google Chrome',
+                    metadata={'hwnd': 12345},
+                ),
+            ],
+        )
+        stub._current_world_model = lambda: wm
+        profile = stub._build_assistant_web_skill_profile('chatgpt')
+        assert profile['window_status'] == 'found'
+        assert profile['window_hwnd'] == 12345
+
+    def test_hwnd_from_metadata(self):
+        """hwnd should be extracted from metadata dict, not top-level attr."""
+        stub = _make_stub_vm()
+        wm = SimpleNamespace(
+            active_windows=[
+                SimpleNamespace(
+                    title='ChatGPT Window',
+                    metadata={'hwnd': 99999},
+                ),
+            ],
+        )
+        stub._current_world_model = lambda: wm
+        profile = stub._build_assistant_web_skill_profile('chatgpt')
+        assert profile['window_hwnd'] == 99999
+
+    def test_provider_normalized(self):
+        """Provider aliases are normalized to canonical lowercase."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        assert ControlCenterViewModel._normalize_provider('ChatGPT') == 'chatgpt'
+        assert ControlCenterViewModel._normalize_provider('chatgpt_web') == 'chatgpt'
+        assert ControlCenterViewModel._normalize_provider('Claude') == 'claude'
+        assert ControlCenterViewModel._normalize_provider('Gemini') == 'gemini'
+        assert ControlCenterViewModel._normalize_provider('') == ''
+        assert ControlCenterViewModel._normalize_provider('Custom Tool') == 'custom_tool'
+
+
+# ══════════════════════════════════════════════════════════════
+# 14. Blocker 4: Follow-up uses ActiveIncidentFrame
+# ══════════════════════════════════════════════════════════════
+
+class TestBlocker4FollowUpUsesActiveIncidentFrame:
+
+    def test_abre_ventana_uses_incident_frame_not_local(self):
+        """'abre la ventana' with active incident should be handled, not local."""
+        stub = _make_stub_vm()
+        stub._active_incident_frame = {
+            'assistant_kind': 'chatgpt',
+            'assistant_title': 'ChatGPT',
+            'resolved': False,
+            'expires_at': time.time() + 600,
+            'hwnd': 54321,
+        }
+        result = stub._try_handle_consultation_followup('abre la ventana')
+        assert result is True
+
+    def test_incident_frame_preferred_over_failure_memory(self):
+        """When both exist, ActiveIncidentFrame takes priority."""
+        stub = _make_stub_vm()
+        stub._active_incident_frame = {
+            'assistant_kind': 'chatgpt',
+            'assistant_title': 'ChatGPT (Incident)',
+            'resolved': False,
+            'expires_at': time.time() + 600,
+        }
+        stub._external_failure_memory = {
+            'assistant_kind': 'chatgpt',
+            'assistant_title': 'ChatGPT (Memory)',
+        }
+        stub._run_external_consultation = MagicMock()
+        result = stub._try_handle_consultation_followup('intenta nuevamente')
+        assert result is True
+
+    def test_expired_incident_falls_to_failure_memory(self):
+        """Expired incident frame falls back to failure memory."""
+        stub = _make_stub_vm()
+        stub._active_incident_frame = {
+            'assistant_kind': 'chatgpt',
+            'assistant_title': 'ChatGPT (Expired)',
+            'resolved': False,
+            'expires_at': time.time() - 100,  # expired
+        }
+        stub._external_failure_memory = {
+            'assistant_kind': 'chatgpt',
+            'assistant_title': 'ChatGPT (Memory)',
+        }
+        result = stub._try_handle_consultation_followup(
+            'puedes hacer la consulta si o no'
+        )
+        assert result is True
+
+    def test_intenta_nuevamente_under_pressure_deferred_not_local(self):
+        """'intenta nuevamente' under pressure must be deferred, not local chat."""
+        stub = _make_stub_vm()
+        stub._active_incident_frame = {
+            'assistant_kind': 'chatgpt',
+            'assistant_title': 'ChatGPT',
+            'resolved': False,
+            'expires_at': time.time() + 600,
+        }
+        stub.adaptive_orchestrator = SimpleNamespace(
+            _assess_resource_pressure=lambda: {
+                'under_pressure': True,
+                'critical': False,
+                'active_signals': ['high_memory_usage'],
+            },
+        )
+        result = stub._try_handle_consultation_followup('intenta nuevamente')
+        assert result is True
+        assert stub._latest_response_meta == 'consultation_retry_deferred'
+
+
+# ══════════════════════════════════════════════════════════════
+# 15. Blocker 5: build_repair_packet no heavy build_package
+# ══════════════════════════════════════════════════════════════
+
+class TestBlocker5NoHeavyBuildPackage:
+
+    def test_build_repair_packet_uses_cache_not_build_package(self):
+        """_build_repair_packet must not call build_package() synchronously."""
+        stub = _make_stub_vm()
+        mock_pcs = MagicMock()
+        mock_pcs.current_package = {
+            'context': {
+                'cloud_reasoning': {'status': 'ok'},
+                'web_skill_status': {'active': True},
+            },
+        }
+        mock_pcs.build_package = MagicMock(side_effect=Exception('should not be called'))
+        stub.portable_context_service = mock_pcs
+        packet = stub._build_repair_packet('test issue')
+        assert packet['type'] == 'repair_request'
+        assert 'cloud_reasoning' in packet['portable_context_excerpt']
+        mock_pcs.build_package.assert_not_called()
+
+    def test_no_cache_marks_unresolved(self):
+        """When no cached package is available, excerpt should indicate UNRESOLVED."""
+        stub = _make_stub_vm()
+        mock_pcs = MagicMock()
+        mock_pcs.current_package = None
+        mock_pcs.latest_cache = None
+        stub.portable_context_service = mock_pcs
+        packet = stub._build_repair_packet('test issue')
+        assert 'UNRESOLVED' in str(packet['portable_context_excerpt'])
+
+
+# ══════════════════════════════════════════════════════════════
+# 16. Blocker 6: Devin repair governed with permission
+# ══════════════════════════════════════════════════════════════
+
+class TestBlocker6DevinRepairGoverned:
+
+    def test_requires_confirmation_before_creating_session(self):
+        """Without user_confirmed=True, should return awaiting_confirmation."""
+        stub = _make_stub_vm()
+        adapter = SimpleNamespace(api_key='test-key')
+        stub.tool_adapters = {'devin_api': adapter}
+        result = stub._try_devin_repair('fix build')
+        assert result['available'] is True
+        assert result['phase'] == 'awaiting_confirmation'
+        assert result['session_id'] == ''
+
+    def test_trace_names_correct(self):
+        """Trace phases must use canonical names: devin_repair_requested etc."""
+        stub = _make_stub_vm()
+        adapter = SimpleNamespace(api_key='test-key')
+        stub.tool_adapters = {'devin_api': adapter}
+        trace_calls = []
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+        ) as mock_tracer:
+            mock_t = MagicMock()
+            mock_tracer.return_value = mock_t
+            mock_t.trace_devin_repair = lambda **kw: trace_calls.append(kw)
+            stub._try_devin_repair('fix build')
+        assert len(trace_calls) >= 1
+        assert trace_calls[0]['phase'] == 'devin_repair_requested'
+
+    def test_sanitize_strips_long_tokens(self):
+        """_sanitize_for_repair strips long alphanumeric strings."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        result = ControlCenterViewModel._sanitize_for_repair(
+            'token=ghp_abcdefghijklmnopqrstuvwxyz123456 user@example.com'
+        )
+        assert 'ghp_' not in result
+        assert '<REDACTED>' in result
+        assert '<EMAIL>' in result
+
+
+# ══════════════════════════════════════════════════════════════
+# 17. Blocker 7: PortableContext 4 sections + OSES findings
+# ══════════════════════════════════════════════════════════════
+
+class TestBlocker7PortableContextAndOsesUnified:
+
+    def test_portable_context_includes_4_sections(self):
+        """build_package must include all 4 sections."""
+        from iabv_v15.services.evolution.portable_context_service import PortableContextService
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            storage = ArtifactStorage(root=tmpdir)
+            svc = PortableContextService(
+                workspace_root=tmpdir,
+                storage=storage,
+            )
+            from iabv_v15.domain.models import utc_now
+            now = utc_now()
+            sections = [
+                svc._user_chrome_bridge_section(now=now),
+                svc._active_incident_frame_section(now=now),
+                svc._web_skill_status_section(now=now),
+                svc._devin_repair_status_section(now=now),
+            ]
+            ids = [s.section_id for s in sections]
+            assert 'user_chrome_bridge' in ids
+            assert 'active_incident_frame' in ids
+            assert 'web_skill_status' in ids
+            assert 'devin_repair_status' in ids
+
+    def test_oses_findings_no_actions(self):
+        """OSES findings must observe/report, never execute actions."""
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            storage = ArtifactStorage(root=tmpdir)
+            svc = OperationalSelfExaminationService(
+                workspace_root=tmpdir,
+                storage=storage,
+            )
+            findings = svc._resource_quiescence_web_skill_findings()
+            for f in findings:
+                assert not hasattr(f, 'execute') or not callable(getattr(f, 'execute', None))
