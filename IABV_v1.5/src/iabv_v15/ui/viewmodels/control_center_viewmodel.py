@@ -7095,7 +7095,7 @@ class ControlCenterViewModel(QObject):
                 readiness['blocking_reason'] = f'resource_pressure_{readiness["resource_pressure"]}'
                 readiness['next_human_action'] = quiescence.get('reason', '')
             elif 'blocked_by_security_verification' in blockers:
-                readiness['action_possible'] = True  # can still attempt, but will likely fail
+                readiness['action_possible'] = False
                 readiness['blocking_reason'] = 'security_verification_recent'
                 profile_path = profile.get('browser_profile_path', '')
                 profile_label = 'chatgpt_program_session/browser_profile'
@@ -7128,6 +7128,60 @@ class ControlCenterViewModel(QObject):
             pass
 
         return readiness
+
+    def _queue_ui_call(self, method_name: str, *args: object) -> None:
+        """Thread-safe UI call: QMetaObject if QObject, direct call otherwise.
+
+        - If self is a QObject, uses QMetaObject.invokeMethod with QueuedConnection.
+        - If self is a test stub (SimpleNamespace), calls method directly.
+        - Captures all exceptions and traces retry_queue_failed.
+        """
+        try:
+            from PySide6.QtCore import QObject
+            is_qobject = isinstance(self, QObject)
+        except ImportError:
+            is_qobject = False
+
+        if is_qobject:
+            try:
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                q_args = [Q_ARG(str, str(a)) for a in args]
+                QMetaObject.invokeMethod(
+                    self, method_name,
+                    Qt.ConnectionType.QueuedConnection,
+                    *q_args,
+                )
+                return
+            except (RuntimeError, TypeError) as exc:
+                # Object deleted or wrong signature — trace and fall through
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'retry_queue_failed',
+                        method=method_name,
+                        error=str(exc)[:120],
+                        path='qobject_deleted_or_type_error',
+                    )
+                except Exception:
+                    pass
+                return
+
+        # Not a QObject (test stub / SimpleNamespace) — call directly
+        method = getattr(self, method_name, None)
+        if method is not None and callable(method):
+            try:
+                method(*[str(a) for a in args])
+            except Exception as exc:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'retry_queue_failed',
+                        method=method_name,
+                        error=str(exc)[:120],
+                        path='direct_call_fallback',
+                    )
+                except Exception:
+                    pass
 
     _deferred_retry_generation: int = 0
     _DEFERRED_RETRY_COOLDOWN_S: float = 10.0
@@ -7167,12 +7221,7 @@ class ControlCenterViewModel(QObject):
                     )
                 except Exception:
                     pass
-                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
-                QMetaObject.invokeMethod(
-                    self, '_on_deferred_retry_ready',
-                    Qt.ConnectionType.QueuedConnection,
-                    Q_ARG(str, assistant_kind),
-                )
+                self._queue_ui_call('_on_deferred_retry_ready', assistant_kind)
             else:
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -7184,12 +7233,7 @@ class ControlCenterViewModel(QObject):
                     )
                 except Exception:
                     pass
-                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
-                QMetaObject.invokeMethod(
-                    self, '_on_deferred_retry_still_blocked',
-                    Qt.ConnectionType.QueuedConnection,
-                    Q_ARG(str, assistant_kind),
-                )
+                self._queue_ui_call('_on_deferred_retry_still_blocked', assistant_kind)
         threading.Thread(target=_retry, daemon=True, name='quiescence-retry').start()
 
     @Slot(str)

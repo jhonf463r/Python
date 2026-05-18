@@ -70,6 +70,7 @@ def _make_stub_vm(**overrides):
         '_should_defer_heavy_work',
         '_normalize_provider',
         '_sanitize_for_repair',
+        '_queue_ui_call',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is None:
@@ -101,6 +102,8 @@ def _make_stub_vm(**overrides):
         '_append_message', '_record_chat_audit', '_set_live_status',
         '_collect_metrics', '_update_evolution_snapshot',
         '_resolve_active_interaction',
+        '_on_deferred_retry_ready',
+        '_on_deferred_retry_still_blocked',
     ):
         if not hasattr(stub, attr):
             setattr(stub, attr, _noop)

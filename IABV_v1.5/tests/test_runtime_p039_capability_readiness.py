@@ -77,6 +77,7 @@ def _make_stub_vm(**overrides):
         '_detect_cdp_available',
         '_set_autonomy_activity_override',
         '_schedule_worker_timeout',
+        '_queue_ui_call',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is None:
@@ -109,6 +110,8 @@ def _make_stub_vm(**overrides):
         '_append_message', '_record_chat_audit', '_set_live_status',
         '_collect_metrics', '_update_evolution_snapshot',
         '_resolve_active_interaction',
+        '_on_deferred_retry_ready',
+        '_on_deferred_retry_still_blocked',
     ):
         if not hasattr(stub, attr):
             setattr(stub, attr, _noop)
@@ -321,9 +324,72 @@ class TestSecurityVerificationProducesHumanAction:
             readiness = stub._assess_external_readiness('chatgpt')
 
         assert readiness['security_block_state'] == 'security_verification'
+        assert readiness['action_possible'] is False
+        assert readiness['blocking_reason'] == 'security_verification_recent'
         assert readiness['next_human_action'] != ''
         assert 'perfil aislado' in readiness['next_human_action']
         assert 'ya lo hice' in readiness['next_human_action']
+
+    def test_security_verification_blocks_consultation(self):
+        """_run_external_consultation must return False when security_verification blocks."""
+        stub = _make_stub_vm()
+        def fake_readiness(self_arg, ak):
+            return {
+                'tool_id': 'external_assistant_chatgpt',
+                'assistant_kind': ak,
+                'assistant_title': 'ChatGPT',
+                'device_state': 'window_found',
+                'build_state': 'current',
+                'resource_pressure': 'none',
+                'session_mode': 'isolated_profile',
+                'session_selected': 'isolated_profile',
+                'auth_state': 'security_verification',
+                'security_block_state': 'security_verification',
+                'observation_permission': 'unknown',
+                'action_possible': False,
+                'capture_possible': False,
+                'response_capture_mode': 'manual_pasteback',
+                'confidence': 0.2,
+                'blocking_reason': 'security_verification_recent',
+                'next_human_action': 'Resuelve la verificacion en la ventana IABV.',
+                'evidence_refs': [],
+                'last_verified_at': time.time(),
+            }
+        stub._assess_external_readiness = types.MethodType(fake_readiness, stub)
+        result = stub._run_external_consultation('chatgpt', announce=True)
+        assert result is False
+        assert stub._working is False
+        assert 'security_verification' in stub._latest_response_meta
+        assert 'Resuelve' in stub._latest_response_text
+
+    def test_security_block_produces_handoff_message(self):
+        """Security block must produce message with next_human_action."""
+        stub = _make_stub_vm()
+        def fake_readiness(self_arg, ak):
+            return {
+                'tool_id': 'external_assistant_chatgpt',
+                'assistant_kind': ak,
+                'assistant_title': 'ChatGPT',
+                'device_state': 'window_found',
+                'build_state': 'current',
+                'resource_pressure': 'none',
+                'session_mode': 'isolated_profile',
+                'session_selected': 'isolated_profile',
+                'auth_state': 'security_verification',
+                'security_block_state': 'security_verification',
+                'observation_permission': 'unknown',
+                'action_possible': False,
+                'capture_possible': False,
+                'response_capture_mode': 'manual_pasteback',
+                'confidence': 0.2,
+                'blocking_reason': 'security_verification_recent',
+                'next_human_action': 'Resuelve la verificacion y escribe ya lo hice.',
+                'evidence_refs': [],
+                'last_verified_at': time.time(),
+            }
+        stub._assess_external_readiness = types.MethodType(fake_readiness, stub)
+        stub._run_external_consultation('chatgpt', announce=True)
+        assert 'ya lo hice' in stub._latest_response_text
 
     def test_security_block_explains_chrome_difference(self):
         """next_human_action must mention that the profile is NOT user's normal Chrome."""
@@ -758,7 +824,106 @@ class TestConfidenceScore:
 
 
 # ══════════════════════════════════════════════════════════════
-# 13. RuntimeAuditTracer trace method
+# 13. Deferred retry thread-safe (no PytestUnhandledThreadExceptionWarning)
+# ══════════════════════════════════════════════════════════════
+
+class TestDeferredRetryThreadSafe:
+
+    def test_deferred_retry_ready_no_thread_warning(self):
+        """Deferred retry ready path must not produce thread warning."""
+        stub = _make_stub_vm()
+        done_event = threading.Event()
+        original_mock = MagicMock()
+        def _on_ready(*args, **kwargs):
+            original_mock(*args, **kwargs)
+            done_event.set()
+        stub._on_deferred_retry_ready = _on_ready
+        stub.adaptive_orchestrator = SimpleNamespace(
+            _assess_resource_pressure=lambda: {'under_pressure': False},
+        )
+        stub._DEFERRED_RETRY_COOLDOWN_S = 0.0
+        stub._deferred_retry_last_ts = 0.0
+        stub._deferred_retry_count = 0
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+        ) as mock_tracer, patch('time.sleep'):
+            tracer_inst = MagicMock()
+            tracer_inst.trace_consultation_quiescence.return_value = {}
+            mock_tracer.return_value = tracer_inst
+            stub._schedule_deferred_consultation_retry('chatgpt', 0.1)
+            done_event.wait(timeout=5.0)
+            original_mock.assert_called()
+
+    def test_deferred_retry_still_blocked_no_thread_warning(self):
+        """Deferred retry still-blocked path must not produce thread warning."""
+        stub = _make_stub_vm()
+        done_event = threading.Event()
+        original_mock = MagicMock()
+        def _on_blocked(*args, **kwargs):
+            original_mock(*args, **kwargs)
+            done_event.set()
+        stub._on_deferred_retry_still_blocked = _on_blocked
+        stub.adaptive_orchestrator = SimpleNamespace(
+            _assess_resource_pressure=lambda: {
+                'under_pressure': True,
+                'critical': False,
+                'active_signals': ['high_memory_usage'],
+            },
+        )
+        stub._DEFERRED_RETRY_COOLDOWN_S = 0.0
+        stub._deferred_retry_last_ts = 0.0
+        stub._deferred_retry_count = 0
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+        ) as mock_tracer, patch('time.sleep'):
+            tracer_inst = MagicMock()
+            tracer_inst.trace_consultation_quiescence.return_value = {}
+            mock_tracer.return_value = tracer_inst
+            stub._schedule_deferred_consultation_retry('chatgpt', 0.1)
+            done_event.wait(timeout=5.0)
+            original_mock.assert_called()
+
+    def test_simple_namespace_fallback_no_crash(self):
+        """_queue_ui_call with SimpleNamespace must not crash."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        stub = _make_stub_vm()
+        stub._on_deferred_retry_ready = MagicMock()
+        method = getattr(ControlCenterViewModel, '_queue_ui_call', None)
+        assert method is not None
+        bound = types.MethodType(method, stub)
+        bound('_on_deferred_retry_ready', 'chatgpt')
+        stub._on_deferred_retry_ready.assert_called_once_with('chatgpt')
+
+    def test_stale_generation_no_retry(self):
+        """If generation changes, retry must not fire."""
+        stub = _make_stub_vm()
+        stub._on_deferred_retry_ready = MagicMock()
+        stub._DEFERRED_RETRY_COOLDOWN_S = 0.0
+        stub._deferred_retry_last_ts = 0.0
+        stub._deferred_retry_count = 0
+        with patch(
+            'iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+        ) as mock_tracer:
+            tracer_inst = MagicMock()
+            tracer_inst.trace_consultation_quiescence.return_value = {}
+            mock_tracer.return_value = tracer_inst
+            stub._schedule_deferred_consultation_retry('chatgpt', 0.1)
+            # Bump generation to stale the retry
+            stub._deferred_retry_generation += 1
+            time.sleep(0.5)
+        stub._on_deferred_retry_ready.assert_not_called()
+
+    def test_missing_method_no_crash(self):
+        """_queue_ui_call with missing method must not crash."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        stub = _make_stub_vm()
+        # Don't define _on_nonexistent — it should not crash
+        bound = types.MethodType(ControlCenterViewModel._queue_ui_call, stub)
+        bound('_on_nonexistent_method', 'chatgpt')  # should not raise
+
+
+# ══════════════════════════════════════════════════════════════
+# 14. RuntimeAuditTracer trace method
 # ══════════════════════════════════════════════════════════════
 
 class TestRuntimeAuditTracerReadiness:
