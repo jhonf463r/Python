@@ -204,6 +204,9 @@ class PortableContextService:
             self._shared_reality_section(review=self_examination, now=now),
             self._user_chrome_bridge_section(now=now),
             self._active_incident_frame_section(now=now),
+            self._web_skill_status_section(now=now),
+            self._devin_repair_status_section(now=now),
+            self._capability_readiness_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3648,6 +3651,136 @@ class PortableContextService:
             source_refs=['RuntimeAuditTracer', 'ActiveIncidentFrame'],
             confidence=0.9 if incident_events > 0 else 0.5,
             last_updated=now,
+        )
+
+    # ------------------------------------------------------------------
+    # P0.38: Web skill status + Devin repair status sections
+    # ------------------------------------------------------------------
+
+    def _web_skill_status_section(self, *, now) -> PortableContextSection:
+        """Export compact web skill profile status. No PII/cookies/tokens."""
+        items: list[dict[str, Any]] = []
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            scan_events = tracer.events(kind='assistant_web_skill_scan', limit=5)
+            for ev in scan_events:
+                data = ev.get('data', {})
+                items.append({
+                    'assistant_kind': data.get('assistant_kind', ''),
+                    'auth_status': data.get('auth_status', 'unknown'),
+                    'session_mode': data.get('session_mode', 'unknown'),
+                    'cdp_available': data.get('cdp_available', False),
+                    'window_found': data.get('window_found', False),
+                    'phase': data.get('phase', ''),
+                    'last_block': data.get('detail', ''),
+                })
+            quiescence_events = tracer.events(kind='external_consultation_quiescence', limit=5)
+            for ev in quiescence_events:
+                data = ev.get('data', {})
+                items.append({
+                    'type': 'quiescence_decision',
+                    'decision': data.get('decision', ''),
+                    'pressure_level': data.get('pressure_level', ''),
+                    'assistant_kind': data.get('assistant_kind', ''),
+                    'reason': str(data.get('reason', ''))[:100],
+                })
+        except Exception:
+            pass
+        summary = (
+            f'{len(items)} eventos de web skill/quiescence registrados'
+            if items else
+            'Sin eventos de web skill registrados'
+        )
+        return self._section(
+            section_id='web_skill_status',
+            title='Web Skill Status (P0.38)',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_web_skill',
+            source_refs=['RuntimeAuditTracer'],
+            confidence=0.8 if items else 0.3,
+            last_updated=now,
+        )
+
+    def _devin_repair_status_section(self, *, now) -> PortableContextSection:
+        """Export compact Devin repair worker status. No PII/credentials."""
+        items: list[dict[str, Any]] = []
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            devin_events = tracer.events(kind='devin_repair_worker', limit=10)
+            for ev in devin_events:
+                data = ev.get('data', {})
+                items.append({
+                    'phase': data.get('phase', ''),
+                    'available': data.get('available', False),
+                    'session_id': str(data.get('session_id', ''))[:12],
+                    'detail': str(data.get('detail', ''))[:100],
+                })
+        except Exception:
+            pass
+        summary = (
+            f'{len(items)} eventos de Devin repair worker registrados'
+            if items else
+            'Sin eventos de Devin repair worker'
+        )
+        return self._section(
+            section_id='devin_repair_status',
+            title='Devin Repair Worker Status (P0.38)',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_devin_repair',
+            source_refs=['RuntimeAuditTracer'],
+            confidence=0.8 if items else 0.3,
+            last_updated=now,
+        )
+
+    def _capability_readiness_section(self, *, now) -> PortableContextSection:
+        """P0.39: Export latest capability readiness per assistant. No PII."""
+        items: list[dict[str, Any]] = []
+        seen_assistants: set[str] = set()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            readiness_events = tracer.events(kind='external_readiness_assessed', limit=20)
+            for ev in reversed(readiness_events):
+                data = ev.get('data', {})
+                ak = data.get('assistant_kind', '')
+                if ak in seen_assistants:
+                    continue
+                seen_assistants.add(ak)
+                items.append({
+                    'assistant_kind': ak,
+                    'action_possible': data.get('action_possible', False),
+                    'confidence': data.get('confidence', 0.0),
+                    'blocking_reason': str(data.get('blocking_reason', ''))[:80],
+                    'session_selected': data.get('session_selected', ''),
+                    'security_block': data.get('security_block', 'none'),
+                    'capture_mode': data.get('capture_mode', ''),
+                })
+        except Exception:
+            pass
+        has_ready = any(i.get('action_possible') for i in items)
+        summary = (
+            f'{len(items)} herramientas evaluadas; '
+            + ('al menos 1 lista' if has_ready else 'ninguna lista actualmente')
+        )
+        unresolved: list[str] = []
+        if not items:
+            unresolved.append('no_readiness_data')
+        elif not has_ready:
+            unresolved.append('no_tool_action_possible')
+        return self._section(
+            section_id='capability_readiness',
+            title='External Tool Capability Readiness (P0.39)',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_readiness',
+            source_refs=['RuntimeAuditTracer', '_assess_external_readiness'],
+            confidence=0.8 if items else 0.3,
+            last_updated=now,
+            unresolved_fields=unresolved if unresolved else None,
         )
 
     def _section(

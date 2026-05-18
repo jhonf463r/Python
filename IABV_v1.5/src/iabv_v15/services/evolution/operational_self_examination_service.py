@@ -746,6 +746,9 @@ class OperationalSelfExaminationService:
         # path imbalance and evidence tag gaps from ChatMessageRepository.
         findings.extend(self._chat_observability_findings())
 
+        # P0.38: Resource quiescence, web skill profile, devin repair patterns.
+        findings.extend(self._resource_quiescence_web_skill_findings())
+
         # RuntimePerformance: always runs — detects memory pressure, excessive
         # threads, slow network probes and other bottlenecks that cause the UI
         # to feel slow or frozen.
@@ -858,6 +861,9 @@ class OperationalSelfExaminationService:
 
         # P0.32+P0.37: detect capabilities promised but unavailable.
         findings.extend(self._capability_promised_but_unavailable_findings())
+
+        # P0.39: detect repeated readiness failures without proof.
+        findings.extend(self._external_readiness_missing_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -6493,6 +6499,124 @@ class OperationalSelfExaminationService:
     # Brecha 2.3 — Web session health findings
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # P0.38: Resource quiescence, web skill profile, devin repair
+    # ------------------------------------------------------------------
+
+    def _resource_quiescence_web_skill_findings(self) -> list[SelfExaminationFinding]:
+        """Detect patterns related to resource pressure blocks, web skill
+        profile gaps, and underused Devin repair worker."""
+        findings: list[SelfExaminationFinding] = []
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            return findings
+
+        # 1. repeated_resource_pressure_blocks
+        quiescence_events = tracer.events(kind='external_consultation_quiescence', limit=50)
+        deferred_count = sum(
+            1 for e in quiescence_events
+            if e.get('data', {}).get('decision') in ('defer', 'cleanup_needed')
+        )
+        if deferred_count >= 3:
+            findings.append(SelfExaminationFinding(
+                category='repeated_resource_pressure_blocks',
+                severity=IssueSeverity.HIGH,
+                title=f'{deferred_count} consultas externas diferidas por presion de recursos',
+                summary=(
+                    f'Se han diferido {deferred_count} consultas externas por presion '
+                    f'de recursos en esta sesion. Esto indica que el entorno necesita '
+                    f'liberacion de recursos o que las consultas deben programarse '
+                    f'en momentos de menor carga.'
+                ),
+                source_refs=['RuntimeAuditTracer.external_consultation_quiescence'],
+            ))
+
+        # 2. startup_heavy_work_starvation
+        startup_events = tracer.events(kind='startup_heavy_work_state', limit=10)
+        inhibited = [e for e in startup_events if e.get('data', {}).get('inhibited')]
+        if len(inhibited) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='startup_heavy_work_starvation',
+                severity=IssueSeverity.MEDIUM,
+                title=f'{len(inhibited)} arranques con trabajo pesado inhibido',
+                summary=(
+                    f'Se ha inhibido trabajo pesado de arranque {len(inhibited)} veces '
+                    f'por presion de recursos. Algunas funciones pueden no estar '
+                    f'disponibles hasta que baje la presion.'
+                ),
+                source_refs=['RuntimeAuditTracer.startup_heavy_work_state'],
+            ))
+
+        # 3. stale_security_verification_repeated
+        scan_events = tracer.events(kind='assistant_web_skill_scan', limit=30)
+        sec_verif_count = sum(
+            1 for e in scan_events
+            if e.get('data', {}).get('auth_status') == 'security_verification'
+        )
+        if sec_verif_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='stale_security_verification_repeated',
+                severity=IssueSeverity.HIGH,
+                title=f'Verificacion de seguridad detectada {sec_verif_count} veces',
+                summary=(
+                    f'El scan de herramienta web ha detectado security_verification '
+                    f'{sec_verif_count} veces. El usuario necesita completar la '
+                    f'verificacion manualmente para desbloquear la ruta externa.'
+                ),
+                recommendation=(
+                    'Pedir al usuario que abra la sesion del asistente externo '
+                    'y complete la verificacion de seguridad.'
+                ),
+                source_refs=['RuntimeAuditTracer.assistant_web_skill_scan'],
+            ))
+
+        # 4. web_skill_profile_missing
+        if not scan_events:
+            dispatches = tracer.recent_dispatch_lifecycles(limit=10)
+            ext_dispatches = [d for d in dispatches if d.get('task_name') == 'external_consultation']
+            if ext_dispatches:
+                findings.append(SelfExaminationFinding(
+                    category='web_skill_profile_missing',
+                    severity=IssueSeverity.MEDIUM,
+                    title='No hay scan de perfil web para asistentes externos',
+                    summary=(
+                        'Se han intentado consultas externas pero no existe '
+                        'un scan de perfil web registrado. El algoritmo '
+                        'OBSERVE->SELECT_SESSION->VERIFY_ACCESS no se ha ejecutado.'
+                    ),
+                    source_refs=['RuntimeAuditTracer.assistant_web_skill_scan'],
+                ))
+
+        # 5. devin_repair_worker_available_but_unused
+        devin_events = tracer.events(kind='devin_repair_worker', limit=10)
+        devin_available = any(
+            e.get('data', {}).get('available') for e in devin_events
+        )
+        devin_used = any(
+            e.get('data', {}).get('phase') == 'session_created' for e in devin_events
+        )
+        if devin_available and not devin_used:
+            unresolved_dispatches = [
+                d for d in tracer.recent_dispatch_lifecycles(limit=20)
+                if d.get('unresolved') or 'blocked' in (d.get('terminal_state') or '')
+            ]
+            if len(unresolved_dispatches) >= 2:
+                findings.append(SelfExaminationFinding(
+                    category='devin_repair_worker_available_but_unused',
+                    severity=IssueSeverity.LOW,
+                    title='Devin repair worker disponible pero no utilizado',
+                    summary=(
+                        f'La API de Devin esta disponible pero no se ha utilizado '
+                        f'para reparar {len(unresolved_dispatches)} dispatches bloqueados/sin resolver. '
+                        f'Considerar enviar un repair packet.'
+                    ),
+                    source_refs=['RuntimeAuditTracer.devin_repair_worker'],
+                ))
+
+        return findings
+
     def _web_session_findings(self) -> list[SelfExaminationFinding]:
         """Detect expired or missing web sessions for governed re-auth.
 
@@ -8834,6 +8958,115 @@ class OperationalSelfExaminationService:
                     'promised_count': promised_count,
                     'capabilities': capabilities[:5],
                 },
+            ))
+        return findings
+
+    def _external_readiness_missing_findings(self) -> list[SelfExaminationFinding]:
+        """P0.39: detect repeated readiness failures or capability without proof.
+
+        Scans runtime_audit.jsonl for 'external_readiness_assessed' events
+        where action_possible=False. If this happens repeatedly, the system
+        is declaring availability but cannot actually consult.
+        Also detects: build_stale repeated, CDP unavailable repeated,
+        security_verification repeated without resolution.
+        OSES only reports — does not take action.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+        blocked_count = 0
+        block_reasons: list[str] = []
+        stale_count = 0
+        security_count = 0
+        cdp_unavailable_count = 0
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    data = entry.get('data', {})
+                    if kind == 'external_readiness_assessed':
+                        if not data.get('action_possible'):
+                            blocked_count += 1
+                            reason = data.get('blocking_reason', '')
+                            if reason and reason not in block_reasons:
+                                block_reasons.append(reason)
+                            if 'build_stale' in reason:
+                                stale_count += 1
+                            if 'security' in reason:
+                                security_count += 1
+                    if kind == 'web_skill_profile_built':
+                        if data.get('cdp_status') == 'unavailable':
+                            cdp_unavailable_count += 1
+        except Exception:
+            pass
+        if blocked_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='external_readiness_missing',
+                severity=IssueSeverity.HIGH,
+                title='External consultation repeatedly blocked by readiness check',
+                summary=(
+                    f'{blocked_count} intentos de consulta externa bloqueados '
+                    f'por readiness check. '
+                    f'Razones: {", ".join(block_reasons[:5])}.'
+                ),
+                recommendation=(
+                    'Verificar: build actualizado, presion de recursos baja, '
+                    'sesion de navegador lista. No declarar capacidad disponible '
+                    'sin readiness proof.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'blocked_count': blocked_count,
+                    'block_reasons': block_reasons[:5],
+                    'stale_count': stale_count,
+                    'security_count': security_count,
+                },
+            ))
+        if stale_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='build_stale_repeated',
+                severity=IssueSeverity.HIGH,
+                title='Runtime build stale detected repeatedly',
+                summary=(
+                    f'El build del runtime fue detectado como stale {stale_count} '
+                    f'veces. Esto impide consultas externas confiables.'
+                ),
+                recommendation=(
+                    'Alinear el runtime con origin/main. '
+                    'No intentar consultas externas desde un build stale.'
+                ),
+                confidence=0.9,
+                metadata={'stale_count': stale_count},
+            ))
+        if cdp_unavailable_count >= 3:
+            findings.append(SelfExaminationFinding(
+                category='cdp_unavailable_repeated',
+                severity=IssueSeverity.MEDIUM,
+                title='CDP unavailable detected repeatedly',
+                summary=(
+                    f'CDP fue detectado como no disponible {cdp_unavailable_count} '
+                    f'veces. El puente gobernado a Chrome del usuario no funciona.'
+                ),
+                recommendation=(
+                    'Instruir al usuario a abrir Chrome con '
+                    '--remote-debugging-port=9222 si desea usar el puente CDP.'
+                ),
+                confidence=0.8,
+                metadata={'cdp_unavailable_count': cdp_unavailable_count},
             ))
         return findings
 

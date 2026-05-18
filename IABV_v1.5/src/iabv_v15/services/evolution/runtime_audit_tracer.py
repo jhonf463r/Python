@@ -514,6 +514,107 @@ class RuntimeAuditTracer:
             **extra,
         )
 
+    # ------------------------------------------------------------------
+    # P0.38: Resource Quiescence + Web Skill + Devin Repair traces
+    # ------------------------------------------------------------------
+
+    def trace_consultation_quiescence(
+        self,
+        *,
+        decision: str = '',
+        assistant_kind: str = '',
+        pressure_level: str = '',
+        reason: str = '',
+    ) -> dict[str, Any]:
+        """Record a resource quiescence decision for external consultation."""
+        return self.trace(
+            'external_consultation_quiescence',
+            decision=decision,
+            assistant_kind=assistant_kind,
+            pressure_level=pressure_level,
+            reason=reason,
+        )
+
+    def trace_assistant_web_skill_scan(
+        self,
+        *,
+        assistant_kind: str = '',
+        phase: str = '',
+        auth_status: str = '',
+        session_mode: str = '',
+        cdp_available: bool = False,
+        window_found: bool = False,
+        detail: str = '',
+    ) -> dict[str, Any]:
+        """Record a web skill profile scan result."""
+        return self.trace(
+            'assistant_web_skill_scan',
+            assistant_kind=assistant_kind,
+            phase=phase,
+            auth_status=auth_status,
+            session_mode=session_mode,
+            cdp_available=cdp_available,
+            window_found=window_found,
+            detail=detail,
+        )
+
+    def trace_devin_repair(
+        self,
+        *,
+        phase: str = '',
+        available: bool = False,
+        session_id: str = '',
+        detail: str = '',
+    ) -> dict[str, Any]:
+        """Record a Devin repair worker event."""
+        return self.trace(
+            'devin_repair_worker',
+            phase=phase,
+            available=available,
+            session_id=session_id,
+            detail=detail,
+        )
+
+    def trace_startup_heavy_work(
+        self,
+        *,
+        inhibited: bool = False,
+        reason: str = '',
+        rss_mb: float = 0.0,
+        disk_free_gb: float = 0.0,
+    ) -> dict[str, Any]:
+        """Record startup heavy work inhibition under resource pressure."""
+        return self.trace(
+            'startup_heavy_work_state',
+            inhibited=inhibited,
+            reason=reason,
+            rss_mb=rss_mb,
+            disk_free_gb=disk_free_gb,
+        )
+
+    def trace_external_readiness(
+        self,
+        *,
+        assistant_kind: str = '',
+        action_possible: bool = False,
+        confidence: float = 0.0,
+        blocking_reason: str = '',
+        session_selected: str = '',
+        security_block: str = 'none',
+        capture_mode: str = 'manual_pasteback',
+    ) -> dict[str, Any]:
+        """Record P0.39 universal capability readiness assessment."""
+        return self.trace(
+            'external_readiness_assessed',
+            assistant_kind=assistant_kind,
+            action_possible=action_possible,
+            confidence=confidence,
+            blocking_reason=blocking_reason,
+            session_selected=session_selected,
+            security_block=security_block,
+            capture_mode=capture_mode,
+        )
+
     def current_elapsed_ms(self) -> float:
         """Return milliseconds since tracer boot (process-relative)."""
         return round((time.perf_counter() - self._t0) * 1000.0, 1)

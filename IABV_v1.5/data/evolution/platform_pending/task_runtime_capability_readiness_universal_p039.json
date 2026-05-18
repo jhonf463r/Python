@@ -1,0 +1,52 @@
+{
+  "id": "runtime_capability_readiness_universal_p039",
+  "title": "P0.39: Universal Capability Readiness — pre-consultation verification contract",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Cerrar la brecha entre 'el sistema observa fallos' y 'el sistema actua con el algoritmo correcto cargado y verifica cientificamente cada capacidad antes de usarla'. Implementa un contrato read-only por herramienta que verifica 8-10 precondiciones antes de intentar consulta externa: build staleness, resource pressure, session selection, CDP availability, window/hwnd, security blocks, capture capability. Produce handoff guiado si algo falta.",
+  "reason": "Evidencia viva: runtime sin P0.38 markers en runtime_audit.jsonl (web_skill_profile_built, external_consultation_quiescence ausentes). Consultas externas se intentan sin readiness proof. Cuando falla security_verification, no se explica claramente que IABV usa perfil aislado vs Chrome normal del usuario.",
+  "dependency_missing": "",
+  "next_action": "Live proof en Windows: (1) mergear PR, (2) abrir IABV, (3) 'haz una consulta a ChatGPT: responde solo S si entiendes', (4) verificar runtime_audit.jsonl: external_readiness_assessed con action_possible y blocking_reason claros, (5) si security_verification, 'abre la ventana' debe enfocar la ventana correcta.",
+  "resume_hint": "P0.39 implementado: _assess_external_readiness() construye contrato readiness de 18 campos desde WorldModelSnapshot+RuntimeAuditTracer+ToolRegistry+PortableContext. Hooked into _run_external_consultation() como pre-gate. trace_external_readiness() traza cada evaluacion. OSES _external_readiness_missing_findings() detecta readiness failures repetidos. PortableContext _capability_readiness_section() exporta estado por asistente.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "No existia verificacion formal de precondiciones antes de intentar consulta externa. Los componentes existian (quiescence gate, web skill profile, CDP probe, security block detection) pero no se orquestaban como gate unico. Resultado: consultas se intentaban a ciegas y fallaban sin explicacion causal clara ni accion humana guiada.",
+    "evidence": [
+      {
+        "event": "runtime_audit.jsonl sin P0.38 markers",
+        "bug": "Runtime vivo no cargo P0.38: faltaban web_skill_profile_built, external_consultation_quiescence"
+      },
+      {
+        "event": "external_consultation attempted sin readiness proof",
+        "bug": "No habia pre-gate que verificara build/pressure/session/CDP/security antes de dispatch"
+      },
+      {
+        "event": "security_verification sin next_human_action claro",
+        "bug": "No se explicaba que IABV usa perfil aislado distinto del Chrome del usuario"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "src/iabv_v15/services/evolution/runtime_audit_tracer.py",
+      "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+      "src/iabv_v15/services/evolution/portable_context_service.py",
+      "data/evolution/platform_pending/task_runtime_capability_readiness_universal_p039.json",
+      "tests/test_runtime_p039_capability_readiness.py"
+    ],
+    "fixes_applied": {
+      "task_b": "_assess_external_readiness() builds 18-field readiness contract from existing pieces: quiescence gate, web skill profile, CDP probe, security block, window hwnd. No new service created.",
+      "task_c": "Pre-consultation gate hooked into _run_external_consultation(). If action_possible=False, produces handoff message with blocking_reason and next_human_action. Defers retry if resource_pressure.",
+      "task_d": "Handoff message explains: perfil aislado vs Chrome normal, exact profile path, action required by user, option to use CDP bridge or manual pasteback.",
+      "task_e_oses": "_external_readiness_missing_findings() detects: repeated readiness failures, build_stale repeated, CDP unavailable repeated. OSES only reports.",
+      "task_e_portable": "_capability_readiness_section() exports latest readiness per assistant: action_possible, confidence, blocking_reason, session_selected, security_block, capture_mode.",
+      "task_g_tracer": "trace_external_readiness() records each readiness assessment in runtime_audit.jsonl."
+    },
+    "covered_by_pr": "",
+    "unresolved": [
+      "live_readiness_proof_pending: requiere ejecucion en Windows con IABV real",
+      "cdp_bridge_live_test_pending: requiere Chrome con --remote-debugging-port",
+      "p038_markers_live_verification_pending: requiere runtime alineado con P0.38 en origin/main"
+    ]
+  }
+}
