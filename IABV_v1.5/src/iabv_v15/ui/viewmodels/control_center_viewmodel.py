@@ -235,6 +235,7 @@ class ControlCenterViewModel(QObject):
         self._development_packet = ''
         self._dev_packet_last_ts: float = 0.0
         self._dev_packet_cooldown_s: float = 30.0
+        self._dev_packet_refresh_pending: bool = False
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
         self._latest_response_meta = 'Cuando completes una consulta, aqui veras el rol detectado, el pack usado y si hubo aprobaciones.'
         self._last_external_failure_payload: dict[str, Any] = {}
@@ -8011,6 +8012,123 @@ class ControlCenterViewModel(QObject):
             force=force,
         )
 
+    # ── P0.42: Idle-Budgeted Development Packet Refresh ──
+    _IDLE_REFRESH_BUDGET_MS: float = 1500.0
+    _IDLE_REFRESH_COOLDOWN_S: float = 5.0
+    _IDLE_REFRESH_STALL_COOLDOWN_S: float = 15.0
+    _NON_CRITICAL_TASK_NAMES: frozenset[str] = frozenset({
+        'provider_health', 'self_teach', 'pbt', 'payload',
+        'security_retest', 'adaptive_action',
+    })
+
+    def _has_recent_ui_stall(self, threshold_ms: float = 2000.0, window_ms: float = 30_000.0) -> bool:
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            recent = tracer.events(kind='ui_event', limit=20)
+            return any(
+                e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+                and e.get('data', {}).get('duration_ms', 0) > threshold_ms
+                and (now_elapsed - e.get('elapsed_ms', 0)) < window_ms
+                for e in recent
+            )
+        except Exception:
+            return False
+
+    def _should_defer_dev_packet_refresh(self, task_name: str) -> str:
+        if self._working:
+            return 'query_pending'
+        if self._has_recent_ui_stall():
+            return 'recent_ui_stall'
+        if self._should_defer_heavy_work():
+            return 'resource_pressure'
+        if task_name in self._NON_CRITICAL_TASK_NAMES:
+            return 'non_critical_task'
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            if now_elapsed < 10_000:
+                return 'startup_followup_active'
+        except Exception:
+            pass
+        return ''
+
+    def _schedule_idle_dev_packet_refresh(self, task_name: str) -> None:
+        defer_reason = self._should_defer_dev_packet_refresh(task_name)
+        if defer_reason:
+            self._dev_packet_refresh_pending = True
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'development_packet_refresh_deferred',
+                    task_name=task_name,
+                    reason=defer_reason,
+                )
+            except Exception:
+                pass
+            if defer_reason == 'recent_ui_stall':
+                delay_ms = int(self._IDLE_REFRESH_STALL_COOLDOWN_S * 1000)
+            else:
+                delay_ms = int(self._IDLE_REFRESH_COOLDOWN_S * 1000)
+            try:
+                from PySide6.QtCore import QTimer
+                QTimer.singleShot(delay_ms, self._run_idle_dev_packet_refresh)
+            except Exception:
+                self._bg_pool.submit(self._run_idle_dev_packet_refresh)
+            return
+        self._bg_pool.submit(self._run_budgeted_dev_packet_refresh)
+
+    def _run_idle_dev_packet_refresh(self) -> None:
+        if not getattr(self, '_dev_packet_refresh_pending', False):
+            return
+        stall_reason = self._should_defer_dev_packet_refresh('')
+        if stall_reason in ('recent_ui_stall', 'query_pending'):
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'development_packet_refresh_skipped_due_to_stall',
+                    reason=stall_reason,
+                )
+            except Exception:
+                pass
+            return
+        self._dev_packet_refresh_pending = False
+        self._bg_pool.submit(self._run_budgeted_dev_packet_refresh)
+
+    def _run_budgeted_dev_packet_refresh(self) -> None:
+        import time as _time
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            tracer = None
+        if tracer:
+            tracer.trace('development_packet_refresh_started')
+        start = _time.monotonic()
+        try:
+            self._refresh_development_packet()
+        except Exception:
+            pass
+        elapsed_ms = (_time.monotonic() - start) * 1000
+        if tracer:
+            if elapsed_ms > self._IDLE_REFRESH_BUDGET_MS:
+                tracer.trace(
+                    'development_packet_refresh_budget_exceeded',
+                    elapsed_ms=round(elapsed_ms, 1),
+                    budget_ms=self._IDLE_REFRESH_BUDGET_MS,
+                )
+                self._development_packet = (self._development_packet or '') + (
+                    '\nmetadata: development_packet_partial=true\n'
+                    'unresolved: UNRESOLVED:development_packet_full_refresh_budget_exceeded\n'
+                )
+            else:
+                tracer.trace(
+                    'development_packet_refresh_finished',
+                    elapsed_ms=round(elapsed_ms, 1),
+                )
+
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
         if user_goal is not None:
             self._last_user_goal = user_goal.strip()
@@ -12471,8 +12589,13 @@ class ControlCenterViewModel(QObject):
         if not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
             self._agent_cards = self._build_agent_cards()
-            self._refresh_development_packet()
+            # P0.42: never call _refresh_development_packet synchronously
+            # from _apply_task_result — schedule via idle budget instead.
+            self._schedule_idle_dev_packet_refresh(task_name)
             self._refresh_autonomy_dock()
+        else:
+            # Even under pressure, mark refresh as pending for later.
+            self._dev_packet_refresh_pending = True
         self.dataChanged.emit()
 
     @Slot(str, str)
@@ -12546,8 +12669,11 @@ class ControlCenterViewModel(QObject):
         # Gate heavy deferred work under resource pressure (Sub-objective B).
         if not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
-            self._refresh_development_packet()
+            # P0.42: schedule via idle budget instead of sync call.
+            self._schedule_idle_dev_packet_refresh(task_name)
             self._refresh_autonomy_dock()
+        else:
+            self._dev_packet_refresh_pending = True
         self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:

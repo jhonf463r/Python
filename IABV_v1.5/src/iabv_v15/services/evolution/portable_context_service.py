@@ -208,6 +208,7 @@ class PortableContextService:
             self._devin_repair_status_section(now=now),
             self._capability_readiness_section(now=now),
             self._next_time_policy_section(now=now),
+            self._post_load_stability_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3825,6 +3826,79 @@ class PortableContextService:
             source_kind='runtime_audit_learning',
             source_refs=['RuntimeAuditTracer', '_record_show_window_learning'],
             confidence=0.7 if policies else 0.3,
+            last_updated=now,
+        )
+
+    def _post_load_stability_section(self, *, now) -> PortableContextSection:
+        """P0.42 Task E: Export post-load stability status.
+
+        Reports latest post-load UI stalls, dominant cause, mitigation
+        status, and recommended next action.
+        """
+        latest_stall_ms: float = 0.0
+        dominant_cause = 'none'
+        deferred_count = 0
+        budget_exceeded_count = 0
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            stall_events = tracer.events(kind='ui_event', limit=50)
+            for ev in reversed(stall_events):
+                data = ev.get('data', {})
+                if (
+                    data.get('event_type') == 'ui_event_loop_stall'
+                    and not data.get('startup_active', True)
+                    and data.get('duration_ms', 0) > latest_stall_ms
+                ):
+                    latest_stall_ms = data.get('duration_ms', 0)
+                    if not data.get('resource_pressure', False):
+                        dominant_cause = 'post_load_ui_thread_dossier_json_io'
+                    else:
+                        dominant_cause = 'resource_pressure'
+            deferred_events = tracer.events(
+                kind='development_packet_refresh_deferred', limit=50,
+            )
+            deferred_count = len(deferred_events)
+            exceeded_events = tracer.events(
+                kind='development_packet_refresh_budget_exceeded', limit=50,
+            )
+            budget_exceeded_count = len(exceeded_events)
+        except Exception:
+            pass
+        mitigation = 'active' if deferred_count > 0 else 'pending'
+        if latest_stall_ms == 0:
+            mitigation = 'no_stalls_observed'
+        pending_unresolved: list[str] = []
+        if budget_exceeded_count > 0:
+            pending_unresolved.append(
+                'UNRESOLVED:development_packet_full_refresh_budget_exceeded',
+            )
+        recommended = 'none'
+        if latest_stall_ms > 5000:
+            recommended = 'verify P0.42 idle-budgeted refresh active in live runtime'
+        elif latest_stall_ms > 0:
+            recommended = 'monitor for regression'
+        items: list[dict[str, Any]] = [{
+            'latest_stall_ms': round(latest_stall_ms, 1),
+            'dominant_cause': dominant_cause,
+            'mitigation_status': mitigation,
+            'pending_unresolved': pending_unresolved,
+            'recommended_next_action': recommended,
+            'deferred_count': deferred_count,
+            'budget_exceeded_count': budget_exceeded_count,
+        }]
+        return self._section(
+            section_id='post_load_stability',
+            title='Post-Load Stability (P0.42)',
+            summary=(
+                f'latest_stall={round(latest_stall_ms)}ms '
+                f'cause={dominant_cause} '
+                f'mitigation={mitigation}'
+            ),
+            items=items,
+            source_kind='runtime_audit_tracer',
+            source_refs=['RuntimeAuditTracer', 'ui_event_loop_stall'],
+            confidence=0.85 if latest_stall_ms > 0 else 0.5,
             last_updated=now,
         )
 

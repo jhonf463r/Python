@@ -1,0 +1,48 @@
+{
+  "id": "runtime_post_load_freeze_remediation_p042",
+  "title": "P0.42: Post-load UI Freeze Remediation + Idle-Budgeted Metacognition",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Eliminar congelamiento de UI post-load causado por _refresh_development_packet() sincronico en _apply_task_result(). La lectura de 120 dossiers JSON bloquea el hilo UI durante 67 segundos con CPU/RAM estables. Implementa politica idle-budgeted: diferir refresh si hay stall reciente, query pendiente o recurso bajo presion. Mover lectura pesada a background con budget de 1500ms.",
+  "reason": "Evidencia viva: freeze_20260519_041113_823694.json reporta ui_event_loop_stall duration_ms=67156 con startup_active=false, query_pending=false, CPU/RAM estables. Stack: _apply_task_result -> _refresh_development_packet -> build_codex_packet -> build_project_context -> list_recent(limit=120) -> json.loads(). NO es resource_pressure; es starvation del hilo UI.",
+  "dependency_missing": "",
+  "next_action": "Live proof en Windows: (1) mergear PR, (2) abrir IABV, (3) esperar UI cargada, (4) no tocar nada 90s, (5) verificar runtime_audit.jsonl: no ui_event_loop_stall >5000ms, development_packet_refresh_deferred o background, nunca _refresh_development_packet sincronico desde _apply_task_result.",
+  "resume_hint": "P0.42 implementado: _apply_task_result y _apply_task_failure ahora llaman _schedule_idle_dev_packet_refresh en vez de _refresh_development_packet sincronico. Si hay recent_ui_stall, query_pending, resource_pressure, non_critical_task o startup_followup_active, el refresh se difiere con timer. Si no hay razon para diferir, se ejecuta en _bg_pool con budget de 1500ms. Si excede budget, marca packet parcial con UNRESOLVED. OSES detecta: stable_resource_ui_starvation, repeated_post_load_ui_stall, dossier_json_io_main_thread. PortableContext exporta post_load_stability.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "post_load_ui_thread_dossier_json_io: _apply_task_result() llamaba _refresh_development_packet() sincrono en hilo UI. Este metodo invoca EngineeringReviewService.build_codex_packet() -> build_project_context() -> ExecutionDossierRepository.list_recent(limit=120) -> _load_from_path() -> json.loads(). 120 archivos JSON leidos secuencialmente en main thread. CPU/RAM estables — no es resource_pressure, es starvation pura.",
+    "evidence": [
+      {
+        "event": "freeze_20260519_041113_823694.json",
+        "bug": "ui_event_loop_stall 67156ms post-load, startup_active=false"
+      },
+      {
+        "event": "_apply_task_result sync path",
+        "bug": "_refresh_development_packet called synchronously on UI thread"
+      },
+      {
+        "event": "120 dossier JSON reads",
+        "bug": "list_recent(limit=120) reads all dossier files sequentially"
+      }
+    ],
+    "files_touched": [
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+      "src/iabv_v15/services/evolution/portable_context_service.py",
+      "data/evolution/platform_pending/task_runtime_post_load_freeze_remediation_p042.json",
+      "tests/test_runtime_p042_post_load_freeze_remediation.py"
+    ],
+    "fixes_applied": {
+      "task_b": "_apply_task_result and _apply_task_failure now call _schedule_idle_dev_packet_refresh instead of _refresh_development_packet. Never synchronous on UI thread.",
+      "task_c": "_run_budgeted_dev_packet_refresh executes on _bg_pool with 1500ms budget. If exceeded, marks packet partial with UNRESOLVED.",
+      "task_d": "Idle-budgeted metacognition policy: _should_defer_dev_packet_refresh checks query_pending, recent_ui_stall, resource_pressure, non_critical_task, startup_followup_active. Stall increases cooldown to 15s.",
+      "task_e_oses": "OSES detects: stable_resource_ui_starvation, repeated_post_load_ui_stall, dossier_json_io_main_thread.",
+      "task_e_portable": "PortableContext exports post_load_stability section: latest_stall_ms, dominant_cause, mitigation_status, pending_unresolved, recommended_next_action."
+    },
+    "covered_by_pr": "",
+    "unresolved": [
+      "live_proof_pending: requiere ejecucion en Windows con IABV real durante 90s sin interaccion"
+    ]
+  }
+}

@@ -9136,6 +9136,102 @@ class OperationalSelfExaminationService:
                 confidence=0.8,
                 metadata={'startup_stall_count': startup_stall_count},
             ))
+        # P0.42: detect post-load UI starvation patterns
+        post_load_stall_count = 0
+        dev_packet_on_ui_thread_count = 0
+        stable_resource_stall_count = 0
+        dossier_json_io_count = 0
+        try:
+            if audit_path.exists():
+                recent3: deque[str] = deque(maxlen=500)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh3:
+                    for line3 in fh3:
+                        recent3.append(line3)
+                for line3 in recent3:
+                    line3_s = line3.strip()
+                    if not line3_s:
+                        continue
+                    try:
+                        entry3 = json.loads(line3_s)
+                    except Exception:
+                        continue
+                    kind3 = entry3.get('kind', '')
+                    data3 = entry3.get('data', {})
+                    if kind3 == 'ui_event':
+                        if (
+                            data3.get('event_type') == 'ui_event_loop_stall'
+                            and data3.get('duration_ms', 0) > 5000
+                            and not data3.get('startup_active', True)
+                        ):
+                            post_load_stall_count += 1
+                            if not data3.get('resource_pressure', False):
+                                stable_resource_stall_count += 1
+                    if kind3 == 'development_packet_refresh_deferred':
+                        dev_packet_on_ui_thread_count += 1
+                    if kind3 == 'development_packet_refresh_budget_exceeded':
+                        dossier_json_io_count += 1
+        except Exception:
+            pass
+        if stable_resource_stall_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='stable_resource_ui_starvation',
+                severity=IssueSeverity.HIGH,
+                title='Post-load UI stall with stable resources',
+                summary=(
+                    f'{stable_resource_stall_count} post-load UI stall(s) '
+                    f'detected with CPU/RAM stable. Cause: UI thread '
+                    f'starvation from synchronous heavy work, not resource '
+                    f'pressure.'
+                ),
+                recommendation=(
+                    'Ensure _refresh_development_packet is never called '
+                    'synchronously from _apply_task_result. Use '
+                    '_schedule_idle_dev_packet_refresh (P0.42).'
+                ),
+                confidence=0.95,
+                metadata={
+                    'post_load_stall_count': post_load_stall_count,
+                    'stable_resource_stall_count': stable_resource_stall_count,
+                    'dominant_cause': 'post_load_ui_thread_dossier_json_io',
+                },
+            ))
+        if post_load_stall_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='repeated_post_load_ui_stall',
+                severity=IssueSeverity.HIGH,
+                title='Repeated post-load UI stalls',
+                summary=(
+                    f'{post_load_stall_count} post-load UI stalls >5s '
+                    f'detected. This pattern indicates heavy metacognition '
+                    f'running on the UI thread after startup.'
+                ),
+                recommendation=(
+                    'Review _apply_task_result call chain for synchronous '
+                    'heavy work. Use idle-budgeted background scheduling.'
+                ),
+                confidence=0.9,
+                metadata={
+                    'post_load_stall_count': post_load_stall_count,
+                    'dev_packet_deferred_count': dev_packet_on_ui_thread_count,
+                },
+            ))
+        if dossier_json_io_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='dossier_json_io_main_thread',
+                severity=IssueSeverity.MEDIUM,
+                title='Dossier JSON IO exceeded budget',
+                summary=(
+                    f'development_packet_refresh exceeded budget '
+                    f'{dossier_json_io_count} time(s). Heavy JSON dossier '
+                    f'reads took longer than the 1500ms idle budget.'
+                ),
+                recommendation=(
+                    'Consider reducing dossier limit or implementing '
+                    'incremental reads with metadata-only summaries.'
+                ),
+                confidence=0.85,
+                metadata={'budget_exceeded_count': dossier_json_io_count},
+            ))
         return findings
 
 

@@ -413,6 +413,10 @@ def _make_apply_result_stub():
     for name in (
         '_apply_task_result', '_should_defer_heavy_work',
         '_remember_external_failure', '_clear_external_failure_memory',
+        # P0.42: idle-budgeted refresh methods
+        '_has_recent_ui_stall', '_should_defer_dev_packet_refresh',
+        '_schedule_idle_dev_packet_refresh', '_run_idle_dev_packet_refresh',
+        '_run_budgeted_dev_packet_refresh',
     ):
         stub.__dict__[name] = types.MethodType(
             getattr(ControlCenterViewModel, name), stub,
@@ -420,6 +424,21 @@ def _make_apply_result_stub():
     stub.__dict__['_trace_dispatch_terminal'] = types.MethodType(_capture_trace, stub)
     # Static method
     stub._derive_external_consultation_outcome = ControlCenterViewModel._derive_external_consultation_outcome
+    # P0.42 class constants
+    stub._NON_CRITICAL_TASK_NAMES = ControlCenterViewModel._NON_CRITICAL_TASK_NAMES
+    stub._IDLE_REFRESH_BUDGET_MS = ControlCenterViewModel._IDLE_REFRESH_BUDGET_MS
+    stub._IDLE_REFRESH_COOLDOWN_S = ControlCenterViewModel._IDLE_REFRESH_COOLDOWN_S
+    stub._IDLE_REFRESH_STALL_COOLDOWN_S = ControlCenterViewModel._IDLE_REFRESH_STALL_COOLDOWN_S
+    stub._dev_packet_refresh_pending = False
+    stub._development_packet = ''
+    stub._dev_packet_last_ts = 0.0
+    stub._dev_packet_cooldown_s = 30.0
+    stub._last_external_consultation_ts = 0.0
+    stub._HEAVY_RESULT_THRESHOLD_S = 5.0
+    stub._task_start_ts = 0.0
+    stub._heavy_result_guard_active = False
+    from concurrent.futures import ThreadPoolExecutor
+    stub._bg_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='test-obs')
 
     # No-op stubs for everything else _apply_task_result calls
     _noop = lambda *a, **kw: None
@@ -440,6 +459,16 @@ def _make_apply_result_stub():
     stub.taskFailed = MagicMock()
     stub._FINAL_INTERACTION_OUTCOMES = ControlCenterViewModel._FINAL_INTERACTION_OUTCOMES
     stub._TERMINAL_DISPATCH_STATES = ControlCenterViewModel._TERMINAL_DISPATCH_STATES
+    stub.engineering_review_service = SimpleNamespace(
+        build_codex_packet=lambda **kw: 'test_packet',
+    )
+    stub.adaptive_orchestrator = SimpleNamespace(
+        _assess_resource_pressure=lambda: {'under_pressure': False},
+    )
+    stub.config = SimpleNamespace(
+        workspace_root='/tmp/test_obs',
+        ollama_base_url='', lm_studio_base_url='', ollama_embedding_model='',
+    )
     return stub
 
 
