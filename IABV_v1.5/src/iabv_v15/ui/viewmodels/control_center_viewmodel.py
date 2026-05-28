@@ -240,6 +240,22 @@ class ControlCenterViewModel(QObject):
         self._last_external_failure_payload: dict[str, Any] = {}
         self._last_external_failure_ts: float = 0.0
         self._dock_skip_last_trace: dict[str, float] = {}
+        # ── P0.68: Universal Runtime Stability Controller ──
+        self._circuit_breaker_open = False
+        self._circuit_breaker_until: float = 0.0
+        self._circuit_breaker_backoff_s: float = 60.0
+        self._circuit_breaker_max_backoff_s: float = 900.0
+        self._deferred_loop_counts: dict[str, int] = {}
+        self._deferred_loop_max: int = 3
+        self._last_slow_dock_duration_ms: float = 0.0
+        self._dock_slow_result_block_until: float = 0.0
+        self._continuity_keywords: frozenset[str] = frozenset({
+            'sigue', 'continua', 'continúa', 'ok procede', 'ok, procede',
+            'que falta', 'qué falta', 'que falta por hacer',
+            'qué falta por hacer', 'termina lo pendiente',
+            'haz lo mas importante', 'haz lo más importante',
+            'arregla esas fallas', 'procede',
+        })
         self._approval_dialog_visible = False
         self._approval_dialog_title = 'Aprobacion requerida'
         self._approval_dialog_text = 'No hay aprobaciones pendientes.'
@@ -3490,7 +3506,8 @@ class ControlCenterViewModel(QObject):
         lowered = detail.lower()
         if 'supero el tiempo maximo' in lowered or 'timeout' in lowered:
             return (
-                f'{detail} Puedes verificar la conexion o reenviar tu consulta.',
+                f'No voy a seguir procesando a ciegas. {detail} '
+                'Puedes verificar la conexion o reenviar tu consulta.',
                 'timeout',
             )
         if task_name == 'external_consultation':
@@ -6986,6 +7003,181 @@ class ControlCenterViewModel(QObject):
         except Exception:
             return False
 
+    # ── P0.68: Universal Circuit Breaker ──
+
+    _CIRCUIT_BREAKER_STALL_THRESHOLD_MS: float = 5000.0
+    _DOCK_SLOW_RESULT_COOLDOWN_S: float = 300.0
+
+    def _check_circuit_breaker(self, work_class: str) -> str:
+        """Check whether *work_class* is blocked by the circuit breaker.
+
+        Returns empty string if allowed, or a reason string if blocked.
+        """
+        now = time.time()
+        if self._circuit_breaker_open and now < self._circuit_breaker_until:
+            return 'circuit_breaker_open'
+        if self._circuit_breaker_open and now >= self._circuit_breaker_until:
+            self._circuit_breaker_open = False
+        if work_class == 'autonomy_dock' and now < self._dock_slow_result_block_until:
+            return 'dock_slow_result_cooldown'
+        loop_count = self._deferred_loop_counts.get(work_class, 0)
+        if loop_count >= self._deferred_loop_max:
+            return 'deferred_loop_limit'
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            recent = tracer.events(kind='ui_event', limit=30)
+            heavy = [
+                e for e in recent
+                if e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+                and e.get('data', {}).get('duration_ms', 0) > self._CIRCUIT_BREAKER_STALL_THRESHOLD_MS
+                and (now_elapsed - e.get('elapsed_ms', 0)) < 60_000
+            ]
+            if heavy:
+                return 'recent_stall_above_threshold'
+        except Exception:
+            pass
+        return ''
+
+    def _trip_circuit_breaker(self, reason: str) -> None:
+        """Open the circuit breaker with exponential backoff."""
+        now = time.time()
+        self._circuit_breaker_open = True
+        self._circuit_breaker_until = now + self._circuit_breaker_backoff_s
+        self._circuit_breaker_backoff_s = min(
+            self._circuit_breaker_backoff_s * 2,
+            self._circuit_breaker_max_backoff_s,
+        )
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'circuit_breaker_tripped',
+                reason=reason,
+                backoff_s=self._circuit_breaker_backoff_s,
+                until=self._circuit_breaker_until,
+            )
+        except Exception:
+            pass
+
+    def _reset_circuit_breaker(self) -> None:
+        """Reset the circuit breaker (called on user explicit click)."""
+        self._circuit_breaker_open = False
+        self._circuit_breaker_backoff_s = 60.0
+        self._deferred_loop_counts.clear()
+        self._dock_slow_result_block_until = 0.0
+
+    def _record_deferred_loop(self, work_class: str) -> None:
+        """Increment the deferred-loop counter for *work_class*."""
+        self._deferred_loop_counts[work_class] = self._deferred_loop_counts.get(work_class, 0) + 1
+
+    def _clear_deferred_loop(self, work_class: str) -> None:
+        """Reset deferred-loop counter after successful execution."""
+        self._deferred_loop_counts.pop(work_class, None)
+
+    def _is_background_work_allowed(self, work_class: str) -> tuple[bool, str]:
+        """Unified gate for all background work classes.
+
+        Returns (allowed, reason).  When not allowed, the caller should
+        NOT reschedule and should record the skip.
+        """
+        if self._should_defer_heavy_work():
+            return False, 'resource_pressure'
+        cb_reason = self._check_circuit_breaker(work_class)
+        if cb_reason:
+            return False, cb_reason
+        return True, ''
+
+    def get_circuit_breaker_state(self) -> dict[str, Any]:
+        """Expose circuit breaker state for PortableContext / tests."""
+        return {
+            'open': self._circuit_breaker_open,
+            'until': self._circuit_breaker_until,
+            'backoff_s': self._circuit_breaker_backoff_s,
+            'deferred_loop_counts': dict(self._deferred_loop_counts),
+            'last_slow_dock_duration_ms': self._last_slow_dock_duration_ms,
+            'dock_slow_result_block_until': self._dock_slow_result_block_until,
+        }
+
+    # ── P0.68: Continuity message handler ──
+
+    def _is_continuity_message(self, text: str) -> bool:
+        """Return True if *text* is a short continuity/follow-up keyword."""
+        normalized = text.strip().lower().rstrip('.,!?')
+        return normalized in self._continuity_keywords
+
+    def _try_handle_continuity_message(self, message: str) -> bool:
+        """Handle continuity messages without hitting local LLM.
+
+        Returns True if handled (caller should return immediately).
+        Responds in <2s with active thread, pending task, and next action.
+        """
+        if not self._is_continuity_message(message):
+            return False
+        active_interaction = getattr(self, '_active_interaction_id', None)
+        pending_task = getattr(self, '_adaptive_session_id', '')
+        last_failure = self._last_external_failure_payload
+        last_failure_ts = self._last_external_failure_ts
+        has_recent_failure = bool(last_failure and (time.time() - last_failure_ts) < 300)
+        has_recent_freeze = False
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            recent_stalls = tracer.events(kind='ui_event', limit=20)
+            has_recent_freeze = any(
+                e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+                and e.get('data', {}).get('duration_ms', 0) > 5000
+                and (now_elapsed - e.get('elapsed_ms', 0)) < 120_000
+                for e in recent_stalls
+            )
+        except Exception:
+            pass
+        should_intercept = bool(
+            active_interaction
+            or pending_task
+            or has_recent_failure
+            or has_recent_freeze
+            or self._working
+            or self._circuit_breaker_open
+        )
+        if not should_intercept:
+            return False
+        parts: list[str] = []
+        if self._working:
+            parts.append('Estoy procesando tu solicitud anterior.')
+        if pending_task:
+            parts.append(f'Sesion adaptativa activa: {pending_task[:60]}.')
+        if has_recent_failure:
+            fail_detail = str(last_failure.get('message', ''))[:80]
+            parts.append(f'Ultimo fallo reciente: {fail_detail}.')
+        if has_recent_freeze:
+            parts.append('Hubo un congelamiento reciente del hilo UI.')
+        if self._circuit_breaker_open:
+            parts.append('El circuit breaker esta abierto por estabilidad.')
+        if not parts:
+            parts.append('No hay hilo activo claro.')
+            parts.append('Puedes precisar que quieres que haga a continuacion?')
+        else:
+            next_action = self._last_user_goal[:80] if self._last_user_goal else 'esperando tu indicacion'
+            parts.append(f'Siguiente accion: {next_action}.')
+        response = ' '.join(parts)
+        self._append_message('assistant', 'IABV', response, 'continuity_handler')
+        self._set_live_status('idle')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'continuity_message_handled',
+                message_excerpt=message[:60],
+                had_active_interaction=bool(active_interaction),
+                had_pending_task=bool(pending_task),
+                had_recent_failure=has_recent_failure,
+                had_recent_freeze=has_recent_freeze,
+            )
+        except Exception:
+            pass
+        return True
+
     # ── P0.38: Resource Quiescence Gate ──
 
     def _evaluate_consultation_quiescence(
@@ -8784,8 +8976,10 @@ class ControlCenterViewModel(QObject):
             return 'budget_cooldown'
         if self._working:
             return 'query_pending'
-        if self._should_defer_heavy_work():
-            return 'resource_pressure'
+        # P0.68: circuit breaker gate
+        allowed, cb_reason = self._is_background_work_allowed('autonomy_dock')
+        if not allowed:
+            return cb_reason
         last_ext = getattr(self, '_last_external_consultation_ts', 0.0)
         if last_ext and (now - last_ext) < self._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S:
             return 'post_external_consultation'
@@ -8857,8 +9051,14 @@ class ControlCenterViewModel(QObject):
         self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
         elapsed_ms = (time.perf_counter() - t0) * 1000
         self._last_dock_refresh_ts = time.time()
+        self._clear_deferred_loop('autonomy_dock')
         if elapsed_ms > self._DOCK_REFRESH_BUDGET_MS:
+            self._last_slow_dock_duration_ms = elapsed_ms
             self._dock_budget_cooldown_until = time.time() + self._DOCK_REFRESH_BUDGET_COOLDOWN_S
+            # P0.68: slow dock triggers long cooldown + circuit breaker
+            if elapsed_ms > 10_000:
+                self._dock_slow_result_block_until = time.time() + self._DOCK_SLOW_RESULT_COOLDOWN_S
+                self._trip_circuit_breaker(f'dock_slow_result_{round(elapsed_ms)}ms')
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                 get_runtime_tracer().trace(
@@ -8866,12 +9066,14 @@ class ControlCenterViewModel(QObject):
                     elapsed_ms=round(elapsed_ms, 1),
                     budget_ms=self._DOCK_REFRESH_BUDGET_MS,
                     cooldown_s=self._DOCK_REFRESH_BUDGET_COOLDOWN_S,
+                    circuit_breaker_tripped=elapsed_ms > 10_000,
                 )
             except Exception:
                 pass
 
     @Slot()
     def refreshAutonomyDock(self) -> None:
+        self._reset_circuit_breaker()
         self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
@@ -9702,6 +9904,56 @@ class ControlCenterViewModel(QObject):
             'external_state_flags': external_state_flags,
         }
 
+    def _describe_resource_pressure(self) -> str:
+        """P0.68: generate precise explanation of pressure source.
+
+        Distinguishes between process-level RSS/UI thread stall and
+        general system CPU/RAM exhaustion so the user is not told
+        'your laptop is saturated' when only the IABV process is stuck.
+        """
+        try:
+            import psutil
+            proc = psutil.Process(os.getpid())
+            rss_mb = proc.memory_info().rss / (1024 * 1024)
+            sys_cpu = psutil.cpu_percent(interval=0)
+            sys_ram = psutil.virtual_memory().percent
+        except Exception:
+            rss_mb = -1
+            sys_cpu = -1
+            sys_ram = -1
+        has_ui_stall = False
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            recent = tracer.events(kind='ui_event', limit=10)
+            has_ui_stall = any(
+                e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+                and e.get('data', {}).get('duration_ms', 0) > 3000
+                and (now_elapsed - e.get('elapsed_ms', 0)) < 60_000
+                for e in recent
+            )
+        except Exception:
+            pass
+        if has_ui_stall and sys_cpu >= 0 and sys_cpu < 70 and sys_ram < 80:
+            return (
+                f'el hilo UI de IABV se congelo (stall del event loop). '
+                f'CPU general {sys_cpu:.0f}%, RAM general {sys_ram:.0f}% — '
+                f'el sistema esta bien, pero IABV internamente se trabo '
+                f'(RSS del proceso: {rss_mb:.0f} MB)'
+            )
+        if rss_mb > 500 and sys_ram < 80:
+            return (
+                f'la memoria interna de IABV es alta ({rss_mb:.0f} MB RSS) '
+                f'aunque la RAM del sistema esta en {sys_ram:.0f}%'
+            )
+        if sys_cpu >= 0 and (sys_cpu > 85 or sys_ram > 85):
+            return (
+                f'el sistema esta bajo presion real '
+                f'(CPU {sys_cpu:.0f}%, RAM {sys_ram:.0f}%)'
+            )
+        return 'presion interna del proceso IABV / stall del hilo UI'
+
     @staticmethod
     def _is_resource_pressure_block(preflight: dict[str, Any]) -> bool:
         """Check if a preflight block is caused by resource pressure."""
@@ -9764,9 +10016,11 @@ class ControlCenterViewModel(QObject):
 
         # P0.22: resource pressure gets explicit deferred message.
         if is_resource_pressure:
+            # P0.68: precise pressure explanation
+            _pressure_detail = self._describe_resource_pressure()
             message = (
                 f'No hice la consulta a {assistant_title}. '
-                'La bloquee antes de abrir la herramienta porque el entorno esta bajo presion de recursos. '
+                f'La bloquee porque {_pressure_detail}. '
                 'No es problema de login ni captura. '
                 'Puedo reintentar cuando baje la presion o usar ruta local.'
             )
@@ -11623,6 +11877,10 @@ class ControlCenterViewModel(QObject):
             else:
                 self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        # P0.68: continuity messages bypass local LLM entirely.
+        if self._try_handle_continuity_message(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
         if self._try_handle_shared_reality_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
@@ -12468,11 +12726,15 @@ class ControlCenterViewModel(QObject):
                 except Exception:
                     pass
         # Gate heavy deferred work under resource pressure (Sub-objective B).
-        if not self._should_defer_heavy_work():
+        # P0.68: post-task chat/external_consultation MUST NOT trigger dock.
+        _skip_dock = task_name in ('chat', 'external_consultation')
+        allowed, _bg_reason = self._is_background_work_allowed('post_task_refresh')
+        if allowed:
             self._update_evolution_snapshot()
             self._agent_cards = self._build_agent_cards()
             self._refresh_development_packet()
-            self._refresh_autonomy_dock()
+            if not _skip_dock:
+                self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
     @Slot(str, str)
@@ -12544,10 +12806,14 @@ class ControlCenterViewModel(QObject):
         )
         self._diagnostic_truth_state = 'observed'
         # Gate heavy deferred work under resource pressure (Sub-objective B).
-        if not self._should_defer_heavy_work():
+        # P0.68: post-task chat/external_consultation MUST NOT trigger dock.
+        _skip_dock = task_name in ('chat', 'external_consultation')
+        allowed, _bg_reason = self._is_background_work_allowed('post_task_refresh')
+        if allowed:
             self._update_evolution_snapshot()
             self._refresh_development_packet()
-            self._refresh_autonomy_dock()
+            if not _skip_dock:
+                self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:

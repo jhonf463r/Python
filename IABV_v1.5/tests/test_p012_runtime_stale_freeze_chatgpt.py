@@ -220,6 +220,7 @@ class TestFreezeRootCause:
         vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
         vm._last_external_consultation_ts = 0.0
         vm._should_defer_heavy_work = MagicMock(return_value=True)
+        vm._is_background_work_allowed = MagicMock(return_value=(False, 'resource_pressure'))
         result = ControlCenterViewModel._should_skip_dock_refresh(vm)
         assert result == 'resource_pressure'
 
@@ -232,6 +233,7 @@ class TestFreezeRootCause:
         vm._DOCK_REFRESH_MIN_INTERVAL_S = 1.0
         vm._last_external_consultation_ts = 0.0
         vm._should_defer_heavy_work = MagicMock(return_value=False)
+        vm._is_background_work_allowed = MagicMock(return_value=(True, ''))
         result = ControlCenterViewModel._should_skip_dock_refresh(vm)
         assert result == ''
 
@@ -245,6 +247,7 @@ class TestFreezeRootCause:
         vm._last_external_consultation_ts = time.time()
         vm._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S = 30.0
         vm._should_defer_heavy_work = MagicMock(return_value=False)
+        vm._is_background_work_allowed = MagicMock(return_value=(True, ''))
         result = ControlCenterViewModel._should_skip_dock_refresh(vm)
         assert result == 'post_external_consultation'
 
@@ -275,6 +278,7 @@ class TestFreezeRootCause:
         vm._last_external_consultation_ts = 0.0
         vm._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S = 30.0
         vm._should_defer_heavy_work = MagicMock(return_value=False)
+        vm._is_background_work_allowed = MagicMock(return_value=(True, ''))
         original = rat_mod.get_runtime_tracer
         rat_mod.get_runtime_tracer = lambda: tracer
         try:
@@ -303,6 +307,7 @@ class TestFreezeRootCause:
         vm._last_external_consultation_ts = 0.0
         vm._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S = 30.0
         vm._should_defer_heavy_work = MagicMock(return_value=False)
+        vm._is_background_work_allowed = MagicMock(return_value=(True, ''))
         original = rat_mod.get_runtime_tracer
         rat_mod.get_runtime_tracer = lambda: tracer
         try:

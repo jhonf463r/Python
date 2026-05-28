@@ -1,0 +1,40 @@
+{
+  "id": "runtime_universal_stability_controller_p068",
+  "title": "P0.68: Universal Runtime Stability Controller + Metacognitive Thread Contract",
+  "status": "UNRESOLVED",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "The system detects freezes, stalls and operational pressure, but the universal controller was not closing the loop. Evidence shows the system defers heavy work but then reschedules it in a loop, executing refreshes/dock/metacognition that freeze the UI. Additionally, short continuity messages like 'sigue', 'ok procede' fall to the heavy local chat and fail instead of using the metacognitive/pending tasks thread.",
+  "resume_hint": "Implementation complete. Awaiting live Windows run to confirm: (1) circuit breaker blocks dock after slow result, (2) 'sigue' with pending_task responds via continuity handler, (3) post-task chat does not trigger automatic dock, (4) timeout SLA shows 'no voy a seguir procesando a ciegas'.",
+  "next_action": "User runs IABV on Windows, triggers a chat that causes dock refresh to exceed budget, then sends 'sigue'. Verify circuit_breaker_tripped and continuity_message_handled events in runtime_audit.jsonl.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "covered_by_pr": "pending",
+    "root_cause": "control_loop_detects_stalls_but_reschedules_same_heavy_work_infinitely",
+    "tasks_implemented": [
+      "1: diagnosed causal loop — _should_defer_heavy_work only checks resource_pressure, not recent stalls or slow dock results; _DOCK_REFRESH_BUDGET_COOLDOWN_S=10s too short for 818s/1454s results",
+      "2: circuit breaker with exponential backoff for all background work classes (autonomy_dock, post_task_refresh, startup_evolution, metacognition_promotion, development_packet_refresh)",
+      "3: post-task chat/external_consultation no longer triggers automatic dock refresh",
+      "4: continuity message handler intercepts 'sigue/continua/ok procede/que falta/termina lo pendiente' before local LLM when active_interaction, pending_task, recent_failure, recent_freeze, or circuit_breaker_open",
+      "5: timeout SLA enhanced with 'no voy a seguir procesando a ciegas' message and terminal state trace",
+      "6: FreezeIncidentReporter._capture_causal_context() adds pre-stall diagnosis fields: last_user_message_preview, active_interaction_id, last_background_job, autonomy_dock_in_flight, process_rss_mb, system_cpu/ram, budget_gate_reason, deferred_loop_active",
+      "7: _describe_resource_pressure() distinguishes process_rss_high vs system_cpu_ram_ok vs ui_thread_starved",
+      "8: OSES findings: repeated_deferred_background_loop, autonomy_dock_slow_projection_repeated, local_continuity_message_misrouted, stable_system_resources_but_ui_thread_starved, metacognitive_thread_contract_missing",
+      "9: PortableContext exports runtime_stability_controller section with latest_stalls, circuit_breaker_state, blocked_work_classes, last_slow_dock_duration_ms, continuity_routing_status",
+      "10: 10 focused tests covering all features"
+    ],
+    "evidencia_runtime_audit": [
+      "~199 ui_event_loop_stall events including 69811ms, 178358ms, 215981ms, 281955ms",
+      "control_post_task_refresh_deferred and control_post_task_refresh_scheduled repeating in loop",
+      "control_autonomy_dock_refresh_discarded_slow_result with 818541ms and 1454071ms durations",
+      "continuity messages ('sigue', 'ok procede') ending provider=local outcome=failed with stalls"
+    ],
+    "unresolved": [
+      "live_circuit_breaker_test_pending: requires IABV on Windows to confirm breaker trips on real stalls",
+      "live_continuity_routing_test_pending: requires real user sending 'sigue' with active pending_task"
+    ]
+  },
+  "dependency_missing": "",
+  "reason": "The universal control loop detects freezes and stalls but does not prevent the same heavy background work from being rescheduled. This creates infinite deferrals: work is deferred, rescheduled 60s later, deferred again — meanwhile the UI freezes. Continuity messages bypass the metacognitive contract and fall to local LLM which stalls further.",
+  "created_at": "2026-05-28T13:50:00Z"
+}

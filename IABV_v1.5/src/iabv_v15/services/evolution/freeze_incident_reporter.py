@@ -200,7 +200,10 @@ class FreezeIncidentReporter:
         # 10. Runtime audit pre-stall context (P0.12)
         report['runtime_audit_context'] = self._capture_runtime_audit_context()
 
-        # 11. Extra context
+        # 11. P0.68: Causal context for stall diagnosis
+        report['causal_context'] = self._capture_causal_context(extra_context)
+
+        # 12. Extra context
         if extra_context:
             report['extra'] = extra_context
 
@@ -675,6 +678,81 @@ class FreezeIncidentReporter:
                 ctx['last_stall_query_pending'] = last_stall.get('query_pending', False)
         except Exception as exc:
             ctx['error'] = str(exc)
+        return ctx
+
+    @staticmethod
+    def _capture_causal_context(extra: dict[str, Any] | None = None) -> dict[str, Any]:
+        """P0.68: capture pre-stall causal context for root-cause diagnosis.
+
+        Fields: last_user_message_preview, active_interaction_id,
+        active_task_name, last_background_job, post_task_refresh_generation,
+        autonomy_dock_in_flight, current_dominant_phase, process_rss_mb,
+        system_cpu_pct, system_ram_pct, budget_gate_reason,
+        deferred_loop_active.
+        """
+        ctx: dict[str, Any] = {}
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            started = tracer.events(kind='dispatch_started', limit=5)
+            if started:
+                last = started[-1].get('data', {})
+                ctx['active_interaction_id'] = last.get('interaction_id', '')
+                ctx['active_task_name'] = last.get('task_name', '')
+                ctx['last_user_message_preview'] = str(
+                    last.get('user_goal_excerpt', '')
+                )[:120]
+            all_recent = tracer.events(limit=30)
+            bg_jobs = [
+                e for e in all_recent
+                if e.get('kind', '').startswith('control_')
+                or e.get('kind', '') in (
+                    'post_result_ui_update_coalesced',
+                    'circuit_breaker_tripped',
+                )
+            ]
+            if bg_jobs:
+                last_bg = bg_jobs[-1]
+                ctx['last_background_job'] = last_bg.get('kind', '')
+            dock_events = [
+                e for e in all_recent
+                if 'dock' in e.get('kind', '')
+            ]
+            ctx['autonomy_dock_in_flight'] = bool(dock_events)
+            budget_events = [
+                e for e in all_recent
+                if e.get('kind') == 'control_autonomy_dock_refresh_budget_exceeded'
+            ]
+            if budget_events:
+                ctx['post_task_refresh_generation'] = len(budget_events)
+            deferred_events = [
+                e for e in all_recent
+                if 'deferred' in e.get('kind', '')
+            ]
+            ctx['deferred_loop_active'] = len(deferred_events) > 2
+            stalls = [
+                e for e in tracer.events(kind='ui_event', limit=10)
+                if e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+            ]
+            if stalls:
+                last_stall = stalls[-1].get('data', {})
+                ctx['current_dominant_phase'] = last_stall.get('dominant_phase', '')
+                ctx['budget_gate_reason'] = last_stall.get('query_pending', False)
+        except Exception:
+            pass
+        try:
+            import psutil
+            proc = psutil.Process(os.getpid())
+            ctx['process_rss_mb'] = round(proc.memory_info().rss / (1024 * 1024), 1)
+            ctx['system_cpu_pct'] = psutil.cpu_percent(interval=0)
+            ctx['system_ram_pct'] = psutil.virtual_memory().percent
+        except Exception:
+            ctx['process_rss_mb'] = -1
+        if extra:
+            for key in ('last_user_message_preview', 'active_interaction_id',
+                        'active_task_name', 'current_dominant_phase'):
+                if key in extra and key not in ctx:
+                    ctx[key] = extra[key]
         return ctx
 
 

@@ -864,6 +864,10 @@ class OperationalSelfExaminationService:
 
         # P0.39: detect repeated readiness failures without proof.
         findings.extend(self._external_readiness_missing_findings())
+
+        # P0.68: runtime stability controller findings.
+        findings.extend(self._runtime_stability_controller_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -9135,6 +9139,161 @@ class OperationalSelfExaminationService:
                 ),
                 confidence=0.8,
                 metadata={'startup_stall_count': startup_stall_count},
+            ))
+        return findings
+
+    def _runtime_stability_controller_findings(self) -> list[SelfExaminationFinding]:
+        """P0.68: detect runtime stability anti-patterns.
+
+        Emits findings for:
+        - repeated_deferred_background_loop
+        - autonomy_dock_slow_projection_repeated
+        - local_continuity_message_misrouted
+        - stable_system_resources_but_ui_thread_starved
+        - metacognitive_thread_contract_missing
+
+        OSES only observes/recommends — does not execute actions.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+        deferred_loop_count = 0
+        dock_slow_count = 0
+        continuity_misrouted = 0
+        ui_stall_with_stable_system = 0
+        circuit_breaker_trips = 0
+        try:
+            if audit_path.exists():
+                recent_lines: deque[str] = deque(maxlen=500)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent_lines.append(line)
+                for line in recent_lines:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    data = entry.get('data', {})
+                    if kind == 'control_autonomy_dock_refresh_deferred':
+                        deferred_loop_count += 1
+                    elif kind == 'control_autonomy_dock_refresh_budget_exceeded':
+                        elapsed_ms = data.get('elapsed_ms', 0)
+                        if elapsed_ms > 10_000:
+                            dock_slow_count += 1
+                    elif kind == 'interaction_resolved':
+                        provider = data.get('provider', '')
+                        msg = str(data.get('message_excerpt', '')).lower()
+                        continuity_words = (
+                            'sigue', 'continua', 'ok procede',
+                            'que falta', 'termina lo pendiente',
+                        )
+                        if provider == 'local' and any(w in msg for w in continuity_words):
+                            outcome = data.get('outcome', '')
+                            if outcome == 'failed':
+                                continuity_misrouted += 1
+                    elif kind == 'ui_event':
+                        if data.get('event_type') == 'ui_event_loop_stall':
+                            duration_ms = data.get('duration_ms', 0)
+                            if duration_ms > 5000:
+                                ui_stall_with_stable_system += 1
+                    elif kind == 'circuit_breaker_tripped':
+                        circuit_breaker_trips += 1
+        except Exception:
+            pass
+        if deferred_loop_count >= 5:
+            findings.append(SelfExaminationFinding(
+                category='repeated_deferred_background_loop',
+                severity=IssueSeverity.HIGH,
+                title='Deferred background work is looping',
+                summary=(
+                    f'Se detectaron {deferred_loop_count} eventos de dock refresh '
+                    f'diferido. El sistema difiere trabajo pero lo reprograma, '
+                    f'generando un loop que consume recursos sin completar.'
+                ),
+                recommendation=(
+                    'El circuit breaker (P0.68) deberia bloquear reintentos '
+                    'automaticos despues de N diferimientos consecutivos.'
+                ),
+                confidence=0.9,
+                metadata={'deferred_loop_count': deferred_loop_count},
+            ))
+        if dock_slow_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='autonomy_dock_slow_projection_repeated',
+                severity=IssueSeverity.HIGH,
+                title='Autonomy dock projection is repeatedly slow',
+                summary=(
+                    f'La proyeccion del dock de autonomia excedio 10s '
+                    f'{dock_slow_count} veces. Esto congela la UI.'
+                ),
+                recommendation=(
+                    'Bloquear dock automatico tras resultado lento '
+                    'y solo permitir por click humano o reposo estable.'
+                ),
+                confidence=0.9,
+                metadata={'dock_slow_count': dock_slow_count},
+            ))
+        if continuity_misrouted >= 2:
+            findings.append(SelfExaminationFinding(
+                category='local_continuity_message_misrouted',
+                severity=IssueSeverity.HIGH,
+                title='Continuity messages falling to local LLM',
+                summary=(
+                    f'Mensajes de continuidad ("sigue", "ok procede") '
+                    f'cayeron al provider local {continuity_misrouted} veces. '
+                    f'Deberian resolverse por el handler metacognitivo.'
+                ),
+                recommendation=(
+                    'Activar el contrato de continuidad metacognitiva (P0.68) '
+                    'que intercepta estos mensajes antes del LLM local.'
+                ),
+                confidence=0.9,
+                metadata={'continuity_misrouted': continuity_misrouted},
+            ))
+        if ui_stall_with_stable_system >= 3:
+            findings.append(SelfExaminationFinding(
+                category='stable_system_resources_but_ui_thread_starved',
+                severity=IssueSeverity.HIGH,
+                title='UI thread starved with stable system resources',
+                summary=(
+                    f'Se detectaron {ui_stall_with_stable_system} stalls del hilo '
+                    f'UI mayores a 5s. Probablemente no es presion del sistema '
+                    f'sino trabajo pesado bloqueando el event loop de Qt.'
+                ),
+                recommendation=(
+                    'Verificar que dock refresh, OSES y evolution snapshot '
+                    'no esten corriendo en el hilo principal.'
+                ),
+                confidence=0.85,
+                metadata={'ui_stall_count': ui_stall_with_stable_system},
+            ))
+        if circuit_breaker_trips == 0 and (deferred_loop_count >= 5 or dock_slow_count >= 2):
+            findings.append(SelfExaminationFinding(
+                category='metacognitive_thread_contract_missing',
+                severity=IssueSeverity.MEDIUM,
+                title='No circuit breaker trips despite stability issues',
+                summary=(
+                    'Se detectan problemas de estabilidad (loops diferidos, '
+                    'dock lento) pero el circuit breaker nunca se activo. '
+                    'El contrato metacognitivo de estabilidad podria no '
+                    'estar implementado o no estar activo.'
+                ),
+                recommendation=(
+                    'Verificar que el Universal Runtime Stability Controller '
+                    '(P0.68) esta conectado en bootstrap.'
+                ),
+                confidence=0.8,
+                metadata={
+                    'deferred_loop_count': deferred_loop_count,
+                    'dock_slow_count': dock_slow_count,
+                },
             ))
         return findings
 

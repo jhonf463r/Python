@@ -37,6 +37,17 @@ def _make_stub_vm():
         _provider_refreshing=False,
         _ui_state_lock=threading.Lock(),
         _adaptive_session_id=None,
+        # P0.68 attributes
+        _circuit_breaker_open=False,
+        _circuit_breaker_until=0.0,
+        _circuit_breaker_backoff_s=60.0,
+        _circuit_breaker_max_backoff_s=900.0,
+        _deferred_loop_counts={},
+        _deferred_loop_max=3,
+        _last_slow_dock_duration_ms=0.0,
+        _dock_slow_result_block_until=0.0,
+        _CIRCUIT_BREAKER_STALL_THRESHOLD_MS=5000.0,
+        _DOCK_SLOW_RESULT_COOLDOWN_S=300.0,
     )
     for name in (
         '_humanize_task_failure',
@@ -47,10 +58,15 @@ def _make_stub_vm():
         '_invalidate_dispatch',
         '_external_state_notice',
         '_trace_dispatch_terminal',
+        '_check_circuit_breaker',
+        '_is_background_work_allowed',
     ):
         method = getattr(ControlCenterViewModel, name, None)
         if method is not None:
             stub.__dict__[name] = types.MethodType(method, stub)
+    stub.adaptive_orchestrator = SimpleNamespace(
+        _assess_resource_pressure=lambda: {'under_pressure': False},
+    )
     return stub
 
 

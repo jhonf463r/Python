@@ -208,6 +208,7 @@ class PortableContextService:
             self._devin_repair_status_section(now=now),
             self._capability_readiness_section(now=now),
             self._next_time_policy_section(now=now),
+            self._runtime_stability_controller_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3826,6 +3827,90 @@ class PortableContextService:
             source_refs=['RuntimeAuditTracer', '_record_show_window_learning'],
             confidence=0.7 if policies else 0.3,
             last_updated=now,
+        )
+
+    def _runtime_stability_controller_section(self, *, now) -> PortableContextSection:
+        """P0.68: export runtime stability controller state.
+
+        Compact section with: latest_stalls, circuit_breaker_state,
+        blocked_work_classes, last_slow_dock_duration_ms,
+        continuity_routing_status, unresolved_fields.
+        """
+        items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        stalls: list[dict[str, Any]] = []
+        cb_state: dict[str, Any] = {}
+        blocked_classes: list[str] = []
+        last_slow_dock_ms: float = 0.0
+        continuity_status = 'unknown'
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            stall_events = [
+                e for e in tracer.events(kind='ui_event', limit=50)
+                if e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+            ]
+            stalls = [
+                {
+                    'ts': e.get('ts', ''),
+                    'duration_ms': e.get('data', {}).get('duration_ms', 0),
+                    'dominant_phase': e.get('data', {}).get('dominant_phase', ''),
+                }
+                for e in stall_events[-5:]
+            ]
+            cb_events = tracer.events(kind='circuit_breaker_tripped', limit=5)
+            if cb_events:
+                last_cb = cb_events[-1].get('data', {})
+                cb_state = {
+                    'last_trip_reason': last_cb.get('reason', ''),
+                    'backoff_s': last_cb.get('backoff_s', 0),
+                    'trip_count': len(cb_events),
+                }
+            dock_slow = [
+                e for e in tracer.events(limit=100)
+                if e.get('kind') == 'control_autonomy_dock_refresh_budget_exceeded'
+                and e.get('data', {}).get('elapsed_ms', 0) > 10_000
+            ]
+            if dock_slow:
+                last_slow_dock_ms = dock_slow[-1].get('data', {}).get('elapsed_ms', 0)
+            deferred = [
+                e for e in tracer.events(limit=100)
+                if 'deferred' in e.get('kind', '')
+            ]
+            if len(deferred) > 3:
+                blocked_classes.append('autonomy_dock')
+            continuity_handled = tracer.events(kind='continuity_message_handled', limit=5)
+            if continuity_handled:
+                continuity_status = 'active'
+            else:
+                continuity_status = 'no_recent_intercepts'
+        except Exception:
+            unresolved.append('runtime_audit_tracer_unavailable')
+        items.append({
+            'latest_stalls': stalls,
+            'circuit_breaker_state': cb_state,
+            'blocked_work_classes': blocked_classes,
+            'last_slow_dock_duration_ms': round(last_slow_dock_ms, 1),
+            'continuity_routing_status': continuity_status,
+        })
+        if not cb_state:
+            unresolved.append('circuit_breaker_never_tripped_needs_live_proof')
+        summary = (
+            f'{len(stalls)} recent stalls, '
+            f'CB trips: {cb_state.get("trip_count", 0)}, '
+            f'blocked: {blocked_classes or "none"}, '
+            f'continuity: {continuity_status}'
+        )
+        return self._section(
+            section_id='runtime_stability_controller',
+            title='Runtime Stability Controller (P0.68)',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit',
+            source_refs=['RuntimeAuditTracer', 'ControlCenterViewModel'],
+            confidence=0.7 if stalls else 0.4,
+            last_updated=now,
+            unresolved_fields=unresolved,
         )
 
     def _section(
