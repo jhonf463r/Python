@@ -6,6 +6,21 @@
   "created_at": "2026-05-28T16:00:00Z",
   "priority": "high",
   "description": "Roadmap matrix for IABV metacognitive autonomy: tracks each phase from birth to cross-device portability, with evidence references, missing links, next test, and risk if unfixed.",
+  "existing_services_consumed": [
+    "concept_weight_evidence.py: existing CWE service — DiscernmentFrameService accepts its dict output, does NOT duplicate",
+    "UniversalPerceptionService: produces CWE upstream",
+    "IntentUnderstandingService: attaches CWE upstream",
+    "TaskContextAssembler: already propagates CWE — only discernment_frame_summary added",
+    "PortableContext: already exports CWE — only roadmap_matrix and unresolved_links added",
+    "OSES._concept_weight_evidence_findings(): existing CWE findings — NOT duplicated",
+    "PortableContext._genesis_readiness_snapshot/_section: existing genesis readiness — NOT duplicated"
+  ],
+  "related_tasks": [
+    "P0.55: concept_weight_evidence service",
+    "P0.60: genesis_readiness_cross_device_contract",
+    "P0.41: related metacognitive wiring",
+    "P0.69: metacognitive_discernment_frame (CLOSED)"
+  ],
   "phases": [
     {
       "phase": "birth",
@@ -52,12 +67,13 @@
       "status": "completed",
       "evidence_refs": [
         "src/iabv_v15/services/evolution/discernment_frame_service.py (_assess_grounding, _collect_sensor_sources)",
-        "src/iabv_v15/domain/models.py (MetacognitiveDiscernmentFrame)"
+        "src/iabv_v15/domain/models.py (MetacognitiveDiscernmentFrame)",
+        "src/iabv_v15/services/evolution/concept_weight_evidence.py (existing CWE service — consumed as dict)"
       ],
       "missing_links": [
-        "ConceptWeightEvidence integration needs live proof with real AdaptiveWeightLayer data"
+        "Live proof: concept_weight_evidence dict from existing service flows into DiscernmentFrame"
       ],
-      "next_test": "Build frame with real metacognitive_adjustments and verify concept_weights populated.",
+      "next_test": "Build frame with concept_weight_evidence dict from existing service and verify concept_weights populated.",
       "risk_if_unfixed": "medium — grounding works but concept weights may be empty without live data."
     },
     {
@@ -66,7 +82,7 @@
       "status": "partial",
       "evidence_refs": [
         "src/iabv_v15/services/evolution/discernment_frame_service.py",
-        "src/iabv_v15/domain/models.py (MetacognitiveDiscernmentFrame, ConceptWeightEvidence)",
+        "src/iabv_v15/domain/models.py (MetacognitiveDiscernmentFrame)",
         "tests/test_discernment_frame_p069.py"
       ],
       "missing_links": [
@@ -85,8 +101,7 @@
         "src/iabv_v15/services/evolution/discernment_frame_service.py (human_summary)"
       ],
       "missing_links": [
-        "Live proof: introspective question returns roadmap-based answer",
-        "'por donde vamos?' wiring to roadmap matrix"
+        "Live proof: introspective question returns roadmap-based answer"
       ],
       "next_test": "User types 'por donde vamos?' and gets phase-by-phase roadmap status.",
       "risk_if_unfixed": "high — user gets generic local LLM answer instead of evidence-based response."
@@ -143,15 +158,15 @@
         "data/evolution/portable_context/"
       ],
       "missing_links": [
-        "metacognitive_roadmap_matrix export in PortableContext",
-        "unresolved_metacognitive_links export in PortableContext"
+        "metacognitive_roadmap_matrix export live proof",
+        "unresolved_metacognitive_links export live proof"
       ],
       "next_test": "Export portable context and verify roadmap_matrix section present.",
       "risk_if_unfixed": "medium — new session won't know metacognitive progress."
     }
   ],
   "unresolved": [
-    "ConceptWeightEvidence live proof with real AdaptiveWeightLayer data",
+    "concept_weight_evidence from existing service flowing into DiscernmentFrame live proof",
     "TaskContextAssembler discernment_frame_summary live validation",
     "'por donde vamos?' returns roadmap-based answer (not generic LLM)",
     "OSES discernment_frame_missing_in_task_context live proof",

@@ -9260,7 +9260,6 @@ def _discernment_frame_findings_impl(self) -> list:
     - failed_attractor_repeated: attractor marked failed but still selected
     - low_confidence_acted_as_high: confidence < 0.4 but action taken
     - discernment_frame_missing_in_task_context: no frame summary in context
-    - concept_weight_evidence_missing: no concept weights populated
     - stale_external_data_overrode_live_world_model: stale data used over live
     """
     findings: list = []
@@ -9291,7 +9290,6 @@ def _discernment_frame_findings_impl(self) -> list:
     low_conf_actions = 0
     failed_attractor_reuse = 0
     untrusted_bias = 0
-    concept_weight_missing = 0
     stale_override_count = 0
 
     for frame in frames:
@@ -9308,8 +9306,6 @@ def _discernment_frame_findings_impl(self) -> list:
                 failed_attractor_reuse += 1
         if has_action and frame.untrusted_sources and not frame.trusted_sources:
             untrusted_bias += 1
-        if 'concept_weight_evidence_missing' in frame.unresolved_fields:
-            concept_weight_missing += 1
         for c in frame.contradictions:
             if c.get('type') == 'stale_world_model_vs_live_input' and has_action:
                 stale_override_count += 1
@@ -9373,18 +9369,6 @@ def _discernment_frame_findings_impl(self) -> list:
             severity=IssueSeverity.HIGH,
             category='external_source_bias',
             metadata={'count': untrusted_bias},
-        ))
-
-    if concept_weight_missing >= len(frames) // 2 + 1:
-        findings.append(SelfExaminationFinding(
-            title='Evidencia de pesos conceptuales ausente',
-            summary=(
-                f'{concept_weight_missing}/{len(frames)} frames sin ConceptWeightEvidence. '
-                'El discernimiento no tiene datos de pesos para evaluar confianza.'
-            ),
-            severity=IssueSeverity.MEDIUM,
-            category='concept_weight_evidence_missing',
-            metadata={'count': concept_weight_missing, 'total_frames': len(frames)},
         ))
 
     if stale_override_count >= 1:

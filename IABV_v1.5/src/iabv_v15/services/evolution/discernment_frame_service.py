@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from iabv_v15.domain.models import ConceptWeightEvidence, MetacognitiveDiscernmentFrame
+from iabv_v15.domain.models import MetacognitiveDiscernmentFrame
 
 _logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class DiscernmentFrameService:
         recent_findings: list[Any] | None = None,
         startup_events: list[dict[str, Any]] | None = None,
         freeze_reports: list[dict[str, Any]] | None = None,
-        concept_weight_evidence: ConceptWeightEvidence | None = None,
+        concept_weight_evidence: dict[str, Any] | None = None,
     ) -> MetacognitiveDiscernmentFrame:
         """Build a new discernment frame from available state."""
         frame = MetacognitiveDiscernmentFrame(
@@ -91,8 +91,10 @@ class DiscernmentFrameService:
         frame.bias_risks = biases['risks']
         frame.contradictions = biases['contradictions']
         # Merge contradictions from concept weight evidence
-        if concept_weight_evidence and concept_weight_evidence.contradictions:
-            frame.contradictions.extend(concept_weight_evidence.contradictions)
+        if concept_weight_evidence:
+            cwe_contradictions = concept_weight_evidence.get('contradictions', [])
+            if cwe_contradictions:
+                frame.contradictions.extend(cwe_contradictions)
 
         # Grounding status
         frame.grounding_status = self._assess_grounding(frame)
@@ -106,77 +108,6 @@ class DiscernmentFrameService:
 
         self._frame_history.append(frame)
         return frame
-
-    def build_concept_weight_evidence(
-        self,
-        *,
-        experiment_runs: list[Any] | None = None,
-        metacognitive_adjustments: dict[str, dict[str, Any]] | None = None,
-    ) -> ConceptWeightEvidence:
-        """Build ConceptWeightEvidence from AdaptiveWeightLayer + experiments.
-
-        Reads real metacognitive adjustments and experiment run data to
-        produce an evidence snapshot of concepts, weights and sources.
-        """
-        concepts: list[str] = []
-        weights: dict[str, float] = {}
-        sources: list[str] = []
-        missing_sources: list[str] = []
-        contradictions: list[dict[str, Any]] = []
-
-        if metacognitive_adjustments:
-            sources.append('adaptive_weight_layer')
-            for key, entry in metacognitive_adjustments.items():
-                adj = float(entry.get('adjustment', 0.0))
-                parts = key.split('|')
-                concept = parts[0] if parts else key
-                if concept and concept not in concepts:
-                    concepts.append(concept)
-                weights[key] = round(0.5 + adj, 4)
-        else:
-            missing_sources.append('adaptive_weight_layer')
-
-        if experiment_runs:
-            sources.append('experiment_lab')
-            from collections import defaultdict
-            route_scores: dict[str, list[float]] = defaultdict(list)
-            for run in experiment_runs:
-                kind = str(getattr(run, 'assistant_kind', '') or '').strip().lower()
-                route_val = getattr(run, 'route', None)
-                route = str(route_val.value if route_val else '')
-                if kind:
-                    key = f'{kind}:{route}'
-                    if key not in concepts:
-                        concepts.append(key)
-                    metrics = getattr(run, 'metrics', None)
-                    score = float(getattr(metrics, 'total_score', 0.0) if metrics else 0.0)
-                    route_scores[key].append(score)
-            for key, scores in route_scores.items():
-                if scores:
-                    weights[key] = round(sum(scores) / len(scores), 4)
-        else:
-            missing_sources.append('experiment_lab')
-
-        confidence = 0.5
-        if sources:
-            confidence += 0.15 * min(len(sources), 2)
-        if missing_sources:
-            confidence -= 0.15 * min(len(missing_sources), 2)
-        confidence = max(0.0, min(1.0, confidence))
-
-        next_action = ''
-        if not sources:
-            next_action = 'UNRESOLVED:concept_weight_evidence_missing'
-
-        return ConceptWeightEvidence(
-            concepts=concepts,
-            weights=weights,
-            sources=sources,
-            missing_sources=missing_sources,
-            contradictions=contradictions,
-            next_action=next_action,
-            confidence=round(confidence, 3),
-        )
 
     def build_birth_frame(
         self,
@@ -333,19 +264,29 @@ class DiscernmentFrameService:
     @staticmethod
     def _apply_concept_weight_evidence(
         frame: MetacognitiveDiscernmentFrame,
-        evidence: ConceptWeightEvidence | None,
+        evidence: dict[str, Any] | None,
     ) -> None:
-        """Wire ConceptWeightEvidence into the frame fields."""
+        """Wire concept_weight_evidence (dict from existing service) into the frame.
+
+        Accepts the dict output produced by the existing
+        ``concept_weight_evidence`` service (or any compatible dict with
+        keys: concepts, weights, sources, missing_sources, contradictions).
+        Does NOT create a parallel model — consumes whatever the upstream
+        service provides.
+        """
         if evidence is None:
             if 'concept_weight_evidence_missing' not in frame.unresolved_fields:
                 frame.unresolved_fields.append('concept_weight_evidence_missing')
             return
-        if evidence.concepts:
-            frame.detected_concepts = list(evidence.concepts)
-        if evidence.weights:
-            frame.concept_weights = dict(evidence.weights)
-        if evidence.sources:
-            for src in evidence.sources:
+        concepts = evidence.get('concepts', [])
+        weights = evidence.get('weights', {})
+        sources = evidence.get('sources', [])
+        if concepts:
+            frame.detected_concepts = list(concepts)
+        if weights:
+            frame.concept_weights = dict(weights)
+        if sources:
+            for src in sources:
                 label = f'cwe:{src}'
                 if label not in frame.sensor_sources:
                     frame.sensor_sources.append(label)
