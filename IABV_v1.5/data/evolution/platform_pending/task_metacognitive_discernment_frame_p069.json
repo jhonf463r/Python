@@ -1,0 +1,54 @@
+{
+  "task_id": "p069_metacognitive_discernment_frame",
+  "title": "P0.69: Metacognitive Discernment Frame + Genesis Attractor Filter",
+  "status": "UNRESOLVED",
+  "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+  "created_at": "2026-05-28T14:00:00Z",
+  "priority": "high",
+  "description": "IABV must have a discernment organ before acting. Each datum must pass through a filter that determines origin, reliability, bias, contradictions, grounding, attractors, candidate action, and risk of acting without sufficient evidence.",
+  "root_cause": "System lacked a unified pre-action discernment contract. Existing services (OSES, ExperimentLab, AdaptiveWeightLayer, PerceptionSnapshot) each held fragments but no service combined them into a coherent frame that could answer: source, confidence, contradictions, bias, and why this action is reasonable.",
+  "what_existed": [
+    "PerceptionSnapshot: unified perception input but no bias/grounding analysis",
+    "OSES._neural_attractor_findings(): identifies stable config attractors from experiment runs",
+    "OSES._neural_ensemble_findings(): identifies IA pairs that work well together",
+    "AdaptiveWeightLayer: adjusts route/assistant weights based on metacognitive feedback",
+    "ExperimentLab: compares routes/assistants/configs with real results",
+    "StrategySelector: recommends routes by history and evidence",
+    "WorldModelSnapshot: live operational picture",
+    "EnvironmentSelfModel: hardware/runtime/risk state",
+    "UniversalPerceptionService: multimodal perception signals",
+    "DecisionAuditTrail: records decisions with confidence/outcome",
+    "StartupTimeline: phase recorder for boot sequence"
+  ],
+  "what_was_fragmented": [
+    "No unified contract combining bias detection + grounding + attractors + contradictions",
+    "No birth/genesis frame from startup data",
+    "No bias filter for external source contradictions vs live state",
+    "No human-readable discernment summary for 'me entiendes?' questions",
+    "OSES could not detect action_without_grounding or contradiction_ignored patterns",
+    "PortableContext did not export discernment state"
+  ],
+  "implemented_tasks": [
+    "MetacognitiveDiscernmentFrame model in domain/models.py",
+    "DiscernmentFrameService with build_frame(), build_birth_frame(), bias filter, attractor summary",
+    "OSES _discernment_frame_findings(): action_without_grounding, contradiction_ignored, low_confidence_acted_as_high, failed_attractor_repeated, external_source_bias",
+    "PortableContext _discernment_frame_section(): compact export without PII",
+    "ControlCenterViewModel: _is_discernment_question() + _answer_discernment_question() for human response",
+    "Platform pending task file"
+  ],
+  "evidence_sources": [
+    "data/evolution/self_examination/latest.json",
+    "src/iabv_v15/domain/models.py (PerceptionSnapshot, WorldModelSnapshot, EnvironmentSelfModel)",
+    "src/iabv_v15/services/evolution/operational_self_examination_service.py (_neural_attractor_findings)",
+    "src/iabv_v15/services/adaptive/adaptive_weight_layer.py",
+    "src/iabv_v15/services/lab/experiment_lab.py",
+    "src/iabv_v15/infra/startup_timeline.py"
+  ],
+  "unresolved": [
+    "Live Windows proof: verify birth frame generates from real startup_timeline",
+    "Live proof: verify discernment question ('me entiendes?') produces correct frame summary",
+    "Live proof: OSES finding generated when action taken without grounding",
+    "ConceptWeightEvidence integration: no existing ConceptWeightEvidence model found — concept_weights field added to frame but not yet populated from external concept source",
+    "TaskContextAssembler integration: requires live test to verify frame summary appears in assembled context"
+  ]
+}

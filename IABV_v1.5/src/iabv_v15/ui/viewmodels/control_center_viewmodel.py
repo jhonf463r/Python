@@ -10265,6 +10265,66 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
+    # ── P0.69: Discernment frame response ──────────────────────
+
+    _DISCERNMENT_PHRASES: tuple[str, ...] = (
+        'me entiendes', '¿me entiendes',
+        'me comprendes', '¿me comprendes',
+        'que sabes', 'qué sabes',
+        'que entiendes', 'qué entiendes',
+        'que no sabes', 'qué no sabes',
+        'que no puedes confirmar', 'qué no puedes confirmar',
+        'por que no puedes', 'por qué no puedes',
+        'que esta fallando', 'qué está fallando',
+        'que te confunde', 'qué te confunde',
+        'que sesgo tienes', 'qué sesgo tienes',
+        'que evidencia tienes', 'qué evidencia tienes',
+        'en que te basas', 'en qué te basas',
+        'como decidiste', 'cómo decidiste',
+        'que vas a hacer', 'qué vas a hacer',
+        'que necesitas observar', 'qué necesitas observar',
+    )
+
+    def _is_discernment_question(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        return any(phrase in normalized for phrase in self._DISCERNMENT_PHRASES)
+
+    def _answer_discernment_question(self, message: str) -> None:
+        """P0.69: answer from DiscernmentFrame instead of local LLM."""
+        try:
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService()
+            frame = svc.latest_frame()
+            if frame is None:
+                wm = getattr(self, '_world_model', None)
+                wm_dict = wm.model_dump() if wm and hasattr(wm, 'model_dump') else None
+                esm = getattr(self, '_environment_self_model', None)
+                esm_dict = esm.model_dump() if esm and hasattr(esm, 'model_dump') else None
+                frame = svc.build_frame(
+                    phase='observe',
+                    trigger_source='user',
+                    raw_inputs=[message[:100]],
+                    world_model=wm_dict,
+                    environment_self_model=esm_dict,
+                )
+            summary = svc.human_summary(frame)
+            parts = []
+            parts.append(f"**Lo que sé:** {summary['what_i_know']}")
+            parts.append(f"**Lo que veo:** {summary['what_i_see']}")
+            parts.append(f"**Lo que no puedo confirmar:** {summary['what_i_cannot_confirm']}")
+            parts.append(f"**Posible sesgo:** {summary['possible_bias']}")
+            parts.append(f"**Lo que necesito observar:** {summary['what_i_need_to_observe']}")
+            parts.append(f"**Siguiente acción:** {summary['next_action']}")
+            if frame.confidence < 0.4:
+                parts.append("\n⚠️ Mi confianza es baja. No debería actuar sin más evidencia.")
+            response = '\n'.join(parts)
+        except Exception as exc:
+            response = f'No puedo generar un frame de discernimiento ahora: {exc}'
+        self._append_message('assistant', 'IABV', response)
+        self.dataChanged.emit()
+
     def _try_resolve_pending_observation_permission(self, message: str) -> bool:
         """Auto-grant observation permission only for explicit permission replies.
 
@@ -11457,6 +11517,10 @@ class ControlCenterViewModel(QObject):
     def _try_handle_lightweight_chat(self, message: str) -> bool:
         if self._is_world_model_question(message):
             self._answer_world_model_question(message)
+            return True
+        # P0.69: discernment questions before self-awareness
+        if self._is_discernment_question(message):
+            self._answer_discernment_question(message)
             return True
         if self._is_self_awareness_question(message):
             self._answer_self_awareness_question(message)
