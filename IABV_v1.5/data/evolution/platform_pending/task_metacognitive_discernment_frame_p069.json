@@ -1,7 +1,7 @@
 {
-  "task_id": "p069_metacognitive_discernment_frame",
+  "id": "p069_metacognitive_discernment_frame",
   "title": "P0.69: Metacognitive Discernment Frame + Genesis Attractor Filter",
-  "status": "CLOSED",
+  "status": "COMPLETED",
   "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
   "created_at": "2026-05-28T14:00:00Z",
   "closed_at": "2026-05-28T16:30:00Z",
@@ -64,5 +64,9 @@
     "PENDING_WINDOWS_RUNTIME: verify discernment question produces correct frame summary in live UI",
     "PENDING_WINDOWS_RUNTIME: verify runtime_audit.jsonl records discernment frame events",
     "PENDING_WINDOWS_RUNTIME: OSES finding generated when action taken without grounding"
-  ]
+  ],
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
+    "source": "pr420_windows_schema_audit"
+  }
 }

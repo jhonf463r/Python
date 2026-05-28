@@ -1,7 +1,7 @@
 {
-  "task_id": "p070_metacognitive_autonomy_roadmap_matrix",
+  "id": "p070_metacognitive_autonomy_roadmap_matrix",
   "title": "P0.70: Metacognitive Autonomy Roadmap Matrix",
-  "status": "IN_PROGRESS",
+  "status": "UNRESOLVED",
   "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
   "created_at": "2026-05-28T16:00:00Z",
   "priority": "high",
@@ -184,5 +184,9 @@
     "PENDING_WINDOWS_RUNTIME: 'por donde vamos?' returns roadmap in live UI chat",
     "PENDING_WINDOWS_RUNTIME: OSES discernment_frame_missing_in_task_context in live review",
     "PENDING_WINDOWS_RUNTIME: PortableContext latest.json contains roadmap_matrix section"
-  ]
+  ],
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
+    "source": "pr420_windows_schema_audit"
+  }
 }
