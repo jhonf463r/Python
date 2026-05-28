@@ -141,15 +141,15 @@ class TestBuildUIBridgeServer:
         try:
             client = UIBridgeClient(port=port)
 
-            # send_message without VM should buffer
+            # P0.71: send_message without VM returns unavailable (fail-closed)
             result = client.call('send_message', text='hello from bridge')
-            assert result.get('result', {}).get('status') == 'buffered'
+            assert result.get('result', {}).get('status') == 'unavailable'
+            assert result.get('result', {}).get('reason') == 'control_center_vm_not_bound'
 
-            # read_messages should return the buffered message
+            # read_messages should return empty (no messages buffered)
             result = client.call('read_messages', limit=10)
             messages = result.get('result', {}).get('messages', [])
-            assert len(messages) == 1
-            assert messages[0]['text'] == 'hello from bridge'
+            assert len(messages) == 0
 
             # get_ui_state should work
             result = client.call('get_ui_state')
@@ -159,10 +159,11 @@ class TestBuildUIBridgeServer:
             result = client.call('push_chat_message', role='user', text='test message')
             assert result.get('result', {}).get('status') == 'recorded'
 
-            # verify pushed message appears in read
+            # verify pushed message appears in read (only 1 — send_message
+            # no longer buffers without VM per P0.71 fail-closed contract)
             result = client.call('read_messages', limit=10)
             messages = result.get('result', {}).get('messages', [])
-            assert len(messages) == 2
+            assert len(messages) == 1
         finally:
             server.stop()
 
@@ -291,7 +292,8 @@ class TestBridgeReadinessHandshake:
             client = UIBridgeClient(port=port)
             result = client.call('send_message', text='post-ready msg')
             payload = result.get('result', {})
-            assert payload.get('status') == 'buffered'
+            # P0.71: without VM, returns unavailable (fail-closed)
+            assert payload.get('status') == 'unavailable'
         finally:
             server.stop()
 
