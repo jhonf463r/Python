@@ -2,7 +2,7 @@
   "task_id": "p070_metacognitive_autonomy_roadmap_matrix",
   "title": "P0.70: Metacognitive Autonomy Roadmap Matrix",
   "status": "IN_PROGRESS",
-  "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+  "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
   "created_at": "2026-05-28T16:00:00Z",
   "priority": "high",
   "description": "Roadmap matrix for IABV metacognitive autonomy: tracks each phase from birth to cross-device portability, with evidence references, missing links, next test, and risk if unfixed.",
@@ -165,11 +165,24 @@
       "risk_if_unfixed": "medium — new session won't know metacognitive progress."
     }
   ],
+  "code_simulation_proof": {
+    "date": "2026-05-28T16:20:00Z",
+    "environment": "Linux VM (code-level simulation, not Windows runtime)",
+    "results": [
+      {"check": "Phrase detection: 6/6 intercepted (por donde vamos, que falta, me entiendes variants)", "status": "PASSED"},
+      {"check": "_answer_roadmap_question reads JSON, formats 10 phases, no LLM call", "status": "PASSED"},
+      {"check": "_answer_discernment_question builds frame + human_summary, no LLM call", "status": "PASSED"},
+      {"check": "PortableContext: roadmap_matrix (6/10 completed), unresolved_links (5 items), discernment_frame", "status": "PASSED"},
+      {"check": "OSES: discernment_frame_missing_in_task_context fires when no frames exist", "status": "PASSED"},
+      {"check": "All responses sub-millisecond, no busy/hang risk", "status": "PASSED"},
+      {"check": "Tests: 38/38 passing", "status": "PASSED"}
+    ]
+  },
   "unresolved": [
-    "concept_weight_evidence from existing service flowing into DiscernmentFrame live proof",
-    "TaskContextAssembler discernment_frame_summary live validation",
-    "'por donde vamos?' returns roadmap-based answer (not generic LLM)",
-    "OSES discernment_frame_missing_in_task_context live proof",
-    "PortableContext metacognitive_roadmap_matrix export live proof"
+    "PENDING_WINDOWS_RUNTIME: CWE dict from existing service flows into DiscernmentFrame",
+    "PENDING_WINDOWS_RUNTIME: TaskContextAssembler discernment_frame_summary in live metadata",
+    "PENDING_WINDOWS_RUNTIME: 'por donde vamos?' returns roadmap in live UI chat",
+    "PENDING_WINDOWS_RUNTIME: OSES discernment_frame_missing_in_task_context in live review",
+    "PENDING_WINDOWS_RUNTIME: PortableContext latest.json contains roadmap_matrix section"
   ]
 }

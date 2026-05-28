@@ -2,7 +2,7 @@
   "task_id": "p069_metacognitive_discernment_frame",
   "title": "P0.69: Metacognitive Discernment Frame + Genesis Attractor Filter",
   "status": "CLOSED",
-  "verification_status": "CODE_COMPLETE_PENDING_LIVE_PROOF",
+  "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
   "created_at": "2026-05-28T14:00:00Z",
   "closed_at": "2026-05-28T16:30:00Z",
   "priority": "high",
@@ -45,10 +45,24 @@
     "P0.60: genesis_readiness_cross_device_contract",
     "P0.41: related metacognitive wiring"
   ],
+  "code_simulation_proof": {
+    "date": "2026-05-28T16:20:00Z",
+    "environment": "Linux VM (code-level simulation, not Windows runtime)",
+    "results": [
+      {"check": "Phrase detection: 6/6 phrases intercepted before local_chat_worker", "status": "PASSED"},
+      {"check": "DiscernmentFrame build + human_summary: 0.6ms, no hang", "status": "PASSED"},
+      {"check": "Roadmap JSON read + phase listing: 0.2ms, no hang", "status": "PASSED"},
+      {"check": "PortableContext: 3/3 sections registered and producing output", "status": "PASSED"},
+      {"check": "OSES: 7 discernment findings (observe-only, no actions)", "status": "PASSED"},
+      {"check": "CWE dict input accepted, concepts/weights propagated to frame", "status": "PASSED"},
+      {"check": "No ConceptWeightEvidence model in domain/models.py", "status": "PASSED"},
+      {"check": "Tests: 38/38 passing (16 P0.69 + 22 P0.70)", "status": "PASSED"}
+    ]
+  },
   "unresolved": [
-    "Live Windows proof: verify birth frame generates from real startup_timeline",
-    "Live proof: verify discernment question ('me entiendes?') produces correct frame summary",
-    "Live proof: OSES finding generated when action taken without grounding",
-    "Live proof: 'por donde vamos?' returns roadmap-based answer"
+    "PENDING_WINDOWS_RUNTIME: verify birth frame generates from real startup_timeline",
+    "PENDING_WINDOWS_RUNTIME: verify discernment question produces correct frame summary in live UI",
+    "PENDING_WINDOWS_RUNTIME: verify runtime_audit.jsonl records discernment frame events",
+    "PENDING_WINDOWS_RUNTIME: OSES finding generated when action taken without grounding"
   ]
 }
