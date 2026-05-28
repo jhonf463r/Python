@@ -209,6 +209,8 @@ class PortableContextService:
             self._capability_readiness_section(now=now),
             self._next_time_policy_section(now=now),
             self._discernment_frame_section(now=now),
+            self._metacognitive_roadmap_matrix_section(now=now),
+            self._unresolved_metacognitive_links_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3857,6 +3859,105 @@ class PortableContextService:
             source_kind='discernment_frame_service',
             source_refs=['DiscernmentFrameService'],
             confidence=float(conf) if isinstance(conf, (int, float)) else 0.0,
+            last_updated=now,
+            unresolved_fields=unresolved,
+        )
+
+    def _metacognitive_roadmap_matrix_section(self, *, now) -> PortableContextSection:
+        """P0.70: export metacognitive autonomy roadmap matrix."""
+        items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        try:
+            import json as _json
+            from pathlib import Path as _Path
+            candidates = [
+                _Path(self.workspace_root) / 'data' / 'evolution' / 'platform_pending' / 'task_metacognitive_autonomy_roadmap_matrix_p070.json',
+            ]
+            for p in candidates:
+                if p.exists():
+                    raw = _json.loads(p.read_text(encoding='utf-8'))
+                    phases = raw.get('phases', [])
+                    compact_phases = []
+                    for ph in phases:
+                        compact_phases.append({
+                            'phase': ph.get('phase', ''),
+                            'status': ph.get('status', 'unresolved'),
+                            'missing_links_count': len(ph.get('missing_links', [])),
+                            'risk_if_unfixed': ph.get('risk_if_unfixed', ''),
+                        })
+                    items.append({
+                        'task_id': raw.get('task_id', ''),
+                        'status': raw.get('status', ''),
+                        'phases': compact_phases,
+                    })
+                    for ph in phases:
+                        for ml in ph.get('missing_links', []):
+                            unresolved.append(f'{ph["phase"]}:{ml}')
+                    break
+            if not items:
+                items.append({'status': 'roadmap_file_not_found'})
+                unresolved.append('metacognitive_roadmap_matrix_not_found')
+        except Exception:
+            items.append({'status': 'error_reading_roadmap'})
+            unresolved.append('metacognitive_roadmap_matrix_read_error')
+
+        completed = sum(1 for i in items[0].get('phases', []) if i.get('status') == 'completed') if items and 'phases' in items[0] else 0
+        total = len(items[0].get('phases', [])) if items and 'phases' in items[0] else 0
+        summary = f'{completed}/{total} phases completed' if total else 'no roadmap'
+        return self._section(
+            section_id='metacognitive_roadmap_matrix',
+            title='Metacognitive Autonomy Roadmap Matrix (P0.70)',
+            summary=summary,
+            items=items,
+            source_kind='platform_pending',
+            source_refs=['task_metacognitive_autonomy_roadmap_matrix_p070.json'],
+            confidence=0.8 if total else 0.0,
+            last_updated=now,
+            unresolved_fields=unresolved,
+        )
+
+    def _unresolved_metacognitive_links_section(self, *, now) -> PortableContextSection:
+        """P0.70: collect unresolved metacognitive links across frame + roadmap."""
+        items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        try:
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService()
+            frame = svc.latest_frame()
+            if frame and frame.unresolved_fields:
+                items.append({
+                    'source': 'discernment_frame',
+                    'unresolved': frame.unresolved_fields[:10],
+                })
+                unresolved.extend(frame.unresolved_fields[:10])
+        except Exception:
+            pass
+        try:
+            import json as _json
+            from pathlib import Path as _Path
+            p = _Path(self.workspace_root) / 'data' / 'evolution' / 'platform_pending' / 'task_metacognitive_autonomy_roadmap_matrix_p070.json'
+            if p.exists():
+                raw = _json.loads(p.read_text(encoding='utf-8'))
+                roadmap_unresolved = raw.get('unresolved', [])
+                if roadmap_unresolved:
+                    items.append({
+                        'source': 'roadmap_matrix',
+                        'unresolved': roadmap_unresolved[:10],
+                    })
+                    unresolved.extend(roadmap_unresolved[:10])
+        except Exception:
+            pass
+        if not items:
+            items.append({'status': 'no_unresolved_links'})
+        summary = f'{len(unresolved)} unresolved metacognitive links' if unresolved else 'all clear'
+        return self._section(
+            section_id='unresolved_metacognitive_links',
+            title='Unresolved Metacognitive Links (P0.70)',
+            summary=summary,
+            items=items,
+            source_kind='aggregated',
+            source_refs=['DiscernmentFrameService', 'roadmap_matrix'],
+            confidence=0.7 if not unresolved else 0.4,
             last_updated=now,
             unresolved_fields=unresolved,
         )

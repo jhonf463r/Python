@@ -3092,6 +3092,26 @@ class MetacognitiveDiscernmentFrame(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ConceptWeightEvidence(BaseModel):
+    """P0.69/P0.70: evidence snapshot linking detected concepts to their
+    weights, sources, missing sources, contradictions and recommended
+    next action.
+
+    Populated by DiscernmentFrameService from AdaptiveWeightLayer and
+    StrategySelector outputs.  Consumed by MetacognitiveDiscernmentFrame
+    to fill ``concept_weights`` and ``detected_concepts``.
+    """
+
+    concepts: list[str] = Field(default_factory=list)
+    weights: dict[str, float] = Field(default_factory=dict)
+    sources: list[str] = Field(default_factory=list)
+    missing_sources: list[str] = Field(default_factory=list)
+    contradictions: list[dict[str, Any]] = Field(default_factory=list)
+    next_action: str = ''
+    confidence: float = 0.0
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class AccountApproval(BaseModel):
     """User-approved account selection for a specific tool.
 
