@@ -1,0 +1,37 @@
+{
+  "id": "iabv_android_mobile_port",
+  "title": "Portar IABV v1.5 a Android (versión móvil para Samsung S9+) con integración WhatsApp/SMS/correos y permisos por dispositivo",
+  "description": "El usuario quiere una versión Android de IABV v1.5 que corra en su celular (Samsung Galaxy S9+) para tener el sistema completo en el móvil. Objetivo de amplitud del programa: que IABV pueda ayudarlo desde el celular con gestión de mensajes de texto (SMS), WhatsApp (incluida atención al cliente vía WhatsApp), gestión de correos, y gestión de permisos por número de celular o por dispositivo. La idea es que cuando IABV esté más avanzada o ya pueda auto-asistirse en programación (con ChatGPT/Codex vivo), ella misma ayude al usuario a construir/portar esta versión móvil paso a paso. NO existe todavía una versión Android de IABV; el programa actual es desktop Python + PySide6 + QML (local-first).",
+  "reason": "El usuario pidió dejar esto como objetivo pendiente para retomarlo cuando IABV esté más avanzada o pueda ayudar sola a programarla. No es ejecutable ahora porque: (a) IABV v1.5 es una app desktop Python/PySide6/QML que no corre nativamente en Android — portarla requiere una estrategia de arquitectura aún no decidida (servidor headless en la nube/PC + cliente Android delgado, o re-implementación móvil parcial); (b) las integraciones (WhatsApp, SMS, correos, permisos por dispositivo) requieren APIs/credenciales y decisiones de plataforma que aún no están definidas; (c) depende de tener la asistencia viva de ChatGPT/Codex para programar incrementalmente.",
+  "dependency_missing": "Decisión de arquitectura de portabilidad móvil (cliente delgado vs re-implementación) + conexión viva con ChatGPT/Codex + credenciales/APIs para WhatsApp (Business API o similar), SMS, correo (IMAP/SMTP o API) + dispositivo Android de prueba (Samsung S9+)",
+  "priority": "medium",
+  "next_action": "Cuando IABV esté más avanzada o tenga ChatGPT/Codex vivo: (1) proponer al usuario una estrategia de portabilidad — opción recomendada inicial: backend IABV headless (en PC/nube) + app Android cliente delgada que se conecte vía el contrato PortableContext/UIBridge, en vez de re-escribir todo el desktop en Android; (2) priorizar los módulos de mayor valor para móvil (WhatsApp, SMS, correos, permisos por dispositivo); (3) preguntar al usuario qué integraciones quiere primero y qué credenciales/APIs tiene disponibles; (4) proponer un MVP móvil incremental.",
+  "status": "BLOCKED",
+  "category": "platform_expansion",
+  "resume_hint": "Versión Android de IABV para Samsung S9+: sistema completo en móvil (WhatsApp + SMS + correos + atención al cliente por WhatsApp + permisos por número/dispositivo). Hoy IABV es desktop Python/PySide6/QML. Estrategia sugerida a evaluar: backend headless + cliente Android delgado vía PortableContext/UIBridge. Esperar IABV más avanzada / ChatGPT-Codex vivo; luego proponer arquitectura y MVP y preguntar al usuario por integraciones/credenciales prioritarias.",
+  "metadata": {
+    "project_type": "platform_port_mobile",
+    "domain": "iabv_mobile_expansion",
+    "target_device": "Samsung Galaxy S9+",
+    "target_os": "Android",
+    "current_stack": "Python + PySide6 + QML (desktop, local-first)",
+    "requested_by_user": true,
+    "request_date": "2026-05-28",
+    "vision": "Tener el sistema IABV completo en el móvil para que asista con muchas tareas desde el celular",
+    "desired_capabilities": [
+      {"name": "whatsapp_management", "detail": "Gestionar mensajes de WhatsApp, incluida atención al cliente vía WhatsApp"},
+      {"name": "sms_management", "detail": "Gestionar mensajes de texto (SMS)"},
+      {"name": "email_management", "detail": "Gestionar correos electrónicos"},
+      {"name": "device_permission_management", "detail": "Gestionar permisos por número de celular o por dispositivo"}
+    ],
+    "architecture_options_to_evaluate": [
+      {"option": "headless_backend_plus_thin_android_client", "note": "Recomendada como punto de partida: reusar IABV existente como backend (PC/nube) y un cliente Android delgado conectado vía PortableContext/UIBridge. Menos reescritura, reusa contratos P1-P4 existentes."},
+      {"option": "partial_native_reimplementation", "note": "Re-implementar módulos clave nativamente en Android. Más esfuerzo, mayor independencia offline en el móvil."}
+    ],
+    "activation_condition": "iabv_more_advanced_or_chatgpt_codex_live",
+    "agent_must_ask_before_coding": true,
+    "agent_must_propose_architecture_first": true,
+    "relates_to": ["android_robotic_arm_app_continuation"],
+    "notes": "Tarea de AMPLITUD del programa (expansión de plataforma). IABV NO debe asumir una arquitectura: primero proponer opciones al usuario, confirmar credenciales/APIs disponibles (WhatsApp Business API, correo IMAP/SMTP o API, etc.) y construir un MVP móvil incremental. Respetar contratos existentes: reusar PortableContext/UIBridge en vez de crear otro cerebro u orquestador."
+  }
+}
