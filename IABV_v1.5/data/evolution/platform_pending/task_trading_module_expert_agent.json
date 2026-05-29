@@ -1,0 +1,36 @@
+{
+  "id": "trading_module_expert_agent",
+  "title": "Completar el módulo/órgano de trading para que IABV sea un agente experto en la bolsa de valores",
+  "description": "El usuario quiere continuar y completar el módulo (\"órgano\") encargado de hacer trading, hasta que IABV sea un agente experto en la bolsa de valores. El usuario ya tiene trabajo avanzado en este módulo. Pide que el propio programa le ayude a hacer un ANÁLISIS PROFUNDO del código/trabajo existente para extraer lo que sirve y seguir construyendo sobre eso (no descartar lo bueno, no duplicar). Ya se hizo un estudio profundo de qué variables hay que seguir; aun así, IABV debe PROFUNDIZAR y validar por evidencia si esas variables están bien o se pueden mejorar (\"si está bien o más que bien\"). El usuario indica que, si se requiere, él le dirá a IABV qué archivos debe analizar para que aprenda esa capacidad en autonomía. NOTA: a hoy NO existe un módulo de trading/bolsa de valores en el código fuente de IABV_v1.5 (src/iabv_v15) — el StrategySelector/ExperimentLab existentes son para selección de rutas/IA, no para bolsa; el proyecto 'wplay' del workspace es otro dominio (predicción de juego/ruleta con RL). Por lo tanto el código de trading del usuario es externo / aún no compartido con IABV.",
+  "reason": "El usuario pidió dejar esto como tarea pendiente para que IABV lo retome y le ayude a completarlo cuando pueda. No es ejecutable ahora porque: (a) el código del módulo de trading que el usuario ya tiene avanzado es externo y su ruta/archivos aún no fueron compartidos con IABV; (b) requiere la asistencia viva de ChatGPT/Codex (cloud reasoning) para el análisis profundo y la programación incremental; (c) la validación de qué variables sirven debe hacerse por evidencia real (ExperimentLab/backtesting), no por suposición.",
+  "dependency_missing": "Acceso a los archivos/ruta del módulo de trading del usuario (él indicará cuáles analizar) + conexión viva con ChatGPT/Codex (cloud reasoning) + fuente de datos de mercado para validar variables (histórico/feed) + criterio de evaluación (backtest/métricas)",
+  "priority": "medium",
+  "next_action": "Cuando IABV tenga ChatGPT/Codex vivo: (1) pedir al usuario qué archivos/ruta del módulo de trading debe analizar; (2) hacer un análisis profundo del código y del estudio de variables existente, separando lo que sirve de lo que no (sin descartar trabajo bueno, sin duplicar); (3) validar por evidencia (backtest/ExperimentLab) si las variables seleccionadas están bien o se pueden mejorar; (4) proponer un plan incremental para completar el módulo hasta nivel 'agente experto'; (5) preguntar al usuario antes de cambiar su código avanzado.",
+  "status": "BLOCKED",
+  "category": "external_project_assist",
+  "resume_hint": "Módulo de trading (bolsa de valores) → objetivo: agente experto. El usuario ya tiene código avanzado + un estudio de qué variables seguir (externo a IABV_v1.5). IABV debe: pedir los archivos, hacer análisis profundo, extraer lo que sirve, validar variables por evidencia (backtest), y completar el módulo de forma incremental. Esperar ChatGPT/Codex vivo. Preguntar antes de tocar el código del usuario.",
+  "metadata": {
+    "project_type": "trading_module_external",
+    "domain": "stock_market_trading",
+    "requested_by_user": true,
+    "request_date": "2026-05-28",
+    "vision": "Que IABV sea un agente experto en la bolsa de valores, completando el módulo de trading existente del usuario",
+    "user_has_existing_work": true,
+    "user_will_point_files": true,
+    "prior_study_exists": "Estudio profundo previo de qué variables hay que seguir (a validar por IABV con evidencia)",
+    "objectives": [
+      {"name": "deep_analysis_existing", "detail": "Análisis profundo del código/trabajo avanzado para extraer lo que sirve"},
+      {"name": "validate_variables_by_evidence", "detail": "Confirmar por evidencia (backtest/ExperimentLab) si las variables elegidas están bien o se pueden mejorar"},
+      {"name": "complete_module", "detail": "Seguir y completar el módulo de trading"},
+      {"name": "expert_agent", "detail": "Llevar el módulo a nivel de agente experto en bolsa de valores"},
+      {"name": "learn_capability_autonomy", "detail": "Aprender la capacidad de trading en autonomía a partir de los archivos que el usuario indique"}
+    ],
+    "activation_condition": "chatgpt_codex_connection_live",
+    "agent_must_ask_before_coding": true,
+    "agent_must_ask_for_files": true,
+    "validation_required": "backtest_or_evidence_based",
+    "not_present_in_iabv_source": true,
+    "relates_to": ["android_robotic_arm_app_continuation", "iabv_android_mobile_port"],
+    "notes": "No existe módulo de trading en src/iabv_v15 a hoy; es trabajo externo del usuario. IABV NO debe inventar resultados ni descartar trabajo bueno; primero pedir archivos, analizar, validar por evidencia y preguntar antes de modificar. Reusar contratos existentes (ExperimentLab/AdaptiveWeightLayer/StrategySelector) para evaluar variables/estrategias en vez de crear otro cerebro."
+  }
+}
