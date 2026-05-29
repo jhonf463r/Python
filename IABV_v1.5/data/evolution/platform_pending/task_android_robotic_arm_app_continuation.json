@@ -1,0 +1,39 @@
+{
+  "id": "android_robotic_arm_app_continuation",
+  "title": "Retomar app Android del brazo robótico (interfaz responsive + vista 3D + memoria de movimiento)",
+  "description": "El usuario tiene en desarrollo una aplicación Android (proyecto externo, NO en este repo) para controlar un brazo robótico. Trabajo avanzado pero pendiente de terminar: (1) la interfaz NO se ajusta al tamaño de la pantalla — necesita layout responsive/adaptativo; (2) continuar la VISTA 3D del brazo; (3) continuar la MEMORIA DE MOVIMIENTO (grabar/reproducir secuencias de movimiento). El usuario ya tiene partes de código e interfaz avanzadas. Cuando IABV tenga la conexión viva con ChatGPT/Codex, debe: analizar el código existente del proyecto Android, preguntarle al usuario por las partes que faltan, y ayudarlo a terminar la app paso a paso.",
+  "reason": "El usuario pidió explícitamente dejar esto pendiente para que IABV lo retome automáticamente cuando ya tenga la conexión de ChatGPT/Codex operativa. No es ejecutable ahora porque (a) el proyecto Android es externo a este repo y su ruta/código aún no fue compartida con IABV, y (b) la conexión cloud (ChatGPT/Codex) que permitiría el análisis y la asistencia de programación aún no está confirmada como viva.",
+  "dependency_missing": "Conexión viva con ChatGPT/Codex (cloud reasoning) confirmada + acceso a la ruta y el código del proyecto Android del brazo robótico",
+  "priority": "medium",
+  "next_action": "Cuando IABV detecte conexión ChatGPT/Codex viva: pedir al usuario la ruta del proyecto Android (o repo), analizar el código y la interfaz existentes, e identificar el estado real de los 3 frentes (layout responsive, vista 3D, memoria de movimiento). Luego preguntar al usuario qué partes del código ya tiene avanzadas para no duplicar, y proponer un plan incremental por frente.",
+  "status": "BLOCKED",
+  "category": "external_project_assist",
+  "resume_hint": "App Android brazo robótico: 3 frentes abiertos — (1) interfaz no se ajusta a pantalla (responsive), (2) vista 3D, (3) memoria de movimiento. El usuario ya tiene código/interfaz avanzados. Esperar conexión ChatGPT/Codex viva, luego analizar código existente y preguntar al usuario antes de programar.",
+  "metadata": {
+    "project_type": "android_app_external",
+    "domain": "robotic_arm_control",
+    "requested_by_user": true,
+    "request_date": "2026-05-28",
+    "open_fronts": [
+      {
+        "name": "responsive_ui",
+        "problem": "La interfaz no se ajusta al tamaño de la pantalla",
+        "goal": "Layout adaptativo que funcione en distintos tamaños/densidades de pantalla Android"
+      },
+      {
+        "name": "vista_3d",
+        "problem": "Vista 3D del brazo en progreso, falta continuar",
+        "goal": "Render 3D del brazo robótico funcional dentro de la app"
+      },
+      {
+        "name": "memoria_movimiento",
+        "problem": "Memoria de movimiento en progreso, falta continuar",
+        "goal": "Grabar y reproducir secuencias de movimiento del brazo"
+      }
+    ],
+    "activation_condition": "chatgpt_codex_connection_live",
+    "user_has_existing_work": true,
+    "agent_must_ask_before_coding": true,
+    "notes": "IABV debe ANALIZAR primero el código existente y PREGUNTAR al usuario sobre lo que ya tiene avanzado antes de generar código nuevo, para no duplicar trabajo. El proyecto Android es externo a IABV_v1.5; IABV asiste como copiloto cuando tenga cloud reasoning vivo."
+  }
+}
