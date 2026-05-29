@@ -6079,6 +6079,74 @@ class ControlCenterViewModel(QObject):
             ),
         }
 
+    @staticmethod
+    def _compare_capture_similarity(
+        before: dict[str, Any] | None,
+        after: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """Compare two capture metadata dicts to measure visual change.
+
+        Returns a dict with:
+        - changed: bool — True if the captures differ meaningfully
+        - similarity_score: float 0..1 (1 = identical)
+        - detail: str
+        - metrics: dict with individual comparisons
+        """
+        no_data: dict[str, Any] = {
+            'changed': False,
+            'similarity_score': 0.0,
+            'detail': 'insufficient data for comparison',
+            'metrics': {},
+        }
+        if not before or not isinstance(before, dict):
+            return no_data
+        if not after or not isinstance(after, dict):
+            return no_data
+
+        metrics: dict[str, Any] = {}
+        score_components: list[float] = []
+
+        bp_before = before.get('blank_probability')
+        bp_after = after.get('blank_probability')
+        if bp_before is not None and bp_after is not None:
+            bp_diff = abs(float(bp_after) - float(bp_before))
+            metrics['blank_probability_delta'] = round(bp_diff, 4)
+            score_components.append(1.0 - min(bp_diff * 5.0, 1.0))
+
+        dr_before = before.get('dynamic_range')
+        dr_after = after.get('dynamic_range')
+        if dr_before is not None and dr_after is not None:
+            dr_b, dr_a = int(dr_before), int(dr_after)
+            dr_max = max(dr_b, dr_a, 1)
+            dr_diff = abs(dr_a - dr_b) / dr_max
+            metrics['dynamic_range_delta'] = abs(dr_a - dr_b)
+            score_components.append(1.0 - min(dr_diff, 1.0))
+
+        uc_before = before.get('unique_color_count')
+        uc_after = after.get('unique_color_count')
+        if uc_before is not None and uc_after is not None:
+            uc_b, uc_a = int(uc_before), int(uc_after)
+            uc_max = max(uc_b, uc_a, 1)
+            uc_diff = abs(uc_a - uc_b) / uc_max
+            metrics['unique_color_delta'] = abs(uc_a - uc_b)
+            score_components.append(1.0 - min(uc_diff, 1.0))
+
+        if not score_components:
+            return no_data
+
+        similarity = sum(score_components) / len(score_components)
+        changed = similarity < 0.85
+
+        return {
+            'changed': changed,
+            'similarity_score': round(similarity, 4),
+            'detail': (
+                f'similarity={similarity:.2f} '
+                f'({"changed" if changed else "unchanged"})'
+            ),
+            'metrics': metrics,
+        }
+
     # ------------------------------------------------------------------
     # P0.9: post-recapture response verification helpers
     # ------------------------------------------------------------------
@@ -7097,6 +7165,63 @@ class ControlCenterViewModel(QObject):
             return bool(pressure.get('under_pressure'))
         except Exception:
             return False
+
+    # ── Central reasoning budget gate ──
+    _REASONING_COOLDOWN_S: ClassVar[float] = 30.0
+    _REASONING_SLOW_THRESHOLD_S: ClassVar[float] = 10.0
+
+    def _should_defer_reasoning(self, message: str) -> bool:
+        """Gate heavy local inference when the system is still recovering.
+
+        Returns True (and emits a short deferral response) when:
+        1. The last heavy inference completed < _REASONING_COOLDOWN_S ago
+        2. That inference took > _REASONING_SLOW_THRESHOLD_S
+        3. System is under resource pressure
+
+        This prevents the stall pattern where a slow response is followed
+        by another message that triggers another slow inference cycle.
+        """
+        if not self._should_defer_heavy_work():
+            return False
+        last_end = getattr(self, '_last_heavy_inference_end_ts', 0.0)
+        last_elapsed = getattr(self, '_last_heavy_inference_elapsed_s', 0.0)
+        if not last_end or not last_elapsed:
+            return False
+        since_last = time.time() - last_end
+        if since_last > self._REASONING_COOLDOWN_S:
+            return False
+        if last_elapsed < self._REASONING_SLOW_THRESHOLD_S:
+            return False
+        self._append_message(
+            'assistant', 'IABV',
+            'Estoy recuperandome de una consulta pesada reciente '
+            f'({last_elapsed:.0f}s). Dame unos segundos antes de '
+            'procesar otra tarea compleja. Intenta de nuevo en breve.',
+            'reasoning_budget_deferred',
+        )
+        self._set_live_status('idle')
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'reasoning_budget_deferred',
+                detail=(
+                    f'Deferred heavy inference: last took {last_elapsed:.1f}s, '
+                    f'completed {since_last:.1f}s ago, under resource pressure'
+                ),
+                data={
+                    'last_elapsed_s': round(last_elapsed, 1),
+                    'since_last_s': round(since_last, 1),
+                    'message_excerpt': message[:120],
+                },
+            )
+        except Exception:
+            pass
+        return True
+
+    def _record_heavy_inference_timing(self, elapsed_s: float) -> None:
+        """Record timing of a completed heavy inference for budget gate."""
+        self._last_heavy_inference_end_ts = time.time()
+        self._last_heavy_inference_elapsed_s = elapsed_s
 
     # ── Anti-freeze per-frame budget accounting ──
     _FRAME_BUDGET_MS: ClassVar[float] = 50.0
@@ -11913,6 +12038,13 @@ class ControlCenterViewModel(QObject):
         # NOTE: explicit_assistant check was here pre-P0.40 but is now
         # handled earlier in the sovereignty guard (line ~11576).
         # If we reach this point the message has no external intent.
+        #
+        # Central reasoning budget gate: if the last heavy inference was
+        # recent and slow AND we are under resource pressure, respond with
+        # a short deferral instead of launching another heavy cycle.
+        if self._should_defer_reasoning(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
         import time as _time
         self._working = True
         self._working_since = _time.time()
@@ -12617,6 +12749,7 @@ class ControlCenterViewModel(QObject):
         # deferred to avoid a UI stall.
         if task_name == 'chat':
             _task_elapsed = time.time() - getattr(self, '_task_start_ts', time.time())
+            self._record_heavy_inference_timing(_task_elapsed)
             if _task_elapsed > self._HEAVY_RESULT_THRESHOLD_S:
                 self._heavy_result_guard_active = True
                 try:

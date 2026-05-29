@@ -874,6 +874,9 @@ class OperationalSelfExaminationService:
         # Visual metacognition: partial occlusion, wrong window, low res.
         findings.extend(self._visual_metacognition_findings())
 
+        # Reasoning budget: deferrals and follow-up-after-failure freezes.
+        findings.extend(self._reasoning_budget_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -9467,6 +9470,90 @@ class OperationalSelfExaminationService:
                 confidence=0.80,
                 metadata={'low_res_count': low_res_count},
             ))
+        return findings
+
+    def _reasoning_budget_findings(self) -> list[SelfExaminationFinding]:
+        """Detect repeated reasoning budget deferrals and follow-up-after-failure freezes.
+
+        Scans runtime_audit for:
+        - ``reasoning_budget_deferred``: system deferred heavy inference ≥3 times
+        - ``post_result_ui_update_coalesced`` + subsequent stall: follow-up
+          after heavy inference caused UI freeze
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        findings: list[SelfExaminationFinding] = []
+        deferral_count = 0
+        heavy_then_stall = 0
+        try:
+            recent: deque[str] = deque(maxlen=500)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent.append(line)
+            prev_heavy = False
+            for line in recent:
+                line_s = line.strip()
+                if not line_s:
+                    continue
+                try:
+                    entry = json.loads(line_s)
+                except Exception:
+                    continue
+                kind = entry.get('kind', '')
+                if kind == 'reasoning_budget_deferred':
+                    deferral_count += 1
+                if kind == 'post_result_ui_update_coalesced':
+                    prev_heavy = True
+                elif kind == 'ui_event_loop_stall' and prev_heavy:
+                    heavy_then_stall += 1
+                    prev_heavy = False
+                elif kind not in ('', 'ui_frame_budget_overrun'):
+                    prev_heavy = False
+        except Exception:
+            return []
+
+        if deferral_count >= 3:
+            findings.append(SelfExaminationFinding(
+                category='repeated_reasoning_budget_deferral',
+                severity=IssueSeverity.MEDIUM,
+                title='Heavy inference deferred repeatedly due to pressure',
+                summary=(
+                    f'{deferral_count} mensaje(s) diferidos porque el sistema '
+                    f'estaba bajo presion despues de una inferencia pesada.'
+                ),
+                recommendation=(
+                    'El modelo local puede ser demasiado pesado para el '
+                    'hardware actual. Considerar un modelo mas liviano o '
+                    'mover inferencia a proceso separado.'
+                ),
+                confidence=0.80,
+                metadata={'deferral_count': deferral_count},
+            ))
+
+        if heavy_then_stall >= 2:
+            findings.append(SelfExaminationFinding(
+                category='followup_after_failure_freeze',
+                severity=IssueSeverity.HIGH,
+                title='UI stall after heavy inference — follow-up freeze pattern',
+                summary=(
+                    f'{heavy_then_stall} caso(s) donde una respuesta pesada '
+                    f'fue seguida por un stall de UI. El patron indica que '
+                    f'el mensaje siguiente disparo otra inferencia costosa.'
+                ),
+                recommendation=(
+                    'Activar reasoning budget gate para diferir mensajes '
+                    'inmediatamente despues de una inferencia lenta. '
+                    'Verificar que _should_defer_reasoning este activo.'
+                ),
+                confidence=0.90,
+                metadata={'heavy_then_stall_count': heavy_then_stall},
+            ))
+
         return findings
 
 

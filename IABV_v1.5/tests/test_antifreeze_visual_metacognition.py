@@ -375,3 +375,203 @@ class TestOSESVisualMetacognitionFindings:
             OperationalSelfExaminationService,
         )
         assert svc._visual_metacognition_findings() == []
+
+
+# ---------------------------------------------------------------
+# Central reasoning budget gate tests
+# ---------------------------------------------------------------
+
+class TestReasoningBudgetGate:
+    """_should_defer_reasoning prevents back-to-back heavy inference."""
+
+    def _make_vm(self) -> Any:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        vm = object.__new__(ControlCenterViewModel)
+        vm._messages = []
+        vm._live_status = 'idle'
+        return vm
+
+    def test_no_defer_without_pressure(self) -> None:
+        vm = self._make_vm()
+        vm._should_defer_heavy_work = lambda: False
+        vm._last_heavy_inference_end_ts = time.time()
+        vm._last_heavy_inference_elapsed_s = 20.0
+        assert vm._should_defer_reasoning('hola') is False
+
+    def test_no_defer_without_recent_heavy(self) -> None:
+        vm = self._make_vm()
+        vm._should_defer_heavy_work = lambda: True
+        # No previous heavy inference recorded
+        assert vm._should_defer_reasoning('hola') is False
+
+    def test_no_defer_when_cooldown_expired(self) -> None:
+        vm = self._make_vm()
+        vm._should_defer_heavy_work = lambda: True
+        vm._last_heavy_inference_end_ts = time.time() - 60.0
+        vm._last_heavy_inference_elapsed_s = 20.0
+        assert vm._should_defer_reasoning('hola') is False
+
+    def test_no_defer_when_last_was_fast(self) -> None:
+        vm = self._make_vm()
+        vm._should_defer_heavy_work = lambda: True
+        vm._last_heavy_inference_end_ts = time.time()
+        vm._last_heavy_inference_elapsed_s = 3.0
+        assert vm._should_defer_reasoning('hola') is False
+
+    def test_defer_when_all_conditions_met(self) -> None:
+        vm = self._make_vm()
+        vm._should_defer_heavy_work = lambda: True
+        vm._last_heavy_inference_end_ts = time.time() - 5.0
+        vm._last_heavy_inference_elapsed_s = 20.0
+        # Stub _append_message and _set_live_status
+        messages: list[tuple[str, ...]] = []
+        vm._append_message = lambda *a, **kw: messages.append(a)
+        vm._set_live_status = lambda s: None
+        result = vm._should_defer_reasoning('hola')
+        assert result is True
+        assert len(messages) == 1
+        assert 'recuperandome' in messages[0][2]
+
+    def test_record_heavy_inference_timing(self) -> None:
+        vm = self._make_vm()
+        before = time.time()
+        vm._record_heavy_inference_timing(15.0)
+        assert vm._last_heavy_inference_elapsed_s == 15.0
+        assert vm._last_heavy_inference_end_ts >= before
+
+    def test_reasoning_constants_exist(self) -> None:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        assert ControlCenterViewModel._REASONING_COOLDOWN_S == 30.0
+        assert ControlCenterViewModel._REASONING_SLOW_THRESHOLD_S == 10.0
+
+
+# ---------------------------------------------------------------
+# Deep visual capture comparison tests
+# ---------------------------------------------------------------
+
+class TestCaptureComparison:
+    """_compare_capture_similarity compares before/after capture metadata."""
+
+    def _compare(self, before: dict | None, after: dict | None) -> dict:
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        return ControlCenterViewModel._compare_capture_similarity(before, after)
+
+    def test_identical_captures_high_similarity(self) -> None:
+        meta = {'blank_probability': 0.1, 'dynamic_range': 200, 'unique_color_count': 5000}
+        result = self._compare(meta, dict(meta))
+        assert result['similarity_score'] > 0.99
+        assert result['changed'] is False
+
+    def test_black_to_content_is_changed(self) -> None:
+        before = {'blank_probability': 0.98, 'dynamic_range': 0, 'unique_color_count': 1}
+        after = {'blank_probability': 0.05, 'dynamic_range': 220, 'unique_color_count': 8000}
+        result = self._compare(before, after)
+        assert result['changed'] is True
+        assert result['similarity_score'] < 0.5
+
+    def test_none_before_returns_no_data(self) -> None:
+        after = {'blank_probability': 0.1, 'dynamic_range': 200, 'unique_color_count': 5000}
+        result = self._compare(None, after)
+        assert result['changed'] is False
+        assert result['detail'] == 'insufficient data for comparison'
+
+    def test_none_after_returns_no_data(self) -> None:
+        before = {'blank_probability': 0.1, 'dynamic_range': 200, 'unique_color_count': 5000}
+        result = self._compare(before, None)
+        assert result['changed'] is False
+
+    def test_partial_metrics_still_work(self) -> None:
+        before = {'blank_probability': 0.9}
+        after = {'blank_probability': 0.1}
+        result = self._compare(before, after)
+        assert result['changed'] is True
+        assert 'blank_probability_delta' in result['metrics']
+
+    def test_similar_but_different_below_threshold(self) -> None:
+        before = {'blank_probability': 0.10, 'dynamic_range': 200, 'unique_color_count': 5000}
+        after = {'blank_probability': 0.12, 'dynamic_range': 195, 'unique_color_count': 4800}
+        result = self._compare(before, after)
+        assert result['changed'] is False
+        assert result['similarity_score'] > 0.85
+
+
+# ---------------------------------------------------------------
+# OSES reasoning budget findings tests
+# ---------------------------------------------------------------
+
+class TestOSESReasoningBudgetFindings:
+    """_reasoning_budget_findings detects deferrals and follow-up freezes."""
+
+    def _make_oses(self, workspace: str) -> Any:
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        svc = OperationalSelfExaminationService.__new__(
+            OperationalSelfExaminationService,
+        )
+        svc.workspace_root = workspace
+        return svc
+
+    def _write_audit(self, tmp: str, events: list[dict]) -> None:
+        logs = Path(tmp) / 'data' / 'logs'
+        logs.mkdir(parents=True, exist_ok=True)
+        with (logs / 'runtime_audit.jsonl').open('w') as f:
+            for ev in events:
+                f.write(json.dumps(ev) + '\n')
+
+    def test_deferral_below_threshold_no_finding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_audit(tmp, [
+                {'kind': 'reasoning_budget_deferred'},
+                {'kind': 'reasoning_budget_deferred'},
+            ])
+            svc = self._make_oses(tmp)
+            findings = svc._reasoning_budget_findings()
+            assert len(findings) == 0
+
+    def test_deferral_at_threshold_produces_finding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_audit(tmp, [
+                {'kind': 'reasoning_budget_deferred'},
+                {'kind': 'reasoning_budget_deferred'},
+                {'kind': 'reasoning_budget_deferred'},
+            ])
+            svc = self._make_oses(tmp)
+            findings = svc._reasoning_budget_findings()
+            cats = [f.category for f in findings]
+            assert 'repeated_reasoning_budget_deferral' in cats
+
+    def test_followup_freeze_pattern_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_audit(tmp, [
+                {'kind': 'post_result_ui_update_coalesced'},
+                {'kind': 'ui_event_loop_stall'},
+                {'kind': 'post_result_ui_update_coalesced'},
+                {'kind': 'ui_event_loop_stall'},
+            ])
+            svc = self._make_oses(tmp)
+            findings = svc._reasoning_budget_findings()
+            cats = [f.category for f in findings]
+            assert 'followup_after_failure_freeze' in cats
+
+    def test_heavy_without_stall_no_finding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_audit(tmp, [
+                {'kind': 'post_result_ui_update_coalesced'},
+                {'kind': 'some_other_event'},
+                {'kind': 'post_result_ui_update_coalesced'},
+                {'kind': 'some_other_event'},
+            ])
+            svc = self._make_oses(tmp)
+            findings = svc._reasoning_budget_findings()
+            cats = [f.category for f in findings]
+            assert 'followup_after_failure_freeze' not in cats
+
+    def test_no_crash_without_workspace(self) -> None:
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        svc = OperationalSelfExaminationService.__new__(
+            OperationalSelfExaminationService,
+        )
+        assert svc._reasoning_budget_findings() == []

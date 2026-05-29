@@ -70,9 +70,13 @@
     },
     "remaining": [
       "Live Windows proof with all PRs merged",
-      "Deep visual verification (screenshot comparison) not implemented",
       "Browser/session selector UI for user"
     ],
+    "p_deep_visual_verification": {
+      "covered_by_pr": "pending",
+      "implementation": "_compare_capture_similarity() compares before/after capture metadata (blank_probability, dynamic_range, unique_color_count) with weighted similarity score. Changed threshold: similarity < 0.85.",
+      "tests": "6 tests in TestCaptureComparison class"
+    },
     "unresolved": "UNRESOLVED:live_windows_visual_runtime_proof_missing — code audit passes, 134 focused + 283 regression tests pass, but no live execution has occurred since #377. User must run IABV on Windows to generate runtime_audit.jsonl and verify full chain."
   }
 }

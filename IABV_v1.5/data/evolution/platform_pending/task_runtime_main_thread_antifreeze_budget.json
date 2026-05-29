@@ -47,10 +47,22 @@
         "dock skip telemetry rate limit per reason"
       ],
       "remaining_root_algorithm_work": [
-        "central reasoning budget gate before every heavy inference path",
-        "process-isolated local inference if Python threads continue starving Qt",
-        "OSES finding for repeated follow-up-after-failure freezes"
+        "process-isolated local inference if Python threads continue starving Qt"
+      ],
+      "closed_root_algorithm_work": [
+        "central reasoning budget gate before every heavy inference path — _should_defer_reasoning() implemented",
+        "OSES finding for repeated follow-up-after-failure freezes — _reasoning_budget_findings() implemented"
       ]
+    },
+    "reasoning_budget_gate_slice": {
+      "covered_by_pr": "pending",
+      "implementation": [
+        "_should_defer_reasoning() gates heavy inference when under pressure + recent slow inference",
+        "_record_heavy_inference_timing() records elapsed time for budget gate",
+        "OSES _reasoning_budget_findings() detects repeated_reasoning_budget_deferral (>=3) and followup_after_failure_freeze (>=2)",
+        "Wired into sendChat before heavy local inference path"
+      ],
+      "tests": "7 reasoning budget + 5 OSES findings tests in test_antifreeze_visual_metacognition.py"
     },
     "frame_budget_slice": {
       "covered_by_pr": "#423",
