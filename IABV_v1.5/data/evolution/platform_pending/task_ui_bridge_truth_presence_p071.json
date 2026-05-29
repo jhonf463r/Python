@@ -9,7 +9,7 @@
   "next_action": "User runs IABV on Windows, confirms exactly one UI process, one 18921 owner, sends '¿por dónde vamos?' through UIBridge, confirms response in chat, confirms runtime_audit has no stall >5s.",
   "metadata": {
     "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
-    "covered_by_pr": "pending",
+    "covered_by_pr": "#422",
     "root_causes": [
       "startup_bridge_reused_not_sufficient_for_ui_alive",
       "no_port_18921_bridge_detection_before_launch",
