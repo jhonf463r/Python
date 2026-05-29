@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import socket
 import threading
 import time
@@ -59,6 +60,11 @@ class UIBridgeStatus:
     connected_clients: int = 0
     last_error: str = ""
     ui_available: bool = False
+    # P0.71: truth contract fields
+    ui_process_pid: int = 0
+    bridge_owner_pid: int = 0
+    control_vm_bound: bool = False
+    chat_ready: bool = False
 
 
 class UIBridgeServer:
@@ -166,6 +172,51 @@ class UIBridgeServer:
         """Track whether deferred post-window setup is running."""
         self._deferred_setup_active = active
 
+    def mark_control_vm_bound(self, bound: bool = True) -> None:
+        """P0.71: signal that ControlCenterViewModel is wired to the bridge."""
+        self._status.control_vm_bound = bound
+        self._status.chat_ready = bound and self._shell_ready
+        self._notify_listeners()
+
+    @staticmethod
+    def _detect_port_owner() -> int | None:
+        """Try to detect which PID owns DEFAULT_BRIDGE_PORT (best-effort)."""
+        try:
+            import subprocess
+            import sys
+            if sys.platform == 'win32':
+                out = subprocess.check_output(
+                    ['netstat', '-ano'],
+                    timeout=3,
+                    text=True,
+                    creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+                )
+                for line in out.splitlines():
+                    if f':{DEFAULT_BRIDGE_PORT}' in line and 'LISTENING' in line:
+                        parts = line.split()
+                        return int(parts[-1])
+            else:
+                out = subprocess.check_output(
+                    ['ss', '-tlnp', f'sport = :{DEFAULT_BRIDGE_PORT}'],
+                    timeout=3,
+                    text=True,
+                )
+                for line in out.splitlines():
+                    if 'pid=' in line:
+                        import re
+                        m = re.search(r'pid=(\d+)', line)
+                        if m:
+                            return int(m.group(1))
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _emit_trace(event: str, data: dict[str, Any] | None = None) -> None:
+        """Emit a structured trace event to runtime_audit via logger."""
+        payload = {'event': event, **(data or {})}
+        logger.info('ui_bridge_trace: %s', json.dumps(payload, default=str))
+
     def _notify_listeners(self) -> None:
         for listener in list(self._listeners):
             try:
@@ -174,8 +225,31 @@ class UIBridgeServer:
                 pass
 
     def start(self) -> None:
-        """Inicia el servidor TCP en un hilo daemon."""
+        """Inicia el servidor TCP en un hilo daemon.
+
+        P0.71: checks for port conflict before binding.  If another process
+        already owns the port, logs a ``ui_bridge_port_conflict`` event and
+        refuses to start (prevents two UIBridgeServers on the same port).
+        """
         if self._running:
+            return
+        # P0.71: detect port conflict before binding
+        conflict_pid = self._detect_port_owner()
+        if conflict_pid and conflict_pid != os.getpid():
+            msg = (
+                f'UIBridgeServer: port {self._port} already owned by PID '
+                f'{conflict_pid} (this PID {os.getpid()}). '
+                f'Refusing to start — ui_bridge_port_conflict.'
+            )
+            self._status.last_error = msg
+            self._status.running = False
+            logger.warning(msg)
+            self._emit_trace('ui_bridge_port_conflict', {
+                'port': self._port,
+                'owner_pid': conflict_pid,
+                'this_pid': os.getpid(),
+            })
+            self._notify_listeners()
             return
         try:
             self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -186,6 +260,8 @@ class UIBridgeServer:
             self._running = True
             self._status.running = True
             self._status.ui_available = True
+            self._status.bridge_owner_pid = os.getpid()
+            self._status.ui_process_pid = os.getpid()
             self._status.last_error = ""
             self._thread = threading.Thread(
                 target=self._accept_loop,
@@ -194,6 +270,21 @@ class UIBridgeServer:
             )
             self._thread.start()
             logger.info("UIBridgeServer started on %s:%d", self._host, self._port)
+            self._emit_trace('ui_bridge_owner_verified', {
+                'port': self._port,
+                'owner_pid': os.getpid(),
+            })
+            self._notify_listeners()
+        except OSError as exc:
+            # Port already in use — likely duplicate UI instance
+            self._status.last_error = str(exc)
+            self._status.running = False
+            logger.warning("UIBridgeServer failed to start: %s", exc)
+            self._emit_trace('ui_bridge_port_conflict', {
+                'port': self._port,
+                'error': str(exc),
+                'this_pid': os.getpid(),
+            })
             self._notify_listeners()
         except Exception as exc:
             self._status.last_error = str(exc)
@@ -390,6 +481,10 @@ def build_ui_bridge_server(
     """
     server = UIBridgeServer(host=host, port=port)
 
+    # P0.71: mark whether a real ControlCenterViewModel is wired
+    if control_center_viewmodel is not None:
+        server.mark_control_vm_bound(True)
+
     # --- Chat messages buffer (in-memory, shared with UI handlers) ---
     _chat_buffer: list[dict[str, Any]] = []
     _chat_lock = threading.Lock()
@@ -397,10 +492,8 @@ def build_ui_bridge_server(
     def _on_send_message(text: str = "") -> dict[str, Any]:
         """Envia un mensaje al chat de la UI.
 
-        If the shell is not yet ready (splash still visible), the message
-        is buffered and will be flushed when ``mark_shell_ready()`` fires.
-        This prevents the "bridge queue without response" problem (Task 9 /
-        Task 2) where MCP sends messages that never reach the chat.
+        P0.71: fail-closed when no ControlCenterViewModel is bound.
+        Returns status=unavailable with reason instead of silently buffering.
         """
         if not text:
             return {"status": "error", "detail": "text is required"}
@@ -416,13 +509,13 @@ def build_ui_bridge_server(
                 return {"status": "queued", "text": text}
             except Exception as exc:
                 return {"status": "error", "detail": str(exc)[:200]}
-        with _chat_lock:
-            _chat_buffer.append({
-                "role": "bridge",
-                "text": text,
-                "timestamp": time.time(),
-            })
-        return {"status": "buffered", "text": text}
+        # P0.71: fail-closed — no VM means message cannot reach chat
+        return {
+            "status": "unavailable",
+            "reason": "control_center_vm_not_bound",
+            "next_system_action": "wait_for_ui_bootstrap_to_wire_vm",
+            "text": text,
+        }
 
     def _on_read_messages(limit: int = 20) -> dict[str, Any]:
         """Lee los ultimos N mensajes del buffer del chat."""
@@ -455,22 +548,31 @@ def build_ui_bridge_server(
     def _on_get_ui_state() -> dict[str, Any]:
         """Retorna el estado actual de la UI.
 
-        ``current_page`` ahora se lee desde el ``NavigationController``
-        real (``current_route``) — antes leia ``_current_page`` que NO
-        existe como atributo en ``ControlCenterViewModel`` y siempre
-        devolvia ``"unknown"``.  Mantenemos el fallback al atributo
-        viejo por si algun consumer externo lo seteo a mano.
+        P0.71: includes truth contract fields: ui_process_pid,
+        bridge_owner_pid, control_vm_bound, navigation_controller_bound,
+        current_page_verified, chat_ready.
         """
-        state: dict[str, Any] = {"ui_running": True}
+        state: dict[str, Any] = {
+            "ui_running": True,
+            "ui_process_pid": server.status.ui_process_pid or os.getpid(),
+            "bridge_owner_pid": server.status.bridge_owner_pid or os.getpid(),
+            "control_vm_bound": control_center_viewmodel is not None,
+            "navigation_controller_bound": False,
+            "current_page_verified": False,
+            "chat_ready": server.status.chat_ready,
+        }
         if control_center_viewmodel is not None:
             try:
                 page: str = "unknown"
                 nav = getattr(control_center_viewmodel, "navigation_controller", None)
+                nav_bound = nav is not None
+                state["navigation_controller_bound"] = nav_bound
                 if nav is not None:
                     getter = getattr(nav, "get_current_route", None)
                     if callable(getter):
                         try:
                             page = str(getter() or "unknown")
+                            state["current_page_verified"] = page != "unknown"
                         except Exception:
                             page = "unknown"
                     else:
@@ -492,19 +594,49 @@ def build_ui_bridge_server(
         return state
 
     def _on_navigate(page: str = "") -> dict[str, Any]:
-        """Navega a una pagina/tab de la UI."""
+        """Navega a una pagina/tab de la UI.
+
+        P0.71: verifies the route actually changed after navigation.
+        Returns status=failed if the route didn't change.
+        """
         if not page:
             return {"status": "error", "detail": "page is required"}
         if control_center_viewmodel is not None:
             try:
                 nav = getattr(control_center_viewmodel, "navigation_controller", None)
                 if nav and hasattr(nav, "navigate_to"):
+                    # P0.71: read route before and after to verify
+                    getter = getattr(nav, "get_current_route", None)
+                    before = ""
+                    if callable(getter):
+                        try:
+                            before = str(getter() or "")
+                        except Exception:
+                            pass
                     nav.navigate_to(page)
-                    return {"status": "navigated", "page": page}
+                    # Short delay for navigation to settle
+                    time.sleep(0.05)
+                    after = ""
+                    if callable(getter):
+                        try:
+                            after = str(getter() or "")
+                        except Exception:
+                            pass
+                    if after and after != before:
+                        return {"status": "navigated", "page": after, "verified": True}
+                    if after == page or page.lower() in (after or "").lower():
+                        return {"status": "navigated", "page": after, "verified": True}
+                    return {
+                        "status": "failed",
+                        "detail": f"navigate_to({page}) called but route stayed '{after or before}'",
+                        "requested_page": page,
+                        "current_page": after or before,
+                    }
             except Exception as exc:
                 return {"status": "error", "detail": str(exc)[:200]}
         return {
-            "status": "error",
+            "status": "unavailable",
+            "reason": "control_center_vm_not_bound",
             "detail": "navigation_controller not available",
         }
 

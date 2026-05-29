@@ -200,7 +200,10 @@ class FreezeIncidentReporter:
         # 10. Runtime audit pre-stall context (P0.12)
         report['runtime_audit_context'] = self._capture_runtime_audit_context()
 
-        # 11. Extra context
+        # 11. P0.71: UI bridge / control VM state at freeze time
+        report['ui_bridge_state'] = self._capture_ui_bridge_state()
+
+        # 12. Extra context
         if extra_context:
             report['extra'] = extra_context
 
@@ -676,6 +679,45 @@ class FreezeIncidentReporter:
         except Exception as exc:
             ctx['error'] = str(exc)
         return ctx
+
+    @staticmethod
+    def _capture_ui_bridge_state() -> dict[str, Any]:
+        """P0.71: capture UIBridge / ControlCenterVM binding state at freeze time.
+
+        Captures: bridge running, bridge owner PID, control_vm_bound,
+        chat_ready, shell_ready, pending message count, and current route.
+        If the cause remains unknown, populates unresolved_fields so that
+        downstream analysis knows what data was missing.
+        """
+        state: dict[str, Any] = {'available': False}
+        unresolved: list[str] = []
+        try:
+            from iabv_v15.services.ui_bridge_service import UIBridgeClient
+            client = UIBridgeClient()
+            if client.is_ui_available():
+                state['available'] = True
+                ui_state = client.call('get_ui_state')
+                result = ui_state.get('result', ui_state)
+                state['control_vm_bound'] = result.get('control_vm_bound', False)
+                state['chat_ready'] = result.get('chat_ready', False)
+                state['bridge_owner_pid'] = result.get('bridge_owner_pid', 0)
+                state['current_page'] = result.get('current_page', 'unknown')
+                state['navigation_controller_bound'] = result.get(
+                    'navigation_controller_bound', False,
+                )
+                if not state['control_vm_bound']:
+                    unresolved.append('bridge_claimed_ready_but_no_vm')
+                readiness = client.call('bridge_readiness')
+                r_result = readiness.get('result', readiness)
+                state['shell_ready'] = r_result.get('shell_ready', False)
+                state['pending_count'] = r_result.get('pending_count', 0)
+            else:
+                unresolved.append('ui_bridge_not_reachable')
+        except Exception as exc:
+            state['error'] = str(exc)[:200]
+            unresolved.append('ui_bridge_state_capture_failed')
+        state['unresolved_fields'] = unresolved
+        return state
 
 
 # ======================================================================

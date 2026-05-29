@@ -1,0 +1,45 @@
+{
+  "id": "ui_bridge_truth_presence_p071",
+  "title": "P0.71: Live UI Presence Contract + UIBridge Truthfulness + Human-Simulated Chat Audit",
+  "status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Codex audited IABV on Windows and found: (1) startup_bridge_reused does not guarantee UI is alive, (2) no port 18921 bridge before forcing UI, (3) duplicate python -m iabv_v15 app processes, (4) UIBridge send_message buffered without ControlCenterViewModel, (5) navigate reported success but route didn't change, (6) 'sigue' fell to provider=local with 112s stall, (7) FreezeIncidentReporter cause unknown. P0.71 addresses all seven root causes.",
+  "resume_hint": "Tasks A-E implemented: start_iabv.ps1 presence contract, port conflict detection, UIBridge fail-closed, FreezeIncidentReporter bridge state capture, OSES _ui_bridge_truth_findings(). Task F tests: 24 P0.71 tests + 28 existing = 52/52 passing. Task G: live Windows proof pending.",
+  "next_action": "User runs IABV on Windows, confirms exactly one UI process, one 18921 owner, sends '¿por dónde vamos?' through UIBridge, confirms response in chat, confirms runtime_audit has no stall >5s.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
+    "covered_by_pr": "pending",
+    "root_causes": [
+      "startup_bridge_reused_not_sufficient_for_ui_alive",
+      "no_port_18921_bridge_detection_before_launch",
+      "duplicate_ui_processes_both_attempt_same_port",
+      "send_message_buffered_without_controlcentervm",
+      "navigate_reported_success_but_route_unchanged",
+      "sigue_fell_to_local_provider_112s_stall",
+      "freeze_cause_unknown_no_bridge_state"
+    ],
+    "tasks_implemented": [
+      "A: start_iabv.ps1 corrected — startup_bridge_reused not sufficient if -StartUI requested, added detection of existing UI process, port 18921 bridge verification, existing UI window focus, comprehensive traces",
+      "B: Single UI Instance Sovereignty — duplicate detection via Get-Process + CimInstance, port conflict check via _detect_port_owner(), SO_REUSEADDR cannot create double logical owner",
+      "C: UIBridge Truth Contract — get_ui_state exposes ui_process_pid/bridge_owner_pid/control_vm_bound/chat_ready, send_message fail-closed (status=unavailable when no VM), navigate verifies route changed",
+      "D: Human-Simulated Chat Audit — 4 simulation tests: bridge delivers messages to VM, navigate to control verified, chat_ready after bootstrap, no silent buffering without VM",
+      "E: Freeze Causal Diagnosis — FreezeIncidentReporter._capture_ui_bridge_state() captures bridge/VM binding at freeze time, OSES._ui_bridge_truth_findings() detects 4 patterns (bridge_claimed_ready_but_no_vm, local_chat_slow_after_continuity, ui_stall_without_causal_phase, duplicate_ui_bridge_owner)"
+    ],
+    "tests": {
+      "p071_tests": 24,
+      "existing_bridge_tests": 28,
+      "total_passed": 52,
+      "total_failed": 0
+    },
+    "unresolved": [
+      "live_ui_chat_bridge_proof_missing: requires IABV on Windows with desktop shortcut",
+      "metacognitive_phrase_routing_pending: '¿por dónde vamos?' roadmap handler is in P0.69/P0.70 (PR #420, not merged)",
+      "windows_start_iabv_ps1_untested: PowerShell changes cannot be tested on Linux"
+    ]
+  },
+  "dependency_missing": "P0.69/P0.70 (PR #420) for metacognitive phrase routing ('¿por dónde vamos?' handler)",
+  "reason": "UIBridge truthfulness gap: bridge reported ui_running=true but messages never reached ControlCenterViewModel. navigate reported success but route stayed on dashboard. 'sigue' triggered 112s stall via provider=local. FreezeIncidentReporter had no bridge state data.",
+  "created_at": "2026-05-28T16:00:00Z",
+  "updated_at": "2026-05-28T16:30:00Z"
+}

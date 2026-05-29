@@ -304,20 +304,17 @@ if (-not (Test-Path $bridge)) {
     exit 1
 }
 
-# Lanzar la UI (ControlCenter/Qt) en paralelo si el usuario lo pidio.
-# Lo hacemos ANTES del `& ... $bridge` porque esa invocacion es bloqueante:
-# la UI arranca en su propio proceso via Start-Process y corre en paralelo
-# con MCP+tunel. Si falla, lo logueamos pero seguimos arrancando el MCP
-# (contrato explicito: la UI no puede tumbar el MCP).
+# P0.71: Lanzar la UI (ControlCenter/Qt) con UI Presence Contract.
+# startup_bridge_reused NO es suficiente cuando -StartUI fue solicitado:
+# debemos garantizar que la UI PySide/QML esté viva, no solo el MCP bridge.
+# Lo hacemos ANTES del `& ... $bridge` porque esa invocacion es bloqueante.
 if ($StartUI) {
     Write-Info ""
-    Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
+    Write-Info "--- UI Presence Check ---"
+
     # Tell the UI bootstrap NOT to auto-start MCP+tunnel -- this script
     # manages them externally.  Prevents port-8000 conflict (Errno 10048).
     $env:IABV_SKIP_MCP_AUTOSTART = '1'
-    # Ensure PYTHONPATH includes src/ so `python -m iabv_v15` resolves correctly.
-    # run_mcp_bridge.ps1 sets this for the MCP server, but the UI process needs
-    # it too — Start-Process inherits the parent env so we set it here.
     $uiSrcPath = Join-Path $iabvRoot 'src'
     if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$uiSrcPath*") {
         if ($env:PYTHONPATH) {
@@ -327,38 +324,87 @@ if ($StartUI) {
         }
     }
     $env:IABV_WORKSPACE_ROOT = $iabvRoot
-    try {
-        $pythonExe = 'python'
-        if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
-        # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
-        # -WindowStyle Hidden sets STARTUPINFO.wShowWindow = SW_HIDE which
-        # causes Windows to override the FIRST ShowWindow() call for EVERY
-        # top-level window in the process with SW_HIDE.  This kills the
-        # PySide6/QML window: Qt calls ShowWindow(hwnd, SW_SHOW) but
-        # Windows substitutes SW_HIDE from STARTUPINFO, so the HWND exists
-        # but is invisible (MainWindowHandle = 0, EnumWindows = 0 visible).
-        #
-        # Instead we use .NET ProcessStartInfo with CreateNoWindow = $true.
-        # CreateNoWindow adds CREATE_NO_WINDOW to the process creation flags
-        # which suppresses the console window WITHOUT touching STARTUPINFO
-        # .wShowWindow.  Qt windows appear normally.
-        #
-        # DO NOT add -RedirectStandardOutput/-RedirectStandardError — those
-        # flags also prevent PySide6 GUI windows from appearing on Windows.
-        $psi = [System.Diagnostics.ProcessStartInfo]::new()
-        $psi.FileName = $pythonExe
-        $psi.Arguments = '-m iabv_v15 app'
-        $psi.WorkingDirectory = $iabvRoot
-        $psi.UseShellExecute = $false
-        $psi.CreateNoWindow = $true
-        $uiProc = [System.Diagnostics.Process]::Start($psi)
-        Write-Info "  UI PID     : $($uiProc.Id)"
-        Write-Info "  PYTHONPATH : $env:PYTHONPATH"
-    } catch {
-        Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
-        Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
-        Write-Warn "         python -m iabv_v15 app"
+
+    # P0.71 trace: ui_presence_check_started
+    Write-Info "  [trace] ui_presence_check_started"
+
+    # Detect existing UI process (Single UI Instance Sovereignty)
+    $existingUI = Get-Process -Name 'python','python3','pythonw' -ErrorAction SilentlyContinue |
+        Where-Object {
+            try {
+                $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+                $cmdLine -and $cmdLine -match 'iabv_v15\s+app'
+            } catch { $false }
+        }
+
+    if ($existingUI) {
+        # Existing UI found — do NOT spawn a duplicate
+        $existingPid = $existingUI[0].Id
+        Write-Info "  [trace] ui_duplicate_prevented (existing PID=$existingPid)"
+        Write-Info "  [trace] ui_presence_check_result: existing_ui_found"
+
+        # Verify UIBridge belongs to this UI (check port 18921)
+        $bridgeAlive = $false
+        try {
+            $tcp = New-Object System.Net.Sockets.TcpClient
+            $tcp.Connect('127.0.0.1', 18921)
+            $bridgeAlive = $tcp.Connected
+            $tcp.Close()
+        } catch {
+            $bridgeAlive = $false
+        }
+        if ($bridgeAlive) {
+            Write-Info "  [trace] ui_bridge_owner_verified (port 18921 responding)"
+        } else {
+            Write-Warn "  [trace] ui_bridge_port_conflict (port 18921 not responding but UI process exists)"
+        }
+
+        # Try to bring existing window to front
+        try {
+            $wsh = New-Object -ComObject WScript.Shell
+            $wsh.AppActivate($existingPid) | Out-Null
+            Write-Info "  UI focused : PID $existingPid (existing instance)"
+        } catch {
+            Write-Warn "  Could not focus existing UI window (PID $existingPid)"
+        }
+        Write-Info "  [trace] ui_launch_skipped_existing_ui"
+    } else {
+        # No existing UI — launch a new one
+        Write-Info "  [trace] ui_launch_started"
+        try {
+            $pythonExe = 'python'
+            if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
+            # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
+            # -WindowStyle Hidden sets STARTUPINFO.wShowWindow = SW_HIDE which
+            # causes Windows to override the FIRST ShowWindow() call for EVERY
+            # top-level window in the process with SW_HIDE.  This kills the
+            # PySide6/QML window.
+            #
+            # Instead we use .NET ProcessStartInfo with CreateNoWindow = $true.
+            # CreateNoWindow adds CREATE_NO_WINDOW to the process creation flags
+            # which suppresses the console window WITHOUT touching STARTUPINFO
+            # .wShowWindow.  Qt windows appear normally.
+            #
+            # DO NOT add -RedirectStandardOutput/-RedirectStandardError — those
+            # flags also prevent PySide6 GUI windows from appearing on Windows.
+            $psi = [System.Diagnostics.ProcessStartInfo]::new()
+            $psi.FileName = $pythonExe
+            $psi.Arguments = '-m iabv_v15 app'
+            $psi.WorkingDirectory = $iabvRoot
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            $uiProc = [System.Diagnostics.Process]::Start($psi)
+            Write-Info "  [trace] ui_launch_result: started (PID=$($uiProc.Id))"
+            Write-Info "  UI PID     : $($uiProc.Id)"
+            Write-Info "  PYTHONPATH : $env:PYTHONPATH"
+        } catch {
+            Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
+            Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
+            Write-Warn "         python -m iabv_v15 app"
+            Write-Info "  [trace] ui_launch_failed: $_"
+        }
     }
+    Write-Info "  [trace] ui_presence_check_result: done"
 }
 
 # M7: limpiar directorios pytest-cache-files huerfanos que se acumulan

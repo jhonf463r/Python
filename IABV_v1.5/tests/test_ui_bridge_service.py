@@ -141,28 +141,24 @@ class TestBuildUIBridgeServer:
         try:
             client = UIBridgeClient(port=port)
 
-            # send_message without VM should buffer
+            # P0.71: send_message without VM must fail-closed
             result = client.call('send_message', text='hello from bridge')
-            assert result.get('result', {}).get('status') == 'buffered'
+            assert result.get('result', {}).get('status') == 'unavailable'
+            assert result.get('result', {}).get('reason') == 'control_center_vm_not_bound'
 
-            # read_messages should return the buffered message
-            result = client.call('read_messages', limit=10)
-            messages = result.get('result', {}).get('messages', [])
-            assert len(messages) == 1
-            assert messages[0]['text'] == 'hello from bridge'
+            # P0.71: message was NOT buffered (fail-closed), so buffer is empty
+            # push_chat_message still records directly in buffer
+            result = client.call('push_chat_message', role='user', text='test message')
+            assert result.get('result', {}).get('status') == 'recorded'
 
             # get_ui_state should work
             result = client.call('get_ui_state')
             assert result.get('result', {}).get('ui_running') is True
 
-            # push_chat_message should record
-            result = client.call('push_chat_message', role='user', text='test message')
-            assert result.get('result', {}).get('status') == 'recorded'
-
             # verify pushed message appears in read
             result = client.call('read_messages', limit=10)
             messages = result.get('result', {}).get('messages', [])
-            assert len(messages) == 2
+            assert len(messages) == 1
         finally:
             server.stop()
 
@@ -289,9 +285,10 @@ class TestBridgeReadinessHandshake:
         server.start()
         try:
             client = UIBridgeClient(port=port)
+            # P0.71: without VM, send_message is fail-closed even after ready
             result = client.call('send_message', text='post-ready msg')
             payload = result.get('result', {})
-            assert payload.get('status') == 'buffered'
+            assert payload.get('status') == 'unavailable'
         finally:
             server.stop()
 

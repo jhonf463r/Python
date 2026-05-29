@@ -9,7 +9,7 @@
   "next_action": "User runs IABV on Windows, triggers ChatGPT consultation that blocks, then asks 'como te puedo ayudar'. Verify incident_followup_intent_classified event in runtime_audit.jsonl.",
   "metadata": {
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
-    "covered_by_pr": "pending",
+    "covered_by_pr": "#411",
     "root_cause": "user_help_offers_fall_to_local_chat_after_external_block",
     "tasks_implemented": [
       "1: audited _try_handle_external_failure_followup, _try_handle_security_verification_retest, sendChat dispatch",

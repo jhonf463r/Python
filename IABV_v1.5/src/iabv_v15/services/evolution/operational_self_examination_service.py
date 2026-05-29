@@ -864,6 +864,10 @@ class OperationalSelfExaminationService:
 
         # P0.39: detect repeated readiness failures without proof.
         findings.extend(self._external_readiness_missing_findings())
+
+        # P0.71: UI bridge truthfulness findings.
+        findings.extend(self._ui_bridge_truth_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -9136,6 +9140,167 @@ class OperationalSelfExaminationService:
                 confidence=0.8,
                 metadata={'startup_stall_count': startup_stall_count},
             ))
+        return findings
+
+    def _ui_bridge_truth_findings(self) -> list[SelfExaminationFinding]:
+        """P0.71: detect UIBridge truthfulness gaps from runtime_audit.
+
+        Scans for:
+        - bridge_claimed_ready_but_no_vm: bridge was up but ControlCenterViewModel
+          was not bound → messages silently lost or buffered.
+        - local_chat_slow_after_continuity: chat response via provider=local took
+          >10s after a bridge state change (continuity event), suggesting heavy
+          LLM was invoked instead of lightweight metacognitive handler.
+        - ui_stall_without_causal_phase: freeze incident occurred but no causal
+          phase was identified (event_loop_blocked_unknown pattern).
+        - duplicate_ui_bridge_owner: port conflict detected — two processes tried
+          to own port 18921.
+
+        OSES only reports — does not take action.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        findings: list[SelfExaminationFinding] = []
+
+        bridge_no_vm_count = 0
+        slow_local_count = 0
+        slow_durations: list[float] = []
+        unknown_stall_count = 0
+        port_conflict_count = 0
+        conflict_pids: list[int] = []
+
+        try:
+            if audit_path.exists():
+                recent: deque[str] = deque(maxlen=300)
+                with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                    for line in fh:
+                        recent.append(line)
+                for line in recent:
+                    line_s = line.strip()
+                    if not line_s:
+                        continue
+                    try:
+                        entry = json.loads(line_s)
+                    except Exception:
+                        continue
+                    kind = entry.get('kind', '')
+                    data = entry.get('data', {})
+
+                    if kind == 'ui_bridge_trace':
+                        ev = data.get('event', '')
+                        if ev == 'ui_bridge_port_conflict':
+                            port_conflict_count += 1
+                            opid = data.get('owner_pid', 0)
+                            if opid and opid not in conflict_pids:
+                                conflict_pids.append(opid)
+
+                    if kind == 'ui_bridge_send_unavailable':
+                        reason = data.get('reason', '')
+                        if reason == 'control_center_vm_not_bound':
+                            bridge_no_vm_count += 1
+
+                    if kind == 'dispatch_terminal':
+                        provider = data.get('provider', '')
+                        duration_ms = data.get('duration_ms', 0)
+                        if provider == 'local' and duration_ms > 10000:
+                            slow_local_count += 1
+                            slow_durations.append(duration_ms)
+
+                    if kind in ('freeze_incident', 'ui_heartbeat_stall'):
+                        cause = data.get('cause', data.get('probable_cause', ''))
+                        if 'unknown' in str(cause).lower() or not cause:
+                            unknown_stall_count += 1
+        except Exception:
+            pass
+
+        if bridge_no_vm_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='bridge_claimed_ready_but_no_vm',
+                severity=IssueSeverity.HIGH,
+                title='UIBridge accepted messages without ControlCenterViewModel',
+                summary=(
+                    f'{bridge_no_vm_count} mensaje(s) enviados al bridge '
+                    f'sin ControlCenterViewModel vinculado. Los mensajes '
+                    f'no llegaron al chat real.'
+                ),
+                recommendation=(
+                    'Verificar que build_ui_bridge_server() recibe el VM '
+                    'correcto y que mark_control_vm_bound() se llama '
+                    'durante bootstrap.'
+                ),
+                confidence=0.9,
+                metadata={'bridge_no_vm_count': bridge_no_vm_count},
+            ))
+
+        if slow_local_count >= 1:
+            avg_ms = sum(slow_durations) / len(slow_durations) if slow_durations else 0
+            findings.append(SelfExaminationFinding(
+                category='local_chat_slow_after_continuity',
+                severity=IssueSeverity.MEDIUM,
+                title='Local chat inference slow (>10s) — may bypass lightweight handler',
+                summary=(
+                    f'{slow_local_count} respuesta(s) de provider=local '
+                    f'tardaron mas de 10s (promedio {avg_ms:.0f}ms). '
+                    f'Posible fallthrough a LLM pesado en vez de '
+                    f'handler metacognitivo ligero.'
+                ),
+                recommendation=(
+                    'Verificar que preguntas metacognitivas '
+                    '("¿por donde vamos?", "¿me entiendes?") son '
+                    'interceptadas por _try_handle_lightweight_chat '
+                    'antes de llegar al provider local.'
+                ),
+                confidence=0.75,
+                metadata={
+                    'slow_local_count': slow_local_count,
+                    'avg_duration_ms': avg_ms,
+                },
+            ))
+
+        if unknown_stall_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='ui_stall_without_causal_phase',
+                severity=IssueSeverity.HIGH,
+                title='UI stall/freeze without identified causal phase',
+                summary=(
+                    f'{unknown_stall_count} stall(s) de UI detectados '
+                    f'sin causa identificada. El FreezeIncidentReporter '
+                    f'registro event_loop_blocked_unknown.'
+                ),
+                recommendation=(
+                    'Revisar ui_bridge_state en el freeze report. '
+                    'Verificar control_vm_bound, bridge commands activos, '
+                    'y tareas background al momento del stall.'
+                ),
+                confidence=0.8,
+                metadata={'unknown_stall_count': unknown_stall_count},
+            ))
+
+        if port_conflict_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='duplicate_ui_bridge_owner',
+                severity=IssueSeverity.HIGH,
+                title='UIBridge port conflict — duplicate owner detected',
+                summary=(
+                    f'{port_conflict_count} conflicto(s) de puerto 18921. '
+                    f'Otro proceso ya era dueño del puerto. '
+                    f'PIDs involucrados: {conflict_pids[:5]}.'
+                ),
+                recommendation=(
+                    'Verificar que start_iabv.ps1 detecta UI existente '
+                    'antes de arrancar otra. No deben coexistir dos '
+                    'UIBridgeServer en el mismo puerto.'
+                ),
+                confidence=0.95,
+                metadata={
+                    'port_conflict_count': port_conflict_count,
+                    'conflict_pids': conflict_pids[:5],
+                },
+            ))
+
         return findings
 
 

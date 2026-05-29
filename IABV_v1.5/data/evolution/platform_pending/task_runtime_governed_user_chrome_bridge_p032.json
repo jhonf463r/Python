@@ -9,7 +9,7 @@
   "next_action": "User runs IABV on Windows, opens Chrome with --remote-debugging-port=9222, types 'usar mi chrome', confirms IABV switches to user Chrome session for ChatGPT consultation.",
   "metadata": {
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
-    "covered_by_pr": "pending",
+    "covered_by_pr": "#411",
     "root_cause": "isolated_profile_blocks_user_logged_in_browser",
     "tasks_implemented": [
       "1: runtime_audit chain confirmed (external_consultation_new_request_forced -> dispatch_started -> blocked/security_verification -> dispatch_terminal)",
