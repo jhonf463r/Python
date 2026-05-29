@@ -25,7 +25,7 @@
     "p04_fix": "_build_shared_reality_handoff() creates causal package. _detect_user_mismatch_claim() identifies user's 'it works for me' signals. _build_causal_explanation() produces 'Tu vista vs Vista de IABV' comparison. This is metacognition applied to the user/system perception gap: the system knows it cannot see what the user sees and explains why.",
     "p05_fix": "OSES _shared_reality_handoff_findings() converts repeated visual mismatches into structured findings with evidence, frequency, last case, and recommended action. PortableContext exports compact summary. The metacognition loop is now: detect invalid capture → explain to user → learn from repetition → prioritize fix.",
     "p06_visual_metacognition_slice": {
-      "covered_by_pr": "pending",
+      "covered_by_pr": "#423",
       "implementation": [
         "_capture_is_partial_occlusion() detects occluded_pct >= 30% or foreground_hwnd mismatch",
         "_capture_is_wrong_window() detects captured_title vs target title mismatch (substring-tolerant)",

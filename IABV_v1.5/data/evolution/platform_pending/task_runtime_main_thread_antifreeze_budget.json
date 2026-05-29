@@ -53,7 +53,7 @@
       ]
     },
     "frame_budget_slice": {
-      "covered_by_pr": "pending",
+      "covered_by_pr": "#423",
       "implementation": [
         "_begin_frame() returns monotonic timestamp",
         "_frame_budget_remaining_ms() calculates budget (50ms normal, 25ms under pressure)",
