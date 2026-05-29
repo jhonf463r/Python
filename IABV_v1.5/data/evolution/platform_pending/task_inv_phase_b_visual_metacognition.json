@@ -1,12 +1,12 @@
 {
   "id": "inv_phase_b_visual_metacognition",
   "title": "Visual metacognition — system must know when its own visual evidence is unreliable",
-  "status": "READY_FOR_NEXT_SLICE",
+  "status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
   "category": "runtime_stability",
   "priority": "P0",
-  "description": "IABV must detect when its own visual capture is unreliable (black image, offscreen window, low information) and NOT treat it as valid evidence. This is a metacognition capability: the system observes its own observation and classifies it.",
-  "resume_hint": "P0.5 adds OSES metacognition feedback loop: repeated visual mismatches become findings (repeated_visual_mismatch, black_capture_repeated, user_needed_to_explain_same_gap). This closes the loop from observation→detection→explanation→learning. P0.4 causal handoff + P0.3 detection remain foundation.",
-  "next_action": "Extend visual metacognition to cover: partial occlusion, wrong window captured, resolution too low for meaningful content. Add user/IABV mismatch as metacognition signal. Validate with more live scenarios.",
+  "description": "IABV must detect when its own visual capture is unreliable (black image, offscreen window, low information, partial occlusion, wrong window, low resolution) and NOT treat it as valid evidence. This is a metacognition capability: the system observes its own observation and classifies it.",
+  "resume_hint": "All 6 detection scenarios now implemented: offscreen/minimized, blank capture, user/IABV browser mismatch, partial occlusion, wrong window captured, resolution too low. OSES findings detect repeated patterns.",
+  "next_action": "Verify on live Windows that new visual metacognition detections fire correctly during external consultation captures.",
   "metadata": {
     "covered_by_pr": "P0.3 visual alignment slice + P0.4 shared reality",
     "real_failure_case": {
@@ -24,11 +24,19 @@
     "p03_fix": "_window_rect_is_captureable() rejects rect with left/top <= -30000. _capture_is_low_information() rejects blank_probability >= 0.90. _validate_visual_evidence_result() sets status=visual_unresolved instead of visual_captured. Runtime audit traces visual_evidence_snapshot with status=unresolved.",
     "p04_fix": "_build_shared_reality_handoff() creates causal package. _detect_user_mismatch_claim() identifies user's 'it works for me' signals. _build_causal_explanation() produces 'Tu vista vs Vista de IABV' comparison. This is metacognition applied to the user/system perception gap: the system knows it cannot see what the user sees and explains why.",
     "p05_fix": "OSES _shared_reality_handoff_findings() converts repeated visual mismatches into structured findings with evidence, frequency, last case, and recommended action. PortableContext exports compact summary. The metacognition loop is now: detect invalid capture → explain to user → learn from repetition → prioritize fix.",
-    "remaining": [
-      "Partial occlusion detection",
-      "Wrong window captured detection",
-      "Resolution too low detection"
-    ],
-    "unresolved": "Only offscreen/minimized, blank capture, and user/IABV browser mismatch are detected. More visual metacognition scenarios need implementation."
+    "p06_visual_metacognition_slice": {
+      "covered_by_pr": "pending",
+      "implementation": [
+        "_capture_is_partial_occlusion() detects occluded_pct >= 30% or foreground_hwnd mismatch",
+        "_capture_is_wrong_window() detects captured_title vs target title mismatch (substring-tolerant)",
+        "_capture_resolution_too_low() detects capture < 200x150px",
+        "_target_window_capture_state() integrates all 3 new detections with UNRESOLVED tags",
+        "OSES _visual_metacognition_findings() detects repeated patterns (>=2 occurrences)",
+        "3 OSES categories: repeated_partial_occlusion, repeated_wrong_window_captured, repeated_resolution_too_low"
+      ],
+      "tests": "23 visual metacognition + 5 OSES findings tests in test_antifreeze_visual_metacognition.py"
+    },
+    "remaining": [],
+    "unresolved": "Live Windows proof pending for new detection scenarios."
   }
 }

@@ -868,6 +868,12 @@ class OperationalSelfExaminationService:
         # P0.71: UI bridge truthfulness findings.
         findings.extend(self._ui_bridge_truth_findings())
 
+        # Anti-freeze: frame budget overrun findings.
+        findings.extend(self._frame_budget_overrun_findings())
+
+        # Visual metacognition: partial occlusion, wrong window, low res.
+        findings.extend(self._visual_metacognition_findings())
+
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -9301,6 +9307,166 @@ class OperationalSelfExaminationService:
                 },
             ))
 
+        return findings
+
+    def _frame_budget_overrun_findings(self) -> list[SelfExaminationFinding]:
+        """Detect repeated UI frame-budget overruns from runtime_audit.
+
+        Scans for ``ui_frame_budget_overrun`` events. If ≥3 occur in the
+        last 300 lines, the UI thread is consistently spending too long
+        on heavy deferred work.
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        findings: list[SelfExaminationFinding] = []
+        overrun_count = 0
+        total_ms = 0.0
+        try:
+            recent: deque[str] = deque(maxlen=300)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent.append(line)
+            for line in recent:
+                line_s = line.strip()
+                if not line_s:
+                    continue
+                try:
+                    entry = json.loads(line_s)
+                except Exception:
+                    continue
+                if entry.get('kind') == 'ui_frame_budget_overrun':
+                    overrun_count += 1
+                    data = entry.get('data', {})
+                    total_ms += float(data.get('elapsed_ms', 0))
+        except Exception:
+            return []
+        if overrun_count >= 3:
+            avg_ms = total_ms / overrun_count if overrun_count else 0
+            findings.append(SelfExaminationFinding(
+                category='repeated_frame_budget_overrun',
+                severity=IssueSeverity.HIGH,
+                title='UI frame budget exceeded repeatedly',
+                summary=(
+                    f'{overrun_count} frame-budget overrun(s) detected. '
+                    f'Average frame time: {avg_ms:.0f}ms (budget: 50ms). '
+                    f'Heavy deferred work is blocking the UI thread.'
+                ),
+                recommendation=(
+                    'Review _update_evolution_snapshot, _build_agent_cards, '
+                    '_refresh_development_packet and _refresh_autonomy_dock '
+                    'for slow operations. Consider moving more work off the '
+                    'UI thread or reducing refresh frequency.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'overrun_count': overrun_count,
+                    'avg_ms': round(avg_ms, 1),
+                },
+            ))
+        return findings
+
+    def _visual_metacognition_findings(self) -> list[SelfExaminationFinding]:
+        """Detect repeated visual metacognition failures from runtime_audit.
+
+        Scans ``visual_evidence_snapshot`` events for patterns:
+        - ``repeated_partial_occlusion``: ≥2 captures with occluded target
+        - ``repeated_wrong_window_captured``: ≥2 captures of wrong window
+        - ``repeated_resolution_too_low``: ≥2 captures below readable size
+        """
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        root = Path(str(workspace))
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        findings: list[SelfExaminationFinding] = []
+        occlusion_count = 0
+        wrong_window_count = 0
+        low_res_count = 0
+        try:
+            recent: deque[str] = deque(maxlen=300)
+            with audit_path.open(encoding='utf-8', errors='replace') as fh:
+                for line in fh:
+                    recent.append(line)
+            for line in recent:
+                line_s = line.strip()
+                if not line_s:
+                    continue
+                try:
+                    entry = json.loads(line_s)
+                except Exception:
+                    continue
+                kind = entry.get('kind', '')
+                data = entry.get('data', {})
+                if kind != 'visual_evidence_snapshot':
+                    continue
+                status = data.get('status', '')
+                unresolved = data.get('unresolved', [])
+                if isinstance(unresolved, str):
+                    unresolved = [unresolved]
+                if 'UNRESOLVED:visual_capture_partial_occlusion' in unresolved:
+                    occlusion_count += 1
+                if 'UNRESOLVED:visual_capture_wrong_window' in unresolved:
+                    wrong_window_count += 1
+                if 'UNRESOLVED:visual_capture_resolution_too_low' in unresolved:
+                    low_res_count += 1
+        except Exception:
+            return []
+
+        if occlusion_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='repeated_partial_occlusion',
+                severity=IssueSeverity.MEDIUM,
+                title='Target window repeatedly occluded during capture',
+                summary=(
+                    f'{occlusion_count} captura(s) con la ventana objetivo '
+                    f'parcialmente cubierta por otra ventana.'
+                ),
+                recommendation=(
+                    'Antes de capturar, traer la ventana objetivo al frente '
+                    '(SetForegroundWindow) y verificar que no haya overlays.'
+                ),
+                confidence=0.80,
+                metadata={'occlusion_count': occlusion_count},
+            ))
+        if wrong_window_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='repeated_wrong_window_captured',
+                severity=IssueSeverity.HIGH,
+                title='Wrong window captured repeatedly',
+                summary=(
+                    f'{wrong_window_count} captura(s) de una ventana diferente '
+                    f'a la objetivo. La evidencia visual no corresponde.'
+                ),
+                recommendation=(
+                    'Verificar que el hwnd de la ventana objetivo coincida '
+                    'con la ventana en primer plano antes de capturar.'
+                ),
+                confidence=0.90,
+                metadata={'wrong_window_count': wrong_window_count},
+            ))
+        if low_res_count >= 2:
+            findings.append(SelfExaminationFinding(
+                category='repeated_resolution_too_low',
+                severity=IssueSeverity.MEDIUM,
+                title='Capture resolution too low for readable content',
+                summary=(
+                    f'{low_res_count} captura(s) con resolucion demasiado '
+                    f'baja (<200x150px). El contenido no es legible.'
+                ),
+                recommendation=(
+                    'Maximizar la ventana objetivo antes de capturar. '
+                    'Verificar que la ventana no este en miniatura.'
+                ),
+                confidence=0.80,
+                metadata={'low_res_count': low_res_count},
+            ))
         return findings
 
 

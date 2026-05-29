@@ -3699,6 +3699,80 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
+    @staticmethod
+    def _capture_is_partial_occlusion(
+        capture_meta: dict[str, Any] | None,
+        target_window: dict[str, Any] | None = None,
+    ) -> bool:
+        """Detect partial occlusion: another window covering part of the target.
+
+        Signals checked:
+        - capture_meta['occluded_pct'] >= 30 (if the capture pipeline reports it)
+        - capture_meta['foreground_hwnd'] != target_window['hwnd'] (another
+          window in front)
+        """
+        if not capture_meta or not isinstance(capture_meta, dict):
+            return False
+        occluded = capture_meta.get('occluded_pct')
+        if occluded is not None and float(occluded) >= 30.0:
+            return True
+        if target_window and isinstance(target_window, dict):
+            fg_hwnd = capture_meta.get('foreground_hwnd')
+            tgt_hwnd = target_window.get('hwnd')
+            if fg_hwnd is not None and tgt_hwnd is not None and fg_hwnd != tgt_hwnd:
+                return True
+        return False
+
+    @staticmethod
+    def _capture_is_wrong_window(
+        capture_meta: dict[str, Any] | None,
+        target_window: dict[str, Any] | None = None,
+    ) -> bool:
+        """Detect wrong window captured: captured title does not match target.
+
+        Compares captured_title (from the capture result) with the target
+        window title.  A mismatch indicates the screenshot belongs to a
+        different window than intended.
+        """
+        if not capture_meta or not isinstance(capture_meta, dict):
+            return False
+        if not target_window or not isinstance(target_window, dict):
+            return False
+        captured_title = str(capture_meta.get('captured_title') or '').strip().lower()
+        target_title = str(target_window.get('title') or '').strip().lower()
+        if not captured_title or not target_title:
+            return False
+        if captured_title == target_title:
+            return False
+        # Allow substring match (e.g. "ChatGPT" in "ChatGPT - Google Chrome")
+        if target_title in captured_title or captured_title in target_title:
+            return False
+        return True
+
+    @staticmethod
+    def _capture_resolution_too_low(
+        capture_meta: dict[str, Any] | None,
+        min_width: int = 200,
+        min_height: int = 150,
+    ) -> bool:
+        """Detect capture resolution too low for meaningful content.
+
+        If the captured image dimensions are below min_width x min_height,
+        the content is unlikely to be readable or useful for evidence.
+        """
+        if not capture_meta or not isinstance(capture_meta, dict):
+            return False
+        width = capture_meta.get('capture_width') or capture_meta.get('width')
+        height = capture_meta.get('capture_height') or capture_meta.get('height')
+        if width is None or height is None:
+            return False
+        try:
+            if int(width) < min_width or int(height) < min_height:
+                return True
+        except (TypeError, ValueError):
+            return False
+        return False
+
     def _target_window_capture_state(
         self,
         target_window: dict[str, Any] | None,
@@ -3758,6 +3832,44 @@ class ControlCenterViewModel(QObject):
             )
             result['suggested_actions'] = [
                 'restore_target_window',
+                'retry_capture',
+            ]
+            return result
+        if self._capture_is_partial_occlusion(capture_meta, target_window):
+            result['low_information'] = True
+            result['unresolved'] = ['UNRESOLVED:visual_capture_partial_occlusion']
+            result['user_message'] = (
+                f'La ventana de {title or "la herramienta"} esta parcialmente cubierta por otra ventana. '
+                'Mueve o minimiza la ventana que la tapa para que pueda ver el contenido completo.'
+            )
+            result['suggested_actions'] = [
+                'bring_target_to_front',
+                'retry_capture',
+            ]
+            return result
+        if self._capture_is_wrong_window(capture_meta, target_window):
+            result['captureable'] = False
+            result['reason'] = 'wrong_window_captured'
+            result['unresolved'] = ['UNRESOLVED:visual_capture_wrong_window']
+            result['user_message'] = (
+                f'Capture una ventana diferente a {title or "la herramienta objetivo"}. '
+                'Verifica que la ventana correcta este visible y en primer plano.'
+            )
+            result['suggested_actions'] = [
+                'bring_target_to_front',
+                'select_visible_window',
+                'retry_capture',
+            ]
+            return result
+        if self._capture_resolution_too_low(capture_meta):
+            result['low_information'] = True
+            result['unresolved'] = ['UNRESOLVED:visual_capture_resolution_too_low']
+            result['user_message'] = (
+                f'La ventana de {title or "la herramienta"} es demasiado pequena para leer su contenido. '
+                'Maximiza o amplia la ventana y reintenta.'
+            )
+            result['suggested_actions'] = [
+                'maximize_target_window',
                 'retry_capture',
             ]
             return result
@@ -6985,6 +7097,54 @@ class ControlCenterViewModel(QObject):
             return bool(pressure.get('under_pressure'))
         except Exception:
             return False
+
+    # ── Anti-freeze per-frame budget accounting ──
+    _FRAME_BUDGET_MS: ClassVar[float] = 50.0
+    _FRAME_BUDGET_PRESSURE_MS: ClassVar[float] = 25.0
+    _FRAME_OVERRUN_LOG_COOLDOWN_S: ClassVar[float] = 10.0
+
+    def _begin_frame(self) -> float:
+        """Mark start of a UI-thread update frame. Returns monotonic timestamp."""
+        return time.monotonic()
+
+    def _frame_budget_remaining_ms(self, frame_start: float) -> float:
+        """Return ms remaining in the current frame budget.
+
+        Under resource pressure the budget is halved to keep the UI
+        responsive.
+        """
+        budget = self._FRAME_BUDGET_MS
+        if self._should_defer_heavy_work():
+            budget = self._FRAME_BUDGET_PRESSURE_MS
+        elapsed_ms = (time.monotonic() - frame_start) * 1000.0
+        return budget - elapsed_ms
+
+    def _should_skip_remaining_heavy_work(self, frame_start: float) -> bool:
+        """Return True if frame budget is exhausted and remaining heavy
+        work should be deferred to the next cycle."""
+        remaining = self._frame_budget_remaining_ms(frame_start)
+        if remaining > 0:
+            return False
+        self._trace_frame_budget_overrun(frame_start)
+        return True
+
+    def _trace_frame_budget_overrun(self, frame_start: float) -> None:
+        """Emit runtime trace when a frame exceeds its budget."""
+        now = time.monotonic()
+        last = getattr(self, '_last_frame_overrun_trace', 0.0)
+        if (now - last) < self._FRAME_OVERRUN_LOG_COOLDOWN_S:
+            return
+        self._last_frame_overrun_trace = now
+        elapsed_ms = (now - frame_start) * 1000.0
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'ui_frame_budget_overrun',
+                detail=f'frame took {elapsed_ms:.1f}ms, budget exhausted',
+                data={'elapsed_ms': round(elapsed_ms, 1)},
+            )
+        except Exception:
+            pass
 
     # ── P0.38: Resource Quiescence Gate ──
 
@@ -12467,12 +12627,16 @@ class ControlCenterViewModel(QObject):
                     )
                 except Exception:
                     pass
-        # Gate heavy deferred work under resource pressure (Sub-objective B).
+        # Gate heavy deferred work under resource pressure + frame budget.
         if not self._should_defer_heavy_work():
+            _frame_t0 = self._begin_frame()
             self._update_evolution_snapshot()
-            self._agent_cards = self._build_agent_cards()
-            self._refresh_development_packet()
-            self._refresh_autonomy_dock()
+            if not self._should_skip_remaining_heavy_work(_frame_t0):
+                self._agent_cards = self._build_agent_cards()
+            if not self._should_skip_remaining_heavy_work(_frame_t0):
+                self._refresh_development_packet()
+            if not self._should_skip_remaining_heavy_work(_frame_t0):
+                self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
     @Slot(str, str)
@@ -12543,11 +12707,14 @@ class ControlCenterViewModel(QObject):
             f"Detalle: {message}"
         )
         self._diagnostic_truth_state = 'observed'
-        # Gate heavy deferred work under resource pressure (Sub-objective B).
+        # Gate heavy deferred work under resource pressure + frame budget.
         if not self._should_defer_heavy_work():
+            _frame_t0 = self._begin_frame()
             self._update_evolution_snapshot()
-            self._refresh_development_packet()
-            self._refresh_autonomy_dock()
+            if not self._should_skip_remaining_heavy_work(_frame_t0):
+                self._refresh_development_packet()
+            if not self._should_skip_remaining_heavy_work(_frame_t0):
+                self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:

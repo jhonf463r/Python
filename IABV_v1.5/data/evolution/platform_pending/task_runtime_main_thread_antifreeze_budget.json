@@ -1,12 +1,12 @@
 {
   "id": "runtime_main_thread_antifreeze_budget",
   "title": "Anti-freeze gating — prevent UI thread blocking under pressure",
-  "status": "READY_FOR_NEXT_SLICE",
+  "status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
   "category": "runtime_stability",
   "priority": "P0",
-  "description": "Heavy deferred work (evolution snapshot, dev packet, autonomy dock) is gated under HIGH/CRITICAL resource pressure so the UI thread stays responsive.",
-  "resume_hint": "Budget accounting for total UI-thread time per frame not yet implemented. BackgroundResourceMonitor integration pending.",
-  "next_action": "Implement per-frame budget accounting and integrate BackgroundResourceMonitor if available.",
+  "description": "Heavy deferred work (evolution snapshot, dev packet, autonomy dock) is gated under HIGH/CRITICAL resource pressure so the UI thread stays responsive. Per-frame budget accounting ensures each update cycle stays within 50ms (25ms under pressure).",
+  "resume_hint": "Per-frame budget accounting implemented. BackgroundResourceMonitor integration done via _should_defer_heavy_work pressure halving.",
+  "next_action": "Verify on live Windows that frame budget traces appear in runtime_audit.jsonl and no UI stalls > 50ms.",
   "metadata": {
     "covered_by_pr": "#377",
     "coverage_detail": "_should_defer_heavy_work() gate using _assess_resource_pressure(). Fixed IssueSeverity comparison bug (str(IssueSeverity.HIGH) returns 'IssueSeverity.HIGH' not 'high'). Gate applied in both _apply_task_result and _apply_task_failure.",
@@ -52,10 +52,19 @@
         "OSES finding for repeated follow-up-after-failure freezes"
       ]
     },
-    "remaining": [
-      "Budget accounting for total UI-thread time per frame",
-      "BackgroundResourceMonitor integration if available"
-    ],
+    "frame_budget_slice": {
+      "covered_by_pr": "pending",
+      "implementation": [
+        "_begin_frame() returns monotonic timestamp",
+        "_frame_budget_remaining_ms() calculates budget (50ms normal, 25ms under pressure)",
+        "_should_skip_remaining_heavy_work() gates individual heavy ops within a frame",
+        "_trace_frame_budget_overrun() emits ui_frame_budget_overrun to runtime_audit",
+        "Wired into _apply_task_result and _apply_task_failure with per-op checks",
+        "OSES _frame_budget_overrun_findings() detects >=3 repeated overruns"
+      ],
+      "tests": "6 frame budget + 3 OSES findings tests in test_antifreeze_visual_metacognition.py"
+    },
+    "remaining": [],
     "unresolved": "User-visible UI proof pending — requires live testing on user's Windows machine"
   }
 }
