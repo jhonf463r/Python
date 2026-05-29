@@ -1,0 +1,105 @@
+{
+  "id": "revenue_app_development_monetization",
+  "title": "Desarrollo de apps/juegos con monetizacion — generar ingresos reales",
+  "status": "PENDING_AUTONOMY_READY",
+  "category": "autonomous_evolution",
+  "priority": "P1",
+  "description": "IABV debe ser capaz de disenar, programar y desplegar aplicaciones y juegos que generen ingresos reales. Esto incluye: seleccionar el nicho correcto basado en market intelligence, implementar monetizacion (ads, IAP, subscriptions), publicar en tiendas (Play Store, App Store, Steam, itch.io), y optimizar continuamente basado en datos de usuarios reales.",
+  "resume_hint": "Depende de market_intelligence y expert_programming_research. El ciclo es: investigar -> disenar -> programar -> publicar -> medir -> optimizar.",
+  "next_action": "Una vez que market intelligence identifique oportunidades, disenar el primer prototipo de app/juego monetizable.",
+  "metadata": {
+    "depends_on": ["market_intelligence_popular_games_analysis", "autonomous_expert_programming_research", "user_behavior_metacognition"],
+    "revenue_strategies": [
+      {
+        "strategy": "ad_supported_games",
+        "description": "Juegos casuales gratuitos monetizados con ads (AdMob, Unity Ads, IronSource)",
+        "target_revenue": "CPM $2-15 dependiendo de region y formato",
+        "implementation": {
+          "ad_networks": ["Google AdMob", "Unity Ads", "IronSource", "AppLovin"],
+          "ad_formats": ["banner", "interstitial", "rewarded_video", "native"],
+          "best_practices": [
+            "Rewarded video despues de perder una vida (mayor engagement)",
+            "Interstitial cada 3-5 minutos (no cada pantalla)",
+            "Banner solo en pantallas de menu (no durante gameplay)",
+            "Frecuencia adaptativa basada en retencion del usuario"
+          ],
+          "revenue_optimization": "A/B testing de frecuencia y posicion de ads"
+        }
+      },
+      {
+        "strategy": "freemium_iap",
+        "description": "Juegos free-to-play con compras in-app (cosmetics, power-ups, contenido premium)",
+        "target_revenue": "ARPDAU $0.05-0.50 dependiendo del genero",
+        "implementation": {
+          "iap_types": ["consumables", "non-consumables", "subscriptions", "cosmetics"],
+          "pricing_psychology": [
+            "Starter pack con descuento (primera compra mas facil)",
+            "Moneda virtual con paquetes escalonados",
+            "Battle pass temporal con recompensas exclusivas",
+            "Ofertas limitadas con countdown timer"
+          ],
+          "ethical_boundaries": [
+            "NO pay-to-win en juegos competitivos",
+            "Transparencia en probabilidades de gacha/lootboxes",
+            "Limites de gasto para proteccion del usuario",
+            "Contenido jugable completo sin pagar"
+          ]
+        }
+      },
+      {
+        "strategy": "premium_apps",
+        "description": "Apps de utilidad o juegos premium con pago unico",
+        "target_revenue": "Precio $1.99-9.99, conversion 1-5% de pagina de tienda",
+        "implementation": {
+          "value_proposition": "Funcionalidad unica que justifique el pago",
+          "trial_version": "Version gratuita limitada + upgrade premium",
+          "reviews_strategy": "Pedir review despues de momento positivo en la app"
+        }
+      },
+      {
+        "strategy": "web_saas",
+        "description": "Herramientas web con modelo de subscripcion",
+        "target_revenue": "MRR objetivo $100-1000+ segun nicho",
+        "implementation": {
+          "tech_stack": "Next.js/FastAPI + Stripe + Vercel/Railway",
+          "tiers": ["free_limited", "pro_monthly", "team_annual"],
+          "growth": "Content marketing + SEO + Product Hunt launch"
+        }
+      }
+    ],
+    "publishing_pipeline": {
+      "google_play": {
+        "requirements": ["Developer account ($25 one-time)", "Privacy policy", "Content rating", "App signing"],
+        "optimization": ["ASO (App Store Optimization)", "Screenshots", "Video preview", "A/B testing de listado"]
+      },
+      "app_store": {
+        "requirements": ["Apple Developer Program ($99/year)", "App Review guidelines", "Privacy labels"],
+        "optimization": ["Keywords", "Subtitle", "Preview videos", "Promotional text"]
+      },
+      "steam": {
+        "requirements": ["Steamworks account ($100/game)", "Store page", "Capsule images", "Trailer"],
+        "optimization": ["Tags", "Wishlists campaign", "Community hub", "Regular updates"]
+      },
+      "web": {
+        "requirements": ["Domain", "Hosting", "Analytics"],
+        "platforms": ["itch.io (free)", "Newgrounds (free)", "Custom domain (paid)"]
+      }
+    },
+    "success_metrics": {
+      "downloads": "Registrar descargas por dia/semana/mes",
+      "revenue": "Registrar ingresos por fuente (ads, IAP, premium)",
+      "retention": "D1, D7, D30 retention rates",
+      "ltv": "Lifetime Value por cohorte de usuarios",
+      "roi": "Return on investment por proyecto",
+      "reviews": "Rating promedio y analisis de sentimiento de reviews"
+    },
+    "metacognition_applied": {
+      "project_selection": "Usar market intelligence + knowledge level para elegir proyectos viables",
+      "failure_learning": "Si un proyecto no genera revenue, analizar causa raiz y no repetir error",
+      "iteration_speed": "Medir tiempo desde idea hasta publicacion y optimizar",
+      "portfolio_diversification": "No depender de un solo juego/app — distribuir riesgo"
+    },
+    "unresolved": "Requiere investigacion de mercado completada + dominio tecnico de al menos 1 framework de juegos y 1 de apps"
+  },
+  "created_at": "2026-05-28T17:00:00Z"
+}

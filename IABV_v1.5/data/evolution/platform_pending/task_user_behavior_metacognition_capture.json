@@ -1,0 +1,119 @@
+{
+  "id": "user_behavior_metacognition_capture",
+  "title": "Metacognicion de comportamiento de usuarios — capturar patrones, predecir objetivos, optimizar experiencia",
+  "status": "PENDING_AUTONOMY_READY",
+  "category": "autonomous_evolution",
+  "priority": "P1",
+  "description": "IABV debe aplicar sus algoritmos de metacognicion para entender profundamente el comportamiento de los usuarios de las apps/juegos que desarrolle. Esto incluye: capturar datos de sesion, detectar patrones de uso, predecir abandono, optimizar engagement, personalizar la experiencia, y retroalimentar el diseno del producto basado en evidencia real.",
+  "resume_hint": "Depende de tener al menos una app publicada con analytics integrado. Los algoritmos de metacognicion existentes (OSES, ExperimentLab, AdaptiveWeightLayer) se reutilizan para analizar usuarios.",
+  "next_action": "Definir esquema de eventos de usuario e integrar analytics en la primera app publicada.",
+  "metadata": {
+    "depends_on": ["revenue_app_development_monetization", "autonomous_expert_programming_research"],
+    "data_capture_strategy": {
+      "events_to_track": [
+        {
+          "category": "session",
+          "events": ["session_start", "session_end", "session_duration", "session_depth"],
+          "purpose": "Medir engagement basico y detectar patrones de uso"
+        },
+        {
+          "category": "progression",
+          "events": ["level_start", "level_complete", "level_fail", "achievement_unlocked", "tutorial_step"],
+          "purpose": "Entender donde los usuarios se atascan o abandonan"
+        },
+        {
+          "category": "monetization",
+          "events": ["ad_shown", "ad_clicked", "ad_rewarded_completed", "iap_initiated", "iap_completed", "iap_abandoned"],
+          "purpose": "Optimizar revenue sin danar la experiencia"
+        },
+        {
+          "category": "social",
+          "events": ["friend_added", "challenge_sent", "leaderboard_viewed", "share_triggered"],
+          "purpose": "Medir viralizacion y engagement social"
+        },
+        {
+          "category": "ux_friction",
+          "events": ["error_screen_shown", "crash_reported", "loading_timeout", "rage_tap_detected", "back_button_spam"],
+          "purpose": "Detectar frustracion del usuario para corregir UX"
+        }
+      ],
+      "privacy_rules": [
+        "NO capturar PII (nombre, email, telefono, ubicacion exacta)",
+        "Solo datos anonimizados y agregados",
+        "Cumplir GDPR y COPPA si aplica",
+        "Consentimiento explicito del usuario antes de recolectar",
+        "Opcion de opt-out siempre disponible"
+      ],
+      "analytics_tools": ["Firebase Analytics", "Mixpanel (free tier)", "custom event logger", "PostHog (self-hosted)"]
+    },
+    "behavior_analysis_algorithms": {
+      "retention_prediction": {
+        "description": "Predecir si un usuario volvera al dia siguiente basado en su primera sesion",
+        "signals": ["session_duration", "levels_completed", "social_actions", "ad_tolerance"],
+        "algorithm": "Logistic regression o decision tree simple — no necesita GPU",
+        "action": "Si prediccion de churn es alta, ofrecer incentivo (reward, descuento)"
+      },
+      "segmentation": {
+        "description": "Clasificar usuarios en segmentos por comportamiento",
+        "segments": [
+          "whale (gasta mucho, pocos usuarios)",
+          "dolphin (gasta moderado)",
+          "minnow (gasta poco o nada)",
+          "social_player (juega por amigos/competencia)",
+          "explorer (prueba todo, completa logros)",
+          "at_risk (sesiones decrecientes, abandono probable)"
+        ],
+        "algorithm": "K-means clustering sobre features de comportamiento"
+      },
+      "funnel_analysis": {
+        "description": "Identificar donde los usuarios abandonan el flujo",
+        "funnels": ["install->tutorial->level1->level5->first_purchase", "ad_shown->ad_clicked->conversion"],
+        "action": "Optimizar el paso con mayor drop-off"
+      },
+      "ab_testing": {
+        "description": "Comparar variantes de UI, mecanicas o monetizacion",
+        "method": "ExperimentLab pattern adaptado: variante A vs B con metricas de exito",
+        "min_sample": "Al menos 100 usuarios por variante antes de concluir"
+      },
+      "sentiment_analysis": {
+        "description": "Analizar reviews y comentarios de la tienda",
+        "source": "Google Play reviews, App Store reviews, feedback in-app",
+        "action": "Detectar temas recurrentes (bugs, frustracion, features deseados)",
+        "algorithm": "NLP basico o consulta a ChatGPT para clasificar"
+      }
+    },
+    "metacognition_loop": {
+      "observe": "Capturar eventos de comportamiento de usuarios",
+      "detect_patterns": "OSES-like: detectar patrones repetidos (churn, engagement peaks, monetization walls)",
+      "hypothesize": "Generar hipotesis sobre por que ocurre un patron (ej: 'usuarios abandonan en nivel 5 porque la dificultad sube demasiado')",
+      "experiment": "Disenar A/B test para validar hipotesis",
+      "learn": "Si la hipotesis se confirma, ajustar el producto. Si no, registrar por que fallo.",
+      "evolve": "AdaptiveWeightLayer ajusta prioridad de features basado en impacto en metricas"
+    },
+    "client_attention_optimization": {
+      "push_notifications": {
+        "rules": [
+          "Maximo 1 push por dia",
+          "Personalizar mensaje segun segmento",
+          "No enviar a usuarios que jugaron hace <2 horas",
+          "Incluir accion concreta (ej: 'Tu cofre gratis esta listo')"
+        ]
+      },
+      "in_app_messaging": {
+        "triggers": [
+          "Primera sesion: tutorial guiado",
+          "Regreso despues de 3+ dias: welcome back reward",
+          "Pre-churn: oferta especial",
+          "Post-purchase: agradecimiento + sugerencia de contenido"
+        ]
+      },
+      "content_freshness": {
+        "strategy": "Eventos temporales, nuevos niveles, seasonal content",
+        "frequency": "Al menos 1 update de contenido por mes",
+        "evidence": "Medir retention lift despues de cada update"
+      }
+    },
+    "unresolved": "Requiere al menos una app publicada con analytics integrado. Los algoritmos de segmentacion y prediccion necesitan datos reales."
+  },
+  "created_at": "2026-05-28T17:00:00Z"
+}

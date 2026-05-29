@@ -1,0 +1,61 @@
+{
+  "id": "autonomous_expert_programming_research",
+  "title": "Investigacion autonoma profunda — convertirse en programador experto via Codex/ChatGPT",
+  "status": "PENDING_AUTONOMY_READY",
+  "category": "autonomous_evolution",
+  "priority": "P1",
+  "description": "Cuando IABV tenga conexion estable con Codex y ChatGPT, debe iniciar ciclos de investigacion profunda para dominar: arquitectura de apps moviles/web, frameworks populares (Unity, Unreal, React Native, Flutter, Godot), patrones de diseno de juegos, APIs de plataformas (Steam, Google Play, App Store, Epic Games), y tecnicas avanzadas de programacion. El objetivo es acumular conocimiento real y verificable que permita crear aplicaciones de alta calidad.",
+  "resume_hint": "Requiere que ExternalConsultation este funcional con Codex y ChatGPT. La investigacion debe ser guiada por ExperimentLab y validada por OSES.",
+  "next_action": "Cuando las consultas externas esten operativas: iniciar ciclo de investigacion con consultas estructuradas a ChatGPT/Codex sobre frameworks, patrones y mejores practicas.",
+  "metadata": {
+    "depends_on": ["external_consultation_stable", "codex_bridge_operational", "chatgpt_bridge_operational"],
+    "research_domains": [
+      {
+        "domain": "game_frameworks",
+        "topics": ["Unity C#", "Unreal Engine", "Godot GDScript", "Phaser.js", "Pygame", "Love2D"],
+        "goal": "Dominar al menos 2 frameworks para poder crear juegos desde cero",
+        "evidence_key": "framework_mastery_level"
+      },
+      {
+        "domain": "mobile_app_development",
+        "topics": ["React Native", "Flutter", "Kotlin/Android", "Swift/iOS", "cross-platform patterns"],
+        "goal": "Crear apps moviles publicables en Play Store y App Store",
+        "evidence_key": "mobile_dev_mastery"
+      },
+      {
+        "domain": "web_development",
+        "topics": ["Next.js", "FastAPI", "Django", "serverless", "Vercel/Netlify deployment"],
+        "goal": "Crear web apps con backend escalable y frontend moderno",
+        "evidence_key": "web_dev_mastery"
+      },
+      {
+        "domain": "data_science_ml",
+        "topics": ["pandas", "scikit-learn", "TensorFlow/PyTorch basics", "recommendation systems", "user clustering"],
+        "goal": "Aplicar ML para analizar comportamiento de usuarios y optimizar productos",
+        "evidence_key": "data_science_mastery"
+      },
+      {
+        "domain": "architecture_patterns",
+        "topics": ["microservices", "event-driven", "CQRS", "clean architecture", "DDD", "testing strategies"],
+        "goal": "Escribir codigo de calidad profesional con arquitectura escalable",
+        "evidence_key": "architecture_mastery"
+      }
+    ],
+    "learning_loop": {
+      "step_1": "Consultar ChatGPT/Codex con preguntas estructuradas sobre el dominio",
+      "step_2": "Registrar respuesta en ExperimentLab como evidencia de aprendizaje",
+      "step_3": "OSES valida que la informacion es consistente y no contradice conocimiento previo",
+      "step_4": "PortableContext exporta resumen de conocimiento acumulado",
+      "step_5": "AdaptiveWeightLayer ajusta prioridad de investigacion segun resultados",
+      "step_6": "Repetir con profundidad incremental"
+    },
+    "metacognition_applied": {
+      "self_assessment": "IABV debe evaluar su propio nivel de conocimiento por dominio (novato/intermedio/avanzado/experto)",
+      "gap_detection": "OSES detecta lagunas de conocimiento cuando una tarea falla por falta de info",
+      "knowledge_decay": "Si un framework se actualiza y IABV no lo investiga, marcar conocimiento como potencialmente stale",
+      "cross_pollination": "Aplicar patrones aprendidos en un dominio a otros (ej: arquitectura de juegos a apps moviles)"
+    },
+    "unresolved": "Requiere que las consultas externas a Codex y ChatGPT esten operativas y estables"
+  },
+  "created_at": "2026-05-28T17:00:00Z"
+}

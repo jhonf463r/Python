@@ -1,0 +1,96 @@
+{
+  "id": "continuous_sales_evolution_optimization",
+  "title": "Evolucion continua de ventas — optimizar ingresos y escalar portfolio",
+  "status": "PENDING_AUTONOMY_READY",
+  "category": "autonomous_evolution",
+  "priority": "P1",
+  "description": "IABV debe operar un ciclo continuo de optimizacion de ventas: medir performance de cada app/juego, detectar oportunidades de mejora, A/B testing automatico de monetizacion, cross-promotion entre apps del portfolio, y escalamiento a nuevas plataformas. El sistema aplica metacognicion para volverse cada vez mejor vendedor.",
+  "resume_hint": "Depende de tener multiples apps publicadas con datos de revenue. El ciclo usa OSES para detectar tendencias y ExperimentLab para validar cambios.",
+  "next_action": "Una vez la primera app genere datos de revenue, iniciar ciclo de optimizacion continua.",
+  "metadata": {
+    "depends_on": ["revenue_app_development_monetization", "user_behavior_metacognition_capture", "market_intelligence_popular_games_analysis"],
+    "optimization_cycle": {
+      "step_1_measure": {
+        "metrics": ["daily_revenue", "ARPDAU", "conversion_rate", "LTV", "CPI", "ROAS"],
+        "frequency": "daily dashboard, weekly deep analysis",
+        "storage": "data/evolution/sales_metrics/"
+      },
+      "step_2_analyze": {
+        "questions": [
+          "Que app genera mas revenue por hora de desarrollo invertida?",
+          "Que canal de adquisicion tiene mejor ROAS?",
+          "Que formato de ad tiene mejor eCPM sin dañar retencion?",
+          "Que segmento de usuarios tiene mayor LTV?",
+          "Que genero/plataforma tiene la mejor relacion esfuerzo/ganancia?"
+        ],
+        "tool": "OSES-like pattern detection sobre sales_metrics"
+      },
+      "step_3_hypothesize": {
+        "examples": [
+          "Si aumento frecuencia de rewarded video de 3 a 5 por sesion, revenue sube 20% sin afectar D7 retention",
+          "Si agrego battle pass al juego X, ARPDAU sube $0.10",
+          "Si lanzo version web del juego movil, capturo audiencia nueva con bajo costo"
+        ]
+      },
+      "step_4_experiment": {
+        "method": "A/B test via ExperimentLab pattern",
+        "duration": "Minimo 7 dias o 500 usuarios por variante",
+        "success_criteria": "Revenue sube >= 10% sin caer retencion D7 > 5%"
+      },
+      "step_5_learn_evolve": {
+        "if_success": "Aplicar cambio a toda la base de usuarios. Registrar en AdaptiveWeightLayer.",
+        "if_failure": "Revertir. Registrar hipotesis fallida para no repetir. Analizar por que fallo.",
+        "portfolio_insight": "Aplicar aprendizaje a otras apps del portfolio si el patron es transferible"
+      }
+    },
+    "scaling_strategies": {
+      "horizontal_portfolio": {
+        "description": "Crear multiples apps/juegos simples en nichos diferentes",
+        "target": "Portfolio de 5-20 apps generando revenue estable",
+        "advantage": "Diversificacion de riesgo, cross-promotion, datos compartidos"
+      },
+      "vertical_deepening": {
+        "description": "Invertir fuerte en 1-2 apps exitosas con updates regulares",
+        "target": "Una app con 100K+ MAU y revenue sostenible",
+        "advantage": "Mayor LTV por usuario, community building, word-of-mouth"
+      },
+      "platform_expansion": {
+        "description": "Portar juegos exitosos a nuevas plataformas",
+        "priority_order": ["mobile -> web", "web -> mobile", "mobile -> Steam", "cualquier -> consola (largo plazo)"],
+        "advantage": "Maximizar reach con el mismo contenido"
+      },
+      "cross_promotion": {
+        "description": "Usar apps existentes para promover nuevas",
+        "methods": ["in-app banner", "interstitial entre sesiones", "shared accounts", "bundle deals"],
+        "rule": "Solo promover apps con rating >= 4.0"
+      }
+    },
+    "competitive_intelligence": {
+      "monitor_competitors": "Rastrear apps similares: updates, pricing changes, new features",
+      "review_mining": "Analizar reviews de competidores para encontrar gaps que nosotros podamos cubrir",
+      "trend_surfing": "Detectar tendencias emergentes temprano y lanzar antes que la competencia",
+      "pricing_analysis": "Comparar nuestros precios con competidores y ajustar"
+    },
+    "metacognition_applied": {
+      "revenue_self_awareness": "IABV sabe exactamente cuanto genera cada app y por que",
+      "failure_pattern_detection": "Si 3 apps seguidas fallan en el mismo genero, cambiar estrategia",
+      "time_investment_tracking": "Medir horas de desarrollo vs revenue generado por app",
+      "skill_roi": "Que habilidades de programacion generan mas revenue? Priorizar aprendizaje de esas.",
+      "market_timing": "Detectar cuando un nicho esta saturado y moverse antes de perder dinero",
+      "ethical_boundaries": [
+        "No crear apps engañosas o scam",
+        "No explotar mecanicas adictivas sin limites",
+        "Transparencia en monetizacion",
+        "Respetar privacidad de usuarios",
+        "No copiar IP de otros — crear contenido original"
+      ]
+    },
+    "long_term_vision": {
+      "year_1": "Publicar 3-5 apps/juegos, generar primeros ingresos, validar pipeline",
+      "year_2": "Portfolio de 10+ apps, revenue mensual estable, conocimiento profundo de 2+ mercados",
+      "year_3": "Escalar a multiples plataformas, considerar team expansion, explorar SaaS tools"
+    },
+    "unresolved": "Requiere apps publicadas generando datos reales de revenue y usuarios. El pipeline de publicacion en tiendas no esta automatizado."
+  },
+  "created_at": "2026-05-28T17:00:00Z"
+}

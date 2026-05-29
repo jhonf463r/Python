@@ -1,0 +1,99 @@
+{
+  "id": "market_intelligence_popular_games_analysis",
+  "title": "Inteligencia de mercado — analisis de juegos populares, plataformas y tendencias",
+  "status": "PENDING_AUTONOMY_READY",
+  "category": "autonomous_evolution",
+  "priority": "P1",
+  "description": "IABV debe investigar autonomamente los juegos mas populares en todas las plataformas (PC, movil, consola, web), analizar que los hace exitosos, que mecanicas usan, como monetizan, que patrones de engagement aplican, y que nicho de mercado tienen oportunidad. Esta informacion alimenta la capacidad de crear apps/juegos competitivos.",
+  "resume_hint": "Requiere consultas externas operativas. Los datos deben capturarse de forma estructurada para que ExperimentLab pueda comparar tendencias.",
+  "next_action": "Investigar top 50 juegos por plataforma: Steam, Google Play, App Store, web (itch.io, Newgrounds). Registrar mecanicas, monetizacion, reviews.",
+  "metadata": {
+    "depends_on": ["external_consultation_stable", "autonomous_expert_programming_research"],
+    "platforms_to_analyze": [
+      {
+        "platform": "steam",
+        "data_points": ["top sellers", "most played", "trending", "genres", "price_points", "review_scores"],
+        "api_source": "SteamSpy, Steam Web API",
+        "frequency": "weekly"
+      },
+      {
+        "platform": "google_play",
+        "data_points": ["top free games", "top grossing", "new releases", "categories", "ratings"],
+        "api_source": "consulta ChatGPT + web scraping guiado",
+        "frequency": "weekly"
+      },
+      {
+        "platform": "app_store",
+        "data_points": ["top charts", "editors choice", "genres", "pricing models"],
+        "api_source": "consulta ChatGPT + investigacion web",
+        "frequency": "weekly"
+      },
+      {
+        "platform": "web_games",
+        "data_points": ["itch.io trending", "Newgrounds top rated", "browser game trends", "HTML5 game engines"],
+        "api_source": "web research via external consultation",
+        "frequency": "monthly"
+      },
+      {
+        "platform": "esports_competitive",
+        "data_points": ["top competitive games", "viewership", "prize pools", "community size"],
+        "api_source": "ChatGPT research",
+        "frequency": "monthly"
+      }
+    ],
+    "analysis_dimensions": {
+      "game_mechanics": [
+        "core loop (que hace el jugador repetidamente)",
+        "progression systems (niveles, unlocks, skill trees)",
+        "social mechanics (multiplayer, guilds, leaderboards, chat)",
+        "retention hooks (daily rewards, streaks, events temporales)",
+        "difficulty curves (como mantienen al jugador enganchado)"
+      ],
+      "monetization_models": [
+        "free-to-play con ads (banner, interstitial, rewarded video)",
+        "freemium (compras in-app, battle pass, cosmetics)",
+        "premium (pago unico, sin ads)",
+        "subscription (acceso mensual a contenido)",
+        "hybrid (ads + IAP + subscription)"
+      ],
+      "user_demographics": [
+        "edad objetivo",
+        "region geografica fuerte",
+        "plataforma primaria",
+        "tiempo promedio de sesion",
+        "lifetime value estimado"
+      ],
+      "technical_stack": [
+        "motor/framework usado",
+        "lenguaje principal",
+        "backend/networking",
+        "analytics integrado",
+        "tamaño del equipo de desarrollo"
+      ]
+    },
+    "output_format": {
+      "per_game_report": {
+        "name": "string",
+        "platform": "string",
+        "genre": "string",
+        "monthly_active_users_estimate": "number",
+        "revenue_model": "string",
+        "core_mechanics": ["string"],
+        "tech_stack": "string",
+        "what_makes_it_successful": "string",
+        "opportunity_for_similar": "string",
+        "difficulty_to_replicate": "low|medium|high"
+      },
+      "storage": "data/evolution/market_intelligence/",
+      "portable_context_section": "market_intelligence_summary"
+    },
+    "metacognition_applied": {
+      "trend_detection": "OSES detecta cuando un genero sube o baja en popularidad",
+      "opportunity_scoring": "Puntuar oportunidades por: demanda, dificultad tecnica, potencial de monetizacion, competencia",
+      "knowledge_gaps": "Si IABV no conoce un genero popular, priorizar investigacion",
+      "bias_awareness": "No sobre-representar un genero solo porque aparece primero en resultados"
+    },
+    "unresolved": "Requiere consultas externas operativas. No se ha definido el formato exacto de almacenamiento en data/"
+  },
+  "created_at": "2026-05-28T17:00:00Z"
+}
