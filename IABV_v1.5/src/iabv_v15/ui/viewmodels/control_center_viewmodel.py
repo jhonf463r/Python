@@ -5908,6 +5908,10 @@ class ControlCenterViewModel(QObject):
         # 6. UNRESOLVED — no hwnd, no profile, no CDP
         focus_method = 'unresolved'
         self._trace_window_focus_result(tracer, incident_id, focus_method, False)
+        try:
+            self._resolve_incident_frame('unresolved')
+        except Exception:
+            pass
         return False
 
     def _trace_window_focus_result(
