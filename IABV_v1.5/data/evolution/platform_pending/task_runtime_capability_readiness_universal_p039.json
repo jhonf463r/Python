@@ -45,7 +45,7 @@
     "covered_by_pr": "",
     "unresolved": [
       "live_readiness_proof_pending: requiere ejecucion en Windows con IABV real",
-      "cdp_bridge_live_test_pending: requiere Chrome con --remote-debugging-port",
+      "cdp_bridge_live_test_pending: P0.72 supersedes manual CDP setup; live proof should use a governed browser session launched from IABV UI",
       "p038_markers_live_verification_pending: requiere runtime alineado con P0.38 en origin/main"
     ]
   }

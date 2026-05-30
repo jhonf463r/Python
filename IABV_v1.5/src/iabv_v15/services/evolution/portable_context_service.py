@@ -208,6 +208,7 @@ class PortableContextService:
             self._devin_repair_status_section(now=now),
             self._capability_readiness_section(now=now),
             self._next_time_policy_section(now=now),
+            self._human_assist_bridge_section(now=now),
             self._discernment_frame_section(now=now),
             self._metacognitive_roadmap_matrix_section(now=now),
             self._unresolved_metacognitive_links_section(now=now),
@@ -3828,6 +3829,92 @@ class PortableContextService:
             source_kind='runtime_audit_learning',
             source_refs=['RuntimeAuditTracer', '_record_show_window_learning'],
             confidence=0.7 if policies else 0.3,
+            last_updated=now,
+        )
+
+    def _human_assist_bridge_section(self, *, now) -> PortableContextSection:
+        """P0.72: export a compact human-assist bridge status (no PII).
+
+        Exposes ``last_external_consultation_failure``,
+        ``human_assist_bridge_status``, ``cdp_bridge_status`` and
+        ``visible_fallback_policy`` so a fresh session knows the current
+        external-consultation handoff posture. No screenshots, no tokens.
+        """
+        import os as _os
+
+        last_failure: dict[str, Any] = {}
+        bridge_status = 'idle'
+        cdp_status = 'unknown'
+        governed_offers = 0
+        governed_launches = 0
+        window_unbound = 0
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+
+            terminals = tracer.events(kind='dispatch_terminal', limit=40)
+            for ev in reversed(terminals):
+                data = ev.get('data', {})
+                if data.get('task_name') == 'external_consultation':
+                    state = str(data.get('terminal_state') or '')
+                    if 'block' in state.lower() or 'security' in state.lower():
+                        last_failure = {
+                            'terminal_state': state,
+                            'reason': str(data.get('reason') or '')[:120],
+                            'assistant_kind': data.get('assistant_kind', '') or data.get('provider', ''),
+                        }
+                        break
+
+            offered = tracer.events(kind='governed_browser_session_launch_offered', limit=20)
+            governed_offers = len(offered)
+            results = tracer.events(kind='governed_browser_session_launch_result', limit=20)
+            governed_launches = sum(1 for e in results if e.get('data', {}).get('success'))
+            unbound = tracer.events(kind='external_security_verification_window_unbound', limit=20)
+            window_unbound = len(unbound)
+
+            cdp_unavail = tracer.events(kind='user_browser_cdp_unavailable', limit=10)
+            if _os.environ.get('IABV_PREFER_CDP_SESSION') == '1':
+                cdp_status = 'governed_cdp_active'
+            elif cdp_unavail:
+                cdp_status = 'user_browser_cdp_unavailable'
+            else:
+                cdp_status = 'isolated_profile'
+
+            if governed_launches:
+                bridge_status = 'governed_browser_launched'
+            elif governed_offers:
+                bridge_status = 'governed_launch_offered'
+            elif last_failure:
+                bridge_status = 'blocked_awaiting_human'
+        except Exception:
+            pass
+
+        visible_fallback_policy = (
+            _os.environ.get('IABV_VISIBLE_FALLBACK_POLICY', '').strip()
+            or 'silent_default'
+        )
+
+        items = [{
+            'last_external_consultation_failure': last_failure or {'status': 'none_recent'},
+            'human_assist_bridge_status': bridge_status,
+            'cdp_bridge_status': cdp_status,
+            'visible_fallback_policy': visible_fallback_policy,
+            'governed_launch_offers': governed_offers,
+            'governed_launches_succeeded': governed_launches,
+            'security_window_unbound_count': window_unbound,
+        }]
+        return self._section(
+            section_id='human_assist_bridge',
+            title='Human-Assist Bridge Status (P0.72)',
+            summary=(
+                f'bridge={bridge_status}; cdp={cdp_status}; '
+                f'visible_fallback={visible_fallback_policy}'
+            ),
+            items=items,
+            source_kind='runtime_audit_human_assist',
+            source_refs=['RuntimeAuditTracer', 'ControlCenterViewModel', 'ExternalAssistantToolAdapter'],
+            confidence=0.7,
             last_updated=now,
         )
 

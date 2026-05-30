@@ -3542,8 +3542,10 @@ class ControlCenterViewModel(QObject):
                 'para que IABV observe tu Chrome normal via CDP '
                 '(sin leer cookies ni tokens).'
             ) if cdp_ok else (
-                'Si prefieres usar tu Chrome normal, abre Chrome con '
-                '"--remote-debugging-port=9222" y escribe "usar mi chrome".'
+                'Si prefieres una ventana aparte, escribe "abre la ventana '
+                'gobernada" y abro una ventana de Chrome gobernada por IABV '
+                '(perfil propio, sin tocar tu navegador normal) para que '
+                'completes la verificacion ahi.'
             )
             message = (
                 f'Herramienta: {assistant_title}. '
@@ -4857,10 +4859,13 @@ class ControlCenterViewModel(QObject):
                 'aqui, o escribe lo que dijo.'
             )
         else:
+            # P0.72: do NOT instruct the user to open a terminal/command.
+            # Offer a governed Chrome window that IABV opens itself.
             options.append(
-                '2) Tu Chrome normal: no esta disponible ahora. '
-                'Para activarla, abre Chrome con '
-                '"--remote-debugging-port=9222" y reinicia la consulta.'
+                '2) Ventana gobernada de IABV: puedo abrir una ventana de '
+                'Chrome con un perfil propio de IABV (separado de tu navegador) '
+                'donde completas la verificacion. Escribe "abre la ventana '
+                'gobernada" o "hazlo tu" y la abro.'
             )
             options.append(
                 '3) Pegado manual: copia la respuesta de ChatGPT y pegala '
@@ -4877,8 +4882,206 @@ class ControlCenterViewModel(QObject):
             + '\n'.join(options)
         )
 
-    _USER_CHROME_BRIDGE_PATTERNS: tuple[str, ...] = (
-        'usar mi chrome', 'use my chrome', 'usar chrome normal',
+    # ══════════════════════════════════════════════════════════════════
+    # P0.72 — Governed Browser Session Launch + Human-Assist Bridge
+    # ══════════════════════════════════════════════════════════════════
+    #
+    # When ChatGPT (or any web assistant) blocks with a security
+    # verification in IABV's isolated profile and CDP to the user's normal
+    # Chrome is unavailable, IABV must NOT tell the user to open a terminal
+    # and run "chrome.exe --remote-debugging-port=9222" — that violates the
+    # UNA SOLA VENTANA principle (AGENTS.md). Instead IABV opens a *governed*
+    # Chrome window itself: a dedicated IABV-owned profile with remote
+    # debugging, separate from the user's normal profile, so the user can
+    # complete the verification in a visible window with zero commands.
+
+    #: Default governed CDP port. Distinct from the user's potential 9222 so
+    #: a governed session never collides with the user's own Chrome bridge.
+    _GOVERNED_CDP_PORT_DEFAULT: int = 9223
+
+    @staticmethod
+    def _resolve_chrome_executable() -> str:
+        """Resolve a Chrome/Chromium executable path without assuming OS.
+
+        Honors ``IABV_CHROME_PATH`` first, then probes common per-platform
+        locations, then falls back to a bare command name resolvable on
+        PATH. Never raises.
+        """
+        import os as _os
+        import shutil as _shutil
+        import sys as _sys
+
+        explicit = _os.environ.get('IABV_CHROME_PATH', '').strip()
+        if explicit:
+            return explicit
+        candidates: list[str] = []
+        if _sys.platform.startswith('win'):
+            program_files = [
+                _os.environ.get('PROGRAMFILES', r'C:\Program Files'),
+                _os.environ.get('PROGRAMFILES(X86)', r'C:\Program Files (x86)'),
+                _os.environ.get('LOCALAPPDATA', ''),
+            ]
+            for base in program_files:
+                if not base:
+                    continue
+                candidates.append(_os.path.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe'))
+            candidates.append('chrome.exe')
+        elif _sys.platform == 'darwin':
+            candidates.append('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+            candidates.append('google-chrome')
+        else:
+            for name in ('google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'):
+                found = _shutil.which(name)
+                if found:
+                    return found
+                candidates.append(name)
+        for cand in candidates:
+            try:
+                if _os.path.isfile(cand):
+                    return cand
+            except Exception:
+                continue
+        # Last resort: a bare name; subprocess will surface failure cleanly.
+        return candidates[0] if candidates else 'chrome'
+
+    @staticmethod
+    def _governed_browser_profile_dir() -> str:
+        """Return the IABV-owned governed browser profile directory.
+
+        This is a dedicated profile, NEVER the user's normal Chrome
+        profile. A fresh profile means the user must log in once
+        (``human_login_required_if_new_profile``).
+        """
+        import os as _os
+        from pathlib import Path as _Path
+        override = _os.environ.get('IABV_GOVERNED_BROWSER_PROFILE', '').strip()
+        if override:
+            return override
+        return str(_Path.home() / '.iabv' / 'governed_browser_profile')
+
+    def _launch_governed_browser_session(
+        self,
+        *,
+        launch_target: str = 'https://chatgpt.com/',
+        assistant_kind: str = 'chatgpt',
+    ) -> dict[str, Any]:
+        """P0.72: open a governed Chrome window with remote debugging.
+
+        Governed = IABV-owned profile + IABV-chosen debugging port, fully
+        separate from the user's normal Chrome. The user completes the
+        security verification in this visible window; no terminal, no
+        manual command, no cookie/token reading. After launch the next
+        consultation can reuse this session via CDP.
+
+        Returns a dict with ``launched``, ``cdp_url``, ``profile_label``,
+        ``human_login_required`` and ``error``. Never raises.
+        """
+        import os as _os
+        import subprocess as _subprocess
+
+        try:
+            port = int(_os.environ.get('IABV_GOVERNED_CDP_PORT', '') or self._GOVERNED_CDP_PORT_DEFAULT)
+        except (TypeError, ValueError):
+            port = self._GOVERNED_CDP_PORT_DEFAULT
+        cdp_url = f'http://localhost:{port}'
+        profile_dir = self._governed_browser_profile_dir()
+        profile_label = 'iabv_governed_browser_profile'
+        chrome_exe = self._resolve_chrome_executable()
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            tracer = None
+
+        if tracer is not None:
+            try:
+                tracer.trace_governed_browser_session(
+                    'started',
+                    assistant_kind=assistant_kind,
+                    cdp_url=cdp_url,
+                    profile_label=profile_label,
+                    launch_target=launch_target,
+                    human_login_required=True,
+                )
+            except Exception:
+                pass
+
+        result: dict[str, Any] = {
+            'launched': False,
+            'cdp_url': cdp_url,
+            'profile_label': profile_label,
+            'profile_dir': profile_dir,
+            'human_login_required': True,
+            'error': '',
+        }
+        try:
+            _os.makedirs(profile_dir, exist_ok=True)
+            args = [
+                chrome_exe,
+                f'--remote-debugging-port={port}',
+                f'--user-data-dir={profile_dir}',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--new-window',
+                launch_target,
+            ]
+            creationflags = getattr(_subprocess, 'DETACHED_PROCESS', 0)
+            _subprocess.Popen(
+                args,
+                creationflags=creationflags,
+                stdout=_subprocess.DEVNULL,
+                stderr=_subprocess.DEVNULL,
+            )
+            result['launched'] = True
+            # Route the next consultation through this governed session.
+            _os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+            _os.environ['IABV_SHARED_CDP_URL'] = cdp_url
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+
+        if tracer is not None:
+            try:
+                tracer.trace_governed_browser_session(
+                    'result',
+                    assistant_kind=assistant_kind,
+                    cdp_url=cdp_url,
+                    profile_label=profile_label,
+                    launch_target=launch_target,
+                    human_login_required=True,
+                    success=bool(result['launched']),
+                    reason=result['error'] or 'ok',
+                )
+            except Exception:
+                pass
+        return result
+
+    @staticmethod
+    def _format_human_assist_message(
+        *,
+        sees: str,
+        cannot_verify: str,
+        needs_from_you: str,
+        action_now: str,
+    ) -> str:
+        """P0.72 Task G: structured human-assist bridge message.
+
+        Always uses the four-line contract and NEVER contains a manual
+        terminal command (UNA SOLA VENTANA principle).
+        """
+        return (
+            f'IABV ve: {sees}\n'
+            f'IABV no puede verificar: {cannot_verify}\n'
+            f'Lo que necesito de ti: {needs_from_you}\n'
+            f'Acción que puedo hacer ahora: {action_now}'
+        )
+
+    _GOVERNED_LAUNCH_OFFER: str = (
+        'Puedo abrir una ventana gobernada de Chrome (perfil propio de IABV, '
+        'separado de tu navegador normal) y dejarla en la página de '
+        'verificación para que la completes ahí. Escribe "abre la ventana '
+        'gobernada" o "hazlo tú" y la abro. La primera vez tendrás que '
+        'iniciar sesión en esa ventana.'
     )
 
     def _verify_chrome_bridge_capability(self) -> bool:
@@ -4952,20 +5155,9 @@ class ControlCenterViewModel(QObject):
 
         if not cdp_probe.get('available', False):
             os.environ.pop('IABV_PREFER_CDP_SESSION', None)
-            msg = (
-                'No puedo conectarme a tu Chrome. '
-                'Para usar tu sesion activa, abre Chrome con: '
-                '"chrome.exe --remote-debugging-port=9222" '
-                'y despues escribe "usar mi chrome" otra vez. '
-                'Mientras tanto, puedes pegar la respuesta manualmente.'
-            )
-            self._latest_response_text = msg
-            self._latest_response_meta = 'user_chrome_bridge: cdp_unavailable'
-            self._append_message(
-                'assistant', 'IABV', msg,
-                'user_chrome_bridge_cdp_unavailable',
-                reasoning_path='governed_chrome_bridge',
-            )
+            # P0.72: CDP to the user's normal Chrome is not reachable. Do NOT
+            # ask the user to open a terminal / run a command. Offer to open a
+            # governed Chrome window ourselves (UNA SOLA VENTANA principle).
             try:
                 tracer.trace_user_browser_bridge(
                     'bridge_result',
@@ -4973,6 +5165,35 @@ class ControlCenterViewModel(QObject):
                     cdp_available=False,
                     session_selected='none',
                     reason='cdp_unavailable',
+                )
+                tracer.trace('user_browser_cdp_unavailable', assistant_kind='chatgpt')
+                tracer.trace_governed_browser_session(
+                    'offered',
+                    assistant_kind='chatgpt',
+                    reason='user_browser_cdp_unavailable',
+                    human_login_required=True,
+                )
+            except Exception:
+                pass
+            msg = self._format_human_assist_message(
+                sees='no puedo conectarme a tu Chrome normal por CDP (no está abierto con depuración).',
+                cannot_verify='no tengo una sesión observable de tu navegador para retomar la consulta.',
+                needs_from_you='tu visto bueno para abrir una ventana gobernada (o pega aquí la respuesta).',
+                action_now=self._GOVERNED_LAUNCH_OFFER,
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = 'user_chrome_bridge: cdp_unavailable governed_cdp_launch_offered'
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'user_chrome_bridge_cdp_unavailable',
+                reasoning_path='governed_chrome_bridge',
+            )
+            try:
+                tracer.trace_human_assist_bridge_message(
+                    block_type='user_browser_cdp_unavailable',
+                    action_offered='governed_browser_session_launch',
+                    cdp_available=False,
+                    single_window_safe=True,
                 )
             except Exception:
                 pass
@@ -5239,6 +5460,16 @@ class ControlCenterViewModel(QObject):
         'ya lo resolvi', 'ya lo resolví', 'done', 'i did it',
         'ya pase el captcha', 'ya pasé el captcha',
     )
+    # P0.72: user delegates the action back to IABV — "do it yourself".
+    # IABV must NOT fall to local LLM; it opens a governed browser window.
+    _DO_IT_YOURSELF_TOKENS: tuple[str, ...] = (
+        'hazlo tu', 'hazlo tú', 'hazlo solo', 'hazlo tu mismo', 'hazlo tú mismo',
+        'abre la ventana gobernada', 'abre una ventana gobernada',
+        'ventana gobernada', 'abre tu la ventana', 'ábrela tú', 'abrela tu',
+        'usa tu navegador', 'usa tu propio chrome',
+        'encargate tu', 'encárgate tú', 'encargate de eso', 'encárgate de eso',
+        'do it yourself', 'open it yourself', 'open the governed window',
+    )
 
     @staticmethod
     def _classify_incident_followup_intent(
@@ -5260,6 +5491,7 @@ class ControlCenterViewModel(QObject):
             'visibility_dispute': 0.0,
             'profile_mismatch': 0.0,
             'retry_done': 0.0,
+            'do_it_yourself': 0.0,
         }
         matched: dict[str, list[str]] = {k: [] for k in scores}
 
@@ -5269,6 +5501,7 @@ class ControlCenterViewModel(QObject):
             'visibility_dispute': _Cls._VISIBILITY_DISPUTE_TOKENS,
             'profile_mismatch': _Cls._PROFILE_MISMATCH_TOKENS,
             'retry_done': _Cls._RETRY_DONE_TOKENS,
+            'do_it_yourself': _Cls._DO_IT_YOURSELF_TOKENS,
         }
 
         for intent_name, tokens in token_map.items():
@@ -5362,10 +5595,21 @@ class ControlCenterViewModel(QObject):
             action_taken = 'explained_help_needed'
 
         elif intent == 'show_problem':
+            # P0.72: user offered help → governed visible fallback is allowed.
             window_opened = self._try_focus_incident_window(incident)
             action_taken = 'window_open_attempted'
             # P0.40 Task E: record learning note when user requests window
             self._record_show_window_learning(incident)
+            try:
+                if tracer:
+                    tracer.trace_visible_fallback(
+                        'requested_by_user',
+                        assistant_kind=incident.get('assistant_kind', ''),
+                        reason='show_problem_intent',
+                        target_available=bool(window_opened),
+                    )
+            except Exception:
+                pass
             if window_opened:
                 response_text = (
                     f'Enfoque la ventana del perfil puente ({profile_label}). '
@@ -5374,16 +5618,38 @@ class ControlCenterViewModel(QObject):
                     'Cuando lo hagas, escribe "ya lo hice".'
                 )
             else:
-                response_text = (
-                    f'UNRESOLVED: No tengo hwnd/tab observable para '
-                    f'el perfil puente ({profile_label}). '
-                    f'El problema es: {block_type}. '
-                    f'Lo que necesito de ti: {user_help} '
-                    'Siguiente accion humana: busca la ventana de Chrome '
-                    f'con titulo que contenga "verificacion" o "{assistant_title}" '
-                    'y resuelve la verificacion ahi. '
-                    'O escribe "usar mi chrome" para activar el puente CDP.'
+                # P0.72 Task F: no observable window → security_window_unbound,
+                # and instead of asking the user to hunt for a window, offer to
+                # open a governed window ourselves (UNA SOLA VENTANA).
+                try:
+                    if tracer:
+                        tracer.trace_security_window_unbound(
+                            incident_id=incident.get('incident_id', ''),
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            profile_label=profile_label,
+                            reason='no_hwnd_or_observable_tab',
+                        )
+                        tracer.trace_visible_fallback(
+                            'blocked_no_target',
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            reason='security_window_unbound',
+                            target_available=False,
+                        )
+                        tracer.trace_governed_browser_session(
+                            'offered',
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            reason='security_window_unbound',
+                            human_login_required=True,
+                        )
+                except Exception:
+                    pass
+                response_text = self._format_human_assist_message(
+                    sees=f'{assistant_title} en verificación de seguridad ({block_type}) en el perfil puente ({profile_label}).',
+                    cannot_verify='no puedo identificar una ventana visible enlazada a esa verificación (sin hwnd/tab observable).',
+                    needs_from_you='que completes la verificación en la ventana que abriré, y luego escribas "ya lo hice".',
+                    action_now=self._GOVERNED_LAUNCH_OFFER,
                 )
+                action_taken = 'security_window_unbound_offered_governed_launch'
 
         elif intent == 'visibility_dispute':
             response_text = (
@@ -5409,12 +5675,58 @@ class ControlCenterViewModel(QObject):
             else:
                 response_text = (
                     'Tu Chrome tiene sesion pero IABV usa un perfil aislado diferente. '
-                    'Para que IABV use tu Chrome, abrelo con: '
-                    '"chrome.exe --remote-debugging-port=9222" '
-                    'y luego escribe "usar mi chrome". '
-                    'Mientras tanto, puedes pegar la respuesta manualmente.'
+                    'No necesitas abrir nada manualmente: '
+                    + self._GOVERNED_LAUNCH_OFFER
                 )
+                try:
+                    if tracer:
+                        tracer.trace_governed_browser_session(
+                            'offered',
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            reason='profile_mismatch_cdp_unavailable',
+                            human_login_required=True,
+                        )
+                except Exception:
+                    pass
             action_taken = 'offered_cdp_bridge'
+
+        elif intent == 'do_it_yourself':
+            # P0.72 Tasks C+D: user delegates the action to IABV. Open a
+            # governed browser window ourselves — never a terminal command.
+            launch_target = (
+                incident.get('launch_target')
+                or incident.get('target_window_title')
+                or 'https://chatgpt.com/'
+            )
+            if not str(launch_target).startswith('http'):
+                launch_target = 'https://chatgpt.com/'
+            launch = self._launch_governed_browser_session(
+                launch_target=str(launch_target),
+                assistant_kind=incident.get('assistant_kind', 'chatgpt'),
+            )
+            if launch.get('launched'):
+                response_text = self._format_human_assist_message(
+                    sees=f'{assistant_title} requiere verificación de seguridad que el perfil aislado no puede pasar solo.',
+                    cannot_verify='no puedo resolver el captcha/login por ti ni leer tu sesión normal.',
+                    needs_from_you='inicia sesión y completa la verificación en la ventana gobernada que acabo de abrir; luego escribe "ya lo hice".',
+                    action_now=(
+                        'Abrí una ventana gobernada de Chrome (perfil propio de IABV, '
+                        f'con depuración en {launch.get("cdp_url", "")}). '
+                        'Reintentaré la consulta por esa sesión cuando confirmes.'
+                    ),
+                )
+                action_taken = 'governed_browser_session_launched'
+            else:
+                response_text = self._format_human_assist_message(
+                    sees=f'{assistant_title} requiere verificación de seguridad.',
+                    cannot_verify=(
+                        'no pude abrir la ventana gobernada automáticamente '
+                        f'({launch.get("error", "desconocido")}).'
+                    ),
+                    needs_from_you='dime si tienes Chrome instalado, o pega aquí la respuesta de ' + assistant_title + '.',
+                    action_now='Puedo reintentar abrir la ventana gobernada si lo confirmas.',
+                )
+                action_taken = 'governed_browser_session_launch_failed'
 
         elif intent == 'retry_done':
             # Delegate to existing retest handler
@@ -5444,6 +5756,14 @@ class ControlCenterViewModel(QObject):
                     intent=intent,
                     action_taken=action_taken,
                 )
+                # P0.72: structured human-assist messages are single-window safe.
+                if response_text and response_text.startswith('IABV ve:'):
+                    tracer.trace_human_assist_bridge_message(
+                        block_type=incident.get('block_type', ''),
+                        action_offered=action_taken,
+                        cdp_available=bool(incident.get('cdp_available', False)),
+                        single_window_safe=True,
+                    )
         except Exception:
             pass
 
@@ -5588,6 +5908,10 @@ class ControlCenterViewModel(QObject):
         # 6. UNRESOLVED — no hwnd, no profile, no CDP
         focus_method = 'unresolved'
         self._trace_window_focus_result(tracer, incident_id, focus_method, False)
+        try:
+            self._resolve_incident_frame('unresolved')
+        except Exception:
+            pass
         return False
 
     def _trace_window_focus_result(
@@ -7200,8 +7524,8 @@ class ControlCenterViewModel(QObject):
                     f'no tu Chrome normal. '
                     f'Resuelve la verificacion/login en la ventana que abrio IABV '
                     f'y escribe "ya lo hice". '
-                    f'O escribe "usar mi chrome" si tienes Chrome con '
-                    f'--remote-debugging-port abierto.'
+                    f'O escribe "abre la ventana gobernada" y abro una ventana '
+                    f'de Chrome gobernada por IABV para que la completes ahi.'
                 )
 
         # Trace the readiness assessment

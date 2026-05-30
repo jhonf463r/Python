@@ -693,6 +693,8 @@ class OperationalSelfExaminationService:
         findings.extend(self._dispatch_lifecycle_anomaly_findings())
         # P0.27: detect external_consultation blocked → local chat misroute.
         findings.extend(self._external_failure_followup_misrouted_findings())
+        # P0.72: human-assist bridge / governed browser handoff observe-only.
+        findings.extend(self._human_assist_bridge_findings())
         findings.extend(self._boot_profile_findings())
         findings.extend(self._chat_research_backlog_findings())
         # Cognitive meta-patterns: fijación, incubación, atractores, ensambles
@@ -2479,6 +2481,179 @@ class OperationalSelfExaminationService:
                     'pairs': misroute_pairs[:5],
                 },
             ))
+        return findings
+
+    def _human_assist_bridge_findings(self) -> list[SelfExaminationFinding]:
+        """P0.72: observe-only findings for the human-assist bridge.
+
+        Reads ``runtime_audit.jsonl`` and detects four patterns:
+        1. ``repeated_security_window_unbound`` — a security-verification window
+           could not be bound to a visible window repeatedly.
+        2. ``cdp_unavailable_user_keeps_requesting_browser`` — CDP to the user's
+           Chrome stays unavailable while the user keeps asking to use it.
+        3. ``command_instruction_violated_single_window_principle`` — a manual
+           ``--remote-debugging-port`` terminal command leaked into a response.
+        4. ``external_incident_without_actionable_handoff`` — an external
+           consultation blocked but no governed launch / structured handoff
+           followed.
+        All findings are observe-only (no auto-remediation).
+        """
+        import json as _json
+        workspace = getattr(self, 'workspace_root', None)
+        if not workspace:
+            return []
+        audit_path = Path(str(workspace)) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+        except OSError:
+            return []
+
+        window_unbound: list[dict[str, Any]] = []
+        cdp_unavailable: list[dict[str, Any]] = []
+        browser_requests: list[dict[str, Any]] = []
+        command_violations: list[dict[str, Any]] = []
+        external_blocks: list[dict[str, Any]] = []
+        handoff_signals = 0
+
+        for line in lines[-800:]:
+            if not line.strip():
+                continue
+            try:
+                event = _json.loads(line)
+            except Exception:
+                continue
+            kind = str(event.get('kind', ''))
+            data = dict(event.get('data') or {})
+
+            if kind == 'external_security_verification_window_unbound':
+                window_unbound.append(data)
+            elif kind == 'user_browser_cdp_unavailable':
+                cdp_unavailable.append(data)
+            elif kind in (
+                'governed_browser_session_launch_offered',
+                'governed_browser_session_launch_started',
+                'governed_browser_session_launch_result',
+                'human_assist_bridge_message_shown',
+            ):
+                handoff_signals += 1
+                if kind == 'human_assist_bridge_message_shown' and not data.get('single_window_safe', True):
+                    command_violations.append(data)
+            elif kind == 'user_browser_bridge' and 'request' in str(data.get('event_type', '')).lower():
+                browser_requests.append(data)
+            elif kind == 'dispatch_terminal':
+                terminal_state = str(data.get('terminal_state') or '').lower()
+                if (
+                    data.get('task_name') == 'external_consultation'
+                    and ('security_verification' in terminal_state or 'blocked' in terminal_state)
+                ):
+                    external_blocks.append(data)
+
+            # Detect a leaked manual command in any event payload.
+            try:
+                blob = _json.dumps(data, ensure_ascii=False).lower()
+            except Exception:
+                blob = ''
+            if '--remote-debugging-port' in blob and kind not in (
+                'governed_browser_session_launch_offered',
+                'governed_browser_session_launch_started',
+                'governed_browser_session_launch_result',
+            ):
+                command_violations.append({'kind': kind, **data})
+
+        findings: list[SelfExaminationFinding] = []
+
+        if len(window_unbound) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='human_assist_bridge',
+                title=f'Repeated security_window_unbound ({len(window_unbound)}x)',
+                summary=(
+                    f'A security-verification window could not be bound to a '
+                    f'visible window {len(window_unbound)} times. The user cannot '
+                    f'complete verification if IABV cannot show the window.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Prefer launching a governed browser window with CDP so the '
+                    'window is always bindable; resolve hwnd via CDP metadata.'
+                ),
+                evidence_refs=[str(w.get('incident_id', ''))[:12] for w in window_unbound[:5]],
+                source_refs=['runtime_audit'],
+                metadata={'pattern': 'repeated_security_window_unbound', 'count': len(window_unbound)},
+            ))
+
+        if len(cdp_unavailable) >= 2:
+            findings.append(SelfExaminationFinding(
+                category='human_assist_bridge',
+                title=f'CDP unavailable but user keeps requesting browser ({len(cdp_unavailable)}x)',
+                summary=(
+                    f'CDP to the user\'s Chrome was unavailable {len(cdp_unavailable)} '
+                    f'times. The user keeps asking IABV to use their browser.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.84,
+                recommendation=(
+                    'Offer/execute a governed Chrome launch (separate profile, '
+                    'port 9223) instead of waiting on the user\'s normal Chrome.'
+                ),
+                evidence_refs=[str(c.get('assistant_kind', ''))[:12] for c in cdp_unavailable[:5]],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'cdp_unavailable_user_keeps_requesting_browser',
+                    'cdp_unavailable_count': len(cdp_unavailable),
+                    'browser_request_count': len(browser_requests),
+                },
+            ))
+
+        if command_violations:
+            findings.append(SelfExaminationFinding(
+                category='human_assist_bridge',
+                title=f'Single-window principle violated by command instruction ({len(command_violations)}x)',
+                summary=(
+                    'A manual terminal command (e.g. '
+                    '"--remote-debugging-port") leaked into a user-facing path. '
+                    'AGENTS.md UNA SOLA VENTANA forbids asking the user to run commands.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.9,
+                recommendation=(
+                    'Replace any command instruction with a governed browser launch '
+                    'offer and the four-line human-assist message.'
+                ),
+                evidence_refs=[str(v.get('kind', ''))[:24] for v in command_violations[:5]],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'command_instruction_violated_single_window_principle',
+                    'count': len(command_violations),
+                },
+            ))
+
+        if external_blocks and handoff_signals == 0:
+            findings.append(SelfExaminationFinding(
+                category='human_assist_bridge',
+                title=f'External incident without actionable handoff ({len(external_blocks)}x)',
+                summary=(
+                    f'{len(external_blocks)} external consultation(s) were blocked '
+                    f'but no governed launch or structured handoff followed. The '
+                    f'user was left without a concrete next action.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.8,
+                recommendation=(
+                    'After a security_verification block, always emit the four-line '
+                    'human-assist message and offer a governed browser launch.'
+                ),
+                evidence_refs=[str(b.get('dispatch_id', ''))[:12] for b in external_blocks[:5]],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'external_incident_without_actionable_handoff',
+                    'block_count': len(external_blocks),
+                    'handoff_signals': handoff_signals,
+                },
+            ))
+
         return findings
 
     def _startup_health_findings(self) -> list[SelfExaminationFinding]:
@@ -8693,13 +8868,14 @@ class OperationalSelfExaminationService:
                     f'{block_count} bloqueos por verificacion de seguridad en perfil aislado. '
                     'El usuario probablemente tiene sesion activa en su Chrome normal '
                     'pero IABV no puede usarla sin CDP/permiso. '
-                    'Considerar: escribir "usar mi chrome" o abrir Chrome con '
-                    '"--remote-debugging-port=9222".'
+                    'Considerar: escribir "usar mi chrome", o que IABV abra una '
+                    'ventana gobernada propia (P0.72).'
                 ),
                 recommendation=(
-                    'Activar CDP bridge: usuario escribe "usar mi chrome" '
-                    'o abre Chrome con --remote-debugging-port=9222. '
-                    'IABV no leera cookies ni tokens, solo observara contenido visible.'
+                    'Ofrecer/ejecutar una ventana gobernada de IABV (perfil propio, '
+                    'remote debugging gestionado por IABV) o que el usuario escriba '
+                    '"usar mi chrome". Nunca pedir al usuario ejecutar comandos en '
+                    'terminal (UNA SOLA VENTANA). IABV no leera cookies ni tokens.'
                 ),
                 confidence=0.85,
                 metadata={
@@ -9068,8 +9244,9 @@ class OperationalSelfExaminationService:
                     f'veces. El puente gobernado a Chrome del usuario no funciona.'
                 ),
                 recommendation=(
-                    'Instruir al usuario a abrir Chrome con '
-                    '--remote-debugging-port=9222 si desea usar el puente CDP.'
+                    'Ofrecer/ejecutar una ventana gobernada de IABV (perfil propio) '
+                    'en vez de pedir al usuario abrir comandos en terminal '
+                    '(UNA SOLA VENTANA, P0.72).'
                 ),
                 confidence=0.8,
                 metadata={'cdp_unavailable_count': cdp_unavailable_count},

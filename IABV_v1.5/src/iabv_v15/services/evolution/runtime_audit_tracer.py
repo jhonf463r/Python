@@ -615,6 +615,111 @@ class RuntimeAuditTracer:
             capture_mode=capture_mode,
         )
 
+    # ------------------------------------------------------------------
+    # P0.72: Governed browser session launch + human-assist bridge traces
+    # ------------------------------------------------------------------
+
+    def trace_governed_browser_session(
+        self,
+        event_type: str,
+        *,
+        assistant_kind: str = '',
+        cdp_url: str = '',
+        profile_label: str = '',
+        launch_target: str = '',
+        human_login_required: bool = False,
+        success: bool = False,
+        reason: str = '',
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Record a governed browser session launch lifecycle event.
+
+        ``event_type`` should be one of:
+        - ``offered``  -> ``governed_browser_session_launch_offered``
+        - ``started``  -> ``governed_browser_session_launch_started``
+        - ``result``   -> ``governed_browser_session_launch_result``
+
+        The governed session uses an IABV-owned profile with remote
+        debugging — never the user's normal Chrome profile. No cookies,
+        tokens or credentials are read or copied.
+        """
+        return self.trace(
+            f'governed_browser_session_launch_{event_type}',
+            assistant_kind=assistant_kind,
+            cdp_url=cdp_url[:200] if cdp_url else '',
+            profile_label=profile_label,
+            launch_target=launch_target[:200] if launch_target else '',
+            human_login_required=human_login_required,
+            success=success,
+            reason=reason[:200] if reason else '',
+            **extra,
+        )
+
+    def trace_security_window_unbound(
+        self,
+        *,
+        incident_id: str = '',
+        assistant_kind: str = '',
+        profile_label: str = '',
+        reason: str = '',
+    ) -> dict[str, Any]:
+        """Record that a security-verification window could not be bound.
+
+        Emitted when a controlled browser exists but no hwnd / window
+        title / observable tab can be resolved for the verification page.
+        """
+        return self.trace(
+            'external_security_verification_window_unbound',
+            incident_id=incident_id,
+            assistant_kind=assistant_kind,
+            profile_label=profile_label,
+            reason=reason[:200] if reason else '',
+        )
+
+    def trace_visible_fallback(
+        self,
+        event_type: str,
+        *,
+        assistant_kind: str = '',
+        reason: str = '',
+        target_available: bool = False,
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Record a governed visible-fallback decision.
+
+        ``event_type`` should be one of:
+        - ``requested_by_user`` -> ``visible_fallback_requested_by_user``
+        - ``blocked_no_target`` -> ``visible_fallback_blocked_no_target``
+        """
+        return self.trace(
+            f'visible_fallback_{event_type}',
+            assistant_kind=assistant_kind,
+            reason=reason[:200] if reason else '',
+            target_available=target_available,
+            **extra,
+        )
+
+    def trace_human_assist_bridge_message(
+        self,
+        *,
+        block_type: str = '',
+        action_offered: str = '',
+        cdp_available: bool = False,
+        single_window_safe: bool = True,
+    ) -> dict[str, Any]:
+        """Record that a structured human-assist bridge message was shown.
+
+        ``single_window_safe`` is True when the message respects the
+        UNA SOLA VENTANA principle (no manual command instructions).
+        """
+        return self.trace(
+            'human_assist_bridge_message_shown',
+            block_type=block_type,
+            action_offered=action_offered,
+            cdp_available=cdp_available,
+            single_window_safe=single_window_safe,
+        )
+
     def current_elapsed_ms(self) -> float:
         """Return milliseconds since tracer boot (process-relative)."""
         return round((time.perf_counter() - self._t0) * 1000.0, 1)
