@@ -398,4 +398,8 @@ class TestPlatformPendingP071:
         assert data.get('id') == 'p071_live_ui_presence_contract'
         assert data.get('status') in ('UNRESOLVED', 'COMPLETED')
         assert len(data.get('implemented_tasks', [])) >= 6
-        assert len(data.get('unresolved', [])) >= 1
+        if data.get('status') == 'COMPLETED':
+            assert data.get('verification_status') == 'LIVE_VERIFIED_WINDOWS_BY_CODEX'
+            assert data.get('unresolved', []) == []
+        else:
+            assert len(data.get('unresolved', [])) >= 1
