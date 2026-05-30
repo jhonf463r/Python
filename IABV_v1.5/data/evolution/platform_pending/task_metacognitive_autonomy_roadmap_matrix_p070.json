@@ -1,0 +1,192 @@
+{
+  "id": "p070_metacognitive_autonomy_roadmap_matrix",
+  "title": "P0.70: Metacognitive Autonomy Roadmap Matrix",
+  "status": "UNRESOLVED",
+  "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
+  "created_at": "2026-05-28T16:00:00Z",
+  "priority": "high",
+  "description": "Roadmap matrix for IABV metacognitive autonomy: tracks each phase from birth to cross-device portability, with evidence references, missing links, next test, and risk if unfixed.",
+  "existing_services_consumed": [
+    "concept_weight_evidence.py: existing CWE service — DiscernmentFrameService accepts its dict output, does NOT duplicate",
+    "UniversalPerceptionService: produces CWE upstream",
+    "IntentUnderstandingService: attaches CWE upstream",
+    "TaskContextAssembler: already propagates CWE — only discernment_frame_summary added",
+    "PortableContext: already exports CWE — only roadmap_matrix and unresolved_links added",
+    "OSES._concept_weight_evidence_findings(): existing CWE findings — NOT duplicated",
+    "PortableContext._genesis_readiness_snapshot/_section: existing genesis readiness — NOT duplicated"
+  ],
+  "related_tasks": [
+    "P0.55: concept_weight_evidence service",
+    "P0.60: genesis_readiness_cross_device_contract",
+    "P0.41: related metacognitive wiring",
+    "P0.69: metacognitive_discernment_frame (CLOSED)"
+  ],
+  "phases": [
+    {
+      "phase": "birth",
+      "description": "System boots, creates first EnvironmentSelfModel and WorldModelSnapshot, records startup timeline.",
+      "status": "completed",
+      "evidence_refs": [
+        "src/iabv_v15/infra/startup_timeline.py",
+        "src/iabv_v15/services/environment/environment_bootstrap_service.py",
+        "src/iabv_v15/services/evolution/discernment_frame_service.py (build_birth_frame)"
+      ],
+      "missing_links": [],
+      "next_test": "Verify birth frame has startup_timeline sensors and env_risks in live Windows runtime.",
+      "risk_if_unfixed": "low — birth flow is functional."
+    },
+    {
+      "phase": "stabilize",
+      "description": "Post-boot stabilization: freeze budget, deferred cognition under resource pressure.",
+      "status": "completed",
+      "evidence_refs": [
+        "src/iabv_v15/services/evolution/freeze_incident_reporter.py",
+        "src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py (_assess_resource_pressure)",
+        "data/evolution/freeze_incidents/"
+      ],
+      "missing_links": [],
+      "next_test": "Confirm freeze budget blocks deep cognition under CRITICAL pressure.",
+      "risk_if_unfixed": "low — stabilization is validated."
+    },
+    {
+      "phase": "observe",
+      "description": "Live observation: WorldModel scans windows, network, tools; PerceptionSnapshot aggregates signals.",
+      "status": "completed",
+      "evidence_refs": [
+        "src/iabv_v15/services/evolution/world_model_service.py",
+        "src/iabv_v15/services/capture/universal_perception_service.py",
+        "src/iabv_v15/domain/models.py (WorldModelSnapshot, PerceptionSnapshot)"
+      ],
+      "missing_links": [],
+      "next_test": "WorldModel snapshot includes tool_live_status in Windows runtime.",
+      "risk_if_unfixed": "low — P1 closed."
+    },
+    {
+      "phase": "ground",
+      "description": "Grounding assessment: distinguish trusted vs untrusted sources, detect missing data.",
+      "status": "completed",
+      "evidence_refs": [
+        "src/iabv_v15/services/evolution/discernment_frame_service.py (_assess_grounding, _collect_sensor_sources)",
+        "src/iabv_v15/domain/models.py (MetacognitiveDiscernmentFrame)",
+        "src/iabv_v15/services/evolution/concept_weight_evidence.py (existing CWE service — consumed as dict)"
+      ],
+      "missing_links": [
+        "Live proof: concept_weight_evidence dict from existing service flows into DiscernmentFrame"
+      ],
+      "next_test": "Build frame with concept_weight_evidence dict from existing service and verify concept_weights populated.",
+      "risk_if_unfixed": "medium — grounding works but concept weights may be empty without live data."
+    },
+    {
+      "phase": "discern",
+      "description": "Pre-action discernment: bias detection, contradiction analysis, attractor evaluation, confidence scoring.",
+      "status": "partial",
+      "evidence_refs": [
+        "src/iabv_v15/services/evolution/discernment_frame_service.py",
+        "src/iabv_v15/domain/models.py (MetacognitiveDiscernmentFrame)",
+        "tests/test_discernment_frame_p069.py"
+      ],
+      "missing_links": [
+        "Live proof: discernment frame used in real task decision path",
+        "TaskContextAssembler discernment_frame_summary needs live validation"
+      ],
+      "next_test": "End-to-end: user asks question -> TaskContextAssembler includes discernment_frame_summary in metadata.",
+      "risk_if_unfixed": "high — system may act without discernment."
+    },
+    {
+      "phase": "communicate",
+      "description": "Introspective UI responses: answer 'me entiendes?', 'por donde vamos?', 'que falta?' from live evidence.",
+      "status": "partial",
+      "evidence_refs": [
+        "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py (_is_discernment_question, _answer_discernment_question)",
+        "src/iabv_v15/services/evolution/discernment_frame_service.py (human_summary)"
+      ],
+      "missing_links": [
+        "Live proof: introspective question returns roadmap-based answer"
+      ],
+      "next_test": "User types 'por donde vamos?' and gets phase-by-phase roadmap status.",
+      "risk_if_unfixed": "high — user gets generic local LLM answer instead of evidence-based response."
+    },
+    {
+      "phase": "act",
+      "description": "Action execution with governance gates: AutonomyGovernancePolicy + AutonomousValidationCycle.",
+      "status": "completed",
+      "evidence_refs": [
+        "src/iabv_v15/services/adaptive/autonomy_governance_policy.py",
+        "src/iabv_v15/services/self_teach/autonomous_validation_cycle.py",
+        "src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py"
+      ],
+      "missing_links": [],
+      "next_test": "Verify governance blocks action when grounding_status != grounded.",
+      "risk_if_unfixed": "low — governance is operational."
+    },
+    {
+      "phase": "learn",
+      "description": "Post-action learning: ExperimentLab records, StrategySelector updates, AdaptiveWeightLayer adjusts.",
+      "status": "completed",
+      "evidence_refs": [
+        "src/iabv_v15/services/lab/experiment_lab.py",
+        "src/iabv_v15/services/lab/strategy_selector.py",
+        "src/iabv_v15/services/adaptive/adaptive_weight_layer.py",
+        "src/iabv_v15/services/adaptive/task_outcome_recorder.py"
+      ],
+      "missing_links": [],
+      "next_test": "After task completion, verify experiment run recorded and weight updated.",
+      "risk_if_unfixed": "low — P2 closed."
+    },
+    {
+      "phase": "reorganize",
+      "description": "Self-examination and adjustment: OSES detects patterns, recommends changes, validates if they worked.",
+      "status": "partial",
+      "evidence_refs": [
+        "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+        "src/iabv_v15/services/evolution/portable_context_service.py",
+        "data/evolution/self_examination/"
+      ],
+      "missing_links": [
+        "OSES discernment_frame_missing_in_task_context finding needs live proof",
+        "OSES stale_external_data_overrode_live_world_model needs live proof"
+      ],
+      "next_test": "Trigger OSES review with frames that have missing grounding; verify finding generated.",
+      "risk_if_unfixed": "medium — OSES may miss discernment-related anti-patterns."
+    },
+    {
+      "phase": "cross_device_portability",
+      "description": "PortableContext exports complete metacognitive state for session transfer.",
+      "status": "partial",
+      "evidence_refs": [
+        "src/iabv_v15/services/evolution/portable_context_service.py",
+        "data/evolution/portable_context/"
+      ],
+      "missing_links": [
+        "metacognitive_roadmap_matrix export live proof",
+        "unresolved_metacognitive_links export live proof"
+      ],
+      "next_test": "Export portable context and verify roadmap_matrix section present.",
+      "risk_if_unfixed": "medium — new session won't know metacognitive progress."
+    }
+  ],
+  "code_simulation_proof": {
+    "date": "2026-05-28T16:20:00Z",
+    "environment": "Linux VM (code-level simulation, not Windows runtime)",
+    "results": [
+      {"check": "Phrase detection: 6/6 intercepted (por donde vamos, que falta, me entiendes variants)", "status": "PASSED"},
+      {"check": "_answer_roadmap_question reads JSON, formats 10 phases, no LLM call", "status": "PASSED"},
+      {"check": "_answer_discernment_question builds frame + human_summary, no LLM call", "status": "PASSED"},
+      {"check": "PortableContext: roadmap_matrix (6/10 completed), unresolved_links (5 items), discernment_frame", "status": "PASSED"},
+      {"check": "OSES: discernment_frame_missing_in_task_context fires when no frames exist", "status": "PASSED"},
+      {"check": "All responses sub-millisecond, no busy/hang risk", "status": "PASSED"},
+      {"check": "Tests: 38/38 passing", "status": "PASSED"}
+    ]
+  },
+  "unresolved": [
+    "PENDING_WINDOWS_RUNTIME: CWE dict from existing service flows into DiscernmentFrame",
+    "PENDING_WINDOWS_RUNTIME: TaskContextAssembler discernment_frame_summary in live metadata",
+    "PENDING_WINDOWS_RUNTIME: 'por donde vamos?' returns roadmap in live UI chat",
+    "PENDING_WINDOWS_RUNTIME: OSES discernment_frame_missing_in_task_context in live review",
+    "PENDING_WINDOWS_RUNTIME: PortableContext latest.json contains roadmap_matrix section"
+  ],
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_PENDING_WINDOWS_RUNTIME",
+    "source": "pr420_windows_schema_audit"
+  }
+}

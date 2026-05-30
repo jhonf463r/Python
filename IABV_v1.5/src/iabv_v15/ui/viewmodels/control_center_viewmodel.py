@@ -10283,6 +10283,8 @@ class ControlCenterViewModel(QObject):
         'como decidiste', 'cómo decidiste',
         'que vas a hacer', 'qué vas a hacer',
         'que necesitas observar', 'qué necesitas observar',
+        'por donde vamos', 'por dónde vamos', '¿por dónde vamos',
+        'que falta', 'qué falta', '¿qué falta',
     )
 
     def _is_discernment_question(self, message: str) -> bool:
@@ -10291,8 +10293,22 @@ class ControlCenterViewModel(QObject):
             return False
         return any(phrase in normalized for phrase in self._DISCERNMENT_PHRASES)
 
+    _ROADMAP_PHRASES: tuple[str, ...] = (
+        'por donde vamos', 'por dónde vamos', '¿por dónde vamos',
+        'que falta', 'qué falta', '¿qué falta',
+    )
+
+    def _is_roadmap_question(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        return any(phrase in normalized for phrase in self._ROADMAP_PHRASES)
+
     def _answer_discernment_question(self, message: str) -> None:
-        """P0.69: answer from DiscernmentFrame instead of local LLM."""
+        """P0.69/P0.70: answer from DiscernmentFrame or roadmap matrix."""
+        if self._is_roadmap_question(message):
+            self._answer_roadmap_question(message)
+            return
         try:
             from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
             svc = DiscernmentFrameService()
@@ -10322,6 +10338,50 @@ class ControlCenterViewModel(QObject):
             response = '\n'.join(parts)
         except Exception as exc:
             response = f'No puedo generar un frame de discernimiento ahora: {exc}'
+        self._append_message('assistant', 'IABV', response)
+        self.dataChanged.emit()
+
+    def _answer_roadmap_question(self, message: str) -> None:
+        """P0.70: answer from roadmap matrix + discernment frame + OSES."""
+        parts: list[str] = []
+        try:
+            import json as _json
+            from pathlib import Path as _Path
+            workspace = getattr(self, '_workspace_root', '') or ''
+            p = _Path(workspace) / 'data' / 'evolution' / 'platform_pending' / 'task_metacognitive_autonomy_roadmap_matrix_p070.json'
+            if p.exists():
+                raw = _json.loads(p.read_text(encoding='utf-8'))
+                phases = raw.get('phases', [])
+                parts.append('**Roadmap metacognitivo:**')
+                for ph in phases:
+                    status_icon = {'completed': 'OK', 'partial': 'PARCIAL', 'unresolved': 'PENDIENTE'}.get(ph.get('status', ''), '?')
+                    missing = ph.get('missing_links', [])
+                    line = f"- **{ph.get('phase', '?')}**: {status_icon}"
+                    if missing:
+                        line += f" — falta: {', '.join(missing[:2])}"
+                    parts.append(line)
+                global_unresolved = raw.get('unresolved', [])
+                if global_unresolved:
+                    parts.append('\n**UNRESOLVED global:**')
+                    for u in global_unresolved[:5]:
+                        parts.append(f'- {u}')
+            else:
+                parts.append('No se encontró el archivo de roadmap metacognitivo.')
+        except Exception as exc:
+            parts.append(f'Error leyendo roadmap: {exc}')
+
+        try:
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService()
+            frame = svc.latest_frame()
+            if frame:
+                parts.append(f'\n**Frame actual:** phase={frame.phase}, grounding={frame.grounding_status}, confidence={round(frame.confidence, 2)}')
+                if frame.unresolved_fields:
+                    parts.append(f'Campos sin resolver: {", ".join(frame.unresolved_fields[:5])}')
+        except Exception:
+            pass
+
+        response = '\n'.join(parts) if parts else 'No tengo datos de roadmap metacognitivo disponibles.'
         self._append_message('assistant', 'IABV', response)
         self.dataChanged.emit()
 

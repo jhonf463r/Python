@@ -178,6 +178,7 @@ class TaskContextAssembler:
                 'validation_learning_summary': validation_learning_summary,
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'discernment_frame_summary': self._discernment_frame_summary(),
                 'evidence_basis': self._classify_evidence_basis(
                     has_world_model=not self._world_model_unresolved(world_model),
                     has_environment=bool(str(environment_self_model.environment_id or '').strip()),
@@ -228,6 +229,7 @@ class TaskContextAssembler:
                 'environment_notifications': list(environment_self_model.notifications or []),
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'discernment_frame_summary': self._discernment_frame_summary(),
                 'evidence_basis': self._classify_evidence_basis(
                     has_world_model=not self._world_model_unresolved(world_model),
                     has_environment=bool(str(environment_self_model.environment_id or '').strip()),
@@ -500,6 +502,15 @@ class TaskContextAssembler:
             return dict(summary or {})
         except Exception:
             return {}
+
+    def _discernment_frame_summary(self) -> dict[str, Any]:
+        """P0.69/P0.70: compact discernment frame summary for perception metadata."""
+        try:
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService()
+            return svc.discernment_frame_summary()
+        except Exception:
+            return {'status': 'unavailable'}
 
     def _tool_world_summary(self, tool: Any) -> dict[str, Any]:
         return {

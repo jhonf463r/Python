@@ -51,6 +51,7 @@ class DiscernmentFrameService:
         recent_findings: list[Any] | None = None,
         startup_events: list[dict[str, Any]] | None = None,
         freeze_reports: list[dict[str, Any]] | None = None,
+        concept_weight_evidence: dict[str, Any] | None = None,
     ) -> MetacognitiveDiscernmentFrame:
         """Build a new discernment frame from available state."""
         frame = MetacognitiveDiscernmentFrame(
@@ -77,6 +78,9 @@ class DiscernmentFrameService:
         frame.candidate_attractor = attractors['candidate']
         frame.attractor_confidence = attractors['confidence']
 
+        # ConceptWeightEvidence wiring
+        self._apply_concept_weight_evidence(frame, concept_weight_evidence)
+
         # Bias filter
         biases = self._detect_bias_risks(
             world_model=world_model,
@@ -86,13 +90,21 @@ class DiscernmentFrameService:
         )
         frame.bias_risks = biases['risks']
         frame.contradictions = biases['contradictions']
+        # Merge contradictions from concept weight evidence
+        if concept_weight_evidence:
+            cwe_contradictions = concept_weight_evidence.get('contradictions', [])
+            if cwe_contradictions:
+                frame.contradictions.extend(cwe_contradictions)
 
         # Grounding status
         frame.grounding_status = self._assess_grounding(frame)
         frame.confidence = self._compute_confidence(frame)
 
-        # Unresolved
-        frame.unresolved_fields = self._collect_unresolved(frame)
+        # Unresolved (extend, don't overwrite — earlier steps may have added markers)
+        frame.unresolved_fields.extend(
+            f for f in self._collect_unresolved(frame)
+            if f not in frame.unresolved_fields
+        )
 
         self._frame_history.append(frame)
         return frame
@@ -216,6 +228,8 @@ class DiscernmentFrameService:
             'trusted_count': len(frame.trusted_sources),
             'untrusted_count': len(frame.untrusted_sources),
             'missing_count': len(frame.missing_sources),
+            'detected_concepts': frame.detected_concepts[:10],
+            'concept_weight_count': len(frame.concept_weights),
             'contradiction_count': len(frame.contradictions),
             'bias_risk_count': len(frame.bias_risks),
             'active_attractor_count': len(frame.active_attractors),
@@ -226,6 +240,58 @@ class DiscernmentFrameService:
             'human_help_needed': frame.human_help_needed,
             'unresolved_fields': frame.unresolved_fields[:5],
         }
+
+    def discernment_frame_summary(self, frame: MetacognitiveDiscernmentFrame | None = None) -> dict[str, Any]:
+        """Compact summary for TaskContextAssembler metadata."""
+        if frame is None:
+            frame = self.latest_frame()
+        if frame is None:
+            return {'status': 'no_frame'}
+        return {
+            'phase': frame.phase,
+            'grounding_status': frame.grounding_status,
+            'confidence': round(frame.confidence, 3),
+            'detected_concepts': frame.detected_concepts[:5],
+            'active_attractors': [a.get('key', '') for a in frame.active_attractors[:3]],
+            'contradictions_count': len(frame.contradictions),
+            'bias_risks': [b.get('type', '') for b in frame.bias_risks[:3]],
+            'selected_action': frame.selected_action,
+            'unresolved_fields': frame.unresolved_fields[:5],
+        }
+
+    # ── ConceptWeightEvidence wiring ──────────────────────────
+
+    @staticmethod
+    def _apply_concept_weight_evidence(
+        frame: MetacognitiveDiscernmentFrame,
+        evidence: dict[str, Any] | None,
+    ) -> None:
+        """Wire concept_weight_evidence (dict from existing service) into the frame.
+
+        Accepts the dict output produced by the existing
+        ``concept_weight_evidence`` service (or any compatible dict with
+        keys: concepts, weights, sources, missing_sources, contradictions).
+        Does NOT create a parallel model — consumes whatever the upstream
+        service provides.
+        """
+        if evidence is None:
+            if 'concept_weight_evidence_missing' not in frame.unresolved_fields:
+                frame.unresolved_fields.append('concept_weight_evidence_missing')
+            return
+        concepts = evidence.get('concepts', [])
+        weights = evidence.get('weights', {})
+        sources = evidence.get('sources', [])
+        if concepts:
+            frame.detected_concepts = list(concepts)
+        if weights:
+            frame.concept_weights = dict(weights)
+        if sources:
+            for src in sources:
+                label = f'cwe:{src}'
+                if label not in frame.sensor_sources:
+                    frame.sensor_sources.append(label)
+                if label not in frame.trusted_sources:
+                    frame.trusted_sources.append(label)
 
     # ── Internal helpers ────────────────────────────────────────
 
