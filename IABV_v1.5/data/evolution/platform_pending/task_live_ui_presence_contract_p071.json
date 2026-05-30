@@ -1,0 +1,60 @@
+{
+  "id": "p071_live_ui_presence_contract",
+  "title": "P0.71: Live UI Presence Contract + UIBridge Truthfulness + Human-Simulated Chat Audit",
+  "status": "COMPLETED",
+  "verification_status": "LIVE_VERIFIED_WINDOWS_BY_CODEX",
+  "created_at": "2026-05-28T20:30:00Z",
+  "priority": "high",
+  "description": "Codex Windows audit revealed: UIBridge reported ui_running=true but send_message went to buffer without ControlCenterViewModel; navigate('control') reported success but route didn't change; startup_bridge_reused was treated as sufficient even when no UI process existed; two python processes fought over port 18921; 'sigue' fell to local provider at 112s latency. P0.71 closes these gaps with truth contracts, presence verification, and causal freeze diagnosis.",
+  "root_cause": "UIBridge lacked fail-closed semantics: it would return 'buffered' or 'navigated' even when no ControlCenterViewModel was bound. start_iabv.ps1 had no single-instance guard for the UI process. FreezeIncidentReporter didn't capture bridge/control VM state at stall time, so cause remained 'unknown'. OSES had no findings for bridge truth violations.",
+  "implemented_tasks": [
+    "A. start_iabv.ps1: UI Presence Contract — startup_bridge_reused NOT sufficient when -StartUI; checks for existing UI process; emits traces (ui_presence_check_started/result, ui_launch_started/result/failed)",
+    "B. start_iabv.ps1: Single UI Instance Sovereignty — Find-ExistingUIProcess detects duplicate, Test-BridgePortOwner verifies port owner, emits ui_duplicate_prevented/ui_bridge_port_conflict/ui_bridge_owner_verified",
+    "C. UIBridgeService: Truth Contract — send_message returns status=unavailable when no VM (not 'buffered'); get_ui_state exposes control_vm_bound, chat_ready, navigation_controller_bound, current_page_verified, PIDs; navigate verifies route actually changed (status=failed if not)",
+    "D. scripts/human_simulated_chat_audit.py: runner that connects to live bridge and tests reachability, VM binding, navigation, metacognitive phrases, response latency, shell readiness",
+    "E. FreezeIncidentReporter: _capture_ui_bridge_state() probes bridge for control_vm_bound, chat_ready, PIDs at freeze time; included in every incident report",
+    "F. OSES: _ui_bridge_truth_findings() detects bridge_claimed_ready_but_no_vm, local_chat_slow_after_continuity, ui_stall_without_causal_phase, duplicate_ui_bridge_owner — observe/recommend only"
+  ],
+  "files_touched": [
+    "scripts/start_iabv.ps1",
+    "src/iabv_v15/services/ui_bridge_service.py",
+    "src/iabv_v15/services/evolution/freeze_incident_reporter.py",
+    "src/iabv_v15/services/evolution/operational_self_examination_service.py",
+    "scripts/human_simulated_chat_audit.py",
+    "data/evolution/platform_pending/task_live_ui_presence_contract_p071.json",
+    "tests/test_ui_bridge_truth_p071.py"
+  ],
+  "not_duplicated": [
+    "No new cerebro or orchestrator created",
+    "UIBridgeStatus extended (not replaced) with truth contract fields",
+    "FreezeIncidentReporter extended (not replaced) with bridge state capture",
+    "OSES findings added via the same pattern as P0.69 (external impl function attached to class)",
+    "ControlCenterViewModel NOT modified — it already handles metacognitive phrases from P0.69"
+  ],
+  "related_tasks": [
+    "P0.69: Metacognitive Discernment Frame",
+    "P0.70: Metacognitive Roadmap Matrix",
+    "P0.40: External Intent Sovereignty"
+  ],
+  "live_proof_windows": {
+    "status": "CONFIRMED",
+    "performed_by": "Codex on Windows (C:\\Python\\_review_pr421_live\\IABV_v1.5)",
+    "date": "2026-05-30",
+    "evidence": [
+      "human_simulated_chat_audit.py against live UI: 9 passed, 0 failed",
+      "UIBridge 127.0.0.1:18921 owned by UI PID; MCP 127.0.0.1:8000 owned by MCP PID (single owner each)",
+      "pytest test_ui_bridge_truth_p071.py + test_ui_bridge_service.py + test_freeze_incident_reporter.py: 74 passed",
+      "send_message no longer stays in pending_shell_ready when bridge is created late after page_loader_ready",
+      "navigate uses real NavigationController.navigate() contract; route change verified"
+    ],
+    "follow_up_commits": [
+      "6c3048e0: exclusive bridge port ownership (SO_EXCLUSIVEADDRUSE) + best-effort sub-250ms freeze bridge capture",
+      "23615231: late UIBridge mark_shell_ready + control route not RAM-gated + navigate()/navigate_to() contract"
+    ]
+  },
+  "residual_notes": [
+    "Startup still spends ~8s in startup_truth_refresh and ~37s before lazy control prebuild in the live run; bridge comes up correctly and chat path works. Startup performance tuning should be a separate slice if needed."
+  ],
+  "unresolved": [],
+  "next_step": "READY_TO_MERGE. Land the P0.69/P0.70/P0.71 stack (#419 -> #420 -> #421) into main in order, or retarget #421 base to main and squash-merge the stack. Repo rules require human approval because the stack touches domain/models.py and closed layers P3/P4."
+}

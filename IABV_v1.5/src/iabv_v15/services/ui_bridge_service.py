@@ -59,6 +59,13 @@ class UIBridgeStatus:
     connected_clients: int = 0
     last_error: str = ""
     ui_available: bool = False
+    # P0.71: truth contract fields
+    ui_process_pid: int = 0
+    bridge_owner_pid: int = 0
+    control_vm_bound: bool = False
+    navigation_controller_bound: bool = False
+    current_page_verified: bool = False
+    chat_ready: bool = False
 
 
 class UIBridgeServer:
@@ -179,7 +186,17 @@ class UIBridgeServer:
             return
         try:
             self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # Single UI instance sovereignty (P0.71): exclusive port ownership.
+            # On Windows SO_REUSEADDR lets a second server steal an actively
+            # bound port, which reproduces the "two bridges, wrong owner" bug.
+            # SO_EXCLUSIVEADDRUSE (Windows only) forbids that; on POSIX a plain
+            # SO_REUSEADDR is safe because it does not permit two live listeners
+            # on the same address.
+            _exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+            if _exclusive is not None:
+                self._server_socket.setsockopt(socket.SOL_SOCKET, _exclusive, 1)
+            else:
+                self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._server_socket.bind((self._host, self._port))
             self._server_socket.listen(4)
             self._server_socket.settimeout(1.0)
@@ -320,15 +337,23 @@ class UIBridgeClient:
         self,
         host: str = DEFAULT_BRIDGE_HOST,
         port: int = DEFAULT_BRIDGE_PORT,
+        *,
+        connect_timeout_s: float = CONNECT_TIMEOUT_S,
+        recv_timeout_s: float = RECV_TIMEOUT_S,
     ) -> None:
         self._host = host
         self._port = port
+        # Per-client timeouts. Best-effort callers (e.g. the freeze
+        # reporter) pass small values so an absent/slow UI can never
+        # block them.
+        self._connect_timeout_s = connect_timeout_s
+        self._recv_timeout_s = recv_timeout_s
 
     def is_ui_available(self) -> bool:
         """Verifica si la UI esta escuchando."""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(CONNECT_TIMEOUT_S)
+            sock.settimeout(self._connect_timeout_s)
             sock.connect((self._host, self._port))
             sock.close()
             return True
@@ -344,8 +369,9 @@ class UIBridgeClient:
         request = {"id": req_id, "method": method, "params": params}
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(RECV_TIMEOUT_S)
+            sock.settimeout(self._connect_timeout_s)
             sock.connect((self._host, self._port))
+            sock.settimeout(self._recv_timeout_s)
         except Exception as exc:
             return {
                 "id": req_id,
@@ -397,10 +423,9 @@ def build_ui_bridge_server(
     def _on_send_message(text: str = "") -> dict[str, Any]:
         """Envia un mensaje al chat de la UI.
 
-        If the shell is not yet ready (splash still visible), the message
-        is buffered and will be flushed when ``mark_shell_ready()`` fires.
-        This prevents the "bridge queue without response" problem (Task 9 /
-        Task 2) where MCP sends messages that never reach the chat.
+        P0.71 truth contract: if ControlCenterViewModel is not bound,
+        returns fail-closed with status=unavailable instead of silently
+        buffering as if it worked.
         """
         if not text:
             return {"status": "error", "detail": "text is required"}
@@ -416,13 +441,12 @@ def build_ui_bridge_server(
                 return {"status": "queued", "text": text}
             except Exception as exc:
                 return {"status": "error", "detail": str(exc)[:200]}
-        with _chat_lock:
-            _chat_buffer.append({
-                "role": "bridge",
-                "text": text,
-                "timestamp": time.time(),
-            })
-        return {"status": "buffered", "text": text}
+        # P0.71: fail-closed when no ControlCenterViewModel
+        return {
+            "status": "unavailable",
+            "reason": "control_center_vm_not_bound",
+            "next_human_action": "Launch IABV UI or verify the bridge is connected.",
+        }
 
     def _on_read_messages(limit: int = 20) -> dict[str, Any]:
         """Lee los ultimos N mensajes del buffer del chat."""
@@ -455,18 +479,22 @@ def build_ui_bridge_server(
     def _on_get_ui_state() -> dict[str, Any]:
         """Retorna el estado actual de la UI.
 
-        ``current_page`` ahora se lee desde el ``NavigationController``
-        real (``current_route``) — antes leia ``_current_page`` que NO
-        existe como atributo en ``ControlCenterViewModel`` y siempre
-        devolvia ``"unknown"``.  Mantenemos el fallback al atributo
-        viejo por si algun consumer externo lo seteo a mano.
+        P0.71 truth contract: includes control_vm_bound, chat_ready,
+        navigation_controller_bound, current_page_verified, and PIDs.
         """
+        import os as _os
         state: dict[str, Any] = {"ui_running": True}
-        if control_center_viewmodel is not None:
+        state["ui_process_pid"] = _os.getpid()
+        state["bridge_owner_pid"] = _os.getpid()
+        vm_bound = control_center_viewmodel is not None
+        state["control_vm_bound"] = vm_bound
+        if vm_bound:
             try:
                 page: str = "unknown"
                 nav = getattr(control_center_viewmodel, "navigation_controller", None)
-                if nav is not None:
+                nav_bound = nav is not None
+                state["navigation_controller_bound"] = nav_bound
+                if nav_bound:
                     getter = getattr(nav, "get_current_route", None)
                     if callable(getter):
                         try:
@@ -481,31 +509,78 @@ def build_ui_bridge_server(
                         or "unknown"
                     )
                 state["current_page"] = page
+                state["current_page_verified"] = page != "unknown"
                 state["chat_session_id"] = getattr(
                     control_center_viewmodel, "_chat_session_id", ""
                 )
                 state["live_status"] = getattr(
                     control_center_viewmodel, "_live_status", "idle"
                 )
+                state["chat_ready"] = True
             except Exception:
-                pass
+                state["chat_ready"] = False
+        else:
+            state["navigation_controller_bound"] = False
+            state["current_page_verified"] = False
+            state["chat_ready"] = False
+        # Update server status for diagnostics
+        server._status.control_vm_bound = vm_bound
+        server._status.chat_ready = state.get("chat_ready", False)
+        server._status.ui_process_pid = state.get("ui_process_pid", 0)
+        server._status.bridge_owner_pid = state.get("bridge_owner_pid", 0)
         return state
 
     def _on_navigate(page: str = "") -> dict[str, Any]:
-        """Navega a una pagina/tab de la UI."""
+        """Navega a una pagina/tab de la UI.
+
+        P0.71 truth contract: verifies that the route actually changed
+        after navigation.  Returns status=failed if it didn't.
+        """
         if not page:
             return {"status": "error", "detail": "page is required"}
         if control_center_viewmodel is not None:
             try:
                 nav = getattr(control_center_viewmodel, "navigation_controller", None)
-                if nav and hasattr(nav, "navigate_to"):
-                    nav.navigate_to(page)
-                    return {"status": "navigated", "page": page}
+                if nav:
+                    navigate = getattr(nav, "navigate_to", None)
+                    if not callable(navigate):
+                        navigate = getattr(nav, "navigate", None)
+                    if not callable(navigate):
+                        return {
+                            "status": "unavailable",
+                            "reason": "navigation_controller_not_callable",
+                            "next_human_action": "Verify the UI navigation controller contract.",
+                        }
+                    navigate(page)
+                    # P0.71: verify route actually changed
+                    actual = "unknown"
+                    getter = getattr(nav, "get_current_route", None)
+                    if callable(getter):
+                        try:
+                            actual = str(getter() or "unknown")
+                        except Exception:
+                            actual = "unknown"
+                    else:
+                        actual = str(getattr(nav, "_current_route", "unknown") or "unknown")
+                    if actual != "unknown" and actual.lower() != page.lower():
+                        return {
+                            "status": "failed",
+                            "detail": f"Route did not change to '{page}'. Actual: '{actual}'.",
+                            "requested_page": page,
+                            "actual_page": actual,
+                        }
+                    return {"status": "navigated", "page": page, "verified": actual != "unknown"}
             except Exception as exc:
                 return {"status": "error", "detail": str(exc)[:200]}
+            return {
+                "status": "unavailable",
+                "reason": "navigation_controller_not_bound",
+                "next_human_action": "Launch the full IABV UI with navigationController bound.",
+            }
         return {
-            "status": "error",
-            "detail": "navigation_controller not available",
+            "status": "unavailable",
+            "reason": "control_center_vm_not_bound",
+            "next_human_action": "Launch IABV UI first.",
         }
 
     def _on_capture_screenshot(region: str = "main") -> dict[str, Any]:

@@ -200,7 +200,10 @@ class FreezeIncidentReporter:
         # 10. Runtime audit pre-stall context (P0.12)
         report['runtime_audit_context'] = self._capture_runtime_audit_context()
 
-        # 11. Extra context
+        # 11. P0.71: UI bridge / control VM state at freeze time
+        report['ui_bridge_state'] = self._capture_ui_bridge_state()
+
+        # 12. Extra context
         if extra_context:
             report['extra'] = extra_context
 
@@ -676,6 +679,46 @@ class FreezeIncidentReporter:
         except Exception as exc:
             ctx['error'] = str(exc)
         return ctx
+
+    @staticmethod
+    def _capture_ui_bridge_state() -> dict[str, Any]:
+        """P0.71: capture UIBridge truth state at freeze time.
+
+        Strictly best-effort: must never block the freeze report. Uses
+        very short connect/recv timeouts so that when the UI/bridge is
+        absent (the common case during a freeze) the whole capture stays
+        well under ~250ms. A reachable bridge is probed once; an absent
+        one returns ``bridge_reachable=false`` immediately.
+        """
+        import time as _time
+        state: dict[str, Any] = {}
+        started = _time.monotonic()
+        try:
+            from iabv_v15.services.ui_bridge_service import UIBridgeClient
+            client = UIBridgeClient(connect_timeout_s=0.15, recv_timeout_s=0.25)
+            state['bridge_reachable'] = client.is_ui_available()
+            if state['bridge_reachable']:
+                ui_state = client.call('get_ui_state')
+                result = ui_state.get('result', {})
+                state['control_vm_bound'] = result.get('control_vm_bound', False)
+                state['chat_ready'] = result.get('chat_ready', False)
+                state['navigation_controller_bound'] = result.get(
+                    'navigation_controller_bound', False,
+                )
+                state['current_page'] = result.get('current_page', 'unknown')
+                state['current_page_verified'] = result.get(
+                    'current_page_verified', False,
+                )
+                state['ui_process_pid'] = result.get('ui_process_pid', 0)
+                state['bridge_owner_pid'] = result.get('bridge_owner_pid', 0)
+            else:
+                state['control_vm_bound'] = False
+                state['chat_ready'] = False
+        except Exception as exc:
+            state['error'] = str(exc)
+            state.setdefault('bridge_reachable', False)
+        state['capture_ms'] = round((_time.monotonic() - started) * 1000.0, 1)
+        return state
 
 
 # ======================================================================

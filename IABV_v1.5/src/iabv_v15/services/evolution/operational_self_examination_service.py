@@ -867,6 +867,9 @@ class OperationalSelfExaminationService:
 
         # P0.69: discernment frame findings.
         findings.extend(self._discernment_frame_findings())
+
+        # P0.71: UI bridge truth contract findings.
+        findings.extend(self._ui_bridge_truth_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -9388,3 +9391,145 @@ def _discernment_frame_findings_impl(self) -> list:
 
 # Attach to the class
 OperationalSelfExaminationService._discernment_frame_findings = _discernment_frame_findings_impl
+
+
+# ── P0.71: UI Bridge Truth Contract findings ──
+
+def _ui_bridge_truth_findings_impl(self) -> list:
+    """P0.71: detect UI bridge anti-patterns from runtime audit events.
+
+    Findings (observe/recommend only — OSES never executes actions):
+    - bridge_claimed_ready_but_no_vm: bridge reports chat_ready but no ControlCenterViewModel
+    - local_chat_slow_after_continuity: local chat provider took >5s after continuity prompt
+    - ui_stall_without_causal_phase: freeze report has unknown cause
+    - duplicate_ui_bridge_owner: two processes listening on bridge port
+    """
+    findings: list = []
+    try:
+        from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
+    except Exception:
+        return findings
+
+    # Read recent runtime audit events for bridge/UI patterns
+    bridge_ready_no_vm = 0
+    local_slow_count = 0
+    stall_unknown_count = 0
+    duplicate_bridge = 0
+
+    try:
+        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+        tracer = get_runtime_tracer()
+        events = tracer.events(limit=200)
+        for ev in events:
+            kind = ev.get('kind', '')
+            data = ev.get('data', {})
+            if kind == 'ui_bridge_port_conflict':
+                duplicate_bridge += 1
+            if kind == 'bridge_claimed_ready_but_no_vm':
+                bridge_ready_no_vm += 1
+            if kind == 'dispatch_completed':
+                duration_ms = data.get('duration_ms', 0)
+                provider = data.get('provider', '')
+                if provider == 'local' and duration_ms > 5000:
+                    local_slow_count += 1
+    except Exception:
+        pass
+
+    # Read recent freeze incidents for unknown-cause stalls
+    try:
+        from iabv_v15.services.evolution.freeze_incident_reporter import FreezeIncidentReporter
+        workspace = getattr(self, 'workspace_root', '')
+        if workspace:
+            import os
+            evo_dir = os.path.join(workspace, 'data', 'evolution')
+            reporter = FreezeIncidentReporter(evo_dir)
+            for inc in reporter.recent_incidents(limit=10):
+                extra = inc or {}
+                if extra.get('incident_type', '') in ('chat_stall', 'startup_freeze'):
+                    bridge_state = {}
+                    full = reporter.get_report(extra.get('file', ''))
+                    if full:
+                        bridge_state = full.get('ui_bridge_state', {})
+                    if bridge_state.get('bridge_reachable') and not bridge_state.get('control_vm_bound'):
+                        bridge_ready_no_vm += 1
+    except Exception:
+        pass
+
+    # Read startup trace for duplicate bridge
+    try:
+        import os
+        workspace = getattr(self, 'workspace_root', '')
+        if workspace:
+            trace_path = os.path.join(workspace, 'data', 'logs', 'startup_ui_presence.jsonl')
+            if os.path.exists(trace_path):
+                import json
+                with open(trace_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            if entry.get('kind') == 'ui_bridge_port_conflict':
+                                duplicate_bridge += 1
+                        except Exception:
+                            pass
+    except Exception:
+        pass
+
+    if bridge_ready_no_vm >= 1:
+        findings.append(SelfExaminationFinding(
+            title='Bridge reportó ready sin ControlCenterViewModel',
+            summary=(
+                f'{bridge_ready_no_vm} evento(s) donde el bridge declaró '
+                'chat_ready pero no hay ViewModel vinculado. Los mensajes '
+                'se bufferean sin llegar al chat real.'
+            ),
+            severity=IssueSeverity.HIGH,
+            category='bridge_claimed_ready_but_no_vm',
+            metadata={'count': bridge_ready_no_vm},
+        ))
+
+    if local_slow_count >= 2:
+        findings.append(SelfExaminationFinding(
+            title='Chat local lento después de continuidad',
+            summary=(
+                f'{local_slow_count} respuestas del proveedor local '
+                'tardaron > 5s. Considerar async threshold menor o '
+                'redirigir a roadmap/frame en vez de LLM pesado.'
+            ),
+            severity=IssueSeverity.MEDIUM,
+            category='local_chat_slow_after_continuity',
+            metadata={'count': local_slow_count},
+        ))
+
+    if stall_unknown_count >= 2:
+        findings.append(SelfExaminationFinding(
+            title='Freeze sin fase causal identificada',
+            summary=(
+                f'{stall_unknown_count} reportes de freeze con causa '
+                'desconocida. FreezeIncidentReporter debería capturar '
+                'bridge state y control VM al momento del stall.'
+            ),
+            severity=IssueSeverity.MEDIUM,
+            category='ui_stall_without_causal_phase',
+            metadata={'count': stall_unknown_count},
+        ))
+
+    if duplicate_bridge >= 1:
+        findings.append(SelfExaminationFinding(
+            title='Bridge port duplicado detectado',
+            summary=(
+                f'{duplicate_bridge} conflicto(s) de puerto bridge 18921. '
+                'Dos procesos intentaron escuchar el mismo puerto. '
+                'Solo uno debe ser dueño lógico del bridge.'
+            ),
+            severity=IssueSeverity.HIGH,
+            category='duplicate_ui_bridge_owner',
+            metadata={'count': duplicate_bridge},
+        ))
+
+    return findings
+
+
+OperationalSelfExaminationService._ui_bridge_truth_findings = _ui_bridge_truth_findings_impl

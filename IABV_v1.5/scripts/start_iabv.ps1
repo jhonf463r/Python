@@ -304,62 +304,133 @@ if (-not (Test-Path $bridge)) {
     exit 1
 }
 
-# Lanzar la UI (ControlCenter/Qt) en paralelo si el usuario lo pidio.
-# Lo hacemos ANTES del `& ... $bridge` porque esa invocacion es bloqueante:
-# la UI arranca en su propio proceso via Start-Process y corre en paralelo
-# con MCP+tunel. Si falla, lo logueamos pero seguimos arrancando el MCP
-# (contrato explicito: la UI no puede tumbar el MCP).
-if ($StartUI) {
-    Write-Info ""
-    Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
-    # Tell the UI bootstrap NOT to auto-start MCP+tunnel -- this script
-    # manages them externally.  Prevents port-8000 conflict (Errno 10048).
-    $env:IABV_SKIP_MCP_AUTOSTART = '1'
-    # Ensure PYTHONPATH includes src/ so `python -m iabv_v15` resolves correctly.
-    # run_mcp_bridge.ps1 sets this for the MCP server, but the UI process needs
-    # it too — Start-Process inherits the parent env so we set it here.
-    $uiSrcPath = Join-Path $iabvRoot 'src'
-    if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$uiSrcPath*") {
-        if ($env:PYTHONPATH) {
-            $env:PYTHONPATH = "$uiSrcPath;$env:PYTHONPATH"
-        } else {
-            $env:PYTHONPATH = $uiSrcPath
-        }
-    }
-    $env:IABV_WORKSPACE_ROOT = $iabvRoot
+# --- P0.71: UI Presence Contract + Single UI Instance Sovereignty ----------
+# When -StartUI is requested, startup_bridge_reused is NOT sufficient.
+# We must verify that a real UI process is alive and its bridge port belongs
+# to it.  If MCP exists but UI doesn't, we start/focus the UI.
+# Traces emitted: ui_presence_check_started, ui_presence_check_result,
+#   ui_launch_started, ui_launch_result, ui_launch_skipped_existing_ui,
+#   ui_launch_failed, ui_duplicate_prevented, ui_bridge_port_conflict,
+#   ui_bridge_owner_verified.
+
+function Write-StartupTrace($kind, $data) {
+    $ts = (Get-Date -Format 'o')
+    $entry = @{ kind = $kind; ts = $ts; data = $data } | ConvertTo-Json -Compress
+    $traceFile = Join-Path $logsDir 'startup_ui_presence.jsonl'
+    try { Add-Content -Path $traceFile -Value $entry -Encoding utf8 } catch {}
+}
+
+function Find-ExistingUIProcess {
+    # Returns the first matching python iabv_v15 app process (not this PID).
     try {
-        $pythonExe = 'python'
-        if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
-        # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
-        # -WindowStyle Hidden sets STARTUPINFO.wShowWindow = SW_HIDE which
-        # causes Windows to override the FIRST ShowWindow() call for EVERY
-        # top-level window in the process with SW_HIDE.  This kills the
-        # PySide6/QML window: Qt calls ShowWindow(hwnd, SW_SHOW) but
-        # Windows substitutes SW_HIDE from STARTUPINFO, so the HWND exists
-        # but is invisible (MainWindowHandle = 0, EnumWindows = 0 visible).
-        #
-        # Instead we use .NET ProcessStartInfo with CreateNoWindow = $true.
-        # CreateNoWindow adds CREATE_NO_WINDOW to the process creation flags
-        # which suppresses the console window WITHOUT touching STARTUPINFO
-        # .wShowWindow.  Qt windows appear normally.
-        #
-        # DO NOT add -RedirectStandardOutput/-RedirectStandardError — those
-        # flags also prevent PySide6 GUI windows from appearing on Windows.
-        $psi = [System.Diagnostics.ProcessStartInfo]::new()
-        $psi.FileName = $pythonExe
-        $psi.Arguments = '-m iabv_v15 app'
-        $psi.WorkingDirectory = $iabvRoot
-        $psi.UseShellExecute = $false
-        $psi.CreateNoWindow = $true
-        $uiProc = [System.Diagnostics.Process]::Start($psi)
-        Write-Info "  UI PID     : $($uiProc.Id)"
-        Write-Info "  PYTHONPATH : $env:PYTHONPATH"
+        $procs = Get-CimInstance Win32_Process -Filter "Name = 'python.exe' OR Name = 'python3.exe'" -ErrorAction SilentlyContinue
+        foreach ($p in $procs) {
+            if ($p.ProcessId -eq $PID) { continue }
+            $cmdLine = $p.CommandLine
+            if ($cmdLine -and $cmdLine -match 'iabv_v15.*app') {
+                return [PSCustomObject]@{
+                    Pid       = $p.ProcessId
+                    CmdLine   = $cmdLine
+                }
+            }
+        }
+    } catch {}
+    return $null
+}
+
+function Test-BridgePortOwner($port, $expectedPid) {
+    # Checks if the given port is owned by the expected PID.
+    try {
+        $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $conn) { return @{ owned = $false; reason = 'no_listener' } }
+        if ($conn.OwningProcess -eq $expectedPid) {
+            return @{ owned = $true; actual_pid = $conn.OwningProcess }
+        }
+        return @{ owned = $false; reason = 'wrong_owner'; actual_pid = $conn.OwningProcess; expected_pid = $expectedPid }
     } catch {
-        Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
-        Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
-        Write-Warn "         python -m iabv_v15 app"
+        return @{ owned = $false; reason = "probe_error: $_" }
     }
 }
+
+if ($StartUI) {
+    Write-Info ""
+    Write-StartupTrace 'ui_presence_check_started' @{ requested_by = 'start_iabv.ps1'; bridge_port = 18921 }
+
+    # --- B. Single UI Instance Sovereignty ---
+    $existingUI = Find-ExistingUIProcess
+    if ($existingUI) {
+        # UI already running — verify its bridge ownership and focus it.
+        $bridgeOwner = Test-BridgePortOwner -port 18921 -expectedPid $existingUI.Pid
+        if ($bridgeOwner.owned) {
+            Write-Info "  UI ya corriendo (PID $($existingUI.Pid)), bridge verificado."
+            Write-StartupTrace 'ui_launch_skipped_existing_ui' @{
+                existing_pid = $existingUI.Pid
+                bridge_owner_verified = $true
+            }
+            Write-StartupTrace 'ui_bridge_owner_verified' @{ pid = $existingUI.Pid; port = 18921 }
+            Write-StartupTrace 'ui_presence_check_result' @{
+                ui_alive = $true; action = 'skipped_existing'; pid = $existingUI.Pid
+            }
+        } elseif ($bridgeOwner.reason -eq 'wrong_owner') {
+            Write-Warn "  Bridge port 18921 owned by PID $($bridgeOwner.actual_pid), not UI PID $($existingUI.Pid)."
+            Write-StartupTrace 'ui_bridge_port_conflict' @{
+                expected_pid = $existingUI.Pid
+                actual_pid   = $bridgeOwner.actual_pid
+            }
+            Write-StartupTrace 'ui_presence_check_result' @{
+                ui_alive = $true; action = 'conflict_detected'; bridge_conflict = $true
+            }
+        } else {
+            Write-Info "  UI corriendo (PID $($existingUI.Pid)) pero bridge no activo aun."
+            Write-StartupTrace 'ui_presence_check_result' @{
+                ui_alive = $true; action = 'skipped_existing'; bridge_status = $bridgeOwner.reason
+            }
+        }
+        Write-StartupTrace 'ui_duplicate_prevented' @{ existing_pid = $existingUI.Pid }
+    } else {
+        # No UI running — launch it.
+        Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
+        Write-StartupTrace 'ui_launch_started' @{ bridge_port = 18921 }
+
+        $env:IABV_SKIP_MCP_AUTOSTART = '1'
+        $uiSrcPath = Join-Path $iabvRoot 'src'
+        if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$uiSrcPath*") {
+            if ($env:PYTHONPATH) {
+                $env:PYTHONPATH = "$uiSrcPath;$env:PYTHONPATH"
+            } else {
+                $env:PYTHONPATH = $uiSrcPath
+            }
+        }
+        $env:IABV_WORKSPACE_ROOT = $iabvRoot
+        try {
+            $pythonExe = 'python'
+            if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
+            # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
+            # CreateNoWindow suppresses the console without touching wShowWindow.
+            $psi = [System.Diagnostics.ProcessStartInfo]::new()
+            $psi.FileName = $pythonExe
+            $psi.Arguments = '-m iabv_v15 app'
+            $psi.WorkingDirectory = $iabvRoot
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            $uiProc = [System.Diagnostics.Process]::Start($psi)
+            Write-Info "  UI PID     : $($uiProc.Id)"
+            Write-Info "  PYTHONPATH : $env:PYTHONPATH"
+            Write-StartupTrace 'ui_launch_result' @{
+                success = $true; pid = $uiProc.Id; bridge_port = 18921
+            }
+        } catch {
+            Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
+            Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
+            Write-Warn "         python -m iabv_v15 app"
+            Write-StartupTrace 'ui_launch_failed' @{ error = "$_" }
+        }
+        Write-StartupTrace 'ui_presence_check_result' @{
+            ui_alive = $false; action = 'launched_new'
+        }
+    }
+}
+# ---------------------------------------------------------------------------
 
 # M7: limpiar directorios pytest-cache-files huerfanos que se acumulan
 # en el workspace con el tiempo. Son seguros de borrar.
