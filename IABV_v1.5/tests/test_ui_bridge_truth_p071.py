@@ -227,6 +227,21 @@ class TestFreezeIncidentBridgeState:
             bridge_state = report['ui_bridge_state']
             assert 'bridge_reachable' in bridge_state or 'error' in bridge_state
 
+    def test_capture_ui_bridge_state_is_fast_when_no_ui(self) -> None:
+        """P0.71 BLOCKER 2: best-effort capture must not block the
+        freeze report. With no UI on the bridge port the capture must
+        report bridge_reachable=false and stay well under 250ms."""
+        import time
+        from iabv_v15.services.evolution.freeze_incident_reporter import (
+            FreezeIncidentReporter,
+        )
+        start = time.monotonic()
+        state = FreezeIncidentReporter._capture_ui_bridge_state()
+        elapsed_ms = (time.monotonic() - start) * 1000.0
+        assert state.get('bridge_reachable') is False
+        assert 'capture_ms' in state
+        assert elapsed_ms < 250.0, f'capture took {elapsed_ms:.1f}ms'
+
 
 # ── OSES _ui_bridge_truth_findings runs ──
 

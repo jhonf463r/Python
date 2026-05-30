@@ -186,7 +186,17 @@ class UIBridgeServer:
             return
         try:
             self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # Single UI instance sovereignty (P0.71): exclusive port ownership.
+            # On Windows SO_REUSEADDR lets a second server steal an actively
+            # bound port, which reproduces the "two bridges, wrong owner" bug.
+            # SO_EXCLUSIVEADDRUSE (Windows only) forbids that; on POSIX a plain
+            # SO_REUSEADDR is safe because it does not permit two live listeners
+            # on the same address.
+            _exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+            if _exclusive is not None:
+                self._server_socket.setsockopt(socket.SOL_SOCKET, _exclusive, 1)
+            else:
+                self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._server_socket.bind((self._host, self._port))
             self._server_socket.listen(4)
             self._server_socket.settimeout(1.0)
@@ -327,15 +337,23 @@ class UIBridgeClient:
         self,
         host: str = DEFAULT_BRIDGE_HOST,
         port: int = DEFAULT_BRIDGE_PORT,
+        *,
+        connect_timeout_s: float = CONNECT_TIMEOUT_S,
+        recv_timeout_s: float = RECV_TIMEOUT_S,
     ) -> None:
         self._host = host
         self._port = port
+        # Per-client timeouts. Best-effort callers (e.g. the freeze
+        # reporter) pass small values so an absent/slow UI can never
+        # block them.
+        self._connect_timeout_s = connect_timeout_s
+        self._recv_timeout_s = recv_timeout_s
 
     def is_ui_available(self) -> bool:
         """Verifica si la UI esta escuchando."""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(CONNECT_TIMEOUT_S)
+            sock.settimeout(self._connect_timeout_s)
             sock.connect((self._host, self._port))
             sock.close()
             return True
@@ -351,8 +369,9 @@ class UIBridgeClient:
         request = {"id": req_id, "method": method, "params": params}
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(RECV_TIMEOUT_S)
+            sock.settimeout(self._connect_timeout_s)
             sock.connect((self._host, self._port))
+            sock.settimeout(self._recv_timeout_s)
         except Exception as exc:
             return {
                 "id": req_id,

@@ -682,11 +682,20 @@ class FreezeIncidentReporter:
 
     @staticmethod
     def _capture_ui_bridge_state() -> dict[str, Any]:
-        """P0.71: capture UIBridge truth state at freeze time."""
+        """P0.71: capture UIBridge truth state at freeze time.
+
+        Strictly best-effort: must never block the freeze report. Uses
+        very short connect/recv timeouts so that when the UI/bridge is
+        absent (the common case during a freeze) the whole capture stays
+        well under ~250ms. A reachable bridge is probed once; an absent
+        one returns ``bridge_reachable=false`` immediately.
+        """
+        import time as _time
         state: dict[str, Any] = {}
+        started = _time.monotonic()
         try:
             from iabv_v15.services.ui_bridge_service import UIBridgeClient
-            client = UIBridgeClient()
+            client = UIBridgeClient(connect_timeout_s=0.15, recv_timeout_s=0.25)
             state['bridge_reachable'] = client.is_ui_available()
             if state['bridge_reachable']:
                 ui_state = client.call('get_ui_state')
@@ -707,6 +716,8 @@ class FreezeIncidentReporter:
                 state['chat_ready'] = False
         except Exception as exc:
             state['error'] = str(exc)
+            state.setdefault('bridge_reachable', False)
+        state['capture_ms'] = round((_time.monotonic() - started) * 1000.0, 1)
         return state
 
 
