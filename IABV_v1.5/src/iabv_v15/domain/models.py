@@ -3052,6 +3052,46 @@ class AccountInventorySnapshot(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class MetacognitiveDiscernmentFrame(BaseModel):
+    """P0.69: evidence-based discernment frame for pre-action reasoning.
+
+    This is NOT another cerebro — it is a shared evidence contract that
+    existing services (OSES, PortableContext, TaskContextAssembler,
+    UniversalPerceptionService, ControlCenterViewModel) read and write
+    to build a causal picture before acting.
+
+    Lifecycle phases: birth → observe → interpret → decide → act → learn → recover.
+    """
+
+    frame_id: str = Field(default_factory=lambda: str(uuid4()))
+    created_at_utc: datetime = Field(default_factory=utc_now)
+    phase: str = 'birth'
+    trigger_source: str = ''
+    raw_inputs: list[str] = Field(default_factory=list)
+    sensor_sources: list[str] = Field(default_factory=list)
+    trusted_sources: list[str] = Field(default_factory=list)
+    untrusted_sources: list[str] = Field(default_factory=list)
+    missing_sources: list[str] = Field(default_factory=list)
+    detected_concepts: list[str] = Field(default_factory=list)
+    concept_weights: dict[str, float] = Field(default_factory=dict)
+    active_attractors: list[dict[str, Any]] = Field(default_factory=list)
+    failed_attractors: list[dict[str, Any]] = Field(default_factory=list)
+    candidate_attractor: str = ''
+    attractor_confidence: float = 0.0
+    contradictions: list[dict[str, Any]] = Field(default_factory=list)
+    bias_risks: list[dict[str, Any]] = Field(default_factory=list)
+    grounding_status: str = 'unknown'
+    confidence: float = 0.0
+    action_candidates: list[dict[str, Any]] = Field(default_factory=list)
+    selected_action: str = ''
+    why_not_other_actions: list[str] = Field(default_factory=list)
+    human_help_needed: bool = False
+    unresolved_fields: list[str] = Field(default_factory=list)
+    next_observation: str = ''
+    learning_hook: str = ''
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class AccountApproval(BaseModel):
     """User-approved account selection for a specific tool.
 

@@ -208,6 +208,7 @@ class PortableContextService:
             self._devin_repair_status_section(now=now),
             self._capability_readiness_section(now=now),
             self._next_time_policy_section(now=now),
+            self._discernment_frame_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
@@ -3826,6 +3827,38 @@ class PortableContextService:
             source_refs=['RuntimeAuditTracer', '_record_show_window_learning'],
             confidence=0.7 if policies else 0.3,
             last_updated=now,
+        )
+
+    def _discernment_frame_section(self, *, now) -> PortableContextSection:
+        """P0.69: export latest discernment frame as compact section."""
+        items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        try:
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService()
+            export = svc.compact_export()
+            if export.get('status') == 'no_frame':
+                items.append({'status': 'no_frame_yet'})
+                unresolved.append('no_discernment_frame_generated')
+            else:
+                items.append(export)
+        except Exception:
+            items.append({'status': 'service_unavailable'})
+            unresolved.append('discernment_frame_service_unavailable')
+        phase = items[0].get('phase', 'unknown') if items else 'unknown'
+        grounding = items[0].get('grounding_status', 'unknown') if items else 'unknown'
+        conf = items[0].get('confidence', 0.0) if items else 0.0
+        summary = f'phase={phase}, grounding={grounding}, confidence={conf}'
+        return self._section(
+            section_id='discernment_frame',
+            title='Metacognitive Discernment Frame (P0.69)',
+            summary=summary,
+            items=items,
+            source_kind='discernment_frame_service',
+            source_refs=['DiscernmentFrameService'],
+            confidence=float(conf) if isinstance(conf, (int, float)) else 0.0,
+            last_updated=now,
+            unresolved_fields=unresolved,
         )
 
     def _section(

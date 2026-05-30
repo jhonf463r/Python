@@ -864,6 +864,9 @@ class OperationalSelfExaminationService:
 
         # P0.39: detect repeated readiness failures without proof.
         findings.extend(self._external_readiness_missing_findings())
+
+        # P0.69: discernment frame findings.
+        findings.extend(self._discernment_frame_findings())
         findings = self._dedupe_findings(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
@@ -9242,3 +9245,118 @@ def get_functional_gap_summary() -> list[dict[str, str]]:
         pass
 
     return gaps
+
+
+# ── P0.69: Discernment Frame findings (method body below class) ──
+# Injected into OperationalSelfExaminationService via the call in build_review.
+
+def _discernment_frame_findings_impl(self) -> list:
+    """P0.69: detect discernment anti-patterns from recent frames.
+
+    Findings:
+    - action_without_grounding: action taken with grounding_status != 'grounded'
+    - contradiction_ignored: contradictions present but action still selected
+    - external_source_bias: action based on untrusted source without verification
+    - failed_attractor_repeated: attractor marked failed but still selected
+    - low_confidence_acted_as_high: confidence < 0.4 but action taken
+    """
+    findings: list = []
+    try:
+        from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+        svc = DiscernmentFrameService(workspace_root=getattr(self, 'workspace_root', ''))
+        frames = svc.recent_frames(limit=10)
+    except Exception:
+        return findings
+
+    if not frames:
+        return findings
+
+    from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
+
+    ungrounded_actions = 0
+    ignored_contradictions = 0
+    low_conf_actions = 0
+    failed_attractor_reuse = 0
+    untrusted_bias = 0
+
+    for frame in frames:
+        has_action = bool(frame.selected_action)
+        if has_action and frame.grounding_status not in ('grounded', 'partial'):
+            ungrounded_actions += 1
+        if has_action and frame.contradictions:
+            ignored_contradictions += 1
+        if has_action and frame.confidence < 0.4:
+            low_conf_actions += 1
+        if frame.failed_attractors and frame.candidate_attractor:
+            failed_keys = {a.get('key', '') for a in frame.failed_attractors}
+            if frame.candidate_attractor in failed_keys:
+                failed_attractor_reuse += 1
+        if has_action and frame.untrusted_sources and not frame.trusted_sources:
+            untrusted_bias += 1
+
+    if ungrounded_actions >= 2:
+        findings.append(SelfExaminationFinding(
+            title='Acciones sin grounding repetidas',
+            summary=(
+                f'{ungrounded_actions} acciones tomadas sin grounding suficiente '
+                'en frames recientes. El sistema actúa sin evidencia.'
+            ),
+            severity=IssueSeverity.HIGH,
+            category='action_without_grounding',
+            metadata={'count': ungrounded_actions},
+        ))
+
+    if ignored_contradictions >= 2:
+        findings.append(SelfExaminationFinding(
+            title='Contradicciones ignoradas al actuar',
+            summary=(
+                f'{ignored_contradictions} acciones tomadas a pesar de '
+                'contradicciones detectadas. El sistema debería resolver '
+                'contradicciones antes de actuar.'
+            ),
+            severity=IssueSeverity.HIGH,
+            category='contradiction_ignored',
+            metadata={'count': ignored_contradictions},
+        ))
+
+    if low_conf_actions >= 2:
+        findings.append(SelfExaminationFinding(
+            title='Baja confianza actuada como alta',
+            summary=(
+                f'{low_conf_actions} acciones tomadas con confianza < 0.4. '
+                'El sistema debería pedir verificación antes de actuar.'
+            ),
+            severity=IssueSeverity.HIGH,
+            category='low_confidence_acted_as_high',
+            metadata={'count': low_conf_actions},
+        ))
+
+    if failed_attractor_reuse >= 1:
+        findings.append(SelfExaminationFinding(
+            title='Atractor fallido reutilizado',
+            summary=(
+                f'{failed_attractor_reuse} veces se seleccionó un atractor marcado '
+                'como fallido. Debería bajarse su peso o pedir verificación.'
+            ),
+            severity=IssueSeverity.MEDIUM,
+            category='failed_attractor_repeated',
+            metadata={'count': failed_attractor_reuse},
+        ))
+
+    if untrusted_bias >= 2:
+        findings.append(SelfExaminationFinding(
+            title='Sesgo por fuente externa no verificada',
+            summary=(
+                f'{untrusted_bias} acciones basadas solo en fuentes no confiables '
+                'sin verificación. Riesgo de actuar sobre datos incorrectos.'
+            ),
+            severity=IssueSeverity.HIGH,
+            category='external_source_bias',
+            metadata={'count': untrusted_bias},
+        ))
+
+    return findings
+
+
+# Attach to the class
+OperationalSelfExaminationService._discernment_frame_findings = _discernment_frame_findings_impl
