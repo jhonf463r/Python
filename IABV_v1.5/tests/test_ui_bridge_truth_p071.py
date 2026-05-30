@@ -398,4 +398,9 @@ class TestPlatformPendingP071:
         assert data.get('id') == 'p071_live_ui_presence_contract'
         assert data.get('status') in ('UNRESOLVED', 'COMPLETED')
         assert len(data.get('implemented_tasks', [])) >= 6
-        assert len(data.get('unresolved', [])) >= 1
+        unresolved = data.get('unresolved', [])
+        assert isinstance(unresolved, list)
+        # A COMPLETED task (live proof confirmed) may legitimately have no
+        # unresolved items; an UNRESOLVED one must still list at least one.
+        if data.get('status') != 'COMPLETED':
+            assert len(unresolved) >= 1
