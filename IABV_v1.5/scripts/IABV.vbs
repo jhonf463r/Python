@@ -21,8 +21,9 @@ If fso.FileExists(lockPath) Then
     Set lockFile = fso.GetFile(lockPath)
     lockAge = DateDiff("s", lockFile.DateLastModified, Now)
     If lockAge < 45 Then
-        ' Another instance is already starting — exit silently
-        WScript.Quit 0
+        ' Another instance may already be starting.
+        ' P0.73: do not quit silently. Let start_iabv.ps1 decide whether
+        ' to focus the existing UI or continue startup.
     End If
 End If
 

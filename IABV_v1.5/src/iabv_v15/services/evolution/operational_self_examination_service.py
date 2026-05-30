@@ -2515,6 +2515,7 @@ class OperationalSelfExaminationService:
         browser_requests: list[dict[str, Any]] = []
         command_violations: list[dict[str, Any]] = []
         external_blocks: list[dict[str, Any]] = []
+        semantic_action_missed: list[dict[str, Any]] = []
         handoff_signals = 0
 
         for line in lines[-800:]:
@@ -2549,6 +2550,18 @@ class OperationalSelfExaminationService:
                     and ('security_verification' in terminal_state or 'blocked' in terminal_state)
                 ):
                     external_blocks.append(data)
+            elif kind == 'external_failure_followup_answered':
+                user_msg = str(data.get('user_message') or '').lower()
+                browser_terms = (
+                    'navegador', 'browser', 'chrome', 'sesion', 'sesión',
+                    'cuenta', 'gmail', 'loguead', 'logead', 'login',
+                )
+                action_terms = (
+                    'usa', 'usar', 'haz', 'has', 'consulta', 'busca',
+                    'soluciona', 'solucionar',
+                )
+                if any(term in user_msg for term in browser_terms) and any(term in user_msg for term in action_terms):
+                    semantic_action_missed.append(data)
 
             # Detect a leaked manual command in any event payload.
             try:
@@ -2651,6 +2664,30 @@ class OperationalSelfExaminationService:
                     'pattern': 'external_incident_without_actionable_handoff',
                     'block_count': len(external_blocks),
                     'handoff_signals': handoff_signals,
+                },
+            ))
+
+        if semantic_action_missed:
+            findings.append(SelfExaminationFinding(
+                category='human_assist_bridge',
+                title=f'External follow-up answered without semantic action binding ({len(semantic_action_missed)}x)',
+                summary=(
+                    'The user gave a browser/account/action instruction after an '
+                    'external failure, but IABV answered through the generic '
+                    'failure-followup path instead of selecting an operational '
+                    'action such as user-browser CDP or governed browser launch.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.88,
+                recommendation=(
+                    'Run semantic action binding before generic external failure '
+                    'follow-up and trace semantic_action_binding_result.'
+                ),
+                evidence_refs=[str(item.get('dispatch_id', ''))[:12] for item in semantic_action_missed[:5]],
+                source_refs=['runtime_audit'],
+                metadata={
+                    'pattern': 'semantic_action_binding_missed',
+                    'count': len(semantic_action_missed),
                 },
             ))
 

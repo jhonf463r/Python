@@ -4613,6 +4613,255 @@ class ControlCenterViewModel(QObject):
             pass
         return True
 
+    _EXTERNAL_ACTION_BROWSER_TERMS: tuple[str, ...] = (
+        'navegador', 'navegadores', 'browser', 'chrome', 'edge', 'brave',
+        'firefox', 'opera', 'sesion', 'sesión', 'cuenta', 'gmail',
+        'loguead', 'logead', 'login', 'iniciar sesion', 'iniciar sesión',
+        'inicie sesion', 'inicié sesión', 'abierta', 'abierto',
+    )
+    _EXTERNAL_ACTION_OWNERSHIP_TERMS: tuple[str, ...] = (
+        'mi ', 'mis ', 'mio', 'mío', 'mia', 'mía', 'tengo', 'tienes',
+        'ya tengo', 'ya esta', 'ya está', 'normal', 'visible',
+    )
+    _EXTERNAL_ACTION_DO_TERMS: tuple[str, ...] = (
+        'usa', 'usar', 'utiliza', 'utilizar', 'haz', 'has', 'hacer',
+        'consulta', 'consultar', 'busca', 'buscar', 'soluciona',
+        'solucionar', 'avanza', 'continua', 'continúa',
+    )
+    _EXTERNAL_ACTION_SHOW_TERMS: tuple[str, ...] = (
+        'muestra', 'muestrame', 'muéstrame', 'abre', 'abreme', 'ábreme',
+        'enfoca', 'ventana', 'problema', 'verificacion', 'verificación',
+    )
+
+    def _classify_external_action_followup(
+        self,
+        message: str,
+        *,
+        failure_payload: dict[str, Any] | None = None,
+        active_incident: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Bind human follow-up language to an operational action.
+
+        P0.73: the old follow-up guard explained failures cheaply, but missed
+        semantically equivalent instructions such as "usa un navegador mio".
+        This classifier keeps the logic local and evidence-based: it only
+        activates when there is a live incident or recent external failure.
+        """
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
+
+        has_context = bool(failure_payload) or bool(active_incident)
+        if not has_context:
+            return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
+
+        matched: list[str] = []
+        score = 0.0
+
+        def _hit(terms: tuple[str, ...], weight: float) -> bool:
+            nonlocal score
+            hits = [term for term in terms if term in normalized]
+            if hits:
+                matched.extend(hits[:4])
+                score += weight
+                return True
+            return False
+
+        browser_ref = _hit(self._EXTERNAL_ACTION_BROWSER_TERMS, 0.34)
+        ownership_ref = _hit(self._EXTERNAL_ACTION_OWNERSHIP_TERMS, 0.22)
+        action_ref = _hit(self._EXTERNAL_ACTION_DO_TERMS, 0.28)
+        show_ref = _hit(self._EXTERNAL_ACTION_SHOW_TERMS, 0.22)
+        assistant_ref = bool(self._explicit_assistant_preference(message) or re.search(r'chat\s*gpt|chatgpt|claude|codex', normalized))
+        if assistant_ref:
+            score += 0.12
+            matched.append('assistant_ref')
+
+        if show_ref and not browser_ref and (score >= 0.22 or active_incident):
+            return {
+                'intent': 'show_problem_window_requested',
+                'confidence': min(score, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        if browser_ref and (ownership_ref or action_ref or assistant_ref):
+            # "usa un navegador mio", "cuenta gmail logueada", "usa mi sesion"
+            # all mean the user is granting/pointing to a browser path.
+            confidence = min(score + (0.12 if action_ref else 0.0), 1.0)
+            intent = 'user_browser_session_requested'
+            if 'gmail' in normalized or 'cuenta' in normalized or 'login' in normalized or 'loguead' in normalized or 'logead' in normalized:
+                intent = 'human_login_available'
+            return {
+                'intent': intent,
+                'confidence': confidence,
+                'matched_terms': sorted(set(matched)),
+            }
+        if action_ref and assistant_ref and score >= 0.40:
+            return {
+                'intent': 'retry_external_consultation_requested',
+                'confidence': min(score, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        return {'intent': 'none', 'confidence': min(score, 1.0), 'matched_terms': sorted(set(matched))}
+
+    def _try_handle_external_action_followup(self, message: str) -> bool:
+        """P0.73: turn broad human follow-up language into a concrete action.
+
+        This runs before the generic external-failure explanation so phrases
+        like "usa un navegador mio" do not get answered as a dead-end status.
+        """
+        payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+        last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
+        if payload and last_ts and (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S:
+            payload = {}
+        incident = self._get_active_incident()
+        if not payload and not incident:
+            return False
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'semantic_action_binding_started',
+                user_message_excerpt=message[:160],
+                has_failure_payload=bool(payload),
+                has_active_incident=bool(incident),
+            )
+        except Exception:
+            tracer = None
+
+        binding = self._classify_external_action_followup(
+            message,
+            failure_payload=payload,
+            active_incident=incident,
+        )
+        intent = str(binding.get('intent') or 'none')
+        confidence = float(binding.get('confidence') or 0.0)
+        assistant_kind = (
+            str((incident or {}).get('assistant_kind') or '')
+            or str(payload.get('assistant_kind') or '')
+            or self._explicit_assistant_preference(message)
+            or 'chatgpt'
+        )
+        assistant_title = (
+            str((incident or {}).get('assistant_title') or '')
+            or str(payload.get('assistant_title') or '')
+            or self._assistant_display_name(assistant_kind)
+        )
+        try:
+            if tracer:
+                tracer.trace(
+                    'semantic_action_binding_result',
+                    intent=intent,
+                    confidence=round(confidence, 3),
+                    matched_terms=list(binding.get('matched_terms') or [])[:10],
+                    assistant_kind=assistant_kind,
+                )
+        except Exception:
+            pass
+
+        if intent == 'none' or confidence < 0.50:
+            return False
+
+        def _finish(text: str, meta: str, action_taken: str) -> bool:
+            self._latest_response_text = text
+            self._latest_response_meta = meta
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant',
+                'IABV',
+                text,
+                meta,
+                reasoning_path='semantic_external_action_binding',
+                evidence_tag='observed',
+            )
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+            try:
+                if tracer:
+                    tracer.trace(
+                        'external_followup_action_selected',
+                        intent=intent,
+                        action_taken=action_taken,
+                        assistant_kind=assistant_kind,
+                        confidence=round(confidence, 3),
+                    )
+                    tracer.trace(
+                        'external_followup_action_executed',
+                        intent=intent,
+                        action_taken=action_taken,
+                        assistant_kind=assistant_kind,
+                    )
+            except Exception:
+                pass
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
+
+        if intent == 'show_problem_window_requested':
+            if incident and self._try_focus_incident_window(incident):
+                return _finish(
+                    f'Enfoqué la ventana relacionada con {assistant_title}. Si ves una verificación, complétala y escribe "ya lo hice".',
+                    'semantic_action_binding: show_problem_window',
+                    'focus_incident_window',
+                )
+            msg = self._format_human_assist_message(
+                sees=f'{assistant_title} tiene un incidente externo reciente, pero no tengo una ventana objetivo confiable.',
+                cannot_verify='no puedo mostrar una ventana si no tengo hwnd/CDP/perfil observable.',
+                needs_from_you='deja visible la ventana de ChatGPT o autoriza que abra una ventana gobernada.',
+                action_now=self._GOVERNED_LAUNCH_OFFER,
+            )
+            return _finish(msg, 'semantic_action_binding: show_problem_window_unresolved', 'offer_governed_browser_session')
+
+        if intent in {'user_browser_session_requested', 'human_login_available'}:
+            probe = self._detect_cdp_available()
+            if probe.get('available', False):
+                os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+                msg = self._format_human_assist_message(
+                    sees='tu navegador normal parece observable por CDP.',
+                    cannot_verify='no voy a leer cookies/tokens; solo usaré contenido visible de la página.',
+                    needs_from_you='mantén la sesión visible si aparece una verificación humana.',
+                    action_now=f'activé la ruta de tu navegador para la próxima consulta a {assistant_title}. Escribe "reintenta".',
+                )
+                return _finish(msg, 'semantic_action_binding: user_browser_cdp_enabled', 'enable_user_browser_cdp')
+
+            launch = self._launch_governed_browser_session(
+                launch_target='https://chatgpt.com/',
+                assistant_kind=assistant_kind or 'chatgpt',
+            )
+            if launch.get('launched'):
+                msg = self._format_human_assist_message(
+                    sees='me estás autorizando a usar una sesión de navegador para resolver el bloqueo externo.',
+                    cannot_verify='tu Chrome normal no está observable por CDP, así que no puedo tomar control de esa sesión sin un puente.',
+                    needs_from_you='en la ventana gobernada que abrí, inicia sesión o completa la verificación si aparece; luego escribe "ya lo hice".',
+                    action_now=f'abrí una ventana gobernada de Chrome para {assistant_title}; después haré el retest gobernado.',
+                )
+                return _finish(msg, 'semantic_action_binding: governed_browser_launched', 'launch_governed_browser_session')
+            msg = self._format_human_assist_message(
+                sees='me estás autorizando a usar un navegador, pero no pude abrir la sesión gobernada.',
+                cannot_verify=f'falló el lanzamiento: {launch.get("error", "desconocido")}.',
+                needs_from_you='deja visible una ventana de ChatGPT o pega aquí la respuesta.',
+                action_now='registré el fallo y no voy a fingir que hice la consulta.',
+            )
+            return _finish(msg, 'semantic_action_binding: governed_browser_launch_failed', 'governed_browser_launch_failed')
+
+        if intent == 'retry_external_consultation_requested':
+            self._run_external_consultation(assistant_kind or 'chatgpt', announce=True)
+            try:
+                if tracer:
+                    tracer.trace(
+                        'external_followup_action_executed',
+                        intent=intent,
+                        action_taken='retry_external_consultation',
+                        assistant_kind=assistant_kind,
+                    )
+            except Exception:
+                pass
+            return True
+
+        return False
+
     def _handle_user_browser_manual_handoff(
         self,
         *,
@@ -12086,6 +12335,15 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_security_verification_retest(message):
             # P0.22: security retest spawns a background worker — keep
             # interaction open until the worker reaches terminal state.
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.73: semantic external action binding. Broad human phrases such
+        # as "usa un navegador mio" must become a governed action before the
+        # older explanatory failure-followup guard can claim them.
+        if self._try_handle_external_action_followup(message):
             if self._working:
                 self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
             else:
