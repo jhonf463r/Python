@@ -2135,6 +2135,28 @@ class AppBootstrap:
             pass
         self._persist_boot_profile('splash_window_closing')
 
+    def _mark_late_ui_bridge_ready_if_shell_is_visible(self, bridge) -> bool:
+        """Mark a bridge created after the QML shell became interactive.
+
+        The control VM and UIBridge can be built lazily after
+        ``page_loader_ready``.  In that path ``_fire_splash_ready_and_raise_main``
+        already ran before a bridge existed, so the new server would otherwise
+        keep ``shell_ready=False`` forever and buffer all chat messages.
+        """
+        source = ''
+        if getattr(self, '_page_loader_ready_received', False):
+            source = 'late_bridge_start_after_page_loader_ready'
+        elif getattr(self, '_shell_loader_ready_handled', False):
+            source = 'late_bridge_start_after_shell_ready'
+        if not source:
+            return False
+        try:
+            bridge.mark_shell_ready(source)
+            return True
+        except Exception:
+            logger.debug('late bridge mark_shell_ready failed from %s', source, exc_info=True)
+            return False
+
     def _fire_splash_ready_and_raise_main(self, source: str) -> None:
         """Common path: ``splash.set_ready()`` + raise/activate main_win.
 
@@ -3307,6 +3329,7 @@ class AppBootstrap:
                     )
                     self.ui_bridge_server = bridge
                     bridge.start()
+                    self._mark_late_ui_bridge_ready_if_shell_is_visible(bridge)
                     logger.info('UIBridgeServer started with ControlCenterViewModel')
                 except Exception:
                     logger.exception('UIBridgeServer failed to start with VM wiring')
@@ -3574,6 +3597,13 @@ class AppBootstrap:
         if (getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
                 and self._startup_followup_active):
             return 'resource_snapshot_refresh_in_flight'
+
+        # The control VM owns the chat bridge used for live audit and human
+        # assistance.  Once heavy startup phases are done, it must be allowed
+        # to build even if non-critical VMs remain gated by resource pressure;
+        # otherwise the app loses its own communication channel.
+        if route == 'control':
+            return None
 
         # 1. Resource pressure from cached snapshot (non-blocking)
         snap, age = self._get_cached_snapshot()

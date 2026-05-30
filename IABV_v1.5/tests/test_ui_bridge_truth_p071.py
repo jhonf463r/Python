@@ -20,6 +20,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -175,6 +176,29 @@ class TestNavigateVerification:
         finally:
             server.stop()
 
+    def test_navigate_uses_real_navigation_controller_contract(self) -> None:
+        """P0.71 live proof: the real NavigationController exposes
+        navigate(), not navigate_to(). The bridge must use that contract
+        instead of reporting the VM as unavailable.
+        """
+        from iabv_v15.ui.controllers.navigation_controller import NavigationController
+
+        port = _find_free_port()
+        vm = MagicMock()
+        vm.navigation_controller = NavigationController()
+        server = build_ui_bridge_server(control_center_viewmodel=vm, port=port)
+        server.mark_shell_ready('test')
+        server.start()
+        try:
+            client = UIBridgeClient(port=port)
+            result = client.call('navigate', page='control')
+            inner = result.get('result', {})
+            assert inner.get('status') == 'navigated'
+            assert inner.get('verified') is True
+            assert vm.navigation_controller.get_current_route() == 'control'
+        finally:
+            server.stop()
+
     def test_navigate_detects_failed_route_change(self) -> None:
         port = _find_free_port()
         vm = MagicMock()
@@ -192,6 +216,59 @@ class TestNavigateVerification:
             assert inner.get('actual_page') == 'dashboard'
         finally:
             server.stop()
+
+
+class TestLateBridgeReadiness:
+    def test_late_bridge_created_after_page_ready_is_marked_ready(self) -> None:
+        from iabv_v15.bootstrap import AppBootstrap
+
+        class _Bridge:
+            def __init__(self) -> None:
+                self.sources: list[str] = []
+
+            def mark_shell_ready(self, source: str) -> None:
+                self.sources.append(source)
+
+        app = AppBootstrap.__new__(AppBootstrap)
+        app._page_loader_ready_received = True
+        app._shell_loader_ready_handled = True
+        bridge = _Bridge()
+
+        assert app._mark_late_ui_bridge_ready_if_shell_is_visible(bridge) is True
+        assert bridge.sources == ['late_bridge_start_after_page_loader_ready']
+
+    def test_late_bridge_before_shell_ready_is_not_marked(self) -> None:
+        from iabv_v15.bootstrap import AppBootstrap
+
+        bridge = MagicMock()
+        app = AppBootstrap.__new__(AppBootstrap)
+        app._page_loader_ready_received = False
+        app._shell_loader_ready_handled = False
+
+        assert app._mark_late_ui_bridge_ready_if_shell_is_visible(bridge) is False
+        bridge.mark_shell_ready.assert_not_called()
+
+    def test_control_route_is_not_blocked_by_ram_pressure(self) -> None:
+        from iabv_v15.bootstrap import AppBootstrap
+
+        app = AppBootstrap.__new__(AppBootstrap)
+        app._deferred_setup_active = False
+        app._truth_refresh_active = False
+        app._startup_evolution_active = False
+        app._startup_followup_active = False
+        app._prebuild_snapshot_refresh_in_flight = False
+        app._get_cached_snapshot = lambda: (
+            SimpleNamespace(
+                ram_pressure='high',
+                cpu_pressure='normal',
+                ram_available_mb=2500,
+                ram_used_pct=82.0,
+            ),
+            0.1,
+        )
+
+        assert app._should_pause_prebuild('control', ['capture']) is None
+        assert app._should_pause_prebuild('capture', []) == 'ram_pressure:high'
 
 
 # ── Duplicate bridge port rejection ──

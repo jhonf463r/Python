@@ -541,8 +541,17 @@ def build_ui_bridge_server(
         if control_center_viewmodel is not None:
             try:
                 nav = getattr(control_center_viewmodel, "navigation_controller", None)
-                if nav and hasattr(nav, "navigate_to"):
-                    nav.navigate_to(page)
+                if nav:
+                    navigate = getattr(nav, "navigate_to", None)
+                    if not callable(navigate):
+                        navigate = getattr(nav, "navigate", None)
+                    if not callable(navigate):
+                        return {
+                            "status": "unavailable",
+                            "reason": "navigation_controller_not_callable",
+                            "next_human_action": "Verify the UI navigation controller contract.",
+                        }
+                    navigate(page)
                     # P0.71: verify route actually changed
                     actual = "unknown"
                     getter = getattr(nav, "get_current_route", None)
@@ -563,6 +572,11 @@ def build_ui_bridge_server(
                     return {"status": "navigated", "page": page, "verified": actual != "unknown"}
             except Exception as exc:
                 return {"status": "error", "detail": str(exc)[:200]}
+            return {
+                "status": "unavailable",
+                "reason": "navigation_controller_not_bound",
+                "next_human_action": "Launch the full IABV UI with navigationController bound.",
+            }
         return {
             "status": "unavailable",
             "reason": "control_center_vm_not_bound",
