@@ -75,6 +75,75 @@ class ToolAdapter:
         return any(bool(value) for value in candidates)
 
     # ------------------------------------------------------------------
+    # P0.72: governed visible fallback gating
+    # ------------------------------------------------------------------
+
+    _VISIBLE_FALLBACK_POLICY_VALUE = 'when_security_verification_show_window_first'
+
+    def _visible_fallback_allowed(
+        self,
+        *,
+        card: ToolCard,
+        task: ToolTask,
+        fallback_error: str,
+    ) -> tuple[bool, str]:
+        """Decide whether a governed visible fallback may run.
+
+        Returns ``(allowed, policy_label)``. Silent by default. Visible/focus
+        is allowed only when the user explicitly offered help (signalled via
+        task/card metadata) or the ``when_security_verification_show_window_first``
+        policy is active (task/card metadata or ``IABV_VISIBLE_FALLBACK_POLICY``
+        env). Never auto-opens windows for purely autonomous queries.
+        """
+        import os as _os
+
+        def _truthy(*values: Any) -> bool:
+            return any(bool(v) for v in values)
+
+        task_meta = dict(task.metadata or {})
+        card_meta = dict(card.metadata or {})
+
+        user_requested = _truthy(
+            task_meta.get('visible_fallback_requested'),
+            task_meta.get('user_offered_help'),
+            card_meta.get('visible_fallback_requested'),
+        )
+        if user_requested:
+            return True, 'user_offered_help'
+
+        policy_on = (
+            str(task_meta.get('visible_fallback_policy') or '').strip().lower()
+            == self._VISIBLE_FALLBACK_POLICY_VALUE
+            or str(card_meta.get('visible_fallback_policy') or '').strip().lower()
+            == self._VISIBLE_FALLBACK_POLICY_VALUE
+            or str(_os.environ.get('IABV_VISIBLE_FALLBACK_POLICY') or '').strip().lower()
+            == self._VISIBLE_FALLBACK_POLICY_VALUE
+        )
+        if policy_on and fallback_error == 'browser_security_verification':
+            return True, self._VISIBLE_FALLBACK_POLICY_VALUE
+        return False, 'silent_default'
+
+    @staticmethod
+    def _trace_visible_fallback(
+        event_type: str,
+        *,
+        assistant_kind: str = '',
+        reason: str = '',
+        target_available: bool = False,
+    ) -> None:
+        """Best-effort trace for governed visible-fallback decisions."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_visible_fallback(
+                event_type,
+                assistant_kind=assistant_kind,
+                reason=reason,
+                target_available=target_available,
+            )
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
     # Tool Resilience: timeout, fallback, and error detection
     # ------------------------------------------------------------------
 
@@ -647,16 +716,43 @@ class ToolAdapter:
                     fallback_error = str(captured.get('error_message') or '').strip().lower()
                     if fallback_error in {'browser_security_verification', 'browser_input_missing', 'browser_dom_capture_pending'}:
                         import logging as _fb_log
-                        _fb_log.getLogger(__name__).info(
-                            'browser_dom_capture failed (%s) — skipping visible fallback to avoid interrupting user',
-                            fallback_error,
+                        # P0.72 Task E: governed visible fallback.
+                        # Silent by default; visible/focus is allowed ONLY when
+                        # the user explicitly offered help, or the policy
+                        # ``when_security_verification_show_window_first`` is on.
+                        # We never declare success here — success still requires
+                        # response_captured below.
+                        visible_allowed, fallback_policy = self._visible_fallback_allowed(
+                            card=card, task=task, fallback_error=fallback_error,
                         )
-                        captured['metadata'] = {
-                            **(captured.get('metadata') or {}),
-                            'visible_fallback_skipped': True,
-                            'skip_reason': 'autonomous queries must not open visible windows',
-                            'original_error': fallback_error,
-                        }
+                        if visible_allowed:
+                            _fb_log.getLogger(__name__).info(
+                                'browser_dom_capture failed (%s) — governed visible fallback '
+                                'permitted (policy=%s)', fallback_error, fallback_policy,
+                            )
+                            captured['metadata'] = {
+                                **(captured.get('metadata') or {}),
+                                'visible_fallback_skipped': False,
+                                'visible_fallback_allowed': True,
+                                'visible_fallback_policy': fallback_policy,
+                                'original_error': fallback_error,
+                            }
+                            self._trace_visible_fallback(
+                                'requested_by_user', assistant_kind=assistant_kind,
+                                reason=fallback_policy, target_available=True,
+                            )
+                        else:
+                            _fb_log.getLogger(__name__).info(
+                                'browser_dom_capture failed (%s) — skipping visible fallback to avoid interrupting user',
+                                fallback_error,
+                            )
+                            captured['metadata'] = {
+                                **(captured.get('metadata') or {}),
+                                'visible_fallback_skipped': True,
+                                'visible_fallback_allowed': False,
+                                'skip_reason': 'autonomous queries must not open visible windows',
+                                'original_error': fallback_error,
+                            }
                 if captured.get('response_captured'):
                     capture_source = str(captured.get('capture_source') or response_capture_mode).strip().lower() or response_capture_mode
                     captured_text = str(captured.get('captured_text') or '').strip()

@@ -112,11 +112,18 @@ class TestPermissionDenied:
 # ---------------------------------------------------------------------------
 
 class TestManualSelectionRequired:
-    """When user types 'usar mi chrome' but CDP is not available."""
+    """When user types 'usar mi chrome' but CDP is not available (P0.72).
 
-    def test_cdp_unavailable_shows_manual_instructions(self, viewmodel_cls):
+    P0.72: must NOT instruct the user to run a terminal command. Instead it
+    offers a governed Chrome window IABV opens itself (UNA SOLA VENTANA).
+    """
+
+    def test_cdp_unavailable_offers_governed_launch_no_command(self, viewmodel_cls):
         vm = MagicMock(spec=viewmodel_cls)
         vm._CHROME_BRIDGE_PATTERNS = viewmodel_cls._CHROME_BRIDGE_PATTERNS
+        vm._verify_chrome_bridge_capability = MagicMock(return_value=True)
+        vm._format_human_assist_message = viewmodel_cls._format_human_assist_message
+        vm._GOVERNED_LAUNCH_OFFER = viewmodel_cls._GOVERNED_LAUNCH_OFFER
         vm._detect_cdp_available = MagicMock(return_value={
             'available': False,
             'cdp_url': 'http://localhost:9222',
@@ -128,7 +135,11 @@ class TestManualSelectionRequired:
         result = viewmodel_cls._try_handle_user_chrome_bridge_selection(vm, 'usar mi chrome')
 
         assert result is True
-        assert 'remote-debugging-port' in vm._latest_response_text
+        # UNA SOLA VENTANA: never a terminal command in the user response.
+        assert '--remote-debugging-port' not in vm._latest_response_text
+        assert 'chrome.exe' not in vm._latest_response_text.lower()
+        # Offers a governed window instead.
+        assert 'gobernada' in vm._latest_response_text.lower()
         assert 'IABV_PREFER_CDP_SESSION' not in os.environ or os.environ.get('IABV_PREFER_CDP_SESSION') != '1'
 
 
