@@ -4865,6 +4865,42 @@ class ControlCenterViewModel(QObject):
                     )
                     return _finish(msg, 'semantic_action_binding: existing_browser_focused', 'focus_existing_browser_session')
 
+            if inventory.get('browser_process_count') and not inventory.get('candidate_count'):
+                user_launch = self._launch_user_default_browser_visible_session(
+                    launch_target='https://chatgpt.com/',
+                    assistant_kind=assistant_kind or 'chatgpt',
+                )
+                try:
+                    if tracer:
+                        tracer.trace(
+                            'user_default_browser_visible_session_launch',
+                            assistant_kind=assistant_kind,
+                            success=bool(user_launch.get('launched')),
+                            reason=user_launch.get('error', '') or 'ok',
+                            browser_process_count=inventory.get('browser_process_count', 0),
+                            semantic_bridge=user_launch.get('semantic_bridge', 'none'),
+                        )
+                except Exception:
+                    pass
+                if user_launch.get('launched'):
+                    msg = self._format_human_assist_message(
+                        sees=f'hay procesos de navegador del usuario activos ({inventory_summary}) pero no una ventana visible enlazada.',
+                        cannot_verify=(
+                            'abrí ChatGPT en tu navegador normal para reutilizar tu perfil/sesión si el navegador la conserva; '
+                            'aún no tengo DOM/CDP para leer la respuesta en segundo plano.'
+                        ),
+                        needs_from_you=(
+                            'si aparece login/verificación, complétalo; si ChatGPT responde, escribe "ya lo hice" '
+                            'o pega la respuesta para que la incorpore.'
+                        ),
+                        action_now='usé el navegador predeterminado del usuario antes de abrir una ventana gobernada.',
+                    )
+                    return _finish(
+                        msg,
+                        'semantic_action_binding: user_default_browser_visible_launched',
+                        'launch_user_default_browser_visible_session',
+                    )
+
             launch = self._launch_governed_browser_session(
                 launch_target='https://chatgpt.com/',
                 assistant_kind=assistant_kind or 'chatgpt',
@@ -5303,6 +5339,42 @@ class ControlCenterViewModel(QObject):
             user32.SetForegroundWindow(hwnd_int)
             result['focused'] = True
             result['method'] = 'win32_hwnd'
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    @staticmethod
+    def _launch_user_default_browser_visible_session(
+        *,
+        launch_target: str = 'https://chatgpt.com/',
+        assistant_kind: str = 'chatgpt',
+    ) -> dict[str, Any]:
+        """Open the user's normal default browser as a visible human surface.
+
+        This is not a CDP/DOM bridge and never reads credentials.  It is the
+        pragmatic middle path when browser processes exist but no observable
+        top-level window is available: use the user's normal profile/session if
+        the OS/default browser provides it, then ask for a human confirmation
+        or pasteback if semantic capture is still unavailable.
+        """
+        import os as _os
+        import sys as _sys
+        import webbrowser as _webbrowser
+
+        result = {
+            'launched': False,
+            'launch_target': launch_target,
+            'assistant_kind': assistant_kind,
+            'surface': 'user_default_browser_visible',
+            'semantic_bridge': 'none',
+            'error': '',
+        }
+        try:
+            if _sys.platform.startswith('win'):
+                _os.startfile(launch_target)  # type: ignore[attr-defined]
+            else:
+                _webbrowser.open(launch_target, new=1, autoraise=True)
+            result['launched'] = True
         except Exception as exc:
             result['error'] = f'{type(exc).__name__}: {exc}'
         return result

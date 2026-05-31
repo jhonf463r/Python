@@ -151,6 +151,35 @@ def test_browser_inventory_reports_background_process_without_visible_window(vie
     assert 'procesos de navegador sin ventana visible' in summary
 
 
+def test_user_browser_process_launches_default_browser_before_governed(viewmodel_cls):
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(
+        active_windows=[],
+        background_processes=[
+            SimpleNamespace(process_name='msedge', pid=10636, state='ok', memory_mb=250.0),
+        ],
+    ))
+    vm._launch_user_default_browser_visible_session = MagicMock(return_value={
+        'launched': True,
+        'launch_target': 'https://chatgpt.com/',
+        'surface': 'user_default_browser_visible',
+        'semantic_bridge': 'none',
+        'error': '',
+    })
+    msg = 'usa mi navegador normal con la cuenta abierta para hacer la consulta'
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)
+
+    assert handled is True
+    vm._launch_user_default_browser_visible_session.assert_called_once()
+    vm._launch_governed_browser_session.assert_not_called()
+    assert 'user_default_browser_visible_launched' in vm._latest_response_meta
+    assert 'navegador normal' in vm._latest_response_text
+    assert 'DOM/CDP' in vm._latest_response_text
+
+
 def test_classifier_binds_gmail_logged_account_to_human_login_available(viewmodel_cls):
     vm = _semantic_vm(viewmodel_cls)
     result = viewmodel_cls._classify_external_action_followup(
