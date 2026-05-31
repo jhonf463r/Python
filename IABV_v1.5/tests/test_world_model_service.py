@@ -204,6 +204,25 @@ def test_world_model_service_emits_permission_gate_and_route_block_for_codex_pro
         assert any(item.block_type == 'permission_required' and item.target_scope == 'consult_codex' for item in snapshot.block_records)
         assert 'permission_required:observe_window_content:codex' in snapshot.detected_blocks
         assert 'permission_registry' in snapshot.observation_sources
+
+        service.grant_observation_permission(
+            scope='observe_window_content:codex',
+            assistant_kind='codex',
+            title='Observacion de Codex',
+            detail='Permiso concedido por el usuario.',
+            granted_by='test',
+        )
+        refreshed = service.scan_now(reason='manual_after_permission', full=True)
+
+        assert refreshed.permission_gates
+        assert refreshed.permission_gates[0].status == 'concedido'
+        assert refreshed.permission_gates[0].granted is True
+        assert refreshed.permission_gates[0].metadata.get('permission_record_granted') is True
+        assert not any(
+            item.block_type == 'permission_required' and item.target_scope == 'consult_codex'
+            for item in refreshed.block_records
+        )
+        assert 'permission_required:observe_window_content:codex' not in refreshed.detected_blocks
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 

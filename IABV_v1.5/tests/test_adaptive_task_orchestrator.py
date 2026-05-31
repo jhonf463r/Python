@@ -566,6 +566,60 @@ def test_adaptive_orchestrator_preflight_requires_observation_permission_for_cod
     assert preflight['approval_checkpoints'][0]['phase_key'] == 'observation_permission'
 
 
+def test_adaptive_orchestrator_preflight_does_not_reask_granted_observation_permission() -> None:
+    orchestrator, episodes = _orchestrator(_workspace('adaptive_preflight_permission_granted'))
+    _seed_wplay_teaching(episodes)
+
+    class FakeWorldModelService:
+        def current_model(self) -> WorldModelSnapshot:
+            return self.request_refresh(reason='manual', full=False)
+
+        def request_refresh(self, *, reason: str = 'manual', full: bool = False) -> WorldModelSnapshot:
+            return WorldModelSnapshot(
+                active_windows=[WindowObservation(title='Codex - IABV', app_name='Codex', pid=91, focused=True)],
+                focused_window=WindowObservation(title='Codex - IABV', app_name='Codex', pid=91, focused=True),
+                tool_live_status=[
+                    ToolLiveStatus(
+                        tool_id='codex_installed',
+                        title='Codex instalado',
+                        assistant_kind='codex',
+                        available=True,
+                        status='abierto',
+                        detail='Permiso concedido.',
+                        thread_status='correcto_probable',
+                        session_status='abierta',
+                        messages_status='desconocidos',
+                        permission_state='concedido',
+                        probe_status='permiso_concedido_esperando_probe',
+                    )
+                ],
+                network_status=NetworkStatusSnapshot(connected=True, status='conectado', quality='buena'),
+                permission_gates=[
+                    ObservationPermissionGate(
+                        scope='observe_window_content:codex',
+                        assistant_kind='codex',
+                        status='concedido',
+                        title='Observacion de Codex',
+                        detail='Permiso concedido por el usuario.',
+                        required_for=['consult_codex'],
+                        granted=True,
+                    )
+                ],
+                confidence=0.83,
+            )
+
+    orchestrator.context_assembler.world_model_service = FakeWorldModelService()
+
+    preflight = orchestrator.preflight_external_assistant(
+        user_goal='consulta con codex este incidente tecnico',
+        assistant_kind='codex',
+    )
+
+    assert preflight['governance']['recommended_action'] != 'request_observation_permission'
+    assert preflight['governance']['approval_required'] is False
+    assert preflight['approval_checkpoints'] == []
+
+
 def test_adaptive_orchestrator_approval_action_advances_session() -> None:
     orchestrator, episodes = _orchestrator(_workspace('adaptive_approval'))
     _seed_wplay_teaching(episodes)

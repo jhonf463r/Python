@@ -1137,6 +1137,17 @@ class WorldModelService:
             blocks.append('network_slow')
         for status in tool_live_status:
             for block in status.detected_blocks:
+                if block == 'permission_required':
+                    scope = str(
+                        status.metadata.get('permission_scope')
+                        or self._content_permission_scope(status.assistant_kind)
+                    )
+                    permission_granted = any(
+                        gate.scope == scope and (gate.granted or gate.status == 'concedido')
+                        for gate in permission_gates
+                    )
+                    if permission_granted:
+                        continue
                 if block not in blocks:
                     blocks.append(block)
         for risk in environment.risk_signals:
@@ -1160,6 +1171,7 @@ class WorldModelService:
                 continue
             scope = str(tool.metadata.get('permission_scope') or self._content_permission_scope(tool.assistant_kind))
             permission = dict(permission_state.get(scope) or {})
+            permission_granted = bool(permission.get('granted')) or tool.permission_state == 'concedido'
             gates.append(
                 ObservationPermissionGate(
                     scope=scope,
@@ -1169,14 +1181,15 @@ class WorldModelService:
                         str(permission.get('detail') or '').strip()
                         or self._permission_prompt(assistant_kind=tool.assistant_kind)
                     ),
-                    status='concedido' if tool.permission_state == 'concedido' else 'requerido',
+                    status='concedido' if permission_granted else 'requerido',
                     required_for=[f'consult_{tool.assistant_kind}'] if tool.assistant_kind else [],
-                    granted=bool(permission.get('granted')) or tool.permission_state == 'concedido',
+                    granted=permission_granted,
                     confidence=max(0.45, float(tool.confidence or 0.0)),
                     metadata={
                         'tool_id': tool.tool_id,
                         'probe_status': tool.probe_status,
                         'window_open': tool.window_open,
+                        'permission_record_granted': bool(permission.get('granted')),
                         'last_verified_at': tool.last_verified_at.isoformat() if tool.last_verified_at is not None else '',
                     },
                 )
