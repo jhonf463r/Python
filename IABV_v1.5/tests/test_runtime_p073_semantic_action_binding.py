@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import time
+import types
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -143,3 +145,68 @@ def test_oses_flags_generic_followup_that_should_have_been_action_binding(tmp_pa
     findings = OperationalSelfExaminationService._human_assist_bridge_findings(svc)
     patterns = {f.metadata.get('pattern') for f in findings}
     assert 'semantic_action_binding_missed' in patterns
+
+
+def test_external_intent_preempts_active_local_chat_worker(viewmodel_cls):
+    """A stale local chat worker must not block a fresh ChatGPT request.
+
+    This reproduces the live Windows finding: a previous "sigue" local
+    worker was still active, so the next "consulta a ChatGPT" message returned
+    before the external-intent sovereignty guard could run.
+    """
+    run_calls: list[tuple[str, bool]] = []
+    terminal_calls: list[dict] = []
+    tracer = MagicMock()
+    vm = SimpleNamespace(
+        _working=True,
+        _working_since=time.time(),
+        _busy_label='procesando local anterior',
+        _active_dispatch_ids={'chat': 'chat-old-001'},
+        _attached_files=[],
+        _active_interaction_id='int-p073',
+        _interaction_has_pending_followup=False,
+        _live_status='processing',
+        _last_external_failure_payload=None,
+        _last_external_failure_ts=0.0,
+        _last_user_goal='',
+        _chat_messages=[],
+        _contextual_suggestions=[],
+        dataChanged=MagicMock(),
+    )
+    vm._explicit_assistant_preference = types.MethodType(
+        viewmodel_cls._explicit_assistant_preference,
+        vm,
+    )
+    from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
+    vm._assistant_preference_resolver = AssistantPreferenceResolver()
+    vm._classify_external_action_followup = MagicMock(return_value={'intent': ''})
+    vm._get_active_incident = MagicMock(return_value=None)
+    vm._invalidate_dispatch = lambda name: vm._active_dispatch_ids.pop(name, None)
+    vm._trace_dispatch_terminal = lambda **kwargs: terminal_calls.append(kwargs)
+    vm._set_live_status = MagicMock()
+    vm._clear_autonomy_activity_override = MagicMock()
+    vm._resolve_active_interaction = MagicMock()
+    vm._append_message = MagicMock()
+    vm._routing_mode_label = MagicMock(return_value='auto')
+    vm._try_handle_chat_command = MagicMock(return_value=False)
+    vm._try_resolve_pending_observation_permission = MagicMock(return_value=False)
+    vm._try_handle_shared_reality_followup = MagicMock(return_value=False)
+    vm._try_handle_incident_followup = MagicMock(return_value=False)
+    vm._try_handle_security_verification_retest = MagicMock(return_value=False)
+    vm._try_handle_external_action_followup = MagicMock(return_value=False)
+    vm._try_handle_user_chrome_bridge_selection = MagicMock(return_value=False)
+    vm._try_handle_cdp_permission_revoke = MagicMock(return_value=False)
+    vm._try_handle_consultation_followup = MagicMock(return_value=False)
+    vm._try_handle_external_failure_followup = MagicMock(return_value=False)
+    vm._run_external_consultation = lambda assistant, announce=True: run_calls.append((assistant, announce)) or True
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        viewmodel_cls.sendChat(vm, 'has una consulta en ChatGPT: responde solo S si entiendes')
+
+    assert run_calls == [('chatgpt', True)]
+    assert vm._active_dispatch_ids.get('chat') is None
+    assert terminal_calls[0]['terminal_state'] == 'superseded_by_external_intent'
+    assert vm._resolve_active_interaction.call_count == 0
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'external_intent_preempted_local_worker' in traced_kinds
+    assert 'external_intent_detected' in traced_kinds

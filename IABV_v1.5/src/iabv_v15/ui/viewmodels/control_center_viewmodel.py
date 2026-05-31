@@ -12296,8 +12296,63 @@ class ControlCenterViewModel(QObject):
             import time
             elapsed = time.time() - getattr(self, '_working_since', 0)
             if elapsed < 60:
-                self._resolve_active_interaction(outcome='abandoned')
-                return
+                explicit_override = ''
+                semantic_override: dict[str, Any] = {}
+                try:
+                    explicit_override = self._explicit_assistant_preference(message)
+                except Exception:
+                    explicit_override = ''
+                try:
+                    semantic_override = self._classify_external_action_followup(
+                        message,
+                        failure_payload=getattr(self, '_last_external_failure_payload', None),
+                        active_incident=self._get_active_incident(),
+                    )
+                except Exception:
+                    semantic_override = {}
+                semantic_intent = str(semantic_override.get('intent') or '').strip()
+                semantic_actionable = bool(semantic_intent and semantic_intent != 'none')
+                chat_dispatch_id = ''
+                external_dispatch_id = ''
+                try:
+                    chat_dispatch_id = str(self._active_dispatch_ids.get('chat') or '')
+                    external_dispatch_id = str(self._active_dispatch_ids.get('external_consultation') or '')
+                except Exception:
+                    pass
+                should_preempt_local = bool(
+                    (explicit_override or semantic_actionable)
+                    and (chat_dispatch_id or not external_dispatch_id)
+                )
+                if should_preempt_local:
+                    if chat_dispatch_id:
+                        self._invalidate_dispatch('chat')
+                        self._trace_dispatch_terminal(
+                            task_name='chat',
+                            dispatch_id=chat_dispatch_id,
+                            terminal_state='superseded_by_external_intent',
+                            provider='local',
+                            reason='new external intent/action follow-up arrived while local worker was active',
+                            user_visible_message=False,
+                        )
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        get_runtime_tracer().trace(
+                            'external_intent_preempted_local_worker',
+                            explicit_assistant=explicit_override,
+                            semantic_intent=semantic_intent,
+                            chat_dispatch_id=chat_dispatch_id,
+                            elapsed_ms=int(elapsed * 1000),
+                            message_excerpt=message[:120],
+                        )
+                    except Exception:
+                        pass
+                    self._working = False
+                    self._busy_label = ''
+                    self._set_live_status('idle')
+                    self._clear_autonomy_activity_override()
+                else:
+                    self._resolve_active_interaction(outcome='abandoned')
+                    return
             # Reset forzado: _working stuck por mas de 60 segundos
             self._working = False
             self._set_live_status('idle')
