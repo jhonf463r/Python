@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
+import csv
 import json
 import os
 from pathlib import Path
@@ -1009,6 +1010,8 @@ class WorldModelService:
             else [browser_payload] if isinstance(browser_payload, dict)
             else []
         )
+        if not browser_rows:
+            browser_rows = self._browser_process_rows_from_tasklist()
         seen_pids = {int(row.get('IDProcess') or row.get('Id') or 0) for row in rows if isinstance(row, dict)}
         for row in browser_rows:
             if not isinstance(row, dict):
@@ -1064,6 +1067,59 @@ class WorldModelService:
                 )
             )
         return items
+
+    def _browser_process_rows_from_tasklist(self) -> list[dict[str, Any]]:
+        """Fast Windows fallback for browser process inventory.
+
+        PowerShell startup can exceed the world-model timeout on busy Windows
+        desktops.  ``tasklist`` is cheap and enough to preserve the fact that a
+        browser process exists, even when it has no visible top-level window.
+        """
+        if os.name != 'nt':
+            return []
+        try:
+            completed = subprocess.run(
+                ['tasklist', '/FO', 'CSV', '/NH'],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='ignore',
+                timeout=2.0,
+                check=False,
+            )
+        except Exception:
+            return []
+        if completed.returncode != 0:
+            return []
+        rows: list[dict[str, Any]] = []
+        browser_names = {
+            'chrome.exe', 'msedge.exe', 'msedgewebview2.exe', 'firefox.exe',
+            'brave.exe', 'opera.exe', 'chromium.exe',
+        }
+        try:
+            parsed = csv.reader(completed.stdout.splitlines())
+            for item in parsed:
+                if len(item) < 5:
+                    continue
+                image_name = str(item[0] or '').strip()
+                if image_name.lower() not in browser_names:
+                    continue
+                try:
+                    pid = int(str(item[1] or '').strip())
+                except Exception:
+                    pid = 0
+                mem_text = str(item[4] or '')
+                digits = ''.join(ch for ch in mem_text if ch.isdigit())
+                memory_bytes = int(digits) * 1024 if digits else 0
+                rows.append({
+                    'Name': image_name.rsplit('.', 1)[0],
+                    'IDProcess': pid,
+                    'PercentProcessorTime': 0,
+                    'WorkingSetPrivate': memory_bytes,
+                })
+        except Exception:
+            return []
+        return rows[:32]
 
     def _detected_blocks(
         self,

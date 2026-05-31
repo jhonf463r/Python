@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
+from unittest.mock import MagicMock, patch
 
 from iabv_v15.domain.models import (
     BackgroundProcessSnapshot,
@@ -308,6 +309,33 @@ def test_world_model_background_processes_preserves_browser_processes_not_in_top
         assert 'msedge' in names
         assert edge.metadata.get('browser_process_candidate') is True
         assert 'ventana visible' in edge.metadata.get('observation_note', '')
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_world_model_browser_processes_fallback_to_tasklist_when_powershell_times_out() -> None:
+    workspace = _workspace('world_model_browser_tasklist_fallback')
+    try:
+        service = WorldModelService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        service._powershell_json = lambda _command: None  # type: ignore[method-assign]
+        tasklist_output = (
+            '"Image Name","PID","Session Name","Session#","Mem Usage"\n'
+            '"msedge.exe","10636","Console","1","38,556 K"\n'
+        )
+        completed = SimpleNamespace(returncode=0, stdout=tasklist_output)
+
+        with patch('iabv_v15.services.evolution.world_model_service.os.name', 'nt'), \
+                patch('iabv_v15.services.evolution.world_model_service.subprocess.run', MagicMock(return_value=completed)):
+            processes = service._background_processes(full=True)
+
+        edge = next(item for item in processes if item.process_name == 'msedge')
+        assert edge.pid == 10636
+        assert edge.metadata.get('browser_process_candidate') is True
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
