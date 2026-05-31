@@ -88,7 +88,7 @@ def test_start_ui_uses_start_process_with_iabv_module(start_iabv_src: str) -> No
         pos = start_iabv_src.find("if ($StartUI)", idx)
         assert pos != -1, "No se encontro el bloque principal if ($StartUI)"
         # El bloque principal tiene un '{' seguido de contenido con Write-Info.
-        candidate = start_iabv_src[pos : pos + 2500]
+        candidate = start_iabv_src[pos : pos + 4500]
         if "Write-Info" in candidate and "-m iabv_v15 app" in candidate:
             block = candidate
             break
@@ -100,6 +100,8 @@ def test_start_ui_uses_start_process_with_iabv_module(start_iabv_src: str) -> No
         "Debe generarse el comando 'python -m iabv_v15 app' como argumentos "
         "del spawn no bloqueante"
     )
+    assert "$psi.EnvironmentVariables['PYTHONPATH'] = $env:PYTHONPATH" in block
+    assert "$psi.EnvironmentVariables['IABV_WORKSPACE_ROOT'] = $iabvRoot" in block
 
 
 def test_start_ui_failure_does_not_kill_mcp(start_iabv_src: str) -> None:

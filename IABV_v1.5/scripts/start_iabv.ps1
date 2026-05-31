@@ -460,6 +460,11 @@ if ($StartUI) {
             $psi.WorkingDirectory = $iabvRoot
             $psi.UseShellExecute = $false
             $psi.CreateNoWindow = $true
+            # Make the UI import the workspace that launched it, even when
+            # Python has an editable install pointing at an older IABV clone.
+            $psi.EnvironmentVariables['PYTHONPATH'] = $env:PYTHONPATH
+            $psi.EnvironmentVariables['IABV_WORKSPACE_ROOT'] = $iabvRoot
+            $psi.EnvironmentVariables['IABV_SKIP_MCP_AUTOSTART'] = '1'
             $uiProc = [System.Diagnostics.Process]::Start($psi)
             Write-Info "  UI PID     : $($uiProc.Id)"
             Write-Info "  PYTHONPATH : $env:PYTHONPATH"
