@@ -4851,6 +4851,13 @@ class ControlCenterViewModel(QObject):
                 focus = self._focus_existing_browser_from_inventory(inventory)
                 if focus.get('focused'):
                     selected = dict(focus.get('selected_window') or {})
+                    self._last_visible_browser_surface = {
+                        'assistant_kind': assistant_kind or 'chatgpt',
+                        'surface': 'existing_browser_visible',
+                        'semantic_bridge': 'none',
+                        'selected_window': selected,
+                        'created_at': time.time(),
+                    }
                     msg = self._format_human_assist_message(
                         sees=f'veo tu navegador ya abierto y lo traje al frente: {selected.get("title") or inventory_summary}.',
                         cannot_verify=(
@@ -4883,6 +4890,13 @@ class ControlCenterViewModel(QObject):
                 except Exception:
                     pass
                 if user_launch.get('launched'):
+                    self._last_visible_browser_surface = {
+                        'assistant_kind': assistant_kind or 'chatgpt',
+                        'surface': 'user_default_browser_visible',
+                        'semantic_bridge': user_launch.get('semantic_bridge', 'none'),
+                        'launch_target': user_launch.get('launch_target', 'https://chatgpt.com/'),
+                        'created_at': time.time(),
+                    }
                     msg = self._format_human_assist_message(
                         sees=f'hay procesos de navegador del usuario activos ({inventory_summary}) pero no una ventana visible enlazada.',
                         cannot_verify=(
@@ -4906,6 +4920,14 @@ class ControlCenterViewModel(QObject):
                 assistant_kind=assistant_kind or 'chatgpt',
             )
             if launch.get('launched'):
+                self._last_visible_browser_surface = {
+                    'assistant_kind': assistant_kind or 'chatgpt',
+                    'surface': 'governed_browser_visible',
+                    'semantic_bridge': 'browser_dom',
+                    'cdp_url': launch.get('cdp_url', ''),
+                    'profile_label': launch.get('profile_label', ''),
+                    'created_at': time.time(),
+                }
                 msg = self._format_human_assist_message(
                     sees=f'me estás autorizando a usar una sesión de navegador; inventario actual: {inventory_summary}.',
                     cannot_verify='tu navegador normal no está observable por CDP, así que no puedo tomar control fiable de esa sesión sin un puente.',
@@ -5023,6 +5045,231 @@ class ControlCenterViewModel(QObject):
         'ya esta listo', 'ya lo resolvi', 'done', 'i did it',
     )
 
+    @staticmethod
+    def _sanitize_visible_response_text(text: str) -> str:
+        """Remove obvious PII/secrets from text copied from a visible page."""
+        cleaned = str(text or '').replace('\x00', ' ')
+        cleaned = re.sub(
+            r'(?i)\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b',
+            '[redacted_email]',
+            cleaned,
+        )
+        cleaned = re.sub(
+            r'(?i)\b(password|contrasena|contraseña|api[_ -]?key|token|secret)\s*[:=]\s*\S+',
+            r'\1=[redacted]',
+            cleaned,
+        )
+        cleaned = re.sub(r'\b[A-Za-z0-9_-]{32,}\b', '[redacted_token]', cleaned)
+        return '\n'.join(line.rstrip() for line in cleaned.splitlines()).strip()
+
+    @staticmethod
+    def _visible_response_text_looks_useful(text: str, *, prompt_text: str = '') -> bool:
+        normalized = ' '.join(str(text or '').split()).strip()
+        if not normalized:
+            return False
+        lowered = normalized.lower()
+        prompt_lower = ' '.join(str(prompt_text or '').split()).lower()
+        if 'responde solo' in prompt_lower or 'solo s' in prompt_lower:
+            short_tokens = {
+                token.strip('.,:;!?()[]{}"\'').lower()
+                for token in normalized.split()
+            }
+            if short_tokens.intersection({'s', 'si', 'sí', 'ok', 'yes'}) and len(normalized) <= 80:
+                return True
+        if len(normalized) < 24:
+            return False
+        if prompt_lower and lowered == prompt_lower:
+            return False
+        if prompt_lower and lowered.startswith(prompt_lower) and len(lowered) <= len(prompt_lower) + 24:
+            return False
+        local_surface_markers = (
+            'iabv',
+            'procesando',
+            'external_consultation',
+            'security_retest',
+        )
+        if any(marker in lowered for marker in local_surface_markers) and 'chatgpt' not in lowered:
+            return False
+        return True
+
+    @staticmethod
+    def _restore_clipboard_text(text: str) -> None:
+        try:  # pragma: no cover - live Qt branch
+            from PySide6.QtGui import QGuiApplication
+
+            app = QGuiApplication.instance()
+            clipboard = app.clipboard() if app is not None else None
+            if clipboard is not None:
+                clipboard.setText(str(text or ''))
+                return
+        except Exception:
+            pass
+        try:  # pragma: no cover - Windows fallback
+            import subprocess as _subprocess
+
+            _subprocess.run(
+                [
+                    'powershell',
+                    '-NoProfile',
+                    '-Command',
+                    'Set-Clipboard -Value ([Console]::In.ReadToEnd())',
+                ],
+                input=str(text or ''),
+                text=True,
+                capture_output=True,
+                timeout=3,
+            )
+        except Exception:
+            pass
+
+    def _attempt_visible_user_browser_response_capture(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+    ) -> dict[str, Any]:
+        """Try a safe visible-page text capture after the user completed the page.
+
+        This is intentionally limited: it does not read cookies, tokens,
+        credentials, browser storage, or hidden DOM. It only tries to focus a
+        visible browser surface already recorded by the previous handoff and
+        copy visible page text. If no semantic channel is available, it returns
+        an unresolved result instead of pretending that ChatGPT was read.
+        """
+        started = time.perf_counter()
+        surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+        prompt_text = str(getattr(self, '_last_user_goal', '') or '')
+        result: dict[str, Any] = {
+            'attempted': False,
+            'success': False,
+            'status': 'not_attempted',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'surface': surface.get('surface', ''),
+            'capture_source': '',
+            'captured_text': '',
+            'captured_excerpt': '',
+            'reason': '',
+            'unresolved_fields': [],
+            'execution_ms': 0,
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'visible_response_capture_started',
+                assistant_kind=assistant_kind,
+                surface=result['surface'],
+                semantic_bridge=surface.get('semantic_bridge', ''),
+            )
+        except Exception:
+            tracer = None
+
+        focused = False
+        focus_error = ''
+        try:
+            probe = self._detect_cdp_available(timeout=0.35)
+            inventory = self._browser_session_inventory(
+                assistant_kind=assistant_kind or 'chatgpt',
+                cdp_probe=probe,
+            )
+        except Exception:
+            inventory = {'candidate_windows': [], 'candidate_count': 0, 'can_focus_existing': False}
+
+        if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+            result['attempted'] = True
+            focus = self._focus_existing_browser_from_inventory(inventory)
+            focused = bool(focus.get('focused'))
+            focus_error = str(focus.get('error') or '')
+            selected = dict(focus.get('selected_window') or {})
+            if selected:
+                surface['selected_window'] = selected
+                result['surface'] = surface.get('surface') or 'existing_browser_visible'
+        elif surface.get('selected_window'):
+            result['attempted'] = True
+            focus = self._focus_existing_browser_from_inventory({
+                'candidate_windows': [dict(surface.get('selected_window') or {})],
+            })
+            focused = bool(focus.get('focused'))
+            focus_error = str(focus.get('error') or '')
+        elif surface.get('surface') in {'user_default_browser_visible', 'existing_browser_visible'}:
+            result['attempted'] = True
+            focus_error = 'visible_window_not_observed'
+
+        if not result['attempted']:
+            result['status'] = 'target_missing'
+            result['reason'] = 'no_visible_browser_surface_recorded'
+            result['unresolved_fields'] = ['visible_browser_surface']
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            return result
+        if not focused:
+            result['status'] = 'target_missing'
+            result['reason'] = focus_error or 'visible_browser_window_not_focusable'
+            result['unresolved_fields'] = ['focusable_browser_window']
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            try:
+                if tracer:
+                    tracer.trace('visible_response_capture_result', **{k: v for k, v in result.items() if k != 'captured_text'})
+            except Exception:
+                pass
+            return result
+
+        try:
+            from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+
+            workspace = str(getattr(getattr(self, 'config', None), 'workspace_root', '') or os.getcwd())
+            runner = UIExecutionRunner(workspace_root=workspace)
+            previous_clipboard = runner.read_clipboard_text()
+            try:
+                copied = runner.copy_active_window_text(select_all=True, settle_seconds=0.18)
+            finally:
+                try:
+                    self._restore_clipboard_text(previous_clipboard)
+                except Exception:
+                    pass
+            sanitized = self._sanitize_visible_response_text(copied)
+            if self._visible_response_text_looks_useful(sanitized, prompt_text=prompt_text):
+                result.update({
+                    'success': True,
+                    'status': 'response_captured',
+                    'capture_source': 'visible_clipboard_capture',
+                    'captured_text': sanitized[:8000],
+                    'captured_excerpt': sanitized[:500],
+                    'reason': 'visible_text_captured',
+                })
+            else:
+                result.update({
+                    'status': 'visible_capture_unreadable',
+                    'capture_source': 'visible_clipboard_capture',
+                    'captured_excerpt': sanitized[:240],
+                    'reason': 'captured_text_not_useful',
+                    'unresolved_fields': ['semantic_response_text'],
+                })
+        except Exception as exc:
+            result.update({
+                'status': 'visible_capture_error',
+                'reason': f'{type(exc).__name__}: {exc}',
+                'unresolved_fields': ['visible_text_capture'],
+            })
+        result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+        try:
+            if tracer:
+                tracer.trace(
+                    'visible_response_capture_result',
+                    **{k: v for k, v in result.items() if k != 'captured_text'},
+                )
+                tracer.trace(
+                    'semantic_capture_ladder_result',
+                    assistant_kind=assistant_kind,
+                    status=result.get('status', ''),
+                    capture_source=result.get('capture_source', ''),
+                    success=bool(result.get('success')),
+                    unresolved_fields=result.get('unresolved_fields', []),
+                )
+        except Exception:
+            pass
+        return result
+
     def _try_handle_security_verification_retest(self, message: str) -> bool:
         """If the user claims they completed security verification, do a single governed retest.
 
@@ -5037,12 +5284,99 @@ class ControlCenterViewModel(QObject):
         metadata = dict(payload.get('metadata') or {})
         ext_meta = metadata.get('external_consultation') or {}
         if not isinstance(ext_meta, dict):
+            ext_meta = {}
+        if not ext_meta:
+            failure = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+            if failure:
+                ext_meta = {
+                    'detail': str(failure.get('meta') or failure.get('message') or ''),
+                    'status': 'blocked_external',
+                    'assistant_kind': str(failure.get('assistant_kind') or ''),
+                    'assistant_title': str(failure.get('assistant_title') or ''),
+                    'terminal_state': str(failure.get('terminal_state') or ''),
+                }
+        if not ext_meta:
             return False
         last_meta = str(ext_meta.get('detail') or ext_meta.get('status') or '')
         if 'browser_security_verification' not in last_meta and ext_meta.get('status') != 'blocked_external':
             flags = ext_meta.get('external_state_flags') or []
             if 'capture_unverified' not in flags:
                 return False
+        assistant_kind = str(ext_meta.get('assistant_kind') or ext_meta.get('requested_assistant_kind') or 'chatgpt')
+        assistant_title = str(ext_meta.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        visible_capture = self._attempt_visible_user_browser_response_capture(
+            assistant_kind=assistant_kind,
+            assistant_title=assistant_title,
+        )
+        if visible_capture.get('success'):
+            excerpt = str(visible_capture.get('captured_excerpt') or '').strip()
+            summary = (
+                f'Ya pude capturar texto util desde la ventana visible de {assistant_title} '
+                'sin leer cookies/tokens/credenciales. Fragmento: '
+                f'{excerpt[:420]}'
+            )
+            self._latest_response_text = summary
+            self._latest_response_meta = 'visible_response_capture: response_captured'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', summary,
+                'visible_response_capture',
+                reasoning_path='visible_response_capture',
+                evidence_tag='observed',
+                trace_metadata={
+                    'assistant': assistant_title,
+                    'capture_source': visible_capture.get('capture_source', ''),
+                    'response_captured': True,
+                },
+            )
+            try:
+                self._clear_external_failure_memory()
+                self._resolve_incident_frame('resolved')
+            except Exception:
+                pass
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
+        if visible_capture.get('attempted'):
+            status = str(visible_capture.get('status') or 'visible_capture_unresolved')
+            reason = str(visible_capture.get('reason') or 'sin canal semantico')
+            msg = self._format_human_assist_message(
+                sees=f'intente usar la ventana visible de {assistant_title}, pero no obtuve texto semantico confiable.',
+                cannot_verify=(
+                    'sin CDP/DOM/accesibilidad/OCR/extension no puedo leer esa respuesta en segundo plano; '
+                    'solo pude intentar una captura visible gobernada y no fue suficiente.'
+                ),
+                needs_from_you=(
+                    'mantén la ventana de ChatGPT al frente y vuelve a escribir "ya lo hice", '
+                    'o pega aqui la respuesta que ves para incorporarla sin fingir observacion.'
+                ),
+                action_now=f'registre UNRESOLVED:{status} ({reason[:120]}).',
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = f'visible_response_capture: {status}'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'visible_response_capture_unresolved',
+                reasoning_path='visible_response_capture',
+                evidence_tag='inferred',
+                trace_metadata={
+                    'assistant': assistant_title,
+                    'status': status,
+                    'unresolved_fields': visible_capture.get('unresolved_fields', []),
+                },
+            )
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
         if getattr(self, '_security_retest_done', False):
             self._append_message(
                 'assistant', 'IABV',
@@ -5062,8 +5396,6 @@ class ControlCenterViewModel(QObject):
             )
         except Exception:
             pass
-        assistant_kind = str(ext_meta.get('assistant_kind') or ext_meta.get('requested_assistant_kind') or 'chatgpt')
-        assistant_title = str(ext_meta.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
         self._append_message(
             'assistant', 'IABV',
             f'Entendido — ejecutando un solo retest gobernado de {assistant_title} '

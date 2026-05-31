@@ -51,6 +51,7 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
     vm._EXTERNAL_ACTION_SHOW_TERMS = viewmodel_cls._EXTERNAL_ACTION_SHOW_TERMS
     vm._BROWSER_APP_TOKENS = viewmodel_cls._BROWSER_APP_TOKENS
     vm._ASSISTANT_WINDOW_TOKENS = viewmodel_cls._ASSISTANT_WINDOW_TOKENS
+    vm._SECURITY_RETEST_PATTERNS = viewmodel_cls._SECURITY_RETEST_PATTERNS
     vm._detect_cdp_available = MagicMock(return_value={'available': False, 'error': 'connection_failed'})
     vm._current_world_model = MagicMock(return_value=SimpleNamespace(active_windows=[]))
     vm._browser_session_inventory = lambda **kwargs: viewmodel_cls._browser_session_inventory(vm, **kwargs)
@@ -66,9 +67,20 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
     vm._append_message = MagicMock()
     vm._set_live_status = MagicMock()
     vm._clear_autonomy_activity_override = MagicMock()
+    vm._clear_external_failure_memory = MagicMock()
+    vm._resolve_incident_frame = MagicMock()
     vm.dataChanged = MagicMock()
     vm._working = False
     vm._busy_label = ''
+    vm._last_adaptive_payload = {}
+    vm._last_user_goal = 'has una consulta a ChatGPT: responde solo S si entiendes'
+    vm._last_visible_browser_surface = {}
+    vm._sanitize_visible_response_text = viewmodel_cls._sanitize_visible_response_text
+    vm._visible_response_text_looks_useful = viewmodel_cls._visible_response_text_looks_useful
+    vm._restore_clipboard_text = MagicMock()
+    vm._attempt_visible_user_browser_response_capture = lambda **kwargs: viewmodel_cls._attempt_visible_user_browser_response_capture(
+        vm, **kwargs,
+    )
     return vm
 
 
@@ -126,6 +138,7 @@ def test_user_browser_request_prefers_existing_visible_window(viewmodel_cls):
     assert 'existing_browser_focused' in vm._latest_response_meta
     assert 'lo traje al frente' in vm._latest_response_text
     assert 'sin CDP/puente' in vm._latest_response_text
+    assert vm._last_visible_browser_surface['surface'] == 'existing_browser_visible'
 
 
 def test_browser_inventory_reports_background_process_without_visible_window(viewmodel_cls):
@@ -178,6 +191,126 @@ def test_user_browser_process_launches_default_browser_before_governed(viewmodel
     assert 'user_default_browser_visible_launched' in vm._latest_response_meta
     assert 'navegador normal' in vm._latest_response_text
     assert 'DOM/CDP' in vm._latest_response_text
+    assert vm._last_visible_browser_surface['surface'] == 'user_default_browser_visible'
+
+
+def test_security_retest_captures_visible_browser_response_before_governed_retest(viewmodel_cls):
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    vm._last_visible_browser_surface = {
+        'surface': 'existing_browser_visible',
+        'selected_window': {'title': 'ChatGPT - Microsoft Edge', 'hwnd': 777},
+        'semantic_bridge': 'none',
+    }
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(
+        active_windows=[
+            SimpleNamespace(
+                title='ChatGPT - Microsoft Edge',
+                app_name='msedge.exe',
+                pid=123,
+                focused=False,
+                metadata={'hwnd': 777},
+            ),
+        ],
+        background_processes=[],
+    ))
+    vm._focus_existing_browser_from_inventory = MagicMock(return_value={
+        'focused': True,
+        'selected_window': {'title': 'ChatGPT - Microsoft Edge', 'hwnd': 777},
+        'method': 'win32_hwnd',
+    })
+    runner = MagicMock()
+    runner.read_clipboard_text.return_value = 'texto previo'
+    runner.copy_active_window_text.return_value = 'ChatGPT\nS'
+
+    with (
+        patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer),
+        patch('iabv_v15.services.tools.ui_execution_runner.UIExecutionRunner', return_value=runner),
+    ):
+        handled = viewmodel_cls._try_handle_security_verification_retest(vm, 'ya lo hice')
+
+    assert handled is True
+    assert 'response_captured' in vm._latest_response_meta
+    assert 'sin leer cookies/tokens/credenciales' in vm._latest_response_text
+    vm._clear_external_failure_memory.assert_called_once()
+    vm._resolve_incident_frame.assert_called_once_with('resolved')
+    runner.copy_active_window_text.assert_called_once_with(select_all=True, settle_seconds=0.18)
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'visible_response_capture_started' in traced_kinds
+    assert 'visible_response_capture_result' in traced_kinds
+    assert 'semantic_capture_ladder_result' in traced_kinds
+
+
+def test_security_retest_visible_capture_unreadable_does_not_run_blind_governed_retest(viewmodel_cls):
+    vm = _semantic_vm(viewmodel_cls)
+    vm._last_visible_browser_surface = {
+        'surface': 'existing_browser_visible',
+        'selected_window': {'title': 'ChatGPT - Microsoft Edge', 'hwnd': 777},
+        'semantic_bridge': 'none',
+    }
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(
+        active_windows=[
+            SimpleNamespace(
+                title='ChatGPT - Microsoft Edge',
+                app_name='msedge.exe',
+                pid=123,
+                focused=False,
+                metadata={'hwnd': 777},
+            ),
+        ],
+        background_processes=[],
+    ))
+    vm._focus_existing_browser_from_inventory = MagicMock(return_value={
+        'focused': True,
+        'selected_window': {'title': 'ChatGPT - Microsoft Edge', 'hwnd': 777},
+    })
+    runner = MagicMock()
+    runner.read_clipboard_text.return_value = 'texto previo'
+    runner.copy_active_window_text.return_value = 'IABV procesando'
+    vm._bg_pool = MagicMock()
+
+    with patch('iabv_v15.services.tools.ui_execution_runner.UIExecutionRunner', return_value=runner):
+        handled = viewmodel_cls._try_handle_security_verification_retest(vm, 'ya lo hice')
+
+    assert handled is True
+    assert 'visible_capture_unreadable' in vm._latest_response_meta
+    assert 'pégala' in vm._latest_response_text or 'pega' in vm._latest_response_text
+    vm._bg_pool.submit.assert_not_called()
+    vm._clear_external_failure_memory.assert_not_called()
+
+
+def test_visible_capture_missing_target_reports_unresolved_without_copy(viewmodel_cls):
+    vm = _semantic_vm(viewmodel_cls)
+    vm._last_visible_browser_surface = {
+        'surface': 'user_default_browser_visible',
+        'semantic_bridge': 'none',
+    }
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(
+        active_windows=[],
+        background_processes=[],
+    ))
+
+    result = viewmodel_cls._attempt_visible_user_browser_response_capture(
+        vm,
+        assistant_kind='chatgpt',
+        assistant_title='ChatGPT',
+    )
+
+    assert result['attempted'] is True
+    assert result['success'] is False
+    assert result['status'] == 'target_missing'
+    assert 'focusable_browser_window' in result['unresolved_fields']
+
+
+def test_visible_capture_sanitizes_pii_and_tokens(viewmodel_cls):
+    raw = 'Cuenta faber@example.com token=abcdefghijklmnopqrstuvwxyz1234567890 password=secreto'
+    sanitized = viewmodel_cls._sanitize_visible_response_text(raw)
+
+    assert 'faber@example.com' not in sanitized
+    assert 'abcdefghijklmnopqrstuvwxyz1234567890' not in sanitized
+    assert 'secreto' not in sanitized
+    assert '[redacted_email]' in sanitized
+    assert '[redacted]' in sanitized
 
 
 def test_classifier_binds_gmail_logged_account_to_human_login_available(viewmodel_cls):
