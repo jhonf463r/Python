@@ -81,6 +81,10 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
     vm._attempt_visible_user_browser_response_capture = lambda **kwargs: viewmodel_cls._attempt_visible_user_browser_response_capture(
         vm, **kwargs,
     )
+    vm._attempt_visible_user_browser_prompt_send = lambda **kwargs: viewmodel_cls._attempt_visible_user_browser_prompt_send(
+        vm, **kwargs,
+    )
+    vm._run_external_consultation = MagicMock(return_value=True)
     return vm
 
 
@@ -192,6 +196,126 @@ def test_user_browser_process_launches_default_browser_before_governed(viewmodel
     assert 'navegador normal' in vm._latest_response_text
     assert 'DOM/CDP' in vm._latest_response_text
     assert vm._last_visible_browser_surface['surface'] == 'user_default_browser_visible'
+
+
+def test_retry_after_visible_browser_launch_sends_prompt_to_same_surface(viewmodel_cls):
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    vm._last_visible_browser_surface = {
+        'surface': 'user_default_browser_visible',
+        'semantic_bridge': 'none',
+        'launch_target': 'https://chatgpt.com/',
+    }
+    vm._attempt_visible_user_browser_prompt_send = MagicMock(return_value={
+        'attempted': True,
+        'success': True,
+        'status': 'prompt_sent',
+        'focused_title': 'ChatGPT - Google Chrome',
+        'reason': 'visible_prompt_pasted_and_submitted',
+    })
+    msg = (
+        'ok ahroa has la cosulta que tengas pendiente, analiza si puede usar '
+        'bien el chatgp y si puedes en segundo plano mejor'
+    )
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)
+
+    assert handled is True
+    vm._attempt_visible_user_browser_prompt_send.assert_called_once()
+    vm._run_external_consultation.assert_not_called()
+    assert 'visible_prompt_sent' in vm._latest_response_meta
+    assert 'ya envi' in vm._latest_response_text.lower()
+    assert 'chat local' in vm._latest_response_text.lower()
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'semantic_action_binding_result' in traced_kinds
+    assert any(
+        call.kwargs.get('action_taken') == 'send_prompt_to_visible_browser_surface'
+        for call in tracer.trace.call_args_list
+    )
+
+
+def test_retry_after_visible_browser_launch_unresolved_does_not_blind_retry(viewmodel_cls):
+    vm = _semantic_vm(viewmodel_cls)
+    vm._last_visible_browser_surface = {
+        'surface': 'existing_browser_visible',
+        'semantic_bridge': 'none',
+        'selected_window': {'title': 'ChatGPT - Google Chrome'},
+    }
+    vm._attempt_visible_user_browser_prompt_send = MagicMock(return_value={
+        'attempted': True,
+        'success': False,
+        'status': 'target_missing',
+        'reason': 'visible_browser_window_not_focusable',
+        'unresolved_fields': ['focusable_browser_window'],
+    })
+    msg = 'has la cosulta pendiente en chatgp'
+
+    handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)
+
+    assert handled is True
+    vm._attempt_visible_user_browser_prompt_send.assert_called_once()
+    vm._run_external_consultation.assert_not_called()
+    assert 'visible_prompt_unresolved' in vm._latest_response_meta
+    assert 'no pude enfocarla' in vm._latest_response_text
+
+
+def test_classifier_binds_typo_consultation_to_retry_with_context(viewmodel_cls):
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'ok ahroa has la cosulta pendiente en chatgp en segundo plano',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'retry_external_consultation_requested'
+    assert result['confidence'] >= 0.50
+
+
+def test_visible_prompt_send_focuses_title_when_world_model_has_no_hwnd(viewmodel_cls):
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    vm._last_visible_browser_surface = {
+        'surface': 'user_default_browser_visible',
+        'semantic_bridge': 'none',
+        'selected_window': {'title': 'ChatGPT - Google Chrome'},
+    }
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(
+        active_windows=[
+            SimpleNamespace(
+                title='ChatGPT - Google Chrome',
+                app_name='chrome.exe',
+                pid=3796,
+                focused=False,
+                metadata={},
+            ),
+        ],
+        background_processes=[],
+    ))
+    runner = MagicMock()
+    runner.read_clipboard_text.return_value = 'clipboard anterior'
+    runner._wait_and_focus_any_window.return_value = 'ChatGPT - Google Chrome'
+
+    with (
+        patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer),
+        patch('iabv_v15.services.tools.ui_execution_runner.UIExecutionRunner', return_value=runner),
+    ):
+        result = viewmodel_cls._attempt_visible_user_browser_prompt_send(
+            vm,
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            prompt_text='responde solo S si entiendes',
+        )
+
+    assert result['success'] is True
+    assert result['status'] == 'prompt_sent'
+    assert result['focused_title'] == 'ChatGPT - Google Chrome'
+    runner._paste_text.assert_called_once_with('responde solo S si entiendes')
+    runner._send_virtual_key.assert_called_once_with(0x0D)
+    vm._restore_clipboard_text.assert_called_once_with('clipboard anterior')
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'visible_prompt_send_started' in traced_kinds
+    assert 'visible_prompt_send_result' in traced_kinds
 
 
 def test_security_retest_captures_visible_browser_response_before_governed_retest(viewmodel_cls):

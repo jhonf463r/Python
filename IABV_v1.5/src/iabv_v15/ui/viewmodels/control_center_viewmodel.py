@@ -4625,7 +4625,9 @@ class ControlCenterViewModel(QObject):
     )
     _EXTERNAL_ACTION_DO_TERMS: tuple[str, ...] = (
         'usa', 'usar', 'utiliza', 'utilizar', 'haz', 'has', 'hacer',
-        'consulta', 'consultar', 'busca', 'buscar', 'soluciona',
+        'consulta', 'cosulta', 'consultar', 'busca', 'buscar',
+        'investiga', 'investigar', 'investigacion', 'investigación',
+        'pendiente', 'pendientes', 'segundo plano', 'soluciona',
         'solucionar', 'avanza', 'continua', 'continúa',
     )
     _EXTERNAL_ACTION_SHOW_TERMS: tuple[str, ...] = (
@@ -4671,10 +4673,25 @@ class ControlCenterViewModel(QObject):
         ownership_ref = _hit(self._EXTERNAL_ACTION_OWNERSHIP_TERMS, 0.22)
         action_ref = _hit(self._EXTERNAL_ACTION_DO_TERMS, 0.28)
         show_ref = _hit(self._EXTERNAL_ACTION_SHOW_TERMS, 0.22)
-        assistant_ref = bool(self._explicit_assistant_preference(message) or re.search(r'chat\s*gpt|chatgpt|claude|codex', normalized))
+        assistant_ref = bool(
+            self._explicit_assistant_preference(message)
+            or re.search(r'chat\s*gpt|chatgpt|chatgp|cahtgpt|\bgpt\b|claude|codex', normalized)
+        )
         if assistant_ref:
             score += 0.12
             matched.append('assistant_ref')
+        contextual_assistant_ref = bool(
+            (failure_payload or {}).get('assistant_kind')
+            or (active_incident or {}).get('assistant_kind')
+        )
+        consultation_ref = bool(
+            re.search(
+                r'consulta|cosulta|consultar|busca|buscar|investiga|investigaci[oó]n|chat\s*gpt|chatgpt|chatgp|\bgpt\b|segundo plano|pendiente',
+                normalized,
+            )
+        )
+        if contextual_assistant_ref:
+            matched.append('context_assistant_ref')
 
         if show_ref and not browser_ref and (score >= 0.22 or active_incident):
             return {
@@ -4695,12 +4712,164 @@ class ControlCenterViewModel(QObject):
                 'matched_terms': sorted(set(matched)),
             }
         if action_ref and assistant_ref and score >= 0.40:
+            contextual_boost = 0.14 if contextual_assistant_ref else 0.0
             return {
                 'intent': 'retry_external_consultation_requested',
-                'confidence': min(score, 1.0),
+                'confidence': min(score + contextual_boost, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        if action_ref and consultation_ref and contextual_assistant_ref and score >= 0.28:
+            return {
+                'intent': 'retry_external_consultation_requested',
+                'confidence': min(score + 0.18, 1.0),
                 'matched_terms': sorted(set(matched)),
             }
         return {'intent': 'none', 'confidence': min(score, 1.0), 'matched_terms': sorted(set(matched))}
+
+    def _attempt_visible_user_browser_prompt_send(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        prompt_text: str,
+    ) -> dict[str, Any]:
+        """Focus the visible user browser surface and send the prompt.
+
+        This is the missing middle step between "I opened ChatGPT" and "I can
+        capture the response".  It does not read credentials or hidden browser
+        state; it only focuses a visible browser window, pastes the prompt,
+        presses Enter, restores the clipboard, and records whether the prompt
+        was actually submitted.
+        """
+        started = time.perf_counter()
+        surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+        result: dict[str, Any] = {
+            'attempted': False,
+            'success': False,
+            'status': 'not_attempted',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'surface': surface.get('surface', ''),
+            'focused_title': '',
+            'prompt_chars': len(str(prompt_text or '')),
+            'reason': '',
+            'unresolved_fields': [],
+            'execution_ms': 0,
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'visible_prompt_send_started',
+                assistant_kind=assistant_kind,
+                surface=result['surface'],
+                prompt_chars=result['prompt_chars'],
+            )
+        except Exception:
+            tracer = None
+        def _return(result_update: dict[str, Any]) -> dict[str, Any]:
+            result.update(result_update)
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            try:
+                if tracer:
+                    tracer.trace('visible_prompt_send_result', **result)
+            except Exception:
+                pass
+            return result
+
+        if not surface:
+            return _return({
+                'status': 'target_missing',
+                'reason': 'no_visible_browser_surface_recorded',
+                'unresolved_fields': ['visible_browser_surface'],
+            })
+        prompt = str(prompt_text or '').strip()
+        if not prompt:
+            return _return({
+                'status': 'prompt_missing',
+                'reason': 'empty_prompt',
+                'unresolved_fields': ['prompt_text'],
+            })
+        try:
+            from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+
+            workspace = str(getattr(getattr(self, 'config', None), 'workspace_root', '') or os.getcwd())
+            runner = UIExecutionRunner(workspace_root=workspace)
+            previous_clipboard = runner.read_clipboard_text()
+            focused = False
+            focused_title = ''
+            try:
+                probe = self._detect_cdp_available(timeout=0.35)
+                inventory = self._browser_session_inventory(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    cdp_probe=probe,
+                )
+            except Exception:
+                inventory = {'candidate_windows': [], 'candidate_count': 0, 'can_focus_existing': False}
+            if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+                focus = self._focus_existing_browser_from_inventory(inventory)
+                focused = bool(focus.get('focused'))
+                selected = dict(focus.get('selected_window') or {})
+                focused_title = str(selected.get('title') or '')
+            if not focused:
+                title_hints = []
+                for item in list(inventory.get('candidate_windows') or []):
+                    title = str(item.get('title') or '').strip()
+                    if title:
+                        title_hints.append(title)
+                selected_surface = dict(surface.get('selected_window') or {})
+                if selected_surface.get('title'):
+                    title_hints.insert(0, str(selected_surface.get('title')))
+                title_hints.extend([
+                    'ChatGPT',
+                    'ChatGPT - Google Chrome',
+                    'ChatGPT - Microsoft Edge',
+                    'Google Chrome',
+                    'Microsoft Edge',
+                ])
+                focused_title = runner._wait_and_focus_any_window(  # noqa: SLF001 - controlled runtime bridge
+                    list(dict.fromkeys(title_hints)),
+                    4.0,
+                    bring_to_foreground=True,
+                )
+                focused = bool(focused_title)
+            if not focused:
+                result.update({
+                    'attempted': True,
+                    'status': 'target_missing',
+                    'reason': 'visible_browser_window_not_focusable',
+                    'unresolved_fields': ['focusable_browser_window'],
+                })
+            else:
+                result['attempted'] = True
+                result['focused_title'] = focused_title
+                try:
+                    runner._paste_text(prompt)  # noqa: SLF001 - existing UIExecutionRunner primitive
+                    runner._send_virtual_key(0x0D)  # noqa: SLF001
+                finally:
+                    try:
+                        self._restore_clipboard_text(previous_clipboard)
+                    except Exception:
+                        pass
+                result.update({
+                    'success': True,
+                    'status': 'prompt_sent',
+                    'reason': 'visible_prompt_pasted_and_submitted',
+                })
+        except Exception as exc:
+            result.update({
+                'attempted': True,
+                'status': 'visible_prompt_send_error',
+                'reason': f'{type(exc).__name__}: {exc}',
+                'unresolved_fields': ['visible_prompt_send'],
+            })
+        result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+        try:
+            if tracer:
+                tracer.trace('visible_prompt_send_result', **result)
+        except Exception:
+            pass
+        return result
 
     def _try_handle_external_action_followup(self, message: str) -> bool:
         """P0.73: turn broad human follow-up language into a concrete action.
@@ -4944,6 +5113,39 @@ class ControlCenterViewModel(QObject):
             return _finish(msg, 'semantic_action_binding: governed_browser_launch_failed', 'governed_browser_launch_failed')
 
         if intent == 'retry_external_consultation_requested':
+            visible_surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+            if visible_surface and str(visible_surface.get('semantic_bridge') or '') != 'browser_dom':
+                prompt_text = str(message or '').strip()
+                normalized_retry = self._normalized_command_text(prompt_text)
+                if re.search(r'\b(reintenta|reintentar|intenta nuevamente|continua|continúa|sigue)\b', normalized_retry):
+                    prompt_text = str(getattr(self, '_last_user_goal', '') or prompt_text).strip()
+                send = self._attempt_visible_user_browser_prompt_send(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    assistant_title=assistant_title,
+                    prompt_text=prompt_text,
+                )
+                if send.get('success'):
+                    msg = self._format_human_assist_message(
+                        sees=f'tengo una superficie visible de {assistant_title}: {send.get("focused_title") or visible_surface.get("surface") or "navegador visible"}.',
+                        cannot_verify=(
+                            'ya envié el prompt por esa ventana, pero sin CDP/DOM/OCR confiable no debo fingir '
+                            'que leí la respuesta en segundo plano.'
+                        ),
+                        needs_from_you=(
+                            'espera a que ChatGPT responda; luego escribe "ya lo hice" para intentar capturar '
+                            'la respuesta visible o pega la respuesta si no puedo leerla.'
+                        ),
+                        action_now='mantengo la tarea activa en la misma ventana visible en vez de abrir otra ruta o caer a chat local.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: visible_prompt_sent', 'send_prompt_to_visible_browser_surface')
+                if send.get('attempted'):
+                    msg = self._format_human_assist_message(
+                        sees=f'tengo registrada una superficie visible previa para {assistant_title}, pero no pude enfocarla ahora.',
+                        cannot_verify=f'falló el envío del prompt: {send.get("status") or "unknown"} / {send.get("reason") or "sin detalle"}.',
+                        needs_from_you='deja visible la ventana correcta de ChatGPT o elige "usar mi navegador" para volver a enlazarla.',
+                        action_now='no abrí otra consulta ni fingí éxito; dejé el estado como target_missing/unresolved.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: visible_prompt_unresolved', 'visible_prompt_send_unresolved')
             self._run_external_consultation(assistant_kind or 'chatgpt', announce=True)
             try:
                 if tracer:
