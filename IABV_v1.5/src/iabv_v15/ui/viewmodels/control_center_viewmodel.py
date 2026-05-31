@@ -4816,6 +4816,26 @@ class ControlCenterViewModel(QObject):
 
         if intent in {'user_browser_session_requested', 'human_login_available'}:
             probe = self._detect_cdp_available()
+            inventory = self._browser_session_inventory(
+                assistant_kind=assistant_kind or 'chatgpt',
+                cdp_probe=probe,
+            )
+            inventory_summary = self._format_browser_inventory_summary(inventory)
+            try:
+                if tracer:
+                    tracer.trace(
+                        'existing_browser_session_inventory',
+                        assistant_kind=assistant_kind,
+                        cdp_available=inventory.get('cdp_available', False),
+                        candidate_count=inventory.get('candidate_count', 0),
+                        assistant_window_count=inventory.get('assistant_window_count', 0),
+                        can_focus_existing=inventory.get('can_focus_existing', False),
+                        can_observe_existing_dom=inventory.get('can_observe_existing_dom', False),
+                        recommended_strategy=inventory.get('recommended_strategy', ''),
+                        limitations=inventory.get('limitations', []),
+                    )
+            except Exception:
+                pass
             if probe.get('available', False):
                 os.environ['IABV_PREFER_CDP_SESSION'] = '1'
                 msg = self._format_human_assist_message(
@@ -4826,14 +4846,32 @@ class ControlCenterViewModel(QObject):
                 )
                 return _finish(msg, 'semantic_action_binding: user_browser_cdp_enabled', 'enable_user_browser_cdp')
 
+            if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+                focus = self._focus_existing_browser_from_inventory(inventory)
+                if focus.get('focused'):
+                    selected = dict(focus.get('selected_window') or {})
+                    msg = self._format_human_assist_message(
+                        sees=f'veo tu navegador ya abierto y lo traje al frente: {selected.get("title") or inventory_summary}.',
+                        cannot_verify=(
+                            'esa ventana existe y puede estar logueada, pero sin CDP/puente no puedo leer '
+                            'la respuesta de ChatGPT en segundo plano ni usar tus correos/credenciales.'
+                        ),
+                        needs_from_you=(
+                            'si aparece verificación o login, complétalo ahí; si ya ves la respuesta, '
+                            'escribe "ya lo hice" para que intente capturar/reingestar.'
+                        ),
+                        action_now='usaré esta superficie visible antes de abrir otra ventana; si no puedo capturarla, ofreceré la ventana gobernada.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: existing_browser_focused', 'focus_existing_browser_session')
+
             launch = self._launch_governed_browser_session(
                 launch_target='https://chatgpt.com/',
                 assistant_kind=assistant_kind or 'chatgpt',
             )
             if launch.get('launched'):
                 msg = self._format_human_assist_message(
-                    sees='me estás autorizando a usar una sesión de navegador para resolver el bloqueo externo.',
-                    cannot_verify='tu Chrome normal no está observable por CDP, así que no puedo tomar control de esa sesión sin un puente.',
+                    sees=f'me estás autorizando a usar una sesión de navegador; inventario actual: {inventory_summary}.',
+                    cannot_verify='tu navegador normal no está observable por CDP, así que no puedo tomar control fiable de esa sesión sin un puente.',
                     needs_from_you='en la ventana gobernada que abrí, inicia sesión o completa la verificación si aparece; luego escribe "ya lo hice".',
                     action_now=f'abrí una ventana gobernada de Chrome para {assistant_title}; después haré el retest gobernado.',
                 )
@@ -5037,6 +5075,15 @@ class ControlCenterViewModel(QObject):
         'revocar permiso cdp', 'revocar cdp', 'revoke cdp',
         'desactivar cdp', 'disable cdp', 'no usar mi chrome',
     )
+    _BROWSER_APP_TOKENS: tuple[str, ...] = (
+        'chrome', 'edge', 'firefox', 'brave', 'opera', 'browser', 'navegador',
+    )
+    _ASSISTANT_WINDOW_TOKENS: dict[str, tuple[str, ...]] = {
+        'chatgpt': ('chatgpt', 'chat gpt', 'chat.openai', 'openai'),
+        'claude': ('claude', 'anthropic'),
+        'codex': ('codex',),
+        'devin': ('devin',),
+    }
 
     @staticmethod
     def _detect_cdp_available(
@@ -5073,6 +5120,157 @@ class ControlCenterViewModel(QObject):
                 )[:100]
         except urllib.error.URLError as exc:
             result['error'] = f'connection_failed: {exc.reason}'
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    def _browser_session_inventory(
+        self,
+        *,
+        assistant_kind: str = 'chatgpt',
+        cdp_probe: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Summarize existing browser sessions before opening a new one.
+
+        This is intentionally capability-oriented: seeing a Chrome window is
+        not the same as being able to read its DOM or capture ChatGPT's
+        response in the background.  The inventory keeps those states separate
+        so IABV can prefer the user's existing browser when it is actually
+        observable, and explain the exact gap when it is only visible/focusable.
+        """
+        probe = dict(cdp_probe or self._detect_cdp_available(timeout=0.75))
+        assistant = str(assistant_kind or 'chatgpt').strip().lower()
+        assistant_tokens = self._ASSISTANT_WINDOW_TOKENS.get(
+            assistant, (assistant,) if assistant else (),
+        )
+        windows: list[dict[str, Any]] = []
+        try:
+            snapshot = self._current_world_model()
+            active = list(getattr(snapshot, 'active_windows', []) or [])
+        except Exception:
+            active = []
+
+        def _value(win: Any, key: str, default: Any = '') -> Any:
+            if isinstance(win, dict):
+                return win.get(key, default)
+            return getattr(win, key, default)
+
+        for win in active:
+            title = str(_value(win, 'title', '') or '').strip()
+            app = str(_value(win, 'app_name', '') or '').strip()
+            metadata = _value(win, 'metadata', {}) or {}
+            joined = f'{title} {app}'.lower()
+            is_browser = any(token in joined for token in self._BROWSER_APP_TOKENS)
+            assistant_match = any(token and token in joined for token in assistant_tokens)
+            if not is_browser and not assistant_match:
+                continue
+            hwnd = None
+            try:
+                hwnd = metadata.get('hwnd') if isinstance(metadata, dict) else None
+            except Exception:
+                hwnd = None
+            if hwnd is None:
+                hwnd = _value(win, 'hwnd', None)
+            windows.append({
+                'title': title[:120],
+                'app_name': app[:80],
+                'pid': int(_value(win, 'pid', 0) or 0),
+                'focused': bool(_value(win, 'focused', False)),
+                'assistant_match': bool(assistant_match),
+                'hwnd_available': hwnd is not None,
+                'hwnd': hwnd,
+            })
+
+        windows = sorted(
+            windows,
+            key=lambda item: (
+                not bool(item.get('assistant_match')),
+                not bool(item.get('focused')),
+                str(item.get('title') or '').lower(),
+            ),
+        )[:8]
+        cdp_available = bool(probe.get('available'))
+        hwnd_available = any(bool(w.get('hwnd_available')) for w in windows)
+        if cdp_available:
+            strategy = 'user_browser_cdp'
+        elif windows and hwnd_available:
+            strategy = 'existing_browser_focus_only'
+        elif windows:
+            strategy = 'existing_browser_visible_unbound'
+        else:
+            strategy = 'governed_browser_needed'
+        limitations: list[str] = []
+        if windows and not cdp_available:
+            limitations.append('existing_browser_dom_not_observable_without_bridge')
+        if not windows:
+            limitations.append('no_existing_browser_window_observed')
+        if windows and not hwnd_available:
+            limitations.append('existing_browser_hwnd_missing')
+        return {
+            'assistant_kind': assistant,
+            'cdp_available': cdp_available,
+            'cdp_url': probe.get('cdp_url', ''),
+            'browser_version': probe.get('browser_version', ''),
+            'cdp_error': probe.get('error', ''),
+            'candidate_windows': windows,
+            'candidate_count': len(windows),
+            'assistant_window_count': sum(1 for w in windows if w.get('assistant_match')),
+            'can_focus_existing': hwnd_available,
+            'can_observe_existing_dom': cdp_available,
+            'recommended_strategy': strategy,
+            'limitations': limitations,
+        }
+
+    @staticmethod
+    def _format_browser_inventory_summary(inventory: dict[str, Any]) -> str:
+        windows = list(inventory.get('candidate_windows') or [])
+        if not windows:
+            return 'no veo una ventana de navegador ya abierta relacionada con esa tarea.'
+        labels = []
+        for item in windows[:4]:
+            title = str(item.get('title') or item.get('app_name') or 'ventana sin titulo')
+            marker = 'ChatGPT' if item.get('assistant_match') else 'navegador'
+            labels.append(f'{marker}: {title}')
+        suffix = '' if len(windows) <= 4 else f' (+{len(windows) - 4} más)'
+        return '; '.join(labels) + suffix
+
+    @staticmethod
+    def _focus_existing_browser_from_inventory(inventory: dict[str, Any]) -> dict[str, Any]:
+        """Bring the best existing browser candidate to the foreground.
+
+        This does not claim DOM access.  It only uses the hwnd already exposed
+        by WorldModel so the user and IABV can share the same visible surface.
+        """
+        result = {
+            'focused': False,
+            'selected_window': {},
+            'method': '',
+            'error': '',
+        }
+        windows = list(inventory.get('candidate_windows') or [])
+        selected = next((w for w in windows if w.get('assistant_match') and w.get('hwnd')), None)
+        if selected is None:
+            selected = next((w for w in windows if w.get('hwnd')), None)
+        if not selected:
+            result['error'] = 'no_hwnd_candidate'
+            return result
+        result['selected_window'] = dict(selected)
+        hwnd = selected.get('hwnd')
+        try:
+            hwnd_int = int(hwnd)
+        except Exception:
+            result['error'] = 'invalid_hwnd'
+            return result
+        if hwnd_int <= 0:
+            result['error'] = 'invalid_hwnd'
+            return result
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            user32.ShowWindow(hwnd_int, 9)  # SW_RESTORE
+            user32.SetForegroundWindow(hwnd_int)
+            result['focused'] = True
+            result['method'] = 'win32_hwnd'
         except Exception as exc:
             result['error'] = f'{type(exc).__name__}: {exc}'
         return result
@@ -5391,13 +5589,32 @@ class ControlCenterViewModel(QObject):
             pass
 
         cdp_probe = self._detect_cdp_available()
+        session_inventory = self._browser_session_inventory(
+            assistant_kind='chatgpt',
+            cdp_probe=cdp_probe,
+        )
+        inventory_summary = self._format_browser_inventory_summary(session_inventory)
 
         try:
             tracer.trace_user_browser_bridge(
                 'cdp_probe_result',
                 assistant_kind='chatgpt',
                 cdp_available=cdp_probe.get('available', False),
+                existing_browser_windows=session_inventory.get('candidate_count', 0),
+                assistant_window_count=session_inventory.get('assistant_window_count', 0),
+                recommended_strategy=session_inventory.get('recommended_strategy', ''),
                 reason=cdp_probe.get('error', '') or 'ok',
+            )
+            tracer.trace(
+                'existing_browser_session_inventory',
+                assistant_kind='chatgpt',
+                cdp_available=session_inventory.get('cdp_available', False),
+                candidate_count=session_inventory.get('candidate_count', 0),
+                assistant_window_count=session_inventory.get('assistant_window_count', 0),
+                can_focus_existing=session_inventory.get('can_focus_existing', False),
+                can_observe_existing_dom=session_inventory.get('can_observe_existing_dom', False),
+                recommended_strategy=session_inventory.get('recommended_strategy', ''),
+                limitations=session_inventory.get('limitations', []),
             )
         except Exception:
             pass
@@ -5424,10 +5641,27 @@ class ControlCenterViewModel(QObject):
                 )
             except Exception:
                 pass
+            if session_inventory.get('candidate_count'):
+                sees = (
+                    f'veo navegadores ya abiertos ({inventory_summary}), '
+                    'pero ninguno expone un puente semántico/DOM para leer la respuesta en segundo plano.'
+                )
+                cannot_verify = (
+                    'puedo enfocar una ventana visible, pero sin CDP/puente no puedo confirmar '
+                    'que esa sesión me devuelva la respuesta ni capturar el DOM de ChatGPT con fiabilidad.'
+                )
+                needs = (
+                    'elige una ruta: escribe "enfoca esa ventana" para que la traiga al frente, '
+                    'o autoriza la ventana gobernada para una sesión observable.'
+                )
+            else:
+                sees = 'no veo una ventana de navegador reutilizable para ChatGPT en el WorldModel actual.'
+                cannot_verify = 'no tengo una sesión observable de tu navegador para retomar la consulta.'
+                needs = 'tu visto bueno para abrir una ventana gobernada (o pega aquí la respuesta).'
             msg = self._format_human_assist_message(
-                sees='no puedo conectarme a tu Chrome normal por CDP (no está abierto con depuración).',
-                cannot_verify='no tengo una sesión observable de tu navegador para retomar la consulta.',
-                needs_from_you='tu visto bueno para abrir una ventana gobernada (o pega aquí la respuesta).',
+                sees=sees,
+                cannot_verify=cannot_verify,
+                needs_from_you=needs,
                 action_now=self._GOVERNED_LAUNCH_OFFER,
             )
             self._latest_response_text = msg

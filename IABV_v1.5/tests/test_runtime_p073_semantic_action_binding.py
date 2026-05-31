@@ -49,7 +49,13 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
     vm._EXTERNAL_ACTION_OWNERSHIP_TERMS = viewmodel_cls._EXTERNAL_ACTION_OWNERSHIP_TERMS
     vm._EXTERNAL_ACTION_DO_TERMS = viewmodel_cls._EXTERNAL_ACTION_DO_TERMS
     vm._EXTERNAL_ACTION_SHOW_TERMS = viewmodel_cls._EXTERNAL_ACTION_SHOW_TERMS
+    vm._BROWSER_APP_TOKENS = viewmodel_cls._BROWSER_APP_TOKENS
+    vm._ASSISTANT_WINDOW_TOKENS = viewmodel_cls._ASSISTANT_WINDOW_TOKENS
     vm._detect_cdp_available = MagicMock(return_value={'available': False, 'error': 'connection_failed'})
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(active_windows=[]))
+    vm._browser_session_inventory = lambda **kwargs: viewmodel_cls._browser_session_inventory(vm, **kwargs)
+    vm._format_browser_inventory_summary = viewmodel_cls._format_browser_inventory_summary
+    vm._focus_existing_browser_from_inventory = MagicMock(return_value={'focused': False, 'error': 'no_hwnd_candidate'})
     vm._launch_governed_browser_session = MagicMock(return_value={
         'launched': True,
         'cdp_url': 'http://localhost:9223',
@@ -85,6 +91,41 @@ def test_usa_un_navegador_mio_launches_governed_browser(viewmodel_cls):
     assert 'semantic_action_binding_started' in traced_kinds
     assert 'semantic_action_binding_result' in traced_kinds
     assert 'external_followup_action_executed' in traced_kinds
+
+
+def test_user_browser_request_prefers_existing_visible_window(viewmodel_cls):
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(
+        active_windows=[
+            SimpleNamespace(
+                title='ChatGPT - Google Chrome',
+                app_name='chrome.exe',
+                pid=1234,
+                focused=False,
+                metadata={'hwnd': 4567},
+            ),
+        ],
+    ))
+    vm._browser_session_inventory = lambda **kwargs: viewmodel_cls._browser_session_inventory(vm, **kwargs)
+    vm._format_browser_inventory_summary = viewmodel_cls._format_browser_inventory_summary
+    vm._focus_existing_browser_from_inventory = MagicMock(return_value={
+        'focused': True,
+        'selected_window': {'title': 'ChatGPT - Google Chrome', 'hwnd': 4567},
+        'method': 'win32_hwnd',
+        'error': '',
+    })
+    msg = 'usa mi navegador que ya tiene gmail logueado para hacer la consulta'
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)
+
+    assert handled is True
+    vm._focus_existing_browser_from_inventory.assert_called_once()
+    vm._launch_governed_browser_session.assert_not_called()
+    assert 'existing_browser_focused' in vm._latest_response_meta
+    assert 'lo traje al frente' in vm._latest_response_text
+    assert 'sin CDP/puente' in vm._latest_response_text
 
 
 def test_classifier_binds_gmail_logged_account_to_human_login_available(viewmodel_cls):
