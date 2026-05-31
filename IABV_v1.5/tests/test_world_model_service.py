@@ -284,21 +284,19 @@ def test_world_model_background_processes_preserves_browser_processes_not_in_top
         )
 
         def fake_powershell_json(command: str):
-            assert 'msedge' in command
-            return [
-                {
-                    'Name': 'python-heavy',
-                    'IDProcess': 5150,
-                    'PercentProcessorTime': 92.0,
-                    'WorkingSetPrivate': 512 * 1024 * 1024,
-                },
-                {
+            if 'Get-Process -Name' in command:
+                return {
                     'Name': 'msedge',
                     'IDProcess': 10636,
                     'PercentProcessorTime': 0.0,
                     'WorkingSetPrivate': 300 * 1024 * 1024,
-                },
-            ]
+                }
+            return {
+                'Name': 'python-heavy',
+                'IDProcess': 5150,
+                'PercentProcessorTime': 92.0,
+                'WorkingSetPrivate': 512 * 1024 * 1024,
+            }
 
         service._powershell_json = fake_powershell_json  # type: ignore[method-assign]
 

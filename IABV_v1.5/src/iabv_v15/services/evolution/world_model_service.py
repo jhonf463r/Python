@@ -988,15 +988,38 @@ class WorldModelService:
         if self._in_test_mode() and not full:
             return []
         payload = self._powershell_json(
-            "$rows = Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | "
-            "Where-Object { $_.Name -and $_.IDProcess -gt 0 -and $_.Name -notin @('_Total','Idle') }; "
-            "$top = $rows | Sort-Object PercentProcessorTime -Descending | Select-Object -First 12; "
-            "$browsers = $rows | Where-Object { $_.Name -match '" + self._BROWSER_PROCESS_PATTERN + "' } | Select-Object -First 32; "
-            "$combined = @($top) + @($browsers); "
-            "$combined | Sort-Object IDProcess -Unique | "
-            "Select-Object Name,IDProcess,PercentProcessorTime,WorkingSetPrivate | ConvertTo-Json -Compress"
+            "Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | "
+            "Where-Object { $_.Name -and $_.IDProcess -gt 0 -and $_.Name -notin @('_Total','Idle') } | "
+            "Sort-Object PercentProcessorTime -Descending | "
+            "Select-Object -First 12 Name,IDProcess,PercentProcessorTime,WorkingSetPrivate | ConvertTo-Json -Compress"
+        )
+        browser_payload = self._powershell_json(
+            "$names = @('chrome','msedge','msedgewebview2','firefox','brave','opera','chromium'); "
+            "Get-Process -Name $names -ErrorAction SilentlyContinue | "
+            "Select-Object -First 32 "
+            "@{Name='Name';Expression={$_.ProcessName}},"
+            "@{Name='IDProcess';Expression={$_.Id}},"
+            "@{Name='PercentProcessorTime';Expression={0}},"
+            "@{Name='WorkingSetPrivate';Expression={$_.PrivateMemorySize64}} | "
+            "ConvertTo-Json -Compress"
         )
         rows = payload if isinstance(payload, list) else [payload] if isinstance(payload, dict) else []
+        browser_rows = (
+            browser_payload if isinstance(browser_payload, list)
+            else [browser_payload] if isinstance(browser_payload, dict)
+            else []
+        )
+        seen_pids = {int(row.get('IDProcess') or row.get('Id') or 0) for row in rows if isinstance(row, dict)}
+        for row in browser_rows:
+            if not isinstance(row, dict):
+                continue
+            try:
+                pid = int(row.get('IDProcess') or row.get('Id') or 0)
+            except Exception:
+                pid = 0
+            if pid and pid not in seen_pids:
+                rows.append(row)
+                seen_pids.add(pid)
         items: list[BackgroundProcessSnapshot] = []
         for row in rows:
             try:
