@@ -4828,6 +4828,7 @@ class ControlCenterViewModel(QObject):
                         assistant_kind=assistant_kind,
                         cdp_available=inventory.get('cdp_available', False),
                         candidate_count=inventory.get('candidate_count', 0),
+                        browser_process_count=inventory.get('browser_process_count', 0),
                         assistant_window_count=inventory.get('assistant_window_count', 0),
                         can_focus_existing=inventory.get('can_focus_existing', False),
                         can_observe_existing_dom=inventory.get('can_observe_existing_dom', False),
@@ -5144,11 +5145,14 @@ class ControlCenterViewModel(QObject):
             assistant, (assistant,) if assistant else (),
         )
         windows: list[dict[str, Any]] = []
+        browser_processes: list[dict[str, Any]] = []
         try:
             snapshot = self._current_world_model()
             active = list(getattr(snapshot, 'active_windows', []) or [])
+            background = list(getattr(snapshot, 'background_processes', []) or [])
         except Exception:
             active = []
+            background = []
 
         def _value(win: Any, key: str, default: Any = '') -> Any:
             if isinstance(win, dict):
@@ -5181,6 +5185,19 @@ class ControlCenterViewModel(QObject):
                 'hwnd': hwnd,
             })
 
+        for proc in background:
+            name = str(_value(proc, 'process_name', '') or '').strip()
+            joined = name.lower()
+            if not any(token in joined for token in self._BROWSER_APP_TOKENS):
+                continue
+            browser_processes.append({
+                'process_name': name[:80],
+                'pid': int(_value(proc, 'pid', 0) or 0),
+                'state': str(_value(proc, 'state', '') or ''),
+                'memory_mb': _value(proc, 'memory_mb', None),
+            })
+        browser_processes = browser_processes[:12]
+
         windows = sorted(
             windows,
             key=lambda item: (
@@ -5197,6 +5214,8 @@ class ControlCenterViewModel(QObject):
             strategy = 'existing_browser_focus_only'
         elif windows:
             strategy = 'existing_browser_visible_unbound'
+        elif browser_processes:
+            strategy = 'existing_browser_process_without_visible_window'
         else:
             strategy = 'governed_browser_needed'
         limitations: list[str] = []
@@ -5204,6 +5223,8 @@ class ControlCenterViewModel(QObject):
             limitations.append('existing_browser_dom_not_observable_without_bridge')
         if not windows:
             limitations.append('no_existing_browser_window_observed')
+        if browser_processes and not windows:
+            limitations.append('browser_processes_exist_without_top_level_window')
         if windows and not hwnd_available:
             limitations.append('existing_browser_hwnd_missing')
         return {
@@ -5214,6 +5235,8 @@ class ControlCenterViewModel(QObject):
             'cdp_error': probe.get('error', ''),
             'candidate_windows': windows,
             'candidate_count': len(windows),
+            'browser_processes': browser_processes,
+            'browser_process_count': len(browser_processes),
             'assistant_window_count': sum(1 for w in windows if w.get('assistant_match')),
             'can_focus_existing': hwnd_available,
             'can_observe_existing_dom': cdp_available,
@@ -5225,6 +5248,15 @@ class ControlCenterViewModel(QObject):
     def _format_browser_inventory_summary(inventory: dict[str, Any]) -> str:
         windows = list(inventory.get('candidate_windows') or [])
         if not windows:
+            processes = list(inventory.get('browser_processes') or [])
+            if processes:
+                names = []
+                for item in processes[:4]:
+                    name = str(item.get('process_name') or 'navegador')
+                    pid = item.get('pid') or ''
+                    names.append(f'{name} pid={pid}' if pid else name)
+                suffix = '' if len(processes) <= 4 else f' (+{len(processes) - 4} más)'
+                return 'veo procesos de navegador sin ventana visible: ' + '; '.join(names) + suffix
             return 'no veo una ventana de navegador ya abierta relacionada con esa tarea.'
         labels = []
         for item in windows[:4]:
@@ -5601,6 +5633,7 @@ class ControlCenterViewModel(QObject):
                 assistant_kind='chatgpt',
                 cdp_available=cdp_probe.get('available', False),
                 existing_browser_windows=session_inventory.get('candidate_count', 0),
+                existing_browser_processes=session_inventory.get('browser_process_count', 0),
                 assistant_window_count=session_inventory.get('assistant_window_count', 0),
                 recommended_strategy=session_inventory.get('recommended_strategy', ''),
                 reason=cdp_probe.get('error', '') or 'ok',
@@ -5610,6 +5643,7 @@ class ControlCenterViewModel(QObject):
                 assistant_kind='chatgpt',
                 cdp_available=session_inventory.get('cdp_available', False),
                 candidate_count=session_inventory.get('candidate_count', 0),
+                browser_process_count=session_inventory.get('browser_process_count', 0),
                 assistant_window_count=session_inventory.get('assistant_window_count', 0),
                 can_focus_existing=session_inventory.get('can_focus_existing', False),
                 can_observe_existing_dom=session_inventory.get('can_observe_existing_dom', False),

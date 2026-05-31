@@ -5,6 +5,7 @@ from ctypes import wintypes
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import sqlite3
@@ -37,6 +38,7 @@ class WorldModelService:
     _DEFAULT_FULL_SCAN_INTERVAL = 180.0
     _NETWORK_TIMEOUT_SECONDS = 1.4
     _HIGH_MEMORY_MB = 900.0
+    _BROWSER_PROCESS_PATTERN = r'^(chrome|msedge|msedgewebview2|firefox|brave|opera|chromium)(#\d+)?$'
 
     def __init__(
         self,
@@ -986,10 +988,13 @@ class WorldModelService:
         if self._in_test_mode() and not full:
             return []
         payload = self._powershell_json(
-            "Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | "
-            "Where-Object { $_.Name -and $_.IDProcess -gt 0 -and $_.Name -notin @('_Total','Idle') } | "
-            "Sort-Object PercentProcessorTime -Descending | "
-            "Select-Object -First 12 Name,IDProcess,PercentProcessorTime,WorkingSetPrivate | ConvertTo-Json -Compress"
+            "$rows = Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | "
+            "Where-Object { $_.Name -and $_.IDProcess -gt 0 -and $_.Name -notin @('_Total','Idle') }; "
+            "$top = $rows | Sort-Object PercentProcessorTime -Descending | Select-Object -First 12; "
+            "$browsers = $rows | Where-Object { $_.Name -match '" + self._BROWSER_PROCESS_PATTERN + "' } | Select-Object -First 32; "
+            "$combined = @($top) + @($browsers); "
+            "$combined | Sort-Object IDProcess -Unique | "
+            "Select-Object Name,IDProcess,PercentProcessorTime,WorkingSetPrivate | ConvertTo-Json -Compress"
         )
         rows = payload if isinstance(payload, list) else [payload] if isinstance(payload, dict) else []
         items: list[BackgroundProcessSnapshot] = []
@@ -1004,6 +1009,7 @@ class WorldModelService:
                 continue
             if not process_name:
                 continue
+            is_browser_process = bool(re.match(self._BROWSER_PROCESS_PATTERN, process_name.lower()))
             state = 'ok'
             detail = ''
             cpu_load = float(cpu_value) if isinstance(cpu_value, (int, float)) else None
@@ -1013,6 +1019,12 @@ class WorldModelService:
             if memory_mb >= self._HIGH_MEMORY_MB:
                 state = 'memory_heavy'
                 detail = 'Este proceso esta usando bastante memoria y puede interferir con tareas pesadas.'
+            metadata = {}
+            if is_browser_process:
+                metadata['browser_process_candidate'] = True
+                metadata['observation_note'] = (
+                    'Proceso de navegador detectado aunque no necesariamente tenga ventana visible.'
+                )
             items.append(
                 BackgroundProcessSnapshot(
                     process_name=process_name,
@@ -1025,6 +1037,7 @@ class WorldModelService:
                     detail=detail,
                     interferes_with_capture=process_name.lower() in {'snippingtool', 'sharex', 'powertoys', 'onedrive'},
                     gpu_percent=None,
+                    metadata=metadata,
                 )
             )
         return items

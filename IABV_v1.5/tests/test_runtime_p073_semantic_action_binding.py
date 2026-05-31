@@ -128,6 +128,29 @@ def test_user_browser_request_prefers_existing_visible_window(viewmodel_cls):
     assert 'sin CDP/puente' in vm._latest_response_text
 
 
+def test_browser_inventory_reports_background_process_without_visible_window(viewmodel_cls):
+    vm = _semantic_vm(viewmodel_cls)
+    vm._current_world_model = MagicMock(return_value=SimpleNamespace(
+        active_windows=[],
+        background_processes=[
+            SimpleNamespace(process_name='msedge', pid=10636, state='ok', memory_mb=250.0),
+        ],
+    ))
+
+    inventory = viewmodel_cls._browser_session_inventory(
+        vm,
+        assistant_kind='chatgpt',
+        cdp_probe={'available': False, 'error': 'connection_failed'},
+    )
+    summary = viewmodel_cls._format_browser_inventory_summary(inventory)
+
+    assert inventory['candidate_count'] == 0
+    assert inventory['browser_process_count'] == 1
+    assert inventory['recommended_strategy'] == 'existing_browser_process_without_visible_window'
+    assert 'browser_processes_exist_without_top_level_window' in inventory['limitations']
+    assert 'procesos de navegador sin ventana visible' in summary
+
+
 def test_classifier_binds_gmail_logged_account_to_human_login_available(viewmodel_cls):
     vm = _semantic_vm(viewmodel_cls)
     result = viewmodel_cls._classify_external_action_followup(

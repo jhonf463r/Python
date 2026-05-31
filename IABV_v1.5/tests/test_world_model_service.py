@@ -273,6 +273,47 @@ def test_world_model_service_blocks_heavy_local_route_when_cpu_pressure_is_detec
         shutil.rmtree(workspace, ignore_errors=True)
 
 
+def test_world_model_background_processes_preserves_browser_processes_not_in_top_cpu() -> None:
+    workspace = _workspace('world_model_browser_process_inventory')
+    try:
+        service = WorldModelService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+
+        def fake_powershell_json(command: str):
+            assert 'msedge' in command
+            return [
+                {
+                    'Name': 'python-heavy',
+                    'IDProcess': 5150,
+                    'PercentProcessorTime': 92.0,
+                    'WorkingSetPrivate': 512 * 1024 * 1024,
+                },
+                {
+                    'Name': 'msedge',
+                    'IDProcess': 10636,
+                    'PercentProcessorTime': 0.0,
+                    'WorkingSetPrivate': 300 * 1024 * 1024,
+                },
+            ]
+
+        service._powershell_json = fake_powershell_json  # type: ignore[method-assign]
+
+        processes = service._background_processes(full=True)
+        names = {item.process_name for item in processes}
+        edge = next(item for item in processes if item.process_name == 'msedge')
+
+        assert 'python-heavy' in names
+        assert 'msedge' in names
+        assert edge.metadata.get('browser_process_candidate') is True
+        assert 'ventana visible' in edge.metadata.get('observation_note', '')
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
 def test_world_model_service_prefers_live_codex_thread_over_stale_wrong_thread_history() -> None:
     workspace = _workspace('world_model_codex_live_thread')
     try:
