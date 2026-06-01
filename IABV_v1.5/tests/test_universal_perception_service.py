@@ -87,6 +87,40 @@ def test_web_page_signal_detects_chatgpt_login_and_input_without_response() -> N
     assert any(action['action'] == 'discover_submit_control' for action in signal.available_actions)
 
 
+def test_web_page_signal_accepts_live_cdp_alias_fields() -> None:
+    service = UniversalPerceptionService()
+
+    signal = service.build_web_page_signal(
+        assistant_kind='chatgpt',
+        requested_target='chatgpt',
+        dom_observation={
+            'sources': ['dom', 'cdp'],
+            'html_flags': {'title': 'ChatGPT', 'url': 'https://chatgpt.com/'},
+            'visible_text': (
+                'Obtén respuestas adaptadas a ti. Inicia sesión para obtener respuestas '
+                'basadas en chats guardados. Iniciar sesión. ¿Qué toca hoy?'
+            ),
+            'controls': [
+                {'tag': 'BUTTON', 'text': 'Iniciar sesión', 'visible': True},
+                {'tag': 'BUTTON', 'aria': 'Selector de modelo', 'text': 'ChatGPT', 'visible': True},
+                {'tag': 'TEXTAREA', 'placeholder': 'Pregunta lo que quieras', 'visible': True},
+                {'tag': 'BUTTON', 'text': 'Voz', 'visible': True},
+            ],
+        },
+    )
+
+    concepts = signal.metadata['visual_concepts']
+    assert signal.dom_available is True
+    assert signal.dom_summary['semantic_sources'] == ['dom', 'cdp']
+    assert 'target_bound' in concepts
+    assert 'login_screen_candidate' in concepts
+    assert 'unauthenticated_session' in concepts
+    assert 'chat_input_ready' in concepts
+    assert 'submit_control_missing' in concepts
+    assert 'low_information_capture' not in concepts
+    assert 'UNRESOLVED:login_or_session_required' in signal.unresolved_fields
+
+
 def test_web_page_signal_detects_security_verification_as_concept() -> None:
     service = UniversalPerceptionService()
 

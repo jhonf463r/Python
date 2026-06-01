@@ -7,6 +7,7 @@ import re
 import subprocess
 import threading
 import time
+import unicodedata
 from typing import Any
 
 try:
@@ -79,30 +80,42 @@ class UniversalPerceptionService:
         """
         observation = dict(dom_observation or {})
         metadata = dict(observation.get("metadata") or {})
+        html_flags = dict(observation.get("html_flags") or metadata.get("html_flags") or {})
         elements = self._normalize_web_elements(
             observation.get("interactive_elements"),
+            observation.get("controls"),
+            observation.get("interactive_controls"),
             observation.get("inputs"),
             observation.get("elements"),
             metadata.get("interactive_elements"),
+            metadata.get("controls"),
+            metadata.get("interactive_controls"),
             metadata.get("inputs"),
         )
         body_text = self._first_text(
             observation.get("body_text"),
             observation.get("bodyText"),
+            observation.get("visible_text"),
+            observation.get("inner_text"),
+            observation.get("text"),
             observation.get("bodyTextSample"),
             observation.get("body_text_sample"),
             metadata.get("body_text"),
+            metadata.get("visible_text"),
+            metadata.get("inner_text"),
             metadata.get("bodyTextSample"),
         )
         title = self._first_text(
             observation.get("title"),
             observation.get("latest_title"),
+            html_flags.get("title"),
             metadata.get("title"),
             metadata.get("latest_title"),
         )
         url = self._first_text(
             observation.get("url"),
             observation.get("latest_url"),
+            html_flags.get("url"),
             metadata.get("url"),
             metadata.get("latest_url"),
         )
@@ -139,7 +152,12 @@ class UniversalPerceptionService:
         )
         semantic_sources = self._unique_strings(
             ["dom"] if body_text or elements else [],
-            ["cdp"] if observation.get("cdp_url") or metadata.get("cdp_url") or observation.get("source") == "cdp" else [],
+            ["cdp"] if (
+                observation.get("cdp_url")
+                or metadata.get("cdp_url")
+                or observation.get("source") == "cdp"
+                or "cdp" in [str(item).lower() for item in (observation.get("sources") or metadata.get("sources") or [])]
+            ) else [],
             ["accessibility"] if observation.get("accessibility_tree") or metadata.get("accessibility_tree") else [],
             ["ocr"] if observation.get("ocr_text") or metadata.get("ocr_text") else [],
         )
@@ -567,7 +585,7 @@ class UniversalPerceptionService:
 
         if self._contains_any(combined, ("captcha", "cloudflare", "security verification", "verificacion de seguridad", "verificación de seguridad", "verify you are not a bot", "checking your browser", "just a moment")):
             add("security_verification_candidate", 0.95)
-        if self._contains_any(combined, ("iniciar sesion", "inicia sesion", "log in", "login", "sign in", "registrarse", "continue with google", "continuar con google", "obtén respuestas adaptadas")):
+        if self._contains_any(combined, ("iniciar sesion", "inicia sesion", "log in", "login", "sign in", "registrarse", "continue with google", "continuar con google", "obten respuestas adaptadas", "obtén respuestas adaptadas")):
             add("login_screen_candidate", 0.9)
             add("unauthenticated_session", 0.86)
 
@@ -724,6 +742,11 @@ class UniversalPerceptionService:
         }
         for src, dst in replacements.items():
             text = text.replace(src, dst)
+        text = "".join(
+            char
+            for char in unicodedata.normalize("NFKD", text)
+            if not unicodedata.combining(char)
+        )
         return re.sub(r"\s+", " ", text)
 
     def _desktop_snapshot(self, *, max_age_seconds: float = 2.0) -> dict[str, list[dict[str, Any]]]:
