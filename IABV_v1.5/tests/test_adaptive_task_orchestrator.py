@@ -474,6 +474,37 @@ def test_autonomy_governance_policy_degrades_under_environment_pressure() -> Non
     assert 'RAM libre' in ' '.join(governance['blockers'])
 
 
+def test_autonomy_governance_high_pressure_allows_explicit_external_consultation() -> None:
+    policy = AutonomyGovernancePolicy()
+
+    governance = policy.evaluate(
+        user_goal='haz una consulta a ChatGPT: responde solo S si entiendes',
+        session_status=AdaptiveSessionStatus.PLANNED.value,
+        session_readiness={},
+        live_audit={},
+        assistant_guidance={},
+        capability_snapshot=[],
+        approval_pending=False,
+        environment_self_model=EnvironmentSelfModel(
+            environment_id='msi-live',
+            scan_status='ready',
+            ai_capacity={'preferred_local_assistant_kind': 'ollama'},
+            risk_signals=[
+                EnvironmentRiskSignal(
+                    kind='ram_pressure',
+                    severity=IssueSeverity.HIGH,
+                    summary='RAM alta por trabajo de fondo.',
+                )
+            ],
+        ),
+    )
+
+    assert governance['should_consult'] is True
+    assert governance['assistant_kind'] == 'chatgpt'
+    assert governance['block_risky_action'] is False
+    assert governance['recommended_action'] == 'consult_chatgpt'
+
+
 def test_autonomy_governance_policy_blocks_codex_when_world_model_reports_wrong_thread() -> None:
     policy = AutonomyGovernancePolicy()
 

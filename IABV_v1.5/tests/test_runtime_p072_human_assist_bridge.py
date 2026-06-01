@@ -174,6 +174,18 @@ class TestDoItYourself:
         assert msg.startswith('IABV ve:')
         assert '--remote-debugging-port' not in msg
 
+    def test_hazlo_t_degraded_encoding_launches_governed_window(self, viewmodel_cls, tracer_mock):
+        incident = _security_incident()
+        vm = _make_followup_vm(viewmodel_cls, incident)
+
+        with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer',
+                   return_value=tracer_mock):
+            handled = viewmodel_cls._try_handle_incident_followup(vm, 'hazlo t?')
+
+        assert handled is True
+        vm._launch_governed_browser_session.assert_called_once()
+        assert vm._latest_response_meta.startswith('incident_followup')
+
     def test_classifier_recognizes_governed_window_phrase(self, viewmodel_cls):
         incident = _security_incident()
         res = viewmodel_cls._classify_incident_followup_intent(

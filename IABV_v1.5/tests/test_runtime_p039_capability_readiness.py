@@ -447,8 +447,8 @@ class TestOpenWindowUsesIncident:
 
 class TestRetryUnderPressureDeferred:
 
-    def test_readiness_blocks_under_pressure(self):
-        """Under high pressure, readiness must block action."""
+    def test_readiness_allows_high_pressure_external_consultation(self):
+        """High pressure must budget heavy work, not block explicit consultation."""
         stub = _make_stub_vm()
         stub.adaptive_orchestrator = SimpleNamespace(
             _assess_resource_pressure=lambda: {
@@ -468,8 +468,9 @@ class TestRetryUnderPressureDeferred:
             mock_tracer.return_value = tracer_inst
             readiness = stub._assess_external_readiness('chatgpt')
 
-        assert readiness['action_possible'] is False
-        assert 'resource_pressure' in readiness['blocking_reason']
+        assert readiness['action_possible'] is True
+        assert readiness['blocking_reason'] == ''
+        assert readiness['resource_pressure'] == 'high'
 
     def test_critical_pressure_blocks(self):
         """Under critical pressure, readiness must block with critical indicator."""
@@ -866,8 +867,8 @@ class TestDeferredRetryThreadSafe:
         stub.adaptive_orchestrator = SimpleNamespace(
             _assess_resource_pressure=lambda: {
                 'under_pressure': True,
-                'critical': False,
-                'active_signals': ['high_memory_usage'],
+                'critical': True,
+                'active_signals': ['ram_critical'],
             },
         )
         stub._DEFERRED_RETRY_COOLDOWN_S = 0.0
