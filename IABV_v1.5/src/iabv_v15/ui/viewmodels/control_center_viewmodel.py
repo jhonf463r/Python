@@ -6616,6 +6616,7 @@ class ControlCenterViewModel(QObject):
     # IABV must NOT fall to local LLM; it opens a governed browser window.
     _DO_IT_YOURSELF_TOKENS: tuple[str, ...] = (
         'hazlo tu', 'hazlo tú', 'hazlo solo', 'hazlo tu mismo', 'hazlo tú mismo',
+        'hazlo t?', 'hazlo t? mismo',
         'abre la ventana gobernada', 'abre una ventana gobernada',
         'ventana gobernada', 'abre tu la ventana', 'ábrela tú', 'abrela tu',
         'usa tu navegador', 'usa tu propio chrome',
@@ -8506,12 +8507,13 @@ class ControlCenterViewModel(QObject):
                 )
                 result['retry_after_s'] = 30
         else:
-            result['decision'] = 'defer'
+            result['decision'] = 'run_now'
             result['reason'] = (
-                'Presion alta de recursos. Diferire brevemente '
-                'la consulta externa.'
+                'Presion alta detectada; se permite la consulta externa '
+                'y se conserva el presupuesto bloqueando trabajo pesado '
+                'no esencial.'
             )
-            result['retry_after_s'] = 15
+            result['retry_after_s'] = 0
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
             get_runtime_tracer().trace_consultation_quiescence(

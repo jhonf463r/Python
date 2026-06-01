@@ -1,0 +1,25 @@
+{
+  "id": "runtime_external_consultation_pressure_scope_p082",
+  "title": "P0.82: Scope resource-pressure gates for explicit external consultation",
+  "status": "PENDING",
+  "category": "runtime_governance",
+  "priority": "P0",
+  "description": "Allow explicit external consultations to proceed under HIGH resource pressure while continuing to block only CRITICAL pressure and defer heavy nonessential metacognitive work.",
+  "reason": "Live Windows proof on 2026-06-01 showed ChatGPT intent was correctly detected and CDP was available, but the dispatch ended as blocked_by_resource_pressure. The resource gate was too broad: it blocked the user-facing external consultation instead of only budgeting heavy background work.",
+  "dependency_missing": "",
+  "next_action": "Run a live ChatGPT consultation from the desktop shortcut. Expected: no local fallback, no resource_pressure block for HIGH pressure; terminal may be response_captured or an actionable security/session handoff.",
+  "resume_hint": "P0.82 changes consultation quiescence and AutonomyGovernancePolicy: HIGH pressure permits explicit external consultation; CRITICAL pressure still blocks/defer; heavy background work remains governed separately.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence": {
+      "runtime_path": "C:\\Python\\IABV_v1.5_verified_main\\IABV_v1.5",
+      "failed_dispatch_terminal": "blocked_by_resource_pressure",
+      "readiness_before_block": "action_possible=true, cdp_available=true",
+      "user_goal": "haz una consulta a ChatGPT: responde solo S si entiendes"
+    },
+    "unresolved": [
+      "live_chatgpt_no_high_pressure_block",
+      "live_chatgpt_terminal_response_or_actionable_handoff"
+    ]
+  }
+}

@@ -394,6 +394,7 @@ class AutonomyGovernancePolicy:
             blockers=blockers,
             diagnostic_category=guidance_mode,
             external_state_flags=external_states,
+            explicit_assistant=explicit_assistant,
         )
         if environment_guard is not None:
             return environment_guard
@@ -712,6 +713,7 @@ class AutonomyGovernancePolicy:
         blockers: list[str],
         diagnostic_category: str,
         external_state_flags: list[str],
+        explicit_assistant: str = '',
     ) -> dict[str, Any] | None:
         if environment is None:
             return None
@@ -722,7 +724,20 @@ class AutonomyGovernancePolicy:
         if not severe_risks:
             return None
         critical_kinds = {str(risk.kind or '') for risk in severe_risks}
-        if not critical_kinds.intersection({'ram_critical', 'ram_pressure', 'gpu_temperature_critical', 'gpu_temperature_warning', 'cpu_pressure', 'throttling_detected'}):
+        pressure_kinds = {
+            'ram_critical',
+            'ram_pressure',
+            'gpu_temperature_critical',
+            'gpu_temperature_warning',
+            'cpu_pressure',
+            'throttling_detected',
+        }
+        if not critical_kinds.intersection(pressure_kinds):
+            return None
+        has_critical = any(
+            risk.severity == IssueSeverity.CRITICAL for risk in severe_risks
+        )
+        if explicit_assistant and not has_critical:
             return None
         preferred_local_assistant = str(environment.ai_capacity.get('preferred_local_assistant_kind') or '').strip().lower()
         risk_notes = [risk.summary for risk in severe_risks][:3]

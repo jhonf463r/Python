@@ -120,12 +120,12 @@ def _make_stub_vm(**overrides):
 
 
 # ══════════════════════════════════════════════════════════════
-# 1. Consulta externa bajo presión → deferred, no local chat
+# 1. Consulta externa bajo presión crítica → deferred, no local chat
 # ══════════════════════════════════════════════════════════════
 
 class TestConsultaExternaBajoPresionDeferred:
 
-    def test_high_pressure_defers(self):
+    def test_high_pressure_runs_external_consultation_with_heavy_work_budgeted(self):
         stub = _make_stub_vm()
         stub.adaptive_orchestrator = SimpleNamespace(
             _assess_resource_pressure=lambda: {
@@ -135,9 +135,10 @@ class TestConsultaExternaBajoPresionDeferred:
             },
         )
         result = stub._evaluate_consultation_quiescence('chatgpt')
-        assert result['decision'] == 'defer'
+        assert result['decision'] == 'run_now'
         assert result['pressure_level'] == 'high'
-        assert result['retry_after_s'] > 0
+        assert result['retry_after_s'] == 0
+        assert 'trabajo pesado' in result['reason']
 
     def test_critical_pressure_defers(self):
         stub = _make_stub_vm()
@@ -170,8 +171,8 @@ class TestConsultaExternaBajoPresionDeferred:
         assert result['decision'] == 'run_now'
         assert result['retry_after_s'] == 0
 
-    def test_deferred_not_local_chat(self):
-        """Deferred consultation must NOT produce local chat response."""
+    def test_high_pressure_not_local_chat_and_not_deferred(self):
+        """High pressure budgets heavy work, but explicit external intent still runs."""
         stub = _make_stub_vm()
         stub.adaptive_orchestrator = SimpleNamespace(
             _assess_resource_pressure=lambda: {
@@ -181,7 +182,7 @@ class TestConsultaExternaBajoPresionDeferred:
             },
         )
         result = stub._evaluate_consultation_quiescence('chatgpt')
-        assert result['decision'] == 'defer'
+        assert result['decision'] == 'run_now'
         assert 'local' not in result.get('reason', '').lower()
 
 
@@ -201,8 +202,8 @@ class TestPresionBajaRetryProgramado:
             },
         )
         result = stub._evaluate_consultation_quiescence('chatgpt')
-        assert result['decision'] == 'defer'
-        assert result['retry_after_s'] > 0, 'retry delay must be positive'
+        assert result['decision'] == 'run_now'
+        assert result['retry_after_s'] == 0, 'high pressure should not defer explicit external consultation'
 
     def test_run_now_has_zero_delay(self):
         stub = _make_stub_vm()
@@ -346,13 +347,14 @@ class TestFollowUpIntentaNuevamenteNoCaeEnLocal:
         )
         assert result is True
 
-    def test_retry_under_pressure_defers(self):
-        """Retry follow-up under pressure should defer, not fall to local."""
+    def test_retry_under_high_pressure_runs_external_path_not_local(self):
+        """Retry follow-up under high pressure should run externally, not local chat."""
         stub = _make_stub_vm()
         stub._external_failure_memory = {
             'assistant_kind': 'chatgpt',
             'assistant_title': 'ChatGPT',
         }
+        stub._run_external_consultation = MagicMock(return_value=True)
         stub.adaptive_orchestrator = SimpleNamespace(
             _assess_resource_pressure=lambda: {
                 'under_pressure': True,
@@ -362,7 +364,7 @@ class TestFollowUpIntentaNuevamenteNoCaeEnLocal:
         )
         result = stub._try_handle_consultation_followup('intenta nuevamente')
         assert result is True
-        assert stub._latest_response_meta == 'consultation_retry_deferred'
+        stub._run_external_consultation.assert_called_once_with('chatgpt', announce=True)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -834,8 +836,8 @@ class TestBlocker4FollowUpUsesActiveIncidentFrame:
         )
         assert result is True
 
-    def test_intenta_nuevamente_under_pressure_deferred_not_local(self):
-        """'intenta nuevamente' under pressure must be deferred, not local chat."""
+    def test_intenta_nuevamente_under_high_pressure_runs_external_not_local(self):
+        """'intenta nuevamente' under high pressure must still use external path."""
         stub = _make_stub_vm()
         stub._active_incident_frame = {
             'assistant_kind': 'chatgpt',
@@ -843,6 +845,7 @@ class TestBlocker4FollowUpUsesActiveIncidentFrame:
             'resolved': False,
             'expires_at': time.time() + 600,
         }
+        stub._run_external_consultation = MagicMock(return_value=True)
         stub.adaptive_orchestrator = SimpleNamespace(
             _assess_resource_pressure=lambda: {
                 'under_pressure': True,
@@ -852,7 +855,7 @@ class TestBlocker4FollowUpUsesActiveIncidentFrame:
         )
         result = stub._try_handle_consultation_followup('intenta nuevamente')
         assert result is True
-        assert stub._latest_response_meta == 'consultation_retry_deferred'
+        stub._run_external_consultation.assert_called_once_with('chatgpt', announce=True)
 
 
 # ══════════════════════════════════════════════════════════════
