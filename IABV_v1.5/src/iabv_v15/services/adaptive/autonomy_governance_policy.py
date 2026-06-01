@@ -349,10 +349,24 @@ class AutonomyGovernancePolicy:
             any(token in normalized_goal for token in ('codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias'))
             and any(token in normalized_goal for token in ('sabes', 'puedes', 'puedo', 'internamente', 'automatic', 'automatica', 'automático', 'respondieron'))
         )
+        always_local_intents = {'system.self_awareness', 'system.metacognition'}
+        conversational_local_intents = {
+            'general.assistance',
+            'knowledge.query',
+            'analytics.strategy',
+            'customer.support',
+            'research.local',
+        }
         conversational_intent = (
-            intent_key in {'general.assistance', 'knowledge.query'}
-            and intent_disposition in {'answer_now', 'need_info'}
-            and (conversational_prompt or meta_assistant_prompt)
+            (
+                intent_key in always_local_intents
+                and intent_disposition in {'answer_now', 'need_info', 'plan_then_execute'}
+            )
+            or (
+                intent_key in conversational_local_intents
+                and intent_disposition in {'answer_now', 'need_info'}
+                and (conversational_prompt or meta_assistant_prompt)
+            )
         )
         explicit_assistant = self._explicit_assistant_request(normalized_goal)
         technical_pressure = guidance_mode in {'need_codex_fix', 'need_adapter'} or live_action == 'consult_codex' or (dominant_incident in self._TECHNICAL_INCIDENTS and bool(weak_capabilities))
@@ -383,6 +397,20 @@ class AutonomyGovernancePolicy:
         )
         if environment_guard is not None:
             return environment_guard
+
+        if conversational_intent:
+            return self._snapshot(
+                autonomy_level='autonomous_local',
+                recommended_action='continue_local',
+                reason='La consulta actual es conversacional/metacognitiva y debe resolverse localmente con estado vivo, sin reciclar bloqueos externos previos.',
+                confidence=max(confidence, 0.72),
+                approval_required=False,
+                block_risky_action=False,
+                require_sandbox=False,
+                blockers=[],
+                diagnostic_category=guidance_mode,
+                external_state_flags=external_states,
+            )
 
         world_model_guard = self._world_model_guard(
             world_model=world,
