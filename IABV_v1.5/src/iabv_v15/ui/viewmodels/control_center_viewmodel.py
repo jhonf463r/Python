@@ -3587,6 +3587,30 @@ class ControlCenterViewModel(QObject):
                 )
             except Exception:
                 pass
+            try:
+                assistant_kind = (
+                    'chatgpt'
+                    if 'chatgpt' in assistant_title.strip().lower()
+                    else self._normalize_provider(assistant_title)
+                )
+                profile_label = 'chatgpt_program_session/browser_profile'
+                self._create_active_incident_frame(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    assistant_title=assistant_title,
+                    terminal_state='blocked_by_security_verification',
+                    block_type='browser_security_verification',
+                    profile_label=profile_label,
+                    cdp_available=cdp_ok,
+                    last_user_goal=str(getattr(self, '_last_user_goal', '') or ''),
+                    dispatch_id=str(self._active_dispatch_ids.get('external_consultation', '') or ''),
+                    browser_profile=profile_label,
+                    selected_browser_or_profile=profile_label,
+                    browser_label=profile_label,
+                    target_window_title='',
+                    hwnd=None,
+                )
+            except Exception:
+                pass
         elif 'codex_state_missing' in lowered:
             human_action = 'Verifica que la extension de Codex este instalada y autenticada en este entorno.'
             message = (
@@ -9463,6 +9487,75 @@ class ControlCenterViewModel(QObject):
             force=force,
         )
 
+    def _schedule_idle_dev_packet_refresh(
+        self,
+        user_goal: str | None = None,
+        *,
+        force: bool = False,
+        reason: str = 'idle',
+    ) -> None:
+        """Refresh the development packet off the UI thread.
+
+        Live proof showed a 38.8s UI stall when ``_apply_task_result`` called
+        ``_refresh_development_packet`` synchronously after a ChatGPT attempt.
+        The packet reads recent dossiers and can be expensive, so post-result
+        paths must only schedule it in the background.
+        """
+        if user_goal is not None:
+            self._last_user_goal = str(user_goal or '').strip()
+        if getattr(self, '_dev_packet_refresh_pending', False) and not force:
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'development_packet_refresh_deferred',
+                    reason='coalesced',
+                    requested_reason=reason,
+                )
+            except Exception:
+                pass
+            return
+        self._dev_packet_refresh_pending = True
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'development_packet_refresh_deferred',
+                reason=reason,
+                force=force,
+            )
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            import time as _time
+            t0 = _time.perf_counter()
+            try:
+                self._refresh_development_packet(force=force)
+                elapsed_ms = (_time.perf_counter() - t0) * 1000
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'development_packet_refresh_finished',
+                        reason=reason,
+                        elapsed_ms=round(elapsed_ms, 1),
+                        force=force,
+                    )
+                except Exception:
+                    pass
+            except Exception as exc:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'development_packet_refresh_failed',
+                        reason=reason,
+                        error=str(exc)[:240],
+                    )
+                except Exception:
+                    pass
+            finally:
+                self._dev_packet_refresh_pending = False
+
+        self._bg_pool.submit(_worker)
+
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
         if user_goal is not None:
             self._last_user_goal = user_goal.strip()
@@ -13862,8 +13955,12 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str)
     def buildDevelopmentPacket(self, text: str) -> None:
-        self._refresh_development_packet(text, force=True)
-        self._busy_label = 'Paquete para Codex actualizado.'
+        self._schedule_idle_dev_packet_refresh(
+            text,
+            force=True,
+            reason='manual_build_development_packet',
+        )
+        self._busy_label = 'Preparando paquete para Codex en segundo plano.'
         self.dataChanged.emit()
 
     @Slot()
@@ -14328,7 +14425,11 @@ class ControlCenterViewModel(QObject):
         if not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
             self._agent_cards = self._build_agent_cards()
-            self._refresh_development_packet()
+            _schedule_dev_packet = getattr(self, '_schedule_idle_dev_packet_refresh', None)
+            if callable(_schedule_dev_packet):
+                _schedule_dev_packet(reason='post_task_result')
+            else:
+                self._refresh_development_packet()
             self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
@@ -14403,7 +14504,11 @@ class ControlCenterViewModel(QObject):
         # Gate heavy deferred work under resource pressure (Sub-objective B).
         if not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
-            self._refresh_development_packet()
+            _schedule_dev_packet = getattr(self, '_schedule_idle_dev_packet_refresh', None)
+            if callable(_schedule_dev_packet):
+                _schedule_dev_packet(reason='post_task_failure')
+            else:
+                self._refresh_development_packet()
             self._refresh_autonomy_dock()
         self.dataChanged.emit()
 

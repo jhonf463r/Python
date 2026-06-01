@@ -591,6 +591,35 @@ class TestResourcePressureBlockMapsToDeferredTerminal:
         trace = vm._traced_calls[0]
         assert trace['terminal_state'] == 'blocked_by_resource_pressure'
 
+    def test_apply_task_result_schedules_dev_packet_off_ui_thread(self) -> None:
+        """Post-result development packet refresh must be deferred.
+
+        Live Windows evidence showed ``_refresh_development_packet`` reading
+        dossier JSON on the UI thread after a ChatGPT attempt, causing a
+        38s stall.  _apply_task_result should schedule that refresh instead.
+        """
+        vm = _make_apply_result_stub()
+        scheduled: list[dict[str, object]] = []
+        vm._schedule_idle_dev_packet_refresh = lambda **kw: scheduled.append(dict(kw))
+
+        def _forbidden_sync_refresh(*_a, **_kw):
+            raise AssertionError('sync _refresh_development_packet should not run in _apply_task_result')
+
+        vm._refresh_development_packet = _forbidden_sync_refresh
+        vm._apply_task_result(
+            'external_consultation',
+            {
+                'success': False,
+                'message': 'ChatGPT blocked by browser_security_verification.',
+                'meta': 'ChatGPT: blocked_by_security_verification',
+                'terminal_state': 'blocked_by_security_verification',
+                'assistant_title': 'ChatGPT',
+                'external_state_flags': ['browser_security_verification'],
+            },
+        )
+
+        assert scheduled == [{'reason': 'post_task_result'}]
+
     def test_is_resource_pressure_block_static(self) -> None:
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
         assert ControlCenterViewModel._is_resource_pressure_block({
