@@ -4633,6 +4633,7 @@ class ControlCenterViewModel(QObject):
     _EXTERNAL_ACTION_SHOW_TERMS: tuple[str, ...] = (
         'muestra', 'muestrame', 'muéstrame', 'abre', 'abreme', 'ábreme',
         'enfoca', 'ventana', 'problema', 'verificacion', 'verificación',
+        'permito', 'autorizo', 'observar', 'observa', 'mira', 'mirar',
     )
 
     def _classify_external_action_followup(
@@ -4694,9 +4695,10 @@ class ControlCenterViewModel(QObject):
             matched.append('context_assistant_ref')
 
         if show_ref and not browser_ref and (score >= 0.22 or active_incident):
+            confidence = score + (0.18 if contextual_assistant_ref else 0.0)
             return {
                 'intent': 'show_problem_window_requested',
-                'confidence': min(score, 1.0),
+                'confidence': min(confidence, 1.0),
                 'matched_terms': sorted(set(matched)),
             }
         if browser_ref and (ownership_ref or action_ref or assistant_ref):
@@ -6559,6 +6561,9 @@ class ControlCenterViewModel(QObject):
         'muestrame donde necesitas mi ayuda', 'muéstrame dónde necesitas mi ayuda',
         'abre la ventana donde necesitas mi ayuda',
         'muestrame eso', 'muéstrame eso',
+        'permito observar', 'autorizo observar', 'puedes observar',
+        'observa chatgpt', 'observar chatgpt', 'ver chatgpt',
+        'mira chatgpt', 'puedes mirar chatgpt',
     )
     _VISIBILITY_DISPUTE_TOKENS: tuple[str, ...] = (
         'no veo la verificacion', 'no veo la verificación',
@@ -11213,6 +11218,48 @@ class ControlCenterViewModel(QObject):
             return True
         return any(sig in reason for sig in resource_pressure_signals)
 
+    @staticmethod
+    def _is_security_verification_preflight_block(preflight: dict[str, Any]) -> bool:
+        """Detect security-verification preflight blocks from structured evidence.
+
+        The preflight can be blocked by AutonomyGovernancePolicy using either
+        a diagnostic category, external_state_flags, block_records, or a plain
+        reason.  This helper keeps that detection in one place so the UI can
+        build a human-assist incident instead of returning a generic dead-end.
+        """
+        governance = dict(preflight.get('governance') or {})
+        world_model_summary = dict(preflight.get('world_model_summary') or {})
+        candidates: list[Any] = [
+            preflight.get('reason'),
+            governance.get('reason'),
+            governance.get('diagnostic_category'),
+            governance.get('recommended_action'),
+            *(governance.get('external_state_flags') or []),
+            *(governance.get('blockers') or []),
+            *(world_model_summary.get('detected_blocks') or []),
+        ]
+        for item in world_model_summary.get('block_records') or []:
+            if isinstance(item, dict):
+                candidates.extend([
+                    item.get('block_type'),
+                    item.get('detail'),
+                    item.get('reason'),
+                    item.get('assistant_kind'),
+                ])
+        worker_health = dict(preflight.get('worker_health') or {})
+        candidates.extend([
+            worker_health.get('reason'),
+            worker_health.get('status'),
+        ])
+        joined = ' '.join(str(item or '').strip().lower() for item in candidates)
+        return (
+            'browser_security_verification' in joined
+            or 'security_verification' in joined
+            or 'verificacion de seguridad' in joined
+            or 'verificación de seguridad' in joined
+            or 'captcha' in joined
+        )
+
     def _blocked_external_consultation_result(
         self,
         *,
@@ -11235,16 +11282,38 @@ class ControlCenterViewModel(QObject):
 
         # P0.22: detect resource_pressure to set correct preflight metadata.
         is_resource_pressure = self._is_resource_pressure_block(preflight)
+        is_security_verification = (
+            not is_resource_pressure
+            and self._is_security_verification_preflight_block(preflight)
+        )
+        preflight_block_type = (
+            'resource_pressure'
+            if is_resource_pressure
+            else 'browser_security_verification'
+            if is_security_verification
+            else 'governance'
+        )
 
         metadata['external_consultation_preflight'] = {
             'assistant_kind': assistant_kind,
             'reason': str(preflight.get('reason') or governance.get('reason') or ''),
             'blocked': True,
             'world_model_summary': world_model_summary,
-            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'block_type': preflight_block_type,
             'requires_observation_permission': False if is_resource_pressure else bool(approval_checkpoints),
             'retry_when_pressure_clears': is_resource_pressure,
         }
+        if is_security_verification:
+            metadata['external_consultation'] = {
+                'status': 'blocked_external',
+                'assistant_kind': assistant_kind,
+                'assistant_title': assistant_title,
+                'detail': 'browser_security_verification',
+                'terminal_state': 'blocked_by_security_verification',
+                'external_state_flags': ['browser_security_verification'],
+                'blocking_reason': 'security_verification_preflight',
+                'response_captured': False,
+            }
         payload['metadata'] = metadata
         payload['approval_checkpoints'] = approval_checkpoints
         payload['assistant_guidance'] = self._guidance_for_external_preflight_block(
@@ -11273,6 +11342,59 @@ class ControlCenterViewModel(QObject):
             )
             meta = f'Permiso requerido para {assistant_title}.'
             terminal_state = 'failed_with_actionable_reason'
+        elif is_security_verification:
+            terminal_state = 'blocked_by_security_verification'
+            meta = f'{assistant_title}: blocked_by_security_verification'
+            profile_label = f'{assistant_kind}_program_session/browser_profile'
+            action_offer = getattr(self, '_GOVERNED_LAUNCH_OFFER', '')
+            if not action_offer:
+                action_offer = (
+                    'Puedo abrir una ventana gobernada para que completes la '
+                    'verificacion y luego reintentar.'
+                )
+            message = self._format_human_assist_message(
+                sees=(
+                    f'{assistant_title} aparece bloqueado por verificacion de seguridad '
+                    'segun el preflight/WorldModel.'
+                ),
+                cannot_verify=(
+                    'no tengo una ventana viva confiable enlazada a ese bloqueo; '
+                    'no debo asumir que es la misma ventana que tu ves.'
+                ),
+                needs_from_you=(
+                    'si ves ChatGPT abierto, escribe "permito observar ChatGPT" '
+                    'o "muestrame la ventana"; si prefieres que la abra yo, '
+                    'escribe "hazlo tu".'
+                ),
+                action_now=action_offer,
+            )
+            try:
+                self._create_active_incident_frame(
+                    assistant_kind=assistant_kind,
+                    assistant_title=assistant_title,
+                    terminal_state=terminal_state,
+                    block_type='browser_security_verification',
+                    last_user_goal=str(getattr(self, '_last_user_goal', '') or ''),
+                    dispatch_id='',
+                    browser_profile=profile_label,
+                    selected_browser_or_profile=profile_label,
+                    browser_label=profile_label,
+                    target_window_title='',
+                    hwnd=None,
+                )
+            except Exception:
+                pass
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'security_verification_preflight_handoff',
+                    assistant_kind=assistant_kind,
+                    terminal_state=terminal_state,
+                    reason=reason[:240],
+                    action_offered='human_assist_or_governed_browser',
+                )
+            except Exception:
+                pass
         else:
             message = (
                 f'No voy a lanzar {assistant_title} porque la ruta ya aparece bloqueada antes de intentarla. '
@@ -11289,9 +11411,13 @@ class ControlCenterViewModel(QObject):
             'meta': meta,
             'payload': payload,
             'assistant_title': assistant_title,
-            'external_state_flags': list(governance.get('external_state_flags') or []),
+            'external_state_flags': (
+                ['browser_security_verification']
+                if is_security_verification
+                else list(governance.get('external_state_flags') or [])
+            ),
             'terminal_state': terminal_state,
-            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'block_type': preflight_block_type,
         }
 
     def _guidance_for_external_preflight_block(
@@ -11315,6 +11441,25 @@ class ControlCenterViewModel(QObject):
                 ],
             }
         diag = str(governance.get('diagnostic_category') or '').strip().lower()
+        guidance_flags = ' '.join(str(item or '').strip().lower() for item in (governance.get('external_state_flags') or []))
+        prompt_lower = prompt.lower()
+        if (
+            diag in {'browser_security_verification', 'security_verification'}
+            or 'browser_security_verification' in guidance_flags
+            or 'security_verification' in guidance_flags
+            or 'verificacion de seguridad' in prompt_lower
+            or 'verificación de seguridad' in prompt_lower
+        ):
+            return {
+                'mode': 'human_assist_bridge',
+                'title': f'Verificacion de seguridad en {assistant_title}',
+                'prompt': prompt,
+                'actions': [
+                    self._assistant_action('show_problem_window', 'Mostrar ventana', 'Enfocar o abrir una ventana visible para resolver la verificacion.'),
+                    self._assistant_action('launch_governed_browser_session', 'Abrir ventana gobernada', 'Abrir una sesion gobernada de navegador dentro del flujo de IABV.'),
+                    self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Reintentar solo despues de resolver la verificacion o enlazar una ventana visible.'),
+                ],
+            }
         if diag == 'assistant_unavailable':
             return {
                 'mode': 'need_approval',

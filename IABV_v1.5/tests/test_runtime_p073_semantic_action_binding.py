@@ -40,6 +40,9 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
     vm._normalized_command_text = lambda message: viewmodel_cls._normalized_command_text(vm, message)
     vm._explicit_assistant_preference = MagicMock(return_value='')
     vm._assistant_display_name = lambda kind: viewmodel_cls._assistant_display_name(vm, kind)
+    vm._classify_incident_followup_intent = lambda message, incident: viewmodel_cls._classify_incident_followup_intent(
+        message, incident,
+    )
     vm._classify_external_action_followup = lambda message, **kwargs: viewmodel_cls._classify_external_action_followup(
         vm, message, **kwargs,
     )
@@ -64,6 +67,7 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
         'error': '',
     })
     vm._try_focus_incident_window = MagicMock(return_value=False)
+    vm._record_show_window_learning = MagicMock()
     vm._append_message = MagicMock()
     vm._set_live_status = MagicMock()
     vm._clear_autonomy_activity_override = MagicMock()
@@ -72,6 +76,8 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
     vm.dataChanged = MagicMock()
     vm._working = False
     vm._busy_label = ''
+    vm._latest_response_text = ''
+    vm._latest_response_meta = ''
     vm._last_adaptive_payload = {}
     vm._last_user_goal = 'has una consulta a ChatGPT: responde solo S si entiendes'
     vm._last_visible_browser_surface = {}
@@ -458,6 +464,42 @@ def test_show_problem_phrase_still_maps_to_window_action(viewmodel_cls):
     )
 
     assert result['intent'] == 'show_problem_window_requested'
+
+
+def test_observation_permission_phrase_maps_to_window_action(viewmodel_cls):
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'permito observar ChatGPT',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'show_problem_window_requested'
+    assert result['confidence'] >= 0.5
+
+
+def test_incident_observation_permission_phrase_opens_help_path(viewmodel_cls):
+    incident = {
+        'incident_id': 'incident-observe',
+        'assistant_kind': 'chatgpt',
+        'assistant_title': 'ChatGPT',
+        'terminal_state': 'blocked_by_security_verification',
+        'block_type': 'browser_security_verification',
+        'profile_label': 'chatgpt_program_session/browser_profile',
+        'created_at': time.time(),
+        'expires_at': time.time() + 600,
+        'resolved': False,
+        'user_help_needed': 'Completar verificacion o permitir ventana gobernada.',
+    }
+    vm = _semantic_vm(viewmodel_cls, active_incident=incident)
+    vm._try_focus_incident_window = MagicMock(return_value=False)
+
+    handled = viewmodel_cls._try_handle_incident_followup(vm, 'permito observar ChatGPT')
+
+    assert handled is True
+    assert 'IABV ve:' in vm._latest_response_text
+    assert 'ventana gobernada' in vm._latest_response_text.lower()
+    assert 'local' not in vm._latest_response_meta.lower()
 
 
 def test_shortcut_launcher_no_longer_exits_silently_on_recent_lock():
