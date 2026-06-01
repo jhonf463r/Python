@@ -352,6 +352,43 @@ function Test-BridgePortOwner($port, $expectedPid) {
     }
 }
 
+function Focus-ExistingUIWindow($pid) {
+    try {
+        if (-not ("IABVWin32Focus" -as [type])) {
+            Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class IABVWin32Focus {
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+}
+"@
+        }
+        $proc = Get-Process -Id $pid -ErrorAction Stop
+        $hwnd = $proc.MainWindowHandle
+        if (-not $hwnd -or $hwnd -eq 0) {
+            return @{ success = $false; reason = 'no_main_window_handle' }
+        }
+        $SW_RESTORE = 9
+        $SWP_NOMOVE = 0x0002
+        $SWP_NOSIZE = 0x0001
+        $SWP_SHOWWINDOW = 0x0040
+        $HWND_TOPMOST = [IntPtr](-1)
+        $HWND_NOTOPMOST = [IntPtr](-2)
+        [void][IABVWin32Focus]::ShowWindowAsync($hwnd, $SW_RESTORE)
+        Start-Sleep -Milliseconds 150
+        [void][IABVWin32Focus]::SetWindowPos($hwnd, $HWND_TOPMOST, 0, 0, 0, 0, ($SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW))
+        Start-Sleep -Milliseconds 150
+        [void][IABVWin32Focus]::SetForegroundWindow($hwnd)
+        Start-Sleep -Milliseconds 150
+        [void][IABVWin32Focus]::SetWindowPos($hwnd, $HWND_NOTOPMOST, 0, 0, 0, 0, ($SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW))
+        return @{ success = $true; reason = 'focused'; hwnd = $hwnd }
+    } catch {
+        return @{ success = $false; reason = "focus_error: $_" }
+    }
+}
+
 if ($StartUI) {
     Write-Info ""
     Write-StartupTrace 'ui_presence_check_started' @{ requested_by = 'start_iabv.ps1'; bridge_port = 18921 }
@@ -360,16 +397,26 @@ if ($StartUI) {
     $existingUI = Find-ExistingUIProcess
     if ($existingUI) {
         # UI already running — verify its bridge ownership and focus it.
+        Write-StartupTrace 'startup_existing_instance_detected' @{
+            existing_pid = $existingUI.Pid
+        }
+        $focusResult = Focus-ExistingUIWindow -pid $existingUI.Pid
+        Write-StartupTrace 'startup_existing_instance_focus_attempted' @{
+            existing_pid = $existingUI.Pid
+            success      = [bool]$focusResult.success
+            reason       = [string]$focusResult.reason
+        }
         $bridgeOwner = Test-BridgePortOwner -port 18921 -expectedPid $existingUI.Pid
         if ($bridgeOwner.owned) {
             Write-Info "  UI ya corriendo (PID $($existingUI.Pid)), bridge verificado."
             Write-StartupTrace 'ui_launch_skipped_existing_ui' @{
                 existing_pid = $existingUI.Pid
                 bridge_owner_verified = $true
+                focus_success = [bool]$focusResult.success
             }
             Write-StartupTrace 'ui_bridge_owner_verified' @{ pid = $existingUI.Pid; port = 18921 }
             Write-StartupTrace 'ui_presence_check_result' @{
-                ui_alive = $true; action = 'skipped_existing'; pid = $existingUI.Pid
+                ui_alive = $true; action = 'focused_existing'; pid = $existingUI.Pid; focus_success = [bool]$focusResult.success
             }
         } elseif ($bridgeOwner.reason -eq 'wrong_owner') {
             Write-Warn "  Bridge port 18921 owned by PID $($bridgeOwner.actual_pid), not UI PID $($existingUI.Pid)."
@@ -413,6 +460,11 @@ if ($StartUI) {
             $psi.WorkingDirectory = $iabvRoot
             $psi.UseShellExecute = $false
             $psi.CreateNoWindow = $true
+            # Make the UI import the workspace that launched it, even when
+            # Python has an editable install pointing at an older IABV clone.
+            $psi.EnvironmentVariables['PYTHONPATH'] = $env:PYTHONPATH
+            $psi.EnvironmentVariables['IABV_WORKSPACE_ROOT'] = $iabvRoot
+            $psi.EnvironmentVariables['IABV_SKIP_MCP_AUTOSTART'] = '1'
             $uiProc = [System.Diagnostics.Process]::Start($psi)
             Write-Info "  UI PID     : $($uiProc.Id)"
             Write-Info "  PYTHONPATH : $env:PYTHONPATH"

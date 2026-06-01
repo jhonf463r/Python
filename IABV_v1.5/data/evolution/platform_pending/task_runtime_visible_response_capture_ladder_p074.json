@@ -1,0 +1,34 @@
+{
+  "id": "runtime_visible_response_capture_ladder_p074",
+  "title": "P0.74: Visible Response Capture Ladder for User Browser Sessions",
+  "status": "COMPLETED",
+  "category": "runtime_observability",
+  "priority": "P0",
+  "description": "Closes the safe middle path after IABV opens or focuses the user's normal browser. When the user says verification/login is done, IABV first attempts a governed visible-text capture from the focused browser surface before falling back to a blind isolated-profile retest.",
+  "reason": "Opening or focusing the user's browser does not imply DOM/CDP access. The previous route could still re-test the isolated profile and miss the response already visible in the user's browser. The new ladder separates visible surface, semantic bridge, visible text capture, and unresolved manual pasteback.",
+  "dependency_missing": "",
+  "next_action": "Live-audit on Windows: ask IABV to open/focus the user's ChatGPT browser, complete any human verification, then type 'ya lo hice'. Expected: response_captured if visible text is captured; otherwise visible_capture_unreadable/target_missing with pasteback guidance, never success without captured text.",
+  "resume_hint": "Implemented in ControlCenterViewModel. The route stores _last_visible_browser_surface for existing/default/governed windows, attempts visible clipboard capture only after explicit user confirmation, redacts emails/tokens/secrets, restores clipboard, and records visible_response_capture_* plus semantic_capture_ladder_result traces.",
+  "metadata": {
+    "verification_status": "CODE_VERIFIED_PENDING_LIVE_PROOF",
+    "covered_by_pr": "https://github.com/jhonf463r/Python/pull/428",
+    "contracts": [
+      "no cookies, tokens, credentials, browser storage, or hidden DOM are read",
+      "no success is declared without response_captured=true",
+      "DOM/CDP remains preferred when available",
+      "without semantic bridge or useful visible text the result stays UNRESOLVED"
+    ],
+    "tests": [
+      "tests/test_runtime_p073_semantic_action_binding.py::test_security_retest_captures_visible_browser_response_before_governed_retest",
+      "tests/test_runtime_p073_semantic_action_binding.py::test_security_retest_visible_capture_unreadable_does_not_run_blind_governed_retest",
+      "tests/test_runtime_p073_semantic_action_binding.py::test_visible_capture_missing_target_reports_unresolved_without_copy",
+      "tests/test_runtime_p073_semantic_action_binding.py::test_visible_capture_sanitizes_pii_and_tokens"
+    ],
+    "unresolved": [
+      "live_windows_visible_capture_proof_pending",
+      "true background DOM capture for normal browser still requires CDP, extension, accessibility, OCR, or governed browser"
+    ]
+  },
+  "created_at": "2026-05-31T00:00:00Z",
+  "updated_at": "2026-05-31T00:00:00Z"
+}

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
+import csv
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import sqlite3
@@ -37,6 +39,7 @@ class WorldModelService:
     _DEFAULT_FULL_SCAN_INTERVAL = 180.0
     _NETWORK_TIMEOUT_SECONDS = 1.4
     _HIGH_MEMORY_MB = 900.0
+    _BROWSER_PROCESS_PATTERN = r'^(chrome|msedge|msedgewebview2|firefox|brave|opera|chromium)(#\d+)?$'
 
     def __init__(
         self,
@@ -991,7 +994,35 @@ class WorldModelService:
             "Sort-Object PercentProcessorTime -Descending | "
             "Select-Object -First 12 Name,IDProcess,PercentProcessorTime,WorkingSetPrivate | ConvertTo-Json -Compress"
         )
+        browser_payload = self._powershell_json(
+            "$names = @('chrome','msedge','msedgewebview2','firefox','brave','opera','chromium'); "
+            "Get-Process -Name $names -ErrorAction SilentlyContinue | "
+            "Select-Object -First 32 "
+            "@{Name='Name';Expression={$_.ProcessName}},"
+            "@{Name='IDProcess';Expression={$_.Id}},"
+            "@{Name='PercentProcessorTime';Expression={0}},"
+            "@{Name='WorkingSetPrivate';Expression={$_.PrivateMemorySize64}} | "
+            "ConvertTo-Json -Compress"
+        )
         rows = payload if isinstance(payload, list) else [payload] if isinstance(payload, dict) else []
+        browser_rows = (
+            browser_payload if isinstance(browser_payload, list)
+            else [browser_payload] if isinstance(browser_payload, dict)
+            else []
+        )
+        if not browser_rows:
+            browser_rows = self._browser_process_rows_from_tasklist()
+        seen_pids = {int(row.get('IDProcess') or row.get('Id') or 0) for row in rows if isinstance(row, dict)}
+        for row in browser_rows:
+            if not isinstance(row, dict):
+                continue
+            try:
+                pid = int(row.get('IDProcess') or row.get('Id') or 0)
+            except Exception:
+                pid = 0
+            if pid and pid not in seen_pids:
+                rows.append(row)
+                seen_pids.add(pid)
         items: list[BackgroundProcessSnapshot] = []
         for row in rows:
             try:
@@ -1004,6 +1035,7 @@ class WorldModelService:
                 continue
             if not process_name:
                 continue
+            is_browser_process = bool(re.match(self._BROWSER_PROCESS_PATTERN, process_name.lower()))
             state = 'ok'
             detail = ''
             cpu_load = float(cpu_value) if isinstance(cpu_value, (int, float)) else None
@@ -1013,6 +1045,12 @@ class WorldModelService:
             if memory_mb >= self._HIGH_MEMORY_MB:
                 state = 'memory_heavy'
                 detail = 'Este proceso esta usando bastante memoria y puede interferir con tareas pesadas.'
+            metadata = {}
+            if is_browser_process:
+                metadata['browser_process_candidate'] = True
+                metadata['observation_note'] = (
+                    'Proceso de navegador detectado aunque no necesariamente tenga ventana visible.'
+                )
             items.append(
                 BackgroundProcessSnapshot(
                     process_name=process_name,
@@ -1025,9 +1063,63 @@ class WorldModelService:
                     detail=detail,
                     interferes_with_capture=process_name.lower() in {'snippingtool', 'sharex', 'powertoys', 'onedrive'},
                     gpu_percent=None,
+                    metadata=metadata,
                 )
             )
         return items
+
+    def _browser_process_rows_from_tasklist(self) -> list[dict[str, Any]]:
+        """Fast Windows fallback for browser process inventory.
+
+        PowerShell startup can exceed the world-model timeout on busy Windows
+        desktops.  ``tasklist`` is cheap and enough to preserve the fact that a
+        browser process exists, even when it has no visible top-level window.
+        """
+        if os.name != 'nt':
+            return []
+        try:
+            completed = subprocess.run(
+                ['tasklist', '/FO', 'CSV', '/NH'],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='ignore',
+                timeout=2.0,
+                check=False,
+            )
+        except Exception:
+            return []
+        if completed.returncode != 0:
+            return []
+        rows: list[dict[str, Any]] = []
+        browser_names = {
+            'chrome.exe', 'msedge.exe', 'msedgewebview2.exe', 'firefox.exe',
+            'brave.exe', 'opera.exe', 'chromium.exe',
+        }
+        try:
+            parsed = csv.reader(completed.stdout.splitlines())
+            for item in parsed:
+                if len(item) < 5:
+                    continue
+                image_name = str(item[0] or '').strip()
+                if image_name.lower() not in browser_names:
+                    continue
+                try:
+                    pid = int(str(item[1] or '').strip())
+                except Exception:
+                    pid = 0
+                mem_text = str(item[4] or '')
+                digits = ''.join(ch for ch in mem_text if ch.isdigit())
+                memory_bytes = int(digits) * 1024 if digits else 0
+                rows.append({
+                    'Name': image_name.rsplit('.', 1)[0],
+                    'IDProcess': pid,
+                    'PercentProcessorTime': 0,
+                    'WorkingSetPrivate': memory_bytes,
+                })
+        except Exception:
+            return []
+        return rows[:32]
 
     def _detected_blocks(
         self,
@@ -1045,6 +1137,17 @@ class WorldModelService:
             blocks.append('network_slow')
         for status in tool_live_status:
             for block in status.detected_blocks:
+                if block == 'permission_required':
+                    scope = str(
+                        status.metadata.get('permission_scope')
+                        or self._content_permission_scope(status.assistant_kind)
+                    )
+                    permission_granted = any(
+                        gate.scope == scope and (gate.granted or gate.status == 'concedido')
+                        for gate in permission_gates
+                    )
+                    if permission_granted:
+                        continue
                 if block not in blocks:
                     blocks.append(block)
         for risk in environment.risk_signals:
@@ -1068,6 +1171,7 @@ class WorldModelService:
                 continue
             scope = str(tool.metadata.get('permission_scope') or self._content_permission_scope(tool.assistant_kind))
             permission = dict(permission_state.get(scope) or {})
+            permission_granted = bool(permission.get('granted')) or tool.permission_state == 'concedido'
             gates.append(
                 ObservationPermissionGate(
                     scope=scope,
@@ -1077,14 +1181,15 @@ class WorldModelService:
                         str(permission.get('detail') or '').strip()
                         or self._permission_prompt(assistant_kind=tool.assistant_kind)
                     ),
-                    status='concedido' if tool.permission_state == 'concedido' else 'requerido',
+                    status='concedido' if permission_granted else 'requerido',
                     required_for=[f'consult_{tool.assistant_kind}'] if tool.assistant_kind else [],
-                    granted=bool(permission.get('granted')) or tool.permission_state == 'concedido',
+                    granted=permission_granted,
                     confidence=max(0.45, float(tool.confidence or 0.0)),
                     metadata={
                         'tool_id': tool.tool_id,
                         'probe_status': tool.probe_status,
                         'window_open': tool.window_open,
+                        'permission_record_granted': bool(permission.get('granted')),
                         'last_verified_at': tool.last_verified_at.isoformat() if tool.last_verified_at is not None else '',
                     },
                 )

@@ -3587,6 +3587,30 @@ class ControlCenterViewModel(QObject):
                 )
             except Exception:
                 pass
+            try:
+                assistant_kind = (
+                    'chatgpt'
+                    if 'chatgpt' in assistant_title.strip().lower()
+                    else self._normalize_provider(assistant_title)
+                )
+                profile_label = 'chatgpt_program_session/browser_profile'
+                self._create_active_incident_frame(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    assistant_title=assistant_title,
+                    terminal_state='blocked_by_security_verification',
+                    block_type='browser_security_verification',
+                    profile_label=profile_label,
+                    cdp_available=cdp_ok,
+                    last_user_goal=str(getattr(self, '_last_user_goal', '') or ''),
+                    dispatch_id=str(self._active_dispatch_ids.get('external_consultation', '') or ''),
+                    browser_profile=profile_label,
+                    selected_browser_or_profile=profile_label,
+                    browser_label=profile_label,
+                    target_window_title='',
+                    hwnd=None,
+                )
+            except Exception:
+                pass
         elif 'codex_state_missing' in lowered:
             human_action = 'Verifica que la extension de Codex este instalada y autenticada en este entorno.'
             message = (
@@ -4613,6 +4637,556 @@ class ControlCenterViewModel(QObject):
             pass
         return True
 
+    _EXTERNAL_ACTION_BROWSER_TERMS: tuple[str, ...] = (
+        'navegador', 'navegadores', 'browser', 'chrome', 'edge', 'brave',
+        'firefox', 'opera', 'sesion', 'sesión', 'cuenta', 'gmail',
+        'loguead', 'logead', 'login', 'iniciar sesion', 'iniciar sesión',
+        'inicie sesion', 'inicié sesión', 'abierta', 'abierto',
+    )
+    _EXTERNAL_ACTION_OWNERSHIP_TERMS: tuple[str, ...] = (
+        'mi ', 'mis ', 'mio', 'mío', 'mia', 'mía', 'tengo', 'tienes',
+        'ya tengo', 'ya esta', 'ya está', 'normal', 'visible',
+    )
+    _EXTERNAL_ACTION_DO_TERMS: tuple[str, ...] = (
+        'usa', 'usar', 'utiliza', 'utilizar', 'haz', 'has', 'hacer',
+        'consulta', 'cosulta', 'consultar', 'busca', 'buscar',
+        'investiga', 'investigar', 'investigacion', 'investigación',
+        'pendiente', 'pendientes', 'segundo plano', 'soluciona',
+        'solucionar', 'avanza', 'continua', 'continúa',
+    )
+    _EXTERNAL_ACTION_SHOW_TERMS: tuple[str, ...] = (
+        'muestra', 'muestrame', 'muéstrame', 'abre', 'abreme', 'ábreme',
+        'enfoca', 'ventana', 'problema', 'verificacion', 'verificación',
+        'permito', 'autorizo', 'observar', 'observa', 'mira', 'mirar',
+    )
+
+    def _classify_external_action_followup(
+        self,
+        message: str,
+        *,
+        failure_payload: dict[str, Any] | None = None,
+        active_incident: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Bind human follow-up language to an operational action.
+
+        P0.73: the old follow-up guard explained failures cheaply, but missed
+        semantically equivalent instructions such as "usa un navegador mio".
+        This classifier keeps the logic local and evidence-based: it only
+        activates when there is a live incident or recent external failure.
+        """
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
+
+        has_context = bool(failure_payload) or bool(active_incident)
+        if not has_context:
+            return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
+
+        matched: list[str] = []
+        score = 0.0
+
+        def _hit(terms: tuple[str, ...], weight: float) -> bool:
+            nonlocal score
+            hits = [term for term in terms if term in normalized]
+            if hits:
+                matched.extend(hits[:4])
+                score += weight
+                return True
+            return False
+
+        browser_ref = _hit(self._EXTERNAL_ACTION_BROWSER_TERMS, 0.34)
+        ownership_ref = _hit(self._EXTERNAL_ACTION_OWNERSHIP_TERMS, 0.22)
+        action_ref = _hit(self._EXTERNAL_ACTION_DO_TERMS, 0.28)
+        show_ref = _hit(self._EXTERNAL_ACTION_SHOW_TERMS, 0.22)
+        assistant_ref = bool(
+            self._explicit_assistant_preference(message)
+            or re.search(r'chat\s*gpt|chatgpt|chatgp|cahtgpt|\bgpt\b|claude|codex', normalized)
+        )
+        if assistant_ref:
+            score += 0.12
+            matched.append('assistant_ref')
+        contextual_assistant_ref = bool(
+            (failure_payload or {}).get('assistant_kind')
+            or (active_incident or {}).get('assistant_kind')
+        )
+        consultation_ref = bool(
+            re.search(
+                r'consulta|cosulta|consultar|busca|buscar|investiga|investigaci[oó]n|chat\s*gpt|chatgpt|chatgp|\bgpt\b|segundo plano|pendiente',
+                normalized,
+            )
+        )
+        if contextual_assistant_ref:
+            matched.append('context_assistant_ref')
+
+        if show_ref and not browser_ref and (score >= 0.22 or active_incident):
+            confidence = score + (0.18 if contextual_assistant_ref else 0.0)
+            return {
+                'intent': 'show_problem_window_requested',
+                'confidence': min(confidence, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        if browser_ref and (ownership_ref or action_ref or assistant_ref):
+            # "usa un navegador mio", "cuenta gmail logueada", "usa mi sesion"
+            # all mean the user is granting/pointing to a browser path.
+            confidence = min(score + (0.12 if action_ref else 0.0), 1.0)
+            intent = 'user_browser_session_requested'
+            if 'gmail' in normalized or 'cuenta' in normalized or 'login' in normalized or 'loguead' in normalized or 'logead' in normalized:
+                intent = 'human_login_available'
+            return {
+                'intent': intent,
+                'confidence': confidence,
+                'matched_terms': sorted(set(matched)),
+            }
+        if action_ref and assistant_ref and score >= 0.40:
+            contextual_boost = 0.14 if contextual_assistant_ref else 0.0
+            return {
+                'intent': 'retry_external_consultation_requested',
+                'confidence': min(score + contextual_boost, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        if action_ref and consultation_ref and contextual_assistant_ref and score >= 0.28:
+            return {
+                'intent': 'retry_external_consultation_requested',
+                'confidence': min(score + 0.18, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        return {'intent': 'none', 'confidence': min(score, 1.0), 'matched_terms': sorted(set(matched))}
+
+    def _attempt_visible_user_browser_prompt_send(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        prompt_text: str,
+    ) -> dict[str, Any]:
+        """Focus the visible user browser surface and send the prompt.
+
+        This is the missing middle step between "I opened ChatGPT" and "I can
+        capture the response".  It does not read credentials or hidden browser
+        state; it only focuses a visible browser window, pastes the prompt,
+        presses Enter, restores the clipboard, and records whether the prompt
+        was actually submitted.
+        """
+        started = time.perf_counter()
+        surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+        result: dict[str, Any] = {
+            'attempted': False,
+            'success': False,
+            'status': 'not_attempted',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'surface': surface.get('surface', ''),
+            'focused_title': '',
+            'prompt_chars': len(str(prompt_text or '')),
+            'reason': '',
+            'unresolved_fields': [],
+            'execution_ms': 0,
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'visible_prompt_send_started',
+                assistant_kind=assistant_kind,
+                surface=result['surface'],
+                prompt_chars=result['prompt_chars'],
+            )
+        except Exception:
+            tracer = None
+        def _return(result_update: dict[str, Any]) -> dict[str, Any]:
+            result.update(result_update)
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            try:
+                if tracer:
+                    tracer.trace('visible_prompt_send_result', **result)
+            except Exception:
+                pass
+            return result
+
+        if not surface:
+            return _return({
+                'status': 'target_missing',
+                'reason': 'no_visible_browser_surface_recorded',
+                'unresolved_fields': ['visible_browser_surface'],
+            })
+        prompt = str(prompt_text or '').strip()
+        if not prompt:
+            return _return({
+                'status': 'prompt_missing',
+                'reason': 'empty_prompt',
+                'unresolved_fields': ['prompt_text'],
+            })
+        try:
+            from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+
+            workspace = str(getattr(getattr(self, 'config', None), 'workspace_root', '') or os.getcwd())
+            runner = UIExecutionRunner(workspace_root=workspace)
+            previous_clipboard = runner.read_clipboard_text()
+            focused = False
+            focused_title = ''
+            try:
+                probe = self._detect_cdp_available(timeout=0.35)
+                inventory = self._browser_session_inventory(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    cdp_probe=probe,
+                )
+            except Exception:
+                inventory = {'candidate_windows': [], 'candidate_count': 0, 'can_focus_existing': False}
+            if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+                focus = self._focus_existing_browser_from_inventory(inventory)
+                focused = bool(focus.get('focused'))
+                selected = dict(focus.get('selected_window') or {})
+                focused_title = str(selected.get('title') or '')
+            if not focused:
+                title_hints = []
+                for item in list(inventory.get('candidate_windows') or []):
+                    title = str(item.get('title') or '').strip()
+                    if title:
+                        title_hints.append(title)
+                selected_surface = dict(surface.get('selected_window') or {})
+                if selected_surface.get('title'):
+                    title_hints.insert(0, str(selected_surface.get('title')))
+                title_hints.extend([
+                    'ChatGPT',
+                    'ChatGPT - Google Chrome',
+                    'ChatGPT - Microsoft Edge',
+                    'Google Chrome',
+                    'Microsoft Edge',
+                ])
+                focused_title = runner._wait_and_focus_any_window(  # noqa: SLF001 - controlled runtime bridge
+                    list(dict.fromkeys(title_hints)),
+                    4.0,
+                    bring_to_foreground=True,
+                )
+                focused = bool(focused_title)
+            if not focused:
+                result.update({
+                    'attempted': True,
+                    'status': 'target_missing',
+                    'reason': 'visible_browser_window_not_focusable',
+                    'unresolved_fields': ['focusable_browser_window'],
+                })
+            else:
+                result['attempted'] = True
+                result['focused_title'] = focused_title
+                try:
+                    runner._paste_text(prompt)  # noqa: SLF001 - existing UIExecutionRunner primitive
+                    runner._send_virtual_key(0x0D)  # noqa: SLF001
+                finally:
+                    try:
+                        self._restore_clipboard_text(previous_clipboard)
+                    except Exception:
+                        pass
+                result.update({
+                    'success': True,
+                    'status': 'prompt_sent',
+                    'reason': 'visible_prompt_pasted_and_submitted',
+                })
+        except Exception as exc:
+            result.update({
+                'attempted': True,
+                'status': 'visible_prompt_send_error',
+                'reason': f'{type(exc).__name__}: {exc}',
+                'unresolved_fields': ['visible_prompt_send'],
+            })
+        result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+        try:
+            if tracer:
+                tracer.trace('visible_prompt_send_result', **result)
+        except Exception:
+            pass
+        return result
+
+    def _try_handle_external_action_followup(self, message: str) -> bool:
+        """P0.73: turn broad human follow-up language into a concrete action.
+
+        This runs before the generic external-failure explanation so phrases
+        like "usa un navegador mio" do not get answered as a dead-end status.
+        """
+        payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+        last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
+        if payload and last_ts and (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S:
+            payload = {}
+        incident = self._get_active_incident()
+        if not payload and not incident:
+            return False
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'semantic_action_binding_started',
+                user_message_excerpt=message[:160],
+                has_failure_payload=bool(payload),
+                has_active_incident=bool(incident),
+            )
+        except Exception:
+            tracer = None
+
+        binding = self._classify_external_action_followup(
+            message,
+            failure_payload=payload,
+            active_incident=incident,
+        )
+        intent = str(binding.get('intent') or 'none')
+        confidence = float(binding.get('confidence') or 0.0)
+        assistant_kind = (
+            str((incident or {}).get('assistant_kind') or '')
+            or str(payload.get('assistant_kind') or '')
+            or self._explicit_assistant_preference(message)
+            or 'chatgpt'
+        )
+        assistant_title = (
+            str((incident or {}).get('assistant_title') or '')
+            or str(payload.get('assistant_title') or '')
+            or self._assistant_display_name(assistant_kind)
+        )
+        try:
+            if tracer:
+                tracer.trace(
+                    'semantic_action_binding_result',
+                    intent=intent,
+                    confidence=round(confidence, 3),
+                    matched_terms=list(binding.get('matched_terms') or [])[:10],
+                    assistant_kind=assistant_kind,
+                )
+        except Exception:
+            pass
+
+        if intent == 'none' or confidence < 0.50:
+            return False
+
+        def _finish(text: str, meta: str, action_taken: str) -> bool:
+            self._latest_response_text = text
+            self._latest_response_meta = meta
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant',
+                'IABV',
+                text,
+                meta,
+                reasoning_path='semantic_external_action_binding',
+                evidence_tag='observed',
+            )
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+            try:
+                if tracer:
+                    tracer.trace(
+                        'external_followup_action_selected',
+                        intent=intent,
+                        action_taken=action_taken,
+                        assistant_kind=assistant_kind,
+                        confidence=round(confidence, 3),
+                    )
+                    tracer.trace(
+                        'external_followup_action_executed',
+                        intent=intent,
+                        action_taken=action_taken,
+                        assistant_kind=assistant_kind,
+                    )
+            except Exception:
+                pass
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
+
+        if intent == 'show_problem_window_requested':
+            if incident and self._try_focus_incident_window(incident):
+                return _finish(
+                    f'Enfoqué la ventana relacionada con {assistant_title}. Si ves una verificación, complétala y escribe "ya lo hice".',
+                    'semantic_action_binding: show_problem_window',
+                    'focus_incident_window',
+                )
+            msg = self._format_human_assist_message(
+                sees=f'{assistant_title} tiene un incidente externo reciente, pero no tengo una ventana objetivo confiable.',
+                cannot_verify='no puedo mostrar una ventana si no tengo hwnd/CDP/perfil observable.',
+                needs_from_you='deja visible la ventana de ChatGPT o autoriza que abra una ventana gobernada.',
+                action_now=self._GOVERNED_LAUNCH_OFFER,
+            )
+            return _finish(msg, 'semantic_action_binding: show_problem_window_unresolved', 'offer_governed_browser_session')
+
+        if intent in {'user_browser_session_requested', 'human_login_available'}:
+            probe = self._detect_cdp_available()
+            inventory = self._browser_session_inventory(
+                assistant_kind=assistant_kind or 'chatgpt',
+                cdp_probe=probe,
+            )
+            inventory_summary = self._format_browser_inventory_summary(inventory)
+            try:
+                if tracer:
+                    tracer.trace(
+                        'existing_browser_session_inventory',
+                        assistant_kind=assistant_kind,
+                        cdp_available=inventory.get('cdp_available', False),
+                        candidate_count=inventory.get('candidate_count', 0),
+                        browser_process_count=inventory.get('browser_process_count', 0),
+                        assistant_window_count=inventory.get('assistant_window_count', 0),
+                        can_focus_existing=inventory.get('can_focus_existing', False),
+                        can_observe_existing_dom=inventory.get('can_observe_existing_dom', False),
+                        recommended_strategy=inventory.get('recommended_strategy', ''),
+                        limitations=inventory.get('limitations', []),
+                    )
+            except Exception:
+                pass
+            if probe.get('available', False):
+                os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+                msg = self._format_human_assist_message(
+                    sees='tu navegador normal parece observable por CDP.',
+                    cannot_verify='no voy a leer cookies/tokens; solo usaré contenido visible de la página.',
+                    needs_from_you='mantén la sesión visible si aparece una verificación humana.',
+                    action_now=f'activé la ruta de tu navegador para la próxima consulta a {assistant_title}. Escribe "reintenta".',
+                )
+                return _finish(msg, 'semantic_action_binding: user_browser_cdp_enabled', 'enable_user_browser_cdp')
+
+            if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+                focus = self._focus_existing_browser_from_inventory(inventory)
+                if focus.get('focused'):
+                    selected = dict(focus.get('selected_window') or {})
+                    self._last_visible_browser_surface = {
+                        'assistant_kind': assistant_kind or 'chatgpt',
+                        'surface': 'existing_browser_visible',
+                        'semantic_bridge': 'none',
+                        'selected_window': selected,
+                        'created_at': time.time(),
+                    }
+                    msg = self._format_human_assist_message(
+                        sees=f'veo tu navegador ya abierto y lo traje al frente: {selected.get("title") or inventory_summary}.',
+                        cannot_verify=(
+                            'esa ventana existe y puede estar logueada, pero sin CDP/puente no puedo leer '
+                            'la respuesta de ChatGPT en segundo plano ni usar tus correos/credenciales.'
+                        ),
+                        needs_from_you=(
+                            'si aparece verificación o login, complétalo ahí; si ya ves la respuesta, '
+                            'escribe "ya lo hice" para que intente capturar/reingestar.'
+                        ),
+                        action_now='usaré esta superficie visible antes de abrir otra ventana; si no puedo capturarla, ofreceré la ventana gobernada.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: existing_browser_focused', 'focus_existing_browser_session')
+
+            if inventory.get('browser_process_count') and not inventory.get('candidate_count'):
+                user_launch = self._launch_user_default_browser_visible_session(
+                    launch_target='https://chatgpt.com/',
+                    assistant_kind=assistant_kind or 'chatgpt',
+                )
+                try:
+                    if tracer:
+                        tracer.trace(
+                            'user_default_browser_visible_session_launch',
+                            assistant_kind=assistant_kind,
+                            success=bool(user_launch.get('launched')),
+                            reason=user_launch.get('error', '') or 'ok',
+                            browser_process_count=inventory.get('browser_process_count', 0),
+                            semantic_bridge=user_launch.get('semantic_bridge', 'none'),
+                        )
+                except Exception:
+                    pass
+                if user_launch.get('launched'):
+                    self._last_visible_browser_surface = {
+                        'assistant_kind': assistant_kind or 'chatgpt',
+                        'surface': 'user_default_browser_visible',
+                        'semantic_bridge': user_launch.get('semantic_bridge', 'none'),
+                        'launch_target': user_launch.get('launch_target', 'https://chatgpt.com/'),
+                        'created_at': time.time(),
+                    }
+                    msg = self._format_human_assist_message(
+                        sees=f'hay procesos de navegador del usuario activos ({inventory_summary}) pero no una ventana visible enlazada.',
+                        cannot_verify=(
+                            'abrí ChatGPT en tu navegador normal para reutilizar tu perfil/sesión si el navegador la conserva; '
+                            'aún no tengo DOM/CDP para leer la respuesta en segundo plano.'
+                        ),
+                        needs_from_you=(
+                            'si aparece login/verificación, complétalo; si ChatGPT responde, escribe "ya lo hice" '
+                            'o pega la respuesta para que la incorpore.'
+                        ),
+                        action_now='usé el navegador predeterminado del usuario antes de abrir una ventana gobernada.',
+                    )
+                    return _finish(
+                        msg,
+                        'semantic_action_binding: user_default_browser_visible_launched',
+                        'launch_user_default_browser_visible_session',
+                    )
+
+            launch = self._launch_governed_browser_session(
+                launch_target='https://chatgpt.com/',
+                assistant_kind=assistant_kind or 'chatgpt',
+            )
+            if launch.get('launched'):
+                self._last_visible_browser_surface = {
+                    'assistant_kind': assistant_kind or 'chatgpt',
+                    'surface': 'governed_browser_visible',
+                    'semantic_bridge': 'browser_dom',
+                    'cdp_url': launch.get('cdp_url', ''),
+                    'profile_label': launch.get('profile_label', ''),
+                    'created_at': time.time(),
+                }
+                msg = self._format_human_assist_message(
+                    sees=f'me estás autorizando a usar una sesión de navegador; inventario actual: {inventory_summary}.',
+                    cannot_verify='tu navegador normal no está observable por CDP, así que no puedo tomar control fiable de esa sesión sin un puente.',
+                    needs_from_you='en la ventana gobernada que abrí, inicia sesión o completa la verificación si aparece; luego escribe "ya lo hice".',
+                    action_now=f'abrí una ventana gobernada de Chrome para {assistant_title}; después haré el retest gobernado.',
+                )
+                return _finish(msg, 'semantic_action_binding: governed_browser_launched', 'launch_governed_browser_session')
+            msg = self._format_human_assist_message(
+                sees='me estás autorizando a usar un navegador, pero no pude abrir la sesión gobernada.',
+                cannot_verify=f'falló el lanzamiento: {launch.get("error", "desconocido")}.',
+                needs_from_you='deja visible una ventana de ChatGPT o pega aquí la respuesta.',
+                action_now='registré el fallo y no voy a fingir que hice la consulta.',
+            )
+            return _finish(msg, 'semantic_action_binding: governed_browser_launch_failed', 'governed_browser_launch_failed')
+
+        if intent == 'retry_external_consultation_requested':
+            visible_surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+            if visible_surface and str(visible_surface.get('semantic_bridge') or '') != 'browser_dom':
+                prompt_text = str(message or '').strip()
+                normalized_retry = self._normalized_command_text(prompt_text)
+                if re.search(r'\b(reintenta|reintentar|intenta nuevamente|continua|continúa|sigue)\b', normalized_retry):
+                    prompt_text = str(getattr(self, '_last_user_goal', '') or prompt_text).strip()
+                send = self._attempt_visible_user_browser_prompt_send(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    assistant_title=assistant_title,
+                    prompt_text=prompt_text,
+                )
+                if send.get('success'):
+                    msg = self._format_human_assist_message(
+                        sees=f'tengo una superficie visible de {assistant_title}: {send.get("focused_title") or visible_surface.get("surface") or "navegador visible"}.',
+                        cannot_verify=(
+                            'ya envié el prompt por esa ventana, pero sin CDP/DOM/OCR confiable no debo fingir '
+                            'que leí la respuesta en segundo plano.'
+                        ),
+                        needs_from_you=(
+                            'espera a que ChatGPT responda; luego escribe "ya lo hice" para intentar capturar '
+                            'la respuesta visible o pega la respuesta si no puedo leerla.'
+                        ),
+                        action_now='mantengo la tarea activa en la misma ventana visible en vez de abrir otra ruta o caer a chat local.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: visible_prompt_sent', 'send_prompt_to_visible_browser_surface')
+                if send.get('attempted'):
+                    msg = self._format_human_assist_message(
+                        sees=f'tengo registrada una superficie visible previa para {assistant_title}, pero no pude enfocarla ahora.',
+                        cannot_verify=f'falló el envío del prompt: {send.get("status") or "unknown"} / {send.get("reason") or "sin detalle"}.',
+                        needs_from_you='deja visible la ventana correcta de ChatGPT o elige "usar mi navegador" para volver a enlazarla.',
+                        action_now='no abrí otra consulta ni fingí éxito; dejé el estado como target_missing/unresolved.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: visible_prompt_unresolved', 'visible_prompt_send_unresolved')
+            self._run_external_consultation(assistant_kind or 'chatgpt', announce=True)
+            try:
+                if tracer:
+                    tracer.trace(
+                        'external_followup_action_executed',
+                        intent=intent,
+                        action_taken='retry_external_consultation',
+                        assistant_kind=assistant_kind,
+                    )
+            except Exception:
+                pass
+            return True
+
+        return False
+
     def _handle_user_browser_manual_handoff(
         self,
         *,
@@ -4699,6 +5273,231 @@ class ControlCenterViewModel(QObject):
         'ya esta listo', 'ya lo resolvi', 'done', 'i did it',
     )
 
+    @staticmethod
+    def _sanitize_visible_response_text(text: str) -> str:
+        """Remove obvious PII/secrets from text copied from a visible page."""
+        cleaned = str(text or '').replace('\x00', ' ')
+        cleaned = re.sub(
+            r'(?i)\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b',
+            '[redacted_email]',
+            cleaned,
+        )
+        cleaned = re.sub(
+            r'(?i)\b(password|contrasena|contraseña|api[_ -]?key|token|secret)\s*[:=]\s*\S+',
+            r'\1=[redacted]',
+            cleaned,
+        )
+        cleaned = re.sub(r'\b[A-Za-z0-9_-]{32,}\b', '[redacted_token]', cleaned)
+        return '\n'.join(line.rstrip() for line in cleaned.splitlines()).strip()
+
+    @staticmethod
+    def _visible_response_text_looks_useful(text: str, *, prompt_text: str = '') -> bool:
+        normalized = ' '.join(str(text or '').split()).strip()
+        if not normalized:
+            return False
+        lowered = normalized.lower()
+        prompt_lower = ' '.join(str(prompt_text or '').split()).lower()
+        if 'responde solo' in prompt_lower or 'solo s' in prompt_lower:
+            short_tokens = {
+                token.strip('.,:;!?()[]{}"\'').lower()
+                for token in normalized.split()
+            }
+            if short_tokens.intersection({'s', 'si', 'sí', 'ok', 'yes'}) and len(normalized) <= 80:
+                return True
+        if len(normalized) < 24:
+            return False
+        if prompt_lower and lowered == prompt_lower:
+            return False
+        if prompt_lower and lowered.startswith(prompt_lower) and len(lowered) <= len(prompt_lower) + 24:
+            return False
+        local_surface_markers = (
+            'iabv',
+            'procesando',
+            'external_consultation',
+            'security_retest',
+        )
+        if any(marker in lowered for marker in local_surface_markers) and 'chatgpt' not in lowered:
+            return False
+        return True
+
+    @staticmethod
+    def _restore_clipboard_text(text: str) -> None:
+        try:  # pragma: no cover - live Qt branch
+            from PySide6.QtGui import QGuiApplication
+
+            app = QGuiApplication.instance()
+            clipboard = app.clipboard() if app is not None else None
+            if clipboard is not None:
+                clipboard.setText(str(text or ''))
+                return
+        except Exception:
+            pass
+        try:  # pragma: no cover - Windows fallback
+            import subprocess as _subprocess
+
+            _subprocess.run(
+                [
+                    'powershell',
+                    '-NoProfile',
+                    '-Command',
+                    'Set-Clipboard -Value ([Console]::In.ReadToEnd())',
+                ],
+                input=str(text or ''),
+                text=True,
+                capture_output=True,
+                timeout=3,
+            )
+        except Exception:
+            pass
+
+    def _attempt_visible_user_browser_response_capture(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+    ) -> dict[str, Any]:
+        """Try a safe visible-page text capture after the user completed the page.
+
+        This is intentionally limited: it does not read cookies, tokens,
+        credentials, browser storage, or hidden DOM. It only tries to focus a
+        visible browser surface already recorded by the previous handoff and
+        copy visible page text. If no semantic channel is available, it returns
+        an unresolved result instead of pretending that ChatGPT was read.
+        """
+        started = time.perf_counter()
+        surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+        prompt_text = str(getattr(self, '_last_user_goal', '') or '')
+        result: dict[str, Any] = {
+            'attempted': False,
+            'success': False,
+            'status': 'not_attempted',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'surface': surface.get('surface', ''),
+            'capture_source': '',
+            'captured_text': '',
+            'captured_excerpt': '',
+            'reason': '',
+            'unresolved_fields': [],
+            'execution_ms': 0,
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'visible_response_capture_started',
+                assistant_kind=assistant_kind,
+                surface=result['surface'],
+                semantic_bridge=surface.get('semantic_bridge', ''),
+            )
+        except Exception:
+            tracer = None
+
+        focused = False
+        focus_error = ''
+        try:
+            probe = self._detect_cdp_available(timeout=0.35)
+            inventory = self._browser_session_inventory(
+                assistant_kind=assistant_kind or 'chatgpt',
+                cdp_probe=probe,
+            )
+        except Exception:
+            inventory = {'candidate_windows': [], 'candidate_count': 0, 'can_focus_existing': False}
+
+        if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+            result['attempted'] = True
+            focus = self._focus_existing_browser_from_inventory(inventory)
+            focused = bool(focus.get('focused'))
+            focus_error = str(focus.get('error') or '')
+            selected = dict(focus.get('selected_window') or {})
+            if selected:
+                surface['selected_window'] = selected
+                result['surface'] = surface.get('surface') or 'existing_browser_visible'
+        elif surface.get('selected_window'):
+            result['attempted'] = True
+            focus = self._focus_existing_browser_from_inventory({
+                'candidate_windows': [dict(surface.get('selected_window') or {})],
+            })
+            focused = bool(focus.get('focused'))
+            focus_error = str(focus.get('error') or '')
+        elif surface.get('surface') in {'user_default_browser_visible', 'existing_browser_visible'}:
+            result['attempted'] = True
+            focus_error = 'visible_window_not_observed'
+
+        if not result['attempted']:
+            result['status'] = 'target_missing'
+            result['reason'] = 'no_visible_browser_surface_recorded'
+            result['unresolved_fields'] = ['visible_browser_surface']
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            return result
+        if not focused:
+            result['status'] = 'target_missing'
+            result['reason'] = focus_error or 'visible_browser_window_not_focusable'
+            result['unresolved_fields'] = ['focusable_browser_window']
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            try:
+                if tracer:
+                    tracer.trace('visible_response_capture_result', **{k: v for k, v in result.items() if k != 'captured_text'})
+            except Exception:
+                pass
+            return result
+
+        try:
+            from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+
+            workspace = str(getattr(getattr(self, 'config', None), 'workspace_root', '') or os.getcwd())
+            runner = UIExecutionRunner(workspace_root=workspace)
+            previous_clipboard = runner.read_clipboard_text()
+            try:
+                copied = runner.copy_active_window_text(select_all=True, settle_seconds=0.18)
+            finally:
+                try:
+                    self._restore_clipboard_text(previous_clipboard)
+                except Exception:
+                    pass
+            sanitized = self._sanitize_visible_response_text(copied)
+            if self._visible_response_text_looks_useful(sanitized, prompt_text=prompt_text):
+                result.update({
+                    'success': True,
+                    'status': 'response_captured',
+                    'capture_source': 'visible_clipboard_capture',
+                    'captured_text': sanitized[:8000],
+                    'captured_excerpt': sanitized[:500],
+                    'reason': 'visible_text_captured',
+                })
+            else:
+                result.update({
+                    'status': 'visible_capture_unreadable',
+                    'capture_source': 'visible_clipboard_capture',
+                    'captured_excerpt': sanitized[:240],
+                    'reason': 'captured_text_not_useful',
+                    'unresolved_fields': ['semantic_response_text'],
+                })
+        except Exception as exc:
+            result.update({
+                'status': 'visible_capture_error',
+                'reason': f'{type(exc).__name__}: {exc}',
+                'unresolved_fields': ['visible_text_capture'],
+            })
+        result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+        try:
+            if tracer:
+                tracer.trace(
+                    'visible_response_capture_result',
+                    **{k: v for k, v in result.items() if k != 'captured_text'},
+                )
+                tracer.trace(
+                    'semantic_capture_ladder_result',
+                    assistant_kind=assistant_kind,
+                    status=result.get('status', ''),
+                    capture_source=result.get('capture_source', ''),
+                    success=bool(result.get('success')),
+                    unresolved_fields=result.get('unresolved_fields', []),
+                )
+        except Exception:
+            pass
+        return result
+
     def _try_handle_security_verification_retest(self, message: str) -> bool:
         """If the user claims they completed security verification, do a single governed retest.
 
@@ -4713,12 +5512,99 @@ class ControlCenterViewModel(QObject):
         metadata = dict(payload.get('metadata') or {})
         ext_meta = metadata.get('external_consultation') or {}
         if not isinstance(ext_meta, dict):
+            ext_meta = {}
+        if not ext_meta:
+            failure = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+            if failure:
+                ext_meta = {
+                    'detail': str(failure.get('meta') or failure.get('message') or ''),
+                    'status': 'blocked_external',
+                    'assistant_kind': str(failure.get('assistant_kind') or ''),
+                    'assistant_title': str(failure.get('assistant_title') or ''),
+                    'terminal_state': str(failure.get('terminal_state') or ''),
+                }
+        if not ext_meta:
             return False
         last_meta = str(ext_meta.get('detail') or ext_meta.get('status') or '')
         if 'browser_security_verification' not in last_meta and ext_meta.get('status') != 'blocked_external':
             flags = ext_meta.get('external_state_flags') or []
             if 'capture_unverified' not in flags:
                 return False
+        assistant_kind = str(ext_meta.get('assistant_kind') or ext_meta.get('requested_assistant_kind') or 'chatgpt')
+        assistant_title = str(ext_meta.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        visible_capture = self._attempt_visible_user_browser_response_capture(
+            assistant_kind=assistant_kind,
+            assistant_title=assistant_title,
+        )
+        if visible_capture.get('success'):
+            excerpt = str(visible_capture.get('captured_excerpt') or '').strip()
+            summary = (
+                f'Ya pude capturar texto util desde la ventana visible de {assistant_title} '
+                'sin leer cookies/tokens/credenciales. Fragmento: '
+                f'{excerpt[:420]}'
+            )
+            self._latest_response_text = summary
+            self._latest_response_meta = 'visible_response_capture: response_captured'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', summary,
+                'visible_response_capture',
+                reasoning_path='visible_response_capture',
+                evidence_tag='observed',
+                trace_metadata={
+                    'assistant': assistant_title,
+                    'capture_source': visible_capture.get('capture_source', ''),
+                    'response_captured': True,
+                },
+            )
+            try:
+                self._clear_external_failure_memory()
+                self._resolve_incident_frame('resolved')
+            except Exception:
+                pass
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
+        if visible_capture.get('attempted'):
+            status = str(visible_capture.get('status') or 'visible_capture_unresolved')
+            reason = str(visible_capture.get('reason') or 'sin canal semantico')
+            msg = self._format_human_assist_message(
+                sees=f'intente usar la ventana visible de {assistant_title}, pero no obtuve texto semantico confiable.',
+                cannot_verify=(
+                    'sin CDP/DOM/accesibilidad/OCR/extension no puedo leer esa respuesta en segundo plano; '
+                    'solo pude intentar una captura visible gobernada y no fue suficiente.'
+                ),
+                needs_from_you=(
+                    'mantén la ventana de ChatGPT al frente y vuelve a escribir "ya lo hice", '
+                    'o pega aqui la respuesta que ves para incorporarla sin fingir observacion.'
+                ),
+                action_now=f'registre UNRESOLVED:{status} ({reason[:120]}).',
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = f'visible_response_capture: {status}'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'visible_response_capture_unresolved',
+                reasoning_path='visible_response_capture',
+                evidence_tag='inferred',
+                trace_metadata={
+                    'assistant': assistant_title,
+                    'status': status,
+                    'unresolved_fields': visible_capture.get('unresolved_fields', []),
+                },
+            )
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
         if getattr(self, '_security_retest_done', False):
             self._append_message(
                 'assistant', 'IABV',
@@ -4738,8 +5624,6 @@ class ControlCenterViewModel(QObject):
             )
         except Exception:
             pass
-        assistant_kind = str(ext_meta.get('assistant_kind') or ext_meta.get('requested_assistant_kind') or 'chatgpt')
-        assistant_title = str(ext_meta.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
         self._append_message(
             'assistant', 'IABV',
             f'Entendido — ejecutando un solo retest gobernado de {assistant_title} '
@@ -4788,6 +5672,15 @@ class ControlCenterViewModel(QObject):
         'revocar permiso cdp', 'revocar cdp', 'revoke cdp',
         'desactivar cdp', 'disable cdp', 'no usar mi chrome',
     )
+    _BROWSER_APP_TOKENS: tuple[str, ...] = (
+        'chrome', 'edge', 'firefox', 'brave', 'opera', 'browser', 'navegador',
+    )
+    _ASSISTANT_WINDOW_TOKENS: dict[str, tuple[str, ...]] = {
+        'chatgpt': ('chatgpt', 'chat gpt', 'chat.openai', 'openai'),
+        'claude': ('claude', 'anthropic'),
+        'codex': ('codex',),
+        'devin': ('devin',),
+    }
 
     @staticmethod
     def _detect_cdp_available(
@@ -4824,6 +5717,224 @@ class ControlCenterViewModel(QObject):
                 )[:100]
         except urllib.error.URLError as exc:
             result['error'] = f'connection_failed: {exc.reason}'
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    def _browser_session_inventory(
+        self,
+        *,
+        assistant_kind: str = 'chatgpt',
+        cdp_probe: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Summarize existing browser sessions before opening a new one.
+
+        This is intentionally capability-oriented: seeing a Chrome window is
+        not the same as being able to read its DOM or capture ChatGPT's
+        response in the background.  The inventory keeps those states separate
+        so IABV can prefer the user's existing browser when it is actually
+        observable, and explain the exact gap when it is only visible/focusable.
+        """
+        probe = dict(cdp_probe or self._detect_cdp_available(timeout=0.75))
+        assistant = str(assistant_kind or 'chatgpt').strip().lower()
+        assistant_tokens = self._ASSISTANT_WINDOW_TOKENS.get(
+            assistant, (assistant,) if assistant else (),
+        )
+        windows: list[dict[str, Any]] = []
+        browser_processes: list[dict[str, Any]] = []
+        try:
+            snapshot = self._current_world_model()
+            active = list(getattr(snapshot, 'active_windows', []) or [])
+            background = list(getattr(snapshot, 'background_processes', []) or [])
+        except Exception:
+            active = []
+            background = []
+
+        def _value(win: Any, key: str, default: Any = '') -> Any:
+            if isinstance(win, dict):
+                return win.get(key, default)
+            return getattr(win, key, default)
+
+        for win in active:
+            title = str(_value(win, 'title', '') or '').strip()
+            app = str(_value(win, 'app_name', '') or '').strip()
+            metadata = _value(win, 'metadata', {}) or {}
+            joined = f'{title} {app}'.lower()
+            is_browser = any(token in joined for token in self._BROWSER_APP_TOKENS)
+            assistant_match = any(token and token in joined for token in assistant_tokens)
+            if not is_browser and not assistant_match:
+                continue
+            hwnd = None
+            try:
+                hwnd = metadata.get('hwnd') if isinstance(metadata, dict) else None
+            except Exception:
+                hwnd = None
+            if hwnd is None:
+                hwnd = _value(win, 'hwnd', None)
+            windows.append({
+                'title': title[:120],
+                'app_name': app[:80],
+                'pid': int(_value(win, 'pid', 0) or 0),
+                'focused': bool(_value(win, 'focused', False)),
+                'assistant_match': bool(assistant_match),
+                'hwnd_available': hwnd is not None,
+                'hwnd': hwnd,
+            })
+
+        for proc in background:
+            name = str(_value(proc, 'process_name', '') or '').strip()
+            joined = name.lower()
+            if not any(token in joined for token in self._BROWSER_APP_TOKENS):
+                continue
+            browser_processes.append({
+                'process_name': name[:80],
+                'pid': int(_value(proc, 'pid', 0) or 0),
+                'state': str(_value(proc, 'state', '') or ''),
+                'memory_mb': _value(proc, 'memory_mb', None),
+            })
+        browser_processes = browser_processes[:12]
+
+        windows = sorted(
+            windows,
+            key=lambda item: (
+                not bool(item.get('assistant_match')),
+                not bool(item.get('focused')),
+                str(item.get('title') or '').lower(),
+            ),
+        )[:8]
+        cdp_available = bool(probe.get('available'))
+        hwnd_available = any(bool(w.get('hwnd_available')) for w in windows)
+        if cdp_available:
+            strategy = 'user_browser_cdp'
+        elif windows and hwnd_available:
+            strategy = 'existing_browser_focus_only'
+        elif windows:
+            strategy = 'existing_browser_visible_unbound'
+        elif browser_processes:
+            strategy = 'existing_browser_process_without_visible_window'
+        else:
+            strategy = 'governed_browser_needed'
+        limitations: list[str] = []
+        if windows and not cdp_available:
+            limitations.append('existing_browser_dom_not_observable_without_bridge')
+        if not windows:
+            limitations.append('no_existing_browser_window_observed')
+        if browser_processes and not windows:
+            limitations.append('browser_processes_exist_without_top_level_window')
+        if windows and not hwnd_available:
+            limitations.append('existing_browser_hwnd_missing')
+        return {
+            'assistant_kind': assistant,
+            'cdp_available': cdp_available,
+            'cdp_url': probe.get('cdp_url', ''),
+            'browser_version': probe.get('browser_version', ''),
+            'cdp_error': probe.get('error', ''),
+            'candidate_windows': windows,
+            'candidate_count': len(windows),
+            'browser_processes': browser_processes,
+            'browser_process_count': len(browser_processes),
+            'assistant_window_count': sum(1 for w in windows if w.get('assistant_match')),
+            'can_focus_existing': hwnd_available,
+            'can_observe_existing_dom': cdp_available,
+            'recommended_strategy': strategy,
+            'limitations': limitations,
+        }
+
+    @staticmethod
+    def _format_browser_inventory_summary(inventory: dict[str, Any]) -> str:
+        windows = list(inventory.get('candidate_windows') or [])
+        if not windows:
+            processes = list(inventory.get('browser_processes') or [])
+            if processes:
+                names = []
+                for item in processes[:4]:
+                    name = str(item.get('process_name') or 'navegador')
+                    pid = item.get('pid') or ''
+                    names.append(f'{name} pid={pid}' if pid else name)
+                suffix = '' if len(processes) <= 4 else f' (+{len(processes) - 4} más)'
+                return 'veo procesos de navegador sin ventana visible: ' + '; '.join(names) + suffix
+            return 'no veo una ventana de navegador ya abierta relacionada con esa tarea.'
+        labels = []
+        for item in windows[:4]:
+            title = str(item.get('title') or item.get('app_name') or 'ventana sin titulo')
+            marker = 'ChatGPT' if item.get('assistant_match') else 'navegador'
+            labels.append(f'{marker}: {title}')
+        suffix = '' if len(windows) <= 4 else f' (+{len(windows) - 4} más)'
+        return '; '.join(labels) + suffix
+
+    @staticmethod
+    def _focus_existing_browser_from_inventory(inventory: dict[str, Any]) -> dict[str, Any]:
+        """Bring the best existing browser candidate to the foreground.
+
+        This does not claim DOM access.  It only uses the hwnd already exposed
+        by WorldModel so the user and IABV can share the same visible surface.
+        """
+        result = {
+            'focused': False,
+            'selected_window': {},
+            'method': '',
+            'error': '',
+        }
+        windows = list(inventory.get('candidate_windows') or [])
+        selected = next((w for w in windows if w.get('assistant_match') and w.get('hwnd')), None)
+        if selected is None:
+            selected = next((w for w in windows if w.get('hwnd')), None)
+        if not selected:
+            result['error'] = 'no_hwnd_candidate'
+            return result
+        result['selected_window'] = dict(selected)
+        hwnd = selected.get('hwnd')
+        try:
+            hwnd_int = int(hwnd)
+        except Exception:
+            result['error'] = 'invalid_hwnd'
+            return result
+        if hwnd_int <= 0:
+            result['error'] = 'invalid_hwnd'
+            return result
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            user32.ShowWindow(hwnd_int, 9)  # SW_RESTORE
+            user32.SetForegroundWindow(hwnd_int)
+            result['focused'] = True
+            result['method'] = 'win32_hwnd'
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    @staticmethod
+    def _launch_user_default_browser_visible_session(
+        *,
+        launch_target: str = 'https://chatgpt.com/',
+        assistant_kind: str = 'chatgpt',
+    ) -> dict[str, Any]:
+        """Open the user's normal default browser as a visible human surface.
+
+        This is not a CDP/DOM bridge and never reads credentials.  It is the
+        pragmatic middle path when browser processes exist but no observable
+        top-level window is available: use the user's normal profile/session if
+        the OS/default browser provides it, then ask for a human confirmation
+        or pasteback if semantic capture is still unavailable.
+        """
+        import os as _os
+        import sys as _sys
+        import webbrowser as _webbrowser
+
+        result = {
+            'launched': False,
+            'launch_target': launch_target,
+            'assistant_kind': assistant_kind,
+            'surface': 'user_default_browser_visible',
+            'semantic_bridge': 'none',
+            'error': '',
+        }
+        try:
+            if _sys.platform.startswith('win'):
+                _os.startfile(launch_target)  # type: ignore[attr-defined]
+            else:
+                _webbrowser.open(launch_target, new=1, autoraise=True)
+            result['launched'] = True
         except Exception as exc:
             result['error'] = f'{type(exc).__name__}: {exc}'
         return result
@@ -5142,13 +6253,34 @@ class ControlCenterViewModel(QObject):
             pass
 
         cdp_probe = self._detect_cdp_available()
+        session_inventory = self._browser_session_inventory(
+            assistant_kind='chatgpt',
+            cdp_probe=cdp_probe,
+        )
+        inventory_summary = self._format_browser_inventory_summary(session_inventory)
 
         try:
             tracer.trace_user_browser_bridge(
                 'cdp_probe_result',
                 assistant_kind='chatgpt',
                 cdp_available=cdp_probe.get('available', False),
+                existing_browser_windows=session_inventory.get('candidate_count', 0),
+                existing_browser_processes=session_inventory.get('browser_process_count', 0),
+                assistant_window_count=session_inventory.get('assistant_window_count', 0),
+                recommended_strategy=session_inventory.get('recommended_strategy', ''),
                 reason=cdp_probe.get('error', '') or 'ok',
+            )
+            tracer.trace(
+                'existing_browser_session_inventory',
+                assistant_kind='chatgpt',
+                cdp_available=session_inventory.get('cdp_available', False),
+                candidate_count=session_inventory.get('candidate_count', 0),
+                browser_process_count=session_inventory.get('browser_process_count', 0),
+                assistant_window_count=session_inventory.get('assistant_window_count', 0),
+                can_focus_existing=session_inventory.get('can_focus_existing', False),
+                can_observe_existing_dom=session_inventory.get('can_observe_existing_dom', False),
+                recommended_strategy=session_inventory.get('recommended_strategy', ''),
+                limitations=session_inventory.get('limitations', []),
             )
         except Exception:
             pass
@@ -5175,10 +6307,27 @@ class ControlCenterViewModel(QObject):
                 )
             except Exception:
                 pass
+            if session_inventory.get('candidate_count'):
+                sees = (
+                    f'veo navegadores ya abiertos ({inventory_summary}), '
+                    'pero ninguno expone un puente semántico/DOM para leer la respuesta en segundo plano.'
+                )
+                cannot_verify = (
+                    'puedo enfocar una ventana visible, pero sin CDP/puente no puedo confirmar '
+                    'que esa sesión me devuelva la respuesta ni capturar el DOM de ChatGPT con fiabilidad.'
+                )
+                needs = (
+                    'elige una ruta: escribe "enfoca esa ventana" para que la traiga al frente, '
+                    'o autoriza la ventana gobernada para una sesión observable.'
+                )
+            else:
+                sees = 'no veo una ventana de navegador reutilizable para ChatGPT en el WorldModel actual.'
+                cannot_verify = 'no tengo una sesión observable de tu navegador para retomar la consulta.'
+                needs = 'tu visto bueno para abrir una ventana gobernada (o pega aquí la respuesta).'
             msg = self._format_human_assist_message(
-                sees='no puedo conectarme a tu Chrome normal por CDP (no está abierto con depuración).',
-                cannot_verify='no tengo una sesión observable de tu navegador para retomar la consulta.',
-                needs_from_you='tu visto bueno para abrir una ventana gobernada (o pega aquí la respuesta).',
+                sees=sees,
+                cannot_verify=cannot_verify,
+                needs_from_you=needs,
                 action_now=self._GOVERNED_LAUNCH_OFFER,
             )
             self._latest_response_text = msg
@@ -5436,6 +6585,9 @@ class ControlCenterViewModel(QObject):
         'muestrame donde necesitas mi ayuda', 'muéstrame dónde necesitas mi ayuda',
         'abre la ventana donde necesitas mi ayuda',
         'muestrame eso', 'muéstrame eso',
+        'permito observar', 'autorizo observar', 'puedes observar',
+        'observa chatgpt', 'observar chatgpt', 'ver chatgpt',
+        'mira chatgpt', 'puedes mirar chatgpt',
     )
     _VISIBILITY_DISPUTE_TOKENS: tuple[str, ...] = (
         'no veo la verificacion', 'no veo la verificación',
@@ -8335,6 +9487,75 @@ class ControlCenterViewModel(QObject):
             force=force,
         )
 
+    def _schedule_idle_dev_packet_refresh(
+        self,
+        user_goal: str | None = None,
+        *,
+        force: bool = False,
+        reason: str = 'idle',
+    ) -> None:
+        """Refresh the development packet off the UI thread.
+
+        Live proof showed a 38.8s UI stall when ``_apply_task_result`` called
+        ``_refresh_development_packet`` synchronously after a ChatGPT attempt.
+        The packet reads recent dossiers and can be expensive, so post-result
+        paths must only schedule it in the background.
+        """
+        if user_goal is not None:
+            self._last_user_goal = str(user_goal or '').strip()
+        if getattr(self, '_dev_packet_refresh_pending', False) and not force:
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'development_packet_refresh_deferred',
+                    reason='coalesced',
+                    requested_reason=reason,
+                )
+            except Exception:
+                pass
+            return
+        self._dev_packet_refresh_pending = True
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'development_packet_refresh_deferred',
+                reason=reason,
+                force=force,
+            )
+        except Exception:
+            pass
+
+        def _worker() -> None:
+            import time as _time
+            t0 = _time.perf_counter()
+            try:
+                self._refresh_development_packet(force=force)
+                elapsed_ms = (_time.perf_counter() - t0) * 1000
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'development_packet_refresh_finished',
+                        reason=reason,
+                        elapsed_ms=round(elapsed_ms, 1),
+                        force=force,
+                    )
+                except Exception:
+                    pass
+            except Exception as exc:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'development_packet_refresh_failed',
+                        reason=reason,
+                        error=str(exc)[:240],
+                    )
+                except Exception:
+                    pass
+            finally:
+                self._dev_packet_refresh_pending = False
+
+        self._bg_pool.submit(_worker)
+
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
         if user_goal is not None:
             self._last_user_goal = user_goal.strip()
@@ -9603,6 +10824,53 @@ class ControlCenterViewModel(QObject):
             assistant_kind=requested_assistant_kind,
         )
         if bool(preflight.get('blocked')):
+            approval_checkpoints = [
+                dict(item) for item in (preflight.get('approval_checkpoints') or [])
+                if isinstance(item, dict)
+            ]
+            observation_permission_block = any(
+                str(item.get('phase_key') or '').strip().lower() == 'observation_permission'
+                for item in approval_checkpoints
+            )
+            if (
+                observation_permission_block
+                and self._has_live_observation_permission(requested_assistant_kind)
+            ):
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'stale_observation_permission_gate_ignored',
+                        assistant_kind=requested_assistant_kind,
+                        preflight_reason=str(preflight.get('reason') or ''),
+                        approval_count=len(approval_checkpoints),
+                        dispatch_id=dispatch_id,
+                    )
+                except Exception:
+                    pass
+                preflight = {
+                    **dict(preflight),
+                    'blocked': False,
+                    'approval_checkpoints': [],
+                    'reason': '',
+                }
+            else:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_permission(
+                        permission_id=f'external_consultation:{requested_assistant_kind}',
+                        action='blocked',
+                        granted=False,
+                        reason=str(preflight.get('reason') or 'ruta bloqueada por gobernanza'),
+                        dialog_shown=True,
+                    )
+                except Exception:
+                    pass
+                return self._blocked_external_consultation_result(
+                    assistant_kind=requested_assistant_kind,
+                    assistant_title=assistant_title,
+                    preflight=preflight,
+                )
+        if bool(preflight.get('blocked')):
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                 get_runtime_tracer().trace_permission(
@@ -10043,6 +11311,48 @@ class ControlCenterViewModel(QObject):
             return True
         return any(sig in reason for sig in resource_pressure_signals)
 
+    @staticmethod
+    def _is_security_verification_preflight_block(preflight: dict[str, Any]) -> bool:
+        """Detect security-verification preflight blocks from structured evidence.
+
+        The preflight can be blocked by AutonomyGovernancePolicy using either
+        a diagnostic category, external_state_flags, block_records, or a plain
+        reason.  This helper keeps that detection in one place so the UI can
+        build a human-assist incident instead of returning a generic dead-end.
+        """
+        governance = dict(preflight.get('governance') or {})
+        world_model_summary = dict(preflight.get('world_model_summary') or {})
+        candidates: list[Any] = [
+            preflight.get('reason'),
+            governance.get('reason'),
+            governance.get('diagnostic_category'),
+            governance.get('recommended_action'),
+            *(governance.get('external_state_flags') or []),
+            *(governance.get('blockers') or []),
+            *(world_model_summary.get('detected_blocks') or []),
+        ]
+        for item in world_model_summary.get('block_records') or []:
+            if isinstance(item, dict):
+                candidates.extend([
+                    item.get('block_type'),
+                    item.get('detail'),
+                    item.get('reason'),
+                    item.get('assistant_kind'),
+                ])
+        worker_health = dict(preflight.get('worker_health') or {})
+        candidates.extend([
+            worker_health.get('reason'),
+            worker_health.get('status'),
+        ])
+        joined = ' '.join(str(item or '').strip().lower() for item in candidates)
+        return (
+            'browser_security_verification' in joined
+            or 'security_verification' in joined
+            or 'verificacion de seguridad' in joined
+            or 'verificación de seguridad' in joined
+            or 'captcha' in joined
+        )
+
     def _blocked_external_consultation_result(
         self,
         *,
@@ -10065,16 +11375,38 @@ class ControlCenterViewModel(QObject):
 
         # P0.22: detect resource_pressure to set correct preflight metadata.
         is_resource_pressure = self._is_resource_pressure_block(preflight)
+        is_security_verification = (
+            not is_resource_pressure
+            and self._is_security_verification_preflight_block(preflight)
+        )
+        preflight_block_type = (
+            'resource_pressure'
+            if is_resource_pressure
+            else 'browser_security_verification'
+            if is_security_verification
+            else 'governance'
+        )
 
         metadata['external_consultation_preflight'] = {
             'assistant_kind': assistant_kind,
             'reason': str(preflight.get('reason') or governance.get('reason') or ''),
             'blocked': True,
             'world_model_summary': world_model_summary,
-            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'block_type': preflight_block_type,
             'requires_observation_permission': False if is_resource_pressure else bool(approval_checkpoints),
             'retry_when_pressure_clears': is_resource_pressure,
         }
+        if is_security_verification:
+            metadata['external_consultation'] = {
+                'status': 'blocked_external',
+                'assistant_kind': assistant_kind,
+                'assistant_title': assistant_title,
+                'detail': 'browser_security_verification',
+                'terminal_state': 'blocked_by_security_verification',
+                'external_state_flags': ['browser_security_verification'],
+                'blocking_reason': 'security_verification_preflight',
+                'response_captured': False,
+            }
         payload['metadata'] = metadata
         payload['approval_checkpoints'] = approval_checkpoints
         payload['assistant_guidance'] = self._guidance_for_external_preflight_block(
@@ -10103,6 +11435,59 @@ class ControlCenterViewModel(QObject):
             )
             meta = f'Permiso requerido para {assistant_title}.'
             terminal_state = 'failed_with_actionable_reason'
+        elif is_security_verification:
+            terminal_state = 'blocked_by_security_verification'
+            meta = f'{assistant_title}: blocked_by_security_verification'
+            profile_label = f'{assistant_kind}_program_session/browser_profile'
+            action_offer = getattr(self, '_GOVERNED_LAUNCH_OFFER', '')
+            if not action_offer:
+                action_offer = (
+                    'Puedo abrir una ventana gobernada para que completes la '
+                    'verificacion y luego reintentar.'
+                )
+            message = self._format_human_assist_message(
+                sees=(
+                    f'{assistant_title} aparece bloqueado por verificacion de seguridad '
+                    'segun el preflight/WorldModel.'
+                ),
+                cannot_verify=(
+                    'no tengo una ventana viva confiable enlazada a ese bloqueo; '
+                    'no debo asumir que es la misma ventana que tu ves.'
+                ),
+                needs_from_you=(
+                    'si ves ChatGPT abierto, escribe "permito observar ChatGPT" '
+                    'o "muestrame la ventana"; si prefieres que la abra yo, '
+                    'escribe "hazlo tu".'
+                ),
+                action_now=action_offer,
+            )
+            try:
+                self._create_active_incident_frame(
+                    assistant_kind=assistant_kind,
+                    assistant_title=assistant_title,
+                    terminal_state=terminal_state,
+                    block_type='browser_security_verification',
+                    last_user_goal=str(getattr(self, '_last_user_goal', '') or ''),
+                    dispatch_id='',
+                    browser_profile=profile_label,
+                    selected_browser_or_profile=profile_label,
+                    browser_label=profile_label,
+                    target_window_title='',
+                    hwnd=None,
+                )
+            except Exception:
+                pass
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'security_verification_preflight_handoff',
+                    assistant_kind=assistant_kind,
+                    terminal_state=terminal_state,
+                    reason=reason[:240],
+                    action_offered='human_assist_or_governed_browser',
+                )
+            except Exception:
+                pass
         else:
             message = (
                 f'No voy a lanzar {assistant_title} porque la ruta ya aparece bloqueada antes de intentarla. '
@@ -10119,9 +11504,13 @@ class ControlCenterViewModel(QObject):
             'meta': meta,
             'payload': payload,
             'assistant_title': assistant_title,
-            'external_state_flags': list(governance.get('external_state_flags') or []),
+            'external_state_flags': (
+                ['browser_security_verification']
+                if is_security_verification
+                else list(governance.get('external_state_flags') or [])
+            ),
             'terminal_state': terminal_state,
-            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'block_type': preflight_block_type,
         }
 
     def _guidance_for_external_preflight_block(
@@ -10145,6 +11534,25 @@ class ControlCenterViewModel(QObject):
                 ],
             }
         diag = str(governance.get('diagnostic_category') or '').strip().lower()
+        guidance_flags = ' '.join(str(item or '').strip().lower() for item in (governance.get('external_state_flags') or []))
+        prompt_lower = prompt.lower()
+        if (
+            diag in {'browser_security_verification', 'security_verification'}
+            or 'browser_security_verification' in guidance_flags
+            or 'security_verification' in guidance_flags
+            or 'verificacion de seguridad' in prompt_lower
+            or 'verificación de seguridad' in prompt_lower
+        ):
+            return {
+                'mode': 'human_assist_bridge',
+                'title': f'Verificacion de seguridad en {assistant_title}',
+                'prompt': prompt,
+                'actions': [
+                    self._assistant_action('show_problem_window', 'Mostrar ventana', 'Enfocar o abrir una ventana visible para resolver la verificacion.'),
+                    self._assistant_action('launch_governed_browser_session', 'Abrir ventana gobernada', 'Abrir una sesion gobernada de navegador dentro del flujo de IABV.'),
+                    self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Reintentar solo despues de resolver la verificacion o enlazar una ventana visible.'),
+                ],
+            }
         if diag == 'assistant_unavailable':
             return {
                 'mode': 'need_approval',
@@ -10225,6 +11633,36 @@ class ControlCenterViewModel(QObject):
         payload['approval_checkpoints'] = filtered
         payload['metadata'] = metadata
         self._last_adaptive_payload = payload
+
+    def _has_live_observation_permission(self, assistant_kind: str) -> bool:
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return False
+        scope = f'observe_window_content:{assistant_kind}'
+        world_model_service = getattr(getattr(self.adaptive_orchestrator, 'context_assembler', None), 'world_model_service', None)
+        if world_model_service is None:
+            return False
+        try:
+            if hasattr(world_model_service, 'permission_snapshot'):
+                for item in world_model_service.permission_snapshot():
+                    record = dict(item or {})
+                    if str(record.get('scope') or '').strip().lower() == scope and bool(record.get('granted')):
+                        return True
+        except Exception:
+            pass
+        try:
+            model = (
+                world_model_service.current_model()
+                if hasattr(world_model_service, 'current_model')
+                else None
+            )
+            for gate in list(getattr(model, 'permission_gates', []) or []):
+                gate_scope = str(getattr(gate, 'scope', '') or '').strip().lower()
+                if gate_scope == scope and (bool(getattr(gate, 'granted', False)) or str(getattr(gate, 'status', '') or '') == 'concedido'):
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _grant_pending_observation_permission(self, *, announce: bool = True) -> bool:
         assistant_kind = self._pending_observation_permission_assistant()
@@ -12047,8 +13485,63 @@ class ControlCenterViewModel(QObject):
             import time
             elapsed = time.time() - getattr(self, '_working_since', 0)
             if elapsed < 60:
-                self._resolve_active_interaction(outcome='abandoned')
-                return
+                explicit_override = ''
+                semantic_override: dict[str, Any] = {}
+                try:
+                    explicit_override = self._explicit_assistant_preference(message)
+                except Exception:
+                    explicit_override = ''
+                try:
+                    semantic_override = self._classify_external_action_followup(
+                        message,
+                        failure_payload=getattr(self, '_last_external_failure_payload', None),
+                        active_incident=self._get_active_incident(),
+                    )
+                except Exception:
+                    semantic_override = {}
+                semantic_intent = str(semantic_override.get('intent') or '').strip()
+                semantic_actionable = bool(semantic_intent and semantic_intent != 'none')
+                chat_dispatch_id = ''
+                external_dispatch_id = ''
+                try:
+                    chat_dispatch_id = str(self._active_dispatch_ids.get('chat') or '')
+                    external_dispatch_id = str(self._active_dispatch_ids.get('external_consultation') or '')
+                except Exception:
+                    pass
+                should_preempt_local = bool(
+                    (explicit_override or semantic_actionable)
+                    and (chat_dispatch_id or not external_dispatch_id)
+                )
+                if should_preempt_local:
+                    if chat_dispatch_id:
+                        self._invalidate_dispatch('chat')
+                        self._trace_dispatch_terminal(
+                            task_name='chat',
+                            dispatch_id=chat_dispatch_id,
+                            terminal_state='superseded_by_external_intent',
+                            provider='local',
+                            reason='new external intent/action follow-up arrived while local worker was active',
+                            user_visible_message=False,
+                        )
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        get_runtime_tracer().trace(
+                            'external_intent_preempted_local_worker',
+                            explicit_assistant=explicit_override,
+                            semantic_intent=semantic_intent,
+                            chat_dispatch_id=chat_dispatch_id,
+                            elapsed_ms=int(elapsed * 1000),
+                            message_excerpt=message[:120],
+                        )
+                    except Exception:
+                        pass
+                    self._working = False
+                    self._busy_label = ''
+                    self._set_live_status('idle')
+                    self._clear_autonomy_activity_override()
+                else:
+                    self._resolve_active_interaction(outcome='abandoned')
+                    return
             # Reset forzado: _working stuck por mas de 60 segundos
             self._working = False
             self._set_live_status('idle')
@@ -12086,6 +13579,15 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_security_verification_retest(message):
             # P0.22: security retest spawns a background worker — keep
             # interaction open until the worker reaches terminal state.
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.73: semantic external action binding. Broad human phrases such
+        # as "usa un navegador mio" must become a governed action before the
+        # older explanatory failure-followup guard can claim them.
+        if self._try_handle_external_action_followup(message):
             if self._working:
                 self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
             else:
@@ -12453,8 +13955,12 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str)
     def buildDevelopmentPacket(self, text: str) -> None:
-        self._refresh_development_packet(text, force=True)
-        self._busy_label = 'Paquete para Codex actualizado.'
+        self._schedule_idle_dev_packet_refresh(
+            text,
+            force=True,
+            reason='manual_build_development_packet',
+        )
+        self._busy_label = 'Preparando paquete para Codex en segundo plano.'
         self.dataChanged.emit()
 
     @Slot()
@@ -12919,7 +14425,11 @@ class ControlCenterViewModel(QObject):
         if not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
             self._agent_cards = self._build_agent_cards()
-            self._refresh_development_packet()
+            _schedule_dev_packet = getattr(self, '_schedule_idle_dev_packet_refresh', None)
+            if callable(_schedule_dev_packet):
+                _schedule_dev_packet(reason='post_task_result')
+            else:
+                self._refresh_development_packet()
             self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
@@ -12994,7 +14504,11 @@ class ControlCenterViewModel(QObject):
         # Gate heavy deferred work under resource pressure (Sub-objective B).
         if not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
-            self._refresh_development_packet()
+            _schedule_dev_packet = getattr(self, '_schedule_idle_dev_packet_refresh', None)
+            if callable(_schedule_dev_packet):
+                _schedule_dev_packet(reason='post_task_failure')
+            else:
+                self._refresh_development_packet()
             self._refresh_autonomy_dock()
         self.dataChanged.emit()
 

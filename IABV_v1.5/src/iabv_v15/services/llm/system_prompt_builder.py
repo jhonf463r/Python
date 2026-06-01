@@ -55,6 +55,24 @@ class SystemPromptBuilder:
 
         return self._truncate(sections)
 
+    def build_compact(
+        self,
+        world_model: WorldModelSnapshot | None,
+        env_self_model: EnvironmentSelfModel | None,
+        *,
+        governance_rules: dict[str, Any] | None = None,
+        max_chars: int = 3500,
+    ) -> str:
+        """Build a compact prompt for small local models."""
+
+        sections: list[tuple[int, str]] = []
+        sections.append((0, self._section_identity()))
+        sections.append((1, self._section_compact_reasoning_contract()))
+        sections.append((2, self._section_live_state(world_model)))
+        sections.append((3, self._section_hardware(env_self_model)))
+        sections.append((4, self._section_governance(governance_rules)))
+        return self._truncate(sections, max_chars=max_chars)
+
     @staticmethod
     def prompt_hash(prompt: str) -> str:
         return hashlib.sha256(prompt.encode()).hexdigest()[:16]
@@ -72,7 +90,37 @@ class SystemPromptBuilder:
             'espanol claro y directo. Tienes acceso al estado vivo del '
             'sistema, herramientas registradas, autoexaminacion operativa '
             'y contexto portable acumulado. No inventas datos que no esten '
-            'en el contexto proporcionado.'
+            'en el contexto proporcionado.\n\n'
+            'PERMISOS OPERATIVOS:\n'
+            '- Puedes observar y razonar sin pedir permiso sobre estado local '
+            'no sensible: ventanas detectadas, procesos, red, workspace, logs '
+            'de IABV, pruebas, contexto portable, autoexaminacion y tool cards.\n'
+            '- Puedes proponer y ejecutar acciones reversibles de bajo riesgo '
+            'sin pedir permiso extra cuando la gobernanza las permita: auditar, '
+            'leer evidencia local, resumir estado, comparar rutas, diagnosticar '
+            'bloqueos y preparar siguiente accion.\n'
+            '- Pide confirmacion para acciones irreversibles, destructivas, '
+            'credenciales, pagos, lectura de contenido visible externo o '
+            'cualquier automatizacion sensible. Si falta evidencia, di '
+            'UNRESOLVED y explica que dato vivo hace falta.\n'
+            '- Si el usuario pregunta por tu metacognicion, capacidades, '
+            'estado, estrategia o que falta, responde desde el estado vivo '
+            'disponible; no recicles una respuesta generica.'
+        )
+
+    @staticmethod
+    def _section_compact_reasoning_contract() -> str:
+        return (
+            '## Contrato de razonamiento compacto\n'
+            '1. Identifica la intencion real del usuario y el hilo previo.\n'
+            '2. Cruza fuentes en este orden: WorldModel/Environment, codigo, '
+            'contexto portable, autoexaminacion, pruebas, historial.\n'
+            '3. Distingue: lo que se, lo que no se, que puedo hacer ahora, '
+            'que requiere ayuda humana.\n'
+            '4. Si hablas de una falla, nombra el modulo, la evidencia y la '
+            'siguiente accion verificable.\n'
+            '5. No respondas como plantilla. Si ya se dijo algo, avanza con '
+            'dato nuevo o marca exactamente que sigue sin evidencia.'
         )
 
     @staticmethod
@@ -404,13 +452,13 @@ class SystemPromptBuilder:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _truncate(sections: list[tuple[int, str]]) -> str:
+    def _truncate(sections: list[tuple[int, str]], *, max_chars: int = _MAX_CHARS) -> str:
         sections.sort(key=lambda t: t[0])
         result: list[str] = []
         total = 0
         for _, text in sections:
-            if total + len(text) > _MAX_CHARS:
-                remaining = _MAX_CHARS - total
+            if total + len(text) > max_chars:
+                remaining = max_chars - total
                 if remaining > 100:
                     result.append(text[:remaining] + '\n...(truncado por limite)')
                 break

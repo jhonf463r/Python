@@ -1,0 +1,20 @@
+{
+  "id": "runtime_metacognitive_local_llm_contract_p080",
+  "title": "P0.80: Metacognitive local LLM contract",
+  "status": "PENDING",
+  "category": "metacognition",
+  "priority": "P0",
+  "description": "Expand local-chat eligibility and system prompting so self-awareness, metacognition, strategy, support, and local research questions use the local LLM with live-system grounding instead of generic templates.",
+  "reason": "The downloaded metacognition prompt was not implemented: only knowledge.query/general.assistance were LLM-eligible, SystemPromptBuilder lacked a compact prompt for small models, and governance could let stale external blocks contaminate introspective questions.",
+  "dependency_missing": "",
+  "next_action": "Live Windows proof: ask 'me entiendes y que evidencia tienes' and 'por donde vamos' in IABV. The answer should be produced by local_chat_llm with system_prompt_mode compact/full metadata and should not be blocked by stale ChatGPT security incidents.",
+  "resume_hint": "P0.80 implements expanded _LOCAL_CHAT_INTENT_KEYS, SystemPromptBuilder.build_compact(), operational permissions in identity prompt, and early local governance for system.self_awareness/system.metacognition.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "prompt_source": "C:\\Users\\faber\\Downloads\\iabv_codex_prompt_metacognicion.md",
+    "unresolved": [
+      "live_windows_local_chat_llm_prompt_metadata",
+      "runtime_ui_answer_quality_for_metacognitive_questions"
+    ]
+  }
+}

@@ -179,6 +179,51 @@ def test_prompt_includes_meta_cognition_section() -> None:
     assert 'Evolucion autonoma' in prompt
 
 
+def test_prompt_identity_declares_operational_permissions() -> None:
+    builder = SystemPromptBuilder()
+    prompt = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=None,
+    )
+
+    assert 'cerebro local' in prompt
+    assert 'Control Maestro' in prompt
+    assert 'PERMISOS OPERATIVOS' in prompt
+    assert 'acciones reversibles' in prompt
+    assert 'sin pedir permiso' in prompt
+    assert 'UNRESOLVED' in prompt
+
+
+def test_compact_prompt_keeps_identity_and_live_contract_under_budget() -> None:
+    builder = SystemPromptBuilder()
+    world_model = WorldModelSnapshot(
+        active_windows=[
+            WindowObservation(title='ChatGPT - Chrome', app_name='chrome.exe'),
+            WindowObservation(title='IABV v1.5', app_name='python.exe'),
+        ],
+    )
+    env = EnvironmentSelfModel(
+        environment_id='test-env',
+        hardware_profile={'cpu': 'i7', 'ram_total_gb': 16},
+        runtime_profile={'python_version': '3.13', 'os': 'Windows 11'},
+    )
+
+    prompt = builder.build_compact(
+        world_model=world_model,
+        env_self_model=env,
+        governance_rules={'autonomy_level': 'autonomous_local', 'recommended_action': 'continue_local'},
+    )
+
+    assert len(prompt) <= 3500
+    assert 'PERMISOS OPERATIVOS' in prompt
+    assert 'Contrato de razonamiento compacto' in prompt
+    assert 'ChatGPT - Chrome' in prompt
+    assert 'Herramientas disponibles' not in prompt
+
+
 def test_prompt_includes_self_examination_findings() -> None:
     """Self-examination snapshot with findings renders in the prompt."""
     builder = SystemPromptBuilder()

@@ -54,7 +54,26 @@ from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 
 
 _LOCAL_CHAT_PACK_IDS = frozenset({'knowledge.query', 'general.assistance'})
-_LOCAL_CHAT_INTENT_KEYS = frozenset({'knowledge.query', 'general.assistance'})
+_LOCAL_CHAT_INTENT_KEYS = frozenset({
+    'knowledge.query',
+    'general.assistance',
+    'system.self_awareness',
+    'system.metacognition',
+    'analytics.strategy',
+    'customer.support',
+    'research.local',
+})
+_ALWAYS_LOCAL_CHAT_INTENT_KEYS = frozenset({
+    'knowledge.query',
+    'general.assistance',
+    'system.self_awareness',
+    'system.metacognition',
+})
+_CONDITIONAL_LOCAL_CHAT_INTENT_KEYS = frozenset({
+    'analytics.strategy',
+    'customer.support',
+    'research.local',
+})
 _LOCAL_CHAT_ROLES = frozenset({TaskRole.KNOWLEDGE, TaskRole.ANALYTICS, TaskRole.RESEARCH})
 
 
@@ -112,13 +131,41 @@ def _synaptic_task_kind_from_intent(intent: TaskIntent | None) -> str:
 def _is_local_chat_flow(session: AdaptiveSession) -> bool:
     pack_id = session.chosen_pack_id or ''
     intent_key = session.intent.intent_key or ''
+    metadata = dict(getattr(session.intent, 'metadata', None) or {})
+    primary_intent = str(metadata.get('primary_intent') or '').strip()
+    if primary_intent in {'project.evolution', 'research.external_consultation', 'browser.search', 'browser.navigate'}:
+        return False
     if pack_id in _LOCAL_CHAT_PACK_IDS:
         return True
+    if intent_key in _ALWAYS_LOCAL_CHAT_INTENT_KEYS:
+        return True
+    if intent_key in _CONDITIONAL_LOCAL_CHAT_INTENT_KEYS:
+        context_metadata = dict(getattr(session.context, 'metadata', None) or {})
+        local_chat_markers = {
+            'conversational_prompt',
+            'self_awareness_prompt',
+            'metacognitive_prompt',
+            'local_reasoning_prompt',
+            'strategy_question',
+        }
+        if any(bool(metadata.get(key) or context_metadata.get(key)) for key in local_chat_markers):
+            return True
+        return False
     if intent_key in _LOCAL_CHAT_INTENT_KEYS:
         return True
     if session.intent.detected_role in _LOCAL_CHAT_ROLES and not pack_id:
+        if primary_intent in {'project.evolution', 'research.external_consultation', 'browser.search', 'browser.navigate'}:
+            return False
         return True
     return False
+
+
+def _effective_governance_intent_key(intent: TaskIntent) -> str:
+    metadata = dict(getattr(intent, 'metadata', None) or {})
+    primary_intent = str(metadata.get('primary_intent') or '').strip()
+    if primary_intent in {'project.evolution', 'research.external_consultation', 'browser.search', 'browser.navigate'}:
+        return primary_intent
+    return str(getattr(intent, 'intent_key', '') or '')
 
 
 def _mask_email(email: str) -> str:
@@ -2699,16 +2746,27 @@ class AdaptiveTaskOrchestrator:
         self_examination = self._self_examination_snapshot()
 
         prompt_builder = SystemPromptBuilder()
-        system_prompt = prompt_builder.build(
-            perception=None,
-            world_model=world_model,
-            env_self_model=env_self_model,
-            portable_context=portable_context,
-            tool_registry=tool_cards,
-            governance_rules=governance_snapshot,
-            control_master_digest=control_master_digest,
-            self_examination=self_examination,
-        )
+        provider_model = self._local_chat_provider_model_name(provider)
+        small_model = self._is_small_local_chat_model(provider_model)
+        if small_model:
+            system_prompt = prompt_builder.build_compact(
+                world_model=world_model,
+                env_self_model=env_self_model,
+                governance_rules=governance_snapshot,
+            )
+            system_prompt_mode = 'compact'
+        else:
+            system_prompt = prompt_builder.build(
+                perception=None,
+                world_model=world_model,
+                env_self_model=env_self_model,
+                portable_context=portable_context,
+                tool_registry=tool_cards,
+                governance_rules=governance_snapshot,
+                control_master_digest=control_master_digest,
+                self_examination=self_examination,
+            )
+            system_prompt_mode = 'full'
         system_prompt_hash = SystemPromptBuilder.prompt_hash(system_prompt)
 
         enriched_request = self._inject_system_prompt(request, system_prompt)
@@ -2720,6 +2778,9 @@ class AdaptiveTaskOrchestrator:
                 'summary': '', 'provider_name': getattr(provider, 'name', ''),
                 'available': True, 'error': str(exc),
                 'system_prompt_hash': system_prompt_hash,
+                'system_prompt_mode': system_prompt_mode,
+                'system_prompt_chars': len(system_prompt),
+                'provider_model': provider_model,
                 'tool_calls_made': [], 'iterations': 0,
             }
         initial_summary = str(getattr(result, 'summary', '') or '').strip()
@@ -2728,6 +2789,9 @@ class AdaptiveTaskOrchestrator:
                 'summary': '', 'provider_name': getattr(result, 'provider_name', '') or getattr(provider, 'name', ''),
                 'available': True, 'error': 'empty_summary',
                 'system_prompt_hash': system_prompt_hash,
+                'system_prompt_mode': system_prompt_mode,
+                'system_prompt_chars': len(system_prompt),
+                'provider_model': provider_model,
                 'tool_calls_made': [], 'iterations': 0,
             }
 
@@ -2752,9 +2816,32 @@ class AdaptiveTaskOrchestrator:
             'available': True,
             'error': '',
             'system_prompt_hash': system_prompt_hash,
+            'system_prompt_mode': system_prompt_mode,
+            'system_prompt_chars': len(system_prompt),
+            'provider_model': provider_model,
             'tool_calls_made': tool_calls_made,
             'iterations': iterations,
         }
+
+    @staticmethod
+    def _local_chat_provider_model_name(provider: Any) -> str:
+        for attr in ('model', '_model', 'model_name', '_model_name', 'executor_model'):
+            value = getattr(provider, attr, '')
+            if value:
+                return str(value)
+        return ''
+
+    @staticmethod
+    def _is_small_local_chat_model(model_name: str) -> bool:
+        normalized = str(model_name or '').lower()
+        if not normalized:
+            return False
+        compact_markers = (
+            '0.5b', '0.6b', '1b', '1.5b', '2b', '3b', '4b',
+            '7b', '8b', ':1.', ':2', ':3', ':4', ':7', ':8',
+            'mini', 'small',
+        )
+        return any(marker in normalized for marker in compact_markers)
 
     @staticmethod
     def _inject_system_prompt(request: InferenceRequest, system_prompt: str) -> InferenceRequest:
@@ -2889,7 +2976,7 @@ class AdaptiveTaskOrchestrator:
             capability_snapshot=session.capability_readiness,
             approval_pending=bool(session.approval_checkpoints),
             goal_context=goal_context,
-            intent_key=session.intent.intent_key,
+            intent_key=_effective_governance_intent_key(session.intent),
             intent_disposition=session.intent.disposition.value,
             external_state_flags=external_state_flags,
             preferred_assistant_kind=historical_preferred_assistant_kind,
@@ -3011,7 +3098,7 @@ class AdaptiveTaskOrchestrator:
             capability_snapshot=capability_snapshot,
             approval_pending=bool(payload.get('approval_checkpoints') or []),
             goal_context=context.goal_context,
-            intent_key=intent.intent_key,
+            intent_key=_effective_governance_intent_key(intent),
             intent_disposition=intent.disposition.value,
             external_state_flags=list((dict(metadata.get('perception_snapshot') or {}).get('external_state_flags') or metadata.get('external_state_flags') or [])),
             preferred_assistant_kind=historical_preferred_assistant_kind,

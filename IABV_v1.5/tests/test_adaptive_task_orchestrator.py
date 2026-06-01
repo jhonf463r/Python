@@ -510,6 +510,63 @@ def test_autonomy_governance_policy_blocks_codex_when_world_model_reports_wrong_
     assert 'workspace' in ' '.join(governance['blockers']).lower()
 
 
+def test_autonomy_governance_self_awareness_ignores_stale_external_blocks() -> None:
+    policy = AutonomyGovernancePolicy()
+
+    governance = policy.evaluate(
+        user_goal='me entiendes y que sabes de tu metacognicion',
+        session_status=AdaptiveSessionStatus.PLANNED.value,
+        session_readiness={},
+        live_audit={},
+        assistant_guidance={'mode': 'browser_security_verification'},
+        capability_snapshot=[],
+        approval_pending=False,
+        intent_key='system.self_awareness',
+        intent_disposition='answer_now',
+        external_state_flags=['wrong_thread', 'capture_unverified'],
+        world_model=WorldModelSnapshot(
+            focused_window=WindowObservation(title='Codex - otro hilo', app_name='Codex', pid=45, focused=True),
+            tool_live_status=[
+                ToolLiveStatus(
+                    tool_id='codex_installed',
+                    title='Codex instalado',
+                    assistant_kind='codex',
+                    available=True,
+                    status='abierto',
+                    thread_status='otro_hilo_activo',
+                )
+            ],
+            network_status=NetworkStatusSnapshot(connected=True, status='conectado', quality='buena'),
+        ),
+    )
+
+    assert governance['recommended_action'] == 'continue_local'
+    assert governance['autonomy_level'] == 'autonomous_local'
+    assert governance['block_risky_action'] is False
+    assert governance['blockers'] == []
+
+
+def test_autonomy_governance_metacognition_plan_is_local() -> None:
+    policy = AutonomyGovernancePolicy()
+
+    governance = policy.evaluate(
+        user_goal='organiza un plan para mejorar tu metacognicion',
+        session_status=AdaptiveSessionStatus.PLANNED.value,
+        session_readiness={},
+        live_audit={},
+        assistant_guidance={},
+        capability_snapshot=[],
+        approval_pending=False,
+        intent_key='system.metacognition',
+        intent_disposition='plan_then_execute',
+        external_state_flags=['browser_security_verification'],
+    )
+
+    assert governance['recommended_action'] == 'continue_local'
+    assert governance['autonomy_level'] == 'autonomous_local'
+    assert 'metacognitiva' in governance['reason']
+
+
 def test_adaptive_orchestrator_preflight_requires_observation_permission_for_codex() -> None:
     orchestrator, episodes = _orchestrator(_workspace('adaptive_preflight_permission'))
     _seed_wplay_teaching(episodes)
@@ -564,6 +621,60 @@ def test_adaptive_orchestrator_preflight_requires_observation_permission_for_cod
     assert preflight['governance']['recommended_action'] == 'request_observation_permission'
     assert preflight['approval_checkpoints']
     assert preflight['approval_checkpoints'][0]['phase_key'] == 'observation_permission'
+
+
+def test_adaptive_orchestrator_preflight_does_not_reask_granted_observation_permission() -> None:
+    orchestrator, episodes = _orchestrator(_workspace('adaptive_preflight_permission_granted'))
+    _seed_wplay_teaching(episodes)
+
+    class FakeWorldModelService:
+        def current_model(self) -> WorldModelSnapshot:
+            return self.request_refresh(reason='manual', full=False)
+
+        def request_refresh(self, *, reason: str = 'manual', full: bool = False) -> WorldModelSnapshot:
+            return WorldModelSnapshot(
+                active_windows=[WindowObservation(title='Codex - IABV', app_name='Codex', pid=91, focused=True)],
+                focused_window=WindowObservation(title='Codex - IABV', app_name='Codex', pid=91, focused=True),
+                tool_live_status=[
+                    ToolLiveStatus(
+                        tool_id='codex_installed',
+                        title='Codex instalado',
+                        assistant_kind='codex',
+                        available=True,
+                        status='abierto',
+                        detail='Permiso concedido.',
+                        thread_status='correcto_probable',
+                        session_status='abierta',
+                        messages_status='desconocidos',
+                        permission_state='concedido',
+                        probe_status='permiso_concedido_esperando_probe',
+                    )
+                ],
+                network_status=NetworkStatusSnapshot(connected=True, status='conectado', quality='buena'),
+                permission_gates=[
+                    ObservationPermissionGate(
+                        scope='observe_window_content:codex',
+                        assistant_kind='codex',
+                        status='concedido',
+                        title='Observacion de Codex',
+                        detail='Permiso concedido por el usuario.',
+                        required_for=['consult_codex'],
+                        granted=True,
+                    )
+                ],
+                confidence=0.83,
+            )
+
+    orchestrator.context_assembler.world_model_service = FakeWorldModelService()
+
+    preflight = orchestrator.preflight_external_assistant(
+        user_goal='consulta con codex este incidente tecnico',
+        assistant_kind='codex',
+    )
+
+    assert preflight['governance']['recommended_action'] != 'request_observation_permission'
+    assert preflight['governance']['approval_required'] is False
+    assert preflight['approval_checkpoints'] == []
 
 
 def test_adaptive_orchestrator_approval_action_advances_session() -> None:

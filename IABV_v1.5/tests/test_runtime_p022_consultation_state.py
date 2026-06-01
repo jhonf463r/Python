@@ -45,6 +45,7 @@ def _make_stub_vm():
         '_is_operational_status_question',
         '_try_resolve_pending_observation_permission',
         '_is_resource_pressure_block',
+        '_is_security_verification_preflight_block',
         '_humanize_task_failure',
         '_human_external_consultation_failure',
         '_should_defer_heavy_work',
@@ -144,6 +145,7 @@ def _make_blocked_result_stub():
     for name in (
         '_blocked_external_consultation_result',
         '_guidance_for_external_preflight_block',
+        '_format_human_assist_message',
         '_assistant_action',
     ):
         method = getattr(ControlCenterViewModel, name, None)
@@ -513,6 +515,61 @@ class TestResourcePressureBlockMapsToDeferredTerminal:
         assert result['terminal_state'] == 'failed_with_actionable_reason'
         assert result['block_type'] == 'governance'
 
+    def test_security_verification_preflight_creates_human_assist_block(self) -> None:
+        vm = _make_blocked_result_stub()
+        calls: list[dict] = []
+        vm._create_active_incident_frame = lambda **kw: calls.append(kw)
+        preflight = {
+            'reason': 'ChatGPT quedo bloqueado por una verificacion de seguridad del sitio.',
+            'governance': {
+                'diagnostic_category': 'browser_security_verification',
+                'external_state_flags': ['browser_security_verification'],
+                'reason': 'ChatGPT quedo bloqueado por una verificacion de seguridad del sitio.',
+            },
+            'world_model_summary': {
+                'detected_blocks': ['browser_security_verification'],
+                'block_records': [
+                    {
+                        'block_type': 'browser_security_verification',
+                        'assistant_kind': 'chatgpt',
+                        'target_scope': 'consult_chatgpt',
+                    },
+                ],
+            },
+        }
+
+        result = vm._blocked_external_consultation_result(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            preflight=preflight,
+        )
+
+        assert result['terminal_state'] == 'blocked_by_security_verification'
+        assert result['block_type'] == 'browser_security_verification'
+        assert result['external_state_flags'] == ['browser_security_verification']
+        assert 'IABV ve:' in result['message']
+        assert 'permito observar ChatGPT' in result['message']
+        assert calls and calls[0]['block_type'] == 'browser_security_verification'
+        ext = result['payload']['metadata']['external_consultation']
+        assert ext['terminal_state'] == 'blocked_by_security_verification'
+
+    def test_security_verification_guidance_uses_human_assist_bridge(self) -> None:
+        vm = _make_blocked_result_stub()
+        guidance = vm._guidance_for_external_preflight_block(
+            assistant_kind='chatgpt',
+            assistant_title='ChatGPT',
+            governance={
+                'diagnostic_category': 'browser_security_verification',
+                'reason': 'verificacion de seguridad',
+                'external_state_flags': ['browser_security_verification'],
+            },
+            approval_checkpoints=[],
+        )
+        assert guidance['mode'] == 'human_assist_bridge'
+        action_keys = [item['action'] for item in guidance['actions']]
+        assert 'show_problem_window' in action_keys
+        assert 'launch_governed_browser_session' in action_keys
+
     def test_apply_task_result_traces_resource_pressure(self) -> None:
         """_apply_task_result must trace terminal_state as
         blocked_by_resource_pressure when the result payload has it."""
@@ -533,6 +590,35 @@ class TestResourcePressureBlockMapsToDeferredTerminal:
         assert len(vm._traced_calls) == 1
         trace = vm._traced_calls[0]
         assert trace['terminal_state'] == 'blocked_by_resource_pressure'
+
+    def test_apply_task_result_schedules_dev_packet_off_ui_thread(self) -> None:
+        """Post-result development packet refresh must be deferred.
+
+        Live Windows evidence showed ``_refresh_development_packet`` reading
+        dossier JSON on the UI thread after a ChatGPT attempt, causing a
+        38s stall.  _apply_task_result should schedule that refresh instead.
+        """
+        vm = _make_apply_result_stub()
+        scheduled: list[dict[str, object]] = []
+        vm._schedule_idle_dev_packet_refresh = lambda **kw: scheduled.append(dict(kw))
+
+        def _forbidden_sync_refresh(*_a, **_kw):
+            raise AssertionError('sync _refresh_development_packet should not run in _apply_task_result')
+
+        vm._refresh_development_packet = _forbidden_sync_refresh
+        vm._apply_task_result(
+            'external_consultation',
+            {
+                'success': False,
+                'message': 'ChatGPT blocked by browser_security_verification.',
+                'meta': 'ChatGPT: blocked_by_security_verification',
+                'terminal_state': 'blocked_by_security_verification',
+                'assistant_title': 'ChatGPT',
+                'external_state_flags': ['browser_security_verification'],
+            },
+        )
+
+        assert scheduled == [{'reason': 'post_task_result'}]
 
     def test_is_resource_pressure_block_static(self) -> None:
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel

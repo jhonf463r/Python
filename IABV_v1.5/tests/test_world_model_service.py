@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
+from unittest.mock import MagicMock, patch
 
 from iabv_v15.domain.models import (
     BackgroundProcessSnapshot,
@@ -203,6 +204,25 @@ def test_world_model_service_emits_permission_gate_and_route_block_for_codex_pro
         assert any(item.block_type == 'permission_required' and item.target_scope == 'consult_codex' for item in snapshot.block_records)
         assert 'permission_required:observe_window_content:codex' in snapshot.detected_blocks
         assert 'permission_registry' in snapshot.observation_sources
+
+        service.grant_observation_permission(
+            scope='observe_window_content:codex',
+            assistant_kind='codex',
+            title='Observacion de Codex',
+            detail='Permiso concedido por el usuario.',
+            granted_by='test',
+        )
+        refreshed = service.scan_now(reason='manual_after_permission', full=True)
+
+        assert refreshed.permission_gates
+        assert refreshed.permission_gates[0].status == 'concedido'
+        assert refreshed.permission_gates[0].granted is True
+        assert refreshed.permission_gates[0].metadata.get('permission_record_granted') is True
+        assert not any(
+            item.block_type == 'permission_required' and item.target_scope == 'consult_codex'
+            for item in refreshed.block_records
+        )
+        assert 'permission_required:observe_window_content:codex' not in refreshed.detected_blocks
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
@@ -269,6 +289,72 @@ def test_world_model_service_blocks_heavy_local_route_when_cpu_pressure_is_detec
         assert 'UNRESOLVED:gpu_process_usage' in snapshot.unresolved_fields
         assert any(item.block_type == 'cpu_heavy' and item.target_scope == 'heavy_local_model' for item in snapshot.block_records)
         assert any(item.get('target_scope') == 'heavy_local_model' for item in snapshot.inferred_state.get('blocked_routes', []))
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_world_model_background_processes_preserves_browser_processes_not_in_top_cpu() -> None:
+    workspace = _workspace('world_model_browser_process_inventory')
+    try:
+        service = WorldModelService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+
+        def fake_powershell_json(command: str):
+            if 'Get-Process -Name' in command:
+                return {
+                    'Name': 'msedge',
+                    'IDProcess': 10636,
+                    'PercentProcessorTime': 0.0,
+                    'WorkingSetPrivate': 300 * 1024 * 1024,
+                }
+            return {
+                'Name': 'python-heavy',
+                'IDProcess': 5150,
+                'PercentProcessorTime': 92.0,
+                'WorkingSetPrivate': 512 * 1024 * 1024,
+            }
+
+        service._powershell_json = fake_powershell_json  # type: ignore[method-assign]
+
+        processes = service._background_processes(full=True)
+        names = {item.process_name for item in processes}
+        edge = next(item for item in processes if item.process_name == 'msedge')
+
+        assert 'python-heavy' in names
+        assert 'msedge' in names
+        assert edge.metadata.get('browser_process_candidate') is True
+        assert 'ventana visible' in edge.metadata.get('observation_note', '')
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_world_model_browser_processes_fallback_to_tasklist_when_powershell_times_out() -> None:
+    workspace = _workspace('world_model_browser_tasklist_fallback')
+    try:
+        service = WorldModelService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        service._powershell_json = lambda _command: None  # type: ignore[method-assign]
+        tasklist_output = (
+            '"Image Name","PID","Session Name","Session#","Mem Usage"\n'
+            '"msedge.exe","10636","Console","1","38,556 K"\n'
+        )
+        completed = SimpleNamespace(returncode=0, stdout=tasklist_output)
+
+        with patch('iabv_v15.services.evolution.world_model_service.os.name', 'nt'), \
+                patch('iabv_v15.services.evolution.world_model_service.subprocess.run', MagicMock(return_value=completed)):
+            processes = service._background_processes(full=True)
+
+        edge = next(item for item in processes if item.process_name == 'msedge')
+        assert edge.pid == 10636
+        assert edge.metadata.get('browser_process_candidate') is True
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 

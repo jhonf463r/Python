@@ -1,0 +1,30 @@
+{
+  "id": "runtime_security_preflight_human_assist_p079",
+  "title": "P0.79: Security preflight human-assist binding",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Convert browser_security_verification preflight blocks into an active incident with a concrete visual/human-assist action instead of a generic route-blocked response.",
+  "reason": "Live audit showed the permission loop was resolved, but the next run stopped on a stale or unbound browser_security_verification block. The user then wrote 'permito observar ChatGPT', but no observation checkpoint was pending and the message fell into a generic follow-up path.",
+  "dependency_missing": "",
+  "next_action": "Live Windows proof: ask 'has una consulta en ChatGPT: responde solo S si entiendes'. If security_verification blocks preflight, IABV must show the four-line human-assist message, create an active incident, and handle 'permito observar ChatGPT' as a window/help action instead of local chat.",
+  "resume_hint": "P0.79 adds _is_security_verification_preflight_block(), maps security preflight to terminal_state blocked_by_security_verification, stores external_consultation metadata, creates ActiveIncidentFrame, and binds 'permito/autorizo observar ChatGPT' to show_problem_window/human-assist actions.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "root_cause": "Security verification from WorldModel/tool history was treated as final governance block without creating an active incident or a target-window action. Follow-up permission phrases had no pending permission gate to resolve.",
+    "evidence": [
+      "runtime_audit showed observation permission granted, then preflight stopped on browser_security_verification",
+      "UI response said route was blocked before launch instead of offering a concrete visual action",
+      "follow-up 'permito observar ChatGPT' was classified as no actionable incident"
+    ],
+    "files_touched": [
+      "src/iabv_v15/ui/viewmodels/control_center_viewmodel.py",
+      "tests/test_runtime_p022_consultation_state.py",
+      "tests/test_runtime_p073_semantic_action_binding.py"
+    ],
+    "unresolved": [
+      "live_windows_chatgpt_security_preflight_handoff",
+      "live_visible_or_governed_window_capture_after_user_grant"
+    ]
+  }
+}

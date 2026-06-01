@@ -12,11 +12,15 @@ from pathlib import Path
 from uuid import uuid4
 
 from iabv_v15.domain.models import (
+    AdaptiveSession,
     InferenceRequest,
     InferenceResult,
+    IntentDisposition,
     ProviderHealth,
     ProviderStatus,
     ReasoningMode,
+    TaskIntent,
+    TaskRole,
 )
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
@@ -63,10 +67,11 @@ from iabv_v15.services.training.pbt_control_service import PBTControlService
 class _RecordingProvider(LLMProvider):
     """Deterministic provider used to observe whether ``answer_user`` fires."""
 
-    def __init__(self, *, name: str, answer: str, available: bool = True) -> None:
+    def __init__(self, *, name: str, answer: str, available: bool = True, model: str = 'recording-model') -> None:
         self._name = name
         self._answer = answer
         self._available = available
+        self.model = model
         self.answer_user_calls: list[InferenceRequest] = []
 
     @property
@@ -314,3 +319,99 @@ def test_non_chat_flow_does_not_invoke_llm() -> None:
     assert 'should not be used for wplay login' not in result.summary
     local_chat_llm = result.raw_output.get('local_chat_llm') or {}
     assert local_chat_llm == {}
+
+
+def test_metacognitive_intent_invokes_local_llm_directly() -> None:
+    provider = _RecordingProvider(
+        name='Ollama',
+        answer='Uso WorldModel, OSES, contexto portable y pruebas antes de responder.',
+        available=True,
+    )
+    orchestrator = _build_orchestrator(
+        _workspace('adaptive_local_chat_llm_metacognition'),
+        general_provider=provider,
+    )
+    request = InferenceRequest(
+        user_goal='me entiendes y que evidencia tienes de tu metacognicion',
+        auto_route=True,
+    )
+    session = AdaptiveSession(
+        user_goal=request.user_goal,
+        intent=TaskIntent(
+            intent_key='system.metacognition',
+            disposition=IntentDisposition.ANSWER_NOW,
+            detected_role=TaskRole.KNOWLEDGE,
+        ),
+    )
+
+    llm_chat = orchestrator._maybe_invoke_local_chat_llm(session=session, request=request)
+
+    assert llm_chat is not None
+    assert llm_chat['summary'] == 'Uso WorldModel, OSES, contexto portable y pruebas antes de responder.'
+    assert len(provider.answer_user_calls) == 1
+    assert provider.answer_user_calls[0].metadata.get('system_prompt_override')
+
+
+def test_expanded_local_chat_intents_are_llm_eligible() -> None:
+    provider = _RecordingProvider(name='Ollama', answer='respuesta local', available=True)
+    orchestrator = _build_orchestrator(
+        _workspace('adaptive_local_chat_llm_expanded_intents'),
+        general_provider=provider,
+    )
+    request = InferenceRequest(user_goal='dame una estrategia local para entender esto', auto_route=True)
+
+    for intent_key in (
+        'system.self_awareness',
+        'system.metacognition',
+        'analytics.strategy',
+        'customer.support',
+        'research.local',
+    ):
+        metadata = {}
+        if intent_key in {'analytics.strategy', 'customer.support', 'research.local'}:
+            metadata['conversational_prompt'] = True
+        session = AdaptiveSession(
+            user_goal=request.user_goal,
+            intent=TaskIntent(
+                intent_key=intent_key,
+                disposition=IntentDisposition.ANSWER_NOW,
+                detected_role=TaskRole.KNOWLEDGE,
+                metadata=metadata,
+            ),
+        )
+        llm_chat = orchestrator._maybe_invoke_local_chat_llm(session=session, request=request)
+        assert llm_chat is not None, intent_key
+        assert llm_chat['summary'] == 'respuesta local'
+
+    assert len(provider.answer_user_calls) == 5
+
+
+def test_small_local_model_receives_compact_system_prompt() -> None:
+    provider = _RecordingProvider(
+        name='Ollama',
+        answer='respuesta compacta',
+        available=True,
+        model='qwen3:8b',
+    )
+    orchestrator = _build_orchestrator(
+        _workspace('adaptive_local_chat_llm_compact_prompt'),
+        general_provider=provider,
+    )
+    request = InferenceRequest(user_goal='que sabes de tu estado vivo', auto_route=True)
+    session = AdaptiveSession(
+        user_goal=request.user_goal,
+        intent=TaskIntent(
+            intent_key='system.self_awareness',
+            disposition=IntentDisposition.ANSWER_NOW,
+            detected_role=TaskRole.KNOWLEDGE,
+        ),
+    )
+
+    llm_chat = orchestrator._maybe_invoke_local_chat_llm(session=session, request=request)
+
+    assert llm_chat is not None
+    assert llm_chat['system_prompt_mode'] == 'compact'
+    assert llm_chat['system_prompt_chars'] <= 3500
+    prompt = provider.answer_user_calls[0].metadata['system_prompt_override']
+    assert 'PERMISOS OPERATIVOS' in prompt
+    assert 'Contrato de razonamiento compacto' in prompt

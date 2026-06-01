@@ -1,0 +1,25 @@
+{
+  "id": "runtime_post_consultation_ui_stall_p081",
+  "title": "P0.81: Post-consultation UI stall and security handoff learning",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Prevent post-result development packet refresh from running on the UI thread and preserve a structured active incident when ChatGPT returns browser_security_verification after dispatch.",
+  "reason": "Live runtime audit on 2026-06-01 showed a 38842ms UI event loop stall after a ChatGPT attempt. Stack trace: _apply_task_result -> _refresh_development_packet -> build_codex_packet -> execution_dossier_repository.list_recent(limit=120) -> JSON load. The same run also blocked ChatGPT with browser_security_verification and no live target window.",
+  "dependency_missing": "",
+  "next_action": "Live Windows proof: run a ChatGPT consultation from the desktop shortcut. The terminal state may still be blocked_by_security_verification, but the UI must not stall on post-result packet refresh and follow-up messages like 'hazlo tu' or 'muestrame la ventana' must use the active incident frame.",
+  "resume_hint": "P0.81 adds _schedule_idle_dev_packet_refresh(), uses it from _apply_task_result/_apply_task_failure/buildDevelopmentPacket, and creates an ActiveIncidentFrame for browser_security_verification returned by the external consultation result path.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence": {
+      "runtime_path": "C:\\Python\\IABV_v1.5_verified_main\\IABV_v1.5",
+      "worst_stall_ms": 38842,
+      "stall_stack": "_apply_task_result -> _refresh_development_packet -> build_codex_packet -> list_recent(limit=120) -> json.loads",
+      "chatgpt_block": "browser_security_verification with window_count=0/process_count=0"
+    },
+    "unresolved": [
+      "live_windows_post_consultation_no_stall",
+      "live_chatgpt_human_assist_followup_after_security_block"
+    ]
+  }
+}
