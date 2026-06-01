@@ -318,6 +318,154 @@ def test_ui_execution_runner_detects_browser_security_verification() -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_ui_execution_runner_accepts_short_response_when_requested() -> None:
+    root = _workspace('ui_execution_runner_short_response')
+    try:
+        runner = UIExecutionRunner(str(root))
+
+        assert runner._captured_text_looks_useful(
+            captured_text='S',
+            prompt_text='responde solo S si entiendes',
+            previous_clipboard='',
+        ) is True
+        assert runner._captured_text_looks_useful(
+            captured_text='S',
+            prompt_text='explica el problema',
+            previous_clipboard='',
+        ) is False
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
+    root = _workspace('ui_execution_runner_shared_cdp')
+    try:
+        runner = UIExecutionRunner(str(root))
+        monkeypatch.setenv('IABV_PREFER_CDP_SESSION', '1')
+        monkeypatch.setenv('IABV_SHARED_CDP_URL', 'http://localhost:9223')
+        calls: list[str] = []
+
+        class _Locator:
+            def __init__(self, page, selector: str) -> None:
+                self.page = page
+                self.selector = selector
+                self.first = self
+
+            def count(self) -> int:
+                if self.selector == 'textarea':
+                    return 1
+                if self.selector == 'button[data-testid="send-button"]':
+                    return 1
+                if self.selector == '[data-message-author-role="assistant"]':
+                    return 1
+                return 0
+
+            def click(self, timeout: int = 0) -> None:
+                calls.append(f'click:{self.selector}')
+                if self.selector == 'button[data-testid="send-button"]':
+                    self.page.submitted = True
+
+            def fill(self, value: str) -> None:
+                calls.append(f'fill:{value}')
+                self.page.prompt = value
+
+            def all_inner_texts(self) -> list[str]:
+                return ['S'] if self.page.submitted else []
+
+            def inner_text(self, timeout: int = 0) -> str:
+                return 'ChatGPT Pregunta lo que quieras Enviar'
+
+        class _Page:
+            url = 'https://chatgpt.com/'
+
+            def __init__(self) -> None:
+                self.prompt = ''
+                self.submitted = False
+                self.keyboard = self
+
+            def title(self) -> str:
+                return 'ChatGPT'
+
+            def bring_to_front(self) -> None:
+                calls.append('bring_to_front')
+
+            def wait_for_load_state(self, *args, **kwargs) -> None:
+                return None
+
+            def locator(self, selector: str) -> _Locator:
+                return _Locator(self, selector)
+
+            def evaluate(self, *args, **kwargs) -> list[dict[str, object]]:
+                return [
+                    {'tag': 'TEXTAREA', 'placeholder': 'Pregunta lo que quieras', 'visible': True},
+                    {'tag': 'BUTTON', 'text': 'Enviar', 'visible': True},
+                ]
+
+            def press(self, key: str) -> None:
+                calls.append(f'press:{key}')
+
+        class _Context:
+            def __init__(self, page) -> None:
+                self.pages = [page]
+
+            def new_page(self):
+                return self.pages[0]
+
+        class _Browser:
+            def __init__(self, page) -> None:
+                self.contexts = [_Context(page)]
+
+            def new_context(self):
+                return self.contexts[0]
+
+        class _Chromium:
+            def __init__(self, page) -> None:
+                self.page = page
+
+            def connect_over_cdp(self, url: str):
+                calls.append(f'cdp:{url}')
+                return _Browser(self.page)
+
+        class _PW:
+            def __init__(self, page) -> None:
+                self.chromium = _Chromium(page)
+
+            def stop(self) -> None:
+                calls.append('pw.stop')
+
+        class _Sync:
+            def __init__(self, page) -> None:
+                self.page = page
+
+            def start(self):
+                return _PW(self.page)
+
+        fake_page = _Page()
+        monkeypatch.setattr(module, 'browser_sync_playwright', lambda: _Sync(fake_page))
+
+        captured = runner._capture_browser_dom_response(
+            launch_target='https://chatgpt.com/',
+            prompt_text='responde solo S',
+            response_wait_seconds=3,
+            browser_profile_dir=str(root / 'unused_profile'),
+            browser_headless=True,
+            input_selectors=['textarea'],
+            response_selectors=['[data-message-author-role="assistant"]'],
+            submit_selectors=['button[data-testid="send-button"]'],
+        )
+
+        assert captured['response_captured'] is True
+        assert captured['captured_text'] == 'S'
+        assert captured['capture_source'] == 'browser_dom_shared_cdp'
+        assert captured['metadata']['shared_cdp'] is True
+        assert calls[0] == 'cdp:http://127.0.0.1:9223'
+        assert 'pw.stop' in calls
+    finally:
+        monkeypatch.delenv('IABV_PREFER_CDP_SESSION', raising=False)
+        monkeypatch.delenv('IABV_SHARED_CDP_URL', raising=False)
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_ui_execution_runner_propagates_codex_state_missing_from_rollout_probe(monkeypatch) -> None:
     root = _workspace('ui_execution_runner_codex_state_missing')
     try:

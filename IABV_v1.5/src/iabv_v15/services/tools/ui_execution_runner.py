@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import time
@@ -769,16 +770,38 @@ class UIExecutionRunner:
 
     def _captured_text_looks_useful(self, *, captured_text: str, prompt_text: str, previous_clipboard: str) -> bool:
         text = str(captured_text or '').strip()
-        if len(text) < 24:
-            return False
         normalized = ' '.join(text.split()).lower()
         prompt_normalized = ' '.join(str(prompt_text or '').split()).lower()
         previous_normalized = ' '.join(str(previous_clipboard or '').split()).lower()
+        if len(text) < 24:
+            return self._short_response_was_requested(
+                captured_text=normalized,
+                prompt_text=prompt_normalized,
+            )
         if normalized == prompt_normalized or normalized == previous_normalized:
             return False
         if prompt_normalized and normalized.startswith(prompt_normalized) and len(normalized) <= len(prompt_normalized) + 16:
             return False
         return True
+
+    def _short_response_was_requested(self, *, captured_text: str, prompt_text: str) -> bool:
+        if not captured_text or captured_text == prompt_text:
+            return False
+        if len(captured_text) > 12:
+            return False
+        short_markers = (
+            'responde solo',
+            'responde únicamente',
+            'responde unicamente',
+            'solo responde',
+            'reply only',
+            'answer only',
+            'one word',
+            'una palabra',
+        )
+        if not any(marker in prompt_text for marker in short_markers):
+            return False
+        return bool(re.match(r'^[\w.,:;!?¿¡-]+$', captured_text, flags=re.IGNORECASE))
 
     def _capture_browser_dom_response(
         self,
@@ -811,6 +834,17 @@ class UIExecutionRunner:
                 'execution_ms': int((time.perf_counter() - started) * 1000),
                 'metadata': {'background_capture_mode': 'browser_dom'},
             }
+        if os.environ.get('IABV_PREFER_CDP_SESSION') == '1':
+            return self._capture_browser_dom_response_via_shared_cdp(
+                launch_target=launch_target,
+                prompt_text=prompt_text,
+                response_wait_seconds=response_wait_seconds,
+                input_selectors=input_selectors,
+                response_selectors=response_selectors,
+                submit_selectors=submit_selectors,
+                reingest_only=reingest_only,
+                started=started,
+            )
         controller = BrowserSessionController(user_data_dir=str(profile_dir), headless=browser_headless)
         launched = False
         prompt_pasted = False
@@ -919,6 +953,276 @@ class UIExecutionRunner:
                 'background_capture_mode': 'browser_dom',
                 'browser_headless': browser_headless,
                 'reingest_only': reingest_only,
+            },
+        }
+
+    def _capture_browser_dom_response_via_shared_cdp(
+        self,
+        *,
+        launch_target: str,
+        prompt_text: str,
+        response_wait_seconds: float,
+        input_selectors: list[str],
+        response_selectors: list[str],
+        submit_selectors: list[str],
+        reingest_only: bool,
+        started: float,
+    ) -> dict[str, Any]:
+        """Capture from the currently governed/user-approved CDP browser.
+
+        This closes the metacognitive gap between readiness and execution:
+        if readiness selected a CDP session, the runner must reuse that live
+        browser instead of opening a new isolated profile.  The method never
+        reads cookies/tokens/localStorage and does not close the user's Chrome.
+        """
+        cdp_url = self._shared_cdp_url()
+        launched = False
+        prompt_pasted = False
+        response_captured = False
+        captured_text = ''
+        focused_title = ''
+        error_message = ''
+        page_observation: dict[str, Any] = {}
+        pw = None
+        browser = None
+        try:
+            pw = browser_sync_playwright().start()
+            browser = self._connect_over_cdp_with_ipv4_fallback(pw, cdp_url)
+            context = (list(getattr(browser, 'contexts', []) or []) or [browser.new_context()])[0]
+            pages = list(getattr(context, 'pages', []) or [])
+            page = self._select_cdp_page(pages=pages, launch_target=launch_target)
+            if page is None:
+                page = context.new_page()
+                page.goto(launch_target, wait_until='domcontentloaded')
+            else:
+                try:
+                    page.bring_to_front()
+                except Exception:
+                    pass
+            launched = True
+            try:
+                page.wait_for_load_state('domcontentloaded', timeout=5000)
+            except Exception:
+                pass
+            focused_title = str(page.title() or '').strip()
+            page_observation = self._browser_page_observation(page, launch_target=launch_target)
+            if reingest_only:
+                pass
+            else:
+                input_selector = self._first_browser_selector(page, input_selectors)
+                if not input_selector:
+                    if self._browser_page_requires_security_verification(page):
+                        error_message = 'browser_security_verification'
+                    elif self._browser_page_requires_login(page):
+                        error_message = 'assistant_login_required'
+                    else:
+                        error_message = 'browser_input_missing'
+                    return self._browser_dom_result(
+                        launched=launched,
+                        focused=True,
+                        focused_title=focused_title,
+                        prompt_pasted=False,
+                        response_captured=False,
+                        captured_text='',
+                        capture_source='browser_dom_shared_cdp',
+                        error_message=error_message,
+                        started=started,
+                        metadata={
+                            'background_capture_mode': 'browser_dom',
+                            'shared_cdp': True,
+                            'cdp_url': cdp_url,
+                            'page_observation': page_observation,
+                        },
+                    )
+                self._fill_browser_prompt(page, input_selector, prompt_text)
+                prompt_pasted = True
+                page_observation = self._browser_page_observation(
+                    page,
+                    launch_target=launch_target,
+                    prompt_pasted=True,
+                )
+                self._submit_browser_prompt(page, submit_selectors)
+            deadline = time.monotonic() + max(3.0, response_wait_seconds)
+            stable_hits = 0
+            last_text = ''
+            while time.monotonic() < deadline:
+                time.sleep(1.0)
+                candidate = self._latest_browser_response_text(page, response_selectors)
+                if not self._captured_text_looks_useful(captured_text=candidate, prompt_text=prompt_text, previous_clipboard=''):
+                    continue
+                if candidate == last_text:
+                    stable_hits += 1
+                else:
+                    last_text = candidate
+                    stable_hits = 1
+                if stable_hits >= 2:
+                    captured_text = candidate
+                    response_captured = True
+                    break
+            if not response_captured and not error_message:
+                error_message = 'browser_dom_capture_pending'
+        except Exception as exc:
+            error_message = f'{type(exc).__name__}: {exc}'
+        finally:
+            try:
+                if pw is not None:
+                    pw.stop()
+            except Exception:
+                pass
+        return self._browser_dom_result(
+            launched=launched,
+            focused=launched,
+            focused_title=focused_title,
+            prompt_pasted=prompt_pasted,
+            response_captured=response_captured,
+            captured_text=captured_text,
+            capture_source='browser_dom_shared_cdp',
+            error_message=error_message,
+            started=started,
+            metadata={
+                'background_capture_mode': 'browser_dom',
+                'shared_cdp': True,
+                'cdp_url': cdp_url,
+                'reingest_only': reingest_only,
+                'page_observation': page_observation,
+            },
+        )
+
+    def _browser_dom_result(
+        self,
+        *,
+        launched: bool,
+        focused: bool,
+        focused_title: str,
+        prompt_pasted: bool,
+        response_captured: bool,
+        captured_text: str,
+        capture_source: str,
+        error_message: str,
+        started: float,
+        metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        enriched_metadata = dict(metadata or {})
+        page_observation = enriched_metadata.get('page_observation')
+        if isinstance(page_observation, dict):
+            try:
+                from iabv_v15.services.capture.universal_perception_service import UniversalPerceptionService
+
+                assistant_kind = self._assistant_kind_from_launch_target(
+                    str(page_observation.get('url') or page_observation.get('metadata', {}).get('launch_target') or '')
+                )
+                signal = UniversalPerceptionService().build_web_page_signal(
+                    dom_observation={
+                        **page_observation,
+                        'metadata': {
+                            **dict(page_observation.get('metadata') or {}),
+                            'prompt_pasted': prompt_pasted,
+                            'response_captured': response_captured,
+                            'captured_text': captured_text if response_captured else '',
+                        },
+                    },
+                    assistant_kind=assistant_kind,
+                    requested_target=assistant_kind,
+                )
+                enriched_metadata['visual_concepts'] = list(signal.metadata.get('visual_concepts') or [])
+                enriched_metadata['visual_concept_weights'] = dict(signal.metadata.get('concept_weights') or {})
+                enriched_metadata['visual_unresolved_fields'] = list(signal.unresolved_fields or [])
+                enriched_metadata['visual_available_actions'] = list(signal.available_actions or [])
+                enriched_metadata['visual_signal_confidence'] = signal.confidence
+            except Exception as exc:
+                enriched_metadata['visual_signal_error'] = f'{type(exc).__name__}: {exc}'
+        return {
+            'launched': launched,
+            'focused': focused,
+            'focused_title': focused_title,
+            'prompt_pasted': prompt_pasted,
+            'response_captured': response_captured,
+            'captured_text': captured_text if response_captured else '',
+            'captured_excerpt': captured_text[:400] if captured_text else '',
+            'capture_source': capture_source,
+            'error_message': error_message,
+            'browser_profile_dir': '',
+            'execution_ms': int((time.perf_counter() - started) * 1000),
+            'metadata': enriched_metadata,
+        }
+
+    def _assistant_kind_from_launch_target(self, launch_target: str) -> str:
+        target = str(launch_target or '').strip().lower()
+        if 'chatgpt' in target or 'openai' in target:
+            return 'chatgpt'
+        if 'claude' in target or 'anthropic' in target:
+            return 'claude'
+        if 'codex' in target:
+            return 'codex'
+        return ''
+
+    def _shared_cdp_url(self) -> str:
+        url = str(os.environ.get('IABV_SHARED_CDP_URL') or 'http://127.0.0.1:9222').strip()
+        if url.startswith('http://localhost:'):
+            url = url.replace('http://localhost:', 'http://127.0.0.1:', 1)
+        return url
+
+    def _connect_over_cdp_with_ipv4_fallback(self, pw: Any, cdp_url: str) -> Any:
+        try:
+            return pw.chromium.connect_over_cdp(cdp_url)
+        except Exception:
+            if 'localhost' in cdp_url:
+                return pw.chromium.connect_over_cdp(cdp_url.replace('localhost', '127.0.0.1', 1))
+            raise
+
+    def _select_cdp_page(self, *, pages: list[Any], launch_target: str) -> Any | None:
+        target = str(launch_target or '').strip().lower()
+        target_host = ''
+        if '://' in target:
+            try:
+                target_host = target.split('://', 1)[1].split('/', 1)[0].replace('www.', '')
+            except Exception:
+                target_host = ''
+        for page in pages:
+            try:
+                url = str(page.url or '').strip().lower()
+                title = str(page.title() or '').strip().lower()
+            except Exception:
+                continue
+            if target_host and target_host in url:
+                return page
+            if 'chatgpt' in target and ('chatgpt' in url or 'chatgpt' in title):
+                return page
+        return pages[0] if pages else None
+
+    def _browser_page_observation(self, page: Any, *, launch_target: str, prompt_pasted: bool = False) -> dict[str, Any]:
+        try:
+            elements = page.evaluate(
+                """() => [...document.querySelectorAll('textarea,input,button,[role=button],a,[contenteditable=true]')]
+                    .filter(el => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length))
+                    .slice(0, 80)
+                    .map(el => ({
+                        tag: el.tagName,
+                        text: (el.innerText || el.getAttribute('aria-label') || el.getAttribute('placeholder') || '').trim().slice(0, 200),
+                        aria: el.getAttribute('aria-label') || '',
+                        placeholder: el.getAttribute('placeholder') || '',
+                        role: el.getAttribute('role') || '',
+                        type: el.getAttribute('type') || '',
+                        disabled: !!el.disabled,
+                        visible: true,
+                    }))"""
+            )
+        except Exception:
+            elements = []
+        try:
+            body_text = str(page.locator('body').inner_text(timeout=1000) or '').strip()
+        except Exception:
+            body_text = ''
+        return {
+            'source': 'cdp',
+            'url': str(getattr(page, 'url', '') or ''),
+            'title': str(page.title() or '').strip() if hasattr(page, 'title') else '',
+            'body_text': body_text[:3000],
+            'interactive_elements': elements if isinstance(elements, list) else [],
+            'metadata': {
+                'cdp_url': self._shared_cdp_url(),
+                'prompt_pasted': prompt_pasted,
+                'launch_target': launch_target,
             },
         }
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import os
+import re
 import subprocess
 import threading
 import time
@@ -61,6 +62,153 @@ class UniversalPerceptionService:
             )
         return base_signal
 
+    def build_web_page_signal(
+        self,
+        *,
+        dom_observation: dict[str, Any] | None = None,
+        assistant_kind: str = "",
+        requested_target: str = "",
+        external_state_flags: list[str] | None = None,
+    ) -> VisualSignalSnapshot:
+        """Convert a live web page observation into universal visual concepts.
+
+        This is the shared perception contract for pages observed through CDP,
+        DOM, accessibility or OCR.  It does not automate the page and it does
+        not decide a route; it only names what is actually observable so other
+        layers can reason from grounded evidence instead of a screenshot alone.
+        """
+        observation = dict(dom_observation or {})
+        metadata = dict(observation.get("metadata") or {})
+        elements = self._normalize_web_elements(
+            observation.get("interactive_elements"),
+            observation.get("inputs"),
+            observation.get("elements"),
+            metadata.get("interactive_elements"),
+            metadata.get("inputs"),
+        )
+        body_text = self._first_text(
+            observation.get("body_text"),
+            observation.get("bodyText"),
+            observation.get("bodyTextSample"),
+            observation.get("body_text_sample"),
+            metadata.get("body_text"),
+            metadata.get("bodyTextSample"),
+        )
+        title = self._first_text(
+            observation.get("title"),
+            observation.get("latest_title"),
+            metadata.get("title"),
+            metadata.get("latest_title"),
+        )
+        url = self._first_text(
+            observation.get("url"),
+            observation.get("latest_url"),
+            metadata.get("url"),
+            metadata.get("latest_url"),
+        )
+        source_flags = canonical_external_state_flags(list(external_state_flags or []))
+        concepts, concept_weights = self._derive_web_concepts(
+            body_text=body_text,
+            title=title,
+            url=url,
+            elements=elements,
+            assistant_kind=assistant_kind,
+            requested_target=requested_target,
+            metadata=metadata,
+            external_state_flags=source_flags,
+        )
+        visible_targets = self._web_visible_targets(
+            title=title,
+            url=url,
+            concepts=concepts,
+            elements=elements,
+        )
+        unresolved_fields = self._web_unresolved_fields(
+            concepts=concepts,
+            elements=elements,
+            metadata=metadata,
+            body_text=body_text,
+            assistant_kind=assistant_kind,
+            requested_target=requested_target,
+        )
+        detected_blocks = self._unique_strings(
+            source_flags,
+            ["login_required"] if "login_screen_candidate" in concepts else [],
+            ["security_verification"] if "security_verification_candidate" in concepts else [],
+            ["target_missing"] if "target_missing" in concepts else [],
+        )
+        semantic_sources = self._unique_strings(
+            ["dom"] if body_text or elements else [],
+            ["cdp"] if observation.get("cdp_url") or metadata.get("cdp_url") or observation.get("source") == "cdp" else [],
+            ["accessibility"] if observation.get("accessibility_tree") or metadata.get("accessibility_tree") else [],
+            ["ocr"] if observation.get("ocr_text") or metadata.get("ocr_text") else [],
+        )
+        missing_sources = [
+            source
+            for source in ("dom", "cdp", "accessibility", "ocr")
+            if source not in semantic_sources
+        ]
+        dom_available = bool(body_text or elements or observation.get("dom_available") or metadata.get("dom_available"))
+        capture_available = bool(dom_available or observation.get("screenshot_path") or metadata.get("screenshot_path"))
+        confidence = self._web_concept_confidence(
+            concepts=concepts,
+            concept_weights=concept_weights,
+            unresolved_fields=unresolved_fields,
+            dom_available=dom_available,
+            element_count=len(elements),
+        )
+        return VisualSignalSnapshot(
+            source=str(observation.get("source") or metadata.get("source") or "web_page_observation"),
+            source_app=str(assistant_kind or requested_target or metadata.get("site_id") or "web_page"),
+            capture_available=capture_available,
+            dom_available=dom_available,
+            latest_url=url,
+            latest_title=title,
+            visible_targets=visible_targets,
+            login_detected="login_screen_candidate" in concepts,
+            learning_ready=bool(concepts and "low_information_capture" not in concepts),
+            cross_check_status="grounded" if dom_available and concepts else "unresolved",
+            visual_evidence_refs=self._unique_strings(
+                observation.get("visual_evidence_refs"),
+                metadata.get("visual_evidence_refs"),
+                [f"web:{title or url}"] if title or url else [],
+            )[:8],
+            visual_snapshot={
+                "status": "available" if capture_available else "no_disponible",
+                "capture_mode": str(observation.get("capture_mode") or metadata.get("capture_mode") or "web_dom_concept"),
+                "screen_capture": "available" if observation.get("screenshot_path") or metadata.get("screenshot_path") else "not_required",
+                "semantic_concepts": concepts,
+                "concept_weights": concept_weights,
+                "element_count": len(elements),
+                "body_text_length": len(body_text),
+                "window_title": title,
+            },
+            dom_summary={
+                "status": "available" if dom_available else "no_disponible",
+                "reason": "" if dom_available else "no_semantic_reader_available",
+                "dom_available": dom_available,
+                "node_count": int(observation.get("dom_node_count") or metadata.get("dom_node_count") or 0),
+                "interactive_element_count": len(elements),
+                "semantic_sources": semantic_sources,
+                "missing_semantic_sources": missing_sources,
+            },
+            available_actions=self._web_available_actions(concepts=concepts, elements=elements),
+            detected_blocks=detected_blocks,
+            confidence=confidence,
+            unresolved_fields=unresolved_fields,
+            metadata={
+                "source_context": "web_page_concept_resolver",
+                "assistant_kind": assistant_kind,
+                "requested_target": requested_target,
+                "visual_concepts": concepts,
+                "concept_weights": concept_weights,
+                "semantic_sources": semantic_sources,
+                "missing_semantic_sources": missing_sources,
+                "element_sample": elements[:12],
+                "body_text_sample": body_text[:500],
+            },
+        )
+
     def build_capture_signal(
         self,
         *,
@@ -73,6 +221,14 @@ class UniversalPerceptionService:
     ) -> VisualSignalSnapshot:
         summary = dict(replay_summary or {})
         metadata = dict(summary.get("metadata") or {})
+        web_observation = summary.get("web_dom_observation") or metadata.get("web_dom_observation")
+        if isinstance(web_observation, dict):
+            return self.build_web_page_signal(
+                dom_observation=web_observation,
+                assistant_kind=str(metadata.get("assistant_kind") or summary.get("assistant_kind") or ""),
+                requested_target=str(metadata.get("requested_target") or summary.get("requested_target") or site_id or ""),
+                external_state_flags=external_state_flags,
+            )
         session = dict(session_health or {})
         lane = dict(lane_summary or {})
         runtime = [dict(item) for item in (runtime_signals or []) if isinstance(item, dict)]
@@ -335,6 +491,240 @@ class UniversalPerceptionService:
             unresolved_fields=unresolved_fields,
             metadata=metadata,
         )
+
+    def _normalize_web_elements(self, *collections: Any) -> list[dict[str, Any]]:
+        elements: list[dict[str, Any]] = []
+        for collection in collections:
+            if not isinstance(collection, (list, tuple)):
+                continue
+            for raw in collection:
+                if not isinstance(raw, dict):
+                    continue
+                label = self._first_text(
+                    raw.get("text"),
+                    raw.get("aria"),
+                    raw.get("aria_label"),
+                    raw.get("placeholder"),
+                    raw.get("label"),
+                    raw.get("name"),
+                )
+                tag = str(raw.get("tag") or raw.get("tagName") or "").strip().lower()
+                role = str(raw.get("role") or "").strip().lower()
+                element = {
+                    "tag": tag,
+                    "role": role,
+                    "text": label[:200],
+                    "aria": str(raw.get("aria") or raw.get("aria_label") or "").strip()[:200],
+                    "placeholder": str(raw.get("placeholder") or "").strip()[:200],
+                    "type": str(raw.get("type") or "").strip().lower(),
+                    "disabled": bool(raw.get("disabled")),
+                    "visible": bool(raw.get("visible", True)),
+                    "rect": dict(raw.get("rect") or {}),
+                }
+                if element not in elements:
+                    elements.append(element)
+        return elements
+
+    def _derive_web_concepts(
+        self,
+        *,
+        body_text: str,
+        title: str,
+        url: str,
+        elements: list[dict[str, Any]],
+        assistant_kind: str,
+        requested_target: str,
+        metadata: dict[str, Any],
+        external_state_flags: list[str],
+    ) -> tuple[list[str], dict[str, float]]:
+        combined = self._normalize_text(
+            " ".join(
+                [
+                    body_text,
+                    title,
+                    url,
+                    " ".join(str(item.get("text") or "") for item in elements),
+                    " ".join(str(item.get("aria") or "") for item in elements),
+                    " ".join(str(item.get("placeholder") or "") for item in elements),
+                    " ".join(external_state_flags),
+                ]
+            )
+        )
+        concepts: list[str] = []
+        weights: dict[str, float] = {}
+
+        def add(name: str, weight: float) -> None:
+            if name not in concepts:
+                concepts.append(name)
+            weights[name] = max(float(weights.get(name, 0.0)), round(weight, 3))
+
+        target = self._normalize_text(requested_target or assistant_kind)
+        page_identity = self._normalize_text(f"{title} {url} {metadata.get('site_id', '')}")
+        if target and not any(token in page_identity for token in self._target_aliases(target)):
+            add("target_missing", 0.9)
+        elif page_identity:
+            add("target_bound", 0.82)
+
+        if self._contains_any(combined, ("captcha", "cloudflare", "security verification", "verificacion de seguridad", "verificación de seguridad", "verify you are not a bot", "checking your browser", "just a moment")):
+            add("security_verification_candidate", 0.95)
+        if self._contains_any(combined, ("iniciar sesion", "inicia sesion", "log in", "login", "sign in", "registrarse", "continue with google", "continuar con google", "obtén respuestas adaptadas")):
+            add("login_screen_candidate", 0.9)
+            add("unauthenticated_session", 0.86)
+
+        textboxes = [
+            item for item in elements
+            if item.get("visible")
+            and not item.get("disabled")
+            and (
+                item.get("tag") in {"textarea", "input"}
+                or item.get("role") == "textbox"
+                or self._contains_any(
+                    self._normalize_text(f"{item.get('text', '')} {item.get('aria', '')} {item.get('placeholder', '')}"),
+                    ("pregunta", "message", "mensaje", "chatear", "chat"),
+                )
+            )
+        ]
+        if textboxes:
+            add("chat_input_ready", 0.86)
+
+        send_controls = [
+            item for item in elements
+            if item.get("visible")
+            and not item.get("disabled")
+            and self._contains_any(
+                self._normalize_text(f"{item.get('text', '')} {item.get('aria', '')} {item.get('placeholder', '')}"),
+                ("enviar", "send", "submit"),
+            )
+        ]
+        if send_controls:
+            add("send_control_ready", 0.82)
+        elif textboxes:
+            add("submit_control_missing", 0.72)
+
+        assistant_messages = metadata.get("assistant_messages") or metadata.get("response_text") or metadata.get("captured_text")
+        if isinstance(assistant_messages, (list, tuple)):
+            has_response = any(str(item or "").strip() for item in assistant_messages)
+        else:
+            has_response = bool(str(assistant_messages or "").strip())
+        if has_response or bool(metadata.get("response_captured")):
+            add("response_captured", 0.92)
+        elif metadata.get("prompt_sent") or metadata.get("prompt_pasted"):
+            add("response_capture_pending", 0.74)
+
+        if not body_text.strip() and not elements:
+            add("low_information_capture", 0.9)
+        if metadata.get("self_capture"):
+            add("self_capture", 0.95)
+        if metadata.get("wrong_profile"):
+            add("wrong_profile", 0.88)
+        return concepts, weights
+
+    def _web_visible_targets(self, *, title: str, url: str, concepts: list[str], elements: list[dict[str, Any]]) -> list[str]:
+        targets = self._unique_strings(
+            [title] if title else [],
+            [url] if url else [],
+            concepts,
+            [str(item.get("text") or "") for item in elements[:8]],
+        )
+        return targets[:10]
+
+    def _web_unresolved_fields(
+        self,
+        *,
+        concepts: list[str],
+        elements: list[dict[str, Any]],
+        metadata: dict[str, Any],
+        body_text: str,
+        assistant_kind: str,
+        requested_target: str,
+    ) -> list[str]:
+        unresolved: list[str] = []
+        if "target_missing" in concepts:
+            unresolved.append("UNRESOLVED:visual_target_missing")
+        if "low_information_capture" in concepts:
+            unresolved.append("UNRESOLVED:low_information_capture")
+        if "chat_input_ready" in concepts and "send_control_ready" not in concepts:
+            unresolved.append("UNRESOLVED:submit_control_not_observed")
+        if "login_screen_candidate" in concepts:
+            unresolved.append("UNRESOLVED:login_or_session_required")
+        if "security_verification_candidate" in concepts:
+            unresolved.append("UNRESOLVED:security_verification_required")
+        if not metadata.get("ocr_text"):
+            unresolved.append("OCR_UNAVAILABLE")
+        if not body_text.strip() and not elements:
+            unresolved.append("UNRESOLVED:semantic_page_read_missing")
+        if (assistant_kind or requested_target) and not (metadata.get("response_captured") or metadata.get("captured_text")):
+            unresolved.append("UNRESOLVED:response_not_captured")
+        return self._unique_strings(unresolved)
+
+    def _web_available_actions(self, *, concepts: list[str], elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        actions: list[dict[str, Any]] = []
+        if "login_screen_candidate" in concepts:
+            actions.append({"action": "request_human_login", "label": "Completar inicio de sesion/verificacion", "available": True})
+        if "security_verification_candidate" in concepts:
+            actions.append({"action": "request_human_security_verification", "label": "Completar verificacion humana", "available": True})
+        if "chat_input_ready" in concepts:
+            actions.append({"action": "type_prompt", "label": "Escribir prompt en el campo de chat", "available": True})
+        if "send_control_ready" in concepts:
+            actions.append({"action": "submit_prompt", "label": "Enviar prompt", "available": True})
+        elif "chat_input_ready" in concepts:
+            actions.append({"action": "discover_submit_control", "label": "Detectar boton/tecla de envio", "available": False})
+        if "response_captured" in concepts:
+            actions.append({"action": "ingest_response", "label": "Ingerir respuesta capturada", "available": True})
+        if not actions:
+            actions.append({"action": "request_human_visual_help", "label": "Pedir ayuda visual concreta", "available": True})
+        return actions[:8]
+
+    def _web_concept_confidence(
+        self,
+        *,
+        concepts: list[str],
+        concept_weights: dict[str, float],
+        unresolved_fields: list[str],
+        dom_available: bool,
+        element_count: int,
+    ) -> float:
+        score = 0.18
+        if dom_available:
+            score += 0.25
+        if element_count:
+            score += 0.18
+        if concepts:
+            score += min(0.24, 0.04 * len(concepts))
+        if concept_weights:
+            score += min(0.1, sum(concept_weights.values()) / max(len(concept_weights), 1) * 0.1)
+        score -= min(0.22, 0.035 * len(unresolved_fields))
+        return round(max(0.0, min(0.96, score)), 3)
+
+    def _target_aliases(self, target: str) -> list[str]:
+        aliases = [target]
+        if "chatgpt" in target or "chat gpt" in target or "gpt" in target:
+            aliases.extend(["chatgpt", "chat gpt", "openai"])
+        if "claude" in target:
+            aliases.extend(["claude", "anthropic"])
+        if "codex" in target:
+            aliases.append("codex")
+        return self._unique_strings(aliases)
+
+    def _contains_any(self, value: str, needles: tuple[str, ...]) -> bool:
+        return any(needle in value for needle in needles)
+
+    def _normalize_text(self, value: Any) -> str:
+        text = str(value or "").strip().lower()
+        if not text:
+            return ""
+        replacements = {
+            "á": "a",
+            "é": "e",
+            "í": "i",
+            "ó": "o",
+            "ú": "u",
+            "ü": "u",
+            "ñ": "n",
+        }
+        for src, dst in replacements.items():
+            text = text.replace(src, dst)
+        return re.sub(r"\s+", " ", text)
 
     def _desktop_snapshot(self, *, max_age_seconds: float = 2.0) -> dict[str, list[dict[str, Any]]]:
         with self._desktop_probe_lock:

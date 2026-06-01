@@ -49,6 +49,87 @@ def test_universal_perception_service_builds_browser_signal() -> None:
     assert signal.confidence > 0.5
 
 
+def test_web_page_signal_detects_chatgpt_login_and_input_without_response() -> None:
+    service = UniversalPerceptionService()
+
+    signal = service.build_web_page_signal(
+        assistant_kind='chatgpt',
+        requested_target='chatgpt',
+        dom_observation={
+            'source': 'cdp',
+            'url': 'https://chatgpt.com/',
+            'title': 'ChatGPT',
+            'body_text': (
+                'Obtén respuestas adaptadas a ti. Inicia sesión para obtener '
+                'respuestas basadas en chats guardados. Iniciar sesión. '
+                '¿En qué estás trabajando?'
+            ),
+            'interactive_elements': [
+                {'tag': 'button', 'text': 'Iniciar sesión', 'visible': True},
+                {'tag': 'textarea', 'placeholder': 'Pregunta lo que quieras', 'visible': True},
+                {'tag': 'button', 'text': 'Voz', 'visible': True},
+            ],
+            'metadata': {'cdp_url': 'http://127.0.0.1:9223'},
+        },
+    )
+
+    concepts = signal.metadata['visual_concepts']
+    assert 'target_bound' in concepts
+    assert 'login_screen_candidate' in concepts
+    assert 'unauthenticated_session' in concepts
+    assert 'chat_input_ready' in concepts
+    assert 'submit_control_missing' in concepts
+    assert 'response_captured' not in concepts
+    assert 'UNRESOLVED:login_or_session_required' in signal.unresolved_fields
+    assert 'UNRESOLVED:submit_control_not_observed' in signal.unresolved_fields
+    assert 'UNRESOLVED:response_not_captured' in signal.unresolved_fields
+    assert signal.dom_summary['semantic_sources'] == ['dom', 'cdp']
+    assert any(action['action'] == 'discover_submit_control' for action in signal.available_actions)
+
+
+def test_web_page_signal_detects_security_verification_as_concept() -> None:
+    service = UniversalPerceptionService()
+
+    signal = service.build_web_page_signal(
+        assistant_kind='chatgpt',
+        requested_target='chatgpt',
+        dom_observation={
+            'url': 'https://chatgpt.com/',
+            'title': 'Just a moment...',
+            'body_text': 'Performing security verification. Verify you are not a bot. Ray ID: abc.',
+            'interactive_elements': [],
+        },
+    )
+
+    assert 'security_verification_candidate' in signal.metadata['visual_concepts']
+    assert 'security_verification' in signal.detected_blocks
+    assert 'UNRESOLVED:security_verification_required' in signal.unresolved_fields
+    assert any(action['action'] == 'request_human_security_verification' for action in signal.available_actions)
+
+
+def test_build_capture_signal_accepts_web_dom_observation() -> None:
+    service = UniversalPerceptionService()
+
+    signal = service.build_capture_signal(
+        replay_summary={
+            'metadata': {
+                'assistant_kind': 'chatgpt',
+                'web_dom_observation': {
+                    'url': 'https://chatgpt.com/',
+                    'title': 'ChatGPT',
+                    'body_text': 'S',
+                    'interactive_elements': [],
+                    'metadata': {'response_captured': True, 'captured_text': 'S'},
+                },
+            },
+        }
+    )
+
+    assert signal.source == 'web_page_observation'
+    assert 'response_captured' in signal.metadata['visual_concepts']
+    assert signal.cross_check_status == 'grounded'
+
+
 def test_universal_perception_service_scans_codex_local_without_dom() -> None:
     registry = _FakeRegistry(
         ToolCard(
