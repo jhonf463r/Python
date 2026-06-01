@@ -10726,6 +10726,53 @@ class ControlCenterViewModel(QObject):
             assistant_kind=requested_assistant_kind,
         )
         if bool(preflight.get('blocked')):
+            approval_checkpoints = [
+                dict(item) for item in (preflight.get('approval_checkpoints') or [])
+                if isinstance(item, dict)
+            ]
+            observation_permission_block = any(
+                str(item.get('phase_key') or '').strip().lower() == 'observation_permission'
+                for item in approval_checkpoints
+            )
+            if (
+                observation_permission_block
+                and self._has_live_observation_permission(requested_assistant_kind)
+            ):
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'stale_observation_permission_gate_ignored',
+                        assistant_kind=requested_assistant_kind,
+                        preflight_reason=str(preflight.get('reason') or ''),
+                        approval_count=len(approval_checkpoints),
+                        dispatch_id=dispatch_id,
+                    )
+                except Exception:
+                    pass
+                preflight = {
+                    **dict(preflight),
+                    'blocked': False,
+                    'approval_checkpoints': [],
+                    'reason': '',
+                }
+            else:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_permission(
+                        permission_id=f'external_consultation:{requested_assistant_kind}',
+                        action='blocked',
+                        granted=False,
+                        reason=str(preflight.get('reason') or 'ruta bloqueada por gobernanza'),
+                        dialog_shown=True,
+                    )
+                except Exception:
+                    pass
+                return self._blocked_external_consultation_result(
+                    assistant_kind=requested_assistant_kind,
+                    assistant_title=assistant_title,
+                    preflight=preflight,
+                )
+        if bool(preflight.get('blocked')):
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                 get_runtime_tracer().trace_permission(
@@ -11348,6 +11395,36 @@ class ControlCenterViewModel(QObject):
         payload['approval_checkpoints'] = filtered
         payload['metadata'] = metadata
         self._last_adaptive_payload = payload
+
+    def _has_live_observation_permission(self, assistant_kind: str) -> bool:
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return False
+        scope = f'observe_window_content:{assistant_kind}'
+        world_model_service = getattr(getattr(self.adaptive_orchestrator, 'context_assembler', None), 'world_model_service', None)
+        if world_model_service is None:
+            return False
+        try:
+            if hasattr(world_model_service, 'permission_snapshot'):
+                for item in world_model_service.permission_snapshot():
+                    record = dict(item or {})
+                    if str(record.get('scope') or '').strip().lower() == scope and bool(record.get('granted')):
+                        return True
+        except Exception:
+            pass
+        try:
+            model = (
+                world_model_service.current_model()
+                if hasattr(world_model_service, 'current_model')
+                else None
+            )
+            for gate in list(getattr(model, 'permission_gates', []) or []):
+                gate_scope = str(getattr(gate, 'scope', '') or '').strip().lower()
+                if gate_scope == scope and (bool(getattr(gate, 'granted', False)) or str(getattr(gate, 'status', '') or '') == 'concedido'):
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _grant_pending_observation_permission(self, *, announce: bool = True) -> bool:
         assistant_kind = self._pending_observation_permission_assistant()

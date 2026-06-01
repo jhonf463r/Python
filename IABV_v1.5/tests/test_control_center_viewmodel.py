@@ -664,6 +664,107 @@ def test_control_center_blocks_external_consultation_before_preview_when_permiss
         _cleanup_bootstrap(bootstrap)
 
 
+def test_control_center_ignores_stale_permission_checkpoint_after_live_grant() -> None:
+    bootstrap = _make_bootstrap('test_control_center_stale_permission_gate_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+        viewmodel._last_user_goal = 'consulta con chatgpt'
+        viewmodel._copy_text = lambda text, notice='': None  # type: ignore[method-assign]
+
+        class FakeWorldModelService:
+            def permission_snapshot(self):
+                return [{
+                    'scope': 'observe_window_content:chatgpt',
+                    'assistant_kind': 'chatgpt',
+                    'granted': True,
+                    'detail': 'Permiso concedido por el usuario.',
+                }]
+
+        bootstrap.adaptive_task_orchestrator.context_assembler.world_model_service = FakeWorldModelService()
+        bootstrap.adaptive_task_orchestrator.preflight_external_assistant = (  # type: ignore[method-assign]
+            lambda **kwargs: {
+                'assistant_kind': 'chatgpt',
+                'world_model': {},
+                'world_model_summary': {
+                    'permission_gates': [
+                        {
+                            'scope': 'observe_window_content:chatgpt',
+                            'assistant_kind': 'chatgpt',
+                            'status': 'requerido',
+                        }
+                    ]
+                },
+                'governance': {
+                    'approval_required': True,
+                    'block_risky_action': True,
+                    'recommended_action': 'request_observation_permission',
+                    'reason': 'Para verificar si ChatGPT esta listo necesito observar esa ventana.',
+                    'external_state_flags': [],
+                },
+                'approval_checkpoints': [
+                    {
+                        'title': 'Permitir observacion de chatgpt',
+                        'decision': 'pending',
+                        'risk_level': 'medium',
+                        'detail': 'Para verificar si ChatGPT esta listo necesito observar esa ventana.',
+                        'phase_key': 'observation_permission',
+                        'metadata': {'assistant_kind': 'chatgpt'},
+                    }
+                ],
+                'blocked': True,
+                'reason': 'Para verificar si ChatGPT esta listo necesito observar esa ventana.',
+            }
+        )
+        preview_calls = {'count': 0}
+
+        def fake_preview_external_consultation(**kwargs):
+            preview_calls['count'] += 1
+            return {
+                'available': True,
+                'summary': 'ChatGPT disponible.',
+                'tool_card': {
+                    'tool_id': 'chatgpt_web_assisted',
+                    'title': 'ChatGPT web asistido',
+                    'metadata': {'launch_mode': 'web_assisted', 'response_capture_mode': 'manual_pasteback'},
+                },
+                'tool_task': {'tool_id': 'chatgpt_web_assisted', 'metadata': {}},
+                'mode_selection': {},
+            }
+
+        def fake_execute_external_consultation(**kwargs):
+            task = SimpleNamespace(task_id='task-chatgpt', tool_id='chatgpt_web_assisted', metadata={})
+            result = SimpleNamespace(
+                success=True,
+                output_text='Consulta externa preparada.',
+                error_message='',
+                result_id='result-chatgpt',
+                metadata={'actual_assistant_kind': 'chatgpt'},
+                execution_state=SimpleNamespace(
+                    metadata={
+                        'launch_mode': 'web_assisted',
+                        'response_capture_mode': 'manual_pasteback',
+                        'manual_pasteback_required': True,
+                        'response_capture_pending': False,
+                        'response_captured': False,
+                    },
+                    detail='Consulta preparada.',
+                ),
+            )
+            return task, result, None
+
+        bootstrap.tool_teach_service.preview_external_consultation = fake_preview_external_consultation
+        bootstrap.tool_teach_service.execute_external_consultation = fake_execute_external_consultation
+
+        result = viewmodel._execute_external_consultation_sync('chatgpt')
+
+        assert result['success'] is True
+        assert preview_calls['count'] == 1
+        assert 'Permiso requerido' not in result['meta']
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
 def test_control_center_grants_observation_permission_and_retries_consultation() -> None:
     bootstrap = _make_bootstrap('test_control_center_permission_retry_workspace')
     try:
