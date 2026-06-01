@@ -1,0 +1,31 @@
+{
+  "id": "web_perception_concept_resolver_shared_cdp_p083",
+  "title": "P0.83: Web Perception Concept Resolver + Shared CDP Response Capture",
+  "status": "PENDING",
+  "category": "runtime_perception",
+  "priority": "P0",
+  "description": "Convert live web page observations into structured concepts before action, and reuse the selected governed/user-approved CDP session for ChatGPT response capture instead of opening a new isolated profile.",
+  "reason": "Live Windows audit on 2026-06-01 showed IABV could open a governed ChatGPT window and CDP could observe DOM, but the runtime still lacked a shared concept frame for page state and the runner did not reuse the selected CDP session. It also rejected intentionally short responses such as 'S'.",
+  "dependency_missing": "",
+  "next_action": "Run a live ChatGPT consultation through the governed CDP session. Expected: metadata includes visual_concepts, visual_unresolved_fields, shared_cdp=true, and a short 'S' response is accepted when the prompt asked for it.",
+  "resume_hint": "UniversalPerceptionService.build_web_page_signal now emits concepts such as target_bound, login_screen_candidate, chat_input_ready, submit_control_missing, security_verification_candidate, response_captured and unresolved fields. UIExecutionRunner now uses IABV_PREFER_CDP_SESSION/IABV_SHARED_CDP_URL for browser_dom capture.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence": {
+      "runtime_path": "C:\\Python\\IABV_v1.5_verified_main\\IABV_v1.5",
+      "cdp_url": "http://127.0.0.1:9223",
+      "observed_page": "https://chatgpt.com/",
+      "observed_concepts_before_fix": [
+        "ChatGPT page visible",
+        "login screen text visible",
+        "chat input visible",
+        "response not captured"
+      ]
+    },
+    "unresolved": [
+      "live_shared_cdp_response_capture",
+      "live_visual_concepts_visible_in_result_metadata",
+      "live_human_ui_explanation_uses_visual_concepts"
+    ]
+  }
+}

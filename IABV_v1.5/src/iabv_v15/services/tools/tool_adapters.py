@@ -794,6 +794,7 @@ class ToolAdapter:
                                 'used_fallback_capture': bool(captured.get('used_fallback_capture')),
                                 'rollout_path': str(captured.get('rollout_path') or ''),
                                 'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
                     if capture_source == 'session_rollout' and not bool(captured.get('thread_verified')):
@@ -835,6 +836,7 @@ class ToolAdapter:
                                 'used_fallback_capture': bool(captured.get('used_fallback_capture')),
                                 'rollout_path': str(captured.get('rollout_path') or ''),
                                 'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
                     return {
@@ -872,6 +874,7 @@ class ToolAdapter:
                             'used_fallback_capture': bool(captured.get('used_fallback_capture')),
                             'rollout_path': str(captured.get('rollout_path') or ''),
                             'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                            'browser_dom_metadata': dict(captured.get('metadata') or {}),
                         },
                     }
                 if captured.get('launched'):
@@ -919,6 +922,7 @@ class ToolAdapter:
                     **consultation_metadata,
                                     'capture_source': str(captured.get('capture_source') or 'browser_dom').strip().lower() or 'browser_dom',
                                     'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                    'browser_dom_metadata': dict(captured.get('metadata') or {}),
                                 },
                             }
                         waiting_message = (
@@ -960,6 +964,7 @@ class ToolAdapter:
                     **consultation_metadata,
                                 'capture_source': str(captured.get('capture_source') or 'browser_dom').strip().lower() or 'browser_dom',
                                 'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
                     if background_capture_mode == 'codex_rollout':
