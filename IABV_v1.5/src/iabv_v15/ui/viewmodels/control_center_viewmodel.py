@@ -231,6 +231,9 @@ class ControlCenterViewModel(QObject):
         self._local_stack_text = ''
         self._last_user_goal = ''
         self._last_goal_context: dict[str, Any] = {}
+        self._goal_context_refresh_in_flight = False
+        self._goal_context_refresh_last_ts: float = 0.0
+        self._goal_context_refresh_cooldown_s: float = 15.0
         self._clipboard_notice = 'Todavia no se ha copiado nada al portapapeles.'
         self._development_packet = ''
         self._dev_packet_last_ts: float = 0.0
@@ -301,7 +304,10 @@ class ControlCenterViewModel(QObject):
         # lightweight signal connections happen on main thread via
         # _deferred_heavy_init.
         if not self._working and not self._adaptive_session_id:
-            self._busy_label = self._startup_readiness_text(validating_local_stack=True)
+            self._busy_label = self._startup_readiness_text(
+                validating_local_stack=True,
+                nonblocking=True,
+            )
         QTimer.singleShot(0, self._deferred_heavy_init)
         QTimer.singleShot(250, self._deferred_initial_refresh)
         QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
@@ -899,16 +905,81 @@ class ControlCenterViewModel(QObject):
         except Exception:
             return {}
 
-    def _goal_context_for_display(self, site_id: str | None = None) -> dict[str, Any]:
-        current = dict(self._last_goal_context or {})
-        metadata = dict(current.get('metadata') or {})
+    def _goal_context_matches_site(self, goal_context: dict[str, Any], site_id: str | None = None) -> bool:
+        if not goal_context:
+            return False
+        if not site_id:
+            return True
+        metadata = dict(goal_context.get('metadata') or {})
         current_site = str(metadata.get('site_id') or '').strip()
-        if current and (not site_id or (current_site and current_site == site_id)):
+        return bool(current_site and current_site == site_id)
+
+    def _schedule_goal_context_refresh(self, site_id: str | None = None, *, reason: str = 'display_cache_miss') -> None:
+        """Refresh persistent goal context away from the UI thread.
+
+        Live freeze evidence showed provider-health UI updates blocking in
+        SQLite while reading objectives. Display paths should use cached or
+        payload-derived context and let this background refresh hydrate the
+        cache for the next UI tick.
+        """
+        if self.objective_repository is None:
+            return
+        if not hasattr(self, '_bg_pool'):
+            return
+        now = time.time()
+        if getattr(self, '_goal_context_refresh_in_flight', False):
+            return
+        last_ts = float(getattr(self, '_goal_context_refresh_last_ts', 0.0) or 0.0)
+        cooldown_s = float(getattr(self, '_goal_context_refresh_cooldown_s', 15.0) or 15.0)
+        if now - last_ts < cooldown_s:
+            return
+        self._goal_context_refresh_in_flight = True
+        self._goal_context_refresh_last_ts = now
+
+        def _worker() -> None:
+            started = time.perf_counter()
+            found = False
+            try:
+                context = self._goal_context_from_repository(site_id)
+                if context:
+                    self._last_goal_context = context
+                    found = True
+            except Exception:
+                context = {}
+            finally:
+                self._goal_context_refresh_in_flight = False
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'goal_context_background_refresh_finished',
+                        reason=reason,
+                        site_id=site_id or '',
+                        found=found,
+                        elapsed_ms=round((time.perf_counter() - started) * 1000, 1),
+                    )
+                except Exception:
+                    pass
+
+        try:
+            self._bg_pool.submit(_worker)
+        except Exception:
+            self._goal_context_refresh_in_flight = False
+
+    def _goal_context_for_display(
+        self,
+        site_id: str | None = None,
+        *,
+        allow_repository: bool = True,
+    ) -> dict[str, Any]:
+        current = dict(self._last_goal_context or {})
+        if self._goal_context_matches_site(current, site_id):
             return current
         payload_context = self._goal_context_from_payload(self._last_adaptive_payload)
-        payload_site = str((payload_context.get('metadata') or {}).get('site_id') or '').strip()
-        if payload_context and (not site_id or (payload_site and payload_site == site_id)):
+        if self._goal_context_matches_site(payload_context, site_id):
             return payload_context
+        if not allow_repository:
+            self._schedule_goal_context_refresh(site_id, reason='display_nonblocking_cache_miss')
+            return {}
         return self._goal_context_from_repository(site_id)
 
     def _explicit_assistant_preference(self, message: str) -> str:
@@ -1453,8 +1524,11 @@ class ControlCenterViewModel(QObject):
                 grouped[key] = merged
         return [grouped[key] for key in order if key in grouped]
 
-    def _startup_readiness_text(self, *, validating_local_stack: bool = False) -> str:
-        goal_context = self._goal_context_for_display(self._current_site_id() or None)
+    def _startup_readiness_text(self, *, validating_local_stack: bool = False, nonblocking: bool = False) -> str:
+        goal_context = self._goal_context_for_display(
+            self._current_site_id() or None,
+            allow_repository=not nonblocking,
+        )
         active_title = str((goal_context.get('objective') or {}).get('title') or goal_context.get('active_title') or 'sin objetivo activo').strip() or 'sin objetivo activo'
         assistant_cards = self._assistant_tool_cards()
         total = len(assistant_cards) or 1
@@ -8162,14 +8236,17 @@ class ControlCenterViewModel(QObject):
             )
         return self._activity_payload()
 
-    def _build_agent_cards(self) -> list[dict[str, str]]:
+    def _build_agent_cards(self, *, nonblocking_goal_context: bool = False) -> list[dict[str, str]]:
         provider_lookup = {card['provider_name']: card for card in self._provider_cards}
         general_ready = provider_lookup.get('Ollama', {}).get('available', False)
         visual_ready = provider_lookup.get('Ollama Vision', {}).get('available', False)
         optional_ready = provider_lookup.get('LM Studio', {}).get('available', False)
         index_ready = provider_lookup.get('Embeddings', {}).get('available', False)
         pbt_generation = int(self._pbt_state.get('generation', 0))
-        goal_context = self._goal_context_for_display(self._current_site_id() or None)
+        goal_context = self._goal_context_for_display(
+            self._current_site_id() or None,
+            allow_repository=not nonblocking_goal_context,
+        )
         goal_title = str((goal_context.get('objective') or {}).get('title') or goal_context.get('active_title') or '').strip()
         goal_status = str(goal_context.get('status') or 'pending')
         goal_progress = float(goal_context.get('progress') or 0.0)
@@ -10476,7 +10553,10 @@ class ControlCenterViewModel(QObject):
         self._provider_refreshing = True
         if not self._working:
             try:
-                startup_text = self._startup_readiness_text(validating_local_stack=True)
+                startup_text = self._startup_readiness_text(
+                    validating_local_stack=True,
+                    nonblocking=True,
+                )
             except Exception:
                 startup_text = 'Consultando el stack local y los asistentes externos en segundo plano.'
             self._busy_label = 'Consultando el stack local y los asistentes externos en segundo plano.' if announce else startup_text
@@ -14175,10 +14255,13 @@ class ControlCenterViewModel(QObject):
         if task_name == 'provider_health':
             self._provider_refreshing = False
             self._provider_cards = list(payload)
-            self._agent_cards = self._build_agent_cards()
+            self._agent_cards = self._build_agent_cards(nonblocking_goal_context=True)
             if not self._working:
-                self._busy_label = self._startup_readiness_text(validating_local_stack=False)
-            self._diagnostic_text = self._build_provider_diagnostic()
+                self._busy_label = self._startup_readiness_text(
+                    validating_local_stack=False,
+                    nonblocking=True,
+                )
+            self._diagnostic_text = self._build_provider_diagnostic(nonblocking=True)
             self._diagnostic_truth_state = 'observed'
         elif task_name == 'chat':
             self._clear_autonomy_activity_override()
@@ -14538,7 +14621,7 @@ class ControlCenterViewModel(QObject):
                 pass
         elif not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
-            self._agent_cards = self._build_agent_cards()
+            self._agent_cards = self._build_agent_cards(nonblocking_goal_context=True)
             _schedule_dev_packet = getattr(self, '_schedule_idle_dev_packet_refresh', None)
             if callable(_schedule_dev_packet):
                 _schedule_dev_packet(reason='post_task_result')
@@ -14626,8 +14709,11 @@ class ControlCenterViewModel(QObject):
             self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
-    def _build_provider_diagnostic(self) -> str:
-        goal_context = self._goal_context_for_display(self._current_site_id() or None)
+    def _build_provider_diagnostic(self, *, nonblocking: bool = False) -> str:
+        goal_context = self._goal_context_for_display(
+            self._current_site_id() or None,
+            allow_repository=not nonblocking,
+        )
         active_title = str((goal_context.get('objective') or {}).get('title') or goal_context.get('active_title') or '').strip()
         lines = [
             'Estado del stack local',

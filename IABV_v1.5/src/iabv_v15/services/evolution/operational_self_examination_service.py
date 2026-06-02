@@ -9295,6 +9295,7 @@ class OperationalSelfExaminationService:
         prebuild_resource_snapshot_stall_count = 0
         slow_development_packet_count = 0
         slow_development_packet_max_ms = 0.0
+        ui_display_sqlite_stall_count = 0
         try:
             if audit_path.exists():
                 recent2: deque[str] = deque(maxlen=300)
@@ -9339,6 +9340,23 @@ class OperationalSelfExaminationService:
                         phase_at_detection = str(
                             data2.get('dominant_phase_at_detection', '') or ''
                         )
+                        stack_blob = ' '.join(
+                            str(item)
+                            for item in (
+                                data2.get('main_thread_stack_during_stall')
+                                or data2.get('post_stall_stack')
+                                or []
+                            )
+                        )
+                        if (
+                            'objective_repository' in stack_blob
+                            and (
+                                '_startup_readiness_text' in stack_blob
+                                or '_goal_context_for_display' in stack_blob
+                                or '_build_provider_diagnostic' in stack_blob
+                            )
+                        ):
+                            ui_display_sqlite_stall_count += 1
                         if 'startup_evolution' in phase or 'startup_evolution' in phase_at_detection:
                             startup_evolution_stall_count += 1
                         if ('resource_snapshot_pending' in phase
@@ -9445,6 +9463,26 @@ class OperationalSelfExaminationService:
                 metadata={
                     'slow_development_packet_count': slow_development_packet_count,
                     'slow_development_packet_max_ms': slow_development_packet_max_ms,
+                },
+            ))
+        if ui_display_sqlite_stall_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='ui_display_sqlite_stall_repeated',
+                severity=IssueSeverity.HIGH,
+                title='UI display path blocked on objective repository',
+                summary=(
+                    'La UI se bloqueo mientras un camino de display leia '
+                    'objective_repository/SQLite. Una vista esta esperando '
+                    'evidencia persistente en vez de usar cache y refresco en background.'
+                ),
+                recommendation=(
+                    'Mantener goal_context no bloqueante en readiness, tarjetas '
+                    'y diagnosticos; hidratar el objetivo persistente en segundo '
+                    'plano y nunca desde dataChanged/apply_task_result.'
+                ),
+                confidence=0.9,
+                metadata={
+                    'ui_display_sqlite_stall_count': ui_display_sqlite_stall_count,
                 },
             ))
         return findings
