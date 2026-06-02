@@ -9293,6 +9293,8 @@ class OperationalSelfExaminationService:
         startup_stall_count = 0
         startup_evolution_stall_count = 0
         prebuild_resource_snapshot_stall_count = 0
+        slow_development_packet_count = 0
+        slow_development_packet_max_ms = 0.0
         try:
             if audit_path.exists():
                 recent2: deque[str] = deque(maxlen=300)
@@ -9321,6 +9323,17 @@ class OperationalSelfExaminationService:
                             external_intent_local_count += 1
                     if kind2 == 'startup_truth_refresh_stall_detected':
                         startup_stall_count += 1
+                    if kind2 == 'development_packet_refresh_finished':
+                        try:
+                            elapsed = float(data2.get('elapsed_ms') or 0.0)
+                        except Exception:
+                            elapsed = 0.0
+                        if elapsed >= 5000.0:
+                            slow_development_packet_count += 1
+                            slow_development_packet_max_ms = max(
+                                slow_development_packet_max_ms,
+                                elapsed,
+                            )
                     if kind2 == 'ui_event_loop_stall':
                         phase = str(data2.get('dominant_phase', '') or '')
                         phase_at_detection = str(
@@ -9410,6 +9423,28 @@ class OperationalSelfExaminationService:
                     'prebuild_resource_snapshot_stall_count': (
                         prebuild_resource_snapshot_stall_count
                     ),
+                },
+            ))
+        if slow_development_packet_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='post_result_development_packet_slow',
+                severity=IssueSeverity.MEDIUM,
+                title='Development packet refresh was slow after task result',
+                summary=(
+                    f'development_packet_refresh_finished supero 5s '
+                    f'{slow_development_packet_count} vez/veces '
+                    f'(max {slow_development_packet_max_ms:.0f}ms). '
+                    f'No debe ejecutarse despues de respuestas ligeras.'
+                ),
+                recommendation=(
+                    'Limitar refresh pesado post-result a tareas que cambian '
+                    'estado evolutivo o consulta externa; omitirlo para chat '
+                    'local/status/metacognicion ligera.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'slow_development_packet_count': slow_development_packet_count,
+                    'slow_development_packet_max_ms': slow_development_packet_max_ms,
                 },
             ))
         return findings
