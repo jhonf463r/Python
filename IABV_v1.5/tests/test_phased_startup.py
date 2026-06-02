@@ -796,35 +796,33 @@ class TestPageLoaderReadyPreventsFallback:
 # ------------------------------------------------------------------ #
 
 
-class TestTruthRefreshOrdering:
-    """OSES must refresh before PortableContext in the final truth refresh."""
+class TestTruthRefreshStartupDeferral:
+    """Startup truth refresh must not run heavy metacognition inline."""
 
-    def test_oses_refreshes_before_portable_context(self):
-        """_final_startup_truth_refresh calls OSES.build_review before PCS.build_package."""
-        bs = _make_bootstrap()
-        call_order = []
-        oses = MagicMock()
-        oses.build_review.side_effect = lambda: call_order.append('oses')
-        pcs = MagicMock()
-        pcs.build_package.side_effect = lambda: call_order.append('pcs')
-        bs.operational_self_examination_service = oses
-        bs.portable_context_service = pcs
-
-        bs._final_startup_truth_refresh()
-
-        assert call_order == ['oses', 'pcs'], (
-            f'Expected OSES before PCS, got: {call_order}'
-        )
-
-    def test_oses_failure_does_not_block_portable_context(self):
-        """If OSES fails, PortableContext must still persist."""
+    def test_fresh_metacognition_skips_heavy_refresh(self):
         bs = _make_bootstrap()
         oses = MagicMock()
-        oses.build_review.side_effect = RuntimeError('oses crash')
         pcs = MagicMock()
         bs.operational_self_examination_service = oses
         bs.portable_context_service = pcs
+        bs._metacognition_data_is_stale = MagicMock(return_value=False)
 
         bs._final_startup_truth_refresh()
 
-        pcs.build_package.assert_called_once()
+        oses.build_review.assert_not_called()
+        pcs.build_package.assert_not_called()
+        assert bs._truth_refresh_active is False
+
+    def test_stale_metacognition_defers_heavy_refresh(self):
+        bs = _make_bootstrap()
+        oses = MagicMock()
+        pcs = MagicMock()
+        bs.operational_self_examination_service = oses
+        bs.portable_context_service = pcs
+        bs._metacognition_data_is_stale = MagicMock(return_value=True)
+
+        bs._final_startup_truth_refresh()
+
+        oses.build_review.assert_not_called()
+        pcs.build_package.assert_not_called()
+        assert bs._truth_refresh_active is False

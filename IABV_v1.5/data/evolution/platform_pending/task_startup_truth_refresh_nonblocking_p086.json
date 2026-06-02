@@ -1,0 +1,24 @@
+{
+  "id": "startup_truth_refresh_nonblocking_p086",
+  "title": "P0.86: Startup Truth Refresh Non-Blocking",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Prevent OSES and PortableContext regeneration from running during startup and blocking the UI/chat lifecycle.",
+  "reason": "Live runtime after P0.85 showed the bridge became available, but startup_truth_refresh still kept startup_followup_active for minutes, emitted repeated lazy_vm_prebuild_paused events, and caused chat timeouts. The birth path must enable communication first and defer deep metacognition to idle maintenance.",
+  "dependency_missing": "",
+  "next_action": "Restart from the desktop shortcut and verify startup_truth_refresh_skipped_fresh or startup_truth_refresh_deferred_stale appears, startup_followup_active clears quickly, and human_simulated_chat_audit remains 9/9.",
+  "resume_hint": "Startup truth refresh now skips when artifacts are fresh and defers stale regeneration instead of calling OSES.build_review() and PortableContext.build_package() inline.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "expected_live_markers": [
+      "startup_truth_refresh_skipped_fresh",
+      "startup_truth_refresh_deferred_stale",
+      "startup_followup_done"
+    ],
+    "unresolved": [
+      "live_shortcut_startup_truth_refresh_nonblocking",
+      "idle_maintenance_followup_for_stale_metacognition"
+    ]
+  }
+}
