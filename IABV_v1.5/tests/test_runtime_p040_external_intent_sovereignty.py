@@ -452,8 +452,8 @@ class TestStartupFreezeBudget:
         assert len(deferred) >= 1
         assert deferred[0]['data']['reason'] == 'recent_ui_stall'
 
-    def test_truth_refresh_proceeds_when_no_pressure(self):
-        """truth_refresh must proceed normally when no query_pending and no stall."""
+    def test_truth_refresh_skips_heavy_work_when_fresh(self):
+        """truth_refresh must not run heavy OSES/PortableContext at startup when fresh."""
         from iabv_v15.bootstrap import AppBootstrap
 
         boot = object.__new__(AppBootstrap)
@@ -486,6 +486,10 @@ class TestStartupFreezeBudget:
         assert boot._truth_refresh_active is False
         deferred = [e for e in traced_events if e['kind'] == 'startup_heavy_work_deferred_due_to_user_or_stall']
         assert len(deferred) == 0
+        skipped = [e for e in traced_events if e['kind'] == 'startup_truth_refresh_skipped_fresh']
+        assert len(skipped) == 1
+        boot.operational_self_examination_service.build_review.assert_not_called()
+        boot.portable_context_service.build_package.assert_not_called()
 
 
 # ══════════════════════════════════════════════════════════════

@@ -2031,56 +2031,40 @@ class AppBootstrap:
             return
 
         force_refresh = self._metacognition_data_is_stale()
-        if force_refresh:
-            logger.info('startup_truth_refresh: metacognition data stale (>24h), forcing full regeneration')
+        if not force_refresh:
+            try:
+                self._tracer.trace(
+                    'startup_truth_refresh_skipped_fresh',
+                    reason='metacognition_artifacts_fresh',
+                )
+            except Exception:
+                pass
+            logger.info('startup_truth_refresh: skipped; metacognition artifacts are fresh')
+            self._truth_refresh_active = False
+            self._push_bootstrap_flags_to_watchdog()
+            self._check_startup_followup_done()
+            return
 
-        import time as _time_budget
-        t0 = _time_budget.perf_counter()
-
+        # Startup must not run minutes-long metacognitive regeneration.
+        # The app needs to communicate first; stale OSES/PortableContext
+        # is handled by the idle/deferred maintenance loop, not by blocking
+        # the birth path.
         try:
-            oses = getattr(self, 'operational_self_examination_service', None)
-            if oses is not None:
-                oses.build_review()
-                logger.info('startup_truth_refresh: OSES re-persisted')
-        except Exception as exc:
-            logger.debug('startup_truth_refresh: OSES failed: %s', exc)
-
-        elapsed_ms = (_time_budget.perf_counter() - t0) * 1000.0
-        if elapsed_ms > self._STARTUP_FREEZE_BUDGET_MS:
             self._tracer.trace(
-                'startup_truth_refresh_stall_detected',
-                phase='oses_build_review',
-                elapsed_ms=round(elapsed_ms, 1),
+                'startup_truth_refresh_deferred_stale',
+                reason='stale_metacognition_deferred_to_idle',
                 budget_ms=self._STARTUP_FREEZE_BUDGET_MS,
             )
-            logger.warning(
-                'startup_truth_refresh: OSES took %.0f ms (budget=%.0f ms)',
-                elapsed_ms, self._STARTUP_FREEZE_BUDGET_MS,
-            )
-
-        t1 = _time_budget.perf_counter()
-        try:
-            pcs = getattr(self, 'portable_context_service', None)
-            if pcs is not None:
-                pcs.build_package()
-                logger.info('startup_truth_refresh: PortableContext re-persisted')
-        except Exception as exc:
-            logger.debug('startup_truth_refresh: PortableContext failed: %s', exc)
-
-        elapsed_ms_pcs = (_time_budget.perf_counter() - t1) * 1000.0
-        if elapsed_ms_pcs > self._STARTUP_FREEZE_BUDGET_MS:
-            self._tracer.trace(
-                'startup_truth_refresh_stall_detected',
-                phase='portable_context_build',
-                elapsed_ms=round(elapsed_ms_pcs, 1),
-                budget_ms=self._STARTUP_FREEZE_BUDGET_MS,
-            )
-
-        if force_refresh:
-            self._tracer.trace('metacognition_refresh', reason='stale_data_>24h')
+        except Exception:
+            pass
+        logger.warning(
+            'startup_truth_refresh: stale metacognition detected; '
+            'deferred to idle maintenance instead of running during startup',
+        )
         self._truth_refresh_active = False
         self._push_bootstrap_flags_to_watchdog()
         self._check_startup_followup_done()
+        return
 
     def _has_recent_ui_stall(self, watchdog: Any, threshold_ms: float = 1500.0) -> bool:
         """P0.40 Task F: check if watchdog recorded a recent UI stall."""
