@@ -1,0 +1,28 @@
+{
+  "id": "prebuild_resource_snapshot_nonblocking_p088",
+  "title": "P0.88: Prebuild Resource Snapshot Nonblocking Deferral",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Keep missing/in-flight resource snapshots from holding a watchdog prebuild_waiting dominant phase during startup.",
+  "reason": "Live shortcut proof after P0.87 confirmed startup_evolution no longer blocked startup, but UI stalls still appeared with dominant_phase=prebuild_waiting:resource_snapshot_pending while snapshot_refresh_in_flight was true. Resource observation is maintenance input and must not look like an active UI wait.",
+  "dependency_missing": "",
+  "next_action": "Merge P0.88, update the desktop shortcut runtime, restart from shortcut, and verify runtime_audit has no prebuild_waiting:resource_snapshot_pending/resource_snapshot_refresh_in_flight stalls.",
+  "resume_hint": "Snapshot-pending prebuild now emits lazy_vm_prebuild_deferred, clears watchdog dominant_phase, retries with a slower idle interval, and does not keep startup_followup_active alive.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence_source": "shortcut runtime after P0.87 merge",
+    "expected_live_markers": [
+      "lazy_vm_prebuild_deferred",
+      "continuity_message_answered"
+    ],
+    "forbidden_live_markers": [
+      "prebuild_waiting:resource_snapshot_pending",
+      "prebuild_waiting:resource_snapshot_refresh_in_flight",
+      "resource_snapshot_refresh_in_flight"
+    ],
+    "unresolved": [
+      "live_shortcut_prebuild_resource_snapshot_nonblocking_after_merge"
+    ]
+  }
+}

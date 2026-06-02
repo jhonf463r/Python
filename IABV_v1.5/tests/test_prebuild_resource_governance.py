@@ -473,7 +473,7 @@ class TestEmitPausedNeverCallsSnapshotSync:
 # ------------------------------------------------------------------ #
 
 class TestStaleCacheBehavior:
-    """When cache is absent, prebuild pauses until snapshot arrives."""
+    """When cache is absent, prebuild defers until snapshot arrives."""
 
     def test_absent_cache_pauses_with_snapshot_unavailable(self):
         """No cache and no refresh → pause with resource_snapshot_unavailable."""
@@ -654,7 +654,7 @@ class TestRefreshCoalescing:
 
 
 # ------------------------------------------------------------------ #
-# 11. Snapshot-pending retry: prebuild waits then resumes
+# 11. Snapshot-pending retry: prebuild defers then resumes
 # ------------------------------------------------------------------ #
 
 class TestSnapshotPendingRetry:
@@ -709,18 +709,18 @@ class TestSnapshotPendingRetry:
 
         mock_gate.assert_not_called()
 
-    def test_timeline_records_snapshot_pending_reason(self):
-        """Timeline must include reason=resource_snapshot_pending."""
+    def test_timeline_records_snapshot_pending_deferral(self):
+        """Timeline must include lightweight deferral for snapshot pending."""
         bs = _make_bootstrap()
         bs._init_prebuild_snapshot_cache()
         bs._prebuild_snapshot_refresh_in_flight = True
 
-        bs._emit_prebuild_paused('resource_snapshot_pending', 'control',
-                                 ['control', 'capture'])
+        bs._emit_prebuild_deferred('resource_snapshot_pending', 'control',
+                                   ['control', 'capture'])
 
         bs._timeline.mark.assert_called_once()
         call_kwargs = bs._timeline.mark.call_args
-        assert call_kwargs.args[0] == 'lazy_vm_prebuild_paused'
+        assert call_kwargs.args[0] == 'lazy_vm_prebuild_deferred'
         assert call_kwargs.kwargs['reason'] == 'resource_snapshot_pending'
 
 
@@ -920,7 +920,7 @@ class TestStartupFollowupActive:
 # ------------------------------------------------------------------ #
 
 class TestDominantPhaseNotStale:
-    """dominant_phase must be set to prebuild_waiting:<reason> on pause."""
+    """dominant_phase must identify real waits and clear idle deferrals."""
 
     def test_waiting_phase_set_on_transient_pause(self):
         bs = _make_bootstrap()
@@ -941,6 +941,23 @@ class TestDominantPhaseNotStale:
         phase_calls = [c.args[0] for c in mock_wd.set_dominant_phase.call_args_list]
         waiting_phases = [p for p in phase_calls if p.startswith('prebuild_waiting:')]
         assert len(waiting_phases) >= 1
+
+    def test_snapshot_pending_deferral_does_not_set_waiting_phase(self):
+        bs = _make_bootstrap()
+        mock_wd = MagicMock()
+        bs.ui_heartbeat_watchdog = mock_wd
+        bs._init_prebuild_snapshot_cache()
+        bs._prebuild_snapshot_refresh_in_flight = True
+        bs._startup_followup_active = False
+
+        with patch('iabv_v15.bootstrap.QTimer') as MockQTimer:
+            MockQTimer.singleShot = MagicMock()
+            bs._build_all_lazy_vms()
+
+        phase_calls = [c.args[0] for c in mock_wd.set_dominant_phase.call_args_list]
+        assert 'prebuild_waiting:resource_snapshot_pending' not in phase_calls
+        assert '' in phase_calls
+        assert bs._prebuild_paused is False
 
     def test_phase_cleared_on_non_transient_pause(self):
         """Non-retryable pause (resource pressure) should clear phase."""

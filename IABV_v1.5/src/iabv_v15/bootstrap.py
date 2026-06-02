@@ -3459,15 +3459,13 @@ class AppBootstrap:
         Updates the watchdog so runtime_audit stalls carry the correct
         ``startup_active`` / ``startup_followup_active`` context.
 
-        Includes snapshot_refresh_in_flight because prebuild depends
-        on a fresh resource snapshot — if a refresh is in-flight, the
-        extended startup is not yet complete.
+        Resource snapshot refresh is not part of the birth contract.  It is
+        maintenance input for idle prebuild and must not keep the first
+        communication channel in "startup follow-up" mode.
         """
         self._push_bootstrap_flags_to_watchdog()
-        snapshot_in_flight = getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
         if (self._deferred_setup_active
-                or self._truth_refresh_active
-                or snapshot_in_flight):
+                or self._truth_refresh_active):
             return  # at least one phase still running
         self._startup_followup_active = False
         # Re-push flags AFTER clearing so bootstrap_flags dict and
@@ -3597,14 +3595,6 @@ class AppBootstrap:
         if self._truth_refresh_active:
             return 'startup_background_active:startup_truth_refresh'
 
-        # 0b. Snapshot refresh in-flight during extended startup.
-        # Even if a cached snapshot exists, a refresh in-flight means
-        # resource data may be stale.  During startup_followup_active
-        # the event loop is fragile, so pause until the refresh lands.
-        if (getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
-                and self._startup_followup_active):
-            return 'resource_snapshot_refresh_in_flight'
-
         # 1. Resource pressure from cached snapshot (non-blocking)
         snap, age = self._get_cached_snapshot()
         if snap is not None and age < self._PREBUILD_SNAPSHOT_MAX_AGE_S:
@@ -3685,10 +3675,32 @@ class AppBootstrap:
             reason, route, remaining, snap_data,
         )
 
+    def _emit_prebuild_deferred(self, reason: str, route: str, remaining: list[str]) -> None:
+        """Emit a lightweight idle-prebuild deferral.
+
+        Snapshot pending/unavailable is not a user-visible freeze cause and
+        should not hold the watchdog dominant phase as if the UI were actively
+        waiting.  It simply means non-critical VM prebuild will retry later.
+        """
+        try:
+            self._timeline.mark(
+                'lazy_vm_prebuild_deferred',
+                reason=reason,
+                route=route,
+                remaining_routes=remaining,
+            )
+        except Exception:
+            pass
+        logger.info(
+            'lazy_vm_prebuild_deferred: reason=%s route=%s remaining=%s',
+            reason, route, remaining,
+        )
+
     # ---- Prebuild chain ----
 
     # How long to wait before retrying when snapshot is pending (ms).
-    _PREBUILD_SNAPSHOT_RETRY_MS: int = 2000
+    # This is idle maintenance; a short 2s loop polluted live stall evidence.
+    _PREBUILD_SNAPSHOT_RETRY_MS: int = 15000
 
     def _build_all_lazy_vms(self) -> None:
         """Pre-build all lazy VMs during idle time (background timer chain).
@@ -3756,9 +3768,15 @@ class AppBootstrap:
             # --- Resource governance gate ---
             pause_reason = self._should_pause_prebuild(route, remaining)
             if pause_reason is not None:
-                self._prebuild_paused = True
-                self._prebuild_paused_routes = routes[idx:]
-                self._emit_prebuild_paused(pause_reason, route, routes[idx:])
+                snapshot_wait = pause_reason.startswith('resource_snapshot_')
+                if snapshot_wait:
+                    self._prebuild_paused = False
+                    self._prebuild_paused_routes = []
+                    self._emit_prebuild_deferred(pause_reason, route, routes[idx:])
+                else:
+                    self._prebuild_paused = True
+                    self._prebuild_paused_routes = routes[idx:]
+                    self._emit_prebuild_paused(pause_reason, route, routes[idx:])
 
                 # For transient reasons (snapshot pending, background
                 # startup active), schedule a non-blocking retry so the
@@ -3768,11 +3786,15 @@ class AppBootstrap:
                     or pause_reason.startswith('startup_background_active:')
                 )
                 if retryable:
-                    # Set dominant_phase to waiting state so stalls
-                    # during the wait carry meaningful context.
                     wd = getattr(self, 'ui_heartbeat_watchdog', None)
                     if wd is not None:
-                        wd.set_dominant_phase(f'prebuild_waiting:{pause_reason}')
+                        if snapshot_wait:
+                            # The UI is not waiting; the idle chain is simply
+                            # deferred until resource observation catches up.
+                            wd.set_dominant_phase('')
+                        else:
+                            # Startup background waits remain useful context.
+                            wd.set_dominant_phase(f'prebuild_waiting:{pause_reason}')
                     QTimer.singleShot(
                         self._PREBUILD_SNAPSHOT_RETRY_MS,
                         lambda: _build_next(idx),
