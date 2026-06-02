@@ -1,0 +1,24 @@
+{
+  "id": "startup_chat_first_bridge_readiness_p085",
+  "title": "P0.85: Startup Chat-First Bridge Readiness",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Make the human communication channel available before heavy metacognitive startup refresh blocks lazy VM prebuild.",
+  "reason": "Live Windows audit on 2026-06-01 showed page_loader_ready in ~2s but UIBridge/chat did not become reachable until much later because ControlCenterVM prebuild paused behind startup_truth_refresh. The user could see the app before the app could reliably communicate back.",
+  "dependency_missing": "",
+  "next_action": "Restart from the desktop shortcut and verify human_simulated_chat_audit passes within 30 seconds after the UI is visible.",
+  "resume_hint": "ControlCenterVM now bypasses truth_refresh/startup_evolution prebuild pauses once deferred setup is complete; non-control VMs still pause under background work/resource pressure.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "expected_live_markers": [
+      "startup_chat_bridge_priority_granted",
+      "lazy_vm_control_done",
+      "UIBridgeServer started with ControlCenterViewModel"
+    ],
+    "unresolved": [
+      "live_shortcut_bridge_ready_under_30s",
+      "startup_truth_refresh_still_heavy_but_no_longer_blocks_control_vm"
+    ]
+  }
+}

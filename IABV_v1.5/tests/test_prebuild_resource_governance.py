@@ -173,7 +173,7 @@ class TestPrebuildPausesHighRAM:
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=80.0))
 
-        reason = bs._should_pause_prebuild('control', ['capture', 'evolution'])
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason is not None
         assert 'ram_pressure' in reason
@@ -182,7 +182,7 @@ class TestPrebuildPausesHighRAM:
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=95.0))
 
-        reason = bs._should_pause_prebuild('control', [])
+        reason = bs._should_pause_prebuild('capture', [])
 
         assert reason is not None
         assert 'ram_pressure:critical' in reason
@@ -340,13 +340,13 @@ class TestTimelineRecordsPaused:
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=85.0))
 
-        reason = bs._should_pause_prebuild('control', ['capture'])
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason is not None
         bs._prebuild_paused = True
-        bs._prebuild_paused_routes = ['control', 'capture']
+        bs._prebuild_paused_routes = ['capture', 'evolution']
         assert bs._prebuild_paused is True
-        assert 'control' in bs._prebuild_paused_routes
+        assert 'capture' in bs._prebuild_paused_routes
 
 
 # ------------------------------------------------------------------ #
@@ -402,7 +402,7 @@ class TestShouldPauseNeverCallsSnapshotSync:
         with patch(
             'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
         ) as mock_snap:
-            bs._should_pause_prebuild('control', [])
+            bs._should_pause_prebuild('capture', [])
 
         mock_snap.assert_not_called()
 
@@ -425,7 +425,7 @@ class TestShouldPauseNeverCallsSnapshotSync:
         ):
             import time as _t
             start = _t.time()
-            reason = bs._should_pause_prebuild('control', [])
+            reason = bs._should_pause_prebuild('capture', [])
             elapsed = _t.time() - start
 
         # Must return immediately (< 0.5s) — never blocks
@@ -484,7 +484,7 @@ class TestStaleCacheBehavior:
             'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
             return_value=_make_resource_snapshot(),
         ):
-            reason = bs._should_pause_prebuild('control', [])
+            reason = bs._should_pause_prebuild('capture', [])
 
         assert reason == 'resource_snapshot_unavailable'
 
@@ -500,7 +500,7 @@ class TestStaleCacheBehavior:
         bs._prebuild_snapshot_refresh_in_flight = True
         bs._startup_followup_active = False
 
-        reason = bs._should_pause_prebuild('control', [])
+        reason = bs._should_pause_prebuild('capture', [])
 
         assert reason == 'resource_snapshot_pending'
 
@@ -667,7 +667,7 @@ class TestSnapshotPendingRetry:
         bs._prebuild_snapshot_refresh_in_flight = True
         bs._startup_followup_active = False  # isolate snapshot-pending path
 
-        reason = bs._should_pause_prebuild('control', ['capture'])
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason == 'resource_snapshot_pending'
 
@@ -680,7 +680,7 @@ class TestSnapshotPendingRetry:
             'iabv_v15.services.intelligent_resource_manager.take_resource_snapshot',
             return_value=_make_resource_snapshot(),
         ) as mock_snap:
-            reason = bs._should_pause_prebuild('control', ['capture'])
+            reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason == 'resource_snapshot_unavailable'
         # Refresh should have been triggered
@@ -765,7 +765,7 @@ class TestDominantPhaseDuringPrebuild:
 class TestPrebuildPausesDuringBackgroundStartup:
     """Prebuild must not run while heavy background startup tasks are active."""
 
-    def test_pauses_when_deferred_setup_active(self):
+    def test_control_pauses_when_deferred_setup_active(self):
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
         bs._deferred_setup_active = True
@@ -774,21 +774,39 @@ class TestPrebuildPausesDuringBackgroundStartup:
 
         assert reason == 'startup_background_active:deferred_post_window_setup'
 
-    def test_pauses_when_truth_refresh_active(self):
+    def test_control_does_not_pause_when_truth_refresh_active(self):
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
         bs._truth_refresh_active = True
 
         reason = bs._should_pause_prebuild('control', ['capture'])
 
-        assert reason == 'startup_background_active:startup_truth_refresh'
+        assert reason is None
 
-    def test_pauses_when_startup_evolution_active(self):
+    def test_control_does_not_pause_when_startup_evolution_active(self):
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
         bs._startup_evolution_active = True
 
         reason = bs._should_pause_prebuild('control', ['capture'])
+
+        assert reason is None
+
+    def test_non_control_pauses_when_truth_refresh_active(self):
+        bs = _make_bootstrap()
+        _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
+        bs._truth_refresh_active = True
+
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
+
+        assert reason == 'startup_background_active:startup_truth_refresh'
+
+    def test_non_control_pauses_when_startup_evolution_active(self):
+        bs = _make_bootstrap()
+        _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
+        bs._startup_evolution_active = True
+
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         assert reason == 'startup_background_active:startup_evolution'
 
@@ -808,9 +826,9 @@ class TestPrebuildPausesDuringBackgroundStartup:
         """startup_background_active reasons should schedule QTimer retry."""
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
-        bs._deferred_setup_active = True
+        bs._truth_refresh_active = True
 
-        reason = bs._should_pause_prebuild('control', ['capture'])
+        reason = bs._should_pause_prebuild('capture', ['evolution'])
 
         # Verify reason is retryable (starts with startup_background_active:)
         assert reason is not None
