@@ -104,6 +104,7 @@ def _make_apply_result_stub():
 
     for name in (
         '_apply_task_result', '_should_defer_heavy_work',
+        '_should_refresh_heavy_post_result',
         '_remember_external_failure', '_clear_external_failure_memory',
     ):
         method = getattr(ControlCenterViewModel, name, None)
@@ -619,6 +620,16 @@ class TestResourcePressureBlockMapsToDeferredTerminal:
         )
 
         assert scheduled == [{'reason': 'post_task_result'}]
+
+    def test_chat_result_does_not_request_heavy_post_result_refresh(self) -> None:
+        """Lightweight/local chat results must not trigger dev packet refresh."""
+        vm = _make_apply_result_stub()
+
+        assert vm._should_refresh_heavy_post_result('chat', {'summary': 'ok'}) is False
+        assert vm._should_refresh_heavy_post_result(
+            'external_consultation',
+            {'success': False, 'terminal_state': 'blocked_by_security_verification'},
+        ) is True
 
     def test_is_resource_pressure_block_static(self) -> None:
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel

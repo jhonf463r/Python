@@ -9558,6 +9558,32 @@ class ControlCenterViewModel(QObject):
 
         self._bg_pool.submit(_worker)
 
+    def _should_refresh_heavy_post_result(self, task_name: str, payload: Any) -> bool:
+        """Return whether post-result heavy UI/evolution refresh is justified.
+
+        Live shortcut proof showed that lightweight chat/metacognitive replies
+        can still trigger a 15s development packet refresh after the user only
+        asked status questions.  Keep the communication loop responsive: heavy
+        refresh belongs to tasks that changed external/evolutionary state.
+        """
+        if task_name in {'provider_health', 'chat', 'security_retest'}:
+            return False
+        if task_name == 'external_consultation':
+            return True
+        if task_name in {
+            'adaptive_action',
+            'self_teach',
+            'payload',
+            'pbt',
+        }:
+            return True
+        if isinstance(payload, dict):
+            if payload.get('adaptive_session') or payload.get('payload'):
+                return True
+            if payload.get('scenario_run') or payload.get('pending_issue'):
+                return True
+        return False
+
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
         if user_goal is not None:
             self._last_user_goal = user_goal.strip()
@@ -14499,8 +14525,18 @@ class ControlCenterViewModel(QObject):
                     )
                 except Exception:
                     pass
-        # Gate heavy deferred work under resource pressure (Sub-objective B).
-        if not self._should_defer_heavy_work():
+        # Gate heavy deferred work under task relevance and resource pressure.
+        if not self._should_refresh_heavy_post_result(task_name, payload):
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'post_result_heavy_refresh_skipped',
+                    task_name=task_name,
+                    reason='lightweight_or_non_evolutionary_result',
+                )
+            except Exception:
+                pass
+        elif not self._should_defer_heavy_work():
             self._update_evolution_snapshot()
             self._agent_cards = self._build_agent_cards()
             _schedule_dev_packet = getattr(self, '_schedule_idle_dev_packet_refresh', None)

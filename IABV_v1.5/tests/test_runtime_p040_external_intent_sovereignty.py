@@ -619,6 +619,38 @@ class TestOSESStartupStallFinding:
             ]
             assert len(snapshot_findings) >= 1
 
+    def test_oses_detects_slow_development_packet_refresh(self):
+        """OSES must report slow post-result development packet refreshes."""
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audit_path = Path(tmpdir) / 'data' / 'logs' / 'runtime_audit.jsonl'
+            audit_path.parent.mkdir(parents=True, exist_ok=True)
+            events = [
+                {
+                    'kind': 'development_packet_refresh_finished',
+                    'data': {
+                        'reason': 'post_task_result',
+                        'elapsed_ms': 15950.4,
+                        'force': False,
+                    },
+                },
+            ]
+            with audit_path.open('w') as fh:
+                for ev in events:
+                    fh.write(json.dumps(ev) + '\n')
+
+            svc = object.__new__(OperationalSelfExaminationService)
+            svc.workspace_root = tmpdir
+            findings = svc._external_readiness_missing_findings()
+
+            dev_packet_findings = [
+                f for f in findings
+                if f.category == 'post_result_development_packet_slow'
+            ]
+            assert len(dev_packet_findings) >= 1
+
 
 # ══════════════════════════════════════════════════════════════
 # Test 7: PortableContext exports next-time policy without PII

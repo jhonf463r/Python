@@ -1,0 +1,26 @@
+{
+  "id": "post_result_heavy_refresh_governance_p089",
+  "title": "P0.89: Post-Result Heavy Refresh Governance",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Prevent lightweight chat/metacognitive responses from triggering heavy evolution snapshot, agent card, development packet, and autonomy dock refreshes.",
+  "reason": "Live shortcut proof after P0.88 showed remaining event_loop_blocked_unknown stalls and development_packet_refresh_finished elapsed_ms=15950.4 after lightweight chat audit messages. The communication loop must remain light unless a task changed external/evolutionary state.",
+  "dependency_missing": "",
+  "next_action": "Merge P0.89, update the desktop shortcut runtime, rerun human_simulated_chat_audit.py, and verify no development_packet_refresh_finished event follows lightweight chat/status/metacognition messages.",
+  "resume_hint": "_apply_task_result now calls _should_refresh_heavy_post_result() before post-result heavy refresh; chat/provider_health/security_retest skip heavy refresh and trace post_result_heavy_refresh_skipped.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence_source": "shortcut runtime after P0.88 merge",
+    "expected_live_markers": [
+      "post_result_heavy_refresh_skipped",
+      "continuity_message_answered"
+    ],
+    "forbidden_live_markers_after_lightweight_chat": [
+      "development_packet_refresh_finished"
+    ],
+    "unresolved": [
+      "live_shortcut_post_result_heavy_refresh_governance_after_merge"
+    ]
+  }
+}
