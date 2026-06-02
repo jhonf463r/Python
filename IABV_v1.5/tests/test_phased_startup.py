@@ -66,6 +66,11 @@ def _make_bootstrap():
         bs._shell_loader_ready_handled = False
         # Service dependencies (mocked — only need to exist as attributes)
         _m = MagicMock
+        bs.chat_message_repository = _m()
+        bs.decision_audit_trail = _m()
+        bs.freeze_incident_reporter = _m()
+        bs.ui_heartbeat_watchdog = None
+        bs.chat_interaction_lifecycle = _m()
         bs.episode_repository = _m()
         bs.knowledge_repository = _m()
         bs.run_repository = _m()

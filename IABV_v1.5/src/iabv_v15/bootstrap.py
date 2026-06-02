@@ -3580,11 +3580,27 @@ class AppBootstrap:
         ``_refresh_prebuild_snapshot_async``).  It NEVER calls
         ``take_resource_snapshot()`` directly.
         """
-        # 0. Background startup phases — highest priority.
-        # If any heavy startup task is still running, the event loop is
-        # already under load.  Building VMs on top would cause stalls.
+        # 0. Deferred setup owns lightweight dependencies needed by
+        # ControlCenterVM (UIBridgeService, MCP refs, screenshot provider).
+        # Do not build control before that batch finishes.
         if self._deferred_setup_active:
             return 'startup_background_active:deferred_post_window_setup'
+
+        # 0b. ControlCenterVM owns the chat bridge used for live audit,
+        # user handoff, and human assistance. Once deferred setup is done,
+        # it must be allowed to build even while metacognitive background
+        # refresh is running; otherwise the app loses its own communication
+        # channel for 40-120s after the user already sees the window.
+        if route == 'control':
+            try:
+                self._timeline.mark('startup_chat_bridge_priority_granted')
+            except Exception:
+                pass
+            return None
+
+        # 0c. Background startup phases for non-control VMs. If any heavy
+        # startup task is still running, the event loop is already under
+        # load. Building non-critical VMs on top would cause stalls.
         if self._truth_refresh_active:
             return 'startup_background_active:startup_truth_refresh'
         if self._startup_evolution_active:
@@ -3597,13 +3613,6 @@ class AppBootstrap:
         if (getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
                 and self._startup_followup_active):
             return 'resource_snapshot_refresh_in_flight'
-
-        # The control VM owns the chat bridge used for live audit and human
-        # assistance.  Once heavy startup phases are done, it must be allowed
-        # to build even if non-critical VMs remain gated by resource pressure;
-        # otherwise the app loses its own communication channel.
-        if route == 'control':
-            return None
 
         # 1. Resource pressure from cached snapshot (non-blocking)
         snap, age = self._get_cached_snapshot()
