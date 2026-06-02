@@ -3266,6 +3266,10 @@ class AppBootstrap:
         logger.info('lazy_vm_constructed: %s', route)
 
     def _build_control_center_vm(self) -> None:
+        try:
+            self._timeline.mark('startup_chat_bridge_priority_granted')
+        except Exception:
+            pass
         self.control_center_viewmodel = ControlCenterViewModel(
             config=self.config,
             episode_repository=self.episode_repository,
