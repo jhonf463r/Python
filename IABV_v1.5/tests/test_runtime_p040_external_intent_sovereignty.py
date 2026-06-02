@@ -587,6 +587,38 @@ class TestOSESStartupStallFinding:
             ]
             assert len(evolution_findings) >= 1
 
+    def test_oses_detects_prebuild_resource_snapshot_stall(self):
+        """OSES must report when resource snapshot waiting pollutes UI stalls."""
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audit_path = Path(tmpdir) / 'data' / 'logs' / 'runtime_audit.jsonl'
+            audit_path.parent.mkdir(parents=True, exist_ok=True)
+            events = [
+                {
+                    'kind': 'ui_event_loop_stall',
+                    'data': {
+                        'duration_ms': 9768,
+                        'dominant_phase': 'prebuild_waiting:resource_snapshot_pending',
+                        'dominant_phase_at_detection': 'prebuild_waiting:resource_snapshot_pending',
+                    },
+                },
+            ]
+            with audit_path.open('w') as fh:
+                for ev in events:
+                    fh.write(json.dumps(ev) + '\n')
+
+            svc = object.__new__(OperationalSelfExaminationService)
+            svc.workspace_root = tmpdir
+            findings = svc._external_readiness_missing_findings()
+
+            snapshot_findings = [
+                f for f in findings
+                if f.category == 'prebuild_resource_snapshot_stall_repeated'
+            ]
+            assert len(snapshot_findings) >= 1
+
 
 # ══════════════════════════════════════════════════════════════
 # Test 7: PortableContext exports next-time policy without PII

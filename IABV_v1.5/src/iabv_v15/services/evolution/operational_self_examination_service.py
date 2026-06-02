@@ -9292,6 +9292,7 @@ class OperationalSelfExaminationService:
         external_intent_local_count = 0
         startup_stall_count = 0
         startup_evolution_stall_count = 0
+        prebuild_resource_snapshot_stall_count = 0
         try:
             if audit_path.exists():
                 recent2: deque[str] = deque(maxlen=300)
@@ -9327,6 +9328,11 @@ class OperationalSelfExaminationService:
                         )
                         if 'startup_evolution' in phase or 'startup_evolution' in phase_at_detection:
                             startup_evolution_stall_count += 1
+                        if ('resource_snapshot_pending' in phase
+                                or 'resource_snapshot_pending' in phase_at_detection
+                                or 'resource_snapshot_refresh_in_flight' in phase
+                                or 'resource_snapshot_refresh_in_flight' in phase_at_detection):
+                            prebuild_resource_snapshot_stall_count += 1
         except Exception:
             pass
         if external_intent_local_count >= 1:
@@ -9381,6 +9387,29 @@ class OperationalSelfExaminationService:
                 confidence=0.85,
                 metadata={
                     'startup_evolution_stall_count': startup_evolution_stall_count,
+                },
+            ))
+        if prebuild_resource_snapshot_stall_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='prebuild_resource_snapshot_stall_repeated',
+                severity=IssueSeverity.MEDIUM,
+                title='Resource snapshot pending polluted UI stall attribution',
+                summary=(
+                    f'resource_snapshot pending/in-flight aparecio en '
+                    f'{prebuild_resource_snapshot_stall_count} stall(s) de UI. '
+                    f'La observacion de recursos debe alimentar decisiones '
+                    f'idle, no sostener un dominant_phase de espera activa.'
+                ),
+                recommendation=(
+                    'Diferir el prebuild hasta tener snapshot sin marcar '
+                    'prebuild_waiting:resource_snapshot_pending y sin retry '
+                    'agresivo en el hilo UI.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'prebuild_resource_snapshot_stall_count': (
+                        prebuild_resource_snapshot_stall_count
+                    ),
                 },
             ))
         return findings

@@ -2,7 +2,7 @@
 
 Validates:
 A. startup_followup_active sync between AppBootstrap and watchdog.
-B. Snapshot refresh in-flight pauses prebuild during startup_followup_active.
+B. Snapshot refresh in-flight is idle maintenance, not startup follow-up.
 C. dominant_phase no stale (tested via watchdog sampler in test_watchdog_async_capture).
 D. PortableContext/OSES dedup by interaction_id.
 E. Markdown resolved=<true|false> in interaction_lifecycle section.
@@ -65,11 +65,8 @@ class FakeBootstrap:
 
     def _check_startup_followup_done(self):
         self._push_bootstrap_flags_to_watchdog()
-        snapshot_in_flight = self._prebuild_snapshot_refresh_in_flight
         if (self._deferred_setup_active
-                or self._truth_refresh_active
-                or self._startup_evolution_active
-                or snapshot_in_flight):
+                or self._truth_refresh_active):
             return
         self._startup_followup_active = False
         self._push_bootstrap_flags_to_watchdog()
@@ -79,11 +76,6 @@ class FakeBootstrap:
             return 'startup_background_active:deferred_post_window_setup'
         if self._truth_refresh_active:
             return 'startup_background_active:startup_truth_refresh'
-        if self._startup_evolution_active:
-            return 'startup_background_active:startup_evolution'
-        if (self._prebuild_snapshot_refresh_in_flight
-                and self._startup_followup_active):
-            return 'resource_snapshot_refresh_in_flight'
         return None
 
 
@@ -133,20 +125,19 @@ class TestStartupFollowupSync:
 
 
 # ---------------------------------------------------------------------------
-# B. Snapshot refresh in-flight pauses prebuild during startup
+# B. Snapshot refresh in-flight is non-blocking startup maintenance
 # ---------------------------------------------------------------------------
 
 class TestSnapshotRefreshInFlightPause:
-    def test_pause_when_refresh_in_flight_and_followup_active(self):
+    def test_no_pause_when_refresh_in_flight_and_followup_active(self):
         """snapshot cached low pressure + refresh_in_flight=True
-        + startup_followup_active=True => pauses with
-        resource_snapshot_refresh_in_flight.
+        + startup_followup_active=True => does not keep startup blocked.
         """
         bs = FakeBootstrap()
         bs._prebuild_snapshot_refresh_in_flight = True
         bs._startup_followup_active = True
         reason = bs._should_pause_prebuild()
-        assert reason == 'resource_snapshot_refresh_in_flight'
+        assert reason is None
 
     def test_no_pause_when_refresh_in_flight_but_followup_not_active(self):
         """refresh_in_flight alone (no startup_followup) does NOT pause."""
