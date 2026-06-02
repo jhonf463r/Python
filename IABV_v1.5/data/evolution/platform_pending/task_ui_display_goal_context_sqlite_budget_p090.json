@@ -1,0 +1,26 @@
+{
+  "id": "ui_display_goal_context_sqlite_budget_p090",
+  "title": "P0.90: UI Display Goal Context SQLite Budget",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Prevent startup/provider-health display paths from blocking the UI on objective_repository SQLite reads.",
+  "reason": "Live shortcut proof after P0.89 produced a 5728ms ui_event_loop_stall. The sampled main-thread stack was _apply_task_result(provider_health) -> _startup_readiness_text() -> _goal_context_for_display() -> objective_repository.latest_active() -> SQLite busy_timeout. CPU/RAM appeared usable, but the UI thread waited on persistent goal context.",
+  "dependency_missing": "",
+  "next_action": "Merge P0.90, update the desktop shortcut runtime, launch IABV from the shortcut, and verify provider_health no longer causes ui_event_loop_stall with objective_repository in the sampled stack.",
+  "resume_hint": "Display paths now call _goal_context_for_display(..., allow_repository=false) and schedule a background goal_context refresh instead of querying SQLite from readiness text, provider diagnostics, or agent card building.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence_source": "freeze_20260602_222505_757352.json",
+    "expected_live_markers": [
+      "goal_context_background_refresh_finished"
+    ],
+    "forbidden_live_stack_markers": [
+      "_startup_readiness_text -> _goal_context_for_display -> objective_repository.latest_active",
+      "_build_provider_diagnostic -> _goal_context_for_display -> objective_repository.latest_active"
+    ],
+    "unresolved": [
+      "live_shortcut_provider_health_goal_context_stall_after_merge"
+    ]
+  }
+}

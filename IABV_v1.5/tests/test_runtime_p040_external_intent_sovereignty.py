@@ -651,6 +651,42 @@ class TestOSESStartupStallFinding:
             ]
             assert len(dev_packet_findings) >= 1
 
+    def test_oses_detects_ui_display_sqlite_stall(self):
+        """OSES must report UI display paths blocked on objective_repository."""
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audit_path = Path(tmpdir) / 'data' / 'logs' / 'runtime_audit.jsonl'
+            audit_path.parent.mkdir(parents=True, exist_ok=True)
+            event = {
+                'kind': 'ui_event_loop_stall',
+                'data': {
+                    'duration_ms': 5728.7,
+                    'dominant_phase': 'event_loop_blocked_unknown',
+                    'main_thread_stack_during_stall': [
+                        'control_center_viewmodel.py, line 14180, in _apply_task_result',
+                        'control_center_viewmodel.py, line 1457, in _startup_readiness_text',
+                        'control_center_viewmodel.py, line 912, in _goal_context_for_display',
+                        'objective_repository.py, line 111, in latest_active',
+                        'database.py, line 27, in connect',
+                    ],
+                },
+            }
+            with audit_path.open('w') as fh:
+                fh.write(json.dumps(event) + '\n')
+
+            svc = object.__new__(OperationalSelfExaminationService)
+            svc.workspace_root = tmpdir
+            findings = svc._external_readiness_missing_findings()
+
+            sqlite_findings = [
+                f for f in findings
+                if f.category == 'ui_display_sqlite_stall_repeated'
+            ]
+            assert len(sqlite_findings) >= 1
+            assert sqlite_findings[0].severity.value == 'high'
+
 
 # ══════════════════════════════════════════════════════════════
 # Test 7: PortableContext exports next-time policy without PII
