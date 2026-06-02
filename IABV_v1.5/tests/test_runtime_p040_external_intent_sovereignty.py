@@ -555,6 +555,38 @@ class TestOSESStartupStallFinding:
             stall_findings = [f for f in findings if f.category == 'startup_truth_refresh_stall_repeated']
             assert len(stall_findings) >= 1
 
+    def test_oses_detects_startup_evolution_stall(self):
+        """OSES must report when startup evolution appears in UI stalls."""
+        from iabv_v15.services.evolution.operational_self_examination_service import (
+            OperationalSelfExaminationService,
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audit_path = Path(tmpdir) / 'data' / 'logs' / 'runtime_audit.jsonl'
+            audit_path.parent.mkdir(parents=True, exist_ok=True)
+            events = [
+                {
+                    'kind': 'ui_event_loop_stall',
+                    'data': {
+                        'duration_ms': 32625,
+                        'dominant_phase': 'prebuild_waiting:startup_background_active:startup_evolution',
+                        'dominant_phase_at_detection': 'prebuild_waiting:startup_background_active:startup_evolution',
+                    },
+                },
+            ]
+            with audit_path.open('w') as fh:
+                for ev in events:
+                    fh.write(json.dumps(ev) + '\n')
+
+            svc = object.__new__(OperationalSelfExaminationService)
+            svc.workspace_root = tmpdir
+            findings = svc._external_readiness_missing_findings()
+
+            evolution_findings = [
+                f for f in findings
+                if f.category == 'startup_evolution_stall_repeated'
+            ]
+            assert len(evolution_findings) >= 1
+
 
 # ══════════════════════════════════════════════════════════════
 # Test 7: PortableContext exports next-time policy without PII

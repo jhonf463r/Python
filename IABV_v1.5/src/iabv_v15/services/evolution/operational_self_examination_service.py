@@ -9291,6 +9291,7 @@ class OperationalSelfExaminationService:
         # P0.40: detect external intent misrouted to local
         external_intent_local_count = 0
         startup_stall_count = 0
+        startup_evolution_stall_count = 0
         try:
             if audit_path.exists():
                 recent2: deque[str] = deque(maxlen=300)
@@ -9319,6 +9320,13 @@ class OperationalSelfExaminationService:
                             external_intent_local_count += 1
                     if kind2 == 'startup_truth_refresh_stall_detected':
                         startup_stall_count += 1
+                    if kind2 == 'ui_event_loop_stall':
+                        phase = str(data2.get('dominant_phase', '') or '')
+                        phase_at_detection = str(
+                            data2.get('dominant_phase_at_detection', '') or ''
+                        )
+                        if 'startup_evolution' in phase or 'startup_evolution' in phase_at_detection:
+                            startup_evolution_stall_count += 1
         except Exception:
             pass
         if external_intent_local_count >= 1:
@@ -9355,6 +9363,25 @@ class OperationalSelfExaminationService:
                 ),
                 confidence=0.8,
                 metadata={'startup_stall_count': startup_stall_count},
+            ))
+        if startup_evolution_stall_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='startup_evolution_stall_repeated',
+                severity=IssueSeverity.MEDIUM,
+                title='Startup evolution blocked live UI readiness',
+                summary=(
+                    f'startup_evolution aparecio en {startup_evolution_stall_count} '
+                    f'stall(s) de UI. El mantenimiento metacognitivo no debe '
+                    f'competir con el nacimiento interactivo.'
+                ),
+                recommendation=(
+                    'Mantener startup_evolution detras de un gate idle/resource '
+                    'y no usarlo como fase bloqueante de prebuild.'
+                ),
+                confidence=0.85,
+                metadata={
+                    'startup_evolution_stall_count': startup_evolution_stall_count,
+                },
             ))
         return findings
 

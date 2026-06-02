@@ -801,14 +801,14 @@ class TestPrebuildPausesDuringBackgroundStartup:
 
         assert reason == 'startup_background_active:startup_truth_refresh'
 
-    def test_non_control_pauses_when_startup_evolution_active(self):
+    def test_non_control_does_not_pause_when_startup_evolution_active(self):
         bs = _make_bootstrap()
         _inject_cached_snapshot(bs, _make_resource_snapshot(ram_used_pct=30.0))
         bs._startup_evolution_active = True
 
         reason = bs._should_pause_prebuild('capture', ['evolution'])
 
-        assert reason == 'startup_background_active:startup_evolution'
+        assert reason is None
 
     def test_does_not_pause_when_no_background_active(self):
         """With all background flags False and low pressure, should proceed."""

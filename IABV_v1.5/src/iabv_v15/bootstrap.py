@@ -3435,12 +3435,17 @@ class AppBootstrap:
     _PREBUILD_SNAPSHOT_MAX_AGE_S: float = 60.0
 
     # -- Background startup phase tracking --
-    # These flags track whether heavy background startup tasks are still
-    # running.  Prebuild pauses while any of them is active so it doesn't
-    # compete for CPU/IO with startup work that can freeze the UI.
+    # These flags track whether background startup tasks are still running.
+    # Only user-visible birth work may hold the startup follow-up contract.
+    # Metacognitive maintenance is idle-gated separately.
     _deferred_setup_active: bool = False
     _truth_refresh_active: bool = False
     _startup_evolution_active: bool = False
+    _STARTUP_EVOLUTION_INITIAL_DELAY_MS: int = 120_000
+    _STARTUP_EVOLUTION_RETRY_BASE_MS: int = 60_000
+    _STARTUP_EVOLUTION_MAX_DEFERRALS: int = 6
+    _STARTUP_EVOLUTION_MIN_FREE_MB: float = 4096.0
+    _STARTUP_EVOLUTION_MAX_RAM_USED_PCT: float = 75.0
 
     # Extended startup: True until *all* background startup phases finish.
     # This is what the watchdog reads (startup_followup_active) to avoid
@@ -3462,7 +3467,6 @@ class AppBootstrap:
         snapshot_in_flight = getattr(self, '_prebuild_snapshot_refresh_in_flight', False)
         if (self._deferred_setup_active
                 or self._truth_refresh_active
-                or self._startup_evolution_active
                 or snapshot_in_flight):
             return  # at least one phase still running
         self._startup_followup_active = False
@@ -3586,13 +3590,12 @@ class AppBootstrap:
                 pass
             return None
 
-        # 0c. Background startup phases for non-control VMs. If any heavy
-        # startup task is still running, the event loop is already under
-        # load. Building non-critical VMs on top would cause stalls.
+        # 0c. Background startup phases for non-control VMs. Truth refresh
+        # belongs to the birth contract, so non-control VMs wait for it.
+        # Startup evolution is idle-gated maintenance and must not freeze
+        # non-critical prebuild by holding a startup-background label.
         if self._truth_refresh_active:
             return 'startup_background_active:startup_truth_refresh'
-        if self._startup_evolution_active:
-            return 'startup_background_active:startup_evolution'
 
         # 0b. Snapshot refresh in-flight during extended startup.
         # Even if a cached snapshot exists, a refresh in-flight means
@@ -4524,6 +4527,90 @@ class AppBootstrap:
         except Exception:
             pass
 
+    def _startup_evolution_initial_delay_ms(self) -> int:
+        """Return the first idle-maintenance delay for startup evolution."""
+        raw = os.environ.get('IABV_STARTUP_EVOLUTION_DELAY_MS')
+        if raw is None:
+            return self._STARTUP_EVOLUTION_INITIAL_DELAY_MS
+        try:
+            return max(30_000, int(raw))
+        except Exception:
+            return self._STARTUP_EVOLUTION_INITIAL_DELAY_MS
+
+    def _trace_startup_evolution(self, kind: str, **data: Any) -> None:
+        tracer = getattr(self, '_tracer', None)
+        if tracer is not None:
+            try:
+                tracer.trace(kind, **data)
+            except Exception:
+                pass
+        try:
+            self._timeline.mark(kind, **data)
+        except Exception:
+            pass
+
+    def _startup_evolution_defer_reason(self) -> str | None:
+        """Return why startup evolution must wait, or ``None`` if safe."""
+        if str(os.environ.get('IABV_DISABLE_STARTUP_EVOLUTION', '')).lower() in {
+            '1', 'true', 'yes', 'on',
+        }:
+            return 'disabled_by_env'
+
+        watchdog = getattr(self, 'ui_heartbeat_watchdog', None)
+        if watchdog is not None:
+            try:
+                if getattr(watchdog, '_query_pending', False):
+                    return 'query_pending'
+            except Exception:
+                pass
+            try:
+                if self._has_recent_ui_stall(watchdog, threshold_ms=1500.0):
+                    return 'recent_ui_stall'
+            except Exception:
+                pass
+
+        snap, age = self._get_cached_snapshot()
+        if snap is None:
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_unavailable'
+        if age >= self._PREBUILD_SNAPSHOT_MAX_AGE_S:
+            self._refresh_prebuild_snapshot_async()
+            return 'resource_snapshot_stale'
+
+        ram_pressure = str(getattr(snap, 'ram_pressure', '') or '').lower()
+        cpu_pressure = str(getattr(snap, 'cpu_pressure', '') or '').lower()
+        if ram_pressure in {'high', 'critical'}:
+            return f'ram_pressure:{ram_pressure}'
+        if cpu_pressure in {'high', 'critical'}:
+            return f'cpu_pressure:{cpu_pressure}'
+
+        try:
+            available_mb = float(getattr(snap, 'ram_available_mb', 0.0) or 0.0)
+            if available_mb < self._STARTUP_EVOLUTION_MIN_FREE_MB:
+                return f'low_free_ram:{available_mb:.0f}mb'
+        except Exception:
+            pass
+        try:
+            used_pct = float(getattr(snap, 'ram_used_pct', 0.0) or 0.0)
+            if used_pct >= self._STARTUP_EVOLUTION_MAX_RAM_USED_PCT:
+                return f'high_ram_used:{used_pct:.1f}%'
+        except Exception:
+            pass
+
+        return None
+
+    def _schedule_startup_evolution_retry(self, delay_ms: int, reason: str) -> None:
+        try:
+            QTimer.singleShot(delay_ms, self._schedule_startup_evolution)
+        except Exception:
+            logger.debug('startup_evolution: retry scheduling failed', exc_info=True)
+        self._trace_startup_evolution(
+            'startup_evolution_deferred_until_idle',
+            reason=reason,
+            delay_ms=delay_ms,
+            deferrals=getattr(self, '_startup_evolution_defer_count', 0),
+        )
+
     def _schedule_startup_evolution(self) -> None:
         """Run evolution cycle in background after startup.
 
@@ -4536,13 +4623,45 @@ class AppBootstrap:
         if metacog is None and api_discovery is None:
             return
 
+        reason = self._startup_evolution_defer_reason()
+        if reason:
+            if reason == 'disabled_by_env':
+                self._trace_startup_evolution(
+                    'startup_evolution_skipped',
+                    reason=reason,
+                )
+                return
+            count = int(getattr(self, '_startup_evolution_defer_count', 0) or 0) + 1
+            self._startup_evolution_defer_count = count
+            if count >= self._STARTUP_EVOLUTION_MAX_DEFERRALS:
+                self._trace_startup_evolution(
+                    'startup_evolution_skipped_after_deferrals',
+                    reason=reason,
+                    deferrals=count,
+                )
+                logger.warning(
+                    'startup_evolution: skipped after %d deferrals (%s)',
+                    count, reason,
+                )
+                return
+            delay_ms = min(
+                self._STARTUP_EVOLUTION_RETRY_BASE_MS * (2 ** (count - 1)),
+                10 * 60_000,
+            )
+            logger.info(
+                'startup_evolution: deferred until idle (%s, attempt %d)',
+                reason, count,
+            )
+            self._schedule_startup_evolution_retry(delay_ms, reason)
+            return
+
+        self._startup_evolution_defer_count = 0
         self._startup_evolution_active = True
         self._push_bootstrap_flags_to_watchdog()
 
         def _run_startup_cycle() -> None:
-            import time
-            time.sleep(5)  # Let UI load first
             logger.info('startup_evolution: beginning background cycle')
+            self._trace_startup_evolution('startup_evolution_started')
             try:
                 # Step 0a: Detect if code was updated since last run
                 self._detect_code_update()
@@ -4622,12 +4741,16 @@ class AppBootstrap:
                         logger.debug('startup_evolution: freeze diagnostics failed: %s', exc)
 
                 logger.info('startup_evolution: background cycle complete')
+                self._trace_startup_evolution('startup_evolution_finished')
             except Exception as exc:
                 logger.warning('startup_evolution: unexpected error: %s', exc)
+                self._trace_startup_evolution(
+                    'startup_evolution_finished',
+                    error=str(exc),
+                )
             finally:
                 self._startup_evolution_active = False
                 self._push_bootstrap_flags_to_watchdog()
-                self._check_startup_followup_done()
 
         threading.Thread(
             target=_run_startup_cycle,
@@ -4946,7 +5069,10 @@ class AppBootstrap:
                 except Exception:
                     pass
 
-            QTimer.singleShot(15000, self._schedule_startup_evolution)
+            QTimer.singleShot(
+                self._startup_evolution_initial_delay_ms(),
+                self._schedule_startup_evolution,
+            )
 
             # Defer the heavy tool-availability probe (HTTP pings + pip
             # install of mcp_client).  The probe now runs in a background

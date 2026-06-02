@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import shutil
+import time
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock, PropertyMock
 from uuid import uuid4
 
@@ -17,6 +19,19 @@ def _make_bootstrap() -> tuple[AppBootstrap, Path]:
     workspace.mkdir(parents=True, exist_ok=True)
     bootstrap = AppBootstrap(str(workspace))
     return bootstrap, workspace
+
+
+def _inject_snapshot(bootstrap: AppBootstrap, *, ram_used_pct: float = 40.0, available_mb: float = 8000.0) -> None:
+    bootstrap._init_prebuild_snapshot_cache()
+    snap = SimpleNamespace(
+        ram_pressure='normal',
+        cpu_pressure='normal',
+        ram_available_mb=available_mb,
+        ram_used_pct=ram_used_pct,
+    )
+    with bootstrap._prebuild_resource_snapshot_lock:
+        bootstrap._prebuild_resource_snapshot = snap
+        bootstrap._prebuild_resource_snapshot_at = time.time()
 
 
 class TestScheduleStartupEvolution:
@@ -40,9 +55,44 @@ class TestScheduleStartupEvolution:
                 'actions_taken': ['rotated provider X'],
             }
             bootstrap.metacognition_evolution = mock_metacog
+            _inject_snapshot(bootstrap)
             bootstrap._schedule_startup_evolution()
             names = [t.name for t in threading.enumerate()]
             assert 'startup-evolution' in names
+        finally:
+            shutil.rmtree(workspace, ignore_errors=True)
+
+    def test_defers_when_ram_is_high(self) -> None:
+        bootstrap, workspace = _make_bootstrap()
+        try:
+            bootstrap.metacognition_evolution = MagicMock()
+            bootstrap.api_key_discovery_service = None
+            _inject_snapshot(bootstrap, ram_used_pct=82.0, available_mb=2500.0)
+            bootstrap._tracer = MagicMock()
+            bootstrap._timeline = MagicMock()
+
+            with patch('iabv_v15.bootstrap.QTimer.singleShot') as single_shot:
+                bootstrap._schedule_startup_evolution()
+
+            single_shot.assert_called_once()
+            assert bootstrap._startup_evolution_active is False
+            assert bootstrap._startup_evolution_defer_count == 1
+            kinds = [c.args[0] for c in bootstrap._tracer.trace.call_args_list]
+            assert 'startup_evolution_deferred_until_idle' in kinds
+        finally:
+            shutil.rmtree(workspace, ignore_errors=True)
+
+    def test_followup_done_does_not_wait_for_startup_evolution(self) -> None:
+        bootstrap, workspace = _make_bootstrap()
+        try:
+            bootstrap._deferred_setup_active = False
+            bootstrap._truth_refresh_active = False
+            bootstrap._startup_evolution_active = True
+            bootstrap._prebuild_snapshot_refresh_in_flight = False
+
+            bootstrap._check_startup_followup_done()
+
+            assert bootstrap._startup_followup_active is False
         finally:
             shutil.rmtree(workspace, ignore_errors=True)
 
