@@ -13,12 +13,13 @@
     "verification_status": "LIVE_VERIFIED",
     "live_proof": {
       "date": "2026-06-02",
-      "runtime_head": "3db018cd",
+      "runtime_head": "b31e5710",
       "startup_method": "desktop_shortcut_vbs",
       "human_simulated_chat_audit": "9/9 passed",
-      "lazy_vm_control_done_t_ms": 10980.4,
-      "first_bridge_chat_queued_t_ms": 18588.8,
-      "chat_send_latencies_ms": [288, 3, 170]
+      "audit_timestamp": "2026-06-02T03:45:45Z",
+      "lazy_vm_control_done_t_ms": 17793.6,
+      "first_bridge_chat_queued_t_ms": 19032.8,
+      "chat_send_latencies_ms": [114, 135, 124]
     },
     "expected_live_markers": [
       "startup_chat_bridge_priority_granted",
