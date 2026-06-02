@@ -1,0 +1,40 @@
+{
+  "id": "startup_evolution_idle_gate_p087",
+  "title": "P0.87: Startup Evolution Idle Gate",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Make startup_evolution an idle/resource-gated maintenance task instead of a blocking birth phase, and keep short continuity commands off the heavy local chat path.",
+  "reason": "Live runtime after P0.86 confirmed startup_truth_refresh no longer blocked, but startup_evolution still appeared in UI stall evidence and the runtime later became nonresponsive with high memory. The same live session showed bare 'sigue' entering chat dispatch and timing out after 120s. The system must communicate first, then evolve only when idle and resources allow.",
+  "dependency_missing": "",
+  "next_action": "Merge P0.87, update the desktop shortcut runtime, then restart from the shortcut and verify prebuild does not pause on startup_background_active:startup_evolution and startup_evolution either starts under idle resources or emits startup_evolution_deferred_until_idle/skipped_after_deferrals.",
+  "resume_hint": "startup_evolution now uses cached resource state, query/stall gates, exponential retry, and no longer blocks prebuild or startup_followup_done. Bare continuity commands now resolve through structured local continuity, not a heavy local worker.",
+  "metadata": {
+    "verification_status": "LIVE_BRANCH_VERIFIED_PENDING_SHORTCUT_MERGE",
+    "live_branch_proof": {
+      "workspace": "C:\\Python\\IABV_v1.5_codex_p073\\IABV_v1.5",
+      "branch": "codex/p087-startup-evolution-idle-gate",
+      "head": "bd69807528a8c6946ff26ce202a06c93aed216a7",
+      "verified_markers": [
+        "continuity_message_answered",
+        "startup_evolution_deferred_until_idle",
+        "startup_evolution_started",
+        "startup_evolution_finished"
+      ],
+      "forbidden_markers_found": false
+    },
+    "expected_live_markers": [
+      "startup_evolution_deferred_until_idle",
+      "startup_evolution_started",
+      "startup_evolution_finished",
+      "continuity_message_answered"
+    ],
+    "forbidden_live_markers": [
+      "prebuild_waiting:startup_background_active:startup_evolution",
+      "startup_background_active:startup_evolution"
+    ],
+    "unresolved": [
+      "live_shortcut_startup_evolution_idle_gate_after_merge"
+    ]
+  }
+}

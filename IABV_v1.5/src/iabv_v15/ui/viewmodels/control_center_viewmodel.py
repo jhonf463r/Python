@@ -13363,6 +13363,78 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
+    _CONTINUITY_COMMANDS: tuple[str, ...] = (
+        'sigue',
+        'continua',
+        'continúa',
+        'continuemos',
+        'procede',
+        'ok sigue',
+        'ok continua',
+        'ok continúa',
+        'ok procede',
+        'adelante',
+        'siguiente',
+    )
+
+    def _is_continuity_message(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        commands = getattr(
+            self,
+            '_CONTINUITY_COMMANDS',
+            ControlCenterViewModel._CONTINUITY_COMMANDS,
+        )
+        if normalized in commands:
+            return True
+        short = len(normalized.split()) <= 4
+        return short and any(
+            normalized.startswith(cmd)
+            for cmd in commands
+        )
+
+    def _try_handle_continuity_message(self, message: str) -> bool:
+        """Handle short continuation commands without invoking local LLM."""
+        if not self._is_continuity_message(message):
+            return False
+
+        parts = [
+            'Sigo con el hilo activo sin abrir un worker pesado.',
+        ]
+        try:
+            lifecycle = self.latestDispatchLifecycle
+        except Exception:
+            lifecycle = {}
+        if lifecycle:
+            state = lifecycle.get('terminal_state') or 'sin terminal'
+            task = lifecycle.get('task_name') or 'tarea'
+            parts.append(f'Última tarea: {task} terminó como {state}.')
+        pending_goal = str(getattr(self, '_last_user_goal', '') or '').strip()
+        if pending_goal:
+            parts.append(f'Contexto actual: {pending_goal[:180]}')
+        parts.append(
+            'Siguiente paso seguro: reviso evidencia viva/roadmap y solo escalo '
+            'a consulta externa si hay una intención explícita o una tarea activa.'
+        )
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'continuity_message_answered',
+                message_excerpt=message[:80],
+                source='local_structured_continuity',
+                had_last_goal=bool(pending_goal),
+            )
+        except Exception:
+            pass
+
+        self._append_message('assistant', 'IABV', '\n'.join(parts))
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
     @Slot(str, str)
     def applyCode(self, code: str, language: str) -> None:
         self.codeApplyRequested.emit(code, language)
@@ -13610,6 +13682,10 @@ class ControlCenterViewModel(QObject):
                 self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_external_failure_followup(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_continuity_message(message):
+            self._set_live_status('idle')
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         # P0.40 Task A: External Intent Sovereignty — any message with

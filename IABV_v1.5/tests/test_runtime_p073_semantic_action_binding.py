@@ -590,6 +590,7 @@ def test_external_intent_preempts_active_local_chat_worker(viewmodel_cls):
     vm._try_handle_cdp_permission_revoke = MagicMock(return_value=False)
     vm._try_handle_consultation_followup = MagicMock(return_value=False)
     vm._try_handle_external_failure_followup = MagicMock(return_value=False)
+    vm._try_handle_continuity_message = MagicMock(return_value=False)
     vm._run_external_consultation = lambda assistant, announce=True: run_calls.append((assistant, announce)) or True
 
     with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
@@ -602,3 +603,36 @@ def test_external_intent_preempts_active_local_chat_worker(viewmodel_cls):
     traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
     assert 'external_intent_preempted_local_worker' in traced_kinds
     assert 'external_intent_detected' in traced_kinds
+
+
+def test_bare_sigue_uses_structured_continuity_not_local_worker(viewmodel_cls):
+    """Bare continuity commands must not fall through to heavy local chat."""
+    tracer = MagicMock()
+    vm = SimpleNamespace(
+        _last_user_goal='hacer una consulta externa y auditar el resultado',
+        latestDispatchLifecycle={
+            'task_name': 'chat',
+            'terminal_state': 'timeout',
+        },
+        dataChanged=SimpleNamespace(emit=MagicMock()),
+    )
+    vm._normalized_command_text = types.MethodType(
+        viewmodel_cls._normalized_command_text,
+        vm,
+    )
+    vm._CONTINUITY_COMMANDS = viewmodel_cls._CONTINUITY_COMMANDS
+    vm._is_continuity_message = types.MethodType(
+        viewmodel_cls._is_continuity_message,
+        vm,
+    )
+    vm._append_message = MagicMock()
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        handled = viewmodel_cls._try_handle_continuity_message(vm, 'sigue')
+
+    assert handled is True
+    vm._append_message.assert_called_once()
+    response = vm._append_message.call_args.args[2]
+    assert 'sin abrir un worker pesado' in response
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'continuity_message_answered' in traced_kinds
