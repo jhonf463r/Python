@@ -1,0 +1,28 @@
+{
+  "id": "startup_chat_bridge_priority_p092",
+  "title": "P0.92: Startup Chat Bridge Priority Contract",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Ensure the live human-machine chat bridge is created before idle VM prebuild and before heavy metacognitive maintenance, so the app can explain failures immediately after the desktop shortcut opens.",
+  "reason": "Live proof after P0.91 showed main window visible and old UI-thread stalls removed, but UIBridge/control chat became reachable only around 18s. A human-simulated audit run too early saw bridge unreachable even though the UI was visible.",
+  "dependency_missing": "",
+  "next_action": "Merge P0.92, update the desktop shortcut runtime, launch IABV from the shortcut, and verify startup_timeline has startup_chat_bridge_ready before deferred_metacognition_start and before lazy_vm_prebuild.",
+  "resume_hint": "bootstrap now schedules _ensure_startup_chat_bridge_ready immediately after _build_deferred_ui_batch_1. This builds only ControlCenterVM/UIBridge early; other lazy VMs stay governed by idle prebuild and resource pressure.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence_source": "startup_timeline.jsonl after main 8ecb88ef",
+    "expected_live_markers": [
+      "startup_chat_bridge_priority_requested",
+      "startup_chat_bridge_ready"
+    ],
+    "forbidden_live_patterns": [
+      "deferred_metacognition_start before startup_chat_bridge_ready",
+      "lazy_vm_prebuild_control_start before startup_chat_bridge_ready",
+      "human_simulated_chat_audit bridge_reachable=false after page_loader_ready"
+    ],
+    "unresolved": [
+      "live_shortcut_startup_chat_bridge_ready_before_heavy_maintenance"
+    ]
+  }
+}

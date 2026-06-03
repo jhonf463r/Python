@@ -3165,6 +3165,97 @@ class OperationalSelfExaminationService:
                     break
             readiness_metadata[key] = val
 
+        chat_bridge_ready_ms = phase_to_ms.get('startup_chat_bridge_ready')
+        chat_bridge_requested_ms = phase_to_ms.get('startup_chat_bridge_priority_requested')
+        chat_bridge_granted_ms = phase_to_ms.get('startup_chat_bridge_priority_granted')
+        deferred_metacognition_ms = phase_to_ms.get('deferred_metacognition_start')
+        if page_ready_ms is not None and chat_bridge_ready_ms is None:
+            findings.append(SelfExaminationFinding(
+                category='startup_chat_bridge_missing',
+                title='Canal de chat no quedo listo durante el arranque',
+                summary=(
+                    'El timeline tiene page_loader_ready, pero no tiene '
+                    'startup_chat_bridge_ready. La UI puede verse lista sin '
+                    'que el canal humano-maquina acepte mensajes reales.'
+                ),
+                severity=IssueSeverity.HIGH,
+                confidence=0.9,
+                recommendation=(
+                    'Construir el ControlCenterVM/UIBridge inmediatamente '
+                    'despues de _build_deferred_ui_batch_1 y antes de tareas '
+                    'metacognitivas pesadas o prebuild idle.'
+                ),
+                source_refs=['data/logs/startup_timeline.jsonl', 'iabv_v15.bootstrap'],
+                metadata={
+                    'phase': 'startup_chat_bridge_missing',
+                    'page_loader_ready_ms': round(page_ready_ms, 1),
+                    'startup_chat_bridge_priority_requested_ms': chat_bridge_requested_ms,
+                    'startup_chat_bridge_priority_granted_ms': chat_bridge_granted_ms,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+        elif chat_bridge_ready_ms is not None and chat_bridge_ready_ms > 8000.0:
+            findings.append(SelfExaminationFinding(
+                category='startup_chat_bridge_late',
+                title=f'Canal de chat listo tarde: {chat_bridge_ready_ms:.0f}ms',
+                summary=(
+                    f'startup_chat_bridge_ready ocurrio a '
+                    f'{chat_bridge_ready_ms:.0f}ms. El usuario ya puede ver '
+                    'la ventana, pero la comunicacion viva tarda demasiado.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.9,
+                recommendation=(
+                    'Priorizar el bridge de chat como primer organo de '
+                    'comunicacion; dejar provider scans, auto-install y '
+                    'metacognicion profunda para despues.'
+                ),
+                source_refs=['data/logs/startup_timeline.jsonl', 'iabv_v15.bootstrap'],
+                metadata={
+                    'phase': 'startup_chat_bridge_late',
+                    'observed_ms': round(chat_bridge_ready_ms, 1),
+                    'threshold_ms': 8000.0,
+                    'startup_chat_bridge_priority_requested_ms': chat_bridge_requested_ms,
+                    'startup_chat_bridge_priority_granted_ms': chat_bridge_granted_ms,
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+        if (
+            deferred_metacognition_ms is not None
+            and (
+                chat_bridge_ready_ms is None
+                or deferred_metacognition_ms < chat_bridge_ready_ms
+            )
+        ):
+            findings.append(SelfExaminationFinding(
+                category='startup_priority_inversion',
+                title='Metacognicion diferida corrio antes del canal de chat',
+                summary=(
+                    'deferred_metacognition_start ocurrio antes de que el '
+                    'startup_chat_bridge_ready quedara evidenciado. Esto '
+                    'invierte la prioridad: el sistema piensa antes de poder '
+                    'explicarse al usuario.'
+                ),
+                severity=IssueSeverity.MEDIUM,
+                confidence=0.85,
+                recommendation=(
+                    'Mantener el chat/bridge como contrato de nacimiento y '
+                    'mover auto-install, cloud health y self-examination al '
+                    'presupuesto idle posterior.'
+                ),
+                source_refs=['data/logs/startup_timeline.jsonl', 'iabv_v15.bootstrap'],
+                metadata={
+                    'phase': 'startup_priority_inversion',
+                    'deferred_metacognition_start_ms': round(deferred_metacognition_ms, 1),
+                    'startup_chat_bridge_ready_ms': (
+                        round(chat_bridge_ready_ms, 1)
+                        if chat_bridge_ready_ms is not None
+                        else None
+                    ),
+                    'phases_seen': list(phase_to_ms.keys()),
+                },
+            ))
+
         # If shell_loader_ready took >12s from process start, flag it.
         slr_ms = readiness_metadata.get('process_to_shell_loader_ready_ms')
         if slr_ms is not None and slr_ms > 12000.0:

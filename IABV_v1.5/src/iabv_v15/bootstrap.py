@@ -1875,6 +1875,10 @@ class AppBootstrap:
         except Exception:
             pass
         self._fire_splash_ready_and_raise_main('shell_loader_ready')
+        QTimer.singleShot(
+            0,
+            lambda: self._ensure_startup_chat_bridge_ready('shell_loader_ready'),
+        )
         # Safety net: if page_loader_ready never fires (e.g. pageLoader
         # async incubation stuck), ensure Phase 3 VMs still get built.
         QTimer.singleShot(5000, self._schedule_pending_deferred_2)
@@ -1975,6 +1979,10 @@ class AppBootstrap:
             self._fire_splash_ready_and_raise_main('page_loader_ready')
         else:
             self._raise_main_window_now('page_loader_ready')
+        QTimer.singleShot(
+            0,
+            lambda: self._ensure_startup_chat_bridge_ready('page_loader_ready'),
+        )
         # Schedule Phase 3: build non-critical VMs now that the user
         # is seeing the rendered page.
         self._schedule_pending_deferred_2()
@@ -2086,7 +2094,8 @@ class AppBootstrap:
     def _metacognition_data_is_stale(self, max_age_hours: float = 24.0) -> bool:
         """Check if OSES / PortableContext latest.json are older than *max_age_hours*."""
         import time as _time
-        data_dir = getattr(self.config, 'data_dir', None)
+        config = getattr(self, 'config', None)
+        data_dir = getattr(config, 'data_dir', None)
         if data_dir is None:
             return False
         base = Path(data_dir) / 'evolution'
@@ -2140,6 +2149,138 @@ class AppBootstrap:
         except Exception:
             logger.debug('late bridge mark_shell_ready failed from %s', source, exc_info=True)
             return False
+
+    def _startup_chat_bridge_is_ready(self) -> bool:
+        """Return True when the live chat bridge can accept UI messages."""
+        if getattr(self, 'control_center_viewmodel', None) is None:
+            return False
+        bridge = getattr(self, 'ui_bridge_server', None)
+        if bridge is None:
+            return False
+        status = getattr(bridge, 'status', None)
+        if status is None:
+            return False
+        return bool(
+            getattr(status, 'running', False)
+            and getattr(status, 'control_vm_bound', False)
+        )
+
+    def _mark_startup_chat_bridge_ready(self, source: str, bridge: Any | None = None) -> None:
+        """Persist the earliest point where UI chat is actually reachable.
+
+        This is the user-communication contract for startup. Heavy
+        metacognition, tool probes and auto-install can be useful, but the
+        organism must first have a working channel to explain what it is doing.
+        """
+        bridge = bridge if bridge is not None else getattr(self, 'ui_bridge_server', None)
+        status = getattr(bridge, 'status', None)
+        running = bool(getattr(status, 'running', False))
+        control_vm_bound = bool(getattr(status, 'control_vm_bound', False))
+        shell_ready = bool(getattr(status, 'shell_ready', False))
+        first_mark = not getattr(self, '_startup_chat_bridge_ready', False)
+        self._startup_chat_bridge_ready = running and control_vm_bound
+        payload = {
+            'source': source,
+            'running': running,
+            'control_vm_bound': control_vm_bound,
+            'shell_ready': shell_ready,
+        }
+        if first_mark and self._startup_chat_bridge_ready:
+            try:
+                self._timeline.mark('startup_chat_bridge_ready', **payload)
+            except Exception:
+                pass
+        try:
+            self._tracer.trace('startup_chat_bridge_ready', **payload)
+        except Exception:
+            pass
+
+    def _ensure_startup_chat_bridge_ready(self, source: str = 'startup') -> bool:
+        """Build only the ControlCenterVM/bridge communication path early.
+
+        The rest of lazy VM prebuild stays governed by resource pressure and
+        idle timing. This method intentionally does not make route decisions;
+        it only ensures the single user communication channel exists.
+        """
+        if self._startup_chat_bridge_is_ready():
+            self._mark_startup_chat_bridge_ready(source)
+            return True
+
+        ctx = getattr(self, '_qml_root_context', None)
+        if ctx is None:
+            try:
+                self._timeline.mark(
+                    'startup_chat_bridge_deferred',
+                    source=source,
+                    reason='qml_context_missing',
+                )
+            except Exception:
+                pass
+            return False
+
+        missing_deps = [
+            name for name in (
+                'mcp_bridge_service',
+                'ui_bridge_server',
+                'chat_capability_ingestion_service',
+            )
+            if not hasattr(self, name)
+        ]
+        if missing_deps:
+            try:
+                self._timeline.mark(
+                    'startup_chat_bridge_deferred',
+                    source=source,
+                    reason='deferred_ui_batch_1_pending',
+                    missing_dependencies=missing_deps,
+                )
+            except Exception:
+                pass
+            return False
+
+        try:
+            self._timeline.mark('startup_chat_bridge_priority_requested', source=source)
+        except Exception:
+            pass
+        try:
+            self._ensure_vm_for_route('control')
+        except Exception:
+            logger.exception('startup chat bridge priority build failed')
+            try:
+                self._tracer.trace(
+                    'startup_chat_bridge_unavailable',
+                    source=source,
+                    reason='control_vm_build_failed',
+                )
+            except Exception:
+                pass
+            return False
+
+        ready = getattr(self, 'control_center_viewmodel', None) is not None
+        if ready:
+            try:
+                ctx.setContextProperty(
+                    'controlCenterViewModel',
+                    self.control_center_viewmodel,
+                )
+            except Exception:
+                logger.debug('startup chat bridge context update failed', exc_info=True)
+            bridge = getattr(self, 'ui_bridge_server', None)
+            if bridge is not None:
+                try:
+                    self._mark_late_ui_bridge_ready_if_shell_is_visible(bridge)
+                except Exception:
+                    logger.debug('startup chat bridge late-ready mark failed', exc_info=True)
+        else:
+            try:
+                self._tracer.trace(
+                    'startup_chat_bridge_unavailable',
+                    source=source,
+                    reason='control_vm_missing_after_build',
+                )
+            except Exception:
+                pass
+        return ready
 
     def _fire_splash_ready_and_raise_main(self, source: str) -> None:
         """Common path: ``splash.set_ready()`` + raise/activate main_win.
@@ -3250,6 +3391,8 @@ class AppBootstrap:
         logger.info('lazy_vm_constructed: %s', route)
 
     def _build_control_center_vm(self) -> None:
+        if getattr(self, 'control_center_viewmodel', None) is not None:
+            return
         try:
             self._timeline.mark('startup_chat_bridge_priority_granted')
         except Exception:
@@ -3318,9 +3461,18 @@ class AppBootstrap:
                     self.ui_bridge_server = bridge
                     bridge.start()
                     self._mark_late_ui_bridge_ready_if_shell_is_visible(bridge)
+                    self._mark_startup_chat_bridge_ready('control_vm_bridge_start', bridge)
                     logger.info('UIBridgeServer started with ControlCenterViewModel')
                 except Exception:
                     logger.exception('UIBridgeServer failed to start with VM wiring')
+                    try:
+                        self._tracer.trace(
+                            'startup_chat_bridge_unavailable',
+                            source='control_vm_bridge_start',
+                            reason='bridge_start_failed',
+                        )
+                    except Exception:
+                        pass
                     self.ui_bridge_server = None
 
             threading.Thread(
@@ -3440,6 +3592,7 @@ class AppBootstrap:
     # Metacognitive maintenance is idle-gated separately.
     _deferred_setup_active: bool = False
     _truth_refresh_active: bool = False
+    _startup_chat_bridge_ready: bool = False
     _startup_evolution_active: bool = False
     _STARTUP_EVOLUTION_INITIAL_DELAY_MS: int = 120_000
     _STARTUP_EVOLUTION_RETRY_BASE_MS: int = 60_000
@@ -4093,8 +4246,16 @@ class AppBootstrap:
                 except Exception:
                     pass
                 self._build_deferred_ui_batch_1()
-                # ControlCenterVM and CaptureStudioVM are now lazy —
-                # built on-demand or during idle pre-build (15 s).
+                # The ControlCenterVM owns the UIBridge chat endpoint.
+                # Build that single communication path immediately after
+                # its lightweight dependencies exist; all other VMs remain
+                # lazy/on-demand or idle-prebuilt later.
+                QTimer.singleShot(
+                    0,
+                    lambda: self._ensure_startup_chat_bridge_ready(
+                        'populate_ui_deferred_1',
+                    ),
+                )
                 try:
                     self._timeline.mark('populate_ui_deferred_1_done')
                 except Exception:
