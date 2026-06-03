@@ -1,0 +1,26 @@
+{
+  "id": "portable_context_account_scan_ui_budget_p091",
+  "title": "P0.91: Portable Context Account Scan UI Budget",
+  "status": "PENDING",
+  "category": "runtime_stability",
+  "priority": "P0",
+  "description": "Prevent UI calls to PortableContextService.current_package(refresh=false) from building the full portable context and scanning browser/account resources synchronously.",
+  "reason": "Live shortcut proof after P0.90 removed the objective_repository SQLite stall, but a new 39649ms ui_event_loop_stall showed PortableContextService.current_package -> build_package -> canonical_work_queue -> ControlMasterService.current_state -> account_resource_scanner.scan_browser_sessions -> os.stat on browser profiles in the main UI thread.",
+  "dependency_missing": "",
+  "next_action": "Merge P0.91, update the desktop shortcut runtime, open IABV from the shortcut, and verify EvolutionCenter/dashboard portable context reads use cached/stale package plus background refresh without UI stalls.",
+  "resume_hint": "UI callers use current_package(refresh=false, allow_stale=true). PortableContextService returns cached/latest or a lightweight UNRESOLVED package and schedules portable_context_background_refresh_finished asynchronously. refresh=true still performs the full build for explicit background/service callers.",
+  "metadata": {
+    "verification_status": "CODE_FIX_PENDING_LIVE_PROOF",
+    "live_evidence_source": "freeze_20260602_225920_996845.json",
+    "expected_live_markers": [
+      "portable_context_background_refresh_finished"
+    ],
+    "forbidden_live_stack_markers": [
+      "PortableContextService.current_package -> build_package -> account_resource_scanner.scan_browser_sessions",
+      "ControlMasterService.current_state -> _project_account_inventory -> build_inventory_snapshot"
+    ],
+    "unresolved": [
+      "live_shortcut_portable_context_account_scan_after_merge"
+    ]
+  }
+}
