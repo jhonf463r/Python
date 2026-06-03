@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -73,6 +74,9 @@ class PortableContextService:
         self.experiment_lab: Any | None = None
         self.chat_message_repository: Any | None = None
         self._current_package: PortableContextPackage | None = None
+        self._package_refresh_in_flight = False
+        self._package_refresh_last_ts: float = 0.0
+        self._PACKAGE_REFRESH_COOLDOWN_S: float = 30.0
         self._account_resource_cache: dict[str, Any] | None = None
         self._account_resource_cached_at: float = 0.0
         self._ACCOUNT_RESOURCE_TTL: float = 60.0
@@ -82,6 +86,7 @@ class PortableContextService:
         *,
         refresh: bool = False,
         max_age_seconds: int = 300,
+        allow_stale: bool = False,
         task_context: TaskContext | None = None,
         environment_self_model: EnvironmentSelfModel | None = None,
         world_model: WorldModelSnapshot | None = None,
@@ -93,6 +98,26 @@ class PortableContextService:
         if not refresh and cached is not None and self._is_fresh(cached, max_age_seconds=max_age_seconds):
             if not self._goal_shifted(cached, task_context=task_context):
                 return cached
+        if not refresh and allow_stale:
+            if cached is not None:
+                self._schedule_package_refresh_async(
+                    reason='current_package_stale_allowed',
+                    task_context=task_context,
+                    environment_self_model=environment_self_model,
+                    world_model=world_model,
+                )
+                return cached
+            package = self._lightweight_unresolved_package(
+                reason='current_package_missing_stale_allowed',
+            )
+            self._current_package = package
+            self._schedule_package_refresh_async(
+                reason='current_package_missing_stale_allowed',
+                task_context=task_context,
+                environment_self_model=environment_self_model,
+                world_model=world_model,
+            )
+            return package
         package = self.build_package(
             task_context=task_context,
             environment_self_model=environment_self_model,
@@ -100,6 +125,80 @@ class PortableContextService:
         )
         self._current_package = package
         return package
+
+    def _schedule_package_refresh_async(
+        self,
+        *,
+        reason: str,
+        task_context: TaskContext | None = None,
+        environment_self_model: EnvironmentSelfModel | None = None,
+        world_model: WorldModelSnapshot | None = None,
+    ) -> None:
+        now = time.time()
+        if self._package_refresh_in_flight:
+            return
+        if now - self._package_refresh_last_ts < self._PACKAGE_REFRESH_COOLDOWN_S:
+            return
+        self._package_refresh_in_flight = True
+        self._package_refresh_last_ts = now
+
+        def _worker() -> None:
+            started = time.perf_counter()
+            ok = False
+            try:
+                package = self.build_package(
+                    task_context=task_context,
+                    environment_self_model=environment_self_model,
+                    world_model=world_model,
+                )
+                self._current_package = package
+                ok = True
+            except Exception:
+                logging.getLogger(__name__).debug(
+                    'portable_context: async refresh failed',
+                    exc_info=True,
+                )
+            finally:
+                self._package_refresh_in_flight = False
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'portable_context_background_refresh_finished',
+                        reason=reason,
+                        success=ok,
+                        elapsed_ms=round((time.perf_counter() - started) * 1000, 1),
+                    )
+                except Exception:
+                    pass
+
+        thread = threading.Thread(
+            target=_worker,
+            daemon=True,
+            name='portable-context-refresh',
+        )
+        thread.start()
+
+    def _lightweight_unresolved_package(self, *, reason: str) -> PortableContextPackage:
+        now = utc_now()
+        section = self._section(
+            section_id='portable_context_runtime',
+            title='Contexto portable',
+            summary='Contexto completo pendiente; se esta reconstruyendo en segundo plano.',
+            items=[],
+            source_kind='portable_context',
+            source_refs=['PortableContextService.current_package'],
+            confidence=0.2,
+            last_updated=now,
+            unresolved_fields=['UNRESOLVED:portable_context_background_refresh_pending'],
+            metadata={'reason': reason},
+        )
+        return PortableContextPackage(
+            updated_at_utc=now,
+            summary='Contexto portable ligero mientras el paquete completo se refresca en segundo plano.',
+            sections=[section],
+            unresolved_fields=['UNRESOLVED:portable_context_background_refresh_pending'],
+            metadata={'source': 'lightweight_unresolved_package', 'reason': reason},
+        )
 
     def build_package(
         self,

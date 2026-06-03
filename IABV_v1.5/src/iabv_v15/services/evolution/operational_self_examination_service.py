@@ -9296,6 +9296,7 @@ class OperationalSelfExaminationService:
         slow_development_packet_count = 0
         slow_development_packet_max_ms = 0.0
         ui_display_sqlite_stall_count = 0
+        ui_portable_context_scan_stall_count = 0
         try:
             if audit_path.exists():
                 recent2: deque[str] = deque(maxlen=300)
@@ -9357,6 +9358,15 @@ class OperationalSelfExaminationService:
                             )
                         ):
                             ui_display_sqlite_stall_count += 1
+                        if (
+                            'portable_context_service.py' in stack_blob
+                            and (
+                                'account_resource_scanner.py' in stack_blob
+                                or '_project_account_inventory' in stack_blob
+                                or 'current_work_queue' in stack_blob
+                            )
+                        ):
+                            ui_portable_context_scan_stall_count += 1
                         if 'startup_evolution' in phase or 'startup_evolution' in phase_at_detection:
                             startup_evolution_stall_count += 1
                         if ('resource_snapshot_pending' in phase
@@ -9483,6 +9493,28 @@ class OperationalSelfExaminationService:
                 confidence=0.9,
                 metadata={
                     'ui_display_sqlite_stall_count': ui_display_sqlite_stall_count,
+                },
+            ))
+        if ui_portable_context_scan_stall_count >= 1:
+            findings.append(SelfExaminationFinding(
+                category='ui_portable_context_scan_stall_repeated',
+                severity=IssueSeverity.HIGH,
+                title='UI display path built portable context with account scan',
+                summary=(
+                    'La UI se bloqueo mientras PortableContextService construia '
+                    'el paquete completo y llegaba a account_resource_scanner. '
+                    'El inventario de cuentas/navegadores debe ser background-only.'
+                ),
+                recommendation=(
+                    'Las vistas deben llamar current_package(refresh=False, '
+                    'allow_stale=True) y dejar el build completo para un refresh '
+                    'asíncrono o rutas que pidan refresh=True explícitamente.'
+                ),
+                confidence=0.9,
+                metadata={
+                    'ui_portable_context_scan_stall_count': (
+                        ui_portable_context_scan_stall_count
+                    ),
                 },
             ))
         return findings

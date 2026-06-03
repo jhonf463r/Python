@@ -284,7 +284,10 @@ class EvolutionCenterViewModel(QObject):
             autonomous_validation = {}
         try:
             portable_context = (
-                self.portable_context_service.current_package(refresh=False).model_dump(mode='json')
+                self.portable_context_service.current_package(
+                    refresh=False,
+                    allow_stale=True,
+                ).model_dump(mode='json')
                 if self.portable_context_service is not None and hasattr(self.portable_context_service, 'current_package')
                 else {}
             )
