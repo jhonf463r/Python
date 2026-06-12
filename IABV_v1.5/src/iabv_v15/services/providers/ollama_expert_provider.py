@@ -1,11 +1,18 @@
 """OllamaExpertProvider: integración nativa Ollama con comportamiento experto.
 
 Usa /api/chat (endpoint nativo) en vez de /v1/chat/completions.
-Parámetros ajustados por tipo de tarea. Retry con contexto reducido.
+Parámetros ajustados por tipo de tarea. Retry con contexto reducido y timeout escalonado.
 Compatible con qwen3:8b, llama3.x, deepseek-coder y otros modelos Ollama.
+
+METACOGNICIÓN AUTOMÁTICA:
+- Timeout escalonado: 30s primer intento, 15s retry (evita congelamiento)
+- Detección temprana de disponibilidad antes de inferencias largas
+- Manejo específico de excepciones httpx (timeout vs error real)
+- Health check consistente con timeouts de inferencia
 """
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
@@ -23,6 +30,8 @@ try:
     import httpx
 except ImportError:
     httpx = None
+
+logger = logging.getLogger(__name__)
 
 
 _MODE_PARAMS: dict[str, dict[str, Any]] = {
@@ -95,10 +104,11 @@ class OllamaExpertProvider(LLMProvider):
     def __init__(
         self,
         config: ProviderConfig,
-        timeout_seconds: float = 90.0,
+        timeout_seconds: float = 30.0,  # REDUCIDO: 90s era excesivo, causaba congelamiento
     ) -> None:
         self.config = config
         self.timeout_seconds = timeout_seconds
+        self._quick_timeout = min(timeout_seconds / 2, 15.0)  # Timeout para retry
         raw_url = (config.base_url or 'http://127.0.0.1:11434').rstrip('/')
         self._base_url = raw_url.removesuffix('/v1')
 
@@ -119,6 +129,7 @@ class OllamaExpertProvider(LLMProvider):
         return self._run(request, response_mode='session_summary')
 
     def health_check(self) -> ProviderHealth:
+        """Health check con timeout consistente y detección temprana."""
         if not self.config.enabled:
             return ProviderHealth(
                 provider_name=self.name,
@@ -135,7 +146,9 @@ class OllamaExpertProvider(LLMProvider):
             )
         start = time.perf_counter()
         try:
-            with httpx.Client(timeout=3.0) as client:
+            # Timeout consistente: 5s para health check (rápido pero suficiente)
+            timeout = httpx.Timeout(connect=2.0, read=5.0, write=2.0, pool=2.0)
+            with httpx.Client(timeout=timeout) as client:
                 resp = client.get(f'{self._base_url}/api/tags')
                 resp.raise_for_status()
             latency_ms = round((time.perf_counter() - start) * 1000, 2)
@@ -154,8 +167,29 @@ class OllamaExpertProvider(LLMProvider):
                 latency_ms=latency_ms,
                 detail=detail,
             )
+        except httpx.TimeoutException as exc:
+            latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            logger.warning('Ollama health check timeout: %s', exc)
+            return ProviderHealth(
+                provider_name=self.name,
+                status=ProviderStatus.DEGRADED,
+                available=False,
+                latency_ms=latency_ms,
+                detail=f'Timeout: {exc}',
+            )
+        except httpx.ConnectError as exc:
+            latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            logger.warning('Ollama no responde (conexión rechazada): %s', exc)
+            return ProviderHealth(
+                provider_name=self.name,
+                status=ProviderStatus.UNAVAILABLE,
+                available=False,
+                latency_ms=latency_ms,
+                detail=f'Ollama no está corriendo: {exc}',
+            )
         except Exception as exc:
             latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            logger.warning('Ollama health check error: %s', exc)
             return ProviderHealth(
                 provider_name=self.name,
                 status=ProviderStatus.DEGRADED,
@@ -165,6 +199,7 @@ class OllamaExpertProvider(LLMProvider):
             )
 
     def _run(self, request: InferenceRequest, *, response_mode: str) -> InferenceResult:
+        """Ejecuta inferencia con timeout escalonado y manejo específico de errores."""
         if httpx is None:
             raise ProviderUnavailableError('httpx no instalado.')
 
@@ -195,12 +230,15 @@ class OllamaExpertProvider(LLMProvider):
             'options': params,
         }
 
-        timeout = httpx.Timeout(connect=5.0, read=self.timeout_seconds, write=10.0, pool=5.0)
+        # Timeout escalonado: primer intento con timeout completo, retry con timeout reducido
+        timeout_full = httpx.Timeout(connect=5.0, read=self.timeout_seconds, write=10.0, pool=5.0)
+        timeout_quick = httpx.Timeout(connect=3.0, read=self._quick_timeout, write=5.0, pool=3.0)
         url = f'{self._base_url}/api/chat'
 
         try:
-            summary = self._post(url, payload, timeout)
-        except Exception as exc_1:
+            summary = self._post(url, payload, timeout_full)
+        except httpx.TimeoutException as exc_1:
+            logger.warning('Ollama timeout primer intento (%s), retry con timeout reducido...', exc_1)
             payload_small = {
                 **payload,
                 'messages': [
@@ -210,8 +248,38 @@ class OllamaExpertProvider(LLMProvider):
                 'options': {**params, 'num_predict': min(params.get('num_predict', 2048), 512)},
             }
             try:
-                summary = self._post(url, payload_small, timeout)
+                summary = self._post(url, payload_small, timeout_quick)
+            except httpx.TimeoutException as exc_2:
+                logger.error('Ollama timeout en retry también: %s', exc_2)
+                raise ProviderUnavailableError(
+                    f'Ollama no respondió en tiempo útil. '
+                    f'Timeout primer intento: {exc_1}. Retry: {exc_2}'
+                ) from exc_2
             except Exception as exc_2:
+                logger.error('Ollama error en retry: %s', exc_2)
+                raise ProviderUnavailableError(
+                    f'Ollama falló en retry después de timeout. '
+                    f'Primer timeout: {exc_1}. Error retry: {exc_2}'
+                ) from exc_2
+        except httpx.ConnectError as exc_1:
+            logger.error('Ollama no accesible (conexión rechazada): %s', exc_1)
+            raise ProviderUnavailableError(
+                f'Ollama no está corriendo o no es accesible: {exc_1}'
+            ) from exc_1
+        except Exception as exc_1:
+            logger.warning('Ollama error primer intento: %s, retry con contexto reducido...', exc_1)
+            payload_small = {
+                **payload,
+                'messages': [
+                    {'role': 'system', 'content': system_text[:600]},
+                    {'role': 'user', 'content': user_text[:1500]},
+                ],
+                'options': {**params, 'num_predict': min(params.get('num_predict', 2048), 512)},
+            }
+            try:
+                summary = self._post(url, payload_small, timeout_quick)
+            except Exception as exc_2:
+                logger.error('Ollama error en retry también: %s', exc_2)
                 raise ProviderUnavailableError(
                     f'Ollama no respondió. Intento 1: {exc_1}. Intento 2: {exc_2}'
                 ) from exc_2
@@ -229,13 +297,33 @@ class OllamaExpertProvider(LLMProvider):
 
     @staticmethod
     def _post(url: str, payload: dict[str, Any], timeout: Any) -> str:
-        with httpx.Client(timeout=timeout) as client:
-            resp = client.post(url, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
+        """Ejecuta POST con manejo específico de errores HTTP."""
+        try:
+            with httpx.Client(timeout=timeout) as client:
+                resp = client.post(url, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.HTTPStatusError as exc:
+            logger.error('Ollama HTTP error %s: %s', exc.response.status_code, exc)
+            raise ProviderUnavailableError(
+                f'Ollama respondió con error HTTP {exc.response.status_code}: {exc}'
+            ) from exc
+        except httpx.TimeoutException as exc:
+            logger.warning('Ollama timeout en POST: %s', exc)
+            raise  # Re-lanzar para manejo específico en _run
+        except httpx.ConnectError as exc:
+            logger.error('Ollama conexión rechazada en POST: %s', exc)
+            raise  # Re-lanzar para manejo específico en _run
+        except Exception as exc:
+            logger.error('Ollama error inesperado en POST: %s', exc)
+            raise ProviderUnavailableError(
+                f'Error inesperado comunicando con Ollama: {exc}'
+            ) from exc
+
         try:
             return data['message']['content'].strip()
         except (KeyError, TypeError) as exc:
+            logger.error('Ollama respuesta mal formada: %s. Raw: %s', exc, str(data)[:200])
             raise ProviderUnavailableError(
                 f'Respuesta inesperada de Ollama: {exc}. Raw: {str(data)[:200]}'
             ) from exc

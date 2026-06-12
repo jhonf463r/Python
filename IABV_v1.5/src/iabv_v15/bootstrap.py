@@ -580,7 +580,7 @@ class AppBootstrap:
             ProviderConfig(name='LM Studio', kind=ProviderKind.LOCAL, base_url=self.config.lm_studio_base_url, model=self.config.lm_studio_model, optional=True),
         ]
 
-        self.general_provider = OllamaExpertProvider(self.provider_configs[0], timeout_seconds=90.0)
+        self.general_provider = OllamaExpertProvider(self.provider_configs[0], timeout_seconds=30.0)
         self.visual_provider = OpenAICompatLocalProvider(self.provider_configs[1], self.config.provider_timeout_seconds)
         self.optional_visual_provider = OpenAICompatLocalProvider(self.provider_configs[2], self.config.provider_timeout_seconds)
         self.site_manual_repository = SiteManualRepository(
