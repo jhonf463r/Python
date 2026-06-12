@@ -284,6 +284,12 @@ class OllamaExpertProvider(LLMProvider):
                     f'Ollama no respondió. Intento 1: {exc_1}. Intento 2: {exc_2}'
                 ) from exc_2
 
+        # Detectar si hubo retry (fallback) para metacognicion
+        fallback_used = False
+        if response_mode != 'deep_reasoning':
+            # Si estamos en un modo normal y tuvimos que reducir contexto, contarlo como fallback
+            fallback_used = len(system_text) < len(_SYSTEM_PROMPTS.get(response_mode, '')) or len(user_text) < len(self._build_user_content(request))
+
         return InferenceResult(
             request_id=request.request_id,
             provider_name=self.name,
@@ -291,6 +297,9 @@ class OllamaExpertProvider(LLMProvider):
             summary=summary,
             inferred_task=request.user_goal,
             confidence=0.72,
+            used_fallback=fallback_used,
+            detected_role=request.task_role,
+            planner_used=request.enable_planning or False,
             executor_model=model_name,
             raw_output={'response_mode': response_mode, 'options': params},
         )
