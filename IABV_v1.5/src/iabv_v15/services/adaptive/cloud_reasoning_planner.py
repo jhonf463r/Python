@@ -224,11 +224,11 @@ class CloudReasoningPlannerService:
         if selector is not None:
             try:
                 selection = selector.select_best_provider(task_type='planning')
-                chain = selection.get('fallback_chain', ['gemini', 'groq', 'ollama_local'])
+                chain = selection.get('fallback_chain', ['openai', 'gemini', 'groq', 'ollama_local'])
             except Exception:
-                chain = ['gemini', 'groq', 'ollama_local']
+                chain = ['openai', 'gemini', 'groq', 'ollama_local']
         else:
-            chain = ['gemini', 'groq', 'ollama_local']
+            chain = ['openai', 'gemini', 'groq', 'ollama_local']
 
         for provider_id in chain:
             started = _time.monotonic()
@@ -276,6 +276,29 @@ class CloudReasoningPlannerService:
             import httpx
         except ImportError:
             return None, {'error': 'httpx not installed', 'status_code': 0}
+
+        if provider_id == 'openai':
+            key = os.environ.get('OPENAI_API_KEY', '')
+            if not key:
+                return None, {'error': 'no API key', 'status_code': 0}
+            try:
+                with httpx.Client(timeout=45.0) as client:
+                    resp = client.post(
+                        'https://api.openai.com/v1/chat/completions',
+                        json={'model': 'gpt-4o', 'messages': messages, 'temperature': 0.15},
+                        headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
+                    )
+                    CloudReasoningPlannerService._record_api_health('openai', resp.status_code)
+                    resp.raise_for_status()
+                    data = resp.json()
+                parsed = CloudReasoningPlannerService._extract_json(data, 'openai')
+                if parsed is not None:
+                    return parsed, None
+                return None, {'error': 'JSON parse failed on 2xx response', 'status_code': resp.status_code}
+            except Exception as exc:
+                logger.debug('cloud-planner openai failed: %s', exc)
+                sc = getattr(getattr(exc, 'response', None), 'status_code', 0)
+                return None, {'error': str(exc)[:200], 'status_code': sc}
 
         if provider_id == 'gemini':
             key = os.environ.get('GEMINI_API_KEY', '')
@@ -393,10 +416,10 @@ class CloudReasoningPlannerService:
 
     @staticmethod
     def _extract_json(data: dict[str, Any], source: str) -> dict[str, Any] | None:
-        """Extract JSON from LLM response, stripping <think> blocks."""
+        """Extract JSON from LLM response, stripping ```json``` blocks."""
         try:
             raw = data['choices'][0]['message']['content'].strip()
-            raw = _re.sub(r'<think>.*?</think>', '', raw, flags=_re.DOTALL).strip()
+            raw = _re.sub(r'```json.*?```', '', raw, flags=_re.DOTALL).strip()
             match = _re.search(r'\{[\s\S]*\}', raw)
             if match:
                 parsed = _json.loads(match.group())
@@ -473,4 +496,4 @@ class CloudReasoningPlannerService:
             with open(log_path, 'a', encoding='utf-8') as f:
                 f.write(_json.dumps(entry, ensure_ascii=False) + '\n')
         except Exception:
-            pass
+            logger.debug('cloud-planner: failed to persist plan')
