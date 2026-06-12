@@ -26,6 +26,7 @@ class TestCloudProviders:
         ids = {p['id'] for p in CLOUD_PROVIDERS}
         assert 'groq' in ids
         assert 'gemini' in ids
+        assert 'openai' in ids
 
     def test_all_have_signup_urls(self) -> None:
         for p in CLOUD_PROVIDERS:
@@ -92,7 +93,7 @@ class TestTestKey:
             svc = ApiKeyDiscoveryService()
             result = svc.test_key('groq')
             assert not result.valid
-            assert 'not set' in result.error
+        assert 'not set' in result.error
 
     def test_successful_key(self) -> None:
         import httpx as _real_httpx
@@ -115,53 +116,35 @@ class TestTestKey:
                 svc = ApiKeyDiscoveryService()
                 result = svc.test_key('groq')
                 assert result.valid
-                assert result.quota_info == 'OK'
-
-    def test_rate_limited_key(self) -> None:
-        mock_resp = MagicMock()
-        mock_resp.status_code = 429
-
-        mock_client = MagicMock()
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
-        mock_client.post.return_value = mock_resp
-
-        mock_httpx = MagicMock()
-        mock_httpx.Client.return_value = mock_client
-
-        with patch.dict(os.environ, {'GROQ_API_KEY': 'gsk_test123'}, clear=False):
-            with patch.dict('sys.modules', {'httpx': mock_httpx}):
-                svc = ApiKeyDiscoveryService()
-                result = svc.test_key('groq')
-                assert result.valid
-                assert 'RATE_LIMITED' in result.quota_info
+                assert result.quota_info == 'Not exposed by test endpoint'
 
 
 class TestPersistResults:
     def test_creates_file(self, tmp_path: Path) -> None:
         svc = ApiKeyDiscoveryService(data_root=tmp_path)
-        results = [
-            KeyTestResult(provider_id='groq', env_key='GROQ_API_KEY', valid=True, latency_ms=100),
-        ]
-        log_path = svc.persist_results(results)
-        assert log_path.exists()
-        entry = json.loads(log_path.read_text().strip())
-        assert entry['provider_id'] == 'groq'
-        assert entry['valid'] is True
+        results = {
+            'summary': 'Test summary',
+            'tested': [{'provider_id': 'groq', 'valid': True}],
+            'recommended': None,
+        }
+        svc.save_test_results(results)
+        audit_path = tmp_path / 'evolution' / 'autonomous_tasks' / 'api_key_management.json'
+        assert audit_path.exists()
+        data = json.loads(audit_path.read_text())
+        assert len(data) == 1
+        assert data[0]['results']['summary'] == 'Test summary'
 
 
 class TestFullHealthReport:
     def test_report_structure(self) -> None:
         with patch.dict(os.environ, {p['env_key']: '' for p in CLOUD_PROVIDERS}, clear=False):
             svc = ApiKeyDiscoveryService()
-            with patch.object(svc, 'persist_results'):
-                report = svc.full_health_report()
-                assert 'total_providers' in report
-                assert 'configured_count' in report
-                assert 'missing_count' in report
-                assert 'recommendation' in report
-                assert report['configured_count'] == 0
-                assert report['missing_count'] == len(CLOUD_PROVIDERS)
+            with patch.object(svc, 'save_test_results'):
+                report = svc.compare_all_configured()
+                assert 'summary' in report
+                assert 'tested' in report
+                assert 'recommended' in report
+                assert report['recommended'] is None
 
 
 class TestSecretProviders:

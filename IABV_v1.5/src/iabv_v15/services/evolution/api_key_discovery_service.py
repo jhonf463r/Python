@@ -34,6 +34,20 @@ logger = logging.getLogger(__name__)
 
 CLOUD_PROVIDERS: list[dict[str, Any]] = [
     {
+        'id': 'openai',
+        'name': 'OpenAI (ChatGPT)',
+        'env_key': 'OPENAI_API_KEY',
+        'key_prefix': 'sk-',
+        'signup_url': 'https://platform.openai.com/api-keys',
+        'api_test_url': 'https://api.openai.com/v1/chat/completions',
+        'model': 'gpt-4o',
+        'tier': 'paid',
+        'daily_limit_info': 'Depends on payment plan',
+        'key_expiration': 'no expiration (revocable manually)',
+        'strengths': 'state-of-the-art reasoning, multimodal, large context window',
+        'auth_method': 'OpenAI account',
+    },
+    {
         'id': 'groq',
         'name': 'Groq',
         'env_key': 'GROQ_API_KEY',
@@ -214,204 +228,130 @@ class ApiKeyDiscoveryService:
             'model': provider['model'],
             'messages': messages,
             'temperature': 0.0,
-            'max_tokens': 5,
+            'max_tokens': 2,
+        }
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
         }
 
-        start = time.monotonic()
+        start = time.perf_counter()
         try:
-            with httpx.Client(timeout=20.0) as client:
-                resp = client.post(
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(
                     provider['api_test_url'],
                     json=payload,
-                    headers={
-                        'Authorization': f'Bearer {api_key}',
-                        'Content-Type': 'application/json',
-                    },
+                    headers=headers,
                 )
-                elapsed_ms = (time.monotonic() - start) * 1000
-
-                if resp.status_code == 429:
-                    return KeyTestResult(
-                        provider_id=provider_id, env_key=env_key,
-                        valid=True, latency_ms=elapsed_ms,
-                        model_used=provider['model'],
-                        quota_info='RATE_LIMITED (429) — key valid but quota exceeded',
-                    )
-
-                resp.raise_for_status()
-                data = resp.json()
-                model_used = data.get('model', provider['model'])
-
+                response.raise_for_status()
+                data = response.json()
+                latency_ms = round((time.perf_counter() - start) * 1000, 2)
                 return KeyTestResult(
-                    provider_id=provider_id, env_key=env_key,
-                    valid=True, latency_ms=elapsed_ms,
-                    model_used=model_used,
-                    quota_info='OK',
+                    provider_id=provider_id,
+                    env_key=env_key,
+                    valid=True,
+                    latency_ms=latency_ms,
+                    model_used=provider['model'],
+                    quota_info='Not exposed by test endpoint',
                 )
-        except Exception as exc:
-            elapsed_ms = (time.monotonic() - start) * 1000
-            error_msg = str(exc)
-            if '401' in error_msg or 'Unauthorized' in error_msg:
-                error_msg = 'INVALID_KEY (401 Unauthorized)'
-            elif '403' in error_msg:
-                error_msg = 'FORBIDDEN (403) — key may be revoked or wrong scope'
+        except httpx.HTTPStatusError as exc:
+            latency_ms = round((time.perf_counter() - start) * 1000, 2)
             return KeyTestResult(
-                provider_id=provider_id, env_key=env_key,
-                latency_ms=elapsed_ms, error=error_msg,
+                provider_id=provider_id,
+                env_key=env_key,
+                latency_ms=latency_ms,
+                error=f'HTTP {exc.response.status_code}: {exc.response.text[:200]}',
+                valid=False,
+            )
+        except httpx.TimeoutException:
+            latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            return KeyTestResult(
+                provider_id=provider_id,
+                env_key=env_key,
+                latency_ms=latency_ms,
+                error='Request timeout after 10s',
+                valid=False,
+            )
+        except Exception as exc:
+            latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            return KeyTestResult(
+                provider_id=provider_id,
+                env_key=env_key,
+                latency_ms=latency_ms,
+                error=str(exc)[:200],
+                valid=False,
             )
 
     # ------------------------------------------------------------------
-    # 3. Compare: test all configured keys and rank them
+    # 3. Compare: test all configured keys and rank by latency
     # ------------------------------------------------------------------
 
-    def compare_all(self) -> list[KeyTestResult]:
-        """Test all configured providers and return sorted by quality."""
-        results: list[KeyTestResult] = []
-        for provider in CLOUD_PROVIDERS:
-            if os.environ.get(provider['env_key'], '').strip():
-                result = self.test_key(provider['id'])
-                results.append(result)
+    def compare_all_configured(self) -> dict[str, Any]:
+        """Test all configured keys and return ranking."""
+        configured = [p for p in self.scan_configured_keys() if p['configured']]
+        if not configured:
+            return {
+                'summary': 'No cloud providers configured',
+                'tested': [],
+                'recommended': None,
+            }
 
-        results.sort(key=lambda r: (
-            not r.valid,
-            'RATE_LIMITED' in (r.quota_info or ''),
-            r.latency_ms,
-        ))
-        return results
+        results: list[dict[str, Any]] = []
+        for provider in configured:
+            test_result = self.test_key(provider['provider_id'])
+            results.append({
+                **provider,
+                'valid': test_result.valid,
+                'latency_ms': test_result.latency_ms,
+                'error': test_result.error,
+                'tested_at_utc': test_result.tested_at_utc,
+            })
 
-    def best_provider(self) -> KeyTestResult | None:
-        """Return the best available provider after testing all."""
-        results = self.compare_all()
-        for r in results:
-            if r.valid and 'RATE_LIMITED' not in (r.quota_info or ''):
-                return r
-        for r in results:
-            if r.valid:
-                return r
-        return None
-
-    # ------------------------------------------------------------------
-    # 4. Track: persist test results for learning and monitoring
-    # ------------------------------------------------------------------
-
-    def persist_results(self, results: list[KeyTestResult]) -> Path:
-        """Append test results to a JSONL log for historical tracking."""
-        log_dir = self._data_root / 'evolution' / 'api_key_health'
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / 'key_tests.jsonl'
-
-        with open(log_path, 'a', encoding='utf-8') as f:
-            batch_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')
-            for r in results:
-                entry = {**r.to_dict(), 'batch_id': batch_id}
-                f.write(json.dumps(entry, ensure_ascii=False) + '\n')
-
-        logger.info('api-key-health: persisted %d results to %s', len(results), log_path)
-        return log_path
-
-    # ------------------------------------------------------------------
-    # 5. Renewal guidance: structured info for UI / orchestrator
-    # ------------------------------------------------------------------
-
-    def renewal_guidance(self) -> list[dict[str, Any]]:
-        """Build actionable renewal info for keys that need attention.
-
-        Returns a list of dicts suitable for the UI to present to the user
-        or for the orchestrator to create a backlog task.
-        """
-        guidance: list[dict[str, Any]] = []
-        scan = self.scan_configured_keys()
-        for item in scan:
-            if not item['configured']:
-                provider = next((p for p in CLOUD_PROVIDERS if p['id'] == item['provider_id']), {})
-                guidance.append({
-                    'action': 'create_key',
-                    'provider_id': item['provider_id'],
-                    'name': item['name'],
-                    'env_key': item['env_key'],
-                    'signup_url': item['signup_url'],
-                    'auth_method': item.get('auth_method', ''),
-                    'tier': item['tier'],
-                    'instructions': (
-                        f"1. Abrir {item['signup_url']}\n"
-                        f"2. Iniciar sesion con tu cuenta ({item.get('auth_method', 'email')})\n"
-                        f"3. Crear una nueva API key\n"
-                        f"4. Pegar el token en IABV cuando lo pida"
-                    ),
-                    'daily_limit': item['daily_limit_info'],
-                    'key_expiration': provider.get('key_expiration', 'unknown'),
-                })
-
-        # Check configured keys that might be failing
-        for item in scan:
-            if item['configured']:
-                result = self.test_key(item['provider_id'])
-                if not result.valid:
-                    guidance.append({
-                        'action': 'renew_key',
-                        'provider_id': item['provider_id'],
-                        'name': item['name'],
-                        'env_key': item['env_key'],
-                        'signup_url': item['signup_url'],
-                        'error': result.error,
-                        'instructions': (
-                            f"La key de {item['name']} fallo: {result.error}\n"
-                            f"1. Abrir {item['signup_url']}\n"
-                            f"2. Revocar la key actual y crear una nueva\n"
-                            f"3. Pegar la nueva key en IABV"
-                        ),
-                    })
-                elif 'RATE_LIMITED' in (result.quota_info or ''):
-                    guidance.append({
-                        'action': 'wait_or_upgrade',
-                        'provider_id': item['provider_id'],
-                        'name': item['name'],
-                        'env_key': item['env_key'],
-                        'quota_info': result.quota_info,
-                        'instructions': (
-                            f"{item['name']} esta en rate limit. Opciones:\n"
-                            f"1. Esperar a que se reinicie la cuota (generalmente diario)\n"
-                            f"2. Usar otro proveedor mientras tanto\n"
-                            f"3. Considerar un plan de pago si es critico"
-                        ),
-                    })
-
-        return guidance
-
-    # ------------------------------------------------------------------
-    # 6. Full health report: combine everything
-    # ------------------------------------------------------------------
-
-    def full_health_report(self) -> dict[str, Any]:
-        """Run a complete health check and return structured results."""
-        scan = self.scan_configured_keys()
-        configured = [s for s in scan if s['configured']]
-        missing = [s for s in scan if not s['configured']]
-
-        test_results = self.compare_all()
-        self.persist_results(test_results)
-
-        best = None
-        for r in test_results:
-            if r.valid and 'RATE_LIMITED' not in (r.quota_info or ''):
-                best = r
-                break
+        # Sort valid by latency
+        valid_results = [r for r in results if r['valid']]
+        if valid_results:
+            valid_results.sort(key=lambda x: x['latency_ms'])
+            recommended = valid_results[0]
+        else:
+            recommended = None
 
         return {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'total_providers': len(CLOUD_PROVIDERS),
-            'configured_count': len(configured),
-            'missing_count': len(missing),
-            'configured': [s['provider_id'] for s in configured],
-            'missing': [{'id': s['provider_id'], 'name': s['name'], 'url': s['signup_url']} for s in missing],
-            'test_results': [r.to_dict() for r in test_results],
-            'best_provider': best.to_dict() if best else None,
-            'recommendation': (
-                f"Usar {best.provider_id} ({best.latency_ms:.0f}ms)" if best
-                else "No hay proveedor funcional. Configurar al menos GROQ_API_KEY."
-            ),
-            'renewal_needed': [
-                r.to_dict() for r in test_results
-                if not r.valid or 'RATE_LIMITED' in (r.quota_info or '')
-            ],
+            'summary': f'Tested {len(results)} provider(s), {len(valid_results)} valid',
+            'tested': results,
+            'recommended': recommended,
         }
+
+    # ------------------------------------------------------------------
+    # 4. Persist: save test results for learning
+    # ------------------------------------------------------------------
+
+    def save_test_results(self, results: dict[str, Any]) -> None:
+        """Persist test results to data/evolution/autonomous_tasks/api_key_management.json."""
+        audit_path = self._data_root / 'evolution' / 'autonomous_tasks' / 'api_key_management.json'
+        audit_path.parent.mkdir(parents=True, exist_ok=True)
+
+        existing: list[dict[str, Any]] = []
+        if audit_path.exists():
+            try:
+                existing = json.loads(audit_path.read_text(encoding='utf-8'))
+            except Exception:
+                pass
+
+        entry = {
+            'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+            'results': results,
+        }
+        existing.append(entry)
+
+        audit_path.write_text(json.dumps(existing, indent=2), encoding='utf-8')
+        logger.info('API key test results persisted to %s', audit_path)
+
+    # ------------------------------------------------------------------
+    # 5. Lifecycle: check for expiring keys (placeholder)
+    # ------------------------------------------------------------------
+
+    def check_key_expiration(self) -> list[dict[str, Any]]:
+        """Check for keys that need renewal."""
+        # Most free/trial keys don't expire automatically
+        # This is a placeholder for future expansion
+        return []

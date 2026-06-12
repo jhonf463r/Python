@@ -1,0 +1,3 @@
+# Decision Audit Trail - IABV v1.5
+# Append-only JSONL file for cloud reasoning and provider selection decisions
+# Format: one JSON object per line

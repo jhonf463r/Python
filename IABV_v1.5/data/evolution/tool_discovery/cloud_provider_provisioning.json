@@ -1,8 +1,38 @@
 {
-  "version": 1,
-  "last_updated": "2026-04-27T00:30:00Z",
+  "version": 2,
+  "last_updated": "2026-04-27T01:00:00Z",
   "description": "Conocimiento aprendido sobre como provisionar proveedores cloud para el cerebro",
   "providers": {
+    "openai": {
+      "name": "OpenAI (ChatGPT)",
+      "api_key_env": "OPENAI_API_KEY",
+      "key_prefix": "sk-",
+      "signup_url": "https://platform.openai.com/api-keys",
+      "billing_url": "https://platform.openai.com/account/billing",
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "model": "gpt-4o",
+      "free_tier": false,
+      "known_issues": {
+        "401_invalid_key": {
+          "symptom": "HTTP 401 - Invalid API key",
+          "cause": "La API key es invalida, expiro o fue revocada",
+          "solution": "Generar nueva API key en platform.openai.com/api-keys",
+          "steps": [
+            "Abrir https://platform.openai.com/api-keys",
+            "Click 'Create new secret key'",
+            "Copiar la key generada (empieza con sk-)",
+            "Guardar via save_secret_to_profile('OPENAI_API_KEY', key)",
+            "Verificar con test call al endpoint"
+          ],
+          "learned_from": "sesion 2026-04-27, estructura inicial"
+        }
+      },
+      "token_renewal": {
+        "detection": ["HTTP 401 (expired/invalid)", "HTTP 429 (quota exceeded)", "HTTP 403 (revoked)"],
+        "auto_action": "Abrir platform.openai.com/api-keys para regenerar",
+        "save_method": "save_secret_to_profile('OPENAI_API_KEY', new_key)"
+      }
+    },
     "gemini": {
       "name": "Google Gemini",
       "api_key_env": "GEMINI_API_KEY",
