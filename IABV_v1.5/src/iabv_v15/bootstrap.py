@@ -335,6 +335,7 @@ from iabv_v15.services.lab.strategy_selector import StrategySelector
 from iabv_v15.services.knowledge.knowledge_service import KnowledgeService
 from iabv_v15.services.knowledge.unified_memory_layer import UnifiedMemoryLayer
 from iabv_v15.services.providers.openai_compat_local_provider import OpenAICompatLocalProvider
+from iabv_v15.services.providers.ollama_expert_provider import OllamaExpertProvider
 from iabv_v15.services.roles.analytics_strategy_service import AnalyticsStrategyService
 from iabv_v15.services.roles.customer_support_service import CustomerSupportService
 from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
@@ -579,7 +580,7 @@ class AppBootstrap:
             ProviderConfig(name='LM Studio', kind=ProviderKind.LOCAL, base_url=self.config.lm_studio_base_url, model=self.config.lm_studio_model, optional=True),
         ]
 
-        self.general_provider = OpenAICompatLocalProvider(self.provider_configs[0], self.config.provider_timeout_seconds)
+        self.general_provider = OllamaExpertProvider(self.provider_configs[0], timeout_seconds=90.0)
         self.visual_provider = OpenAICompatLocalProvider(self.provider_configs[1], self.config.provider_timeout_seconds)
         self.optional_visual_provider = OpenAICompatLocalProvider(self.provider_configs[2], self.config.provider_timeout_seconds)
         self.site_manual_repository = SiteManualRepository(
