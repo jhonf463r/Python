@@ -1,18 +1,17 @@
 ﻿from __future__ import annotations
 
 import atexit
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
-import hashlib
-import json
-import logging
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import os
+from datetime import datetime, timezone
+import logging
+logger = logging.getLogger(__name__)
 from pathlib import Path
 import re
 import threading
 import time
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +41,8 @@ from iabv_v15.infra.persistence.scenario_run_repository import ScenarioRunReposi
 from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+from iabv_v15.services.adaptive.execution_time_monitor import get_execution_time_monitor
 from iabv_v15.services.adaptive.assistant_preference_resolver import AssistantPreferenceResolver
-from iabv_v15.services.adaptive.autonomy_governance_policy import (
-    record_operational_budget_experiment,
-)
 from iabv_v15.services.development.development_assist_service import DevelopmentAssistService
 from iabv_v15.services.evolution.autonomy_activity_projector import AutonomyActivityProjector
 from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
@@ -61,27 +58,36 @@ from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, S
 
 
 class ControlCenterViewModel(QObject):
-    _CHAT_INLINE_TEXT_LIMIT = 3500
-    _CHAT_PREVIEW_MESSAGE_LIMIT = 8
-    _CHAT_PREVIEW_TEXT_LIMIT = 1200
-    _AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB = 2500.0
-    _AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S = 60.0
-    _EXTERNAL_FOLLOWUP_TIMEOUT_MS = 120_000
-    _EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS = 75_000
-    _LOCAL_CHAT_TIMEOUT_MS = 60_000
-    _EXTERNAL_CONTEXT_ITEM_LIMIT = 700
-    _EXTERNAL_CONTEXT_PACK_LIMIT = 12000
+    # --- Timeout constants for worker threads (Sub-objective A) ---
+    # Default fallback timeouts (used when ExecutionTimeMonitor has insufficient data)
+    _CHAT_WORKER_TIMEOUT_S: float = 300.0  # Aumentado para fix #5 - timeout recovery  # Aumentado para fix #5 - timeout recovery
+    _EXTERNAL_WORKER_TIMEOUT_S: float = 240.0  # Aumentado para fix #5 - timeout recovery  # Aumentado para fix #5 - timeout recovery
+    _POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S: float = 12.0
+    # Multiplier for non-final interaction states (reused_context, prepared, awaiting_external_response)
+    _NON_FINAL_STATE_MULTIPLIER: float = 2.5
+
+    # --- Terminal dispatch states (Sub-objective A) ---
+    # Every dispatch MUST end in one of these states visible to the user.
+    # --- Stale-result guard ---
+    # Each worker receives a unique dispatch_id at spawn time.  The watchdog
+    # and the worker itself check ``_active_dispatch_ids[task_name]`` before
+    # emitting any signal.  If the id no longer matches (because a new
+    # dispatch started or a timeout already fired), the emission is silently
+    # discarded and an audit log entry is written.
+    _TERMINAL_DISPATCH_STATES: frozenset[str] = frozenset({
+        'success',
+        'blocked_by_permission',
+        'blocked_by_security_verification',
+        'blocked_by_quota',
+        'timeout',
+        'cancelled',
+        'failed_with_actionable_reason',
+        'needs_human_handoff',
+    })
 
     dataChanged = Signal()
-    chatChanged = Signal()
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
-    autonomyDockProjected = Signal(int, object)
-    autonomyDockChanged = Signal()
-    autonomyDockStatusChanged = Signal()
-    developmentPacketReady = Signal(int, str)
-    evolutionSnapshotReady = Signal(int, object)
-    agentCardsReady = Signal(int, object)
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -145,6 +151,7 @@ class ControlCenterViewModel(QObject):
         self_audit_service: Any | None = None,
         chat_capability_ingestion_service: Any | None = None,
         chat_message_repository: Any | None = None,
+        chat_state_dumper: Any | None = None,
         defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
@@ -192,6 +199,7 @@ class ControlCenterViewModel(QObject):
         # esta inyectado, sendChat funciona igual (comportamiento legacy).
         self.chat_capability_ingestion_service = chat_capability_ingestion_service
         self.chat_message_repository = chat_message_repository
+        self.chat_state_dumper = chat_state_dumper
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
         self._last_reasoning_path: str = ''
@@ -207,13 +215,12 @@ class ControlCenterViewModel(QObject):
         self._evolution_overview: dict[str, Any] = {}
         self._evolution_area_cards: list[dict[str, Any]] = []
         self._evolution_blockers: list[dict[str, str]] = []
-        self._evolution_snapshot_generation: int = 0
         self._agent_cards: list[dict[str, Any]] = []
-        self._agent_cards_generation: int = 0
         self._legacy_cards = self._build_legacy_cards()
         self._role_cards = [profile.model_dump(mode='json') for profile in self.role_router.role_profiles]
         self._ui_state_lock = threading.Lock()
-        self._bg_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ccvm-bg')
+        self._active_dispatch_ids: dict[str, str] = {}
+        self._bg_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='ccvm-bg')
         atexit.register(self._shutdown_bg_pool)
         self._chat_messages: list[dict[str, str]] = []
         self._attached_files: list[dict[str, Any]] = []
@@ -233,44 +240,26 @@ class ControlCenterViewModel(QObject):
         self._last_goal_context: dict[str, Any] = {}
         self._clipboard_notice = 'Todavia no se ha copiado nada al portapapeles.'
         self._development_packet = ''
-        self._development_packet_generation: int = 0
         self._dev_packet_last_ts: float = 0.0
         self._dev_packet_cooldown_s: float = 30.0
         self._latest_response_text = 'Todavia no hay respuesta final en esta sesion.'
         self._latest_response_meta = 'Cuando completes una consulta, aqui veras el rol detectado, el pack usado y si hubo aprobaciones.'
+        self._last_external_failure_payload: dict[str, Any] = {}
+        self._last_external_failure_ts: float = 0.0
+        self._dock_skip_last_trace: dict[str, float] = {}
         self._approval_dialog_visible = False
         self._approval_dialog_title = 'Aprobacion requerida'
         self._approval_dialog_text = 'No hay aprobaciones pendientes.'
         self._assistant_guidance_mode = 'idle'
         self._assistant_guidance_text = 'Describe una tarea y te dire si me falta ensenanza, aprobacion, revision evolutiva o apoyo de Codex.'
         self._assistant_action_buttons: list[dict[str, str]] = []
-        self._external_evidence_panel: dict[str, Any] = {}
-        self._visible_external_sessions: dict[str, Any] = {}
-        self._external_visible_verification_opened_at: dict[str, float] = {}
-        self._external_browser_session_preferences: dict[str, dict[str, Any]] = {}
         self._last_adaptive_payload: dict[str, Any] = {}
+        self._active_incident_frame: dict[str, Any] | None = None
         self._autonomy_activity_override: dict[str, Any] = {}
         self._live_process_summary: dict[str, Any] = {}
         self._live_work_items: list[dict[str, Any]] = []
         self._assistant_session_cards: list[dict[str, Any]] = []
         self._autonomy_timeline: list[dict[str, Any]] = []
-        self._autonomy_dock_generation: int = 0
-        self._autonomy_dock_refresh_in_flight: bool = False
-        self._autonomy_dock_last_refresh_started: float = 0.0
-        self._autonomy_dock_min_interval_s: float = 20.0
-        self._autonomy_dock_last_fingerprint: str = ''
-        self._autonomy_dock_status: str = 'idle'
-        self._autonomy_dock_last_result: str = 'idle'
-        self._autonomy_dock_last_summary: str = 'Dock de autonomia sin refresco reciente.'
-        self._autonomy_dock_last_skip_trace_key: str = ''
-        self._autonomy_dock_last_skip_trace_at: float = 0.0
-        self._autonomy_dock_rest_window_started_at: float = time.monotonic()
-        self._autonomy_dock_last_budget_decision: dict[str, Any] = {}
-        self._operational_budget_experiment_throttle: dict[str, float] = {}
-        self._interaction_pending_followup_outcome: str = ''
-        self._interaction_pending_followup_provider: str = ''
-        self._external_followup_timeout_generation: int = 0
-        self._visible_work_timeout_generation: int = 0
 
         self._adaptive_session_id = ''
         self._adaptive_status_text = 'Sin sesion adaptativa activa.'
@@ -311,10 +300,6 @@ class ControlCenterViewModel(QObject):
         }
         self.taskResolved.connect(self._apply_task_result)
         self.taskFailed.connect(self._apply_task_failure)
-        self.autonomyDockProjected.connect(self._apply_autonomy_dock_projection)
-        self.developmentPacketReady.connect(self._apply_development_packet)
-        self.evolutionSnapshotReady.connect(self._apply_evolution_snapshot)
-        self.agentCardsReady.connect(self._apply_agent_cards)
         self.bridgeChatRequested.connect(self._dispatch_bridge_chat)
         self._seed_messages()
         # Always defer heavy work to keep constructor fast and avoid
@@ -326,7 +311,7 @@ class ControlCenterViewModel(QObject):
             self._busy_label = self._startup_readiness_text(validating_local_stack=True)
         QTimer.singleShot(0, self._deferred_heavy_init)
         QTimer.singleShot(250, self._deferred_initial_refresh)
-        QTimer.singleShot(900, self._deferred_provider_health_probe)
+        QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
 
     def _deferred_heavy_init(self) -> None:
         """Attach lightweight listeners that need main-thread affinity.
@@ -347,21 +332,13 @@ class ControlCenterViewModel(QObject):
         self._bg_pool.shutdown(wait=False)
 
     def _deferred_initial_refresh(self) -> None:
-        """Keep first Control Center paint light.
+        """Run initial data load on background thread to keep main thread free.
 
-        A full refresh scans repositories, task records and evolution
-        summaries.  Live Windows audits showed that doing that immediately
-        after navigation can starve the Qt event loop even from a worker
-        thread because of GIL and memory pressure.  The full synchronous
-        ``refresh()`` and explicit QML refresh actions still exist; initial
-        navigation only updates cache-based labels.
+        Delegates to ``_refresh_all_data`` on ``_bg_pool`` so the event
+        loop stays free for lazy VM prebuild.  This eliminates the code
+        duplication that existed between refresh() and this method.
         """
-        if not self._working and not self._adaptive_session_id:
-            self._busy_label = self._startup_readiness_text(validating_local_stack=False)
-        # Only the visible chat/status strip changes here.  Emitting the broad
-        # dataChanged signal wakes many QML bindings on first Control Center
-        # paint and was observed to amplify route-entry memory pressure.
-        self.chatChanged.emit()
+        self._bg_pool.submit(self._refresh_all_data)
 
     def _placeholder_provider_cards(self) -> list[dict[str, Any]]:
         return [
@@ -405,18 +382,13 @@ class ControlCenterViewModel(QObject):
                 return []
             messages: list[dict[str, Any]] = []
             for row in rows:
-                raw_text = str(row['text'] or '')
-                display_text = self._chat_display_text(raw_text)
                 msg: dict[str, Any] = {
                     'role': row['role'],
                     'speaker': row['speaker'],
-                    'text': display_text,
+                    'text': row['text'],
                     'meta': row.get('meta', ''),
                     'timestamp': row.get('created_at_utc', '')[:5],
                 }
-                if display_text != raw_text:
-                    msg['textTruncated'] = True
-                    msg['fullTextChars'] = len(raw_text)
                 if row.get('evidence_tag'):
                     msg['evidenceTag'] = row['evidence_tag']
                 if row.get('reasoning_path'):
@@ -457,19 +429,6 @@ class ControlCenterViewModel(QObject):
             'idle': 'inactivo',
         }.get(status, status)
 
-    @classmethod
-    def _chat_display_text(cls, text: str) -> str:
-        """Return a UI-safe message body while preserving full text in storage."""
-        raw = str(text or '')
-        limit = int(getattr(cls, '_CHAT_INLINE_TEXT_LIMIT', 3500))
-        if len(raw) <= limit:
-            return raw
-        omitted = len(raw) - limit
-        return (
-            raw[:limit].rstrip()
-            + f"\n\n[Salida completa persistida en el historial local; se omitieron {omitted} caracteres para mantener la UI fluida.]"
-        )
-
     def _append_message(self, role: str, speaker: str, text: str, meta: str = '',
                         *, attachments: list[dict[str, Any]] | None = None,
                         code_blocks: list[dict[str, Any]] | None = None,
@@ -478,13 +437,8 @@ class ControlCenterViewModel(QObject):
                         evidence_tag: str = '',
                         reasoning_path: str = '',
                         trace_metadata: dict[str, Any] | None = None) -> None:
-        display_text = ControlCenterViewModel._chat_display_text(text)
-        raw_text = str(text or '')
-        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': display_text, 'meta': meta,
+        msg: dict[str, Any] = {'role': role, 'speaker': speaker, 'text': text, 'meta': meta,
                                'status': status, 'timestamp': datetime.now(timezone.utc).strftime('%H:%M')}
-        if display_text != raw_text:
-            msg['textTruncated'] = True
-            msg['fullTextChars'] = len(raw_text)
         if attachments:
             msg['attachments'] = attachments
         if code_blocks:
@@ -496,10 +450,6 @@ class ControlCenterViewModel(QObject):
         effective_reasoning_path = reasoning_path or self._last_reasoning_path
         if effective_reasoning_path:
             msg['reasoningPath'] = effective_reasoning_path
-        persist_metadata = dict(trace_metadata or {})
-        if display_text != raw_text:
-            persist_metadata.setdefault('ui_text_truncated', True)
-            persist_metadata.setdefault('full_text_chars', len(raw_text))
         with self._ui_state_lock:
             self._chat_messages.append(msg)
             self._chat_messages = self._chat_messages[-30:]
@@ -507,15 +457,26 @@ class ControlCenterViewModel(QObject):
             role=role, speaker=speaker, text=text, meta=meta,
             evidence_tag=evidence_tag,
             reasoning_path=effective_reasoning_path,
-            trace_metadata=persist_metadata or trace_metadata,
+            trace_metadata=trace_metadata,
         )
+        # Dump del estado del chat para auditoría en tiempo real
+        if self.chat_state_dumper:
+            try:
+                self.chat_state_dumper.dump_chat_state(
+                    chat_messages=list(self._chat_messages),
+                    chat_session_id=self._chat_session_id,
+                    metadata={
+                        'last_reasoning_path': effective_reasoning_path,
+                        'working': self._working,
+                        'auto_route_enabled': self._auto_route_enabled,
+                        'selected_role': self._selected_role,
+                    },
+                )
+            except Exception as e:
+                logger.warning(f"Failed to dump chat state: {e}")
         self._last_reasoning_path = ''
         self._refresh_contextual_suggestions()
         self._validate_ui_reflects_reality()
-        chat_signal = getattr(self, 'chatChanged', None)
-        emit_chat = getattr(chat_signal, 'emit', None)
-        if callable(emit_chat):
-            emit_chat()
 
     def _persist_chat_message(
         self,
@@ -1110,7 +1071,7 @@ class ControlCenterViewModel(QObject):
             'focus': focus,
         }
 
-    def _build_evolution_snapshot(self) -> dict[str, Any]:
+    def _update_evolution_snapshot(self) -> None:
         health_snapshot = self.evolution_review_service.build_project_health().model_dump(mode='json') if self.evolution_review_service is not None else {}
         experiment_runs = self.experiment_lab_repository.list_runs(limit=12) if self.experiment_lab_repository is not None else []
         experiment_recommendations = self.experiment_lab_repository.list_recommendations(limit=3) if self.experiment_lab_repository is not None else []
@@ -1355,7 +1316,7 @@ class ControlCenterViewModel(QObject):
         else:
             overall_trend = 'sin base'
         next_help = blockers[0]['help'] if blockers else (self._assistant_action_buttons[0]['label'] if self._assistant_action_buttons else 'Seguir capturando evidencia y ejecutando tareas reales.')
-        overview = {
+        self._evolution_overview = {
             'title': 'Pulso evolutivo',
             'status': overall_status,
             'trend': overall_trend,
@@ -1374,53 +1335,8 @@ class ControlCenterViewModel(QObject):
                 {'title': 'Reutilizacion', 'value': str(reusable_patterns + reused_episodes), 'detail': 'patrones o reusos detectados'},
             ],
         }
-        return {
-            'overview': overview,
-            'area_cards': area_cards,
-            'blockers': blockers,
-        }
-
-    def _update_evolution_snapshot(self) -> None:
-        self._apply_evolution_snapshot(0, self._build_evolution_snapshot(), accept_any_generation=True)
-
-    def _refresh_evolution_snapshot_async(self) -> None:
-        self._evolution_snapshot_generation += 1
-        gen = self._evolution_snapshot_generation
-
-        def _bg() -> dict[str, Any]:
-            return self._build_evolution_snapshot()
-
-        def _done(fut: Any) -> None:
-            if self._evolution_snapshot_generation != gen:
-                return
-            try:
-                snapshot = fut.result()
-            except Exception:
-                logger.debug('evolution snapshot bg refresh failed', exc_info=True)
-                return
-            self.evolutionSnapshotReady.emit(gen, snapshot)
-
-        future = self._bg_pool.submit(_bg)
-        future.add_done_callback(_done)
-
-    @Slot(int, object)
-    def _apply_evolution_snapshot(
-        self,
-        gen: int,
-        snapshot: object,
-        *,
-        accept_any_generation: bool = False,
-    ) -> None:
-        if not accept_any_generation and self._evolution_snapshot_generation != gen:
-            return
-        if not isinstance(snapshot, dict):
-            return
-        self._evolution_overview = dict(snapshot.get('overview') or {})
-        self._evolution_area_cards = [dict(item) for item in (snapshot.get('area_cards') or [])]
-        self._evolution_blockers = [dict(item) for item in (snapshot.get('blockers') or [])]
-        if not accept_any_generation:
-            self.dataChanged.emit()
-
+        self._evolution_area_cards = area_cards
+        self._evolution_blockers = blockers
     def _assistant_tool_ids(self) -> list[str]:
         # devin_api y github_api son adapters activos (API REST) que el usuario
         # tambien entiende como "IAs con las que me conecto". Dejarlos fuera hacia
@@ -1560,18 +1476,9 @@ class ControlCenterViewModel(QObject):
         return [grouped[key] for key in order if key in grouped]
 
     def _startup_readiness_text(self, *, validating_local_stack: bool = False) -> str:
-        goal_context = dict(self._last_goal_context or {})
+        goal_context = self._goal_context_for_display(self._current_site_id() or None)
         active_title = str((goal_context.get('objective') or {}).get('title') or goal_context.get('active_title') or 'sin objetivo activo').strip() or 'sin objetivo activo'
-        assistant_cards = list(self._agent_cards or [])
-        if not assistant_cards:
-            assistant_cards = [
-                {
-                    'name': str(card.get('provider_name') or 'Asistente'),
-                    'status': 'listo automatico' if card.get('available') else 'no disponible',
-                }
-                for card in self._provider_cards
-                if isinstance(card, dict)
-            ]
+        assistant_cards = self._assistant_tool_cards()
         total = len(assistant_cards) or 1
         available_cards = [item for item in assistant_cards if item.get('status') != 'no disponible']
         automatic_cards = [item for item in assistant_cards if item.get('status') == 'listo automatico']
@@ -2603,9 +2510,7 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._evolution_status_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='evolution_status')
-        recorder = getattr(self, '_record_chat_audit', None)
-        if callable(recorder):
-            recorder(reasoning_path='evolution_status', user_goal=message)
+        self._record_chat_audit(reasoning_path='evolution_status', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2618,9 +2523,7 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._learning_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='learning')
-        recorder = getattr(self, '_record_chat_audit', None)
-        if callable(recorder):
-            recorder(reasoning_path='learning', user_goal=message)
+        self._record_chat_audit(reasoning_path='learning', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2633,9 +2536,7 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._self_awareness_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='self_awareness')
-        recorder = getattr(self, '_record_chat_audit', None)
-        if callable(recorder):
-            recorder(reasoning_path='self_awareness', user_goal=message)
+        self._record_chat_audit(reasoning_path='self_awareness', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -2648,9 +2549,7 @@ class ControlCenterViewModel(QObject):
         reply, meta = self._world_model_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed',
                              reasoning_path='world_model')
-        recorder = getattr(self, '_record_chat_audit', None)
-        if callable(recorder):
-            recorder(reasoning_path='world_model', user_goal=message)
+        self._record_chat_audit(reasoning_path='world_model', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -3153,9 +3052,7 @@ class ControlCenterViewModel(QObject):
 
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path=reasoning_path, trace_metadata=trace)
-        recorder = getattr(self, '_record_chat_audit', None)
-        if callable(recorder):
-            recorder(reasoning_path=reasoning_path, user_goal=message)
+        self._record_chat_audit(reasoning_path=reasoning_path, user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._busy_label = 'Respuesta lista.'
@@ -3219,1325 +3116,13 @@ class ControlCenterViewModel(QObject):
         reply, meta, evidence_tag = self._general_chat_reply(message)
         self._append_message('assistant', 'IABV', reply, meta, evidence_tag=evidence_tag,
                              reasoning_path='general_chat')
-        recorder = getattr(self, '_record_chat_audit', None)
-        if callable(recorder):
-            recorder(reasoning_path='general_chat', user_goal=message)
+        self._record_chat_audit(reasoning_path='general_chat', user_goal=message)
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._working = False
         self._set_live_status('idle')
         self._busy_label = 'Respuesta lista.'
-        chat_signal = getattr(self, 'chatChanged', None)
-        emit_chat = getattr(chat_signal, 'emit', None)
-        if callable(emit_chat):
-            emit_chat()
-
-    def _is_external_consultation_diagnosis_question(self, message: str) -> bool:
-        normalized = self._normalized_command_text(message)
-        has_external_token = any(
-            token in normalized
-            for token in ('chatgpt', 'codex', 'claude', 'consulta externa', 'asistente externo')
-        )
-        external_payload = dict((getattr(self, '_last_adaptive_payload', {}) or {}).get('metadata') or {})
-        external_context_active = bool(
-            external_payload.get('external_consultation')
-            or external_payload.get('external_consultation_preflight')
-            or external_payload.get('autonomous_evolution')
-            or dict(getattr(self, '_external_evidence_panel', {}) or {}).get('visible')
-        )
-        if not has_external_token and not external_context_active:
-            return False
-        return any(
-            token in normalized
-            for token in (
-                'que paso',
-                'qué paso',
-                'que pasó',
-                'metadato',
-                'metadata',
-                'entendiendo',
-                'entendido',
-                'interpretando',
-                'por que no',
-                'por qué no',
-                'no pudo',
-                'no contesto',
-                'no contestó',
-                'navegador',
-                'ventana',
-                'visible',
-                'visual',
-                'no la veo',
-                'mostrar',
-                'donde se quedo',
-                'dónde se quedo',
-                'donde se quedó',
-                'segundo plano',
-                'tomando la informacion',
-                'tomando la información',
-                'como vamos a interactuar',
-                'cómo vamos a interactuar',
-            )
-        )
-
-    def get_external_evidence_panel(self) -> dict[str, Any]:
-        return dict(getattr(self, '_external_evidence_panel', {}) or {})
-
-    @staticmethod
-    def _external_evidence_kv_items(metadata: dict[str, Any] | list[dict[str, Any]] | None) -> list[dict[str, str]]:
-        if isinstance(metadata, list):
-            return [
-                {
-                    'key': str(item.get('key') or '')[:48],
-                    'value': str(item.get('value') or '')[:160],
-                }
-                for item in metadata[:12]
-                if isinstance(item, dict) and str(item.get('key') or '').strip()
-            ]
-        items: list[dict[str, str]] = []
-        for key, value in sorted(dict(metadata or {}).items()):
-            if isinstance(value, (dict, list)):
-                try:
-                    raw = json.dumps(value, ensure_ascii=False, sort_keys=True)
-                except Exception:
-                    raw = str(value)
-            else:
-                raw = str(value)
-            items.append({'key': str(key)[:48], 'value': raw[:160]})
-            if len(items) >= 12:
-                break
-        return items
-
-    def _set_external_evidence_panel(
-        self,
-        *,
-        title: str,
-        status: str,
-        assistant_title: str = '',
-        interaction_id: str = '',
-        phases: list[Any] | None = None,
-        metadata: dict[str, Any] | list[dict[str, Any]] | None = None,
-        visual_evidence: list[dict[str, Any]] | None = None,
-        user_help: str = '',
-        actions: list[dict[str, str]] | None = None,
-    ) -> None:
-        phase_rows: list[dict[str, str]] = []
-        for item in list(phases or [])[-8:]:
-            if isinstance(item, dict):
-                label = str(item.get('phase') or item.get('label') or '').strip()
-                detail_bits: list[str] = []
-                if item.get('detail'):
-                    detail_bits.append(str(item.get('detail') or '')[:160])
-                for key in ('selected_tool_id', 'response_verified', 'reuse_guard_active', 'available'):
-                    if key in item:
-                        detail_bits.append(f'{key}={item.get(key)}')
-                phase_rows.append({'label': label, 'detail': ', '.join(detail_bits)})
-            else:
-                phase_rows.append({'label': str(item or '').strip(), 'detail': ''})
-        phase_rows = [row for row in phase_rows if row.get('label')]
-        self._external_evidence_panel = {
-            'visible': True,
-            'title': title,
-            'status': status,
-            'assistant': assistant_title,
-            'interaction_id': interaction_id,
-            'phases': phase_rows,
-            'metadata': ControlCenterViewModel._external_evidence_kv_items(metadata),
-            'visual_evidence': [
-                {
-                    'label': str(item.get('label') or '')[:80],
-                    'path': str(item.get('path') or '')[:260],
-                    'image_url': str(item.get('image_url') or '')[:320],
-                    'detail': str(item.get('detail') or '')[:220],
-                    'permission_granted': bool(item.get('permission_granted')),
-                    'region': str(item.get('region') or '')[:32],
-                    'semantic_summary': dict(item.get('semantic_summary') or {}),
-                    'semantic_path': str(item.get('semantic_path') or '')[:260],
-                    'capture_quality': dict(item.get('capture_quality') or {}),
-                    'capture_attempts': list(item.get('capture_attempts') or [])[:4],
-                }
-                for item in list(visual_evidence or [])[-4:]
-                if isinstance(item, dict) and str(item.get('path') or item.get('image_url') or '').strip()
-            ],
-            'user_help': user_help,
-            'actions': list(actions or []),
-        }
-        chat_signal = getattr(self, 'chatChanged', None)
-        emit_chat = getattr(chat_signal, 'emit', None)
-        if callable(emit_chat):
-            emit_chat()
-
-    def _external_evidence_assistant_kind(self) -> str:
-        pending = self._pending_observation_permission_assistant()
-        if pending:
-            return pending
-        panel = dict(getattr(self, '_external_evidence_panel', {}) or {})
-        probe = ' '.join(
-            str(value or '').strip().lower()
-            for value in (
-                panel.get('assistant'),
-                panel.get('title'),
-                panel.get('status'),
-            )
-        )
-        metadata = panel.get('metadata') or []
-        if isinstance(metadata, list):
-            probe += ' ' + ' '.join(
-                f"{str(item.get('key') or '').lower()} {str(item.get('value') or '').lower()}"
-                for item in metadata
-                if isinstance(item, dict)
-            )
-        for key in ('chatgpt', 'claude', 'codex', 'ollama', 'devin', 'windsurf'):
-            if key in probe:
-                return key
-        return ''
-
-    def _observation_permission_granted(self, assistant_kind: str) -> bool:
-        assistant_kind = str(assistant_kind or '').strip().lower()
-        if not assistant_kind:
-            return False
-        world_model_service = getattr(getattr(self.adaptive_orchestrator, 'context_assembler', None), 'world_model_service', None)
-        snapshot = getattr(world_model_service, 'permission_snapshot', None)
-        if not callable(snapshot):
-            return False
-        scope = f'observe_window_content:{assistant_kind}'
-        try:
-            permissions = snapshot()
-        except Exception:
-            return False
-        for item in permissions or []:
-            payload = dict(item or {})
-            if str(payload.get('scope') or '').strip().lower() == scope:
-                return bool(payload.get('granted'))
-        return False
-
-    @staticmethod
-    def _assistant_web_url(assistant_kind: str) -> str:
-        normalized = str(assistant_kind or '').strip().lower()
-        if normalized == 'chatgpt':
-            return 'https://chatgpt.com/'
-        if normalized == 'claude':
-            return 'https://claude.ai/'
-        if normalized == 'devin':
-            return 'https://app.devin.ai/'
-        if normalized == 'codex':
-            return 'https://chatgpt.com/codex'
-        return ''
-
-    def _assistant_program_browser_profile_dir(self, assistant_kind: str) -> Path:
-        normalized = str(assistant_kind or 'external').strip().lower() or 'external'
-        workspace_root = Path(str(getattr(self.config, 'workspace_root', '') or '.'))
-        return (
-            workspace_root
-            / 'data'
-            / 'tool_teaching'
-            / 'external_assistants'
-            / f'{normalized}_program_session'
-            / 'browser_profile'
-        )
-
-    @staticmethod
-    def _is_user_browser_session_request(message: str) -> bool:
-        command = ' '.join(str(message or '').lower().strip().split())
-        if not command:
-            return False
-        browser_terms = (
-            'mi navegador',
-            'mis navegadores',
-            'navegador donde',
-            'navegadores donde',
-            'chrome donde',
-            'edge donde',
-            'perfil de chrome',
-            'perfil de edge',
-            'sesion iniciada',
-            'sesión iniciada',
-            'inicios de sesion',
-            'inicios de sesión',
-            'ya tengo sesion',
-            'ya tengo sesión',
-            'ya logueado',
-            'ya logueada',
-            'mis cuentas',
-            'mis correos',
-            'cuentas logueadas',
-        )
-        action_terms = ('usa', 'usar', 'utiliza', 'utilizar', 'abre', 'abrir', 'reusa', 'reusar', 'aprovecha', 'aprovechar')
-        return any(term in command for term in browser_terms) and any(term in command for term in action_terms)
-
-    def _assistant_for_browser_session_preference(self, message: str) -> str:
-        explicit = self._explicit_assistant_preference(message)
-        if explicit:
-            return explicit
-        panel_kind = self._external_evidence_assistant_kind()
-        if panel_kind:
-            return panel_kind
-        command = str(message or '').lower()
-        for candidate in ('chatgpt', 'claude', 'codex', 'devin'):
-            if candidate in command:
-                return candidate
-        return 'chatgpt'
-
-    def _external_browser_session_preference(self, assistant_kind: str) -> dict[str, Any]:
-        assistant_kind = str(assistant_kind or '').strip().lower()
-        if not assistant_kind:
-            return {}
-        return dict((getattr(self, '_external_browser_session_preferences', {}) or {}).get(assistant_kind) or {})
-
-    def _prefer_user_browser_for_external(self, assistant_kind: str) -> bool:
-        preference = self._external_browser_session_preference(assistant_kind)
-        mode = str(preference.get('mode') or '').strip().lower()
-        return mode in {'user_default_browser', 'user_existing_browser', 'user_existing_cdp'}
-
-    def _external_session_goal_overrides(self, assistant_kind: str) -> dict[str, Any]:
-        preference = self._external_browser_session_preference(assistant_kind)
-        if not preference:
-            return {}
-        mode = str(preference.get('mode') or '').strip().lower()
-        if mode not in {'user_default_browser', 'user_existing_browser', 'user_existing_cdp'}:
-            return {}
-        return {
-            'browser_session_mode': mode,
-            'user_browser_requested': True,
-            'background_preference_requested': bool(preference.get('background_preference_requested', False)),
-            'response_capture_mode': 'manual_pasteback',
-            'background_capture_mode': 'user_visible_browser',
-            'requires_manual_pasteback': True,
-            'session_scope': 'user_browser',
-            'session_label': 'Navegador del usuario',
-            'isolated_session_required': False,
-        }
-
-    def _handle_user_browser_session_request(self, message: str) -> bool:
-        if not ControlCenterViewModel._is_user_browser_session_request(message):
-            return False
-        assistant_kind = self._assistant_for_browser_session_preference(message)
-        assistant_title = self._assistant_display_name(assistant_kind)
-        command = ' '.join(str(message or '').lower().strip().split())
-        preference = {
-            'mode': 'user_default_browser',
-            'assistant_kind': assistant_kind,
-            'background_preference_requested': 'segundo plano' in command or 'background' in command,
-            'source': 'chat_instruction',
-            'updated_at_utc': datetime.now(timezone.utc).isoformat(),
-            'message_preview': str(message or '')[:160],
-        }
-        self._external_browser_session_preferences[assistant_kind] = preference
-        self._trace_external_followup(
-            'external_browser_session_preference_updated',
-            assistant_kind=assistant_kind,
-            mode=preference['mode'],
-            background_preference_requested=preference['background_preference_requested'],
-            message_preview=preference['message_preview'],
-        )
-        self._set_external_evidence_panel(
-            title=f'Ruta externa ajustada para {assistant_title}',
-            status='user_browser_preferred',
-            assistant_title=assistant_title,
-            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
-            phases=[{'phase': 'browser_session_preference_updated', 'detail': 'user_default_browser'}],
-            metadata=[
-                {'key': 'browser_session_mode', 'value': 'user_default_browser'},
-                {'key': 'isolated_program_profile', 'value': 'false'},
-                {'key': 'background_preference_requested', 'value': str(preference['background_preference_requested']).lower()},
-                {'key': 'confirmed_login_state', 'value': 'UNRESOLVED'},
-            ],
-            user_help=(
-                f'Voy a priorizar tu navegador predeterminado para {assistant_title}, no el perfil aislado del programa. '
-                'No voy a asumir que una cuenta esta disponible hasta verificarlo en vivo. Si aparece login o verificacion, te mostrare esa ventana para que puedas resolverla.'
-            ),
-            actions=[
-                self._assistant_action(f'open_external_assistant_{assistant_kind}', f'Abrir {assistant_title}', 'Abrir la pagina en tu navegador predeterminado.'),
-                self._assistant_action(f'consult_{assistant_kind}', f'Consultar {assistant_title}', 'Reintentar la consulta usando esta preferencia.'),
-                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Cruzar lo visible con los metadatos despues de abrir.'),
-            ],
-        )
-        self._append_message(
-            'assistant',
-            'IABV',
-            (
-                f'Entendido. Para {assistant_title} voy a usar tu navegador predeterminado y tus sesiones visibles antes que el perfil aislado del programa. '
-                'El estado de login queda UNRESOLVED hasta observar la pagina real.'
-            ),
-            'Preferencia de navegador actualizada.',
-            reasoning_path='external_browser_session_preference',
-            evidence_tag='observed',
-        )
         self.dataChanged.emit()
-        return True
-
-    def _open_external_assistant_for_human_verification(
-        self,
-        assistant_kind: str,
-        *,
-        reason: str = 'user_action',
-        announce: bool = True,
-    ) -> bool:
-        """Open a visible assistant window when a web security check needs a human."""
-        assistant_kind = str(assistant_kind or self._external_evidence_assistant_kind() or '').strip().lower()
-        if not assistant_kind:
-            if announce:
-                self._append_message('assistant', 'IABV', 'No se que asistente externo debo abrir para verificacion.', 'Asistente externo no identificado.')
-            return False
-        url = ControlCenterViewModel._assistant_web_url(assistant_kind)
-        if not url:
-            if announce:
-                self._append_message('assistant', 'IABV', f'No tengo URL visible configurada para {assistant_kind}.', 'Ruta visible no disponible.')
-            return False
-        assistant_title = self._assistant_display_name(assistant_kind)
-        use_user_browser = self._prefer_user_browser_for_external(assistant_kind)
-        profile_dir = self._assistant_program_browser_profile_dir(assistant_kind)
-        if not use_user_browser:
-            profile_dir.mkdir(parents=True, exist_ok=True)
-        browser_mode = 'user_default_browser_visible' if use_user_browser else 'program_profile_visible'
-        self._external_visible_verification_opened_at[assistant_kind] = time.monotonic()
-        self._set_external_evidence_panel(
-            title=f'Verificacion visible de {assistant_title}',
-            status='needs_human_verification',
-            assistant_title=assistant_title,
-            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
-            phases=[{'phase': 'visible_verification_window_requested', 'detail': reason}],
-            metadata={
-                'assistant_kind': assistant_kind,
-                'url': url,
-                'browser_session_mode': browser_mode,
-                'browser_profile_dir': '' if use_user_browser else str(profile_dir),
-                'isolated_program_profile': not use_user_browser,
-                'reason': reason,
-                'source': 'ControlCenterViewModel._open_external_assistant_for_human_verification',
-            },
-            user_help=(
-                (
-                    f'Abro una ventana visible de {assistant_title} usando tu navegador predeterminado. '
-                    if use_user_browser
-                    else f'Abro una ventana visible de {assistant_title} usando el perfil del programa. '
-                )
-                + 'Si aparece una verificacion de seguridad, resuelvela ahi. Despues pulsa Reintentar o Capturar vista para que IABV cruce lo visible con sus metadatos.'
-            ),
-            actions=[
-                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar lo que se ve despues de abrir la verificacion.'),
-                self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a consultar despues de resolver la verificacion.'),
-                self._assistant_action('ingest_external_response', 'Pegar respuesta', 'Ingerir manualmente una respuesta si ya aparecio.'),
-                self._assistant_action('audit_autonomy', 'Auditar ruta', 'Revisar el bloqueo operativo.'),
-            ],
-        )
-        if announce:
-            self._append_message(
-                'assistant',
-                'IABV',
-                (
-                    f'Voy a abrir una ventana visible de {assistant_title} para que puedas resolver login o verificacion de seguridad. '
-                    'Despues de resolverla, pulsa Reintentar o Capturar vista.'
-                ),
-                f'Verificacion visible de {assistant_title}.',
-                reasoning_path='external_human_verification',
-                evidence_tag='observed',
-            )
-        self.dataChanged.emit()
-
-        def _worker() -> None:
-            mode = 'unresolved'
-            error = ''
-            try:
-                if use_user_browser:
-                    import webbrowser
-
-                    opened = bool(webbrowser.open(url))
-                    mode = 'user_default_browser_visible' if opened else 'failed'
-                    if not opened:
-                        error = 'webbrowser.open returned False'
-                else:
-                    from iabv_v15.services.capture.browser_session_controller import BrowserSessionController
-
-                    controller = BrowserSessionController(user_data_dir=str(profile_dir), headless=False)
-                    controller.start()
-                    page = controller.page or controller.new_page()
-                    page.goto(url, wait_until='domcontentloaded')
-                    self._visible_external_sessions[assistant_kind] = controller
-                    mode = 'program_profile_visible'
-            except Exception as exc:
-                error = str(exc)[:240]
-                try:
-                    import webbrowser
-
-                    webbrowser.open(url)
-                    mode = 'default_browser_fallback'
-                except Exception as fallback_exc:
-                    error = f'{error}; fallback={fallback_exc}'[:240]
-                    mode = 'failed'
-            try:
-                self._trace_external_followup(
-                    'external_assistant_verification_window_opened',
-                    assistant_kind=assistant_kind,
-                    assistant_title=assistant_title,
-                    url=url,
-                    browser_session_mode=browser_mode,
-                    browser_profile_dir='' if use_user_browser else str(profile_dir),
-                    isolated_program_profile=not use_user_browser,
-                    mode=mode,
-                    error=error,
-                    reason=reason,
-                )
-            except Exception:
-                pass
-
-        threading.Thread(target=_worker, daemon=True, name=f'iabv-visible-{assistant_kind}-verification').start()
-        return True
-
-    def _release_visible_external_session(self, assistant_kind: str, *, reason: str = 'retry') -> None:
-        """Close a visible verification browser before the headless path reuses its profile."""
-        assistant_kind = str(assistant_kind or '').strip().lower()
-        if not assistant_kind:
-            return
-        sessions = getattr(self, '_visible_external_sessions', None)
-        if not isinstance(sessions, dict):
-            return
-        controller = sessions.pop(assistant_kind, None)
-        if controller is None:
-            return
-        error = ''
-        try:
-            close = getattr(controller, 'close', None)
-            if callable(close):
-                close()
-        except Exception as exc:
-            error = str(exc)[:240]
-        try:
-            self._trace_external_followup(
-                'external_assistant_verification_window_released',
-                assistant_kind=assistant_kind,
-                assistant_title=self._assistant_display_name(assistant_kind),
-                reason=reason,
-                error=error,
-            )
-        except Exception:
-            pass
-
-    @staticmethod
-    def _preflight_is_security_verification(preflight: dict[str, Any]) -> bool:
-        governance = dict(preflight.get('governance') or {})
-        reason = str(preflight.get('reason') or governance.get('reason') or '').strip().lower()
-        flags = [
-            str(item).strip().lower()
-            for item in (
-                list(governance.get('external_state_flags') or [])
-                + list(preflight.get('external_state_flags') or [])
-                + list(dict(preflight.get('world_model_summary') or {}).get('external_state_flags') or [])
-            )
-            if str(item).strip()
-        ]
-        return (
-            'browser_security_verification' in reason
-            or 'verificacion de seguridad' in reason
-            or 'verificación de seguridad' in reason
-            or 'browser_security_verification' in flags
-        )
-
-    def _should_retest_security_preflight_after_visible_verification(
-        self,
-        assistant_kind: str,
-        preflight: dict[str, Any],
-        *,
-        max_age_seconds: float = 1800.0,
-    ) -> bool:
-        """Allow one live retest after the user had a visible verification path.
-
-        The security block comes from WorldModel/history. After the user grants
-        observation and IABV opens a visible program-profile browser, the honest
-        next step is to retest the real session. This does not claim success;
-        the adapter still verifies the live browser result.
-        """
-        assistant_kind = str(assistant_kind or '').strip().lower()
-        if not assistant_kind:
-            return False
-        if not ControlCenterViewModel._preflight_is_security_verification(preflight):
-            return False
-        if not self._observation_permission_granted(assistant_kind):
-            return False
-        opened_at = float((getattr(self, '_external_visible_verification_opened_at', {}) or {}).get(assistant_kind) or 0.0)
-        has_visible_session = assistant_kind in (getattr(self, '_visible_external_sessions', {}) or {})
-        if not opened_at and not has_visible_session:
-            return False
-        if opened_at and (time.monotonic() - opened_at) > max_age_seconds:
-            return False
-        return True
-
-    @staticmethod
-    def _assistant_window_title_hints(assistant_kind: str) -> list[str]:
-        normalized = str(assistant_kind or '').strip().lower()
-        if normalized == 'chatgpt':
-            return ['chatgpt', 'chat.openai', 'openai']
-        if normalized == 'claude':
-            return ['claude', 'anthropic']
-        if normalized == 'codex':
-            return ['codex']
-        if normalized == 'devin':
-            return ['devin']
-        if normalized == 'windsurf':
-            return ['windsurf']
-        return [normalized] if normalized else []
-
-    def _target_window_for_visual_evidence(self, assistant_kind: str) -> dict[str, Any]:
-        """Return the best external target window, without guessing as success."""
-        assistant_kind = str(assistant_kind or '').strip().lower()
-        hints = [hint for hint in ControlCenterViewModel._assistant_window_title_hints(assistant_kind) if hint]
-        if not hints:
-            return {}
-        world_model_service_getter = getattr(self, '_world_model_service', None)
-        if callable(world_model_service_getter):
-            service = world_model_service_getter()
-        else:
-            service = getattr(getattr(getattr(self, 'adaptive_orchestrator', None), 'context_assembler', None), 'world_model_service', None)
-        snapshot = None
-        if service is not None:
-            try:
-                refresh = getattr(service, 'request_refresh', None)
-                snapshot = refresh(reason=f'visual_evidence_target:{assistant_kind}', full=False) if callable(refresh) else service.current_model()
-            except Exception:
-                try:
-                    snapshot = service.current_model()
-                except Exception:
-                    snapshot = None
-        windows = list(getattr(snapshot, 'active_windows', []) or [])
-        candidates: list[dict[str, Any]] = []
-        for window in windows:
-            title = str(getattr(window, 'title', '') or '')
-            app_name = str(getattr(window, 'app_name', '') or '')
-            normalized = f'{title} {app_name}'.lower()
-            if not any(hint in normalized for hint in hints):
-                continue
-            if 'iabv' in normalized and assistant_kind != 'iabv':
-                continue
-            metadata = dict(getattr(window, 'metadata', {}) or {})
-            rect = list(metadata.get('rect') or [])
-            hwnd = int(metadata.get('hwnd') or 0)
-            candidates.append(
-                {
-                    'title': title,
-                    'app_name': app_name,
-                    'assistant_kind': str(getattr(window, 'assistant_kind', '') or assistant_kind),
-                    'tool_id': str(getattr(window, 'tool_id', '') or ''),
-                    'pid': int(getattr(window, 'pid', 0) or 0),
-                    'focused': bool(getattr(window, 'focused', False)),
-                    'visible': bool(getattr(window, 'visible', True)),
-                    'hwnd': hwnd,
-                    'rect': rect,
-                }
-            )
-        candidates.sort(key=lambda item: (not bool(item.get('focused')), not bool(item.get('hwnd')), str(item.get('title') or '')))
-        return dict(candidates[0]) if candidates else {}
-
-    @staticmethod
-    def _capture_region_for_target_window(target_window: dict[str, Any]) -> str:
-        rect = list(dict(target_window or {}).get('rect') or [])
-        if len(rect) >= 4:
-            left, top, width, height = [int(value or 0) for value in rect[:4]]
-            if width > 0 and height > 0:
-                return f'bbox:{left},{top},{width},{height}'
-        hwnd = int(dict(target_window or {}).get('hwnd') or 0)
-        if hwnd > 0:
-            return f'hwnd:{hwnd}'
-        return ''
-
-    @staticmethod
-    def _capture_region_candidates_for_target_window(target_window: dict[str, Any]) -> list[dict[str, str]]:
-        """Return capture attempts ordered by visual reliability.
-
-        For external Chromium windows, native hwnd capture can be all black.
-        The visible bbox is closer to what the user sees, so it goes first
-        when WorldModel exposes a rectangle; hwnd remains as fallback evidence.
-        """
-        target = dict(target_window or {})
-        candidates: list[dict[str, str]] = []
-        rect = list(target.get('rect') or [])
-        if len(rect) >= 4:
-            left, top, width, height = [int(value or 0) for value in rect[:4]]
-            if width > 0 and height > 0:
-                candidates.append(
-                    {
-                        'region': f'bbox:{left},{top},{width},{height}',
-                        'capture_scope': 'external_target_window_bbox',
-                    }
-                )
-        hwnd = int(target.get('hwnd') or 0)
-        if hwnd > 0:
-            candidates.append({'region': f'hwnd:{hwnd}', 'capture_scope': 'external_target_window_hwnd'})
-        return candidates
-
-    @staticmethod
-    def _visual_capture_quality(screenshot_data: bytes) -> dict[str, Any]:
-        """Estimate whether a screenshot has enough visual information.
-
-        This is intentionally cheap and deterministic. It catches the common
-        Windows/Chromium failure mode where a valid PNG is completely black.
-        """
-        size_bytes = len(screenshot_data or b'')
-        if not screenshot_data:
-            return {
-                'status': 'empty',
-                'size_bytes': 0,
-                'blank_probability': 1.0,
-                'useful': False,
-                'reason': 'empty_capture',
-            }
-        try:
-            import io
-            from PIL import Image, ImageStat  # type: ignore
-
-            image = Image.open(io.BytesIO(screenshot_data)).convert('RGB')
-            width, height = image.size
-            stat = ImageStat.Stat(image)
-            extrema = image.getextrema()
-            dynamic_range = max((hi - lo) for lo, hi in extrema)
-            mean_stddev = sum(float(value) for value in stat.stddev) / 3.0
-            unique_colors = image.getcolors(maxcolors=256)
-            unique_color_count = 257 if unique_colors is None else len(unique_colors)
-            blank_probability = 0.0
-            if width <= 0 or height <= 0:
-                blank_probability = 1.0
-            elif dynamic_range <= 2 and mean_stddev <= 1.0:
-                blank_probability = 0.98
-            elif unique_color_count <= 2 and mean_stddev <= 2.0:
-                blank_probability = 0.9
-            elif size_bytes < 12000 and width * height >= 250000 and mean_stddev < 8.0:
-                blank_probability = 0.84
-            elif mean_stddev < 5.0:
-                blank_probability = 0.62
-            useful = blank_probability < 0.8
-            return {
-                'status': 'analyzed',
-                'size_bytes': size_bytes,
-                'image_width': int(width),
-                'image_height': int(height),
-                'mean_stddev': round(mean_stddev, 4),
-                'dynamic_range': int(dynamic_range),
-                'unique_color_count': int(unique_color_count),
-                'blank_probability': round(blank_probability, 4),
-                'useful': useful,
-                'reason': 'ok' if useful else 'low_information_pixels',
-            }
-        except Exception as exc:
-            return {
-                'status': 'unresolved',
-                'size_bytes': size_bytes,
-                'blank_probability': 0.0,
-                'useful': True,
-                'reason': f'quality_analysis_unavailable:{str(exc)[:80]}',
-            }
-
-    @staticmethod
-    def _visual_evidence_image_url(path: str) -> str:
-        normalized = str(path or '').replace('\\', '/')
-        if normalized.startswith('/'):
-            return f'file://{normalized}'
-        return f'file:///{normalized}'
-
-    def _visual_evidence_semantic_summary(self, entry: dict[str, Any]) -> dict[str, Any]:
-        path = str(entry.get('path') or '').strip()
-        if not path:
-            return {
-                'status': 'unavailable',
-                'state_hypothesis': 'visual_unavailable',
-                'confidence': 0.0,
-                'labels': [],
-                'unresolved_fields': ['UNRESOLVED:visual_evidence_path_missing'],
-            }
-        analyzer = getattr(self, 'universal_perception_service', None)
-        if analyzer is None or not hasattr(analyzer, 'analyze_visual_evidence'):
-            analyzer = UniversalPerceptionService()
-        try:
-            signal = analyzer.analyze_visual_evidence(
-                image_path=path,
-                assistant_kind=str(entry.get('assistant_kind') or ''),
-                permission_granted=bool(entry.get('permission_granted')),
-                source='external_evidence_panel',
-                metadata={
-                    'assistant_title': str(entry.get('assistant_kind') or ''),
-                    'target_window_found': bool(entry.get('target_window_found')),
-                    'target_window_title': str(entry.get('target_window_title') or ''),
-                    'capture_scope': str(entry.get('capture_scope') or ''),
-                    'captured_self_only': bool(entry.get('captured_self_only')),
-                },
-            )
-            payload = signal.model_dump(mode='json') if hasattr(signal, 'model_dump') else dict(signal)
-        except Exception as exc:
-            return {
-                'status': 'error',
-                'state_hypothesis': 'visual_analysis_failed',
-                'confidence': 0.0,
-                'labels': [],
-                'unresolved_fields': ['UNRESOLVED:visual_semantic_analysis_failed'],
-                'error': str(exc)[:220],
-            }
-        snapshot = dict(payload.get('visual_snapshot') or {})
-        summary = {
-            'status': 'available' if payload.get('capture_available') else 'unavailable',
-            'state_hypothesis': str(snapshot.get('state_hypothesis') or ''),
-            'confidence': float(payload.get('confidence') or 0.0),
-            'labels': list(snapshot.get('semantic_labels') or payload.get('visible_targets') or [])[:10],
-            'ocr_status': str(snapshot.get('ocr_status') or ''),
-            'ocr_text_preview': str(snapshot.get('ocr_text_preview') or '')[:300],
-            'image_width': int(snapshot.get('image_width') or 0),
-            'image_height': int(snapshot.get('image_height') or 0),
-            'blank_probability': float(snapshot.get('blank_probability') or 0.0),
-            'unresolved_fields': list(payload.get('unresolved_fields') or []),
-        }
-        try:
-            sidecar = Path(path).with_suffix('.json')
-            sidecar.write_text(
-                json.dumps(
-                    {
-                        'visual_evidence': {key: value for key, value in entry.items() if key != 'semantic_summary'},
-                        'visual_signal': payload,
-                        'semantic_summary': summary,
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                    sort_keys=True,
-                ),
-                encoding='utf-8',
-            )
-            summary['semantic_path'] = str(sidecar)
-        except Exception:
-            summary.setdefault('unresolved_fields', []).append('UNRESOLVED:visual_semantic_sidecar_write_failed')
-        return summary
-
-    def _capture_visual_evidence_snapshot(
-        self,
-        *,
-        assistant_kind: str = '',
-        reason: str = 'user_requested',
-        announce: bool = True,
-    ) -> dict[str, Any]:
-        assistant_kind = str(assistant_kind or self._external_evidence_assistant_kind() or '').strip().lower()
-        permission_granted = self._observation_permission_granted(assistant_kind)
-        target_window: dict[str, Any] = {}
-        target_region = ''
-        capture_attempt_plan: list[dict[str, str]] = []
-        if assistant_kind and permission_granted:
-            target_window = ControlCenterViewModel._target_window_for_visual_evidence(self, assistant_kind)  # type: ignore[arg-type]
-            capture_attempt_plan = ControlCenterViewModel._capture_region_candidates_for_target_window(target_window)
-            target_region = capture_attempt_plan[0]['region'] if capture_attempt_plan else ''
-        target_found = bool(target_window and capture_attempt_plan)
-        if target_found:
-            region = target_region
-            capture_scope = capture_attempt_plan[0]['capture_scope']
-        else:
-            region = 'screen' if permission_granted else 'main'
-            capture_scope = 'screen_fallback_no_target' if permission_granted else 'iabv_window_only'
-            capture_attempt_plan = [{'region': region, 'capture_scope': capture_scope}]
-        target_title = str(target_window.get('title') or '').strip()
-        captured_self_only = (not permission_granted) or ('iabv' in target_title.lower() and assistant_kind != 'iabv')
-        unresolved_fields: list[str] = []
-        if assistant_kind and not permission_granted:
-            unresolved_fields.append('UNRESOLVED:external_window_content_permission_missing')
-        if assistant_kind and permission_granted and not target_found:
-            unresolved_fields.append('UNRESOLVED:external_target_window_not_found')
-
-        try:
-            from iabv_v15.infra.ui import build_ui_screenshot_provider
-
-            provider = build_ui_screenshot_provider()
-            if provider is None:
-                raise RuntimeError('screenshot_provider_unavailable')
-            screenshot_data = b''
-            capture_quality: dict[str, Any] = {}
-            capture_attempts: list[dict[str, Any]] = []
-            selected_attempt: dict[str, str] = dict(capture_attempt_plan[0] if capture_attempt_plan else {'region': region, 'capture_scope': capture_scope})
-            for attempt in capture_attempt_plan:
-                attempt_region = str(attempt.get('region') or '')
-                attempt_scope = str(attempt.get('capture_scope') or '')
-                attempt_data = provider.capture(attempt_region)
-                attempt_quality = ControlCenterViewModel._visual_capture_quality(attempt_data)
-                capture_attempts.append(
-                    {
-                        'region': attempt_region,
-                        'capture_scope': attempt_scope,
-                        'size_bytes': int(attempt_quality.get('size_bytes') or len(attempt_data or b'')),
-                        'blank_probability': float(attempt_quality.get('blank_probability') or 0.0),
-                        'useful': bool(attempt_quality.get('useful')),
-                        'reason': str(attempt_quality.get('reason') or ''),
-                    }
-                )
-                if attempt_data and (not screenshot_data or bool(attempt_quality.get('useful'))):
-                    screenshot_data = attempt_data
-                    capture_quality = attempt_quality
-                    selected_attempt = attempt
-                if screenshot_data and bool(attempt_quality.get('useful')):
-                    break
-            region = str(selected_attempt.get('region') or region)
-            capture_scope = str(selected_attempt.get('capture_scope') or capture_scope)
-            if not screenshot_data:
-                raise RuntimeError('screenshot_capture_empty')
-            if capture_quality and not bool(capture_quality.get('useful', True)):
-                unresolved_fields.append('UNRESOLVED:visual_capture_low_information')
-            evidence_dir = Path(str(getattr(self.config, 'workspace_root', '') or '.')) / 'data' / 'evolution' / 'visual_evidence'
-            evidence_dir.mkdir(parents=True, exist_ok=True)
-            stamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')
-            suffix = assistant_kind or 'iabv'
-            path = evidence_dir / f'visual_{stamp}_{suffix}.png'
-            path.write_bytes(screenshot_data)
-            if target_found:
-                label = f'Ventana objetivo: {target_title or self._assistant_display_name(assistant_kind)}'
-                target_detail = f'target={target_title or "sin titulo"}'
-            elif permission_granted:
-                label = 'Pantalla completa sin ventana objetivo'
-                target_detail = f'target=UNRESOLVED:{assistant_kind or "external"}_window_not_found'
-            else:
-                label = 'Vista IABV local'
-                target_detail = 'target=IABV local'
-            entry = {
-                'label': label,
-                'path': str(path),
-                'image_url': ControlCenterViewModel._visual_evidence_image_url(str(path)),
-                'detail': (
-                    f'region={region}; scope={capture_scope}; reason={reason}; {target_detail}; '
-                    + ('incluye ventana externa objetivo' if target_found else 'no confirma ventana externa objetivo')
-                ),
-                'permission_granted': permission_granted,
-                'assistant_kind': assistant_kind,
-                'region': region,
-                'capture_scope': capture_scope,
-                'target_window_found': target_found,
-                'target_window_title': target_title,
-                'target_window': target_window,
-                'captured_self_only': captured_self_only,
-                'size_bytes': len(screenshot_data),
-                'capture_quality': capture_quality,
-                'capture_attempts': capture_attempts,
-                'unresolved_fields': unresolved_fields,
-            }
-            status = 'ok'
-            error = ''
-        except Exception as exc:
-            entry = {
-                'label': 'Captura visual fallida',
-                'path': '',
-                'image_url': '',
-                'detail': str(exc)[:220],
-                'permission_granted': permission_granted,
-                'assistant_kind': assistant_kind,
-                'region': region,
-                'capture_scope': capture_scope,
-                'target_window_found': target_found,
-                'target_window_title': target_title,
-                'target_window': target_window,
-                'captured_self_only': captured_self_only,
-                'size_bytes': 0,
-                'capture_quality': {},
-                'capture_attempts': [],
-                'unresolved_fields': list(dict.fromkeys(unresolved_fields + ['visual_capture_failed'])),
-            }
-            status = 'error'
-            error = str(exc)[:220]
-
-        semantic_summary = self._visual_evidence_semantic_summary(entry) if entry.get('path') else {
-            'status': 'unavailable',
-            'state_hypothesis': 'visual_unavailable',
-            'confidence': 0.0,
-            'labels': [],
-            'unresolved_fields': list(entry.get('unresolved_fields') or []),
-        }
-        entry['semantic_summary'] = semantic_summary
-        if semantic_summary.get('semantic_path'):
-            entry['semantic_path'] = str(semantic_summary.get('semantic_path') or '')
-        if semantic_summary.get('state_hypothesis'):
-            entry['detail'] = (
-                str(entry.get('detail') or '')
-                + f"; state={semantic_summary.get('state_hypothesis')}; confidence={semantic_summary.get('confidence')}"
-            )[:220]
-        semantic_unresolved = [
-            str(item)
-            for item in (semantic_summary.get('unresolved_fields') or [])
-            if str(item)
-        ]
-        if semantic_unresolved:
-            entry['unresolved_fields'] = list(dict.fromkeys(list(entry.get('unresolved_fields') or []) + semantic_unresolved))
-
-        panel = dict(getattr(self, '_external_evidence_panel', {}) or {})
-        visuals = [dict(item) for item in (panel.get('visual_evidence') or []) if isinstance(item, dict)]
-        if entry.get('path'):
-            visuals.append(entry)
-        metadata_rows = [dict(item) for item in (panel.get('metadata') or []) if isinstance(item, dict)]
-        metadata_rows.extend(
-            [
-                {'key': 'visual_evidence_status', 'value': status},
-                {'key': 'visual_evidence_region', 'value': region},
-                {'key': 'visual_capture_scope', 'value': capture_scope},
-                {'key': 'visual_capture_quality', 'value': str(dict(entry.get('capture_quality') or {}).get('reason') or '')},
-                {'key': 'visual_blank_probability', 'value': str(dict(entry.get('capture_quality') or {}).get('blank_probability') or 0.0)},
-                {'key': 'visual_capture_attempts', 'value': json.dumps(entry.get('capture_attempts') or [], ensure_ascii=False)[:160]},
-                {'key': 'visual_target_window_found', 'value': str(target_found)},
-                {'key': 'visual_target_window_title', 'value': target_title or 'UNRESOLVED'},
-                {'key': 'visual_permission_granted', 'value': str(permission_granted)},
-                {'key': 'visual_semantic_state', 'value': str(semantic_summary.get('state_hypothesis') or '')},
-                {'key': 'visual_semantic_confidence', 'value': str(semantic_summary.get('confidence') or 0.0)},
-                {'key': 'visual_semantic_labels', 'value': ','.join(str(item) for item in (semantic_summary.get('labels') or [])[:5])},
-            ]
-        )
-        all_unresolved = list(dict.fromkeys(unresolved_fields + semantic_unresolved))
-        if all_unresolved:
-            metadata_rows.append({'key': 'UNRESOLVED', 'value': ','.join(all_unresolved)})
-        if error:
-            metadata_rows.append({'key': 'visual_evidence_error', 'value': error})
-        actions = [dict(item) for item in (panel.get('actions') or []) if isinstance(item, dict)]
-        action_names = {str(item.get('action') or '') for item in actions}
-        if 'approve_observation_permission' not in action_names and assistant_kind and not permission_granted:
-            actions.insert(0, self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Autorizar captura de pantalla externa para cruzarla con los metadatos.'))
-        open_action = f'open_external_assistant_{assistant_kind}' if assistant_kind else ''
-        if assistant_kind and permission_granted and not target_found and open_action not in action_names:
-            actions.insert(0, self._assistant_action(open_action, f'Abrir {self._assistant_display_name(assistant_kind)}', 'Mostrar la ventana externa para resolver login/verificacion y poder capturarla.'))
-        if 'capture_visual_evidence' not in action_names:
-            actions.append(self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar una imagen de lo que IABV puede ver ahora.'))
-        self._set_external_evidence_panel(
-            title=str(panel.get('title') or 'Evidencia visual de la interaccion'),
-            status='visual_captured' if status == 'ok' else 'visual_unresolved',
-            assistant_title=str(panel.get('assistant') or self._assistant_display_name(assistant_kind) or 'IABV'),
-            interaction_id=str(panel.get('interaction_id') or getattr(self, '_active_interaction_id', '') or ''),
-            phases=list(panel.get('phases') or []) + [{'phase': 'visual_evidence_snapshot', 'permission_granted': permission_granted}],
-            metadata=metadata_rows,
-            visual_evidence=visuals,
-            user_help=(
-                'Capture la vista que IABV puede usar como evidencia. '
-                'Sin permiso explicito solo guardo la ventana de IABV. Con permiso intento capturar primero la ventana externa objetivo; si no la encuentro, marco esa brecha como UNRESOLVED.'
-            ),
-            actions=actions,
-        )
-        if assistant_kind and not permission_granted:
-            self._approval_dialog_visible = True
-            self._approval_dialog_title = f'Permiso para observar {self._assistant_display_name(assistant_kind)}'
-            self._approval_dialog_text = (
-                f'Para capturar la ventana externa de {self._assistant_display_name(assistant_kind)} necesito tu permiso. '
-                'Sin ese permiso solo guardo la ventana de IABV y marco la evidencia externa como UNRESOLVED.'
-            )
-        try:
-            self._trace_external_followup(
-                'visual_evidence_snapshot',
-                status=status,
-                assistant_kind=assistant_kind,
-                region=region,
-                capture_scope=capture_scope,
-                target_window_found=target_found,
-                target_window_title=target_title,
-                permission_granted=permission_granted,
-                path=str(entry.get('path') or ''),
-                size_bytes=int(entry.get('size_bytes') or 0),
-                capture_quality=dict(entry.get('capture_quality') or {}),
-                capture_attempts=list(entry.get('capture_attempts') or []),
-                unresolved_fields=list(entry.get('unresolved_fields') or []),
-                semantic_state=str(semantic_summary.get('state_hypothesis') or ''),
-                semantic_confidence=float(semantic_summary.get('confidence') or 0.0),
-                semantic_labels=list(semantic_summary.get('labels') or [])[:8],
-                semantic_path=str(semantic_summary.get('semantic_path') or ''),
-                reason=reason,
-            )
-        except Exception:
-            pass
-        if announce:
-            if status == 'ok':
-                detail = (
-                    'Incluye pantalla externa autorizada.' if permission_granted
-                    else 'Solo incluye la ventana IABV; la ventana externa sigue sin permiso.'
-                )
-                self._append_message(
-                    'assistant',
-                    'IABV',
-                    f'Guarde una captura visual como evidencia: {entry.get("path")}. {detail}',
-                    'Evidencia visual registrada.',
-                    evidence_tag='observed',
-                    reasoning_path='visual_evidence_snapshot',
-                )
-            else:
-                self._append_message(
-                    'assistant',
-                    'IABV',
-                    f'No pude capturar evidencia visual ahora: {entry.get("detail")}.',
-                    'Evidencia visual no disponible.',
-                    evidence_tag='unresolved',
-                    reasoning_path='visual_evidence_snapshot',
-                )
-        self.dataChanged.emit()
-        return entry
-
-    def _schedule_visible_work_timeout(self, *, reason: str, timeout_ms: int | None = None) -> None:
-        self._visible_work_timeout_generation = int(getattr(self, '_visible_work_timeout_generation', 0)) + 1
-        generation = self._visible_work_timeout_generation
-        delay_ms = int(timeout_ms or self._LOCAL_CHAT_TIMEOUT_MS)
-        if str(reason or '').startswith('external_consultation:'):
-            self._trace_external_followup(
-                'external_consultation_visible_timeout_scheduled',
-                reason=reason,
-                timeout_ms=delay_ms,
-                generation=generation,
-                interaction_id=getattr(self, '_active_interaction_id', '') or '',
-            )
-
-        def _expire() -> None:
-            self._expire_visible_work_if_stale(generation, reason=reason)
-
-        try:
-            QTimer.singleShot(delay_ms, _expire)
-        except Exception:
-            timer = threading.Timer(delay_ms / 1000.0, _expire)
-            timer.daemon = True
-            timer.start()
-
-    def _expire_visible_work_if_stale(self, generation: int, *, reason: str) -> None:
-        if generation != int(getattr(self, '_visible_work_timeout_generation', 0)):
-            return
-        if not bool(getattr(self, '_working', False)):
-            return
-        reason_text = str(reason or '')
-        is_external = reason_text.startswith('external_consultation:')
-        assistant_kind = reason_text.split(':', 1)[1].strip() if is_external and ':' in reason_text else ''
-        if is_external:
-            try:
-                provider = self._assistant_display_name(assistant_kind)
-            except Exception:
-                provider = assistant_kind or 'asistente externo'
-            outcome = 'blocked'
-            user_text = (
-                f'La consulta externa con {provider} no devolvio un resultado util dentro del tiempo visible. '
-                'Cierro "Consultando..." como bloqueado para que puedas seguir. '
-                'Queda registrada la causa y puedo continuar con la ruta local/offline disponible sin depender de creditos o internet.'
-            )
-            meta = f'Timeout externo visible: {provider}.'
-            self._trace_external_followup(
-                'external_consultation_visible_timeout',
-                reason=reason_text,
-                assistant_kind=assistant_kind,
-                provider=provider,
-                generation=generation,
-                interaction_id=getattr(self, '_active_interaction_id', '') or '',
-            )
-            self._trace_external_followup(
-                'external_consultation_blocked',
-                reason='visible_timeout',
-                assistant_kind=assistant_kind,
-                provider=provider,
-                fallback_route='local_or_ollama',
-                interaction_id=getattr(self, '_active_interaction_id', '') or '',
-            )
-        else:
-            provider = 'local'
-            outcome = 'failed'
-            user_text = (
-                'La respuesta interna se paso del tiempo limite visible. Cierro el estado Consultando para que puedas seguir interactuando; '
-                'si llega una respuesta tardia quedara como evidencia secundaria, pero no la doy por confirmada.'
-            )
-            meta = f'Timeout visible: {reason_text}.'
-        self._working = False
-        self._interaction_has_pending_followup = False
-        self._interaction_pending_followup_outcome = ''
-        self._interaction_pending_followup_provider = ''
-        self._set_live_status('idle')
-        self._busy_label = (
-            'Consulta externa bloqueada por timeout visible; la interfaz vuelve a quedar disponible.'
-            if is_external
-            else 'La consulta se pauso por timeout visible; no voy a dejar la UI en Consultando.'
-        )
-        self._clear_autonomy_activity_override()
-        if is_external:
-            try:
-                self._set_autonomy_activity_override(
-                    visible=True,
-                    title='Consulta externa bloqueada',
-                    status='blocked',
-                    stage='timeout visible',
-                    progress=1.0,
-                    detail=user_text,
-                    tool=provider,
-                    next_step='Seguir local/offline o reintentar una via externa con evidencia nueva.',
-                    human_help='Si ves una verificacion o respuesta en el navegador, puedes mostrarla o ingerirla manualmente.',
-                    learning_note='El timeout queda registrado para no dejar la UI en consultando ni fingir respuesta externa.',
-                    mode='external',
-                )
-            except Exception:
-                pass
-        self._append_message(
-            'assistant',
-            'IABV',
-            user_text,
-            meta,
-            evidence_tag='observed',
-            reasoning_path='external_visible_timeout' if is_external else 'visible_work_timeout',
-        )
-        self._record_chat_audit(
-            reasoning_path='external_visible_timeout' if is_external else 'visible_work_timeout',
-            user_goal=self._last_user_goal or '',
-            error_detail=f'timeout:{reason_text}',
-        )
-        self._resolve_active_interaction(outcome=outcome, provider=provider)
-        self.chatChanged.emit()
-
-    def _latest_external_consultation_audit_summary(self) -> dict[str, Any]:
-        audit_path = Path(str(getattr(self.config, 'logs_dir', '') or '')) / 'runtime_audit.jsonl'
-        if not audit_path.exists():
-            return {'status': 'missing_audit'}
-        try:
-            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()[-500:]
-        except Exception as exc:
-            return {'status': 'read_failed', 'error': str(exc)[:120]}
-        records: list[dict[str, Any]] = []
-        for line in lines:
-            try:
-                rec = json.loads(line)
-            except Exception:
-                continue
-            if isinstance(rec, dict):
-                records.append(rec)
-        target_id = ''
-        phases: list[str] = []
-        phase_details: list[dict[str, Any]] = []
-        outcome: dict[str, Any] = {}
-        resolved: dict[str, Any] = {}
-        waits: list[str] = []
-        for rec in reversed(records):
-            kind = str(rec.get('kind') or '')
-            data = dict(rec.get('data') or {})
-            iid = str(data.get('interaction_id') or '')
-            if kind == 'external_consultation_phase' and iid:
-                target_id = iid
-                break
-        if not target_id:
-            for rec in reversed(records):
-                kind = str(rec.get('kind') or '')
-                data = dict(rec.get('data') or {})
-                iid = str(data.get('interaction_id') or '')
-                if not iid:
-                    continue
-                text = str(data.get('message_preview') or '')
-                assistant = str(data.get('assistant_kind') or data.get('provider') or data.get('assistant_title') or '').lower()
-                if self._is_external_consultation_diagnosis_question(text):
-                    continue
-                if 'chatgpt' in text.lower() or 'chatgpt' in assistant:
-                    target_id = iid
-                    break
-        for rec in reversed(records):
-            kind = str(rec.get('kind') or '')
-            data = dict(rec.get('data') or {})
-            text = str(data.get('message_preview') or '').lower()
-            assistant = str(data.get('assistant_kind') or data.get('provider') or data.get('assistant_title') or '').lower()
-            iid = str(data.get('interaction_id') or '')
-            is_external = (
-                'chatgpt' in text
-                or 'chatgpt' in assistant
-                or kind == 'external_consultation_phase'
-            )
-            if not target_id and iid and is_external:
-                target_id = iid
-            if not target_id or iid != target_id:
-                continue
-            if kind == 'external_consultation_phase':
-                phase = str(data.get('phase') or '')
-                phases.append(phase)
-                phase_details.append({
-                    'phase': phase,
-                    'assistant_kind': data.get('assistant_kind'),
-                    'selected_tool_id': data.get('selected_tool_id'),
-                    'available': data.get('available'),
-                    'reuse_guard_active': data.get('reuse_guard_active'),
-                    'response_verified': data.get('response_verified'),
-                    'rss_mb': data.get('rss_mb'),
-                })
-            elif kind == 'interaction_outcome':
-                outcome = data
-            elif kind == 'interaction_resolved':
-                resolved = data
-            elif kind in {'interaction_visible_wait_released', 'external_followup_timeout', 'external_followup_timeout_scheduled'}:
-                waits.append(kind)
-        if not target_id:
-            return {'status': 'no_external_interaction_found'}
-        phases = list(reversed([phase for phase in phases if phase]))
-        phase_details = list(reversed([item for item in phase_details if item.get('phase')]))
-        return {
-            'status': 'found',
-            'interaction_id': target_id,
-            'phases': phases[-8:],
-            'phase_details': phase_details[-8:],
-            'outcome': outcome,
-            'resolved': resolved,
-            'wait_events': list(reversed(waits[-8:])),
-        }
-
-    def _answer_external_consultation_diagnosis_question(self, message: str) -> None:
-        self._last_user_goal = message
-        summary = self._latest_external_consultation_audit_summary()
-        status = str(summary.get('status') or '')
-        if status != 'found':
-            reply = (
-                'No encontre una consulta externa reciente verificable en runtime_audit. '
-                'Eso queda como UNRESOLVED:external_consultation_audit_missing para no inventar una causa.'
-            )
-            meta = f'Auditoria externa: {status or "sin estado"}.'
-        else:
-            outcome = dict(summary.get('outcome') or {})
-            resolved = dict(summary.get('resolved') or {})
-            phases = [str(item) for item in (summary.get('phases') or []) if str(item)]
-            outcome_label = str(outcome.get('outcome') or 'sin outcome')
-            final_label = str(resolved.get('outcome') or 'sin cierre final')
-            provider = str(outcome.get('provider') or resolved.get('provider') or 'externo')
-            if 'reuse_guard_short_circuit' in phases and outcome_label in {'reused_context', 'sin outcome'}:
-                diagnosis = (
-                    f'Detecte {provider}, pero solo llegue a reuse_guard_short_circuit: '
-                    'eso significa que encontre una ruta/consulta equivalente y NO verifique que ChatGPT recibiera una consulta nueva ni que devolviera respuesta.'
-                )
-                next_step = (
-                    'La accion correcta es pedir permiso para observar la ventana externa o que pegues la respuesta si ya aparecio; '
-                    'no debo fingir que ChatGPT contesto.'
-                )
-            elif final_label == 'blocked':
-                diagnosis = f'La consulta externa cerro como blocked para {provider}; no hay respuesta externa valida.'
-                next_step = 'No hay navegador/hilo externo confirmado para este intento; debo mostrar el bloqueo y pedir tu ayuda o reintentar con evidencia nueva.'
-            else:
-                diagnosis = f'El episodio externo quedo outcome={outcome_label}, final={final_label}, provider={provider}.'
-                next_step = 'Si falta respuesta verificable, debo mantenerlo como no confirmado.'
-            reply = (
-                f'{diagnosis} Fases vistas: {", ".join(phases) or "sin fases"}. '
-                f'{next_step}'
-            )
-            meta = f'Auditado desde runtime_audit | interaction_id={summary.get("interaction_id")}.'
-            self._set_external_evidence_panel(
-                title='Evidencia de consulta externa',
-                status='blocked' if final_label == 'blocked' or 'reuse_guard_short_circuit' in phases else 'unverified',
-                assistant_title=provider,
-                interaction_id=str(summary.get('interaction_id') or ''),
-                phases=list(summary.get('phase_details') or phases),
-                metadata={
-                    'outcome': outcome_label,
-                    'final': final_label,
-                    'provider': provider,
-                    'source': 'runtime_audit.jsonl',
-                    'wait_events': list(summary.get('wait_events') or []),
-                },
-                user_help=(
-                    'Esto es lo que el programa sabe de verdad. Si no coincide con lo que ves, '
-                    'puedes permitirme observar la ventana o pegar aqui la respuesta externa.'
-                ),
-                actions=[
-                    self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Verificar la ventana externa con permiso explicito.'),
-                    self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual para comparar pantalla y audit trail.'),
-                    self._assistant_action('ingest_external_response', 'Pegar respuesta', 'Ingerir manualmente una respuesta que ya aparecio fuera de IABV.'),
-                    self._assistant_action('audit_autonomy', 'Auditar ruta', 'Revisar por que la ruta externa quedo bloqueada.'),
-                ],
-            )
-        self._clear_autonomy_activity_override()
-        self._append_message('assistant', 'IABV', reply, meta, evidence_tag='observed', reasoning_path='external_consultation_audit')
-        self._record_chat_audit(
-            reasoning_path='external_consultation_audit',
-            provider_id='runtime_audit',
-            user_goal=message,
-            metadata={'external_consultation_audit': summary},
-        )
-        self._latest_response_text = reply
-        self._latest_response_meta = meta
-        self._working = False
-        self._set_live_status('idle')
-        self._busy_label = 'Auditoria de consulta externa lista.'
-        chat_signal = getattr(self, 'chatChanged', None)
-        emit_chat = getattr(chat_signal, 'emit', None)
-        if callable(emit_chat):
-            emit_chat()
 
     def _human_hardware_notice(self, governance: dict[str, Any] | None) -> str:
         governance = dict(governance or {})
@@ -4925,68 +3510,4327 @@ class ControlCenterViewModel(QObject):
     def _humanize_task_failure(self, task_name: str, message: str) -> tuple[str, str]:
         detail = str(message or '').strip()
         lowered = detail.lower()
+        if 'supero el tiempo maximo' in lowered or 'timeout' in lowered:
+            return (
+                f'{detail} Puedes verificar la conexion o reenviar tu consulta.',
+                'timeout',
+            )
         if task_name == 'external_consultation':
             if 'acceso denegado' in lowered or 'access denied' in lowered:
                 return (
-                    'No pude abrir o capturar la consulta externa desde este entorno. Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.',
-                    'Bloqueo al preparar consulta externa.',
+                    f'Herramienta externa bloqueada por permisos. {detail[:200]}',
+                    'blocked_by_permission',
                 )
         if any(token in lowered for token in ('login', 'session', 'sesion')):
             return (
-                'La consulta externa no quedo lista porque la sesion del asistente no estaba disponible. Sigo por aqui y, si hace falta, la reintento cuando el acceso este listo.',
-                'Sesion externa no disponible.',
+                f'Sesion del asistente no disponible. Accion: inicia sesion en la herramienta y reintenta. {detail[:200]}',
+                'blocked_by_permission',
             )
-        return (
-            'No pude completar la consulta externa en este momento. Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.',
-            'Consulta externa no disponible.',
+        if any(token in lowered for token in ('cuota', 'quota', 'rate limit')):
+            return (
+                f'Cuota o limite alcanzado. Accion: espera o cambia de herramienta. {detail[:200]}',
+                'blocked_by_quota',
             )
-        return detail, 'Error en la ultima operacion local.'
+        # Strip Python exception traces from user-visible messages.
+        _has_traceback = any(t in lowered for t in (
+            'traceback', 'nonetype', 'attributeerror', 'keyerror',
+            'typeerror', 'valueerror', 'object has no attribute',
+        ))
+        if _has_traceback or not detail:
+            visible = (
+                'No pude completar la consulta externa en este momento. '
+                'Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
+            )
+        else:
+            visible = f'{detail} Sigo con la via local.'
+        return visible, 'failed_with_actionable_reason'
 
     def _human_external_consultation_failure(self, assistant_title: str, failure_detail: str, external_state_flags: list[str] | None = None) -> tuple[str, str, str]:
         detail = str(failure_detail or '').strip()
         lowered = detail.lower()
         external_notice = self._external_state_notice(external_state_flags)
+        # --- Sub-objective C: structured handoff on external tool failure ---
+        # Each branch now tells the user: WHAT tool, WHAT block, WHAT evidence,
+        # WHAT human action is needed, and whether local fallback is viable.
         if 'browser_security_verification' in lowered:
+            # P0.32: probe CDP availability to offer session selection
+            try:
+                cdp_probe = self._detect_cdp_available()
+            except Exception:
+                cdp_probe = {'available': False, 'error': 'probe_failed'}
+            cdp_ok = cdp_probe.get('available', False)
+            cdp_option = (
+                'Tambien puedes escribir "usar mi chrome" '
+                'para que IABV observe tu Chrome normal via CDP '
+                '(sin leer cookies ni tokens).'
+            ) if cdp_ok else (
+                'Si prefieres una ventana aparte, escribe "abre la ventana '
+                'gobernada" y abro una ventana de Chrome gobernada por IABV '
+                '(perfil propio, sin tocar tu navegador normal) para que '
+                'completes la verificacion ahi.'
+            )
             message = (
-                f'No pude completar la consulta con {assistant_title} porque el sitio activo una verificacion de seguridad '
-                'antes de abrir el chat. Sigo con la mejor via disponible y dejo el bloqueo trazado.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: verificacion de seguridad del sitio (captcha / challenge). '
+                f'Evidencia: IABV esta mirando una ventana/perfil controlado por IABV '
+                f'(chatgpt_program_session/browser_profile), '
+                f'no necesariamente tu Chrome normal. '
+                f'Tu navegador real tiene cookies y sesion activa que este perfil '
+                f'aislado no comparte; que tu hayas iniciado sesion en tu Chrome '
+                f'no prueba que esta sesion controlada este lista. '
+                f'Accion humana: '
+                f'1) Inicia sesion o resuelve la verificacion en la ventana que abrio IABV. '
+                f'2) Cuando este lista, escribe "ya lo hice" para un retest gobernado. '
+                f'{cdp_option} '
+                f'3) Pegado manual: copia la respuesta y pegala aqui. '
+                'Sigo con la mejor via local disponible.'
             )
             if external_notice:
                 message = f'{message} {external_notice}'
-            meta = f'Consulta con {assistant_title} bloqueada por verificacion del sitio.'
-            busy = message
+            meta = f'{assistant_title}: blocked_by_security_verification'
+            busy = f'Verificacion de seguridad pendiente para {assistant_title}.'
+            # P0.32: trace with CDP availability + session selection state
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                tracer = get_runtime_tracer()
+                tracer.trace(
+                    'assistant_profile_context_reported',
+                    assistant_title=assistant_title,
+                    profile_label='chatgpt_program_session/browser_profile',
+                    block_type='browser_security_verification',
+                    user_chrome_bridge='cdp_available' if cdp_ok else 'governed_user_chrome_bridge_missing',
+                    cdp_available=cdp_ok,
+                )
+                tracer.trace_user_browser_bridge(
+                    'cdp_probe_attempted',
+                    assistant_kind=assistant_title.lower().replace(' ', '_'),
+                    cdp_available=cdp_ok,
+                    reason=cdp_probe.get('error', '') or 'ok',
+                )
+            except Exception:
+                pass
         elif 'codex_state_missing' in lowered:
+            human_action = 'Verifica que la extension de Codex este instalada y autenticada en este entorno.'
             message = (
-                f'Abrí {assistant_title}, pero esta instalacion no expone el tracking del hilo que necesito para verificar '
-                'la respuesta de forma segura. Sigo con la mejor via disponible y dejo el bloqueo trazado.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: falta tracking del hilo de conversacion. '
+                f'Evidencia: la instalacion no expone el estado del hilo. '
+                f'Accion humana: {human_action} '
+                'Sigo con la via local.'
             )
             if external_notice:
                 message = f'{message} {external_notice}'
-            meta = f'Consulta con {assistant_title} bloqueada por falta de tracking.'
+            meta = f'{assistant_title}: needs_human_handoff'
             busy = message
         elif 'acceso denegado' in lowered or 'access denied' in lowered:
+            human_action = 'Revisa permisos o credenciales para acceder a la herramienta externa.'
             message = (
-                f'No pude abrir la consulta externa con {assistant_title} desde este entorno. '
-                'Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: acceso denegado desde este entorno. '
+                f'Evidencia: {detail[:120] or "sin detalle adicional"}. '
+                f'Accion humana: {human_action} '
+                'Sigo con la via local.'
             )
-            meta = f'Consulta con {assistant_title} bloqueada por el entorno.'
+            meta = f'{assistant_title}: blocked_by_permission'
             busy = message
         elif 'session' in lowered or 'sesion' in lowered or 'login' in lowered:
+            human_action = 'Inicia sesion en la herramienta externa y vuelve a intentar.'
             message = (
-                f'La sesion de {assistant_title} no estaba lista para usarla ahora mismo. '
-                'Sigo por aqui y, si hace falta, la reintento cuando el acceso este disponible.'
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: sesion no activa o expirada. '
+                f'Evidencia: {detail[:120] or "sin detalle adicional"}. '
+                f'Accion humana: {human_action} '
+                'Sigo con la via local mientras tanto.'
             )
-            meta = f'Sesion de {assistant_title} no disponible.'
+            meta = f'{assistant_title}: blocked_by_permission'
+            busy = message
+        elif 'timeout' in lowered or 'timed out' in lowered or 'tiempo' in lowered:
+            message = (
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: la operacion tomo demasiado tiempo. '
+                f'Evidencia: {detail[:120] or "timeout sin detalle adicional"}. '
+                'Accion humana: verifica que la herramienta este respondiendo y reintenta. '
+                'Sigo con la via local.'
+            )
+            meta = f'{assistant_title}: timeout'
+            busy = message
+        elif 'cuota' in lowered or 'quota' in lowered or 'rate' in lowered or 'limit' in lowered:
+            message = (
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: cuota o limite de uso alcanzado. '
+                f'Evidencia: {detail[:120] or "sin detalle adicional"}. '
+                'Accion humana: espera a que se renueve la cuota o usa otra herramienta. '
+                'Sigo con la via local.'
+            )
+            meta = f'{assistant_title}: blocked_by_quota'
             busy = message
         else:
-            message = f'No pude preparar la consulta externa con {assistant_title} en este momento.'
+            message = (
+                f'Herramienta: {assistant_title}. '
+                f'Bloqueo: fallo no clasificado. '
+                f'Evidencia: {detail[:120] or "sin detalle"}. '
+            )
             if external_notice:
-                message = f'{message} {external_notice}'
-            else:
-                message = f'{message} Voy a seguir con lo que ya tenemos aqui y, si hace falta, preparo otra via.'
-            meta = f'Consulta con {assistant_title} no disponible.'
+                message = f'{message}{external_notice} '
+            message = f'{message}Sigo con la via local.'
+            meta = f'{assistant_title}: failed_with_actionable_reason'
             busy = message
         return message, meta, busy
+
+    # ── Task A: window-rect capturability classification ────────
+    @staticmethod
+    def _window_rect_is_captureable(rect: list[int] | tuple[int, ...] | None) -> bool:
+        """Return True only if *rect* represents a visible, capturable window.
+
+        A window is NOT capturable when:
+        - rect is absent or has fewer than 4 elements,
+        - left or top are <= -30000 (offscreen / minimized on Windows),
+        - computed width or height are too small for a real page (< 50 px).
+        """
+        if not rect or not isinstance(rect, (list, tuple)) or len(rect) < 4:
+            return False
+        try:
+            left, top = int(rect[0]), int(rect[1])
+        except (TypeError, ValueError, IndexError):
+            return False
+        if left <= -30000 or top <= -30000:
+            return False
+        try:
+            right, bottom = int(rect[2]), int(rect[3])
+        except (TypeError, ValueError, IndexError):
+            return False
+        width = right - left if right > left else int(rect[2])
+        height = bottom - top if bottom > top else int(rect[3])
+        if width < 50 or height < 50:
+            return False
+        return True
+
+    @staticmethod
+    def _capture_is_low_information(capture_meta: dict[str, Any] | None) -> bool:
+        """Return True if the capture metadata indicates a black/blank image."""
+        if not capture_meta or not isinstance(capture_meta, dict):
+            return False
+        blank_prob = float(capture_meta.get('blank_probability') or 0.0)
+        if blank_prob >= 0.90:
+            return True
+        dynamic_range = capture_meta.get('dynamic_range')
+        if dynamic_range is not None and int(dynamic_range) == 0:
+            return True
+        unique_colors = capture_meta.get('unique_color_count')
+        if unique_colors is not None and int(unique_colors) <= 2:
+            return True
+        if capture_meta.get('useful') is False:
+            return True
+        return False
+
+    def _target_window_capture_state(
+        self,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Classify a target window + capture result for visual evidence.
+
+        Returns a dict with:
+        - captureable: bool
+        - reason: str (why not captureable, or 'ok')
+        - low_information: bool
+        - unresolved: list[str] of UNRESOLVED tags
+        - user_message: str (actionable guidance for the user)
+        - suggested_actions: list[str]
+        """
+        result: dict[str, Any] = {
+            'captureable': True,
+            'reason': 'ok',
+            'low_information': False,
+            'unresolved': [],
+            'user_message': '',
+            'suggested_actions': [],
+        }
+        if target_window is None:
+            result['captureable'] = False
+            result['reason'] = 'no_target_window'
+            result['unresolved'] = ['UNRESOLVED:visual_capture_no_target_window']
+            result['user_message'] = 'No encontre una ventana objetivo para capturar.'
+            result['suggested_actions'] = ['select_visible_window']
+            return result
+        rect = target_window.get('rect')
+        title = str(target_window.get('title') or '').strip()
+        hwnd = target_window.get('hwnd')
+        if not self._window_rect_is_captureable(rect):
+            result['captureable'] = False
+            result['reason'] = 'target_window_minimized_or_offscreen'
+            result['unresolved'] = [
+                'UNRESOLVED:external_target_window_minimized_or_offscreen',
+                'UNRESOLVED:visual_capture_low_information',
+            ]
+            result['user_message'] = (
+                f'Encontre {title or "la ventana objetivo"}, pero esta minimizada o fuera de pantalla. '
+                f'Mi captura salio negra. Restaura esa ventana o pulsa abrir {title or "la herramienta"} y reintenta.'
+            )
+            result['suggested_actions'] = [
+                'restore_target_window',
+                'select_visible_window',
+                'retry_capture',
+            ]
+            return result
+        if capture_meta and self._capture_is_low_information(capture_meta):
+            result['low_information'] = True
+            result['unresolved'] = ['UNRESOLVED:visual_capture_low_information']
+            result['user_message'] = (
+                f'Capture la ventana de {title or "la herramienta"}, pero la imagen tiene muy poca informacion (negra o casi vacia). '
+                'Verifica que la herramienta este mostrando contenido visible y reintenta la captura.'
+            )
+            result['suggested_actions'] = [
+                'restore_target_window',
+                'retry_capture',
+            ]
+            return result
+        return result
+
+    # ── Task B+C: visual evidence validation in external consultation ──
+    def _validate_visual_evidence_result(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        result_metadata: dict[str, Any],
+        consultation_metadata: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Check if external consultation visual evidence is valid.
+
+        If the target window was offscreen/minimized or capture was
+        low-information, returns a modified result dict with:
+        - status='visual_unresolved' (not visual_captured)
+        - unresolved tags
+        - user-facing guided handoff message
+
+        Returns None if the evidence is valid (no override needed).
+        """
+        target_window = result_metadata.get('target_window')
+        capture_meta = result_metadata.get('visual_evidence_snapshot') or result_metadata.get('capture_meta') or {}
+        if not target_window and not capture_meta:
+            capture_meta_from_exec = {}
+            for key in ('blank_probability', 'dynamic_range', 'unique_color_count', 'useful'):
+                if key in result_metadata:
+                    capture_meta_from_exec[key] = result_metadata[key]
+            if capture_meta_from_exec:
+                capture_meta = capture_meta_from_exec
+            else:
+                return None
+        capture_state = self._target_window_capture_state(target_window, capture_meta)
+        if capture_state['captureable'] and not capture_state['low_information']:
+            return None
+        unresolved_tags = list(capture_state.get('unresolved') or [])
+        reason = capture_state['reason']
+        user_message = capture_state['user_message']
+        suggested_actions = list(capture_state.get('suggested_actions') or [])
+        consultation_metadata['status'] = 'visual_unresolved'
+        existing_unresolved = list(consultation_metadata.get('unresolved') or [])
+        for tag in unresolved_tags:
+            if tag not in existing_unresolved:
+                existing_unresolved.append(tag)
+        consultation_metadata['unresolved'] = existing_unresolved
+        consultation_metadata['visual_capture_reason'] = reason
+        consultation_metadata['suggested_actions'] = suggested_actions
+        # Task D: trace invalid visual evidence to runtime audit
+        self._trace_visual_evidence_invalid(
+            assistant_kind=assistant_kind,
+            assistant_title=assistant_title,
+            target_window=target_window,
+            capture_meta=capture_meta,
+            reason=reason,
+            suggested_actions=suggested_actions,
+        )
+        return {
+            'visual_unresolved': True,
+            'user_message': user_message,
+            'reason': reason,
+            'unresolved': unresolved_tags,
+            'suggested_actions': suggested_actions,
+        }
+
+    # ── Task D: runtime audit trace for invalid visual evidence ─────
+    def _trace_visual_evidence_invalid(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None,
+        reason: str,
+        suggested_actions: list[str] | None = None,
+    ) -> None:
+        """Log a visual_evidence_invalid event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tw = target_window or {}
+            cm = capture_meta or {}
+            get_runtime_tracer().trace(
+                'visual_evidence_snapshot',
+                status='unresolved',
+                assistant_kind=assistant_kind,
+                assistant_title=assistant_title,
+                target_title=str(tw.get('title') or ''),
+                hwnd=tw.get('hwnd'),
+                rect=tw.get('rect'),
+                capture_scope=str(cm.get('capture_scope') or 'external_target_window_bbox'),
+                blank_probability=float(cm.get('blank_probability') or 0.0),
+                dynamic_range=cm.get('dynamic_range'),
+                unique_color_count=cm.get('unique_color_count'),
+                useful=False,
+                reason=reason,
+                next_action=', '.join(suggested_actions or ['restore_target_window', 'retry_capture']),
+            )
+        except Exception:
+            pass
+
+    # ── Task C: guided visual handoff message builder ───────────
+    def _visual_handoff_message(
+        self,
+        *,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        capture_state: dict[str, Any],
+        local_fallback_available: bool = True,
+    ) -> str:
+        """Build a structured handoff message when visual evidence fails.
+
+        Tells the user: what tool, what window, what coordinates/state,
+        what was actually seen, what user action is needed, and whether
+        a local fallback route exists.
+        """
+        tw = target_window or {}
+        title = str(tw.get('title') or assistant_title)
+        hwnd = tw.get('hwnd', 'desconocido')
+        rect = tw.get('rect', 'no disponible')
+        reason = capture_state.get('reason', 'unknown')
+        parts = [
+            f'Herramienta: {assistant_title}.',
+            f'Ventana objetivo: {title}.',
+            f'Coordenadas detectadas: hwnd={hwnd}, rect={rect}.',
+        ]
+        if reason == 'target_window_minimized_or_offscreen':
+            parts.append('Estado: la ventana esta minimizada o fuera de pantalla.')
+            parts.append('Lo que vi: captura negra / sin informacion visual.')
+        elif reason == 'no_target_window':
+            parts.append('Estado: no se encontro ventana objetivo.')
+            parts.append('Lo que vi: ninguna ventana coincide con la herramienta solicitada.')
+        else:
+            parts.append(f'Estado: {reason}.')
+            parts.append('Lo que vi: captura con muy poca informacion visual.')
+        actions = capture_state.get('suggested_actions') or []
+        action_labels = {
+            'restore_target_window': f'restaurar/abrir la ventana de {assistant_title}',
+            'select_visible_window': 'seleccionar una ventana visible manualmente',
+            'retry_capture': 'reintentar la captura despues de restaurar',
+        }
+        action_texts = [action_labels.get(a, a) for a in actions]
+        if action_texts:
+            parts.append(f'Accion necesaria: {"; ".join(action_texts)}.')
+        if local_fallback_available:
+            parts.append('Mientras tanto, sigo con la mejor via local disponible.')
+        return ' '.join(parts)
+
+    # ── P0.4 Task A: shared reality causal handoff package ───────
+    def _build_shared_reality_handoff(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None,
+        capture_state: dict[str, Any],
+        user_claim: str = '',
+        evidence_path: str = '',
+    ) -> dict[str, Any]:
+        """Build a causal handoff package explaining the gap between what the
+        user sees and what IABV sees.
+
+        Returns a plain dict (not a new model) with all fields required for
+        the shared reality explanation.
+        """
+        tw = target_window or {}
+        cm = capture_meta or {}
+        target_title = str(tw.get('title') or '').strip()
+        hwnd = tw.get('hwnd')
+        rect = tw.get('rect')
+        capture_scope = str(cm.get('capture_scope') or 'unknown')
+        capture_useful = bool(cm.get('useful', True))
+        blank_prob = float(cm.get('blank_probability') or 0.0)
+        dynamic_range = cm.get('dynamic_range')
+        unique_colors = cm.get('unique_color_count')
+        reason = capture_state.get('reason', 'unknown')
+        browser_label = 'unknown'
+        if target_title:
+            title_lower = target_title.lower()
+            if 'chrome for testing' in title_lower:
+                browser_label = 'Chrome for Testing (sesión aislada de IABV)'
+            elif 'chrome' in title_lower:
+                browser_label = 'Google Chrome (sesión controlada)'
+            elif 'firefox' in title_lower:
+                browser_label = 'Firefox'
+            elif 'edge' in title_lower:
+                browser_label = 'Microsoft Edge'
+            else:
+                browser_label = 'navegador/sesión controlada por IABV'
+        mismatch_reason = 'unknown'
+        if reason == 'target_window_minimized_or_offscreen':
+            mismatch_reason = (
+                'La ventana que IABV usa está minimizada o fuera de pantalla. '
+                'Tú probablemente ves tu navegador/sesión normal, pero IABV '
+                'usa una sesión aislada que no está visible.'
+            )
+        elif reason == 'no_target_window':
+            mismatch_reason = (
+                'IABV no encontró la ventana objetivo. Es posible que la '
+                'herramienta esté abierta en tu navegador personal pero no en '
+                'la sesión controlada por IABV.'
+            )
+        elif reason in ('low_information_pixels', 'low_information'):
+            mismatch_reason = (
+                'La ventana de IABV está visible pero la captura tiene muy '
+                'poca información (negra o casi vacía). La herramienta puede '
+                'funcionar en tu navegador pero no en la sesión de IABV.'
+            )
+        else:
+            mismatch_reason = (
+                'IABV no pudo verificar el estado de la herramienta. '
+                'Puede funcionar en tu navegador pero no en la sesión de IABV.'
+            )
+        causal_explanation = self._build_causal_explanation(
+            assistant_title=assistant_title,
+            browser_label=browser_label,
+            target_title=target_title,
+            reason=reason,
+            rect=rect,
+            blank_prob=blank_prob,
+        )
+        user_action_needed = list(capture_state.get('suggested_actions') or [])
+        if 'authorize_visible_browser' not in user_action_needed:
+            user_action_needed.append('authorize_visible_browser')
+        unresolved_tags = list(capture_state.get('unresolved') or [])
+        if not any('shared_reality' in t for t in unresolved_tags):
+            unresolved_tags.append('UNRESOLVED:shared_reality_mismatch_pending_live_proof')
+        return {
+            'user_claim': user_claim or 'unknown',
+            'requested_tool': assistant_kind,
+            'selected_tool': assistant_kind,
+            'selected_browser_or_profile': browser_label,
+            'target_window_title': target_title or 'unknown',
+            'hwnd': hwnd,
+            'rect': rect,
+            'capture_scope': capture_scope,
+            'capture_useful': capture_useful,
+            'capture_quality': {
+                'blank_probability': blank_prob,
+                'dynamic_range': dynamic_range,
+                'unique_color_count': unique_colors,
+                'useful': capture_useful,
+            },
+            'mismatch_reason': mismatch_reason,
+            'causal_explanation': causal_explanation,
+            'user_action_needed': user_action_needed,
+            'fallback_available': True,
+            'unresolved': unresolved_tags,
+            'evidence_path': evidence_path or 'no_disponible',
+        }
+
+    # ── P0.4 Task B: detect user/IABV mismatch claims ─────────
+    _USER_MISMATCH_PATTERNS: ClassVar[list[str]] = [
+        'a mí sí me funciona',
+        'a mi si me funciona',
+        'yo sí lo veo',
+        'yo si lo veo',
+        'en mi navegador sí',
+        'en mi navegador si',
+        'por qué a mí sí',
+        'por que a mi si',
+        'a él no',
+        'a el no',
+        'a iabv no',
+        'yo lo veo bien',
+        'a mí me funciona',
+        'a mi me funciona',
+        'funciona en mi',
+        'yo sí puedo',
+        'yo si puedo',
+    ]
+
+    @staticmethod
+    def _detect_user_mismatch_claim(user_text: str) -> str:
+        """Return the matching claim phrase if the user is saying 'it works for
+        me but not for IABV', or empty string if no match."""
+        if not user_text:
+            return ''
+        normalized = ' '.join(user_text.lower().strip().split())
+        for pattern in ControlCenterViewModel._USER_MISMATCH_PATTERNS:
+            if pattern in normalized:
+                return pattern
+        return ''
+
+    # ── P0.4 Task C: causal comparative message ────────────────
+    def _build_causal_explanation(
+        self,
+        *,
+        assistant_title: str,
+        browser_label: str,
+        target_title: str,
+        reason: str,
+        rect: Any = None,
+        blank_prob: float = 0.0,
+    ) -> str:
+        """Build the 'Tu vista vs Vista de IABV' causal explanation."""
+        parts = []
+        parts.append(f'Tu vista: probablemente ves {assistant_title} funcionando en tu navegador o sesión normal.')
+        parts.append(
+            f'Vista de IABV: estoy usando {browser_label}'
+            f'{f" (ventana: {target_title})" if target_title else ""}.'
+        )
+        if reason == 'target_window_minimized_or_offscreen':
+            parts.append(
+                f'Esa ventana está minimizada o fuera de pantalla '
+                f'(coordenadas: {rect or "no disponible"}).'
+            )
+            parts.append('Mi captura salió negra / sin información visual.')
+        elif reason == 'no_target_window':
+            parts.append('No encontré la ventana objetivo en mi sesión.')
+        else:
+            if blank_prob >= 0.90:
+                parts.append(f'La captura tiene muy poca información (blank_probability={blank_prob:.2f}).')
+            else:
+                parts.append('La captura no tiene suficiente información para verificar el estado.')
+        parts.append(f'Por eso no puedo confirmar {assistant_title} desde mi sesión.')
+        parts.append(
+            'Necesito que restaures esa ventana, selecciones la ventana correcta '
+            'o autorices usar el navegador visible.'
+        )
+        return ' '.join(parts)
+
+    # ── P0.4 Task C: shared reality user message ───────────────
+    def _shared_reality_user_message(
+        self,
+        *,
+        handoff: dict[str, Any],
+        user_claim: str = '',
+    ) -> str:
+        """Build the full user-facing message for shared reality handoff.
+
+        Includes: tool, window, coordinates, what IABV saw, the difference,
+        why IABV cannot proceed, what user must do, and fallback info.
+        """
+        parts = []
+        if user_claim:
+            parts.append(f'Entiendo que a ti sí te funciona ("{user_claim}").')
+        parts.append(f'Herramienta: {handoff.get("requested_tool", "unknown")}.')
+        target = handoff.get('target_window_title', 'unknown')
+        hwnd = handoff.get('hwnd', 'desconocido')
+        rect = handoff.get('rect', 'no disponible')
+        parts.append(f'Ventana que intenté usar: {target} (hwnd={hwnd}, rect={rect}).')
+        cq = handoff.get('capture_quality') or {}
+        blank_prob = float(cq.get('blank_probability') or 0.0)
+        if blank_prob >= 0.90:
+            parts.append(f'Qué vi: captura negra / baja información (blank_probability={blank_prob:.2f}).')
+        elif not cq.get('useful', True):
+            parts.append('Qué vi: captura sin información útil.')
+        else:
+            parts.append('Qué vi: no pude verificar el estado real.')
+        parts.append(f'Diferencia probable: {handoff.get("mismatch_reason", "desconocida")}.')
+        parts.append(f'Por qué no avanzo: no puedo verificar estado real de {handoff.get("requested_tool", "la herramienta")}.')
+        actions = handoff.get('user_action_needed') or []
+        action_labels = {
+            'restore_target_window': 'restaurar/abrir la ventana objetivo',
+            'select_visible_window': 'seleccionar una ventana visible manualmente',
+            'retry_capture': 'reintentar la captura después de restaurar',
+            'authorize_visible_browser': 'autorizar que use el navegador visible en tu pantalla',
+        }
+        action_texts = [action_labels.get(a, a) for a in actions]
+        if action_texts:
+            parts.append(f'Qué necesito: {"; ".join(action_texts)}.')
+        evidence_path = handoff.get('evidence_path', '')
+        if evidence_path and evidence_path != 'no_disponible':
+            parts.append(f'Evidencia de captura: {evidence_path} (useful=false, reason={handoff.get("capture_quality", {}).get("reason", "low_information_pixels")}).')
+        if handoff.get('fallback_available'):
+            parts.append('Qué haré mientras tanto: sigo con la mejor vía local disponible.')
+        return ' '.join(parts)
+
+    # ── P0.4 Task D: evidence path exposure ────────────────────
+    def _attach_evidence_to_handoff(
+        self,
+        handoff: dict[str, Any],
+        result_metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Attach screenshot evidence path to handoff if available."""
+        evidence_path = ''
+        for key in ('screenshot_path', 'capture_path', 'evidence_path', 'image_path'):
+            path_val = str(result_metadata.get(key) or '').strip()
+            if path_val:
+                evidence_path = path_val
+                break
+        if evidence_path:
+            handoff['evidence_path'] = evidence_path
+            handoff['evidence_metadata'] = {
+                'path': evidence_path,
+                'useful': False,
+                'reason': 'low_information_pixels',
+                'description': 'Esto fue lo que capturé',
+            }
+        return handoff
+
+    # ── P0.4 Task E: runtime audit trace for shared reality ────
+    def _trace_shared_reality_handoff(
+        self,
+        handoff: dict[str, Any],
+    ) -> None:
+        """Log a shared_reality_handoff event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            cq = handoff.get('capture_quality') or {}
+            get_runtime_tracer().trace(
+                'shared_reality_handoff',
+                assistant_kind=handoff.get('requested_tool', ''),
+                user_claim=handoff.get('user_claim', 'unknown'),
+                target_window_title=handoff.get('target_window_title', ''),
+                browser_profile=handoff.get('selected_browser_or_profile', 'unknown'),
+                hwnd=handoff.get('hwnd'),
+                rect=handoff.get('rect'),
+                capture_scope=handoff.get('capture_scope', 'unknown'),
+                capture_path=handoff.get('evidence_path', 'no_disponible'),
+                capture_useful=handoff.get('capture_useful', False),
+                blank_probability=float(cq.get('blank_probability') or 0.0),
+                mismatch_reason=handoff.get('mismatch_reason', ''),
+                causal_explanation_summary=str(handoff.get('causal_explanation') or '')[:500],
+                user_action_needed=handoff.get('user_action_needed', []),
+                unresolved=handoff.get('unresolved', []),
+            )
+        except Exception:
+            pass
+
+    # ── P0.4 wiring: handle shared reality followup in chat ──────
+    def _try_handle_shared_reality_followup(self, message: str) -> bool:
+        """If the user says 'it works for me' and there is a recent
+        shared_reality_handoff in the adaptive payload, respond with
+        the causal explanation. Returns True if handled."""
+        claim = self._detect_user_mismatch_claim(message)
+        if not claim:
+            return False
+        payload = dict(self._last_adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
+        handoff = metadata.get('shared_reality_handoff')
+        if not handoff or not isinstance(handoff, dict):
+            return False
+        handoff = dict(handoff)
+        handoff['user_claim'] = claim
+        msg = self._shared_reality_user_message(handoff=handoff, user_claim=claim)
+        self._trace_shared_reality_handoff(handoff)
+        tool_name = handoff.get('requested_tool', 'herramienta externa')
+        self._latest_response_text = msg
+        self._latest_response_meta = f'{tool_name}: shared_reality_followup'
+        self._busy_label = ''
+        self._append_message(
+            'assistant', 'IABV', msg,
+            'shared_reality_followup',
+        )
+        self._set_live_status('idle')
+        return True
+
+    # -- P0.16: explain recent external failure without heavy local inference --
+    _EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S: float = 600.0
+    _EXTERNAL_FAILURE_FOLLOWUP_PATTERNS: tuple[str, ...] = (
+        'intente nuevamente', 'intenta nuevamente', 'reintenta', 'reintentar',
+        'analiza bien', 'analiza el error', 'cual es el error', 'cuál es el error',
+        'que paso', 'qué paso', 'que pasó', 'qué pasó', 'por que', 'por qué',
+        'no pudo', 'no pudo hacer', 'fallo', 'falló', 'error', 'chatgpt',
+        'a mi si', 'a mi sí', 'a mí si', 'a mí sí',
+        # P0.27: deictic follow-up patterns after external failure
+        'solucionar eso', 'soluciona eso', 'arregla eso', 'arreglalo',
+        'ayudame con eso', 'ayúdame con eso',
+        'pueddes solucionar', 'puedes solucionar',
+        'ese problema', 'ese fallo', 'ese error',
+        'eso de chatgpt', 'eso de chat gpt',
+        'no pudo consultar', 'sigue sin consultar',
+        'porque sigue fallando', 'por qué sigue fallando',
+        'por que no consulta', 'por qué no consulta',
+        'hazlo con la ventana', 'hazlo con mi ventana',
+    )
+    # P0.27: deictic references that only match within recent external failure window.
+    # Short tokens like 'eso' are too broad without external failure context.
+    _EXTERNAL_FAILURE_DEICTIC_TOKENS: tuple[str, ...] = (
+        'solucionar eso', 'soluciona eso', 'arregla eso',
+        'ayudame con eso', 'ayúdame con eso',
+        'pueddes solucionar eso', 'puedes solucionar eso',
+    )
+    # P0.27: patterns where the user says they see ChatGPT in their own browser
+    _USER_BROWSER_HANDOFF_PATTERNS: tuple[str, ...] = (
+        'yo veo chatgpt', 'yo veo chat gpt',
+        'yo veo bien la ventana', 'yo veo la ventana',
+        'yo si veo chatgpt', 'yo si veo chat gpt',
+        'a mi si me abre', 'a mi me abre',
+        'yo ya inicie sesion', 'yo ya inicié sesión',
+        'ya inicie sesion en chatgpt', 'ya inicié sesión en chatgpt',
+    )
+
+    def _remember_external_failure(
+        self,
+        *,
+        assistant_title: str,
+        message: str,
+        meta: str,
+        outcome: str = 'failed',
+        success: bool = False,
+        assistant_kind: str = '',
+        terminal_state: str = '',
+        dispatch_id: str = '',
+    ) -> None:
+        """Keep the latest external failure as local evidence for follow-up chat.
+
+        This is not routing state. It only prevents a second heavy local
+        inference when the user immediately asks what happened after an
+        external tool timeout/block.
+        """
+        self._last_external_failure_payload = {
+            'assistant_title': str(assistant_title or 'Asistente externo'),
+            'message': str(message or '')[:1200],
+            'meta': str(meta or '')[:1200],
+            'outcome': str(outcome or 'failed'),
+            'success': bool(success),
+            'at': time.time(),
+            'assistant_kind': str(assistant_kind or ''),
+            'terminal_state': str(terminal_state or ''),
+            'dispatch_id': str(dispatch_id or ''),
+        }
+        self._last_external_failure_ts = time.time()
+        # P0.37: create active incident frame for blocked terminal states
+        try:
+            ts = str(terminal_state or '')
+            meta_lower = str(meta or '').lower()
+            block_type = ''
+            if 'blocked_by_security_verification' in ts or 'browser_security_verification' in meta_lower:
+                block_type = 'browser_security_verification'
+            elif 'visible_timeout' in ts or 'visible_timeout' in meta_lower:
+                block_type = 'visible_timeout'
+            elif 'blocked' in ts:
+                block_type = ts
+            if block_type:
+                # Extract real payload context from latest adaptive payload
+                _ap = getattr(self, '_last_adaptive_payload', None) or {}
+                _handoff = dict((_ap.get('metadata') or {}).get('shared_reality_handoff') or {})
+                _tw_title = str(_handoff.get('target_window_title', '') or '')
+                _hwnd_raw = _handoff.get('hwnd')
+                _hwnd = int(_hwnd_raw) if _hwnd_raw is not None else None
+                _browser_label = str(_handoff.get('selected_browser_or_profile', '') or '')
+                _browser_profile = str(_handoff.get('browser_profile', '') or '')
+                self._create_active_incident_frame(
+                    assistant_kind=str(assistant_kind or ''),
+                    assistant_title=str(assistant_title or 'Asistente externo'),
+                    terminal_state=ts,
+                    block_type=block_type,
+                    last_user_goal=str(getattr(self, '_last_user_goal', '') or ''),
+                    dispatch_id=str(dispatch_id or ''),
+                    browser_profile=_browser_profile,
+                    selected_browser_or_profile=_browser_label,
+                    browser_label=_browser_label,
+                    target_window_title=_tw_title,
+                    hwnd=_hwnd,
+                )
+        except Exception:
+            pass
+
+    def _clear_external_failure_memory(self) -> None:
+        self._last_external_failure_payload = {}
+        self._last_external_failure_ts = 0.0
+
+    # -- P0.30 Task B: structured self-audit guard --
+    _STRUCTURED_SELF_AUDIT_PATTERNS: tuple[str, ...] = (
+        'autoauditoria', 'autoauditoría', 'auto auditoria', 'auto auditoría',
+        'estado de tests', 'estado de pruebas',
+        'self audit', 'self-audit',
+        'portable context', 'contexto portable',
+        'control master',
+        'que evidencia tienes', 'qué evidencia tienes',
+        'que algoritmos se ejecutaron', 'qué algoritmos se ejecutaron',
+        'que fallo en la ultima interaccion', 'qué falló en la última interacción',
+        'dime el estado de', 'muestra el estado',
+        'test evidence', 'evidencia de tests',
+        'runtime audit', 'audit trail',
+    )
+
+    def _try_handle_structured_self_audit(self, message: str) -> bool:
+        """P0.30 Task B: answer self-audit questions from structured artifacts.
+
+        Reads ONLY from persisted evidence files — never invokes Ollama or
+        the Adaptive local orchestrator.  Must respond in <5s.
+        """
+        lowered = ' '.join(message.strip().lower().split())
+        if not any(p in lowered for p in self._STRUCTURED_SELF_AUDIT_PATTERNS):
+            return False
+
+        import json as _json
+        workspace = str(getattr(self.config, 'workspace_root', '') or '')
+        if not workspace:
+            workspace = str(Path.cwd())
+        root = Path(workspace)
+
+        sections: list[str] = []
+        evidence_tag = 'observed'
+        missing: list[str] = []
+
+        # 1. Test evidence
+        te_path = root / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
+        if te_path.exists():
+            try:
+                te = _json.loads(te_path.read_text(encoding='utf-8'))
+                sections.append(
+                    f"**Tests**: passed={te.get('passed', '?')}, "
+                    f"failed={te.get('failed', '?')}, "
+                    f"total={te.get('total', '?')}, "
+                    f"timestamp={te.get('timestamp', '?')}"
+                )
+            except Exception:
+                missing.append('test_evidence (parse error)')
+        else:
+            sections.append('**Tests**: no ejecute tests ahora — no hay test_evidence/latest.json.')
+            missing.append('test_evidence')
+
+        # 2. Self examination
+        se_path = root / 'data' / 'evolution' / 'self_examination' / 'latest.json'
+        if se_path.exists():
+            try:
+                se = _json.loads(se_path.read_text(encoding='utf-8'))
+                status = se.get('status', '?')
+                summary = str(se.get('summary', ''))[:300]
+                updated = se.get('updated_at_utc', '?')
+                n_findings = len(se.get('findings', []))
+                sections.append(
+                    f"**SelfAudit**: status={status}, "
+                    f"findings={n_findings}, "
+                    f"updated={updated}. "
+                    f"Resumen: {summary}"
+                )
+            except Exception:
+                missing.append('self_examination (parse error)')
+        else:
+            missing.append('self_examination')
+
+        # 3. Portable context
+        pc_path = root / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+        if pc_path.exists():
+            try:
+                pc = _json.loads(pc_path.read_text(encoding='utf-8'))
+                updated = pc.get('updated_at_utc', '?')
+                section_ids = [s.get('section_id', '?') for s in pc.get('sections', [])[:8]]
+                sections.append(
+                    f"**PortableContext**: updated={updated}, "
+                    f"secciones={section_ids}"
+                )
+            except Exception:
+                missing.append('portable_context (parse error)')
+        else:
+            missing.append('portable_context')
+
+        # 4. Control master
+        cm_path = root / 'data' / 'evolution' / 'control_master' / 'latest.json'
+        if cm_path.exists():
+            try:
+                cm = _json.loads(cm_path.read_text(encoding='utf-8'))
+                tests_state = cm.get('current_tests_state', {})
+                if tests_state:
+                    sections.append(
+                        f"**ControlMaster tests_state**: "
+                        f"passed={tests_state.get('passed', '?')}, "
+                        f"failed={tests_state.get('failed', '?')}, "
+                        f"total={tests_state.get('total', '?')}"
+                    )
+                else:
+                    sections.append('**ControlMaster**: sin snapshot de tests.')
+            except Exception:
+                missing.append('control_master (parse error)')
+        else:
+            missing.append('control_master')
+
+        # 5. Last dispatch from runtime_audit tail
+        audit_path = root / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if audit_path.exists():
+            try:
+                lines = audit_path.read_text(encoding='utf-8').strip().splitlines()
+                last_dispatch = None
+                for line in reversed(lines[-50:]):
+                    entry = _json.loads(line)
+                    if entry.get('kind') == 'dispatch_terminal':
+                        last_dispatch = entry
+                        break
+                if last_dispatch:
+                    d = last_dispatch.get('data', {})
+                    sections.append(
+                        f"**Ultimo dispatch**: {d.get('task_name', '?')} "
+                        f"-> {d.get('terminal_state', '?')} "
+                        f"(dispatch_id={d.get('dispatch_id', '?')[:12]})"
+                    )
+            except Exception:
+                pass
+
+        if missing:
+            sections.append(f"**UNRESOLVED**: {', '.join(missing)}")
+            evidence_tag = 'inferred'
+
+        reply = (
+            'Autoauditoria directa desde artefactos estructurados '
+            '(no ejecute LLM local ni tests ahora):\n\n'
+            + '\n'.join(sections)
+        )
+        meta = 'structured_self_audit (artifacts only, no Ollama)'
+
+        self._latest_response_text = reply
+        self._latest_response_meta = meta
+        self._busy_label = 'Autoauditoria desde evidencia.'
+        self._working = False
+        self._append_message(
+            'assistant', 'IABV', reply, meta,
+            reasoning_path='structured_self_audit',
+            evidence_tag=evidence_tag,
+        )
+        self._set_live_status('idle')
+        self._clear_autonomy_activity_override()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'structured_self_audit_answered' if not missing else 'structured_self_audit_missing_evidence',
+                artifacts_found=len(sections) - (1 if missing else 0),
+                missing=missing[:5],
+                user_message_excerpt=message[:120],
+            )
+        except Exception:
+            pass
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
+    def _try_handle_external_failure_followup(self, message: str) -> bool:
+        """Answer immediate follow-ups about a recent external failure cheaply.
+
+        P0.16: after a ChatGPT timeout the next message entered normal local
+        inference and froze the UI.  This guard keeps that explanation on the
+        GUI path and uses only the already recorded failure payload.
+
+        P0.27: extended with deictic binding ("solucionar eso", "arregla eso")
+        and user-browser handoff ("yo veo chatgpt") so follow-ups never fall
+        through to Adaptive local orchestrator.
+
+        P0.30 Task D: if the message expresses an explicit NEW external
+        consultation intent ("haz una consulta a ChatGPT", "consulta
+        chatgpt"), skip follow-up and let sendChat route it as a fresh
+        external consultation.  Only deictic references ("eso",
+        "soluciona eso") without an explicit assistant name qualify as
+        follow-ups.
+        """
+        payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+        last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
+        if not payload or not last_ts:
+            return False
+        if (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S:
+            return False
+        lowered = message.strip().lower()
+        if not any(pattern in lowered for pattern in self._EXTERNAL_FAILURE_FOLLOWUP_PATTERNS):
+            return False
+        # P0.30 Task D: explicit new consultation intent wins over follow-up.
+        # If the user says "haz una consulta a ChatGPT: responde solo S"
+        # that is a new request, not a follow-up of the old failure.
+        explicit_new = self._explicit_assistant_preference(message)
+        if explicit_new:
+            # Trace that we are forcing a new request instead of follow-up
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'external_consultation_new_request_forced',
+                    previous_failure_assistant=str(payload.get('assistant_title', '')),
+                    new_target=explicit_new,
+                    user_message_excerpt=message[:120],
+                )
+            except Exception:
+                pass
+            return False
+
+        assistant_title = str(payload.get('assistant_title') or 'Asistente externo')
+        previous_message = str(payload.get('message') or 'No hubo respuesta externa util.').strip()
+        previous_meta = str(payload.get('meta') or 'sin metadata').strip()
+        outcome = str(payload.get('outcome') or 'failed').strip()
+        previous_terminal = str(payload.get('terminal_state') or '').strip()
+        previous_kind = str(payload.get('assistant_kind') or '').strip()
+        previous_dispatch = str(payload.get('dispatch_id') or '').strip()
+
+        # P0.27 Task D: user says they see ChatGPT in their own browser →
+        # offer manual handoff instead of repeating the isolated profile.
+        is_handoff = any(p in lowered for p in self._USER_BROWSER_HANDOFF_PATTERNS)
+        if is_handoff:
+            return self._handle_user_browser_manual_handoff(
+                message=message,
+                assistant_title=assistant_title,
+                assistant_kind=previous_kind,
+                previous_terminal=previous_terminal,
+                previous_dispatch=previous_dispatch,
+            )
+
+        # P0.27 Task A/B: deictic or keyword follow-up — explain without
+        # heavy local inference.
+        followup_path = 'external_failure_followup'
+        if any(p in lowered for p in self._EXTERNAL_FAILURE_DEICTIC_TOKENS):
+            followup_path = 'external_failure_followup_deictic'
+
+        summary = (
+            f"Revise el fallo reciente de {assistant_title}. No quedo sin cierre: "
+            f"el ciclo externo termino como {outcome}. "
+            f"Lo que vio IABV fue: {previous_message[:320]} "
+            f"Evidencia tecnica: {previous_meta[:260]}. "
+            "No voy a lanzar razonamiento local pesado para explicar el mismo bloqueo, "
+            "porque eso fue lo que dejo la UI congelada. "
+            "El siguiente paso correcto es reintentar solo con la ventana de ChatGPT visible y enfocada, "
+            "o completar la verificacion/captcha si aparece. Si quieres, escribe 'reintentar ChatGPT ahora' "
+            "despues de dejar esa ventana lista."
+        )
+        self._latest_response_text = summary
+        self._latest_response_meta = f'{assistant_title}: {followup_path}'
+        self._busy_label = 'Fallo externo explicado desde evidencia reciente.'
+        self._working = False
+        self._append_message(
+            'assistant',
+            'IABV',
+            summary,
+            followup_path,
+            reasoning_path=followup_path,
+            evidence_tag='observed',
+        )
+        self._set_live_status('idle')
+        self._clear_autonomy_activity_override()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'external_failure_followup_answered',
+                assistant_title=assistant_title,
+                outcome=outcome,
+                previous_meta=previous_meta[:240],
+                user_message=message[:240],
+                followup_path=followup_path,
+                previous_assistant_kind=previous_kind,
+                previous_terminal_state=previous_terminal,
+                dispatch_id=previous_dispatch,
+            )
+            # P0.27 Task E: trace that local fallback was suppressed
+            tracer.trace(
+                'local_fallback_suppressed_for_external_failure',
+                previous_assistant_kind=previous_kind,
+                previous_terminal_state=previous_terminal,
+                user_message_excerpt=message[:120],
+                selected_followup_path=followup_path,
+                dispatch_id=previous_dispatch,
+                interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            )
+        except Exception:
+            pass
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
+    _EXTERNAL_ACTION_BROWSER_TERMS: tuple[str, ...] = (
+        'navegador', 'navegadores', 'browser', 'chrome', 'edge', 'brave',
+        'firefox', 'opera', 'sesion', 'sesión', 'cuenta', 'gmail',
+        'loguead', 'logead', 'login', 'iniciar sesion', 'iniciar sesión',
+        'inicie sesion', 'inicié sesión', 'abierta', 'abierto',
+    )
+    _EXTERNAL_ACTION_OWNERSHIP_TERMS: tuple[str, ...] = (
+        'mi ', 'mis ', 'mio', 'mío', 'mia', 'mía', 'tengo', 'tienes',
+        'ya tengo', 'ya esta', 'ya está', 'normal', 'visible',
+    )
+    _EXTERNAL_ACTION_DO_TERMS: tuple[str, ...] = (
+        'usa', 'usar', 'utiliza', 'utilizar', 'haz', 'has', 'hacer',
+        'consulta', 'cosulta', 'consultar', 'busca', 'buscar',
+        'investiga', 'investigar', 'investigacion', 'investigación',
+        'pendiente', 'pendientes', 'segundo plano', 'soluciona',
+        'solucionar', 'avanza', 'continua', 'continúa',
+    )
+    _EXTERNAL_ACTION_SHOW_TERMS: tuple[str, ...] = (
+        'muestra', 'muestrame', 'muéstrame', 'abre', 'abreme', 'ábreme',
+        'enfoca', 'ventana', 'problema', 'verificacion', 'verificación',
+    )
+
+    def _classify_external_action_followup(
+        self,
+        message: str,
+        *,
+        failure_payload: dict[str, Any] | None = None,
+        active_incident: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Bind human follow-up language to an operational action.
+
+        P0.73: the old follow-up guard explained failures cheaply, but missed
+        semantically equivalent instructions such as "usa un navegador mio".
+        This classifier keeps the logic local and evidence-based: it only
+        activates when there is a live incident or recent external failure.
+        """
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
+
+        has_context = bool(failure_payload) or bool(active_incident)
+        if not has_context:
+            return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
+
+        matched: list[str] = []
+        score = 0.0
+
+        def _hit(terms: tuple[str, ...], weight: float) -> bool:
+            nonlocal score
+            hits = [term for term in terms if term in normalized]
+            if hits:
+                matched.extend(hits[:4])
+                score += weight
+                return True
+            return False
+
+        browser_ref = _hit(self._EXTERNAL_ACTION_BROWSER_TERMS, 0.34)
+        ownership_ref = _hit(self._EXTERNAL_ACTION_OWNERSHIP_TERMS, 0.22)
+        action_ref = _hit(self._EXTERNAL_ACTION_DO_TERMS, 0.28)
+        show_ref = _hit(self._EXTERNAL_ACTION_SHOW_TERMS, 0.22)
+        assistant_ref = bool(
+            self._explicit_assistant_preference(message)
+            or re.search(r'chat\s*gpt|chatgpt|chatgp|cahtgpt|\bgpt\b|claude|codex', normalized)
+        )
+        if assistant_ref:
+            score += 0.12
+            matched.append('assistant_ref')
+        contextual_assistant_ref = bool(
+            (failure_payload or {}).get('assistant_kind')
+            or (active_incident or {}).get('assistant_kind')
+        )
+        consultation_ref = bool(
+            re.search(
+                r'consulta|cosulta|consultar|busca|buscar|investiga|investigaci[oó]n|chat\s*gpt|chatgpt|chatgp|\bgpt\b|segundo plano|pendiente',
+                normalized,
+            )
+        )
+        if contextual_assistant_ref:
+            matched.append('context_assistant_ref')
+
+        if show_ref and not browser_ref and (score >= 0.22 or active_incident):
+            return {
+                'intent': 'show_problem_window_requested',
+                'confidence': min(score, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        if browser_ref and (ownership_ref or action_ref or assistant_ref):
+            # "usa un navegador mio", "cuenta gmail logueada", "usa mi sesion"
+            # all mean the user is granting/pointing to a browser path.
+            confidence = min(score + (0.12 if action_ref else 0.0), 1.0)
+            intent = 'user_browser_session_requested'
+            if 'gmail' in normalized or 'cuenta' in normalized or 'login' in normalized or 'loguead' in normalized or 'logead' in normalized:
+                intent = 'human_login_available'
+            return {
+                'intent': intent,
+                'confidence': confidence,
+                'matched_terms': sorted(set(matched)),
+            }
+        if action_ref and assistant_ref and score >= 0.40:
+            contextual_boost = 0.14 if contextual_assistant_ref else 0.0
+            return {
+                'intent': 'retry_external_consultation_requested',
+                'confidence': min(score + contextual_boost, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        if action_ref and consultation_ref and contextual_assistant_ref and score >= 0.28:
+            return {
+                'intent': 'retry_external_consultation_requested',
+                'confidence': min(score + 0.18, 1.0),
+                'matched_terms': sorted(set(matched)),
+            }
+        return {'intent': 'none', 'confidence': min(score, 1.0), 'matched_terms': sorted(set(matched))}
+
+    def _attempt_visible_user_browser_prompt_send(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        prompt_text: str,
+    ) -> dict[str, Any]:
+        """Focus the visible user browser surface and send the prompt.
+
+        This is the missing middle step between "I opened ChatGPT" and "I can
+        capture the response".  It does not read credentials or hidden browser
+        state; it only focuses a visible browser window, pastes the prompt,
+        presses Enter, restores the clipboard, and records whether the prompt
+        was actually submitted.
+        """
+        started = time.perf_counter()
+        surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+        result: dict[str, Any] = {
+            'attempted': False,
+            'success': False,
+            'status': 'not_attempted',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'surface': surface.get('surface', ''),
+            'focused_title': '',
+            'prompt_chars': len(str(prompt_text or '')),
+            'reason': '',
+            'unresolved_fields': [],
+            'execution_ms': 0,
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'visible_prompt_send_started',
+                assistant_kind=assistant_kind,
+                surface=result['surface'],
+                prompt_chars=result['prompt_chars'],
+            )
+        except Exception:
+            tracer = None
+        def _return(result_update: dict[str, Any]) -> dict[str, Any]:
+            result.update(result_update)
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            try:
+                if tracer:
+                    tracer.trace('visible_prompt_send_result', **result)
+            except Exception:
+                pass
+            return result
+
+        if not surface:
+            return _return({
+                'status': 'target_missing',
+                'reason': 'no_visible_browser_surface_recorded',
+                'unresolved_fields': ['visible_browser_surface'],
+            })
+        prompt = str(prompt_text or '').strip()
+        if not prompt:
+            return _return({
+                'status': 'prompt_missing',
+                'reason': 'empty_prompt',
+                'unresolved_fields': ['prompt_text'],
+            })
+        try:
+            from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+
+            workspace = str(getattr(getattr(self, 'config', None), 'workspace_root', '') or os.getcwd())
+            runner = UIExecutionRunner(workspace_root=workspace)
+            previous_clipboard = runner.read_clipboard_text()
+            focused = False
+            focused_title = ''
+            try:
+                probe = self._detect_cdp_available(timeout=0.35)
+                inventory = self._browser_session_inventory(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    cdp_probe=probe,
+                )
+            except Exception:
+                inventory = {'candidate_windows': [], 'candidate_count': 0, 'can_focus_existing': False}
+            if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+                focus = self._focus_existing_browser_from_inventory(inventory)
+                focused = bool(focus.get('focused'))
+                selected = dict(focus.get('selected_window') or {})
+                focused_title = str(selected.get('title') or '')
+            if not focused:
+                title_hints = []
+                for item in list(inventory.get('candidate_windows') or []):
+                    title = str(item.get('title') or '').strip()
+                    if title:
+                        title_hints.append(title)
+                selected_surface = dict(surface.get('selected_window') or {})
+                if selected_surface.get('title'):
+                    title_hints.insert(0, str(selected_surface.get('title')))
+                title_hints.extend([
+                    'ChatGPT',
+                    'ChatGPT - Google Chrome',
+                    'ChatGPT - Microsoft Edge',
+                    'Google Chrome',
+                    'Microsoft Edge',
+                ])
+                focused_title = runner._wait_and_focus_any_window(  # noqa: SLF001 - controlled runtime bridge
+                    list(dict.fromkeys(title_hints)),
+                    4.0,
+                    bring_to_foreground=True,
+                )
+                focused = bool(focused_title)
+            if not focused:
+                result.update({
+                    'attempted': True,
+                    'status': 'target_missing',
+                    'reason': 'visible_browser_window_not_focusable',
+                    'unresolved_fields': ['focusable_browser_window'],
+                })
+            else:
+                result['attempted'] = True
+                result['focused_title'] = focused_title
+                try:
+                    runner._paste_text(prompt)  # noqa: SLF001 - existing UIExecutionRunner primitive
+                    runner._send_virtual_key(0x0D)  # noqa: SLF001
+                finally:
+                    try:
+                        self._restore_clipboard_text(previous_clipboard)
+                    except Exception:
+                        pass
+                result.update({
+                    'success': True,
+                    'status': 'prompt_sent',
+                    'reason': 'visible_prompt_pasted_and_submitted',
+                })
+        except Exception as exc:
+            result.update({
+                'attempted': True,
+                'status': 'visible_prompt_send_error',
+                'reason': f'{type(exc).__name__}: {exc}',
+                'unresolved_fields': ['visible_prompt_send'],
+            })
+        result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+        try:
+            if tracer:
+                tracer.trace('visible_prompt_send_result', **result)
+        except Exception:
+            pass
+        return result
+
+    def _try_handle_external_action_followup(self, message: str) -> bool:
+        """P0.73: turn broad human follow-up language into a concrete action.
+
+        This runs before the generic external-failure explanation so phrases
+        like "usa un navegador mio" do not get answered as a dead-end status.
+        """
+        payload = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+        last_ts = float(getattr(self, '_last_external_failure_ts', 0.0) or 0.0)
+        if payload and last_ts and (time.time() - last_ts) > self._EXTERNAL_FAILURE_FOLLOWUP_WINDOW_S:
+            payload = {}
+        incident = self._get_active_incident()
+        if not payload and not incident:
+            return False
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'semantic_action_binding_started',
+                user_message_excerpt=message[:160],
+                has_failure_payload=bool(payload),
+                has_active_incident=bool(incident),
+            )
+        except Exception:
+            tracer = None
+
+        binding = self._classify_external_action_followup(
+            message,
+            failure_payload=payload,
+            active_incident=incident,
+        )
+        intent = str(binding.get('intent') or 'none')
+        confidence = float(binding.get('confidence') or 0.0)
+        assistant_kind = (
+            str((incident or {}).get('assistant_kind') or '')
+            or str(payload.get('assistant_kind') or '')
+            or self._explicit_assistant_preference(message)
+            or 'chatgpt'
+        )
+        assistant_title = (
+            str((incident or {}).get('assistant_title') or '')
+            or str(payload.get('assistant_title') or '')
+            or self._assistant_display_name(assistant_kind)
+        )
+        try:
+            if tracer:
+                tracer.trace(
+                    'semantic_action_binding_result',
+                    intent=intent,
+                    confidence=round(confidence, 3),
+                    matched_terms=list(binding.get('matched_terms') or [])[:10],
+                    assistant_kind=assistant_kind,
+                )
+        except Exception:
+            pass
+
+        if intent == 'none' or confidence < 0.50:
+            return False
+
+        def _finish(text: str, meta: str, action_taken: str) -> bool:
+            self._latest_response_text = text
+            self._latest_response_meta = meta
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant',
+                'IABV',
+                text,
+                meta,
+                reasoning_path='semantic_external_action_binding',
+                evidence_tag='observed',
+            )
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+            try:
+                if tracer:
+                    tracer.trace(
+                        'external_followup_action_selected',
+                        intent=intent,
+                        action_taken=action_taken,
+                        assistant_kind=assistant_kind,
+                        confidence=round(confidence, 3),
+                    )
+                    tracer.trace(
+                        'external_followup_action_executed',
+                        intent=intent,
+                        action_taken=action_taken,
+                        assistant_kind=assistant_kind,
+                    )
+            except Exception:
+                pass
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
+
+        if intent == 'show_problem_window_requested':
+            if incident and self._try_focus_incident_window(incident):
+                return _finish(
+                    f'Enfoqué la ventana relacionada con {assistant_title}. Si ves una verificación, complétala y escribe "ya lo hice".',
+                    'semantic_action_binding: show_problem_window',
+                    'focus_incident_window',
+                )
+            msg = self._format_human_assist_message(
+                sees=f'{assistant_title} tiene un incidente externo reciente, pero no tengo una ventana objetivo confiable.',
+                cannot_verify='no puedo mostrar una ventana si no tengo hwnd/CDP/perfil observable.',
+                needs_from_you='deja visible la ventana de ChatGPT o autoriza que abra una ventana gobernada.',
+                action_now=self._GOVERNED_LAUNCH_OFFER,
+            )
+            return _finish(msg, 'semantic_action_binding: show_problem_window_unresolved', 'offer_governed_browser_session')
+
+        if intent in {'user_browser_session_requested', 'human_login_available'}:
+            probe = self._detect_cdp_available()
+            inventory = self._browser_session_inventory(
+                assistant_kind=assistant_kind or 'chatgpt',
+                cdp_probe=probe,
+            )
+            inventory_summary = self._format_browser_inventory_summary(inventory)
+            try:
+                if tracer:
+                    tracer.trace(
+                        'existing_browser_session_inventory',
+                        assistant_kind=assistant_kind,
+                        cdp_available=inventory.get('cdp_available', False),
+                        candidate_count=inventory.get('candidate_count', 0),
+                        browser_process_count=inventory.get('browser_process_count', 0),
+                        assistant_window_count=inventory.get('assistant_window_count', 0),
+                        can_focus_existing=inventory.get('can_focus_existing', False),
+                        can_observe_existing_dom=inventory.get('can_observe_existing_dom', False),
+                        recommended_strategy=inventory.get('recommended_strategy', ''),
+                        limitations=inventory.get('limitations', []),
+                    )
+            except Exception:
+                pass
+            if probe.get('available', False):
+                os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+                msg = self._format_human_assist_message(
+                    sees='tu navegador normal parece observable por CDP.',
+                    cannot_verify='no voy a leer cookies/tokens; solo usaré contenido visible de la página.',
+                    needs_from_you='mantén la sesión visible si aparece una verificación humana.',
+                    action_now=f'activé la ruta de tu navegador para la próxima consulta a {assistant_title}. Escribe "reintenta".',
+                )
+                return _finish(msg, 'semantic_action_binding: user_browser_cdp_enabled', 'enable_user_browser_cdp')
+
+            if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+                focus = self._focus_existing_browser_from_inventory(inventory)
+                if focus.get('focused'):
+                    selected = dict(focus.get('selected_window') or {})
+                    self._last_visible_browser_surface = {
+                        'assistant_kind': assistant_kind or 'chatgpt',
+                        'surface': 'existing_browser_visible',
+                        'semantic_bridge': 'none',
+                        'selected_window': selected,
+                        'created_at': time.time(),
+                    }
+                    msg = self._format_human_assist_message(
+                        sees=f'veo tu navegador ya abierto y lo traje al frente: {selected.get("title") or inventory_summary}.',
+                        cannot_verify=(
+                            'esa ventana existe y puede estar logueada, pero sin CDP/puente no puedo leer '
+                            'la respuesta de ChatGPT en segundo plano ni usar tus correos/credenciales.'
+                        ),
+                        needs_from_you=(
+                            'si aparece verificación o login, complétalo ahí; si ya ves la respuesta, '
+                            'escribe "ya lo hice" para que intente capturar/reingestar.'
+                        ),
+                        action_now='usaré esta superficie visible antes de abrir otra ventana; si no puedo capturarla, ofreceré la ventana gobernada.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: existing_browser_focused', 'focus_existing_browser_session')
+
+            if inventory.get('browser_process_count') and not inventory.get('candidate_count'):
+                user_launch = self._launch_user_default_browser_visible_session(
+                    launch_target='https://chatgpt.com/',
+                    assistant_kind=assistant_kind or 'chatgpt',
+                )
+                try:
+                    if tracer:
+                        tracer.trace(
+                            'user_default_browser_visible_session_launch',
+                            assistant_kind=assistant_kind,
+                            success=bool(user_launch.get('launched')),
+                            reason=user_launch.get('error', '') or 'ok',
+                            browser_process_count=inventory.get('browser_process_count', 0),
+                            semantic_bridge=user_launch.get('semantic_bridge', 'none'),
+                        )
+                except Exception:
+                    pass
+                if user_launch.get('launched'):
+                    self._last_visible_browser_surface = {
+                        'assistant_kind': assistant_kind or 'chatgpt',
+                        'surface': 'user_default_browser_visible',
+                        'semantic_bridge': user_launch.get('semantic_bridge', 'none'),
+                        'launch_target': user_launch.get('launch_target', 'https://chatgpt.com/'),
+                        'created_at': time.time(),
+                    }
+                    msg = self._format_human_assist_message(
+                        sees=f'hay procesos de navegador del usuario activos ({inventory_summary}) pero no una ventana visible enlazada.',
+                        cannot_verify=(
+                            'abrí ChatGPT en tu navegador normal para reutilizar tu perfil/sesión si el navegador la conserva; '
+                            'aún no tengo DOM/CDP para leer la respuesta en segundo plano.'
+                        ),
+                        needs_from_you=(
+                            'si aparece login/verificación, complétalo; si ChatGPT responde, escribe "ya lo hice" '
+                            'o pega la respuesta para que la incorpore.'
+                        ),
+                        action_now='usé el navegador predeterminado del usuario antes de abrir una ventana gobernada.',
+                    )
+                    return _finish(
+                        msg,
+                        'semantic_action_binding: user_default_browser_visible_launched',
+                        'launch_user_default_browser_visible_session',
+                    )
+
+            launch = self._launch_governed_browser_session(
+                launch_target='https://chatgpt.com/',
+                assistant_kind=assistant_kind or 'chatgpt',
+            )
+            if launch.get('launched'):
+                self._last_visible_browser_surface = {
+                    'assistant_kind': assistant_kind or 'chatgpt',
+                    'surface': 'governed_browser_visible',
+                    'semantic_bridge': 'browser_dom',
+                    'cdp_url': launch.get('cdp_url', ''),
+                    'profile_label': launch.get('profile_label', ''),
+                    'created_at': time.time(),
+                }
+                msg = self._format_human_assist_message(
+                    sees=f'me estás autorizando a usar una sesión de navegador; inventario actual: {inventory_summary}.',
+                    cannot_verify='tu navegador normal no está observable por CDP, así que no puedo tomar control fiable de esa sesión sin un puente.',
+                    needs_from_you='en la ventana gobernada que abrí, inicia sesión o completa la verificación si aparece; luego escribe "ya lo hice".',
+                    action_now=f'abrí una ventana gobernada de Chrome para {assistant_title}; después haré el retest gobernado.',
+                )
+                return _finish(msg, 'semantic_action_binding: governed_browser_launched', 'launch_governed_browser_session')
+            msg = self._format_human_assist_message(
+                sees='me estás autorizando a usar un navegador, pero no pude abrir la sesión gobernada.',
+                cannot_verify=f'falló el lanzamiento: {launch.get("error", "desconocido")}.',
+                needs_from_you='deja visible una ventana de ChatGPT o pega aquí la respuesta.',
+                action_now='registré el fallo y no voy a fingir que hice la consulta.',
+            )
+            return _finish(msg, 'semantic_action_binding: governed_browser_launch_failed', 'governed_browser_launch_failed')
+
+        if intent == 'retry_external_consultation_requested':
+            visible_surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+            if visible_surface and str(visible_surface.get('semantic_bridge') or '') != 'browser_dom':
+                prompt_text = str(message or '').strip()
+                normalized_retry = self._normalized_command_text(prompt_text)
+                if re.search(r'\b(reintenta|reintentar|intenta nuevamente|continua|continúa|sigue)\b', normalized_retry):
+                    prompt_text = str(getattr(self, '_last_user_goal', '') or prompt_text).strip()
+                send = self._attempt_visible_user_browser_prompt_send(
+                    assistant_kind=assistant_kind or 'chatgpt',
+                    assistant_title=assistant_title,
+                    prompt_text=prompt_text,
+                )
+                if send.get('success'):
+                    msg = self._format_human_assist_message(
+                        sees=f'tengo una superficie visible de {assistant_title}: {send.get("focused_title") or visible_surface.get("surface") or "navegador visible"}.',
+                        cannot_verify=(
+                            'ya envié el prompt por esa ventana, pero sin CDP/DOM/OCR confiable no debo fingir '
+                            'que leí la respuesta en segundo plano.'
+                        ),
+                        needs_from_you=(
+                            'espera a que ChatGPT responda; luego escribe "ya lo hice" para intentar capturar '
+                            'la respuesta visible o pega la respuesta si no puedo leerla.'
+                        ),
+                        action_now='mantengo la tarea activa en la misma ventana visible en vez de abrir otra ruta o caer a chat local.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: visible_prompt_sent', 'send_prompt_to_visible_browser_surface')
+                if send.get('attempted'):
+                    msg = self._format_human_assist_message(
+                        sees=f'tengo registrada una superficie visible previa para {assistant_title}, pero no pude enfocarla ahora.',
+                        cannot_verify=f'falló el envío del prompt: {send.get("status") or "unknown"} / {send.get("reason") or "sin detalle"}.',
+                        needs_from_you='deja visible la ventana correcta de ChatGPT o elige "usar mi navegador" para volver a enlazarla.',
+                        action_now='no abrí otra consulta ni fingí éxito; dejé el estado como target_missing/unresolved.',
+                    )
+                    return _finish(msg, 'semantic_action_binding: visible_prompt_unresolved', 'visible_prompt_send_unresolved')
+            self._run_external_consultation(assistant_kind or 'chatgpt', announce=True)
+            try:
+                if tracer:
+                    tracer.trace(
+                        'external_followup_action_executed',
+                        intent=intent,
+                        action_taken='retry_external_consultation',
+                        assistant_kind=assistant_kind,
+                    )
+            except Exception:
+                pass
+            return True
+
+        return False
+
+    def _handle_user_browser_manual_handoff(
+        self,
+        *,
+        message: str,
+        assistant_title: str,
+        assistant_kind: str,
+        previous_terminal: str,
+        previous_dispatch: str,
+    ) -> bool:
+        """P0.27 Task D: user says they see ChatGPT — offer manual pasteback.
+
+        IABV cannot verify the user's browser session without CDP/permission.
+        Instead of repeating the isolated profile, copy the prompt to clipboard
+        and explain the limitation.
+        """
+        user_goal = str(getattr(self, '_last_user_goal', '') or '')
+        prompt_text = user_goal[:500] if user_goal else ''
+        if prompt_text:
+            try:
+                self._copy_text(prompt_text, 'Prompt copiado al portapapeles para pegado manual.')
+            except Exception:
+                pass
+
+        clipboard_note = (
+            ' Ya copie el prompt al portapapeles para que lo pegues directamente.'
+            if prompt_text else ''
+        )
+        summary = (
+            f'Entendido — tu ves {assistant_title} en tu navegador, pero IABV '
+            'no puede comprobar esa sesion sin CDP/permiso de observacion. '
+            'Por eso la consulta anterior fallo con perfil aislado. '
+            f'{clipboard_note} '
+            'Pega el prompt en la ventana de ChatGPT que ves, '
+            'obtiene la respuesta y escribeme lo que dijo, '
+            'o escribe "ya lo hice" para que IABV intente un retest gobernado. '
+            'No voy a fingir que recibí respuesta.'
+        )
+        self._latest_response_text = summary
+        self._latest_response_meta = f'{assistant_title}: user_browser_manual_handoff'
+        self._busy_label = ''
+        self._working = False
+        self._append_message(
+            'assistant', 'IABV', summary,
+            'user_browser_manual_handoff',
+            reasoning_path='user_browser_manual_handoff',
+            evidence_tag='observed',
+        )
+        self._set_live_status('idle')
+        self._clear_autonomy_activity_override()
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'user_browser_handoff_required',
+                previous_assistant_kind=assistant_kind,
+                previous_terminal_state=previous_terminal,
+                user_message_excerpt=message[:120],
+                selected_followup_path='user_browser_manual_handoff',
+                dispatch_id=previous_dispatch,
+                interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+                prompt_copied=bool(prompt_text),
+            )
+            tracer.trace(
+                'local_fallback_suppressed_for_external_failure',
+                previous_assistant_kind=assistant_kind,
+                previous_terminal_state=previous_terminal,
+                user_message_excerpt=message[:120],
+                selected_followup_path='user_browser_manual_handoff',
+                dispatch_id=previous_dispatch,
+                interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
+            )
+        except Exception:
+            pass
+        try:
+            self.dataChanged.emit()
+        except Exception:
+            pass
+        return True
+
+    # ── P0.12: Security verification retest handler ──
+    _SECURITY_RETEST_PATTERNS: tuple[str, ...] = (
+        'ya lo hice', 'ya lo hise', 'ya complete', 'a mi si me funciona',
+        'a mi me funciona', 'ya pase el captcha', 'ya verifique',
+        'ya esta listo', 'ya lo resolvi', 'done', 'i did it',
+    )
+
+    @staticmethod
+    def _sanitize_visible_response_text(text: str) -> str:
+        """Remove obvious PII/secrets from text copied from a visible page."""
+        cleaned = str(text or '').replace('\x00', ' ')
+        cleaned = re.sub(
+            r'(?i)\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b',
+            '[redacted_email]',
+            cleaned,
+        )
+        cleaned = re.sub(
+            r'(?i)\b(password|contrasena|contraseña|api[_ -]?key|token|secret)\s*[:=]\s*\S+',
+            r'\1=[redacted]',
+            cleaned,
+        )
+        cleaned = re.sub(r'\b[A-Za-z0-9_-]{32,}\b', '[redacted_token]', cleaned)
+        return '\n'.join(line.rstrip() for line in cleaned.splitlines()).strip()
+
+    @staticmethod
+    def _visible_response_text_looks_useful(text: str, *, prompt_text: str = '') -> bool:
+        normalized = ' '.join(str(text or '').split()).strip()
+        if not normalized:
+            return False
+        lowered = normalized.lower()
+        prompt_lower = ' '.join(str(prompt_text or '').split()).lower()
+        if 'responde solo' in prompt_lower or 'solo s' in prompt_lower:
+            short_tokens = {
+                token.strip('.,:;!?()[]{}"\'').lower()
+                for token in normalized.split()
+            }
+            if short_tokens.intersection({'s', 'si', 'sí', 'ok', 'yes'}) and len(normalized) <= 80:
+                return True
+        if len(normalized) < 24:
+            return False
+        if prompt_lower and lowered == prompt_lower:
+            return False
+        if prompt_lower and lowered.startswith(prompt_lower) and len(lowered) <= len(prompt_lower) + 24:
+            return False
+        local_surface_markers = (
+            'iabv',
+            'procesando',
+            'external_consultation',
+            'security_retest',
+        )
+        if any(marker in lowered for marker in local_surface_markers) and 'chatgpt' not in lowered:
+            return False
+        return True
+
+    @staticmethod
+    def _restore_clipboard_text(text: str) -> None:
+        try:  # pragma: no cover - live Qt branch
+            from PySide6.QtGui import QGuiApplication
+
+            app = QGuiApplication.instance()
+            clipboard = app.clipboard() if app is not None else None
+            if clipboard is not None:
+                clipboard.setText(str(text or ''))
+                return
+        except Exception:
+            pass
+        try:  # pragma: no cover - Windows fallback
+            import subprocess as _subprocess
+
+            _subprocess.run(
+                [
+                    'powershell',
+                    '-NoProfile',
+                    '-Command',
+                    'Set-Clipboard -Value ([Console]::In.ReadToEnd())',
+                ],
+                input=str(text or ''),
+                text=True,
+                capture_output=True,
+                timeout=3,
+            )
+        except Exception:
+            pass
+
+    def _attempt_visible_user_browser_response_capture(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+    ) -> dict[str, Any]:
+        """Try a safe visible-page text capture after the user completed the page.
+
+        This is intentionally limited: it does not read cookies, tokens,
+        credentials, browser storage, or hidden DOM. It only tries to focus a
+        visible browser surface already recorded by the previous handoff and
+        copy visible page text. If no semantic channel is available, it returns
+        an unresolved result instead of pretending that ChatGPT was read.
+        """
+        started = time.perf_counter()
+        surface = dict(getattr(self, '_last_visible_browser_surface', {}) or {})
+        prompt_text = str(getattr(self, '_last_user_goal', '') or '')
+        result: dict[str, Any] = {
+            'attempted': False,
+            'success': False,
+            'status': 'not_attempted',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'surface': surface.get('surface', ''),
+            'capture_source': '',
+            'captured_text': '',
+            'captured_excerpt': '',
+            'reason': '',
+            'unresolved_fields': [],
+            'execution_ms': 0,
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'visible_response_capture_started',
+                assistant_kind=assistant_kind,
+                surface=result['surface'],
+                semantic_bridge=surface.get('semantic_bridge', ''),
+            )
+        except Exception:
+            tracer = None
+
+        focused = False
+        focus_error = ''
+        try:
+            probe = self._detect_cdp_available(timeout=0.35)
+            inventory = self._browser_session_inventory(
+                assistant_kind=assistant_kind or 'chatgpt',
+                cdp_probe=probe,
+            )
+        except Exception:
+            inventory = {'candidate_windows': [], 'candidate_count': 0, 'can_focus_existing': False}
+
+        if inventory.get('candidate_count') and inventory.get('can_focus_existing'):
+            result['attempted'] = True
+            focus = self._focus_existing_browser_from_inventory(inventory)
+            focused = bool(focus.get('focused'))
+            focus_error = str(focus.get('error') or '')
+            selected = dict(focus.get('selected_window') or {})
+            if selected:
+                surface['selected_window'] = selected
+                result['surface'] = surface.get('surface') or 'existing_browser_visible'
+        elif surface.get('selected_window'):
+            result['attempted'] = True
+            focus = self._focus_existing_browser_from_inventory({
+                'candidate_windows': [dict(surface.get('selected_window') or {})],
+            })
+            focused = bool(focus.get('focused'))
+            focus_error = str(focus.get('error') or '')
+        elif surface.get('surface') in {'user_default_browser_visible', 'existing_browser_visible'}:
+            result['attempted'] = True
+            focus_error = 'visible_window_not_observed'
+
+        if not result['attempted']:
+            result['status'] = 'target_missing'
+            result['reason'] = 'no_visible_browser_surface_recorded'
+            result['unresolved_fields'] = ['visible_browser_surface']
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            return result
+        if not focused:
+            result['status'] = 'target_missing'
+            result['reason'] = focus_error or 'visible_browser_window_not_focusable'
+            result['unresolved_fields'] = ['focusable_browser_window']
+            result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+            try:
+                if tracer:
+                    tracer.trace('visible_response_capture_result', **{k: v for k, v in result.items() if k != 'captured_text'})
+            except Exception:
+                pass
+            return result
+
+        try:
+            from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
+
+            workspace = str(getattr(getattr(self, 'config', None), 'workspace_root', '') or os.getcwd())
+            runner = UIExecutionRunner(workspace_root=workspace)
+            previous_clipboard = runner.read_clipboard_text()
+            try:
+                copied = runner.copy_active_window_text(select_all=True, settle_seconds=0.18)
+            finally:
+                try:
+                    self._restore_clipboard_text(previous_clipboard)
+                except Exception:
+                    pass
+            sanitized = self._sanitize_visible_response_text(copied)
+            if self._visible_response_text_looks_useful(sanitized, prompt_text=prompt_text):
+                result.update({
+                    'success': True,
+                    'status': 'response_captured',
+                    'capture_source': 'visible_clipboard_capture',
+                    'captured_text': sanitized[:8000],
+                    'captured_excerpt': sanitized[:500],
+                    'reason': 'visible_text_captured',
+                })
+            else:
+                result.update({
+                    'status': 'visible_capture_unreadable',
+                    'capture_source': 'visible_clipboard_capture',
+                    'captured_excerpt': sanitized[:240],
+                    'reason': 'captured_text_not_useful',
+                    'unresolved_fields': ['semantic_response_text'],
+                })
+        except Exception as exc:
+            result.update({
+                'status': 'visible_capture_error',
+                'reason': f'{type(exc).__name__}: {exc}',
+                'unresolved_fields': ['visible_text_capture'],
+            })
+        result['execution_ms'] = int((time.perf_counter() - started) * 1000)
+        try:
+            if tracer:
+                tracer.trace(
+                    'visible_response_capture_result',
+                    **{k: v for k, v in result.items() if k != 'captured_text'},
+                )
+                tracer.trace(
+                    'semantic_capture_ladder_result',
+                    assistant_kind=assistant_kind,
+                    status=result.get('status', ''),
+                    capture_source=result.get('capture_source', ''),
+                    success=bool(result.get('success')),
+                    unresolved_fields=result.get('unresolved_fields', []),
+                )
+        except Exception:
+            pass
+        return result
+
+    def _try_handle_security_verification_retest(self, message: str) -> bool:
+        """If the user claims they completed security verification, do a single governed retest.
+
+        The background worker only produces a result dict; UI updates are
+        routed through taskResolved/taskFailed so Qt state is never
+        touched from a non-GUI thread.
+        """
+        lowered = message.strip().lower()
+        if not any(p in lowered for p in self._SECURITY_RETEST_PATTERNS):
+            return False
+        payload = dict(self._last_adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
+        ext_meta = metadata.get('external_consultation') or {}
+        if not isinstance(ext_meta, dict):
+            ext_meta = {}
+        if not ext_meta:
+            failure = dict(getattr(self, '_last_external_failure_payload', {}) or {})
+            if failure:
+                ext_meta = {
+                    'detail': str(failure.get('meta') or failure.get('message') or ''),
+                    'status': 'blocked_external',
+                    'assistant_kind': str(failure.get('assistant_kind') or ''),
+                    'assistant_title': str(failure.get('assistant_title') or ''),
+                    'terminal_state': str(failure.get('terminal_state') or ''),
+                }
+        if not ext_meta:
+            return False
+        last_meta = str(ext_meta.get('detail') or ext_meta.get('status') or '')
+        if 'browser_security_verification' not in last_meta and ext_meta.get('status') != 'blocked_external':
+            flags = ext_meta.get('external_state_flags') or []
+            if 'capture_unverified' not in flags:
+                return False
+        assistant_kind = str(ext_meta.get('assistant_kind') or ext_meta.get('requested_assistant_kind') or 'chatgpt')
+        assistant_title = str(ext_meta.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        visible_capture = self._attempt_visible_user_browser_response_capture(
+            assistant_kind=assistant_kind,
+            assistant_title=assistant_title,
+        )
+        if visible_capture.get('success'):
+            excerpt = str(visible_capture.get('captured_excerpt') or '').strip()
+            summary = (
+                f'Ya pude capturar texto util desde la ventana visible de {assistant_title} '
+                'sin leer cookies/tokens/credenciales. Fragmento: '
+                f'{excerpt[:420]}'
+            )
+            self._latest_response_text = summary
+            self._latest_response_meta = 'visible_response_capture: response_captured'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', summary,
+                'visible_response_capture',
+                reasoning_path='visible_response_capture',
+                evidence_tag='observed',
+                trace_metadata={
+                    'assistant': assistant_title,
+                    'capture_source': visible_capture.get('capture_source', ''),
+                    'response_captured': True,
+                },
+            )
+            try:
+                self._clear_external_failure_memory()
+                self._resolve_incident_frame('resolved')
+            except Exception:
+                pass
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
+        if visible_capture.get('attempted'):
+            status = str(visible_capture.get('status') or 'visible_capture_unresolved')
+            reason = str(visible_capture.get('reason') or 'sin canal semantico')
+            msg = self._format_human_assist_message(
+                sees=f'intente usar la ventana visible de {assistant_title}, pero no obtuve texto semantico confiable.',
+                cannot_verify=(
+                    'sin CDP/DOM/accesibilidad/OCR/extension no puedo leer esa respuesta en segundo plano; '
+                    'solo pude intentar una captura visible gobernada y no fue suficiente.'
+                ),
+                needs_from_you=(
+                    'mantén la ventana de ChatGPT al frente y vuelve a escribir "ya lo hice", '
+                    'o pega aqui la respuesta que ves para incorporarla sin fingir observacion.'
+                ),
+                action_now=f'registre UNRESOLVED:{status} ({reason[:120]}).',
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = f'visible_response_capture: {status}'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'visible_response_capture_unresolved',
+                reasoning_path='visible_response_capture',
+                evidence_tag='inferred',
+                trace_metadata={
+                    'assistant': assistant_title,
+                    'status': status,
+                    'unresolved_fields': visible_capture.get('unresolved_fields', []),
+                },
+            )
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            return True
+        if getattr(self, '_security_retest_done', False):
+            self._append_message(
+                'assistant', 'IABV',
+                'Ya hice un retest gobernado despues de tu confirmacion y sigue bloqueado. '
+                'Para intentar otra vez, selecciona otro perfil de navegador o reinicia la sesion.',
+                'security_retest_already_done',
+            )
+            self._set_live_status('idle')
+            return True
+        self._security_retest_done = True
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'security_verification_retest',
+                user_claim=message[:200],
+                assistant_kind=str(ext_meta.get('assistant_kind') or ''),
+            )
+        except Exception:
+            pass
+        self._append_message(
+            'assistant', 'IABV',
+            f'Entendido — ejecutando un solo retest gobernado de {assistant_title} '
+            f'despues de tu confirmacion.',
+            'security_retest_initiated',
+        )
+        self._working = True
+        self._set_live_status('processing')
+        self.dataChanged.emit()
+
+        def _retest_worker() -> None:
+            try:
+                result = self._execute_external_consultation_sync(
+                    assistant_kind, dispatch_id=f'security_retest_{uuid.uuid4().hex[:8]}',
+                )
+                result_payload = {
+                    'success': bool(result.get('success')),
+                    'detail': str(result.get('detail', '') or result.get('meta', '')),
+                    'assistant_kind': assistant_kind,
+                    'assistant_title': assistant_title,
+                }
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'security_verification_retest_result',
+                        **result_payload,
+                    )
+                except Exception:
+                    pass
+                self.taskResolved.emit('security_retest', result_payload)
+            except Exception as exc:
+                self.taskFailed.emit('security_retest', str(exc))
+
+        self._bg_pool.submit(_retest_worker)
+        return True
+
+    # ══════════════════════════════════════════════════════════════════
+    # P0.32 — Governed User Chrome Bridge / External Session Selection
+    # ══════════════════════════════════════════════════════════════════
+
+    _CHROME_BRIDGE_PATTERNS: tuple[str, ...] = (
+        'usar mi chrome', 'use my chrome', 'mi navegador', 'my browser',
+        'chrome normal', 'usar chrome', 'mi sesion', 'my session',
+    )
+    _CDP_REVOKE_PATTERNS: tuple[str, ...] = (
+        'revocar permiso cdp', 'revocar cdp', 'revoke cdp',
+        'desactivar cdp', 'disable cdp', 'no usar mi chrome',
+    )
+    _BROWSER_APP_TOKENS: tuple[str, ...] = (
+        'chrome', 'edge', 'firefox', 'brave', 'opera', 'browser', 'navegador',
+    )
+    _ASSISTANT_WINDOW_TOKENS: dict[str, tuple[str, ...]] = {
+        'chatgpt': ('chatgpt', 'chat gpt', 'chat.openai', 'openai'),
+        'claude': ('claude', 'anthropic'),
+        'codex': ('codex',),
+        'devin': ('devin',),
+    }
+
+    @staticmethod
+    def _detect_cdp_available(
+        cdp_url: str = '',
+        timeout: float = 2.0,
+    ) -> dict[str, Any]:
+        """Probe CDP endpoint without reading cookies/tokens/credentials.
+
+        Returns ``{'available': True/False, 'browser_version': ..., ...}``.
+        Only reads ``/json/version`` — never accesses page content,
+        cookies, localStorage, or any user data.
+        """
+        import urllib.request
+        import urllib.error
+
+        url = cdp_url or os.environ.get(
+            'IABV_SHARED_CDP_URL', 'http://localhost:9222',
+        )
+        version_url = f'{url}/json/version'
+        result: dict[str, Any] = {
+            'available': False,
+            'cdp_url': url,
+            'browser_version': '',
+            'error': '',
+        }
+        try:
+            req = urllib.request.Request(version_url, method='GET')
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                import json
+                data = json.loads(resp.read().decode('utf-8', errors='replace'))
+                result['available'] = True
+                result['browser_version'] = str(
+                    data.get('Browser', data.get('browser', '')),
+                )[:100]
+        except urllib.error.URLError as exc:
+            result['error'] = f'connection_failed: {exc.reason}'
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    def _browser_session_inventory(
+        self,
+        *,
+        assistant_kind: str = 'chatgpt',
+        cdp_probe: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Summarize existing browser sessions before opening a new one.
+
+        This is intentionally capability-oriented: seeing a Chrome window is
+        not the same as being able to read its DOM or capture ChatGPT's
+        response in the background.  The inventory keeps those states separate
+        so IABV can prefer the user's existing browser when it is actually
+        observable, and explain the exact gap when it is only visible/focusable.
+        """
+        probe = dict(cdp_probe or self._detect_cdp_available(timeout=0.75))
+        assistant = str(assistant_kind or 'chatgpt').strip().lower()
+        assistant_tokens = self._ASSISTANT_WINDOW_TOKENS.get(
+            assistant, (assistant,) if assistant else (),
+        )
+        windows: list[dict[str, Any]] = []
+        browser_processes: list[dict[str, Any]] = []
+        try:
+            snapshot = self._current_world_model()
+            active = list(getattr(snapshot, 'active_windows', []) or [])
+            background = list(getattr(snapshot, 'background_processes', []) or [])
+        except Exception:
+            active = []
+            background = []
+
+        def _value(win: Any, key: str, default: Any = '') -> Any:
+            if isinstance(win, dict):
+                return win.get(key, default)
+            return getattr(win, key, default)
+
+        for win in active:
+            title = str(_value(win, 'title', '') or '').strip()
+            app = str(_value(win, 'app_name', '') or '').strip()
+            metadata = _value(win, 'metadata', {}) or {}
+            joined = f'{title} {app}'.lower()
+            is_browser = any(token in joined for token in self._BROWSER_APP_TOKENS)
+            assistant_match = any(token and token in joined for token in assistant_tokens)
+            if not is_browser and not assistant_match:
+                continue
+            hwnd = None
+            try:
+                hwnd = metadata.get('hwnd') if isinstance(metadata, dict) else None
+            except Exception:
+                hwnd = None
+            if hwnd is None:
+                hwnd = _value(win, 'hwnd', None)
+            windows.append({
+                'title': title[:120],
+                'app_name': app[:80],
+                'pid': int(_value(win, 'pid', 0) or 0),
+                'focused': bool(_value(win, 'focused', False)),
+                'assistant_match': bool(assistant_match),
+                'hwnd_available': hwnd is not None,
+                'hwnd': hwnd,
+            })
+
+        for proc in background:
+            name = str(_value(proc, 'process_name', '') or '').strip()
+            joined = name.lower()
+            if not any(token in joined for token in self._BROWSER_APP_TOKENS):
+                continue
+            browser_processes.append({
+                'process_name': name[:80],
+                'pid': int(_value(proc, 'pid', 0) or 0),
+                'state': str(_value(proc, 'state', '') or ''),
+                'memory_mb': _value(proc, 'memory_mb', None),
+            })
+        browser_processes = browser_processes[:12]
+
+        windows = sorted(
+            windows,
+            key=lambda item: (
+                not bool(item.get('assistant_match')),
+                not bool(item.get('focused')),
+                str(item.get('title') or '').lower(),
+            ),
+        )[:8]
+        cdp_available = bool(probe.get('available'))
+        hwnd_available = any(bool(w.get('hwnd_available')) for w in windows)
+        if cdp_available:
+            strategy = 'user_browser_cdp'
+        elif windows and hwnd_available:
+            strategy = 'existing_browser_focus_only'
+        elif windows:
+            strategy = 'existing_browser_visible_unbound'
+        elif browser_processes:
+            strategy = 'existing_browser_process_without_visible_window'
+        else:
+            strategy = 'governed_browser_needed'
+        limitations: list[str] = []
+        if windows and not cdp_available:
+            limitations.append('existing_browser_dom_not_observable_without_bridge')
+        if not windows:
+            limitations.append('no_existing_browser_window_observed')
+        if browser_processes and not windows:
+            limitations.append('browser_processes_exist_without_top_level_window')
+        if windows and not hwnd_available:
+            limitations.append('existing_browser_hwnd_missing')
+        return {
+            'assistant_kind': assistant,
+            'cdp_available': cdp_available,
+            'cdp_url': probe.get('cdp_url', ''),
+            'browser_version': probe.get('browser_version', ''),
+            'cdp_error': probe.get('error', ''),
+            'candidate_windows': windows,
+            'candidate_count': len(windows),
+            'browser_processes': browser_processes,
+            'browser_process_count': len(browser_processes),
+            'assistant_window_count': sum(1 for w in windows if w.get('assistant_match')),
+            'can_focus_existing': hwnd_available,
+            'can_observe_existing_dom': cdp_available,
+            'recommended_strategy': strategy,
+            'limitations': limitations,
+        }
+
+    @staticmethod
+    def _format_browser_inventory_summary(inventory: dict[str, Any]) -> str:
+        windows = list(inventory.get('candidate_windows') or [])
+        if not windows:
+            processes = list(inventory.get('browser_processes') or [])
+            if processes:
+                names = []
+                for item in processes[:4]:
+                    name = str(item.get('process_name') or 'navegador')
+                    pid = item.get('pid') or ''
+                    names.append(f'{name} pid={pid}' if pid else name)
+                suffix = '' if len(processes) <= 4 else f' (+{len(processes) - 4} más)'
+                return 'veo procesos de navegador sin ventana visible: ' + '; '.join(names) + suffix
+            return 'no veo una ventana de navegador ya abierta relacionada con esa tarea.'
+        labels = []
+        for item in windows[:4]:
+            title = str(item.get('title') or item.get('app_name') or 'ventana sin titulo')
+            marker = 'ChatGPT' if item.get('assistant_match') else 'navegador'
+            labels.append(f'{marker}: {title}')
+        suffix = '' if len(windows) <= 4 else f' (+{len(windows) - 4} más)'
+        return '; '.join(labels) + suffix
+
+    @staticmethod
+    def _focus_existing_browser_from_inventory(inventory: dict[str, Any]) -> dict[str, Any]:
+        """Bring the best existing browser candidate to the foreground.
+
+        This does not claim DOM access.  It only uses the hwnd already exposed
+        by WorldModel so the user and IABV can share the same visible surface.
+        """
+        result = {
+            'focused': False,
+            'selected_window': {},
+            'method': '',
+            'error': '',
+        }
+        windows = list(inventory.get('candidate_windows') or [])
+        selected = next((w for w in windows if w.get('assistant_match') and w.get('hwnd')), None)
+        if selected is None:
+            selected = next((w for w in windows if w.get('hwnd')), None)
+        if not selected:
+            result['error'] = 'no_hwnd_candidate'
+            return result
+        result['selected_window'] = dict(selected)
+        hwnd = selected.get('hwnd')
+        try:
+            hwnd_int = int(hwnd)
+        except Exception:
+            result['error'] = 'invalid_hwnd'
+            return result
+        if hwnd_int <= 0:
+            result['error'] = 'invalid_hwnd'
+            return result
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            user32.ShowWindow(hwnd_int, 9)  # SW_RESTORE
+            user32.SetForegroundWindow(hwnd_int)
+            result['focused'] = True
+            result['method'] = 'win32_hwnd'
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    @staticmethod
+    def _launch_user_default_browser_visible_session(
+        *,
+        launch_target: str = 'https://chatgpt.com/',
+        assistant_kind: str = 'chatgpt',
+    ) -> dict[str, Any]:
+        """Open the user's normal default browser as a visible human surface.
+
+        This is not a CDP/DOM bridge and never reads credentials.  It is the
+        pragmatic middle path when browser processes exist but no observable
+        top-level window is available: use the user's normal profile/session if
+        the OS/default browser provides it, then ask for a human confirmation
+        or pasteback if semantic capture is still unavailable.
+        """
+        import os as _os
+        import sys as _sys
+        import webbrowser as _webbrowser
+
+        result = {
+            'launched': False,
+            'launch_target': launch_target,
+            'assistant_kind': assistant_kind,
+            'surface': 'user_default_browser_visible',
+            'semantic_bridge': 'none',
+            'error': '',
+        }
+        try:
+            if _sys.platform.startswith('win'):
+                _os.startfile(launch_target)  # type: ignore[attr-defined]
+            else:
+                _webbrowser.open(launch_target, new=1, autoraise=True)
+            result['launched'] = True
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+        return result
+
+    def _build_session_selection_message(
+        self,
+        assistant_title: str,
+        cdp_probe: dict[str, Any],
+    ) -> str:
+        """Build a user-facing message explaining the available session options.
+
+        Options depend on CDP availability:
+        - If CDP is available: isolated profile, user Chrome (with permission), manual pasteback.
+        - If CDP is not available: isolated profile, manual pasteback, instructions to enable CDP.
+        """
+        cdp_ok = cdp_probe.get('available', False)
+        browser_ver = cdp_probe.get('browser_version', '')
+
+        options = [
+            '1) Perfil aislado de IABV: la sesion controlada por IABV '
+            '(puede requerir login/captcha separado).',
+        ]
+        if cdp_ok:
+            ver_note = f' (detecte: {browser_ver})' if browser_ver else ''
+            options.append(
+                f'2) Tu Chrome normal{ver_note}: IABV observaria tu navegador '
+                f'(requiere tu permiso explicito). Escribe "usar mi chrome" '
+                f'para activar esta opcion. No leere cookies ni tokens, '
+                f'solo observare el contenido visible de la pagina.'
+            )
+            options.append(
+                '3) Pegado manual: copia la respuesta de ChatGPT y pegala '
+                'aqui, o escribe lo que dijo.'
+            )
+        else:
+            # P0.72: do NOT instruct the user to open a terminal/command.
+            # Offer a governed Chrome window that IABV opens itself.
+            options.append(
+                '2) Ventana gobernada de IABV: puedo abrir una ventana de '
+                'Chrome con un perfil propio de IABV (separado de tu navegador) '
+                'donde completas la verificacion. Escribe "abre la ventana '
+                'gobernada" o "hazlo tu" y la abro.'
+            )
+            options.append(
+                '3) Pegado manual: copia la respuesta de ChatGPT y pegala '
+                'aqui, o escribe lo que dijo.'
+            )
+
+        return (
+            f'Herramienta: {assistant_title}.\n'
+            f'IABV esta usando un perfil aislado '
+            f'(chatgpt_program_session/browser_profile) '
+            f'que no comparte tu sesion de Chrome normal. '
+            f'Por eso la verificacion de seguridad te bloquea a ti pero no al perfil real.\n\n'
+            f'Opciones disponibles:\n'
+            + '\n'.join(options)
+        )
+
+    # ══════════════════════════════════════════════════════════════════
+    # P0.72 — Governed Browser Session Launch + Human-Assist Bridge
+    # ══════════════════════════════════════════════════════════════════
+    #
+    # When ChatGPT (or any web assistant) blocks with a security
+    # verification in IABV's isolated profile and CDP to the user's normal
+    # Chrome is unavailable, IABV must NOT tell the user to open a terminal
+    # and run "chrome.exe --remote-debugging-port=9222" — that violates the
+    # UNA SOLA VENTANA principle (AGENTS.md). Instead IABV opens a *governed*
+    # Chrome window itself: a dedicated IABV-owned profile with remote
+    # debugging, separate from the user's normal profile, so the user can
+    # complete the verification in a visible window with zero commands.
+
+    #: Default governed CDP port. Distinct from the user's potential 9222 so
+    #: a governed session never collides with the user's own Chrome bridge.
+    _GOVERNED_CDP_PORT_DEFAULT: int = 9223
+
+    @staticmethod
+    def _resolve_chrome_executable() -> str:
+        """Resolve a Chrome/Chromium executable path without assuming OS.
+
+        Honors ``IABV_CHROME_PATH`` first, then probes common per-platform
+        locations, then falls back to a bare command name resolvable on
+        PATH. Never raises.
+        """
+        import os as _os
+        import shutil as _shutil
+        import sys as _sys
+
+        explicit = _os.environ.get('IABV_CHROME_PATH', '').strip()
+        if explicit:
+            return explicit
+        candidates: list[str] = []
+        if _sys.platform.startswith('win'):
+            program_files = [
+                _os.environ.get('PROGRAMFILES', r'C:\Program Files'),
+                _os.environ.get('PROGRAMFILES(X86)', r'C:\Program Files (x86)'),
+                _os.environ.get('LOCALAPPDATA', ''),
+            ]
+            for base in program_files:
+                if not base:
+                    continue
+                candidates.append(_os.path.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe'))
+            candidates.append('chrome.exe')
+        elif _sys.platform == 'darwin':
+            candidates.append('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+            candidates.append('google-chrome')
+        else:
+            for name in ('google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'):
+                found = _shutil.which(name)
+                if found:
+                    return found
+                candidates.append(name)
+        for cand in candidates:
+            try:
+                if _os.path.isfile(cand):
+                    return cand
+            except Exception:
+                continue
+        # Last resort: a bare name; subprocess will surface failure cleanly.
+        return candidates[0] if candidates else 'chrome'
+
+    @staticmethod
+    def _governed_browser_profile_dir() -> str:
+        """Return the IABV-owned governed browser profile directory.
+
+        This is a dedicated profile, NEVER the user's normal Chrome
+        profile. A fresh profile means the user must log in once
+        (``human_login_required_if_new_profile``).
+        """
+        import os as _os
+        from pathlib import Path as _Path
+        override = _os.environ.get('IABV_GOVERNED_BROWSER_PROFILE', '').strip()
+        if override:
+            return override
+        return str(_Path.home() / '.iabv' / 'governed_browser_profile')
+
+    def _launch_governed_browser_session(
+        self,
+        *,
+        launch_target: str = 'https://chatgpt.com/',
+        assistant_kind: str = 'chatgpt',
+    ) -> dict[str, Any]:
+        """P0.72: open a governed Chrome window with remote debugging.
+
+        Governed = IABV-owned profile + IABV-chosen debugging port, fully
+        separate from the user's normal Chrome. The user completes the
+        security verification in this visible window; no terminal, no
+        manual command, no cookie/token reading. After launch the next
+        consultation can reuse this session via CDP.
+
+        Returns a dict with ``launched``, ``cdp_url``, ``profile_label``,
+        ``human_login_required`` and ``error``. Never raises.
+        """
+        import os as _os
+        import subprocess as _subprocess
+
+        try:
+            port = int(_os.environ.get('IABV_GOVERNED_CDP_PORT', '') or self._GOVERNED_CDP_PORT_DEFAULT)
+        except (TypeError, ValueError):
+            port = self._GOVERNED_CDP_PORT_DEFAULT
+        cdp_url = f'http://localhost:{port}'
+        profile_dir = self._governed_browser_profile_dir()
+        profile_label = 'iabv_governed_browser_profile'
+        chrome_exe = self._resolve_chrome_executable()
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            tracer = None
+
+        if tracer is not None:
+            try:
+                tracer.trace_governed_browser_session(
+                    'started',
+                    assistant_kind=assistant_kind,
+                    cdp_url=cdp_url,
+                    profile_label=profile_label,
+                    launch_target=launch_target,
+                    human_login_required=True,
+                )
+            except Exception:
+                pass
+
+        result: dict[str, Any] = {
+            'launched': False,
+            'cdp_url': cdp_url,
+            'profile_label': profile_label,
+            'profile_dir': profile_dir,
+            'human_login_required': True,
+            'error': '',
+        }
+        try:
+            _os.makedirs(profile_dir, exist_ok=True)
+            args = [
+                chrome_exe,
+                f'--remote-debugging-port={port}',
+                f'--user-data-dir={profile_dir}',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--new-window',
+                launch_target,
+            ]
+            creationflags = getattr(_subprocess, 'DETACHED_PROCESS', 0)
+            _subprocess.Popen(
+                args,
+                creationflags=creationflags,
+                stdout=_subprocess.DEVNULL,
+                stderr=_subprocess.DEVNULL,
+            )
+            result['launched'] = True
+            # Route the next consultation through this governed session.
+            _os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+            _os.environ['IABV_SHARED_CDP_URL'] = cdp_url
+        except Exception as exc:
+            result['error'] = f'{type(exc).__name__}: {exc}'
+
+        if tracer is not None:
+            try:
+                tracer.trace_governed_browser_session(
+                    'result',
+                    assistant_kind=assistant_kind,
+                    cdp_url=cdp_url,
+                    profile_label=profile_label,
+                    launch_target=launch_target,
+                    human_login_required=True,
+                    success=bool(result['launched']),
+                    reason=result['error'] or 'ok',
+                )
+            except Exception:
+                pass
+        return result
+
+    @staticmethod
+    def _format_human_assist_message(
+        *,
+        sees: str,
+        cannot_verify: str,
+        needs_from_you: str,
+        action_now: str,
+    ) -> str:
+        """P0.72 Task G: structured human-assist bridge message.
+
+        Always uses the four-line contract and NEVER contains a manual
+        terminal command (UNA SOLA VENTANA principle).
+        """
+        return (
+            f'IABV ve: {sees}\n'
+            f'IABV no puede verificar: {cannot_verify}\n'
+            f'Lo que necesito de ti: {needs_from_you}\n'
+            f'Acción que puedo hacer ahora: {action_now}'
+        )
+
+    _GOVERNED_LAUNCH_OFFER: str = (
+        'Puedo abrir una ventana gobernada de Chrome (perfil propio de IABV, '
+        'separado de tu navegador normal) y dejarla en la página de '
+        'verificación para que la completes ahí. Escribe "abre la ventana '
+        'gobernada" o "hazlo tú" y la abro. La primera vez tendrás que '
+        'iniciar sesión en esa ventana.'
+    )
+
+    def _verify_chrome_bridge_capability(self) -> bool:
+        """P0.32+P0.37 metacognitive guard: verify Chrome bridge is wired."""
+        return (
+            hasattr(self, '_try_handle_user_chrome_bridge_selection')
+            and hasattr(self, '_detect_cdp_available')
+            and callable(getattr(self, '_try_handle_user_chrome_bridge_selection', None))
+            and callable(getattr(self, '_detect_cdp_available', None))
+        )
+
+    def _try_handle_user_chrome_bridge_selection(self, message: str) -> bool:
+        """Handle user request to switch to their Chrome via CDP.
+
+        Gates on explicit permission. Never reads cookies/tokens.
+        Sets IABV_PREFER_CDP_SESSION=1 so the next consultation
+        uses the shared CDP controller.
+
+        Includes metacognitive guard: if P0.32 handlers are not wired,
+        responds with UNRESOLVED instead of promising the capability.
+        """
+        lowered = message.strip().lower()
+        if not any(p in lowered for p in self._CHROME_BRIDGE_PATTERNS):
+            return False
+
+        if not self._verify_chrome_bridge_capability():
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'capability_promised_but_unavailable',
+                    capability='user_chrome_bridge',
+                    reason='p032_handlers_not_wired',
+                )
+            except Exception:
+                pass
+            msg = (
+                'La ruta de Chrome del usuario no esta disponible '
+                'en este build; queda UNRESOLVED.'
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = 'capability_promised_but_unavailable'
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'capability_promised_but_unavailable',
+                reasoning_path='metacognitive_capability_guard',
+            )
+            return True
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace_user_browser_bridge(
+                'permission_requested',
+                assistant_kind='chatgpt',
+                reason='user_requested_chrome_bridge',
+            )
+        except Exception:
+            pass
+
+        cdp_probe = self._detect_cdp_available()
+        session_inventory = self._browser_session_inventory(
+            assistant_kind='chatgpt',
+            cdp_probe=cdp_probe,
+        )
+        inventory_summary = self._format_browser_inventory_summary(session_inventory)
+
+        try:
+            tracer.trace_user_browser_bridge(
+                'cdp_probe_result',
+                assistant_kind='chatgpt',
+                cdp_available=cdp_probe.get('available', False),
+                existing_browser_windows=session_inventory.get('candidate_count', 0),
+                existing_browser_processes=session_inventory.get('browser_process_count', 0),
+                assistant_window_count=session_inventory.get('assistant_window_count', 0),
+                recommended_strategy=session_inventory.get('recommended_strategy', ''),
+                reason=cdp_probe.get('error', '') or 'ok',
+            )
+            tracer.trace(
+                'existing_browser_session_inventory',
+                assistant_kind='chatgpt',
+                cdp_available=session_inventory.get('cdp_available', False),
+                candidate_count=session_inventory.get('candidate_count', 0),
+                browser_process_count=session_inventory.get('browser_process_count', 0),
+                assistant_window_count=session_inventory.get('assistant_window_count', 0),
+                can_focus_existing=session_inventory.get('can_focus_existing', False),
+                can_observe_existing_dom=session_inventory.get('can_observe_existing_dom', False),
+                recommended_strategy=session_inventory.get('recommended_strategy', ''),
+                limitations=session_inventory.get('limitations', []),
+            )
+        except Exception:
+            pass
+
+        if not cdp_probe.get('available', False):
+            os.environ.pop('IABV_PREFER_CDP_SESSION', None)
+            # P0.72: CDP to the user's normal Chrome is not reachable. Do NOT
+            # ask the user to open a terminal / run a command. Offer to open a
+            # governed Chrome window ourselves (UNA SOLA VENTANA principle).
+            try:
+                tracer.trace_user_browser_bridge(
+                    'bridge_result',
+                    assistant_kind='chatgpt',
+                    cdp_available=False,
+                    session_selected='none',
+                    reason='cdp_unavailable',
+                )
+                tracer.trace('user_browser_cdp_unavailable', assistant_kind='chatgpt')
+                tracer.trace_governed_browser_session(
+                    'offered',
+                    assistant_kind='chatgpt',
+                    reason='user_browser_cdp_unavailable',
+                    human_login_required=True,
+                )
+            except Exception:
+                pass
+            if session_inventory.get('candidate_count'):
+                sees = (
+                    f'veo navegadores ya abiertos ({inventory_summary}), '
+                    'pero ninguno expone un puente semántico/DOM para leer la respuesta en segundo plano.'
+                )
+                cannot_verify = (
+                    'puedo enfocar una ventana visible, pero sin CDP/puente no puedo confirmar '
+                    'que esa sesión me devuelva la respuesta ni capturar el DOM de ChatGPT con fiabilidad.'
+                )
+                needs = (
+                    'elige una ruta: escribe "enfoca esa ventana" para que la traiga al frente, '
+                    'o autoriza la ventana gobernada para una sesión observable.'
+                )
+            else:
+                sees = 'no veo una ventana de navegador reutilizable para ChatGPT en el WorldModel actual.'
+                cannot_verify = 'no tengo una sesión observable de tu navegador para retomar la consulta.'
+                needs = 'tu visto bueno para abrir una ventana gobernada (o pega aquí la respuesta).'
+            msg = self._format_human_assist_message(
+                sees=sees,
+                cannot_verify=cannot_verify,
+                needs_from_you=needs,
+                action_now=self._GOVERNED_LAUNCH_OFFER,
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = 'user_chrome_bridge: cdp_unavailable governed_cdp_launch_offered'
+            self._append_message(
+                'assistant', 'IABV', msg,
+                'user_chrome_bridge_cdp_unavailable',
+                reasoning_path='governed_chrome_bridge',
+            )
+            try:
+                tracer.trace_human_assist_bridge_message(
+                    block_type='user_browser_cdp_unavailable',
+                    action_offered='governed_browser_session_launch',
+                    cdp_available=False,
+                    single_window_safe=True,
+                )
+            except Exception:
+                pass
+            self.dataChanged.emit()
+            return True
+
+        os.environ['IABV_PREFER_CDP_SESSION'] = '1'
+
+        try:
+            tracer.trace_user_browser_bridge(
+                'permission_granted',
+                assistant_kind='chatgpt',
+                cdp_available=True,
+                session_selected='user_chrome_cdp',
+            )
+            tracer.trace_user_browser_bridge(
+                'session_selected',
+                assistant_kind='chatgpt',
+                cdp_available=True,
+                session_selected='user_chrome_cdp',
+                reason='user_explicit_permission',
+            )
+        except Exception:
+            pass
+
+        msg = (
+            'Activado: IABV usara tu Chrome normal para la proxima consulta '
+            'a ChatGPT (via CDP). No leere cookies, tokens ni credenciales — '
+            'solo observare el contenido visible de la pagina. '
+            'Puedes escribir "revocar permiso cdp" en cualquier momento para '
+            'volver al perfil aislado.'
+        )
+        self._latest_response_text = msg
+        self._latest_response_meta = 'user_chrome_bridge: cdp_activated'
+        self._append_message(
+            'assistant', 'IABV', msg,
+            'user_chrome_bridge_activated',
+            reasoning_path='governed_chrome_bridge',
+        )
+        self.dataChanged.emit()
+        return True
+
+    def _try_handle_cdp_permission_revoke(self, message: str) -> bool:
+        """Handle user request to revoke CDP permission.
+
+        Clears IABV_PREFER_CDP_SESSION so subsequent consultations
+        return to the isolated profile.
+        """
+        lowered = message.strip().lower()
+        if not any(p in lowered for p in self._CDP_REVOKE_PATTERNS):
+            return False
+
+        os.environ.pop('IABV_PREFER_CDP_SESSION', None)
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_user_browser_bridge(
+                'permission_denied',
+                assistant_kind='chatgpt',
+                cdp_available=False,
+                session_selected='isolated_profile',
+                reason='user_revoked_cdp_permission',
+            )
+        except Exception:
+            pass
+
+        msg = (
+            'CDP desactivado. IABV vuelve al perfil aislado para consultas externas. '
+            'Si necesitas usar tu Chrome otra vez, escribe "usar mi chrome".'
+        )
+        self._latest_response_text = msg
+        self._latest_response_meta = 'user_chrome_bridge: cdp_revoked'
+        self._append_message(
+            'assistant', 'IABV', msg,
+            'user_chrome_bridge_revoked',
+            reasoning_path='governed_chrome_bridge',
+        )
+        self.dataChanged.emit()
+        return True
+
+    # ══════════════════════════════════════════════════════════════════
+
+    # P0.37 — Active Incident Frame + Guided Human Assistance Resolver
+    # ══════════════════════════════════════════════════════════════════
+
+    _INCIDENT_FRAME_TTL_S: float = 900.0  # 15 min
+
+    def _create_active_incident_frame(
+        self,
+        *,
+        assistant_kind: str,
+        assistant_title: str,
+        terminal_state: str,
+        block_type: str,
+        profile_label: str = 'chatgpt_program_session',
+        cdp_available: bool = False,
+        last_user_goal: str = '',
+        dispatch_id: str = '',
+        browser_profile: str = '',
+        selected_browser_or_profile: str = '',
+        browser_label: str = '',
+        target_window_title: str = '',
+        hwnd: int | None = None,
+    ) -> dict[str, Any]:
+        """Build and store an active incident frame (read-only metadata).
+
+        Not a new service — just structured metadata in the ViewModel so
+        subsequent user messages can be resolved against the real incident.
+        """
+        # Resolve cdp_available from live probe if not explicitly set
+        if not cdp_available:
+            try:
+                cdp_available = bool(self._detect_cdp_available())
+            except Exception:
+                pass
+        frame: dict[str, Any] = {
+            'incident_id': f'inc_{uuid.uuid4().hex[:8]}',
+            'assistant_kind': assistant_kind,
+            'assistant_title': assistant_title,
+            'terminal_state': terminal_state,
+            'block_type': block_type,
+            'profile_label': profile_label,
+            'cdp_available': cdp_available,
+            'last_user_goal': last_user_goal[:300],
+            'user_help_needed': self._describe_user_help_needed(block_type),
+            'available_actions': self._describe_available_actions(
+                block_type, cdp_available,
+                bridge_wired=self._verify_chrome_bridge_capability(),
+            ),
+            'created_at': time.time(),
+            'expires_at': time.time() + self._INCIDENT_FRAME_TTL_S,
+            'dispatch_id': dispatch_id,
+            'resolved': False,
+            'browser_profile': browser_profile or profile_label,
+            'selected_browser_or_profile': selected_browser_or_profile or browser_label,
+            'browser_label': browser_label,
+            'target_window_title': target_window_title,
+            'hwnd': hwnd,
+        }
+        self._active_incident_frame = frame
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'active_incident_frame_created',
+                incident_id=frame['incident_id'],
+                terminal_state=terminal_state,
+                block_type=block_type,
+                assistant_kind=assistant_kind,
+                cdp_available=cdp_available,
+                target_window_title=target_window_title,
+                hwnd_available=hwnd is not None,
+            )
+        except Exception:
+            pass
+        return frame
+
+    @staticmethod
+    def _describe_user_help_needed(block_type: str) -> str:
+        if block_type == 'browser_security_verification':
+            return (
+                'Completar la verificacion de seguridad (captcha/login) '
+                'en la ventana del perfil puente de IABV, o activar '
+                'CDP para usar tu Chrome normal.'
+            )
+        if block_type == 'visible_timeout':
+            return 'Verificar que la ventana del asistente esta visible y responde.'
+        return 'Revisar el estado de la herramienta externa.'
+
+    @staticmethod
+    def _describe_available_actions(
+        block_type: str,
+        cdp_available: bool,
+        *,
+        bridge_wired: bool = True,
+    ) -> list[str]:
+        actions = []
+        if block_type == 'browser_security_verification':
+            actions.append('retest_after_user_confirms')
+            actions.append('show_problem_window')
+            if cdp_available and bridge_wired:
+                actions.append('switch_to_user_chrome_cdp')
+            actions.append('manual_pasteback')
+        elif block_type == 'visible_timeout':
+            actions.append('retest_after_user_confirms')
+            actions.append('manual_pasteback')
+        else:
+            actions.append('manual_pasteback')
+        return actions
+
+    def _get_active_incident(self) -> dict[str, Any] | None:
+        """Return active incident frame if still valid, else None."""
+        frame = getattr(self, '_active_incident_frame', None)
+        if not frame:
+            return None
+        if frame.get('resolved'):
+            return None
+        if time.time() > frame.get('expires_at', 0):
+            return None
+        return frame
+
+    def _resolve_incident_frame(self, resolution: str = 'resolved') -> None:
+        frame = getattr(self, '_active_incident_frame', None)
+        if frame:
+            frame['resolved'] = True
+            frame['resolution'] = resolution
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'incident_followup_resolved_or_unresolved',
+                    incident_id=frame.get('incident_id', ''),
+                    resolution=resolution,
+                    terminal_state=frame.get('terminal_state', ''),
+                )
+            except Exception:
+                pass
+
+    # -- Intent tokens with weights for semantic scoring --
+    _HELP_OFFER_TOKENS: tuple[str, ...] = (
+        'como te ayudo', 'cómo te ayudo', 'como te puedo ayudar',
+        'cómo te puedo ayudar', 'que necesitas de mi', 'qué necesitas de mí',
+        'en que te ayudo', 'en qué te ayudo', 'como ayudo', 'cómo ayudo',
+        'que puedo hacer', 'qué puedo hacer', 'te ayudo',
+        'how can i help', 'what do you need',
+        # P0.40 Task C: guided human assistance phrases
+        'yo te ayudo', 'yo te ayudo con eso', 'te ayudo con eso',
+        'yo te puedo ayudar', 'cuenta conmigo',
+    )
+    _SHOW_PROBLEM_TOKENS: tuple[str, ...] = (
+        'abreme la ventana', 'ábreme la ventana', 'muestrame',
+        'muéstrame', 'donde esta', 'dónde está', 'donde esta el problema',
+        'dónde está el problema', 'abrelo', 'ábrelo', 'ensenname',
+        'enséñame', 'show me', 'open the window',
+        'muestrame la ventana', 'muéstrame la ventana',
+        'donde tienes el problema', 'dónde tienes el problema',
+        'abreme donde', 'ábreme donde',
+        # P0.40 Task C: "abre esa verificación" / incident window phrases
+        'abre esa verificacion', 'abre esa verificación',
+        'abreme esa verificacion', 'ábreme esa verificación',
+        'abre la verificacion', 'abre la verificación',
+        'muestrame donde necesitas mi ayuda', 'muéstrame dónde necesitas mi ayuda',
+        'abre la ventana donde necesitas mi ayuda',
+        'muestrame eso', 'muéstrame eso',
+    )
+    _VISIBILITY_DISPUTE_TOKENS: tuple[str, ...] = (
+        'no veo la verificacion', 'no veo la verificación',
+        'no veo esa ventana', 'no veo eso', 'no veo el problema',
+        'yo no veo', 'a mi no me aparece', 'a mí no me aparece',
+        'yo si veo chatgpt', 'yo sí veo chatgpt',
+        'a mi si me funciona', 'a mí sí me funciona',
+        'yo no tengo ese problema',
+    )
+    _PROFILE_MISMATCH_TOKENS: tuple[str, ...] = (
+        'yo ya inicie sesion', 'yo ya inicié sesión',
+        'ya inicie sesion en chrome', 'ya inicié sesión en chrome',
+        'yo estoy logueado', 'yo estoy logeado',
+        'en mi chrome si funciona', 'en mi chrome sí funciona',
+        'mi chrome esta bien', 'mi chrome está bien',
+        'mi navegador si funciona', 'mi navegador sí funciona',
+    )
+    _RETRY_DONE_TOKENS: tuple[str, ...] = (
+        'ya lo hice', 'ya lo hise', 'ya complete', 'ya completé',
+        'ya pase la verificacion', 'ya pasé la verificación',
+        'ya verifique', 'ya verifiqué', 'ya esta listo', 'ya está listo',
+        'ya lo resolvi', 'ya lo resolví', 'done', 'i did it',
+        'ya pase el captcha', 'ya pasé el captcha',
+    )
+    # P0.72: user delegates the action back to IABV — "do it yourself".
+    # IABV must NOT fall to local LLM; it opens a governed browser window.
+    _DO_IT_YOURSELF_TOKENS: tuple[str, ...] = (
+        'hazlo tu', 'hazlo tú', 'hazlo solo', 'hazlo tu mismo', 'hazlo tú mismo',
+        'abre la ventana gobernada', 'abre una ventana gobernada',
+        'ventana gobernada', 'abre tu la ventana', 'ábrela tú', 'abrela tu',
+        'usa tu navegador', 'usa tu propio chrome',
+        'encargate tu', 'encárgate tú', 'encargate de eso', 'encárgate de eso',
+        'do it yourself', 'open it yourself', 'open the governed window',
+    )
+
+    @staticmethod
+    def _classify_incident_followup_intent(
+        message: str,
+        active_incident: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Classify user intent relative to an active incident frame.
+
+        Returns ``{'intent': <str>, 'score': <float>, 'tokens_matched': [...]}``
+        where intent is one of: help_offer, show_problem, visibility_dispute,
+        profile_mismatch, retry_done, new_request, unrelated.
+        """
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel as _Cls
+
+        lowered = message.strip().lower()
+        scores: dict[str, float] = {
+            'help_offer': 0.0,
+            'show_problem': 0.0,
+            'visibility_dispute': 0.0,
+            'profile_mismatch': 0.0,
+            'retry_done': 0.0,
+            'do_it_yourself': 0.0,
+        }
+        matched: dict[str, list[str]] = {k: [] for k in scores}
+
+        token_map: dict[str, tuple[str, ...]] = {
+            'help_offer': _Cls._HELP_OFFER_TOKENS,
+            'show_problem': _Cls._SHOW_PROBLEM_TOKENS,
+            'visibility_dispute': _Cls._VISIBILITY_DISPUTE_TOKENS,
+            'profile_mismatch': _Cls._PROFILE_MISMATCH_TOKENS,
+            'retry_done': _Cls._RETRY_DONE_TOKENS,
+            'do_it_yourself': _Cls._DO_IT_YOURSELF_TOKENS,
+        }
+
+        for intent_name, tokens in token_map.items():
+            for tok in tokens:
+                if tok in lowered:
+                    scores[intent_name] += 1.0
+                    matched[intent_name].append(tok)
+
+        # Boost scores for contextual signals
+        has_deictic = any(d in lowered for d in (
+            'eso', 'ese', 'ahi', 'ahí', 'esa ventana', 'ese problema',
+        ))
+        assistant_ref = any(a in lowered for a in (
+            'chatgpt', 'chat gpt', 'chrome', 'navegador', 'ventana', 'browser',
+        ))
+
+        if has_deictic:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.3
+        if assistant_ref:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.2
+
+        # Recency boost: more recent incidents get stronger classification
+        age = time.time() - active_incident.get('created_at', 0)
+        if age < 120:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.3
+        elif age < 300:
+            for k in scores:
+                if scores[k] > 0:
+                    scores[k] += 0.1
+
+        best_intent = max(scores, key=lambda k: scores[k])
+        best_score = scores[best_intent]
+
+        if best_score < 0.5:
+            return {'intent': 'unrelated', 'score': 0.0, 'tokens_matched': []}
+
+        return {
+            'intent': best_intent,
+            'score': round(best_score, 2),
+            'tokens_matched': matched[best_intent],
+        }
+
+    def _try_handle_incident_followup(self, message: str) -> bool:
+        """P0.37: Handle user messages in context of an active incident frame.
+
+        This catches help-offer, show-problem, visibility-dispute, and
+        profile-mismatch intents that the older pattern-based handlers
+        miss, preventing them from falling to local chat.
+        """
+        incident = self._get_active_incident()
+        if not incident:
+            return False
+
+        classification = self._classify_incident_followup_intent(message, incident)
+        intent = classification['intent']
+        if intent == 'unrelated':
+            return False
+
+        # Trace the classification
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'incident_followup_intent_classified',
+                incident_id=incident.get('incident_id', ''),
+                intent=intent,
+                score=classification['score'],
+                block_type=incident.get('block_type', ''),
+                terminal_state=incident.get('terminal_state', ''),
+            )
+        except Exception:
+            tracer = None
+
+        # Dispatch to action
+        action_taken = 'none'
+        response_text = ''
+
+        assistant_title = incident.get('assistant_title', 'Asistente externo')
+        block_type = incident.get('block_type', '')
+        profile_label = incident.get('profile_label', '')
+        user_help = incident.get('user_help_needed', '')
+
+        if intent == 'help_offer':
+            response_text = self._build_incident_help_response(incident)
+            action_taken = 'explained_help_needed'
+
+        elif intent == 'show_problem':
+            # P0.72: user offered help → governed visible fallback is allowed.
+            window_opened = self._try_focus_incident_window(incident)
+            action_taken = 'window_open_attempted'
+            # P0.40 Task E: record learning note when user requests window
+            self._record_show_window_learning(incident)
+            try:
+                if tracer:
+                    tracer.trace_visible_fallback(
+                        'requested_by_user',
+                        assistant_kind=incident.get('assistant_kind', ''),
+                        reason='show_problem_intent',
+                        target_available=bool(window_opened),
+                    )
+            except Exception:
+                pass
+            if window_opened:
+                response_text = (
+                    f'Enfoque la ventana del perfil puente ({profile_label}). '
+                    f'Lo que yo veo: {block_type}. '
+                    f'Lo que necesito de ti: {user_help} '
+                    'Cuando lo hagas, escribe "ya lo hice".'
+                )
+            else:
+                # P0.72 Task F: no observable window → security_window_unbound,
+                # and instead of asking the user to hunt for a window, offer to
+                # open a governed window ourselves (UNA SOLA VENTANA).
+                try:
+                    if tracer:
+                        tracer.trace_security_window_unbound(
+                            incident_id=incident.get('incident_id', ''),
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            profile_label=profile_label,
+                            reason='no_hwnd_or_observable_tab',
+                        )
+                        tracer.trace_visible_fallback(
+                            'blocked_no_target',
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            reason='security_window_unbound',
+                            target_available=False,
+                        )
+                        tracer.trace_governed_browser_session(
+                            'offered',
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            reason='security_window_unbound',
+                            human_login_required=True,
+                        )
+                except Exception:
+                    pass
+                response_text = self._format_human_assist_message(
+                    sees=f'{assistant_title} en verificación de seguridad ({block_type}) en el perfil puente ({profile_label}).',
+                    cannot_verify='no puedo identificar una ventana visible enlazada a esa verificación (sin hwnd/tab observable).',
+                    needs_from_you='que completes la verificación en la ventana que abriré, y luego escribas "ya lo hice".',
+                    action_now=self._GOVERNED_LAUNCH_OFFER,
+                )
+                action_taken = 'security_window_unbound_offered_governed_launch'
+
+        elif intent == 'visibility_dispute':
+            response_text = (
+                f'Es normal que tu Chrome funcione pero IABV no pueda usarlo. '
+                f'IABV usa un perfil aislado ({profile_label}) que no comparte '
+                f'tu sesion de {assistant_title}. '
+                'Por eso tu ves todo bien pero IABV ve verificacion de seguridad. '
+                'Opciones: (1) completar verificacion en la ventana puente de IABV, '
+                '(2) escribir "usar mi chrome" para que IABV use tu Chrome via CDP, '
+                '(3) copiar la respuesta y pegarla aqui.'
+            )
+            action_taken = 'explained_profile_difference'
+
+        elif intent == 'profile_mismatch':
+            cdp_available = incident.get('cdp_available', False)
+            if cdp_available:
+                response_text = (
+                    'Perfecto — tu Chrome tiene sesion activa pero IABV usa un perfil aislado. '
+                    'Escribe "usar mi chrome" y IABV usara tu Chrome normal via CDP '
+                    'sin leer cookies ni tokens. '
+                    'Eso deberia resolver el bloqueo.'
+                )
+            else:
+                response_text = (
+                    'Tu Chrome tiene sesion pero IABV usa un perfil aislado diferente. '
+                    'No necesitas abrir nada manualmente: '
+                    + self._GOVERNED_LAUNCH_OFFER
+                )
+                try:
+                    if tracer:
+                        tracer.trace_governed_browser_session(
+                            'offered',
+                            assistant_kind=incident.get('assistant_kind', ''),
+                            reason='profile_mismatch_cdp_unavailable',
+                            human_login_required=True,
+                        )
+                except Exception:
+                    pass
+            action_taken = 'offered_cdp_bridge'
+
+        elif intent == 'do_it_yourself':
+            # P0.72 Tasks C+D: user delegates the action to IABV. Open a
+            # governed browser window ourselves — never a terminal command.
+            launch_target = (
+                incident.get('launch_target')
+                or incident.get('target_window_title')
+                or 'https://chatgpt.com/'
+            )
+            if not str(launch_target).startswith('http'):
+                launch_target = 'https://chatgpt.com/'
+            launch = self._launch_governed_browser_session(
+                launch_target=str(launch_target),
+                assistant_kind=incident.get('assistant_kind', 'chatgpt'),
+            )
+            if launch.get('launched'):
+                response_text = self._format_human_assist_message(
+                    sees=f'{assistant_title} requiere verificación de seguridad que el perfil aislado no puede pasar solo.',
+                    cannot_verify='no puedo resolver el captcha/login por ti ni leer tu sesión normal.',
+                    needs_from_you='inicia sesión y completa la verificación en la ventana gobernada que acabo de abrir; luego escribe "ya lo hice".',
+                    action_now=(
+                        'Abrí una ventana gobernada de Chrome (perfil propio de IABV, '
+                        f'con depuración en {launch.get("cdp_url", "")}). '
+                        'Reintentaré la consulta por esa sesión cuando confirmes.'
+                    ),
+                )
+                action_taken = 'governed_browser_session_launched'
+            else:
+                response_text = self._format_human_assist_message(
+                    sees=f'{assistant_title} requiere verificación de seguridad.',
+                    cannot_verify=(
+                        'no pude abrir la ventana gobernada automáticamente '
+                        f'({launch.get("error", "desconocido")}).'
+                    ),
+                    needs_from_you='dime si tienes Chrome instalado, o pega aquí la respuesta de ' + assistant_title + '.',
+                    action_now='Puedo reintentar abrir la ventana gobernada si lo confirmas.',
+                )
+                action_taken = 'governed_browser_session_launch_failed'
+
+        elif intent == 'retry_done':
+            # Delegate to existing retest handler
+            if self._try_handle_security_verification_retest(message):
+                action_taken = 'retest_delegated'
+                try:
+                    if tracer:
+                        tracer.trace(
+                            'incident_followup_retest_started',
+                            incident_id=incident.get('incident_id', ''),
+                        )
+                except Exception:
+                    pass
+                return True
+            response_text = (
+                'No puedo ejecutar un retest ahora. '
+                f'Verificacion necesaria: {user_help}'
+            )
+            action_taken = 'retest_unavailable'
+
+        # Trace the action selected
+        try:
+            if tracer:
+                tracer.trace(
+                    'incident_followup_action_selected',
+                    incident_id=incident.get('incident_id', ''),
+                    intent=intent,
+                    action_taken=action_taken,
+                )
+                # P0.72: structured human-assist messages are single-window safe.
+                if response_text and response_text.startswith('IABV ve:'):
+                    tracer.trace_human_assist_bridge_message(
+                        block_type=incident.get('block_type', ''),
+                        action_offered=action_taken,
+                        cdp_available=bool(incident.get('cdp_available', False)),
+                        single_window_safe=True,
+                    )
+        except Exception:
+            pass
+
+        if response_text:
+            self._latest_response_text = response_text
+            self._latest_response_meta = f'incident_followup: {intent}/{action_taken}'
+            self._busy_label = ''
+            self._working = False
+            self._append_message(
+                'assistant', 'IABV', response_text,
+                f'incident_followup_{intent}',
+                reasoning_path=f'incident_followup_{intent}',
+                evidence_tag='observed',
+            )
+            self._set_live_status('idle')
+            self._clear_autonomy_activity_override()
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+
+        return True
+
+    def _build_incident_help_response(self, incident: dict[str, Any]) -> str:
+        """Build a structured help response for the active incident."""
+        block_type = incident.get('block_type', 'unknown')
+        assistant_title = incident.get('assistant_title', 'Asistente externo')
+        profile_label = incident.get('profile_label', '')
+        user_help = incident.get('user_help_needed', '')
+        actions = incident.get('available_actions', [])
+
+        lines = [
+            f'El problema esta en la consulta a {assistant_title}.',
+            f'Lo que yo veo: {block_type} en el perfil {profile_label}.',
+            f'Lo que necesito de ti: {user_help}',
+        ]
+        if 'switch_to_user_chrome_cdp' in actions:
+            lines.append(
+                'Opcion rapida: escribe "usar mi chrome" para usar tu Chrome normal.'
+            )
+        if 'show_problem_window' in actions:
+            lines.append(
+                'Puedo intentar abrir/enfocar la ventana del perfil puente '
+                'si escribes "ábreme la ventana".'
+            )
+        lines.append('Cuando lo hayas resuelto, escribe "ya lo hice".')
+        return ' '.join(lines)
+
+    def _try_focus_incident_window(self, incident: dict[str, Any]) -> bool:
+        """P0.40 Task D: Try to bring the incident browser window to the front.
+
+        Priority:
+        1. hwnd stored in incident frame -> Win32 ShowWindow/SetForegroundWindow
+        2. WorldModelService active_windows -> search by title
+        3. Isolated browser profile -> launch/focus via profile path
+        4. CDP available + user chose "usar mi chrome" -> list/select tab
+        5. None possible -> UNRESOLVED with clear next human action
+
+        Does NOT automate login or read cookies/tokens.
+        """
+        incident_id = incident.get('incident_id', '')
+        profile_label = incident.get('profile_label', '')
+        focus_method = 'none'
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'incident_problem_window_focus_attempted',
+                incident_id=incident_id,
+                profile_label=profile_label,
+            )
+        except Exception:
+            tracer = None
+
+        target_hwnd: int | None = None
+
+        # 1. Try hwnd stored directly in the incident frame
+        stored_hwnd = incident.get('hwnd')
+        if stored_hwnd is not None:
+            try:
+                target_hwnd = int(stored_hwnd)
+            except (ValueError, TypeError):
+                pass
+
+        # 2. If no stored hwnd, search WorldModelService.current_model()
+        if target_hwnd is None:
+            try:
+                snapshot = self._current_world_model()
+                for win in (snapshot.active_windows or []):
+                    title = str(win.title or '').lower()
+                    if 'chatgpt' in title or 'chrome' in title or 'verificat' in title:
+                        win_hwnd = win.metadata.get('hwnd')
+                        if win_hwnd is not None:
+                            target_hwnd = int(win_hwnd)
+                            break
+            except Exception:
+                pass
+
+        # 3. Attempt focus via Win32 API
+        if target_hwnd is not None:
+            try:
+                import ctypes
+                SW_RESTORE = 9
+                ctypes.windll.user32.ShowWindow(target_hwnd, SW_RESTORE)
+                ctypes.windll.user32.SetForegroundWindow(target_hwnd)
+                focus_method = 'win32_hwnd'
+                self._trace_window_focus_result(tracer, incident_id, focus_method, True)
+                return True
+            except Exception:
+                pass
+
+        # 4. Try to open isolated browser profile if path is known
+        browser_profile_path = incident.get('browser_profile_path', '')
+        if browser_profile_path and not target_hwnd:
+            try:
+                import subprocess
+                import os
+                chrome_exe = os.environ.get('IABV_CHROME_PATH', 'chrome.exe')
+                subprocess.Popen(
+                    [chrome_exe, f'--user-data-dir={browser_profile_path}'],
+                    creationflags=getattr(subprocess, 'DETACHED_PROCESS', 0),
+                )
+                focus_method = 'browser_profile_launch'
+                self._trace_window_focus_result(tracer, incident_id, focus_method, True)
+                return True
+            except Exception:
+                pass
+
+        # 5. CDP available — list tabs if user chose "usar mi chrome"
+        import os as _os
+        if _os.environ.get('IABV_PREFER_CDP_SESSION') == '1':
+            try:
+                cdp_available = self._detect_cdp_available()
+                if cdp_available:
+                    focus_method = 'cdp_tab_list'
+                    self._trace_window_focus_result(tracer, incident_id, focus_method, True)
+                    return True
+            except Exception:
+                pass
+
+        # 6. UNRESOLVED — no hwnd, no profile, no CDP
+        focus_method = 'unresolved'
+        self._trace_window_focus_result(tracer, incident_id, focus_method, False)
+        try:
+            self._resolve_incident_frame('unresolved')
+        except Exception:
+            pass
+        return False
+
+    def _trace_window_focus_result(
+        self,
+        tracer: Any,
+        incident_id: str,
+        method: str,
+        success: bool,
+    ) -> None:
+        """P0.40 Task G: trace window focus result."""
+        try:
+            if tracer is not None:
+                tracer.trace(
+                    'incident_problem_window_focus_result',
+                    incident_id=incident_id,
+                    method=method,
+                    success=success,
+                )
+        except Exception:
+            pass
+
+    def _record_show_window_learning(self, incident: dict[str, Any]) -> None:
+        """P0.40 Task E: record a learning note + PortableContext policy.
+
+        When the user explicitly asks to see the problem window, record
+        the pattern so OSES and PortableContext remember:
+        'cuando haya security verification, mostrar/focalizar ventana
+        antes de explicar genericamente'.
+        """
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            tracer.trace(
+                'incident_human_assistance_requested',
+                incident_id=incident.get('incident_id', ''),
+                block_type=incident.get('block_type', ''),
+                user_action='show_problem_window_requested',
+                policy='when_security_verification_show_window_first',
+            )
+        except Exception:
+            pass
+
+    # ══════════════════════════════════════════════════════════════════
+    # P0.6 — Shared Reality Remediation / Window Target Recovery
+    # ══════════════════════════════════════════════════════════════════
+
+    def _assess_visual_remediation(
+        self,
+        *,
+        target_window: dict[str, Any] | None,
+        capture_meta: dict[str, Any] | None,
+        capture_state: dict[str, Any],
+        browser_profile: str = '',
+    ) -> dict[str, Any]:
+        """Evaluate whether a failed visual capture can be remediated.
+
+        Returns a dict with:
+        - status: no_action_needed | remediation_available
+                  | needs_user_selection | unresolved
+        - reason, target_window_title, rect, proposed_action,
+          safe_to_auto_try, user_message
+        """
+        tw = target_window or {}
+        cm = capture_meta or {}
+        title = str(tw.get('title') or '').strip()
+        hwnd = tw.get('hwnd')
+        rect = tw.get('rect')
+        reason = capture_state.get('reason', 'unknown')
+
+        # Visible window + useful capture → nothing to do
+        is_low_info = bool(capture_state.get('low_information'))
+        if capture_state.get('captureable') and not is_low_info:
+            return {
+                'status': 'no_action_needed',
+                'reason': 'capture_valid',
+                'target_window_title': title or 'unknown',
+                'rect': rect,
+                'proposed_action': 'none',
+                'safe_to_auto_try': False,
+                'user_message': '',
+            }
+
+        # Normalize reason: when window is captureable but image is black,
+        # the capture_state reason is 'ok' — override for remediation.
+        if is_low_info and reason == 'ok':
+            reason = 'low_information'
+
+        # Classify remediable scenarios
+        proposed_action = 'request_user_restore'
+        safe_to_auto = False
+        user_msg = ''
+
+        if reason == 'target_window_minimized_or_offscreen':
+            if hwnd and isinstance(hwnd, int) and hwnd > 0:
+                proposed_action = 'restore_window_by_hwnd'
+                safe_to_auto = True
+                user_msg = (
+                    f'La ventana "{title or "objetivo"}" esta minimizada/offscreen. '
+                    f'Intentare restaurarla automaticamente antes de recapturar.'
+                )
+            else:
+                proposed_action = 'request_user_restore'
+                safe_to_auto = False
+                user_msg = (
+                    f'La ventana objetivo esta minimizada/offscreen pero no tengo un '
+                    f'hwnd valido para restaurarla. Restaura la ventana manualmente y reintenta.'
+                )
+            status = 'remediation_available'
+
+        elif reason in ('low_information_pixels', 'low_information'):
+            blank_prob = float(cm.get('blank_probability') or 0.0)
+            if hwnd and isinstance(hwnd, int) and hwnd > 0:
+                proposed_action = 'restore_and_recapture'
+                safe_to_auto = True
+                user_msg = (
+                    f'La captura de "{title or "la ventana"}" salio negra '
+                    f'(blank_probability={blank_prob:.2f}). Intentare restaurar y recapturar.'
+                )
+            else:
+                proposed_action = 'request_user_restore'
+                safe_to_auto = False
+                user_msg = (
+                    f'La captura salio negra (blank_probability={blank_prob:.2f}) '
+                    f'y no tengo hwnd valido. Restaura la ventana y reintenta.'
+                )
+            status = 'remediation_available'
+
+        elif reason == 'no_target_window':
+            proposed_action = 'request_user_selection'
+            safe_to_auto = False
+            user_msg = (
+                'No encontre la ventana objetivo. Selecciona la ventana correcta '
+                'o permite usar tu navegador visible.'
+            )
+            status = 'needs_user_selection'
+
+        else:
+            proposed_action = 'request_user_help'
+            safe_to_auto = False
+            user_msg = (
+                f'No pude determinar el estado de la ventana (razon: {reason}). '
+                'Verifica que la herramienta este visible y reintenta.'
+            )
+            status = 'unresolved'
+
+        # Detect controlled session mismatch
+        bp = browser_profile or str(tw.get('title') or '')
+        bp_lower = bp.lower()
+        if any(kw in bp_lower for kw in ('chrome for testing', 'aislada', 'controlada')):
+            if proposed_action == 'request_user_help':
+                proposed_action = 'recommend_browser_selector'
+            user_msg += (
+                ' Tu navegador visible puede estar funcionando, pero IABV '
+                'estaba mirando otra sesion. Puedes autorizar usar tu navegador visible.'
+            )
+
+        return {
+            'status': status,
+            'reason': reason,
+            'target_window_title': title or 'unknown',
+            'hwnd': hwnd,
+            'rect': rect,
+            'proposed_action': proposed_action,
+            'safe_to_auto_try': safe_to_auto,
+            'user_message': user_msg,
+        }
+
+    def _attempt_safe_remediation(
+        self,
+        assessment: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Attempt a safe, reversible remediation action.
+
+        On a real Windows desktop, calls ShowWindow(hwnd, SW_RESTORE) and
+        SetForegroundWindow(hwnd) to bring a minimized/offscreen window back.
+        Success is only True if the Win32 calls were made with a valid hwnd.
+
+        Returns dict with action_taken, success, detail.
+        """
+        if not assessment.get('safe_to_auto_try'):
+            return {
+                'action_taken': 'none',
+                'success': False,
+                'detail': 'No safe auto-remediation available; user action required.',
+            }
+
+        proposed = assessment.get('proposed_action', '')
+        if proposed not in ('restore_window_by_hwnd', 'restore_and_recapture'):
+            return {
+                'action_taken': 'none',
+                'success': False,
+                'detail': f'Action "{proposed}" is not auto-remediable.',
+            }
+
+        hwnd = assessment.get('hwnd')
+        if not hwnd or not isinstance(hwnd, int) or hwnd <= 0:
+            return {
+                'action_taken': 'none',
+                'success': False,
+                'detail': 'hwnd is missing or invalid; cannot attempt Win32 restore.',
+            }
+
+        # Attempt Win32 window restore with real hwnd
+        try:
+            import ctypes
+            SW_RESTORE = 9
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            show_result = user32.ShowWindow(hwnd, SW_RESTORE)
+            fg_result = user32.SetForegroundWindow(hwnd)
+            return {
+                'action_taken': proposed,
+                'success': True,
+                'detail': (
+                    f'Win32 ShowWindow({hwnd}, SW_RESTORE)={show_result}, '
+                    f'SetForegroundWindow({hwnd})={fg_result}.'
+                ),
+            }
+        except (AttributeError, OSError):
+            # Not on Windows or ctypes.windll not available
+            return {
+                'action_taken': proposed,
+                'success': False,
+                'detail': 'Win32 API not available (not running on Windows desktop). '
+                          'Remediation flagged for user handoff.',
+            }
+
+    def _attempt_post_remediation_recapture(
+        self,
+        *,
+        remediation_result: dict[str, Any],
+        assessment: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Attempt ONE recapture after a successful remediation.
+
+        Conditions (all must be true):
+        - remediation_result['success'] is True
+        - hwnd is a valid positive int
+        - proposed_action was restore_window_by_hwnd or restore_and_recapture
+
+        Uses PIL ImageGrab.grab(bbox=rect) if rect is available and valid,
+        otherwise falls back to full-screen grab. The captured image is
+        analysed in-memory (no disk write) for blank_probability.
+
+        Returns dict with:
+        - recapture_attempted: bool
+        - recapture_status: 'improved' | 'still_low_information' | 'skipped' | 'error'
+        - capture_useful_after: bool | None
+        - blank_probability_after: float | None
+        - recapture_unresolved: list[str]
+        - detail: str
+        """
+        noop: dict[str, Any] = {
+            'recapture_attempted': False,
+            'recapture_status': 'skipped',
+            'capture_useful_after': None,
+            'blank_probability_after': None,
+            'recapture_unresolved': [],
+            'detail': '',
+        }
+
+        if not remediation_result.get('success'):
+            noop['detail'] = 'remediation_success is False; skipping recapture.'
+            return noop
+
+        hwnd = assessment.get('hwnd')
+        if not hwnd or not isinstance(hwnd, int) or hwnd <= 0:
+            noop['detail'] = 'hwnd is missing or invalid; skipping recapture.'
+            noop['recapture_unresolved'] = [
+                'UNRESOLVED:visual_remediation_recapture_invalid_hwnd',
+            ]
+            return noop
+
+        proposed = assessment.get('proposed_action', '')
+        if proposed not in ('restore_window_by_hwnd', 'restore_and_recapture'):
+            noop['detail'] = (
+                f'proposed_action "{proposed}" does not qualify for recapture.'
+            )
+            return noop
+
+        # Attempt recapture via PIL ImageGrab
+        try:
+            from PIL import ImageGrab  # type: ignore[import-untyped]
+        except ImportError:
+            noop['detail'] = 'PIL ImageGrab not available; recapture UNRESOLVED.'
+            noop['recapture_unresolved'] = [
+                'UNRESOLVED:visual_remediation_recapture_no_imagegrab',
+            ]
+            return noop
+
+        rect = assessment.get('rect')
+        try:
+            if rect and isinstance(rect, (list, tuple)) and len(rect) >= 4:
+                left, top, right, bottom = (
+                    int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]),
+                )
+                if left > -30000 and top > -30000:
+                    image = ImageGrab.grab(bbox=(left, top, right, bottom))
+                else:
+                    image = ImageGrab.grab(all_screens=True)
+            else:
+                image = ImageGrab.grab(all_screens=True)
+        except Exception as exc:
+            return {
+                'recapture_attempted': True,
+                'recapture_status': 'error',
+                'capture_useful_after': None,
+                'blank_probability_after': None,
+                'recapture_unresolved': [
+                    'UNRESOLVED:visual_remediation_recapture_grab_failed',
+                ],
+                'detail': f'ImageGrab.grab raised: {type(exc).__name__}',
+            }
+
+        # Analyse the recaptured image in-memory without optional numerical
+        # dependencies.  ``ImageGrab`` returns a PIL image, whose histogram and
+        # extrema are enough for the same low-information gate used elsewhere.
+        try:
+            rgb = image.convert('RGB')
+            histogram = list(rgb.histogram())
+            total_values = max(sum(histogram), 1)
+            blank_values = (
+                sum(histogram[0:5])
+                + sum(histogram[256:261])
+                + sum(histogram[512:517])
+            )
+            blank_probability = round(blank_values / total_values, 4)
+            extrema = rgb.getextrema()
+            mins = [int(pair[0]) for pair in extrema]
+            maxs = [int(pair[1]) for pair in extrema]
+            dynamic_range = max(maxs) - min(mins)
+            colors = rgb.getcolors(maxcolors=100000)
+            unique_colors = 99999 if colors is None else len(colors)
+        except Exception:
+            return {
+                'recapture_attempted': True,
+                'recapture_status': 'error',
+                'capture_useful_after': None,
+                'blank_probability_after': None,
+                'recapture_unresolved': [
+                    'UNRESOLVED:visual_remediation_recapture_analysis_failed',
+                ],
+                'detail': 'Recapture completed but image analysis failed.',
+            }
+
+        recapture_meta: dict[str, Any] = {
+            'blank_probability': blank_probability,
+            'dynamic_range': dynamic_range,
+            'unique_color_count': unique_colors,
+            'useful': True,
+        }
+        is_low = self._capture_is_low_information(recapture_meta)
+        if is_low:
+            recapture_meta['useful'] = False
+            return {
+                'recapture_attempted': True,
+                'recapture_status': 'still_low_information',
+                'capture_useful_after': False,
+                'blank_probability_after': blank_probability,
+                'recapture_unresolved': [
+                    'UNRESOLVED:visual_remediation_recapture_still_low_information',
+                ],
+                'detail': (
+                    f'Recapture completed but image is still low-information '
+                    f'(blank_probability={blank_probability}).'
+                ),
+            }
+
+        return {
+            'recapture_attempted': True,
+            'recapture_status': 'improved',
+            'capture_useful_after': True,
+            'blank_probability_after': blank_probability,
+            'recapture_unresolved': [],
+            'detail': (
+                f'Recapture improved: blank_probability={blank_probability}, '
+                f'dynamic_range={dynamic_range}, unique_colors={unique_colors}.'
+            ),
+        }
+
+    # ------------------------------------------------------------------
+    # P0.9: post-recapture response verification helpers
+    # ------------------------------------------------------------------
+
+    def _build_post_recapture_response_proof(
+        self,
+        *,
+        response_captured: bool,
+        response_capture_pending: bool,
+        response_capture_mode: str,
+        assistant_title: str,
+        target_window: dict[str, Any] | None,
+        assessment: dict[str, Any],
+        capture_useful_before: bool,
+        capture_useful_after: bool | None,
+        recapture: dict[str, Any],
+        evidence_path: str = '',
+    ) -> dict[str, Any]:
+        """Build compact proof dict differentiating window-observable
+        from response-captured after a post-remediation recapture.
+
+        Fields exposed:
+        - target_window_title, hwnd, rect
+        - capture_useful_before, capture_useful_after
+        - response_captured, response_capture_pending
+        - response_capture_mode
+        - evidence_path (if exists)
+        - window_observable (always True here — called only when recapture improved)
+        - status: 'response_captured' | 'response_pending' | 'response_not_captured'
+        """
+        tw = target_window or {}
+        hwnd = assessment.get('hwnd') or tw.get('hwnd')
+        rect = assessment.get('rect') or tw.get('rect')
+        title = assessment.get('target_window_title') or tw.get('title') or assistant_title
+
+        is_pending = (
+            response_capture_pending
+            or response_capture_mode in {'clipboard_capture', 'dom_capture', 'browser_dom'}
+        ) and not response_captured
+
+        if response_captured:
+            status = 'response_captured'
+        elif is_pending:
+            status = 'response_pending'
+        else:
+            status = 'response_not_captured'
+
+        safe_evidence_path: str | None = None
+        if evidence_path:
+            try:
+                from pathlib import PureWindowsPath
+                safe_evidence_path = PureWindowsPath(str(evidence_path)).name or 'available'
+            except Exception:
+                safe_evidence_path = 'available'
+
+        return {
+            'target_window_title': title,
+            'hwnd': hwnd,
+            'rect': rect,
+            'capture_useful_before': capture_useful_before,
+            'capture_useful_after': bool(capture_useful_after),
+            'response_captured': response_captured,
+            'response_capture_pending': is_pending,
+            'response_capture_mode': response_capture_mode,
+            'evidence_path': safe_evidence_path,
+            'window_observable': True,
+            'status': status,
+        }
+
+    def _post_recapture_response_pending_message(
+        self,
+        *,
+        assistant_title: str,
+        response_proof: dict[str, Any],
+    ) -> str:
+        """Build user-facing guidance when window is observable but response
+        was NOT captured."""
+        title = response_proof.get('target_window_title') or assistant_title
+        parts: list[str] = []
+        parts.append(
+            f'La ventana de {assistant_title} fue restaurada y la captura visual mejoro.'
+        )
+        parts.append(
+            f'Sin embargo, la respuesta externa de {title} aun no fue capturada por IABV.'
+        )
+        mode = response_proof.get('response_capture_mode', '')
+        if response_proof.get('response_capture_pending'):
+            if mode in ('dom_capture', 'browser_dom'):
+                parts.append(
+                    'IABV intentara capturar la respuesta automaticamente desde la sesion aislada.'
+                )
+            elif mode == 'clipboard_capture':
+                parts.append(
+                    'IABV intentara capturar la respuesta desde el portapapeles.'
+                )
+            else:
+                parts.append(
+                    'La captura de respuesta queda pendiente.'
+                )
+        else:
+            parts.append(
+                f'Para completar: abre {title}, copia la respuesta y pegala en IABV, '
+                f'o permite que IABV reintente la captura.'
+            )
+        return ' '.join(parts)
+
+    def _trace_post_recapture_response_verification(
+        self,
+        *,
+        assistant_kind: str,
+        response_proof: dict[str, Any],
+    ) -> None:
+        """Log a post_recapture_response_verification event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'post_recapture_response_verification',
+                assistant_kind=assistant_kind,
+                target_window_title=response_proof.get('target_window_title', ''),
+                hwnd_present=response_proof.get('hwnd') is not None and response_proof.get('hwnd') != 0,
+                window_observable=response_proof.get('window_observable', False),
+                response_captured=response_proof.get('response_captured', False),
+                response_capture_pending=response_proof.get('response_capture_pending', False),
+                response_capture_mode=response_proof.get('response_capture_mode', ''),
+                status=response_proof.get('status', ''),
+                capture_useful_before=response_proof.get('capture_useful_before', False),
+                capture_useful_after=response_proof.get('capture_useful_after', False),
+            )
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # P0.10: post-recapture response capture retry
+    # ------------------------------------------------------------------
+
+    def _compact_response_retry_reason(self, reason: Any) -> str:
+        """Keep retry reasons useful without leaking local paths or emails."""
+        text = str(reason or '').strip()
+        if not text:
+            return ''
+        text = re.sub(
+            r'[A-Za-z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*([^\\/:*?"<>|\r\n]+)',
+            r'...\\\1',
+            text,
+        )
+        text = re.sub(r'/(?:[^/\s]+/)+([^/\s]+)', r'.../\1', text)
+        text = re.sub(r'[\w.+-]+@[\w.-]+', '[email]', text)
+        return text[:240]
+
+    def _attempt_post_recapture_response_retry(
+        self,
+        *,
+        consultation_metadata: dict[str, Any],
+        payload: dict[str, Any],
+        assistant_title: str,
+        assistant_kind: str,
+        dispatch_id: str,
+    ) -> dict[str, Any]:
+        """Attempt ONE response capture retry via reingest_existing_session.
+
+        Uses AutonomousEvolutionService.reingest_existing_session() which
+        re-captures from the existing browser session without re-sending
+        the original consultation.  Returns a dict with:
+        - retry_attempted: bool
+        - response_captured: bool
+        - retry_status: 'success' | 'no_response' | 'error' | 'unavailable'
+        - reason: str
+        """
+        self._trace_response_capture_retry(
+            event='response_capture_retry_started',
+            assistant_kind=assistant_kind,
+            dispatch_id=dispatch_id,
+            status='started',
+            reason='',
+        )
+        service = getattr(self, 'autonomous_evolution_service', None)
+        if service is None:
+            result = {
+                'retry_attempted': False,
+                'response_captured': False,
+                'retry_status': 'unavailable',
+                'reason': 'autonomous_evolution_service_not_available',
+            }
+            self._trace_response_capture_retry(
+                event='response_capture_retry_result',
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status='unavailable',
+                reason='service_not_available',
+            )
+            return result
+
+        existing_consultation = {
+            'selected_tool_id': str(consultation_metadata.get('selected_tool_id') or ''),
+            'assistant_kind': str(consultation_metadata.get('assistant_kind') or assistant_kind),
+            'response_capture_mode': str(consultation_metadata.get('response_capture_mode') or ''),
+            'session_scope': str(consultation_metadata.get('session_scope') or ''),
+            'session_label': str(consultation_metadata.get('session_label') or ''),
+            'session_profile_dir': str(consultation_metadata.get('session_profile_dir') or ''),
+            'thread_key': str(consultation_metadata.get('thread_key') or ''),
+            'thread_title': str(consultation_metadata.get('thread_title') or ''),
+            'isolated_session': bool(consultation_metadata.get('isolated_session')),
+            'site_id': str(consultation_metadata.get('site_id') or ''),
+            'diagnostic_category': str(consultation_metadata.get('diagnostic_category') or ''),
+            'incident_kind': str(consultation_metadata.get('incident_kind') or ''),
+            'pending_issue_id': str(consultation_metadata.get('pending_issue_id') or ''),
+        }
+        user_goal = str(self._last_user_goal or '').strip() or f'respuesta de {assistant_title}'
+
+        executor: ThreadPoolExecutor | None = None
+        try:
+            executor = ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix='ccvm-response-retry',
+            )
+            future = executor.submit(
+                service.reingest_existing_session,
+                existing_consultation=existing_consultation,
+                adaptive_payload=dict(payload),
+                user_goal=user_goal,
+                source=f'post_recapture_retry_{dispatch_id}',
+            )
+            reingest = future.result(
+                timeout=self._POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S,
+            )
+        except FutureTimeoutError:
+            try:
+                future.cancel()  # type: ignore[name-defined]
+            except Exception:
+                pass
+            result = {
+                'retry_attempted': True,
+                'response_captured': False,
+                'retry_status': 'timeout',
+                'reason': 'reingest_timeout',
+            }
+            self._trace_response_capture_retry(
+                event='response_capture_retry_result',
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status='timeout',
+                reason=result['reason'],
+            )
+            return result
+        except Exception as exc:
+            result = {
+                'retry_attempted': True,
+                'response_captured': False,
+                'retry_status': 'error',
+                'reason': f'reingest_exception: {type(exc).__name__}',
+            }
+            self._trace_response_capture_retry(
+                event='response_capture_retry_result',
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status='error',
+                reason=result['reason'],
+            )
+            return result
+        finally:
+            if executor is not None:
+                executor.shutdown(wait=False, cancel_futures=True)
+
+        captured = bool(reingest.get('pre_capture_ingested'))
+        reason = self._compact_response_retry_reason(
+            reingest.get('reason') or ('captured' if captured else 'no_response')
+        )
+        status = 'success' if captured else 'no_response'
+
+        result = {
+            'retry_attempted': True,
+            'response_captured': captured,
+            'retry_status': status,
+            'reason': reason,
+        }
+        self._trace_response_capture_retry(
+            event='response_capture_retry_result',
+            assistant_kind=assistant_kind,
+            dispatch_id=dispatch_id,
+            status=status,
+            reason=reason,
+        )
+        return result
+
+    def _trace_response_capture_retry(
+        self,
+        *,
+        event: str,
+        assistant_kind: str,
+        dispatch_id: str,
+        status: str,
+        reason: str,
+    ) -> None:
+        """Log response_capture_retry_started / _result to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                event,
+                assistant_kind=assistant_kind,
+                dispatch_id=dispatch_id,
+                status=status,
+                reason=reason,
+            )
+        except Exception:
+            pass
+
+    def _trace_visual_remediation_attempted(
+        self,
+        *,
+        assistant_kind: str,
+        target_window_title: str,
+        hwnd: Any,
+        rect: Any,
+        reason: str,
+        proposed_action: str,
+        action_taken: str,
+        result_status: str,
+        capture_useful_before: bool,
+        capture_useful_after: bool | None = None,
+        blank_probability_before: float = 0.0,
+        blank_probability_after: float | None = None,
+        remediation_success: bool | None = None,
+        remediation_detail_code: str = '',
+        recapture_status: str = 'skipped',
+        unresolved: list[str] | None = None,
+    ) -> None:
+        """Log a visual_remediation_attempted event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace(
+                'visual_remediation_attempted',
+                assistant_kind=assistant_kind,
+                target_window_title=target_window_title,
+                hwnd_present=hwnd is not None and hwnd != 0,
+                rect=rect,
+                reason=reason,
+                proposed_action=proposed_action,
+                action_taken=action_taken,
+                result_status=result_status,
+                capture_useful_before=capture_useful_before,
+                capture_useful_after=capture_useful_after,
+                blank_probability_before=blank_probability_before,
+                blank_probability_after=blank_probability_after,
+                remediation_success=remediation_success,
+                remediation_detail_code=remediation_detail_code,
+                recapture_status=recapture_status,
+                unresolved=unresolved or [],
+            )
+        except Exception:
+            pass
+
+    def _remediation_user_message(
+        self,
+        *,
+        assistant_title: str,
+        assessment: dict[str, Any],
+        remediation_result: dict[str, Any],
+    ) -> str:
+        """Build a practical, non-technical message for the user after
+        a remediation attempt."""
+        parts: list[str] = []
+        title = assessment.get('target_window_title', 'la herramienta')
+        parts.append(f'Yo intente capturar: {assistant_title}')
+
+        reason = assessment.get('reason', '')
+        if 'minimized' in reason or 'offscreen' in reason:
+            parts.append(
+                f'La ventana "{title}" estaba minimizada/offscreen o devolvio imagen negra.'
+            )
+        elif 'low_information' in reason:
+            parts.append(f'La captura de "{title}" salio negra o sin informacion util.')
+        elif 'no_target' in reason:
+            parts.append('No encontre la ventana objetivo.')
+        else:
+            parts.append(f'La captura de "{title}" no fue valida ({reason}).')
+
+        action = remediation_result.get('action_taken', 'none')
+        success = remediation_result.get('success', False)
+        if action != 'none' and success:
+            parts.append(
+                'Intente restaurar la ventana automaticamente; necesito reintentar la consulta/captura para verificar.'
+            )
+        elif action != 'none':
+            parts.append(
+                'Intente restaurar la ventana pero no fue posible en este entorno.'
+            )
+
+        parts.append(
+            'Tu navegador visible puede estar funcionando, pero IABV estaba mirando otra sesion.'
+        )
+        parts.append(
+            'Accion recomendada: restaura/selecciona esta ventana o permite usar tu navegador visible.'
+        )
+        parts.append('Puedo reintentar despues de eso.')
+        return '\n'.join(parts)
 
     def _external_state_notice(self, flags: list[str] | None) -> str:
         normalized = canonical_external_state_flags(flags)
@@ -5341,35 +8185,6 @@ class ControlCenterViewModel(QObject):
         cards.extend(self._assistant_tool_cards())
         return cards
 
-    def _refresh_agent_cards_async(self) -> None:
-        self._agent_cards_generation += 1
-        gen = self._agent_cards_generation
-
-        def _bg() -> list[dict[str, str]]:
-            return self._build_agent_cards()
-
-        def _done(fut: Any) -> None:
-            if self._agent_cards_generation != gen:
-                return
-            try:
-                cards = fut.result()
-            except Exception:
-                logger.debug('agent cards bg refresh failed', exc_info=True)
-                return
-            self.agentCardsReady.emit(gen, cards)
-
-        future = self._bg_pool.submit(_bg)
-        future.add_done_callback(_done)
-
-    @Slot(int, object)
-    def _apply_agent_cards(self, gen: int, cards: object) -> None:
-        if self._agent_cards_generation != gen:
-            return
-        if not isinstance(cards, list):
-            return
-        self._agent_cards = [dict(item) for item in cards if isinstance(item, dict)]
-        self.dataChanged.emit()
-
     def _estimate_complexity(self, message: str) -> ComplexityLevel:
         text = message.lower()
         if len(message.split()) >= 24 or any(token in text for token in ['plan', 'estrategia', 'compar', 'analiza a fondo', 'pasos']):
@@ -5500,22 +8315,6 @@ class ControlCenterViewModel(QObject):
         interaction_id = getattr(self, '_active_interaction_id', None)
         if not interaction_id:
             return
-        self._resolve_interaction_by_id(
-            interaction_id,
-            outcome=outcome,
-            provider=provider,
-        )
-
-    def _resolve_interaction_by_id(
-        self,
-        interaction_id: str,
-        *,
-        outcome: str = 'resolved',
-        provider: str = '',
-    ) -> None:
-        """Resolve a specific interaction, even if another chat became active."""
-        if not interaction_id:
-            return
         is_final = outcome in self._FINAL_INTERACTION_OUTCOMES
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         if lifecycle is not None:
@@ -5528,144 +8327,1169 @@ class ControlCenterViewModel(QObject):
             except Exception:
                 pass
         if is_final:
-            self._external_followup_timeout_generation = (
-                int(getattr(self, '_external_followup_timeout_generation', 0)) + 1
-            )
-            if getattr(self, '_active_interaction_id', None) == interaction_id:
-                self._active_interaction_id = None
-                self._interaction_pending_followup_outcome = ''
-                self._interaction_pending_followup_provider = ''
-                watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
-                if watchdog is not None:
-                    watchdog.set_query_pending(False)
-                    watchdog.set_active_interaction(None)
-                self._set_live_status('idle')
+            self._active_interaction_id = None
+            watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
+            if watchdog is not None:
+                watchdog.set_query_pending(False)
+                watchdog.set_active_interaction(None)
+            self._set_live_status('idle')
             self._promote_metacognition_after_resolution()
 
-    def _trace_external_followup(self, kind: str, **data: Any) -> None:
+    # ── Dispatch-id helpers (stale-result guard) ────────────────
+    def _new_dispatch_id(self, task_name: str) -> str:
+        """Create a unique dispatch id for *task_name* and register it."""
+        import uuid
+        did = uuid.uuid4().hex
+        self._active_dispatch_ids[task_name] = did
+        return did
+
+    def _is_dispatch_active(self, task_name: str, dispatch_id: str) -> bool:
+        return self._active_dispatch_ids.get(task_name) == dispatch_id
+
+    def _invalidate_dispatch(self, task_name: str) -> None:
+        self._active_dispatch_ids.pop(task_name, None)
+
+    # ── Runtime audit helpers for dispatch lifecycle events ─────
+    def _trace_dispatch_started(
+        self,
+        *,
+        task_name: str,
+        dispatch_id: str = '',
+        provider: str = '',
+        source: str = '',
+        user_goal_excerpt: str = '',
+        visible_busy_label: str = '',
+    ) -> None:
+        """Log a dispatch started event to RuntimeAuditTracer."""
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            get_runtime_tracer().trace(kind, **data)
+            get_runtime_tracer().trace_dispatch_started(
+                task_name=task_name,
+                dispatch_id=dispatch_id,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
+                provider=provider,
+                source=source,
+                user_goal_excerpt=user_goal_excerpt,
+                visible_busy_label=visible_busy_label,
+            )
         except Exception:
             pass
 
-    def _schedule_external_followup_timeout(
+    def _trace_dispatch_terminal(
         self,
         *,
-        interaction_id: str,
-        outcome: str,
-        provider: str,
+        task_name: str,
+        dispatch_id: str = '',
+        terminal_state: str,
+        provider: str = '',
+        reason: str = '',
+        user_visible_message: bool = True,
     ) -> None:
-        """Arm a safety timeout for non-final external follow-up episodes."""
-        if not interaction_id:
-            return
-        self._external_followup_timeout_generation += 1
-        generation = self._external_followup_timeout_generation
-        timeout_ms = int(getattr(
-            self,
-            '_EXTERNAL_FOLLOWUP_TIMEOUT_MS',
-            ControlCenterViewModel._EXTERNAL_FOLLOWUP_TIMEOUT_MS,
-        ))
-        self._trace_external_followup(
-            'external_followup_timeout_scheduled',
-            interaction_id=interaction_id,
-            outcome=outcome,
-            provider=provider,
-            timeout_ms=timeout_ms,
-            generation=generation,
-        )
-        QTimer.singleShot(
-            timeout_ms,
-            lambda: self._expire_external_followup_if_stale(
-                interaction_id=interaction_id,
-                generation=generation,
-                outcome=outcome,
+        """Log a dispatch terminal event to RuntimeAuditTracer."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_dispatch_terminal(
+                task_name=task_name,
+                dispatch_id=dispatch_id,
+                terminal_state=terminal_state,
+                interaction_id=getattr(self, '_active_interaction_id', '') or '',
                 provider=provider,
-                timeout_ms=timeout_ms,
-            ),
-        )
-
-    def _expire_external_followup_if_stale(
-        self,
-        *,
-        interaction_id: str,
-        generation: int,
-        outcome: str,
-        provider: str,
-        timeout_ms: int,
-    ) -> None:
-        """Close a non-final external episode that never produced a final result."""
-        if generation != getattr(self, '_external_followup_timeout_generation', 0):
-            return
-        lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
-        info: dict[str, Any] | None = None
-        if lifecycle is not None and hasattr(lifecycle, 'interaction_info'):
-            try:
-                info = lifecycle.interaction_info(interaction_id)
-            except Exception:
-                info = None
-        if not info:
-            return
-        is_current = getattr(self, '_active_interaction_id', None) == interaction_id
-        self._trace_external_followup(
-            'external_followup_timeout',
-            interaction_id=interaction_id,
-            previous_outcome=outcome,
-            provider=provider,
-            timeout_ms=timeout_ms,
-            was_current_interaction=is_current,
-        )
-        if is_current:
-            self._interaction_has_pending_followup = False
-            self._interaction_pending_followup_outcome = ''
-            self._interaction_pending_followup_provider = ''
-            self._release_visible_query_wait(reason=f'external_followup_timeout:{outcome}')
-            self._append_message(
-                'assistant',
-                'IABV',
-                (
-                    'No recibí una respuesta final de la consulta externa dentro '
-                    'del tiempo esperado. La dejo cerrada como bloqueada para '
-                    'que la interfaz no quede en consultando.'
-                ),
-                f'{provider or "asistente externo"} | timeout {int(timeout_ms / 1000)}s',
-                reasoning_path='external_followup_timeout',
-                evidence_tag='observed',
-                trace_metadata={'interaction_id': interaction_id, 'previous_outcome': outcome},
+                reason=reason,
+                user_visible_message_present=user_visible_message,
             )
-            self._busy_label = 'Consulta externa cerrada por timeout; la interfaz vuelve a quedar disponible.'
-        self._resolve_interaction_by_id(
-            interaction_id,
-            outcome='blocked',
-            provider=provider,
-        )
-        if is_current:
-            self.chatChanged.emit()
-            self._refresh_autonomy_dock_async()
+        except Exception:
+            pass
 
-    def _record_non_final_external_outcome(
+    # ── Execution time tracking for dynamic timeout adjustment ─────
+    def _record_task_execution_time(
+        self,
+        task_name: str,
+        duration_seconds: float,
+        outcome: str = '',
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """Record task execution time in ExecutionTimeMonitor.
+
+        Args:
+            task_name: Type of task (e.g., 'chat', 'external_consultation')
+            duration_seconds: Actual execution time
+            outcome: Task outcome ('resolved', 'failed', 'timeout', etc.)
+            metadata: Additional context (e.g., interaction state)
+        """
+        try:
+            monitor = get_execution_time_monitor()
+            monitor.record_execution(
+                task_name=task_name,
+                duration_seconds=duration_seconds,
+                outcome=outcome,
+                metadata=metadata,
+            )
+            logger.info(
+                f'ExecutionTimeMonitor: recorded {task_name} duration={duration_seconds:.1f}s, '
+                f'outcome={outcome}, metadata={metadata}'
+            )
+        except Exception as exc:
+            logger.warning(f'ExecutionTimeMonitor: failed to record {task_name} time: {exc}')
+
+    # ── Worker timeout watchdog (Sub-objective A) ──────────────
+    def _schedule_worker_timeout(
         self,
         *,
-        outcome: str,
-        provider: str,
+        done_event: threading.Event,
+        task_name: str,
+        timeout_s: float,
+        dispatch_id: str = '',
     ) -> None:
-        """Persist a pending external outcome without leaving foreground wait stuck."""
-        pending_interaction_id = getattr(self, '_active_interaction_id', '') or ''
-        self._interaction_has_pending_followup = True
-        self._interaction_pending_followup_outcome = outcome
-        self._interaction_pending_followup_provider = provider
-        self._resolve_active_interaction(
-            outcome=outcome,
-            provider=provider,
+        """Fire taskFailed if *done_event* is not set within *timeout_s*.
+
+        Implements soft/hard deadline with progress awareness (Sub-objective A):
+        - Soft deadline (80%): check worker progress state
+        - If recent progress: extend timeout
+        - If waiting on user_permission: defer to human (no timeout)
+        - If waiting on external: attempt recovery once
+        - If no progress: terminal timeout
+
+        When *dispatch_id* is provided the watchdog also invalidates it
+        so that a late-finishing worker with the same id will be discarded.
+        """
+        def _watchdog() -> None:
+            started_at = time.time()
+
+            def _trace_worker_timeout(kind: str, **payload: Any) -> None:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        kind,
+                        task_name=task_name,
+                        dispatch_id=dispatch_id,
+                        interaction_id=getattr(self, '_active_interaction_id', '') or '',
+                        **payload,
+                    )
+                except Exception:
+                    pass
+
+            # Get dynamic timeout from ExecutionTimeMonitor
+            actual_timeout = timeout_s
+            interaction_id = getattr(self, '_active_interaction_id', None)
+            interaction_state = ''
+
+            # Check interaction state for non-final states
+            if interaction_id and task_name in ('external_consultation', 'chat'):
+                lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
+                if lifecycle is not None:
+                    try:
+                        with lifecycle._lock:
+                            record = lifecycle._interactions.get(interaction_id)
+                            if record is not None:
+                                interaction_state = record.get('outcome', '')
+                    except Exception:
+                        pass
+
+            # Query ExecutionTimeMonitor for dynamic timeout
+            try:
+                monitor = get_execution_time_monitor()
+                actual_timeout = monitor.get_recommended_timeout(task_name, interaction_state)
+                logger.info(
+                    f'Watchdog: {task_name} using dynamic timeout {actual_timeout:.1f}s '
+                    f'(state={interaction_state or "none"}, default={timeout_s:.1f}s)'
+                )
+            except Exception as exc:
+                # Fall back to provided timeout on any error
+                actual_timeout = timeout_s
+                logger.warning(f'Watchdog: failed to get dynamic timeout for {task_name}: {exc}, using {actual_timeout:.1f}s')
+
+            # Soft deadline: 80% of timeout for progress check
+            soft_timeout = actual_timeout * 0.8
+            if done_event.wait(timeout=soft_timeout):
+                return  # worker finished in time
+            _trace_worker_timeout(
+                'worker_timeout_soft_deadline_reached',
+                timeout_s=actual_timeout,
+                soft_timeout_s=soft_timeout,
+                interaction_state=interaction_state,
+            )
+
+            # At soft deadline, check progress state
+            if interaction_id and task_name in ('external_consultation', 'chat'):
+                lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
+                if lifecycle is not None:
+                    try:
+                        progress_state = lifecycle.get_progress_state(interaction_id)
+                        if progress_state.get('exists'):
+                            waiting_on = progress_state.get('waiting_on', 'none')
+                            recovery_attempts = progress_state.get('recovery_attempts', 0)
+
+                            # Check if there was recent progress (within last 30s)
+                            from datetime import datetime, timezone
+                            last_progress_str = progress_state.get('last_progress_at')
+                            if last_progress_str:
+                                try:
+                                    last_progress = datetime.fromisoformat(last_progress_str.replace('Z', '+00:00'))
+                                    now = datetime.now(timezone.utc)
+                                    progress_age = (now - last_progress).total_seconds()
+                                except Exception:
+                                    progress_age = 9999.0
+                            else:
+                                progress_age = 9999.0
+                            _trace_worker_timeout(
+                                'worker_progress_observed',
+                                waiting_on=waiting_on,
+                                progress_age_s=round(progress_age, 3),
+                                last_progress_reason=progress_state.get('last_progress_reason', ''),
+                                recovery_attempts=recovery_attempts,
+                                recoverable=bool(progress_state.get('recoverable', False)),
+                            )
+
+                            # Decision logic at soft deadline
+                            if waiting_on == 'user_permission':
+                                # Waiting on human: defer timeout, keep UI actionable
+                                logger.info(f'Watchdog: {task_name} waiting on user_permission, deferring timeout')
+                                # Wait for hard deadline but don't fail
+                                if done_event.wait(timeout=actual_timeout - soft_timeout):
+                                    return
+                                # After hard deadline, still check if resolved
+                                if not self._working:
+                                    return
+                                if dispatch_id and not self._is_dispatch_active(task_name, dispatch_id):
+                                    return
+                                # Mark as waiting for human instead of timeout
+                                self._trace_dispatch_terminal(
+                                    task_name=task_name,
+                                    dispatch_id=dispatch_id,
+                                    terminal_state='needs_human_handoff',
+                                    reason='waiting on user permission exceeded timeout',
+                                )
+                                _trace_worker_timeout(
+                                    'worker_timeout_terminal',
+                                    terminal_state='needs_human_handoff',
+                                    waiting_on=waiting_on,
+                                    elapsed_s=round(time.time() - started_at, 3),
+                                )
+                                self.taskFailed.emit(
+                                    task_name,
+                                    'La operacion sigue esperando una accion humana. '
+                                    'No voy a dejar la interfaz en procesando: revisa el permiso pendiente y vuelve a intentar.',
+                                )
+                                return
+
+                            elif waiting_on in ('external_browser', 'response_capture') and recovery_attempts == 0:
+                                # External consultation: attempt recovery once
+                                logger.info(f'Watchdog: {task_name} waiting on {waiting_on}, attempting recovery')
+                                recovery_number = lifecycle.increment_recovery_attempt(interaction_id)
+                                try:
+                                    get_execution_time_monitor().record_recovery_attempt(task_name)
+                                except Exception:
+                                    pass
+                                _trace_worker_timeout(
+                                    'worker_recovery_attempted',
+                                    waiting_on=waiting_on,
+                                    recovery_attempt=recovery_number,
+                                )
+                                # Extend timeout for recovery attempt
+                                recovery_extension = 30.0  # 30s recovery window
+                                if done_event.wait(timeout=recovery_extension):
+                                    try:
+                                        get_execution_time_monitor().record_execution(
+                                            task_name=task_name,
+                                            duration_seconds=time.time() - started_at,
+                                            outcome='recovery_success',
+                                            metadata={
+                                                'waiting_on': waiting_on,
+                                                'recovery_attempt': recovery_number,
+                                            },
+                                        )
+                                    except Exception:
+                                        pass
+                                    _trace_worker_timeout(
+                                        'worker_recovery_result',
+                                        result='success',
+                                        waiting_on=waiting_on,
+                                        recovery_attempt=recovery_number,
+                                    )
+                                    return  # recovered in time
+                                # Recovery failed, proceed to terminal
+                                _trace_worker_timeout(
+                                    'worker_recovery_result',
+                                    result='failed',
+                                    waiting_on=waiting_on,
+                                    recovery_attempt=recovery_number,
+                                )
+
+                            elif progress_age < 30.0:
+                                # Recent progress: extend timeout
+                                extension = min(30.0, actual_timeout * 0.5)  # Extend up to 50% or 30s
+                                logger.info(
+                                    f'Watchdog: {task_name} has recent progress ({progress_age:.1f}s ago), '
+                                    f'extending timeout by {extension:.1f}s'
+                                )
+                                if done_event.wait(timeout=extension):
+                                    return  # finished in extension
+                            else:
+                                _trace_worker_timeout(
+                                    'worker_no_progress_detected',
+                                    waiting_on=waiting_on,
+                                    progress_age_s=round(progress_age, 3),
+                                    last_progress_reason=progress_state.get('last_progress_reason', ''),
+                                )
+
+                    except Exception as exc:
+                        logger.warning(f'Watchdog: failed to check progress state for {task_name}: {exc}')
+                        _trace_worker_timeout(
+                            'worker_no_progress_detected',
+                            waiting_on='unknown',
+                            error=str(exc),
+                        )
+            else:
+                _trace_worker_timeout(
+                    'worker_no_progress_detected',
+                    waiting_on='no_interaction_state',
+                    progress_age_s=9999.0,
+                )
+
+            # Hard deadline: terminal timeout
+            if done_event.wait(timeout=actual_timeout - soft_timeout):
+                return  # worker finished in time
+
+            # Terminal timeout handling
+            if not self._working:
+                return  # already resolved by other path
+            if dispatch_id and not self._is_dispatch_active(task_name, dispatch_id):
+                return  # superseded by a newer dispatch
+            if dispatch_id:
+                self._invalidate_dispatch(task_name)
+            try:
+                get_execution_time_monitor().record_execution(
+                    task_name=task_name,
+                    duration_seconds=time.time() - started_at,
+                    outcome='timeout',
+                    metadata={'reason': 'worker_no_progress', 'no_progress': True},
+                )
+            except Exception:
+                pass
+            self._trace_dispatch_terminal(
+                task_name=task_name,
+                dispatch_id=dispatch_id,
+                terminal_state='timeout',
+                reason=f'watchdog fired after {int(actual_timeout)}s with no progress',
+            )
+            _trace_worker_timeout(
+                'worker_timeout_terminal',
+                terminal_state='timeout',
+                elapsed_s=round(time.time() - started_at, 3),
+                timeout_s=actual_timeout,
+            )
+            self.taskFailed.emit(
+                task_name,
+                f'La operacion ({task_name}) supero el tiempo maximo de {int(actual_timeout)}s sin progreso. '
+                'Puedes intentar de nuevo o verificar que las herramientas esten accesibles.',
+            )
+
+        threading.Thread(target=_watchdog, daemon=True, name=f'{task_name}-timeout').start()
+
+    # ── Pressure gating for deferred heavy work (Sub-objective B) ──
+    def _should_defer_heavy_work(self) -> bool:
+        """Return True when heavy background ops should be skipped.
+
+        Uses AdaptiveTaskOrchestrator._assess_resource_pressure() to read
+        live environment risk signals.  Under HIGH or CRITICAL pressure
+        the UI thread must stay free for user interaction.
+        """
+        try:
+            pressure = self.adaptive_orchestrator._assess_resource_pressure()
+            return bool(pressure.get('under_pressure'))
+        except Exception:
+            return False
+
+    # ── P0.38: Resource Quiescence Gate ──
+
+    def _evaluate_consultation_quiescence(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """Decide whether an external consultation can run now.
+
+        Returns dict with:
+        - decision: run_now | defer | ask_user | cleanup_needed
+        - pressure_level: none | high | critical
+        - reason: human-readable explanation
+        - retry_after_s: suggested delay before retry (0 if run_now)
+        """
+        result: dict[str, Any] = {
+            'decision': 'run_now',
+            'pressure_level': 'none',
+            'reason': '',
+            'retry_after_s': 0,
+        }
+        try:
+            pressure = self.adaptive_orchestrator._assess_resource_pressure()
+        except Exception:
+            return result
+        if not pressure.get('under_pressure'):
+            return result
+        critical = bool(pressure.get('critical'))
+        result['pressure_level'] = 'critical' if critical else 'high'
+        signals = list(pressure.get('active_signals') or [])
+        if critical:
+            if any(s in signals for s in ('disk_critical', 'disk_space_critical')):
+                result['decision'] = 'cleanup_needed'
+                result['reason'] = (
+                    'Disco critico. No puedo abrir herramientas externas '
+                    'hasta liberar espacio.'
+                )
+                result['retry_after_s'] = 60
+            else:
+                result['decision'] = 'defer'
+                result['reason'] = (
+                    'Presion critica de recursos (RAM/CPU). '
+                    'Diferire la consulta hasta que baje la presion.'
+                )
+                result['retry_after_s'] = 30
+        else:
+            result['decision'] = 'defer'
+            result['reason'] = (
+                'Presion alta de recursos. Diferire brevemente '
+                'la consulta externa.'
+            )
+            result['retry_after_s'] = 15
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_consultation_quiescence(
+                decision=result['decision'],
+                assistant_kind=assistant_kind,
+                pressure_level=result['pressure_level'],
+                reason=result['reason'],
+            )
+        except Exception:
+            pass
+        return result
+
+    # ── P0.39: Universal Capability Readiness ──
+
+    def _assess_external_readiness(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """Build a universal readiness contract before external consultation.
+
+        Assembles from existing pieces:
+        WorldModelSnapshot, RuntimeAuditTracer, _build_assistant_web_skill_profile,
+        _evaluate_consultation_quiescence, _detect_cdp_available.
+
+        Returns a dict with action_possible=True/False plus structured
+        blocking_reason and next_human_action when not ready.
+        Does NOT create a new service — read-only assembly from existing sources.
+        """
+        now = time.time()
+        title = self._assistant_display_name(assistant_kind)
+        readiness: dict[str, Any] = {
+            'tool_id': f'external_assistant_{self._normalize_provider(assistant_kind)}',
+            'assistant_kind': assistant_kind,
+            'assistant_title': title,
+            'device_state': 'unknown',
+            'build_state': 'unknown',
+            'resource_pressure': 'none',
+            'session_mode': 'unknown',
+            'session_selected': 'unknown',
+            'auth_state': 'unknown',
+            'security_block_state': 'none',
+            'observation_permission': 'unknown',
+            'action_possible': True,
+            'capture_possible': False,
+            'response_capture_mode': 'manual_pasteback',
+            'confidence': 0.0,
+            'blocking_reason': '',
+            'next_human_action': '',
+            'evidence_refs': [],
+            'last_verified_at': now,
+        }
+        blockers: list[str] = []
+
+        # 1. Build staleness check
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            fp = tracer.trace_build_fingerprint(
+                workspace=str(getattr(self.config, 'workspace_root', '')),
+            )
+            if fp.get('stale'):
+                readiness['build_state'] = 'stale'
+                blockers.append('build_stale')
+                readiness['evidence_refs'].append(f'build_head={fp.get("head", "?")[:12]}')
+            else:
+                readiness['build_state'] = 'current'
+                readiness['evidence_refs'].append(f'build_head={fp.get("head", "?")[:12]}')
+        except Exception:
+            readiness['build_state'] = 'unknown'
+
+        # 2. Resource pressure
+        quiescence = self._evaluate_consultation_quiescence(assistant_kind)
+        readiness['resource_pressure'] = quiescence['pressure_level']
+        if quiescence['decision'] != 'run_now':
+            blockers.append(f'resource_pressure_{quiescence["pressure_level"]}')
+            readiness['evidence_refs'].append(f'quiescence={quiescence["decision"]}')
+            readiness['retry_after_s'] = quiescence.get('retry_after_s', 15)
+
+        # 3. Web skill profile (session, auth, window, CDP)
+        profile = self._build_assistant_web_skill_profile(assistant_kind)
+        readiness['session_mode'] = profile['active_session_mode']
+        readiness['auth_state'] = profile['auth_status']
+
+        # 4. CDP probe
+        cdp_status = profile.get('cdp_status', 'unknown')
+        readiness['evidence_refs'].append(f'cdp={cdp_status}')
+        if cdp_status == 'available':
+            readiness['capture_possible'] = True
+            readiness['response_capture_mode'] = 'cdp'
+            readiness['observation_permission'] = 'cdp_available'
+
+        # 5. Session selected
+        import os as _os
+        if _os.environ.get('IABV_PREFER_CDP_SESSION') == '1' and cdp_status == 'available':
+            readiness['session_selected'] = 'governed_user_chrome_cdp'
+        elif profile['active_session_mode'] == 'isolated_profile':
+            readiness['session_selected'] = 'isolated_profile'
+        elif profile['active_session_mode'] == 'manual_pasteback':
+            readiness['session_selected'] = 'manual_handoff'
+        else:
+            readiness['session_selected'] = profile['active_session_mode']
+
+        # 6. Window / hwnd
+        if profile.get('window_status') == 'found':
+            readiness['device_state'] = 'window_found'
+            readiness['evidence_refs'].append(f'hwnd={profile.get("window_hwnd", "?")}')
+        else:
+            readiness['device_state'] = 'no_window'
+
+        # 7. Security block from recent history
+        if profile.get('last_block_reason'):
+            if 'security_verification' in profile['last_block_reason']:
+                readiness['security_block_state'] = 'security_verification'
+                blockers.append('blocked_by_security_verification')
+            elif 'blocked' in profile['last_block_reason']:
+                readiness['security_block_state'] = profile['last_block_reason']
+                blockers.append(profile['last_block_reason'])
+
+        # 8. Capture possible without CDP
+        if not readiness['capture_possible']:
+            if readiness['auth_state'] == 'authenticated' and readiness['device_state'] == 'window_found':
+                readiness['capture_possible'] = True
+                readiness['response_capture_mode'] = 'dom_observation'
+
+        # 9. Confidence score
+        confidence = 1.0
+        if readiness['build_state'] == 'stale':
+            confidence -= 0.3
+        if readiness['resource_pressure'] in ('high', 'critical'):
+            confidence -= 0.2
+        if readiness['security_block_state'] != 'none':
+            confidence -= 0.3
+        if readiness['auth_state'] in ('security_verification', 'logged_out'):
+            confidence -= 0.2
+        if not readiness['capture_possible']:
+            confidence -= 0.1
+        readiness['confidence'] = max(0.0, round(confidence, 2))
+
+        # 10. Overall action_possible + blocking_reason + next_human_action
+        if blockers:
+            if 'build_stale' in blockers:
+                readiness['action_possible'] = False
+                readiness['blocking_reason'] = 'build_stale'
+                readiness['next_human_action'] = (
+                    'El runtime no esta actualizado. Alinea el runtime con '
+                    'origin/main antes de intentar consultas externas.'
+                )
+            elif any('resource_pressure' in b for b in blockers):
+                readiness['action_possible'] = False
+                readiness['blocking_reason'] = f'resource_pressure_{readiness["resource_pressure"]}'
+                readiness['next_human_action'] = quiescence.get('reason', '')
+            elif 'blocked_by_security_verification' in blockers:
+                readiness['action_possible'] = False
+                readiness['blocking_reason'] = 'security_verification_recent'
+                profile_path = profile.get('browser_profile_path', '')
+                profile_label = 'chatgpt_program_session/browser_profile'
+                if profile_path:
+                    parts = str(profile_path).replace('\\', '/').split('/')
+                    if len(parts) >= 2:
+                        profile_label = '/'.join(parts[-2:])
+                readiness['next_human_action'] = (
+                    f'IABV usa un perfil aislado ({profile_label}), '
+                    f'no tu Chrome normal. '
+                    f'Resuelve la verificacion/login en la ventana que abrio IABV '
+                    f'y escribe "ya lo hice". '
+                    f'O escribe "abre la ventana gobernada" y abro una ventana '
+                    f'de Chrome gobernada por IABV para que la completes ahi.'
+                )
+
+        # Trace the readiness assessment
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_external_readiness(
+                assistant_kind=assistant_kind,
+                action_possible=readiness['action_possible'],
+                confidence=readiness['confidence'],
+                blocking_reason=readiness['blocking_reason'],
+                session_selected=readiness['session_selected'],
+                security_block=readiness['security_block_state'],
+                capture_mode=readiness['response_capture_mode'],
+            )
+        except Exception:
+            pass
+
+        return readiness
+
+    def _queue_ui_call(self, method_name: str, *args: object) -> None:
+        """Thread-safe UI call: QMetaObject if QObject, direct call otherwise.
+
+        - If self is a QObject, uses QMetaObject.invokeMethod with QueuedConnection.
+        - If self is a test stub (SimpleNamespace), calls method directly.
+        - Captures all exceptions and traces retry_queue_failed.
+        """
+        try:
+            from PySide6.QtCore import QObject
+            is_qobject = isinstance(self, QObject)
+        except ImportError:
+            is_qobject = False
+
+        if is_qobject:
+            try:
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                q_args = [Q_ARG(str, str(a)) for a in args]
+                QMetaObject.invokeMethod(
+                    self, method_name,
+                    Qt.ConnectionType.QueuedConnection,
+                    *q_args,
+                )
+                return
+            except (RuntimeError, TypeError) as exc:
+                # Object deleted or wrong signature — trace and fall through
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'retry_queue_failed',
+                        method=method_name,
+                        error=str(exc)[:120],
+                        path='qobject_deleted_or_type_error',
+                    )
+                except Exception:
+                    pass
+                return
+
+        # Not a QObject (test stub / SimpleNamespace) — call directly
+        method = getattr(self, method_name, None)
+        if method is not None and callable(method):
+            try:
+                method(*[str(a) for a in args])
+            except Exception as exc:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'retry_queue_failed',
+                        method=method_name,
+                        error=str(exc)[:120],
+                        path='direct_call_fallback',
+                    )
+                except Exception:
+                    pass
+
+    _deferred_retry_generation: int = 0
+    _DEFERRED_RETRY_COOLDOWN_S: float = 10.0
+    _DEFERRED_RETRY_MAX: int = 3
+    _deferred_retry_count: int = 0
+    _deferred_retry_last_ts: float = 0.0
+
+    def _schedule_deferred_consultation_retry(
+        self, assistant_kind: str, delay_s: float,
+        *, dispatch_id: str = '',
+    ) -> None:
+        """Schedule a background retry — Qt-safe: never mutates UI from thread."""
+        now = time.time()
+        if now - self._deferred_retry_last_ts < self._DEFERRED_RETRY_COOLDOWN_S:
+            return
+        if self._deferred_retry_count >= self._DEFERRED_RETRY_MAX:
+            return
+        self._deferred_retry_generation += 1
+        gen = self._deferred_retry_generation
+        self._deferred_retry_count += 1
+        self._deferred_retry_last_ts = now
+
+        def _retry() -> None:
+            import time as _t
+            _t.sleep(max(delay_s, 5.0))
+            if gen != self._deferred_retry_generation:
+                return
+            quiescence = self._evaluate_consultation_quiescence(assistant_kind)
+            if quiescence['decision'] == 'run_now':
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_consultation_quiescence(
+                        decision='retry_triggered',
+                        assistant_kind=assistant_kind,
+                        pressure_level='none',
+                        reason='quiescence retry after deferred',
+                    )
+                except Exception:
+                    pass
+                self._queue_ui_call('_on_deferred_retry_ready', assistant_kind)
+            else:
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace_consultation_quiescence(
+                        decision='retry_still_deferred',
+                        assistant_kind=assistant_kind,
+                        pressure_level=quiescence['pressure_level'],
+                        reason=quiescence['reason'],
+                    )
+                except Exception:
+                    pass
+                self._queue_ui_call('_on_deferred_retry_still_blocked', assistant_kind)
+        threading.Thread(target=_retry, daemon=True, name='quiescence-retry').start()
+
+    @Slot(str)
+    def _on_deferred_retry_ready(self, assistant_kind: str) -> None:
+        """Qt main-thread slot: retry consultation after quiescence cleared."""
+        self._run_external_consultation(assistant_kind, announce=True)
+
+    @Slot(str)
+    def _on_deferred_retry_still_blocked(self, assistant_kind: str) -> None:
+        """Qt main-thread slot: inform user retry still deferred."""
+        msg = (
+            f'Intente reintentar la consulta a '
+            f'{self._assistant_display_name(assistant_kind)} '
+            f'pero la presion de recursos sigue alta. '
+            f'Puedes intentar de nuevo cuando baje la presion.'
         )
-        self._release_visible_query_wait(
-            reason=f'external_consultation_non_final:{outcome}',
-        )
-        self._schedule_external_followup_timeout(
-            interaction_id=pending_interaction_id,
-            outcome=outcome,
-            provider=provider,
-        )
+        self._latest_response_text = msg
+        self._latest_response_meta = 'consultation_retry_still_deferred'
+        self._append_message('assistant', 'IABV', msg, 'consultation_retry_still_deferred')
+        self._working = False
+        self.dataChanged.emit()
+
+    # ── P0.38: AssistantWebSkillProfile ──
+
+    _PROVIDER_ALIASES: dict[str, str] = {
+        'chatgpt': 'chatgpt', 'ChatGPT': 'chatgpt',
+        'chatgpt_web': 'chatgpt', 'openai': 'chatgpt',
+        'claude': 'claude', 'Claude': 'claude',
+        'gemini': 'gemini', 'Gemini': 'gemini',
+    }
+
+    @staticmethod
+    def _normalize_provider(provider: str) -> str:
+        """Normalize provider/assistant_kind to canonical lowercase form."""
+        if not provider:
+            return ''
+        canonical = ControlCenterViewModel._PROVIDER_ALIASES.get(provider)
+        if canonical:
+            return canonical
+        return provider.strip().lower().replace(' ', '_')
+
+    _WEB_SKILL_SESSION_MODES = (
+        'isolated_profile', 'governed_user_bridge',
+        'manual_pasteback', 'api_if_available',
+    )
+    _WEB_SKILL_AUTH_STATES = (
+        'unknown', 'authenticated', 'security_verification', 'logged_out',
+    )
+
+    def _build_assistant_web_skill_profile(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """Build a structured web skill profile for an assistant.
+
+        Not a new service — structured metadata built from existing sources:
+        ToolRegistry, WorldModel, ExternalAssistantToolAdapter, RuntimeAuditTracer.
+        """
+        title = self._assistant_display_name(assistant_kind)
+        profile: dict[str, Any] = {
+            'assistant_kind': assistant_kind,
+            'assistant_title': title,
+            'session_modes': list(self._WEB_SKILL_SESSION_MODES),
+            'active_session_mode': 'unknown',
+            'browser_profile_path': '',
+            'cdp_status': 'unknown',
+            'window_status': 'unknown',
+            'auth_status': 'unknown',
+            'capture_modes': ['manual_pasteback'],
+            'last_scan_ts': 0.0,
+            'last_block_reason': '',
+            'action_grammar': [
+                'open_profile', 'focus_window', 'ask_question',
+                'wait_for_response', 'capture_response', 'verify_response',
+                'retry_after_user_done', 'fallback_manual',
+            ],
+        }
+        # Enrich from WorldModel — use active_windows contract, not wm.windows
+        try:
+            wm = self._current_world_model()
+            if wm:
+                windows = list(wm.active_windows or [])
+                kind_lower = self._normalize_provider(assistant_kind)
+                for w in windows:
+                    w_title = str(getattr(w, 'title', '') or '').lower()
+                    if kind_lower in w_title or title.lower() in w_title:
+                        profile['window_status'] = 'found'
+                        meta = getattr(w, 'metadata', None) or {}
+                        profile['window_hwnd'] = meta.get('hwnd') or getattr(w, 'hwnd', None)
+                        break
+        except Exception:
+            pass
+        # Enrich from CDP probe
+        try:
+            if hasattr(self, '_detect_cdp_available'):
+                cdp_result = self._detect_cdp_available()
+                if isinstance(cdp_result, dict):
+                    profile['cdp_status'] = 'available' if cdp_result.get('available') else 'unavailable'
+                    if cdp_result.get('available'):
+                        profile['capture_modes'].insert(0, 'cdp')
+                        profile['active_session_mode'] = 'governed_user_bridge'
+        except Exception:
+            pass
+        # Enrich from recent dispatch history
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            lifecycles = tracer.recent_dispatch_lifecycles(limit=10)
+            for lc in lifecycles:
+                if lc.get('provider') == assistant_kind:
+                    ts = lc.get('terminal_state', '')
+                    if ts == 'blocked_by_security_verification':
+                        profile['auth_status'] = 'security_verification'
+                        profile['last_block_reason'] = 'security_verification'
+                    elif ts == 'response_captured':
+                        profile['auth_status'] = 'authenticated'
+                    elif 'blocked' in ts:
+                        profile['last_block_reason'] = ts
+                    break
+        except Exception:
+            pass
+        # Browser profile path
+        try:
+            profile['browser_profile_path'] = str(
+                Path(self.config.workspace_root)
+                / 'data' / 'tool_teaching' / 'external_assistants'
+                / f'{assistant_kind}_program_session' / 'browser_profile'
+            )
+        except Exception:
+            pass
+        if profile['active_session_mode'] == 'unknown':
+            if profile['window_status'] == 'found':
+                profile['active_session_mode'] = 'isolated_profile'
+            else:
+                profile['active_session_mode'] = 'manual_pasteback'
+        profile['last_scan_ts'] = time.time()
+        return profile
+
+    def _scan_assistant_web_skill(
+        self, assistant_kind: str,
+    ) -> dict[str, Any]:
+        """P0.38 Task D: Governed scan of a web tool's availability.
+
+        OBSERVE → SELECT_SESSION → VERIFY_ACCESS → report result.
+        Does not ACT — only observes and reports. Never reads cookies/tokens.
+        """
+        profile = self._build_assistant_web_skill_profile(assistant_kind)
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            get_runtime_tracer().trace_assistant_web_skill_scan(
+                assistant_kind=assistant_kind,
+                phase='scan_complete',
+                auth_status=profile['auth_status'],
+                session_mode=profile['active_session_mode'],
+                cdp_available=profile['cdp_status'] == 'available',
+                window_found=profile['window_status'] == 'found',
+                detail=profile.get('last_block_reason', ''),
+            )
+        except Exception:
+            pass
+        return profile
+
+    # ── P0.38: Devin Repair Worker ──
+
+    def _build_repair_packet(self, issue_summary: str) -> dict[str, Any]:
+        """Build a structured repair request packet from PortableContext cache.
+
+        Uses latest cache/latest.json — never calls build_package() synchronously
+        to avoid freezing the UI thread.
+        No PII, no cookies, no tokens.
+        """
+        packet: dict[str, Any] = {
+            'type': 'repair_request',
+            'issue_summary': issue_summary[:500],
+            'timestamp': time.time(),
+            'portable_context_excerpt': {},
+            'recent_failures': [],
+            'recommended_action': '',
+        }
+        try:
+            pcs = getattr(self, 'portable_context_service', None)
+            if pcs:
+                # Use cached package — never heavy rebuild in UI path
+                pkg = getattr(pcs, 'current_package', None)
+                if pkg is None and hasattr(pcs, 'latest_cache'):
+                    pkg = pcs.latest_cache
+                if pkg is None:
+                    latest_path = Path(self.config.workspace_root) / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+                    if latest_path.exists():
+                        import json as _json
+                        try:
+                            raw = _json.loads(latest_path.read_text(encoding='utf-8'))
+                            pkg = raw
+                        except Exception:
+                            pass
+                if pkg is not None:
+                    ctx = pkg.get('context', None) if isinstance(pkg, dict) else (getattr(pkg, 'context', None) or {})
+                    if isinstance(ctx, dict):
+                        packet['portable_context_excerpt'] = {
+                            k: v for k, v in ctx.items()
+                            if k in (
+                                'cloud_reasoning', 'external_consultation',
+                                'startup_health', 'web_skill_status',
+                                'devin_repair_status',
+                            )
+                        }
+                    else:
+                        packet['portable_context_excerpt'] = {'status': 'UNRESOLVED_no_fresh_context'}
+                else:
+                    packet['portable_context_excerpt'] = {'status': 'UNRESOLVED_no_cached_context'}
+        except Exception:
+            pass
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            lifecycles = tracer.recent_dispatch_lifecycles(limit=5)
+            failed = [
+                {
+                    'task': lc['task_name'],
+                    'terminal': lc['terminal_state'],
+                    'provider': lc['provider'],
+                }
+                for lc in lifecycles
+                if lc.get('terminal_state') and 'blocked' in lc.get('terminal_state', '')
+            ]
+            packet['recent_failures'] = failed[:3]
+        except Exception:
+            pass
+        return packet
+
+    @staticmethod
+    def _sanitize_for_repair(text: str) -> str:
+        """Strip potential PII/tokens from repair packet text."""
+        import re
+        sanitized = re.sub(r'[A-Za-z0-9_\-]{20,}', '<REDACTED>', text)
+        sanitized = re.sub(r'[\w.+-]+@[\w-]+\.[\w.-]+', '<EMAIL>', sanitized)
+        return sanitized[:500]
+
+    def _try_devin_repair(
+        self, issue_summary: str, *, user_confirmed: bool = False,
+    ) -> dict[str, Any]:
+        """Attempt to create a Devin repair task if the API is available.
+
+        Returns result dict with phase/available/session_id.
+        Does not use browser credentials — only the Devin REST API.
+        Requires user_confirmed=True to actually create the session.
+        """
+        result: dict[str, Any] = {
+            'phase': 'check_availability',
+            'available': False,
+            'session_id': '',
+            'detail': '',
+        }
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+        except Exception:
+            tracer = None
+        try:
+            devin_adapter = self.tool_adapters.get('devin_api')
+            if devin_adapter is None or not getattr(devin_adapter, 'api_key', ''):
+                result['detail'] = 'devin_api adapter not available or no API key'
+                result['phase'] = 'unavailable'
+                if tracer:
+                    tracer.trace_devin_repair(
+                        phase='devin_repair_unavailable',
+                        available=False,
+                        detail=result['detail'],
+                    )
+                return result
+            result['available'] = True
+            # Trace the request
+            if tracer:
+                tracer.trace_devin_repair(
+                    phase='devin_repair_requested',
+                    available=True,
+                    detail=self._sanitize_for_repair(issue_summary),
+                )
+            if not user_confirmed:
+                result['phase'] = 'awaiting_confirmation'
+                result['detail'] = 'Devin repair available but requires user confirmation'
+                return result
+            result['phase'] = 'preparing_packet'
+            packet = self._build_repair_packet(issue_summary)
+            prompt = (
+                f'IABV v1.5 Repair Request:\n'
+                f'Issue: {self._sanitize_for_repair(issue_summary)}\n'
+                f'Recent failures: {packet.get("recent_failures", [])}\n'
+                f'Context: {json.dumps(packet.get("portable_context_excerpt", {}), default=str)[:500]}'
+            )
+            result['phase'] = 'creating_session'
+            try:
+                from iabv_v15.bootstrap import _devin_create_session
+                session_id = _devin_create_session(devin_adapter, prompt)
+                if session_id:
+                    result['session_id'] = session_id
+                    result['phase'] = 'session_created'
+                    result['detail'] = f'Devin session {session_id[:12]} created'
+                    if tracer:
+                        tracer.trace_devin_repair(
+                            phase='devin_repair_created',
+                            available=True,
+                            session_id=session_id[:12],
+                            detail=result['detail'],
+                        )
+                else:
+                    result['phase'] = 'session_creation_failed'
+                    result['detail'] = 'Devin API returned empty session_id'
+                    if tracer:
+                        tracer.trace_devin_repair(
+                            phase='devin_repair_failed',
+                            available=True,
+                            detail=result['detail'],
+                        )
+            except Exception as exc:
+                result['phase'] = 'session_creation_failed'
+                result['detail'] = str(exc)[:200]
+                if tracer:
+                    tracer.trace_devin_repair(
+                        phase='devin_repair_failed',
+                        available=True,
+                        detail=result['detail'],
+                    )
+        except Exception as exc:
+            result['phase'] = 'error'
+            result['detail'] = str(exc)[:200]
+        return result
+
+    # ── P0.38: Follow-up intent classification for active incidents ──
+
+    _FOLLOWUP_RETRY_PATTERNS: tuple[str, ...] = (
+        'intenta nuevamente', 'intenta de nuevo', 'intentalo de nuevo',
+        'intentalo otra vez', 'reintenta', 'vuelve a intentar',
+        'prueba otra vez', 'prueba de nuevo', 'retry',
+        'hazlo otra vez', 'hazlo de nuevo',
+    )
+    _FOLLOWUP_QUERY_PATTERNS: tuple[str, ...] = (
+        'puedes hacer la consulta', 'puedes consultar',
+        'si o no', 'sí o no', 'puedes o no',
+        'que necesitas', 'qué necesitas',
+        'que te falta', 'qué te falta',
+        'por que no puedes', 'por qué no puedes',
+    )
+    _FOLLOWUP_WINDOW_PATTERNS: tuple[str, ...] = (
+        'abre la ventana', 'abreme la ventana', 'ábreme la ventana',
+        'muestra la ventana', 'muestrame la ventana', 'muéstrame la ventana',
+        'enfoca la ventana', 'focus window',
+    )
+
+    def _try_handle_consultation_followup(self, message: str) -> bool:
+        """P0.38 Task F: Handle follow-up messages for active consultations.
+
+        Messages like 'intenta nuevamente', 'puedes hacer la consulta',
+        'abre la ventana' should NOT fall to local chat if there is an
+        active external incident or recent failure memory.
+        Integrates with ActiveIncidentFrame (P0.37) when available.
+        """
+        lowered = message.strip().lower()
+        # Check both ActiveIncidentFrame (P0.37) and failure memory
+        incident = getattr(self, '_active_incident_frame', None)
+        failure_memory = getattr(self, '_external_failure_memory', None)
+        if not failure_memory and not incident:
+            return False
+        if incident and not incident.get('resolved') and time.time() < incident.get('expires_at', 0):
+            assistant_kind = str(incident.get('assistant_kind', ''))
+            assistant_title = str(incident.get('assistant_title', ''))
+        elif failure_memory:
+            assistant_kind = str(failure_memory.get('assistant_kind', ''))
+            assistant_title = str(failure_memory.get('assistant_title', '') or self._assistant_display_name(assistant_kind))
+        else:
+            return False
+        # Retry patterns
+        if any(p in lowered for p in self._FOLLOWUP_RETRY_PATTERNS):
+            profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
+            quiescence = self._evaluate_consultation_quiescence(assistant_kind or 'chatgpt')
+            if quiescence['decision'] != 'run_now':
+                msg = (
+                    f'Quiero reintentar la consulta a {assistant_title}, '
+                    f'pero {quiescence["reason"]} '
+                    f'Programare un reintento automatico.'
+                )
+                self._latest_response_text = msg
+                self._latest_response_meta = 'consultation_retry_deferred'
+                self._append_message('assistant', 'IABV', msg, 'consultation_retry_deferred')
+                self._schedule_deferred_consultation_retry(
+                    assistant_kind or 'chatgpt',
+                    quiescence['retry_after_s'],
+                )
+                self.dataChanged.emit()
+                return True
+            self._run_external_consultation(assistant_kind or 'chatgpt', announce=True)
+            return True
+        # Query patterns — explain state, don't fall to local
+        if any(p in lowered for p in self._FOLLOWUP_QUERY_PATTERNS):
+            profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
+            lines = [f'Estado actual de {assistant_title}:']
+            lines.append(f'- Sesion: {profile["active_session_mode"]}')
+            lines.append(f'- Autenticacion: {profile["auth_status"]}')
+            lines.append(f'- Ventana: {profile["window_status"]}')
+            lines.append(f'- CDP: {profile["cdp_status"]}')
+            if profile['last_block_reason']:
+                lines.append(f'- Ultimo bloqueo: {profile["last_block_reason"]}')
+            quiescence = self._evaluate_consultation_quiescence(assistant_kind or 'chatgpt')
+            if quiescence['decision'] == 'run_now':
+                lines.append('Puedo intentar la consulta ahora. Escribe "intenta nuevamente".')
+            else:
+                lines.append(f'Debo esperar: {quiescence["reason"]}')
+            msg = '\n'.join(lines)
+            self._latest_response_text = msg
+            self._latest_response_meta = 'consultation_status_report'
+            self._append_message('assistant', 'IABV', msg, 'consultation_status_report')
+            self.dataChanged.emit()
+            return True
+        # Window patterns — use ActiveIncidentFrame hwnd when available
+        if any(p in lowered for p in self._FOLLOWUP_WINDOW_PATTERNS):
+            # Prefer hwnd from ActiveIncidentFrame (P0.37), fall back to web skill profile
+            hwnd = None
+            if incident and incident.get('hwnd') is not None:
+                hwnd = incident['hwnd']
+            if hwnd is None:
+                profile = self._scan_assistant_web_skill(assistant_kind or 'chatgpt')
+                hwnd = profile.get('window_hwnd')
+            if hwnd is not None:
+                try:
+                    import ctypes
+                    user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+                    user32.ShowWindow(hwnd, 9)
+                    user32.SetForegroundWindow(hwnd)
+                    msg = f'Enfoque la ventana de {assistant_title}.'
+                    self._latest_response_text = msg
+                    self._latest_response_meta = 'window_focused'
+                    self._append_message('assistant', 'IABV', msg, 'window_focused')
+                except Exception:
+                    msg = (
+                        f'No pude enfocar la ventana de {assistant_title}. '
+                        f'Busca la ventana manualmente.'
+                    )
+                    self._latest_response_text = msg
+                    self._latest_response_meta = 'window_focus_failed'
+                    self._append_message('assistant', 'IABV', msg, 'window_focus_failed')
+            else:
+                msg = (
+                    f'No encontre una ventana activa de {assistant_title}. '
+                    f'Abre {assistant_title} manualmente y luego escribe "intenta nuevamente".'
+                )
+                self._latest_response_text = msg
+                self._latest_response_meta = 'window_not_found'
+                self._append_message('assistant', 'IABV', msg, 'window_not_found')
+            self.dataChanged.emit()
+            return True
+        return False
 
     @staticmethod
     def _derive_external_consultation_outcome(payload: Any) -> str:
@@ -5768,55 +9592,7 @@ class ControlCenterViewModel(QObject):
 
     def _promote_metacognition_after_resolution(self) -> None:
         """Refresh OSES and PortableContext after a resolved interaction."""
-        budget = self._background_work_budget_decision(
-            work_class='metacognition_promotion',
-            source='interaction_resolution',
-            confidence=0.86,
-        )
-        if not bool(budget.get('allowed')):
-            retry_scheduled = bool(getattr(self, '_metacognition_promotion_retry_scheduled', False))
-            self._trace_autonomy_dock(
-                'interaction_metacognition_promotion_deferred',
-                reason=str(budget.get('reason') or 'operational_budget_deferred'),
-                budget=budget,
-                retry_scheduled=retry_scheduled,
-                rss_mb=self._process_rss_mb(),
-            )
-            if retry_scheduled:
-                return
-            retry_after = float(budget.get('defer_seconds') or 60.0)
-            retry_after = max(30.0, min(180.0, retry_after))
-            self._metacognition_promotion_retry_scheduled = True
-
-            def _retry() -> None:
-                try:
-                    self._metacognition_promotion_retry_scheduled = False
-                    self._promote_metacognition_after_resolution()
-                except Exception:
-                    pass
-
-            timer = threading.Timer(retry_after, _retry)
-            timer.daemon = True
-            timer.start()
-            return
-
-        self._metacognition_promotion_retry_scheduled = False
-        self._trace_autonomy_dock(
-            'interaction_metacognition_promotion_recorded_only',
-            budget=budget,
-            reason='runtime_audit_durable_ui_process_promotion_disabled',
-            rss_mb=self._process_rss_mb(),
-            next_refresh='startup_truth_refresh_or_explicit_package_build',
-        )
-        if str(os.environ.get('IABV_ENABLE_UI_INTERACTION_PROMOTION') or '').strip() != '1':
-            return
-
-        self._trace_autonomy_dock(
-            'interaction_metacognition_promotion_started',
-            budget=budget,
-            rss_mb=self._process_rss_mb(),
-        )
-
+        import threading as _thr
         def _refresh() -> None:
             try:
                 oses = getattr(self, '_oses_ref', None)
@@ -5830,7 +9606,7 @@ class ControlCenterViewModel(QObject):
                     pcs.build_package()
             except Exception:
                 pass
-        threading.Thread(target=_refresh, name='iabv-resolve-promote', daemon=True).start()
+        _thr.Thread(target=_refresh, name='iabv-resolve-promote', daemon=True).start()
 
     def _explicit_site_hint_from_message(self, message: str) -> str | None:
         text = self._normalized_command_text(message)
@@ -5949,48 +9725,6 @@ class ControlCenterViewModel(QObject):
             force=force,
         )
 
-    def _refresh_development_packet_async(
-        self, user_goal: str | None = None, *, force: bool = False,
-    ) -> None:
-        import time as _time
-        if user_goal is not None:
-            self._last_user_goal = user_goal.strip()
-        now = _time.monotonic()
-        if not force and (now - self._dev_packet_last_ts) < self._dev_packet_cooldown_s:
-            return
-        self._dev_packet_last_ts = now
-        self._development_packet_generation += 1
-        gen = self._development_packet_generation
-        goal = self._last_user_goal
-        selected_role_title = 'Automatico' if self._auto_route_enabled else self._selected_role_title()
-
-        def _bg() -> str:
-            return self.engineering_review_service.build_codex_packet(
-                user_goal=goal,
-                selected_role_title=selected_role_title,
-                force=force,
-            )
-
-        def _done(fut: Any) -> None:
-            if self._development_packet_generation != gen:
-                return
-            try:
-                packet = str(fut.result() or '')
-            except Exception:
-                logger.debug('development packet bg refresh failed', exc_info=True)
-                return
-            self.developmentPacketReady.emit(gen, packet)
-
-        future = self._bg_pool.submit(_bg)
-        future.add_done_callback(_done)
-
-    @Slot(int, str)
-    def _apply_development_packet(self, gen: int, packet: str) -> None:
-        if self._development_packet_generation != gen:
-            return
-        self._development_packet = packet
-        self.dataChanged.emit()
-
     def _seed_development_packet(self, user_goal: str | None = None) -> None:
         if user_goal is not None:
             self._last_user_goal = user_goal.strip()
@@ -6075,28 +9809,8 @@ class ControlCenterViewModel(QObject):
             'prompt': f'La consulta con {assistant_title} ya quedo preparada. Copia la respuesta al portapapeles y dime ingerir respuesta para que la interprete y decida el siguiente paso.',
             'actions': [
                 self._assistant_action('ingest_external_response', 'Ingerir respuesta', 'Leer la respuesta desde el portapapeles y convertirla en acciones internas.'),
-                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar evidencia visual de lo que IABV puede observar ahora.'),
                 self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Comprobar si la ruta externa sigue siendo coherente.'),
                 self._assistant_action('open_evolution_center', 'Ver evolutivo', 'Revisar el caso mientras llega la respuesta externa.'),
-            ],
-        }
-
-    def _guidance_for_unverified_external_reuse(
-        self,
-        *,
-        assistant_kind: str,
-        assistant_title: str,
-        reason: str,
-    ) -> dict[str, Any]:
-        return {
-            'mode': 'need_approval',
-            'title': f'Necesito verificar {assistant_title}',
-            'prompt': reason,
-            'actions': [
-                self._assistant_action('approve_observation_permission', 'Permitir observacion', f'Conceder permiso para observar la ventana de {assistant_title} y confirmar que paso.'),
-                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia antes de reintentar.'),
-                self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a intentar la consulta con evidencia nueva.'),
-                self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Revisar por que el sistema interpreto el estado como reutilizable.'),
             ],
         }
 
@@ -6541,30 +10255,11 @@ class ControlCenterViewModel(QObject):
             'execute': bool(self._adaptive_session_id and execution_state.get('executor_available') and not execution_state.get('simulation_only')),
             'abort': bool(self._adaptive_session_id and status not in {'aborted', 'completed'}),
         }
-        self._refresh_autonomy_dock_async()
+        self._refresh_autonomy_dock()
 
     def get_chat_messages(self) -> list[dict[str, str]]:
         with self._ui_state_lock:
             return list(self._chat_messages)
-
-    def get_chat_messages_preview(self) -> list[dict[str, Any]]:
-        """Return a small UI-facing window over the persisted chat history."""
-        limit = int(getattr(self, '_CHAT_PREVIEW_MESSAGE_LIMIT', 8))
-        text_limit = int(getattr(self, '_CHAT_PREVIEW_TEXT_LIMIT', 1200))
-        with self._ui_state_lock:
-            messages = [dict(item) for item in self._chat_messages[-limit:]]
-        for item in messages:
-            text = str(item.get('text') or '')
-            if len(text) > text_limit:
-                omitted = len(text) - text_limit
-                item['text'] = (
-                    text[:text_limit].rstrip()
-                    + f"\n\n[Vista resumida: se omitieron {omitted} caracteres. Usa busqueda o historial local para recuperar el contenido completo.]"
-                )
-                item['textTruncated'] = True
-                item['previewTextChars'] = text_limit
-                item.setdefault('fullTextChars', len(text))
-        return messages
 
     def get_provider_cards(self) -> list[dict[str, Any]]:
         return self._provider_cards
@@ -6583,508 +10278,6 @@ class ControlCenterViewModel(QObject):
 
     def get_autonomy_timeline(self) -> list[dict[str, Any]]:
         return self._autonomy_timeline
-
-    def get_autonomy_dock_status(self) -> str:
-        return self._autonomy_dock_status
-
-    def get_autonomy_dock_last_result(self) -> str:
-        return self._autonomy_dock_last_result
-
-    def get_autonomy_dock_last_summary(self) -> str:
-        return self._autonomy_dock_last_summary
-
-    @staticmethod
-    def _compact_autonomy_dock_value(value: Any, depth: int = 0, max_depth: int = 2) -> Any:
-        if value is None or isinstance(value, (bool, int, float)):
-            return value
-        if isinstance(value, str):
-            return value[:96]
-        if isinstance(value, list):
-            if depth >= max_depth:
-                return {'__len': len(value)}
-            return {
-                '__len': len(value),
-                'items': [
-                    ControlCenterViewModel._compact_autonomy_dock_value(item, depth + 1, max_depth)
-                    for item in value[:12]
-                ],
-            }
-        if isinstance(value, dict):
-            if depth >= max_depth:
-                return {'__keys': sorted(str(key) for key in value.keys())[:24]}
-            return {
-                str(key): ControlCenterViewModel._compact_autonomy_dock_value(value[key], depth + 1, max_depth)
-                for key in sorted(value.keys(), key=str)[:32]
-            }
-        return str(value)[:96]
-
-    @staticmethod
-    def _autonomy_dock_fingerprint(projected: dict[str, Any]) -> str:
-        compact = {
-            'live_process_summary': ControlCenterViewModel._compact_autonomy_dock_value(
-                projected.get('live_process_summary') or {}
-            ),
-            'live_work_items': ControlCenterViewModel._compact_autonomy_dock_value(
-                projected.get('live_work_items') or []
-            ),
-            'assistant_session_cards': ControlCenterViewModel._compact_autonomy_dock_value(
-                projected.get('assistant_session_cards') or []
-            ),
-            'autonomy_timeline': ControlCenterViewModel._compact_autonomy_dock_value(
-                projected.get('autonomy_timeline') or []
-            ),
-        }
-        raw = json.dumps(compact, sort_keys=True, default=str)
-        return hashlib.md5(raw.encode('utf-8', errors='replace')).hexdigest()[:16]
-
-    @staticmethod
-    def _process_rss_mb() -> float:
-        try:
-            import psutil  # type: ignore
-            return round(float(psutil.Process(os.getpid()).memory_info().rss) / (1024 * 1024), 1)
-        except Exception:
-            return 0.0
-
-    def _trace_autonomy_dock(self, kind: str, **data: Any) -> None:
-        try:
-            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            get_runtime_tracer().trace(kind, **data)
-        except Exception:
-            pass
-
-    def _visible_query_wait_active(self) -> bool:
-        """True while the user is still waiting for the foreground chat answer."""
-        if self._working:
-            return True
-        if getattr(self, '_active_interaction_id', None) and self._live_status in {'processing', 'streaming'}:
-            return True
-        return False
-
-    def _recent_ui_stall_ms(self) -> float:
-        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
-        if watchdog is None:
-            return 0.0
-        recent_stalls = []
-        try:
-            recent_stalls = list(watchdog.recent_stalls(limit=3))
-        except Exception:
-            return 0.0
-        durations: list[float] = []
-        for item in recent_stalls:
-            if not isinstance(item, dict):
-                continue
-            try:
-                durations.append(float(item.get('duration_ms') or 0.0))
-            except Exception:
-                continue
-        return max(durations or [0.0])
-
-    def _ui_route_stability_budget_context(self) -> tuple[float | None, str]:
-        """Return current UI route age and label for operational-budget decisions."""
-        route_age_s: float | None = None
-        active_route = ''
-        bootstrap = getattr(self, '_bootstrap_ref', None)
-        if bootstrap is not None:
-            try:
-                active_route = str(getattr(bootstrap, '_active_ui_route', '') or '').strip()
-            except Exception:
-                active_route = ''
-            try:
-                changed_at = float(getattr(bootstrap, '_last_ui_route_change_at', 0.0) or 0.0)
-                if changed_at > 0.0:
-                    route_age_s = max(0.0, time.monotonic() - changed_at)
-            except Exception:
-                route_age_s = None
-        if not active_route:
-            nav = getattr(self, 'navigation_controller', None)
-            getter = getattr(nav, 'get_current_route', None) if nav is not None else None
-            if callable(getter):
-                try:
-                    active_route = str(getter() or '').strip()
-                except Exception:
-                    active_route = ''
-        return route_age_s, active_route
-
-    def _autonomy_dock_budget_decision(self, *, source: str, rss_mb: float) -> dict[str, Any]:
-        policy = getattr(getattr(self, 'adaptive_orchestrator', None), 'autonomy_governance_policy', None)
-        visible_wait = self._visible_query_wait_active()
-        idle_seconds = max(0.0, time.monotonic() - float(getattr(self, '_autonomy_dock_rest_window_started_at', 0.0) or 0.0))
-        recent_stall_ms = self._recent_ui_stall_ms()
-        route_age_s, active_route = ControlCenterViewModel._ui_route_stability_budget_context(self)
-
-        def _record(budget: dict[str, Any], summary: str) -> None:
-            recorder = getattr(self, '_record_operational_budget_experiment', None)
-            if not callable(recorder):
-                return
-            try:
-                recorder(budget, observed_summary=summary)
-            except Exception:
-                pass
-
-        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
-            try:
-                budget = dict(policy.evaluate_operational_budget(
-                    work_class='autonomy_dock_refresh',
-                    source=source,
-                    priority='background',
-                    user_waiting=visible_wait,
-                    query_pending=visible_wait,
-                    rss_mb=rss_mb,
-                    recent_stall_ms=recent_stall_ms,
-                    idle_seconds=idle_seconds,
-                    ui_route_stability_age_s=route_age_s,
-                    active_route=active_route,
-                    background_active=bool(getattr(self, '_provider_refreshing', False)),
-                    confidence=0.84,
-                ))
-                _record(
-                    budget,
-                    f'autonomy_dock_refresh:{source} -> {budget.get("decision")}:{budget.get("reason")}',
-                )
-                return budget
-            except Exception:
-                pass
-        if visible_wait:
-            budget = {
-                'allowed': False,
-                'decision': 'defer',
-                'reason': 'visible_query_wait_active',
-                'work_class': 'autonomy_dock_refresh',
-                'priority': 'background',
-                'evidence': {
-                    'rss_mb': rss_mb,
-                    'idle_seconds': round(idle_seconds, 1),
-                    'recent_stall_ms': recent_stall_ms,
-                    'ui_route_stability_age_s': route_age_s,
-                    'active_route': active_route,
-                },
-                'decision_source': 'control_center_viewmodel.fallback_budget',
-            }
-            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
-            return budget
-        rss_limit = float(getattr(
-            self,
-            '_AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB',
-            ControlCenterViewModel._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB,
-        ))
-        if rss_mb >= rss_limit:
-            budget = {
-                'allowed': False,
-                'decision': 'defer',
-                'reason': 'resource_pressure_high',
-                'work_class': 'autonomy_dock_refresh',
-                'priority': 'background',
-                'evidence': {
-                    'rss_mb': rss_mb,
-                    'idle_seconds': round(idle_seconds, 1),
-                    'recent_stall_ms': recent_stall_ms,
-                    'ui_route_stability_age_s': route_age_s,
-                    'active_route': active_route,
-                },
-                'decision_source': 'control_center_viewmodel.fallback_budget',
-            }
-            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
-            return budget
-        post_task = str(source or '').strip().lower().startswith('post_task:')
-        if post_task and recent_stall_ms >= 2000.0:
-            budget = {
-                'allowed': False,
-                'decision': 'defer',
-                'reason': f'post_task_recent_ui_stall:{int(recent_stall_ms)}ms',
-                'work_class': 'autonomy_dock_refresh',
-                'priority': 'background',
-                'evidence': {
-                    'rss_mb': rss_mb,
-                    'idle_seconds': round(idle_seconds, 1),
-                    'recent_stall_ms': recent_stall_ms,
-                    'ui_route_stability_age_s': route_age_s,
-                    'active_route': active_route,
-                },
-                'decision_source': 'control_center_viewmodel.fallback_budget',
-            }
-            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
-            return budget
-        if post_task and rss_mb >= 1500.0:
-            budget = {
-                'allowed': False,
-                'decision': 'defer',
-                'reason': 'post_task_resource_pressure_high',
-                'work_class': 'autonomy_dock_refresh',
-                'priority': 'background',
-                'evidence': {
-                    'rss_mb': rss_mb,
-                    'idle_seconds': round(idle_seconds, 1),
-                    'recent_stall_ms': recent_stall_ms,
-                    'ui_route_stability_age_s': route_age_s,
-                    'active_route': active_route,
-                },
-                'decision_source': 'control_center_viewmodel.fallback_budget',
-            }
-            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
-            return budget
-        if post_task and idle_seconds < 600.0:
-            budget = {
-                'allowed': False,
-                'decision': 'defer',
-                'reason': 'post_task_rest_window_not_reached',
-                'work_class': 'autonomy_dock_refresh',
-                'priority': 'background',
-                'evidence': {
-                    'rss_mb': rss_mb,
-                    'idle_seconds': round(idle_seconds, 1),
-                    'recent_stall_ms': recent_stall_ms,
-                    'ui_route_stability_age_s': route_age_s,
-                    'active_route': active_route,
-                },
-                'decision_source': 'control_center_viewmodel.fallback_budget',
-            }
-            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
-            return budget
-        if source != 'user_click' and idle_seconds < 120.0:
-            budget = {
-                'allowed': False,
-                'decision': 'defer',
-                'reason': 'rest_window_not_reached',
-                'work_class': 'autonomy_dock_refresh',
-                'priority': 'background',
-                'evidence': {
-                    'rss_mb': rss_mb,
-                    'idle_seconds': round(idle_seconds, 1),
-                    'recent_stall_ms': recent_stall_ms,
-                    'ui_route_stability_age_s': route_age_s,
-                    'active_route': active_route,
-                },
-                'decision_source': 'control_center_viewmodel.fallback_budget',
-            }
-            _record(budget, f'autonomy_dock_refresh:{source} -> fallback defer')
-            return budget
-        budget = {
-            'allowed': True,
-            'decision': 'allow',
-            'reason': 'budget_available',
-            'work_class': 'autonomy_dock_refresh',
-            'priority': 'background',
-            'evidence': {
-                'rss_mb': rss_mb,
-                'idle_seconds': round(idle_seconds, 1),
-                'recent_stall_ms': recent_stall_ms,
-                'ui_route_stability_age_s': route_age_s,
-                'active_route': active_route,
-            },
-            'decision_source': 'control_center_viewmodel.fallback_budget',
-        }
-        _record(budget, f'autonomy_dock_refresh:{source} -> fallback allow')
-        return budget
-
-    def _record_operational_budget_experiment(
-        self,
-        budget: dict[str, Any],
-        *,
-        observed_summary: str = '',
-    ) -> None:
-        record_operational_budget_experiment(
-            repository=self.experiment_lab_repository,
-            budget=budget,
-            observed_summary=observed_summary,
-            evidence_refs=['ControlCenterViewModel', 'runtime_audit'],
-            metadata={'caller': 'ControlCenterViewModel'},
-            throttle_state=self._operational_budget_experiment_throttle,
-            throttle_seconds=60.0,
-        )
-
-    def _background_work_budget_decision(
-        self,
-        *,
-        work_class: str,
-        source: str,
-        confidence: float = 0.84,
-    ) -> dict[str, Any]:
-        """Apply the existing operational budget to non-foreground refreshes."""
-        rss_mb = self._process_rss_mb()
-        visible_wait = self._visible_query_wait_active()
-        idle_seconds = max(
-            0.0,
-            time.monotonic() - float(getattr(self, '_autonomy_dock_rest_window_started_at', 0.0) or 0.0),
-        )
-        recent_stall_ms = self._recent_ui_stall_ms()
-        route_age_s, active_route = ControlCenterViewModel._ui_route_stability_budget_context(self)
-        policy = getattr(getattr(self, 'adaptive_orchestrator', None), 'autonomy_governance_policy', None)
-        if policy is not None and hasattr(policy, 'evaluate_operational_budget'):
-            try:
-                budget = dict(policy.evaluate_operational_budget(
-                    work_class=work_class,
-                    source=source,
-                    priority='background',
-                    user_waiting=visible_wait,
-                    query_pending=visible_wait,
-                    rss_mb=rss_mb,
-                    recent_stall_ms=recent_stall_ms,
-                    idle_seconds=idle_seconds,
-                    ui_route_stability_age_s=route_age_s,
-                    active_route=active_route,
-                    background_active=bool(getattr(self, '_provider_refreshing', False)),
-                    confidence=confidence,
-                ))
-                self._record_operational_budget_experiment(
-                    budget,
-                    observed_summary=f'{work_class}:{source} -> {budget.get("decision")}:{budget.get("reason")}',
-                )
-                return budget
-            except Exception:
-                pass
-        if visible_wait:
-            reason = 'visible_query_wait_active'
-            allowed = False
-        elif rss_mb >= float(getattr(
-            self,
-            '_AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB',
-            ControlCenterViewModel._AUTONOMY_DOCK_TIMER_RSS_LIMIT_MB,
-        )):
-            reason = 'resource_pressure_high'
-            allowed = False
-        elif source.startswith('post_task:') and recent_stall_ms >= 2000.0:
-            reason = f'post_task_recent_ui_stall:{int(recent_stall_ms)}ms'
-            allowed = False
-        elif source.startswith('post_task:') and rss_mb >= 1500.0:
-            reason = 'post_task_resource_pressure_high'
-            allowed = False
-        elif source.startswith('post_task:') and idle_seconds < 600.0:
-            reason = 'post_task_rest_window_not_reached'
-            allowed = False
-        elif source != 'user_click' and idle_seconds < 120.0:
-            reason = 'rest_window_not_reached'
-            allowed = False
-        else:
-            reason = 'budget_available'
-            allowed = True
-        budget = {
-            'allowed': allowed,
-            'decision': 'allow' if allowed else 'defer',
-            'reason': reason,
-            'work_class': work_class,
-            'priority': 'background',
-            'evidence': {
-                'rss_mb': rss_mb,
-                'idle_seconds': round(idle_seconds, 1),
-                'recent_stall_ms': recent_stall_ms,
-                'ui_route_stability_age_s': route_age_s,
-                'active_route': active_route,
-            },
-            'decision_source': 'control_center_viewmodel.fallback_budget',
-        }
-        self._record_operational_budget_experiment(
-            budget,
-            observed_summary=f'{work_class}:{source} -> fallback {budget["decision"]}:{reason}',
-        )
-        return budget
-
-    def _refresh_post_task_surfaces_after_result(self, task_name: str) -> None:
-        """Refresh secondary UI/metacognition surfaces only when budget allows.
-
-        Chat completion must not immediately fan out into OSES/packet/card
-        rebuilds while the user is still observing the UI.  The canonical
-        interaction audit is already durable at this point; these surfaces are
-        background projections and can wait for an idle/rest window.
-        """
-        heavy_refreshes = [
-            'progress_cards',
-            'evolution_snapshot',
-            'agent_cards',
-            'development_packet',
-        ]
-        if task_name in {'chat', 'external_consultation'}:
-            budget = self._background_work_budget_decision(
-                work_class='control_post_task_refresh',
-                source=f'post_task:{task_name}',
-                confidence=0.86,
-            )
-            if not bool(budget.get('allowed')):
-                reason = str(budget.get('reason') or 'operational_budget_deferred')
-                self._trace_autonomy_dock(
-                    'control_post_task_refresh_deferred',
-                    task_name=task_name,
-                    reason=reason,
-                    skipped_refreshes=heavy_refreshes,
-                    budget=budget,
-                    rss_mb=self._process_rss_mb(),
-                )
-                self._refresh_autonomy_dock_async(source=f'post_task:{task_name}')
-                return
-            self._trace_autonomy_dock(
-                'control_post_task_refresh_started',
-                task_name=task_name,
-                budget=budget,
-                rss_mb=self._process_rss_mb(),
-            )
-        self._update_progress_cards()
-        self._refresh_evolution_snapshot_async()
-        self._refresh_agent_cards_async()
-        self._refresh_development_packet_async()
-        self._refresh_autonomy_dock_async(source=f'post_task:{task_name}')
-
-    def _autonomy_dock_defer_reason(self, *, source: str, force: bool) -> tuple[str, float]:
-        """Return a reason to defer timer-driven dock refreshes under pressure."""
-        rss_mb = self._process_rss_mb()
-        budget = self._autonomy_dock_budget_decision(source=source, rss_mb=rss_mb)
-        self._autonomy_dock_last_budget_decision = dict(budget)
-        if bool(budget.get('allowed')):
-            return '', rss_mb
-        return str(budget.get('reason') or 'operational_budget_deferred'), rss_mb
-
-    def _trace_autonomy_dock_skip_once(
-        self,
-        *,
-        event: str,
-        source: str,
-        reason: str,
-        **data: Any,
-    ) -> None:
-        """Trace routine timer skips sparsely so telemetry cannot freeze the UI."""
-        now = time.monotonic()
-        key = f'{event}:{source}:{reason}'
-        if source == 'timer':
-            last_key = getattr(self, '_autonomy_dock_last_skip_trace_key', '')
-            last_at = float(getattr(self, '_autonomy_dock_last_skip_trace_at', 0.0) or 0.0)
-            cooldown_s = float(
-                getattr(
-                    self,
-                    '_AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S',
-                    ControlCenterViewModel._AUTONOMY_DOCK_SKIP_TRACE_COOLDOWN_S,
-                )
-            )
-            if key == last_key and (now - last_at) < cooldown_s:
-                return
-            self._autonomy_dock_last_skip_trace_key = key
-            self._autonomy_dock_last_skip_trace_at = now
-        payload = dict(data)
-        payload.update({'source': source, 'reason': reason})
-        budget = getattr(self, '_autonomy_dock_last_budget_decision', None)
-        if isinstance(budget, dict) and budget:
-            payload.setdefault('operational_budget', budget)
-        active_interaction_id = getattr(self, '_active_interaction_id', None)
-        if active_interaction_id:
-            payload.setdefault('interaction_id', active_interaction_id)
-        self._trace_autonomy_dock(event, **payload)
-
-    def _release_visible_query_wait(self, *, reason: str) -> None:
-        """Stop marking the UI as waiting once the user already got a visible reply."""
-        watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
-        if watchdog is not None:
-            try:
-                watchdog.set_query_pending(False)
-                watchdog.set_active_interaction(None)
-            except Exception:
-                pass
-        self._set_live_status('idle')
-        try:
-            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            get_runtime_tracer().trace(
-                'interaction_visible_wait_released',
-                interaction_id=getattr(self, '_active_interaction_id', '') or '',
-                reason=reason,
-            )
-        except Exception:
-            pass
 
     def get_evolution_overview(self) -> dict[str, Any]:
         return self._evolution_overview
@@ -7236,7 +10429,7 @@ class ControlCenterViewModel(QObject):
         self._pbt_candidates = self._pbt_state.get('candidates', [])[:4]
         self._last_goal_context = self._goal_context_from_repository(self._current_site_id() or None)
         self._update_progress_cards()
-        self._refresh_evolution_snapshot_async()
+        self._update_evolution_snapshot()
         self._agent_cards = self._build_agent_cards()
         self._repo_bridge_text = self.development_assist_service.build_repo_bridge_summary()
         self._local_stack_text = self.development_assist_service.build_local_stack_summary()
@@ -7245,6 +10438,7 @@ class ControlCenterViewModel(QObject):
         self._seed_development_packet()
         self._refresh_autonomy_dock()
         self._refresh_control_master()
+        self._check_stale_build_gate()
         self.dataChanged.emit()
 
     @Slot()
@@ -7267,7 +10461,97 @@ class ControlCenterViewModel(QObject):
         """
         self._bg_pool.submit(self._refresh_all_data)
 
+    def _check_stale_build_gate(self) -> None:
+        """Show a one-time warning if the build fingerprint is stale."""
+        if getattr(self, '_stale_build_warned', False):
+            return
+        fp = self.latestRuntimeBuildFingerprint
+        if not fp or not fp.get('stale'):
+            return
+        self._stale_build_warned = True
+        missing = ', '.join(fp.get('missing_markers') or [])
+        branch = fp.get('branch', '?')
+        self._append_message(
+            'assistant',
+            'IABV',
+            f'Estas probando codigo viejo (rama {branch}); '
+            'esta prueba viva no valida los fixes recientes. '
+            f'Markers faltantes: {missing}.',
+            'Stale-Code Gate: build sin features P0.8-P0.11.',
+        )
+
+    # ── P0.12 Refresh budget: coalesce timestamps ──
+    _DOCK_REFRESH_BUDGET_MS: float = 2000.0
+    _DOCK_REFRESH_MIN_INTERVAL_S: float = 1.0
+    _DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S: float = 30.0
+    _DOCK_REFRESH_BUDGET_COOLDOWN_S: float = 10.0
+    _DOCK_SKIP_TRACE_COOLDOWN_S: float = 15.0
+
+    def _should_skip_dock_refresh(self) -> str:
+        """Return a non-empty reason string if dock refresh should be skipped."""
+        now = time.time()
+        last_refresh = getattr(self, '_last_dock_refresh_ts', 0.0)
+        if now - last_refresh < self._DOCK_REFRESH_MIN_INTERVAL_S:
+            return 'coalesced'
+        budget_cooldown_until = getattr(self, '_dock_budget_cooldown_until', 0.0)
+        if now < budget_cooldown_until:
+            return 'budget_cooldown'
+        if self._working:
+            return 'query_pending'
+        if self._should_defer_heavy_work():
+            return 'resource_pressure'
+        last_ext = getattr(self, '_last_external_consultation_ts', 0.0)
+        if last_ext and (now - last_ext) < self._DOCK_REFRESH_POST_CONSULTATION_COOLDOWN_S:
+            return 'post_external_consultation'
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+            now_elapsed = tracer.current_elapsed_ms()
+            recent_stalls = tracer.events(kind='ui_event', limit=20)
+            heavy_stalls = [
+                e for e in recent_stalls
+                if e.get('data', {}).get('event_type') == 'ui_event_loop_stall'
+                and e.get('data', {}).get('duration_ms', 0) > 2000
+                and (now_elapsed - e.get('elapsed_ms', 0)) < 30_000
+            ]
+            if heavy_stalls:
+                return 'recent_heavy_stall'
+        except Exception:
+            pass
+        return ''
+
+    def _should_trace_dock_skip(self, reason: str) -> bool:
+        """Rate-limit repeated skip telemetry while preserving first evidence."""
+        now = time.time()
+        last_by_reason = getattr(self, '_dock_skip_last_trace', None)
+        if not isinstance(last_by_reason, dict):
+            last_by_reason = {}
+            self._dock_skip_last_trace = last_by_reason
+        last = float(last_by_reason.get(reason, 0.0) or 0.0)
+        if now - last < self._DOCK_SKIP_TRACE_COOLDOWN_S:
+            return False
+        last_by_reason[reason] = now
+        return True
+
     def _refresh_autonomy_dock(self) -> None:
+        skip_reason = self._should_skip_dock_refresh()
+        if skip_reason:
+            if self._should_trace_dock_skip(skip_reason):
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    trace_kind = {
+                        'coalesced': 'control_autonomy_dock_refresh_deferred',
+                        'query_pending': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
+                        'resource_pressure': 'control_autonomy_dock_refresh_skipped_due_to_pressure',
+                        'recent_heavy_stall': 'control_autonomy_dock_refresh_deferred',
+                        'post_external_consultation': 'control_autonomy_dock_refresh_deferred',
+                        'budget_cooldown': 'control_autonomy_dock_refresh_deferred',
+                    }.get(skip_reason, 'control_autonomy_dock_refresh_deferred')
+                    get_runtime_tracer().trace(trace_kind, reason=skip_reason)
+                except Exception:
+                    pass
+            return
+        t0 = time.perf_counter()
         projector = self.autonomy_activity_projector
         if projector is None:
             self._live_process_summary = {}
@@ -7285,247 +10569,25 @@ class ControlCenterViewModel(QObject):
         self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
         self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
         self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
-
-    def _refresh_autonomy_dock_async(self, *, source: str = 'timer', force: bool = False) -> None:
-        """Run autonomy dock projection on ``_bg_pool`` and apply to UI."""
-        trace_hook = getattr(self, '_trace_autonomy_dock', None)
-
-        def _trace(kind: str, **data: Any) -> None:
-            if callable(trace_hook):
-                trace_hook(kind, **data)
-
-        defer_helper = getattr(self, '_autonomy_dock_defer_reason', None)
-        if callable(defer_helper):
-            defer_reason, defer_rss_mb = defer_helper(source=source, force=force)
-        else:
-            defer_reason, defer_rss_mb = '', 0.0
-        skip_once = getattr(self, '_trace_autonomy_dock_skip_once', None)
-        if defer_reason:
-            payload = {
-                'rss_mb': defer_rss_mb or self._process_rss_mb(),
-                'live_status': self._live_status,
-                'working': bool(self._working),
-                'operational_budget': dict(getattr(self, '_autonomy_dock_last_budget_decision', {}) or {}),
-            }
-            if callable(skip_once):
-                skip_once(
-                    event='control_autonomy_dock_refresh_deferred',
-                    source=source,
-                    reason=defer_reason,
-                    **payload,
-                )
-            else:
-                _trace('control_autonomy_dock_refresh_deferred', source=source, reason=defer_reason, **payload)
-            return
-        if self._autonomy_dock_refresh_in_flight:
-            if callable(skip_once):
-                skip_once(
-                    event='control_autonomy_dock_refresh_skipped',
-                    source=source,
-                    reason='in_flight',
-                )
-            else:
-                _trace('control_autonomy_dock_refresh_skipped', source=source, reason='in_flight')
-            return
-        now = time.monotonic()
-        elapsed_since_last = now - self._autonomy_dock_last_refresh_started
-        if not force and elapsed_since_last < self._autonomy_dock_min_interval_s:
-            payload = {
-                'cooldown_remaining_ms': round((self._autonomy_dock_min_interval_s - elapsed_since_last) * 1000.0, 1),
-            }
-            if callable(skip_once):
-                skip_once(
-                    event='control_autonomy_dock_refresh_skipped',
-                    source=source,
-                    reason='cooldown',
-                    **payload,
-                )
-            else:
-                _trace('control_autonomy_dock_refresh_skipped', source=source, reason='cooldown', **payload)
-            return
-        self._autonomy_dock_refresh_in_flight = True
-        self._autonomy_dock_status = 'refreshing'
-        self._autonomy_dock_last_result = 'running'
-        self._autonomy_dock_last_summary = 'Actualizando dock de autonomia...'
-        self._autonomy_dock_last_refresh_started = now
-        self._autonomy_dock_generation += 1
-        gen = self._autonomy_dock_generation
-        refresh_id = f'ccdock-{uuid.uuid4().hex[:8]}'
-        t0 = time.perf_counter()
-        self.autonomyDockStatusChanged.emit()
-        _trace(
-            'control_autonomy_dock_refresh_started',
-            refresh_id=refresh_id,
-            source=source,
-            generation=gen,
-            rss_mb=self._process_rss_mb(),
-            status_emitted_signals=['autonomyDockStatusChanged'],
-        )
-        projector = self.autonomy_activity_projector
-        if projector is None:
-            self._autonomy_dock_refresh_in_flight = False
-            self._autonomy_dock_status = 'idle'
-            self._autonomy_dock_last_result = 'unavailable'
-            self._autonomy_dock_last_summary = 'Dock de autonomia no disponible en esta sesion.'
-            self._live_process_summary = {}
-            self._live_work_items = []
-            self._assistant_session_cards = []
-            self._autonomy_timeline = []
-            self.autonomyDockStatusChanged.emit()
-            self.autonomyDockChanged.emit()
-            _trace(
-                'control_autonomy_dock_refresh_applied',
-                refresh_id=refresh_id,
-                source=source,
-                generation=gen,
-                duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
-                result='unavailable',
-                rss_mb=self._process_rss_mb(),
-                emitted_signals=['autonomyDockChanged', 'autonomyDockStatusChanged'],
-            )
-            return
-        def _bg() -> dict[str, Any] | None:
-            if self._autonomy_dock_generation != gen:
-                return None
-            watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
-            if watchdog is not None:
-                watchdog.set_dominant_phase('control_center_refresh_autonomy_dock')
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        self._last_dock_refresh_ts = time.time()
+        if elapsed_ms > self._DOCK_REFRESH_BUDGET_MS:
+            self._dock_budget_cooldown_until = time.time() + self._DOCK_REFRESH_BUDGET_COOLDOWN_S
             try:
-                goal = self._goal_context_for_display(self._current_site_id() or None)
-                audit = self._latest_live_audit()
-                replay = self._latest_replay_visual_summary()
-                activity = self.get_autonomy_activity()
-                return projector.project(
-                    goal_context=goal,
-                    live_audit=audit,
-                    replay_visual_summary=replay,
-                    autonomy_activity=activity,
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'control_autonomy_dock_refresh_budget_exceeded',
+                    elapsed_ms=round(elapsed_ms, 1),
+                    budget_ms=self._DOCK_REFRESH_BUDGET_MS,
+                    cooldown_s=self._DOCK_REFRESH_BUDGET_COOLDOWN_S,
                 )
-            finally:
-                if watchdog is not None:
-                    watchdog.set_dominant_phase('')
-
-        def _apply(fut: Any) -> None:
-            self._autonomy_dock_refresh_in_flight = False
-            if self._autonomy_dock_generation != gen:
-                self._autonomy_dock_status = 'idle'
-                self._autonomy_dock_last_result = 'cancelled'
-                self._autonomy_dock_last_summary = 'Refresh de autonomia cancelado por una generacion mas nueva.'
-                self.autonomyDockStatusChanged.emit()
-                _trace(
-                    'control_autonomy_dock_refresh_stale',
-                    refresh_id=refresh_id,
-                    source=source,
-                    generation=gen,
-                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
-                    rss_mb=self._process_rss_mb(),
-                )
-                return
-            try:
-                projected = fut.result()
             except Exception:
-                logger.debug('autonomy dock bg projection failed', exc_info=True)
-                self._autonomy_dock_status = 'failed'
-                self._autonomy_dock_last_result = 'failed'
-                self._autonomy_dock_last_summary = 'No pude actualizar el dock de autonomia.'
-                self.autonomyDockStatusChanged.emit()
-                _trace(
-                    'control_autonomy_dock_refresh_failed',
-                    refresh_id=refresh_id,
-                    source=source,
-                    generation=gen,
-                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
-                    rss_mb=self._process_rss_mb(),
-                )
-                return
-            if projected is None:
-                self._autonomy_dock_status = 'idle'
-                self._autonomy_dock_last_result = 'cancelled'
-                self._autonomy_dock_last_summary = 'Refresh de autonomia cancelado antes de aplicar.'
-                self.autonomyDockStatusChanged.emit()
-                _trace(
-                    'control_autonomy_dock_refresh_stale',
-                    refresh_id=refresh_id,
-                    source=source,
-                    generation=gen,
-                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
-                    rss_mb=self._process_rss_mb(),
-                )
-                return
-            projected['_refresh_meta'] = {
-                'refresh_id': refresh_id,
-                'source': source,
-                'generation': gen,
-                't0': t0,
-            }
-            self.autonomyDockProjected.emit(gen, projected)
-
-        future = self._bg_pool.submit(_bg)
-        future.add_done_callback(_apply)
-
-    @Slot(int, object)
-    def _apply_autonomy_dock_projection(self, gen: int, projected: object) -> None:
-        if self._autonomy_dock_generation != gen or not isinstance(projected, dict):
-            return
-        try:
-            meta = dict(projected.get('_refresh_meta') or {})
-            refresh_id = str(meta.get('refresh_id') or '')
-            source = str(meta.get('source') or 'unknown')
-            t0 = float(meta.get('t0') or time.perf_counter())
-            fingerprint = ControlCenterViewModel._autonomy_dock_fingerprint(projected)
-            changed = fingerprint != self._autonomy_dock_last_fingerprint
-            emitted_signals = ['autonomyDockStatusChanged']
-            self._autonomy_dock_status = 'idle'
-            self._autonomy_dock_last_result = 'changed' if changed else 'unchanged'
-            if changed:
-                self._live_process_summary = dict(projected.get('live_process_summary') or {})
-                self._live_work_items = [dict(item) for item in (projected.get('live_work_items') or [])]
-                self._assistant_session_cards = [dict(item) for item in (projected.get('assistant_session_cards') or [])]
-                self._autonomy_timeline = [dict(item) for item in (projected.get('autonomy_timeline') or [])]
-                self._autonomy_dock_last_fingerprint = fingerprint
-                self._autonomy_dock_last_summary = (
-                    f'Dock actualizado: {len(self._live_work_items)} trabajos, '
-                    f'{len(self._assistant_session_cards)} asistentes, '
-                    f'{len(self._autonomy_timeline)} eventos.'
-                )
-                self.autonomyDockChanged.emit()
-                emitted_signals.append('autonomyDockChanged')
-            else:
-                self._autonomy_dock_last_summary = 'Dock actualizado: sin cambios nuevos.'
-            self.autonomyDockStatusChanged.emit()
-            trace_hook = getattr(self, '_trace_autonomy_dock', None)
-            if callable(trace_hook):
-                trace_hook(
-                    'control_autonomy_dock_refresh_applied',
-                    refresh_id=refresh_id,
-                    source=source,
-                    generation=gen,
-                    duration_ms=round((time.perf_counter() - t0) * 1000.0, 1),
-                    result=self._autonomy_dock_last_result,
-                    item_counts={
-                        'live_work_items': len(projected.get('live_work_items') or []),
-                        'assistant_session_cards': len(projected.get('assistant_session_cards') or []),
-                        'autonomy_timeline': len(projected.get('autonomy_timeline') or []),
-                    },
-                    rss_mb=self._process_rss_mb(),
-                    emitted_signals=emitted_signals,
-                )
-        except Exception:
-            self._autonomy_dock_status = 'failed'
-            self._autonomy_dock_last_result = 'failed'
-            self._autonomy_dock_last_summary = 'No pude aplicar el refresh del dock de autonomia.'
-            self.autonomyDockStatusChanged.emit()
-            logger.debug('autonomy dock UI projection apply failed', exc_info=True)
+                pass
 
     @Slot()
     def refreshAutonomyDock(self) -> None:
-        """Non-blocking QML refresh for the autonomy dock."""
-        self._refresh_autonomy_dock_async(source='timer', force=False)
-
-    @Slot()
-    def refreshAutonomyDockFromUser(self) -> None:
-        """Manual QML refresh for the autonomy dock; bypasses cooldown."""
-        self._refresh_autonomy_dock_async(source='user_click', force=True)
+        self._refresh_autonomy_dock()
+        self.dataChanged.emit()
 
     @Slot(str)
     def setRole(self, role: str) -> None:
@@ -7534,48 +10596,22 @@ class ControlCenterViewModel(QObject):
         if role == 'auto':
             self._auto_route_enabled = True
             self._busy_label = 'Modo automatico restaurado. La consola detectara intencion, pack y aprobaciones.'
-            self._refresh_development_packet_async()
+            self._bg_pool.submit(self._refresh_development_packet)
             self.dataChanged.emit()
             return
         if role in valid_roles:
             self._selected_role = role
             self._auto_route_enabled = False
             self._busy_label = f'Rol forzado a {self._selected_role_title()}.'
-            self._refresh_development_packet_async()
+            self._bg_pool.submit(self._refresh_development_packet)
             self.dataChanged.emit()
 
     @Slot()
     def toggleAdvanced(self) -> None:
         self._advanced_visible = not self._advanced_visible
         self.dataChanged.emit()
-        if self._advanced_visible:
-            QTimer.singleShot(0, lambda: self._refresh_provider_health(announce=False))
-
-    def _deferred_provider_health_probe(self) -> None:
-        """Avoid provider/tool scans while the first Control route is still settling."""
-        if not self._advanced_visible:
-            try:
-                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                get_runtime_tracer().trace(
-                    'control_provider_health_deferred',
-                    reason='advanced_panel_collapsed',
-                )
-            except Exception:
-                pass
-            return
-        self._refresh_provider_health(announce=False)
 
     def _refresh_provider_health(self, *, announce: bool) -> None:
-        if not announce and not self._advanced_visible:
-            try:
-                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                get_runtime_tracer().trace(
-                    'control_provider_health_deferred',
-                    reason='advanced_panel_collapsed',
-                )
-            except Exception:
-                pass
-            return
         if self._provider_refreshing:
             return
         self._provider_refreshing = True
@@ -7585,7 +10621,7 @@ class ControlCenterViewModel(QObject):
             except Exception:
                 startup_text = 'Consultando el stack local y los asistentes externos en segundo plano.'
             self._busy_label = 'Consultando el stack local y los asistentes externos en segundo plano.' if announce else startup_text
-            self.chatChanged.emit()
+            self.dataChanged.emit()
 
         def worker() -> None:
             try:
@@ -7915,99 +10951,30 @@ class ControlCenterViewModel(QObject):
             lines.append('Capacidades debiles:')
             for item in weak[:3]:
                 lines.append(
-                    self._compact_external_context_line(
-                        f"- {item.get('title') or item.get('capability_id') or 'capacidad'} | {item.get('status')} | {item.get('suggested_next_step') or 'sin siguiente paso'}"
-                    )
+                    f"- {item.get('title') or item.get('capability_id') or 'capacidad'} | {item.get('status')} | {item.get('suggested_next_step') or 'sin siguiente paso'}"
                 )
         outcome = payload.get('outcome') or {}
         if outcome.get('summary'):
-            lines.append(self._compact_external_context_line(f"Outcome actual: {outcome.get('summary')}"))
+            lines.append(f"Outcome actual: {outcome.get('summary')}")
         evidence_refs = payload.get('evidence_refs') or context.get('evidence_summary') or []
         if evidence_refs:
             lines.append('Evidencia textual:')
             for item in evidence_refs[:6]:
-                lines.append(self._compact_external_context_line(f"- {item}"))
+                lines.append(f"- {item}")
         if assistant_kind == 'codex':
             self._refresh_development_packet(self._last_user_goal or intent.get('title') or 'caso actual', force=True)
             lines.append('Paquete local para Codex:')
-            lines.append(self._compact_external_context_line(self._development_packet.strip(), limit=5000))
+            lines.append(self._development_packet.strip())
         else:
             lines.append('Objetivo para la IA externa: explicar por que el flujo no queda aprendido y proponer el siguiente microajuste mas seguro.')
-        return self._limit_external_context_pack('\n'.join(item for item in lines if item).strip())
+        return '\n'.join(item for item in lines if item).strip()
 
-    def _compact_external_context_line(self, value: Any, *, limit: int | None = None) -> str:
-        text = ' '.join(str(value or '').split())
-        max_len = int(limit or self._EXTERNAL_CONTEXT_ITEM_LIMIT)
-        if len(text) <= max_len:
-            return text
-        return text[: max_len - 18].rstrip() + ' ... [truncado]'
-
-    def _limit_external_context_pack(self, context_pack: str) -> str:
-        text = str(context_pack or '').strip()
-        if len(text) <= self._EXTERNAL_CONTEXT_PACK_LIMIT:
-            return text
-        marker = '\n\n[Contexto truncado por presupuesto operativo: el paquete completo era demasiado grande para una consulta visible segura.]'
-        return text[: self._EXTERNAL_CONTEXT_PACK_LIMIT - len(marker)].rstrip() + marker
-
-    def _trace_external_consultation_phase(self, phase: str, **payload: Any) -> None:
-        try:
-            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            get_runtime_tracer().trace(
-                'external_consultation_phase',
-                phase=phase,
-                interaction_id=self._active_interaction_id or '',
-                rss_mb=round(self._process_rss_mb(), 1),
-                **payload,
-            )
-        except Exception:
-            pass
-
-    @staticmethod
-    def _process_rss_mb() -> float:
-        try:
-            import psutil
-            return float(psutil.Process(os.getpid()).memory_info().rss) / (1024.0 * 1024.0)
-        except Exception:
-            return 0.0
-
-    def _preview_external_consultation_light(
+    def _execute_external_consultation_sync(
         self,
-        *,
         assistant_kind: str,
-        site_id: str | None,
-        diagnostic_category: str,
-        incident_kind: str,
+        *,
+        dispatch_id: str = '',
     ) -> dict[str, Any]:
-        self._trace_external_consultation_phase('reuse_probe_start', assistant_kind=assistant_kind)
-        goal_overrides: dict[str, Any] = {}
-        override_getter = getattr(self, '_external_session_goal_overrides', None)
-        if callable(override_getter):
-            try:
-                goal_overrides = dict(override_getter(assistant_kind) or {})
-            except Exception:
-                goal_overrides = {}
-        preview = self.tool_teach_service.preview_external_consultation(
-            user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
-            assistant_preference=assistant_kind,
-            context_pack='IABV reuse probe: detectar si ya existe contexto o episodio equivalente antes de construir un paquete grande.',
-            site_id=site_id,
-            diagnostic_category=diagnostic_category,
-            incident_kind=incident_kind,
-            launch_dry_run=False,
-            goal_parameters=goal_overrides,
-        )
-        tool_task = dict(preview.get('tool_task') or {})
-        reuse_guard = bool(dict(tool_task.get('metadata') or {}).get('reuse_guard_active'))
-        self._trace_external_consultation_phase(
-            'reuse_probe_done',
-            assistant_kind=assistant_kind,
-            available=bool(preview.get('available')),
-            reuse_guard_active=reuse_guard,
-            selected_tool_id=str((preview.get('tool_card') or {}).get('tool_id') or tool_task.get('tool_id') or ''),
-        )
-        return preview
-
-    def _execute_external_consultation_sync(self, assistant_kind: str) -> dict[str, Any]:
         if self.tool_teach_service is None:
             message = 'La capa Tool Teaching externa no esta inicializada en este contexto.'
             self._latest_response_text = message
@@ -8026,20 +10993,35 @@ class ControlCenterViewModel(QObject):
             assistant_kind=requested_assistant_kind,
         )
         if bool(preflight.get('blocked')):
-            retest_after_visible_verification = self._should_retest_security_preflight_after_visible_verification(
-                requested_assistant_kind,
-                preflight,
+            approval_checkpoints = [
+                dict(item) for item in (preflight.get('approval_checkpoints') or [])
+                if isinstance(item, dict)
+            ]
+            observation_permission_block = any(
+                str(item.get('phase_key') or '').strip().lower() == 'observation_permission'
+                for item in approval_checkpoints
             )
-            if retest_after_visible_verification:
-                self._release_visible_external_session(
-                    requested_assistant_kind,
-                    reason='security_preflight_retest_after_visible_verification',
-                )
-                self._trace_external_consultation_phase(
-                    'security_preflight_retest_after_visible_verification',
-                    assistant_kind=requested_assistant_kind,
-                    reason=str(preflight.get('reason') or ''),
-                )
+            if (
+                observation_permission_block
+                and self._has_live_observation_permission(requested_assistant_kind)
+            ):
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'stale_observation_permission_gate_ignored',
+                        assistant_kind=requested_assistant_kind,
+                        preflight_reason=str(preflight.get('reason') or ''),
+                        approval_count=len(approval_checkpoints),
+                        dispatch_id=dispatch_id,
+                    )
+                except Exception:
+                    pass
+                preflight = {
+                    **dict(preflight),
+                    'blocked': False,
+                    'approval_checkpoints': [],
+                    'reason': '',
+                }
             else:
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -8057,69 +11039,28 @@ class ControlCenterViewModel(QObject):
                     assistant_title=assistant_title,
                     preflight=preflight,
                 )
-            # Deliberately continue into the live execution path after the
-            # user-visible verification window was opened. If the challenge is
-            # still present, ToolTeach/adapter will return a fresh failed result.
+        if bool(preflight.get('blocked')):
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace_permission(
+                    permission_id=f'external_consultation:{requested_assistant_kind}',
+                    action='blocked',
+                    granted=False,
+                    reason=str(preflight.get('reason') or 'ruta bloqueada por gobernanza'),
+                    dialog_shown=True,
+                )
+            except Exception:
+                pass
+            return self._blocked_external_consultation_result(
+                assistant_kind=requested_assistant_kind,
+                assistant_title=assistant_title,
+                preflight=preflight,
+            )
         self._clear_observation_permission_artifacts()
         site_id = self._current_site_id() or None
         diagnostic_category = self._current_diagnostic_category()
         incident_kind = self._current_incident_kind()
-        light_preview = self._preview_external_consultation_light(
-            assistant_kind=assistant_kind,
-            site_id=site_id,
-            diagnostic_category=diagnostic_category,
-            incident_kind=incident_kind,
-        )
-        light_tool_card = dict(light_preview.get('tool_card') or {})
-        light_tool_task = dict(light_preview.get('tool_task') or {})
-        light_selected_tool_id = str(light_tool_card.get('tool_id') or light_tool_task.get('tool_id') or '')
-        if not bool(light_preview.get('available')):
-            assistant_title = str(light_tool_card.get('title') or self._assistant_display_name(requested_assistant_kind))
-            pending_issue_id = str((self._last_adaptive_payload or {}).get('pending_issue_id') or '')
-            extra = f' Pendiente actual: {pending_issue_id}.' if pending_issue_id else ''
-            message = f'No encontre una via externa disponible para {assistant_title}. Mantengo la guia local.{extra}'
-            self._latest_response_text = message
-            self._latest_response_meta = 'Consulta externa no disponible.'
-            self._trace_external_consultation_phase('reuse_probe_unavailable', assistant_kind=assistant_kind)
-            return {
-                'success': False,
-                'message': message,
-                'meta': 'Consulta externa no disponible.',
-                'payload': dict(self._last_adaptive_payload or {}),
-                'assistant_title': assistant_title,
-            }
-        if bool(dict(light_tool_task.get('metadata') or {}).get('reuse_guard_active')):
-            actual_assistant_kind = str(self._assistant_kind_from_tool_id(light_selected_tool_id) or requested_assistant_kind)
-            assistant_title = str(light_tool_card.get('title') or self._assistant_display_name(actual_assistant_kind))
-            if not self._observation_permission_granted(actual_assistant_kind):
-                self._trace_external_consultation_phase(
-                    'reuse_guard_short_circuit',
-                    assistant_kind=assistant_kind,
-                    selected_tool_id=light_selected_tool_id,
-                    response_verified=False,
-                )
-                return self._unverified_reuse_guard_external_result(
-                    assistant_kind=actual_assistant_kind,
-                    assistant_title=assistant_title,
-                    selected_tool_id=light_selected_tool_id,
-                    tool_task=light_tool_task,
-                )
-            self._trace_external_consultation_phase(
-                'reuse_guard_bypassed_after_observation_permission',
-                assistant_kind=assistant_kind,
-                selected_tool_id=light_selected_tool_id,
-                response_verified=False,
-            )
-        self._trace_external_consultation_phase('context_pack_build_start', assistant_kind=assistant_kind)
         context_pack = self._build_external_context_pack(assistant_kind)
-        self._trace_external_consultation_phase('context_pack_build_done', assistant_kind=assistant_kind, context_chars=len(context_pack))
-        goal_overrides: dict[str, Any] = {}
-        override_getter = getattr(self, '_external_session_goal_overrides', None)
-        if callable(override_getter):
-            try:
-                goal_overrides = dict(override_getter(assistant_kind) or {})
-            except Exception:
-                goal_overrides = {}
         preview = self.tool_teach_service.preview_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_preference=assistant_kind,
@@ -8128,7 +11069,6 @@ class ControlCenterViewModel(QObject):
             diagnostic_category=diagnostic_category,
             incident_kind=incident_kind,
             launch_dry_run=False,
-            goal_parameters=goal_overrides,
         )
         tool_card = dict(preview.get('tool_card') or {})
         tool_task = dict(preview.get('tool_task') or {})
@@ -8137,9 +11077,7 @@ class ControlCenterViewModel(QObject):
         requested_assistant_kind = str(assistant_kind or '').strip().lower()
         actual_assistant_kind = str(self._assistant_kind_from_tool_id(selected_tool_id) or requested_assistant_kind)
         assistant_title = str(tool_card.get('title') or self._assistant_display_name(actual_assistant_kind))
-        self._trace_external_consultation_phase('clipboard_copy_start', assistant_kind=assistant_kind, context_chars=len(context_pack))
         self._copy_text(context_pack, f'Contexto para {assistant_title} copiado al portapapeles.')
-        self._trace_external_consultation_phase('clipboard_copy_done', assistant_kind=assistant_kind, context_chars=len(context_pack))
         if not bool(preview.get('available')):
             pending_issue_id = str((self._last_adaptive_payload or {}).get('pending_issue_id') or '')
             extra = f' Pendiente actual: {pending_issue_id}.' if pending_issue_id else ''
@@ -8153,20 +11091,17 @@ class ControlCenterViewModel(QObject):
                 'payload': dict(self._last_adaptive_payload or {}),
                 'assistant_title': assistant_title,
             }
-        if bool(tool_task.get('metadata', {}).get('reuse_guard_active')) and not self._observation_permission_granted(actual_assistant_kind):
-            return self._unverified_reuse_guard_external_result(
-                assistant_kind=actual_assistant_kind,
-                assistant_title=assistant_title,
-                selected_tool_id=selected_tool_id,
-                tool_task=tool_task,
-            )
         if bool(tool_task.get('metadata', {}).get('reuse_guard_active')):
-            self._trace_external_consultation_phase(
-                'reuse_guard_bypassed_after_observation_permission',
-                assistant_kind=assistant_kind,
-                selected_tool_id=selected_tool_id,
-                response_verified=False,
-            )
+            message = f'Ya tenia una consulta equivalente para {assistant_title}, asi que voy a reutilizar ese contexto en lugar de arrancar de cero.'
+            self._latest_response_text = message
+            self._latest_response_meta = 'Reutilizando contexto existente.'
+            return {
+                'success': True,
+                'message': message,
+                'meta': 'Reutilizando contexto existente.',
+                'payload': dict(self._last_adaptive_payload or {}),
+                'assistant_title': assistant_title,
+            }
         task, result, _ = self.tool_teach_service.execute_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
             assistant_preference=assistant_kind,
@@ -8176,7 +11111,6 @@ class ControlCenterViewModel(QObject):
             incident_kind=incident_kind,
             approved=True,
             launch_dry_run=False,
-            goal_parameters=goal_overrides,
         )
         launch_mode = str(result.execution_state.metadata.get('launch_mode') or tool_card.get('metadata', {}).get('launch_mode') or '')
         response_capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or tool_card.get('metadata', {}).get('response_capture_mode') or '')
@@ -8242,6 +11176,230 @@ class ControlCenterViewModel(QObject):
             'external_state_flags': external_state_flags,
             'detail': str(result.execution_state.detail or result.error_message or ''),
         }
+        # ── Task B+C: validate visual evidence before treating as success ──
+        # The live observation data (target_window, blank_probability, etc.)
+        # may live in result.execution_state.metadata rather than
+        # result.metadata — combine both to ensure the validator sees all
+        # available evidence regardless of where the adapter stored it.
+        # execution_state.metadata prevails on conflict (live capture data).
+        combined_result_metadata = {
+            **result_metadata,
+            **dict(result.execution_state.metadata or {}),
+        }
+        visual_override = self._validate_visual_evidence_result(
+            assistant_kind=actual_assistant_kind or requested_assistant_kind,
+            assistant_title=assistant_title,
+            result_metadata=combined_result_metadata,
+            consultation_metadata=consultation_metadata,
+        )
+        if visual_override is not None:
+            # Evidence is invalid: do NOT report as success
+            payload = dict(self._last_adaptive_payload or {})
+            metadata = dict(payload.get('metadata') or {})
+            metadata['external_consultation'] = dict(consultation_metadata)
+            metadata['autonomous_evolution'] = dict(consultation_metadata)
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
+            target_window = combined_result_metadata.get('target_window')
+            capture_meta = (
+                combined_result_metadata.get('visual_evidence_snapshot')
+                or combined_result_metadata.get('capture_meta')
+                or {}
+            )
+            capture_state = self._target_window_capture_state(
+                target_window, capture_meta,
+            )
+            # ── P0.6: attempt remediation before giving up ──
+            assessment = self._assess_visual_remediation(
+                target_window=target_window,
+                capture_meta=capture_meta,
+                capture_state=capture_state,
+            )
+            remediation_result = self._attempt_safe_remediation(assessment)
+            capture_useful_before = bool(
+                (capture_meta or {}).get('useful', False)
+            )
+            blank_prob_before = float(
+                (capture_meta or {}).get('blank_probability') or 0.0
+            )
+            remediation_unresolved = list(capture_state.get('unresolved') or [])
+            remediation_detail = str(remediation_result.get('detail') or '')
+            remediation_detail_lower = remediation_detail.lower()
+            remediation_detail_code = (
+                'win32_api_not_available'
+                if 'win32' in remediation_detail_lower and 'not available' in remediation_detail_lower
+                else ''
+            )
+            # ── P0.8: attempt ONE post-remediation recapture ──
+            recapture = self._attempt_post_remediation_recapture(
+                remediation_result=remediation_result,
+                assessment=assessment,
+            )
+            capture_useful_after = recapture.get('capture_useful_after')
+            blank_prob_after = recapture.get('blank_probability_after')
+            recapture_status = recapture.get('recapture_status', 'skipped')
+            if recapture.get('recapture_unresolved'):
+                remediation_unresolved.extend(recapture['recapture_unresolved'])
+            if not recapture.get('recapture_attempted'):
+                if 'UNRESOLVED:visual_remediation_recapture_not_available' not in remediation_unresolved:
+                    remediation_unresolved.append('UNRESOLVED:visual_remediation_recapture_not_available')
+            self._trace_visual_remediation_attempted(
+                assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                target_window_title=assessment.get('target_window_title', ''),
+                hwnd=(target_window or {}).get('hwnd'),
+                rect=assessment.get('rect'),
+                reason=assessment.get('reason', ''),
+                proposed_action=assessment.get('proposed_action', ''),
+                action_taken=remediation_result.get('action_taken', 'none'),
+                result_status=assessment.get('status', 'unresolved'),
+                capture_useful_before=capture_useful_before,
+                capture_useful_after=capture_useful_after,
+                blank_probability_before=blank_prob_before,
+                blank_probability_after=blank_prob_after,
+                remediation_success=bool(remediation_result.get('success', False)),
+                remediation_detail_code=remediation_detail_code,
+                recapture_status=recapture_status,
+                unresolved=remediation_unresolved,
+            )
+            metadata['visual_remediation'] = {
+                'assessment': assessment,
+                'result': remediation_result,
+                'recapture': recapture,
+            }
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
+            # P0.8: if recapture improved, the visual target is now
+            # observable; but it is not, by itself, a verified external answer.
+            # P0.9: differentiate window-observable from response-captured.
+            visual_recaptured = recapture_status == 'improved' and bool(capture_useful_after)
+            if visual_recaptured:
+                consultation_metadata['visual_evidence_recovered'] = True
+                consultation_metadata['visual_recapture_status'] = recapture_status
+                # ── P0.9: verify response was actually captured ──
+                response_proof = self._build_post_recapture_response_proof(
+                    response_captured=response_captured,
+                    response_capture_pending=response_capture_pending,
+                    response_capture_mode=response_capture_mode,
+                    assistant_title=assistant_title,
+                    target_window=target_window,
+                    assessment=assessment,
+                    capture_useful_before=capture_useful_before,
+                    capture_useful_after=capture_useful_after,
+                    recapture=recapture,
+                    evidence_path=str(
+                        combined_result_metadata.get('evidence_path')
+                        or combined_result_metadata.get('screenshot_path')
+                        or ''
+                    ),
+                )
+                consultation_metadata['response_proof'] = response_proof
+                self._trace_post_recapture_response_verification(
+                    assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                    response_proof=response_proof,
+                )
+                metadata['external_consultation'] = dict(consultation_metadata)
+                metadata['autonomous_evolution'] = dict(consultation_metadata)
+                payload['metadata'] = metadata
+                self._update_adaptive_state(payload)
+                if not response_proof.get('response_captured'):
+                    # ── P0.10: attempt ONE response capture retry ──
+                    retry_result = self._attempt_post_recapture_response_retry(
+                        consultation_metadata=consultation_metadata,
+                        payload=payload,
+                        assistant_title=assistant_title,
+                        assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                        dispatch_id=dispatch_id or 'external_consultation_untracked',
+                    )
+                    if retry_result.get('response_captured'):
+                        # Retry succeeded — update proof and allow success
+                        response_proof['response_captured'] = True
+                        response_proof['status'] = 'response_captured'
+                        response_proof['response_capture_retry'] = 'success'
+                        consultation_metadata['response_proof'] = response_proof
+                        consultation_metadata['response_captured'] = True
+                        consultation_metadata['status'] = 'prepared'
+                        metadata['external_consultation'] = dict(consultation_metadata)
+                        metadata['autonomous_evolution'] = dict(consultation_metadata)
+                        payload['metadata'] = metadata
+                        self._update_adaptive_state(payload)
+                        # Fall through to normal success path below
+                    else:
+                        # Retry failed or unavailable — UNRESOLVED with guidance
+                        response_proof['response_capture_retry'] = retry_result.get('retry_status', 'unavailable')
+                        consultation_metadata['response_proof'] = response_proof
+                        guidance_msg = self._post_recapture_response_pending_message(
+                            assistant_title=assistant_title,
+                            response_proof=response_proof,
+                        )
+                        remediation_unresolved.append(
+                            'UNRESOLVED:window_observable_response_not_captured'
+                        )
+                        if not retry_result.get('retry_attempted'):
+                            remediation_unresolved.append(
+                                'UNRESOLVED:post_recapture_response_retry_api_missing'
+                            )
+                        consultation_metadata['status'] = 'window_observable_response_pending'
+                        metadata['external_consultation'] = dict(consultation_metadata)
+                        payload['metadata'] = metadata
+                        self._update_adaptive_state(payload)
+                        self._latest_response_text = guidance_msg
+                        self._latest_response_meta = f'{assistant_title}: response_pending'
+                        self._busy_label = ''
+                        return {
+                            'success': False,
+                            'message': guidance_msg,
+                            'meta': f'{assistant_title}: response_pending',
+                            'payload': payload,
+                            'assistant_title': assistant_title,
+                            'external_state_flags': external_state_flags,
+                            'visual_unresolved': False,
+                            'window_observable': True,
+                            'response_captured': False,
+                            'response_capture_pending': response_proof.get('response_capture_pending', False),
+                            'response_proof': response_proof,
+                            'visual_remediation': {
+                                'assessment': assessment,
+                                'result': remediation_result,
+                                'recapture': recapture,
+                            },
+                        }
+            else:
+                # P0.4: build shared reality causal handoff
+                shared_handoff = self._build_shared_reality_handoff(
+                    assistant_kind=actual_assistant_kind or requested_assistant_kind,
+                    assistant_title=assistant_title,
+                    target_window=target_window,
+                    capture_meta=capture_meta,
+                    capture_state=capture_state,
+                )
+                self._attach_evidence_to_handoff(shared_handoff, combined_result_metadata)
+                self._trace_shared_reality_handoff(shared_handoff)
+                metadata['shared_reality_handoff'] = shared_handoff
+                payload['metadata'] = metadata
+                self._update_adaptive_state(payload)
+                handoff_msg = self._remediation_user_message(
+                    assistant_title=assistant_title,
+                    assessment=assessment,
+                    remediation_result=remediation_result,
+                )
+                self._latest_response_text = handoff_msg
+                self._latest_response_meta = f'{assistant_title}: visual_unresolved'
+                self._busy_label = f'Captura visual no valida para {assistant_title}.'
+                return {
+                    'success': False,
+                    'message': handoff_msg,
+                    'meta': f'{assistant_title}: visual_unresolved',
+                    'payload': payload,
+                    'assistant_title': assistant_title,
+                    'external_state_flags': external_state_flags,
+                    'visual_unresolved': True,
+                    'shared_reality_handoff': shared_handoff,
+                    'visual_remediation': {
+                        'assessment': assessment,
+                        'result': remediation_result,
+                        'recapture': recapture,
+                    },
+                }
         payload = dict(self._last_adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
         metadata['external_consultation'] = dict(consultation_metadata)
@@ -8255,6 +11413,15 @@ class ControlCenterViewModel(QObject):
             meta = f'Consulta con {assistant_title}.'
         else:
             meta = f'Revision con {assistant_title}.'
+        # ── P0.12 Stale-Code Gate: invalidate live proof if build is stale ──
+        _fp = self.latestRuntimeBuildFingerprint
+        _build_is_stale = bool(_fp.get('stale')) if _fp else False
+        if _build_is_stale:
+            consultation_metadata['stale_build'] = True
+            consultation_metadata['stale_missing_markers'] = _fp.get('missing_markers', [])
+            metadata['external_consultation'] = dict(consultation_metadata)
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
         if result.success:
             if response_captured:
                 message = f"{result.output_text or 'Respuesta externa capturada.'} Ya tengo texto util desde {assistant_title} y lo dejare listo para integrarlo de forma segura.{fallback_note}"
@@ -8264,6 +11431,8 @@ class ControlCenterViewModel(QObject):
                 message = f"{result.output_text or 'Consulta externa preparada.'} IABV la llevara en una sesion aislada del programa, usando un chat especial separado de tus chats normales y capturando la respuesta en segundo plano cuando la sesion ya este autenticada.{fallback_note}"
             else:
                 message = f"{result.output_text or 'Consulta externa preparada.'} El contexto ya esta copiado y la respuesta vuelve por pegado manual.{fallback_note}"
+            if _build_is_stale:
+                message += ' [Stale-Code Gate: esta prueba viva no valida fixes recientes — actualiza main y vuelve a probar.]'
             self._latest_response_text = message
             self._latest_response_meta = meta
             self._busy_label = f'Consulta externa lista con {assistant_title}.'
@@ -8274,6 +11443,7 @@ class ControlCenterViewModel(QObject):
                 'payload': payload,
                 'assistant_title': assistant_title,
                 'external_state_flags': external_state_flags,
+                'stale_build': _build_is_stale,
             }
         failure_detail = str(result.error_message or result.execution_state.detail or 'sin detalle').strip()
         message, failure_meta, failure_busy = self._human_external_consultation_failure(
@@ -8292,6 +11462,23 @@ class ControlCenterViewModel(QObject):
             'assistant_title': assistant_title,
             'external_state_flags': external_state_flags,
         }
+
+    @staticmethod
+    def _is_resource_pressure_block(preflight: dict[str, Any]) -> bool:
+        """Check if a preflight block is caused by resource pressure."""
+        governance = dict(preflight.get('governance') or {})
+        reason = str(preflight.get('reason') or governance.get('reason') or '').lower()
+        diag = str(governance.get('diagnostic_category') or '').lower()
+        resource_pressure_signals = (
+            'presion de recursos',
+            'presión de recursos',
+            'resource pressure',
+            'resource_pressure',
+            'degradar con gracia',
+        )
+        if diag in ('environment_guard', 'resource_pressure'):
+            return True
+        return any(sig in reason for sig in resource_pressure_signals)
 
     def _blocked_external_consultation_result(
         self,
@@ -8312,11 +11499,18 @@ class ControlCenterViewModel(QObject):
         decision_context['metadata'] = decision_metadata
         metadata['decision_context'] = decision_context
         metadata['world_model_summary'] = world_model_summary
+
+        # P0.22: detect resource_pressure to set correct preflight metadata.
+        is_resource_pressure = self._is_resource_pressure_block(preflight)
+
         metadata['external_consultation_preflight'] = {
             'assistant_kind': assistant_kind,
             'reason': str(preflight.get('reason') or governance.get('reason') or ''),
             'blocked': True,
             'world_model_summary': world_model_summary,
+            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
+            'requires_observation_permission': False if is_resource_pressure else bool(approval_checkpoints),
+            'retry_when_pressure_clears': is_resource_pressure,
         }
         payload['metadata'] = metadata
         payload['approval_checkpoints'] = approval_checkpoints
@@ -8328,71 +11522,31 @@ class ControlCenterViewModel(QObject):
         )
         self._update_adaptive_state(payload)
         reason = str(preflight.get('reason') or governance.get('reason') or '').strip()
-        security_blocked = (
-            'browser_security_verification' in reason.lower()
-            or 'verificacion de seguridad' in reason.lower()
-            or 'verificación de seguridad' in reason.lower()
-            or 'browser_security_verification' in list(governance.get('external_state_flags') or [])
-        )
-        open_action = f'open_external_assistant_{assistant_kind}'
-        panel_actions = [
-            self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Verificar la ventana externa con permiso explicito.'),
-            self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia.'),
-            self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a evaluar la ruta si cambio el estado.'),
-            self._assistant_action('audit_autonomy', 'Auditar ruta', 'Revisar el bloqueo operativo.'),
-        ]
-        if security_blocked:
-            panel_actions.insert(0, self._assistant_action(open_action, f'Abrir {assistant_title}', 'Mostrar la pagina/verificacion para que el usuario pueda resolverla.'))
-        self._set_external_evidence_panel(
-            title='Verificacion de seguridad pendiente' if security_blocked else 'Ruta externa bloqueada antes de abrir ventana',
-            status='blocked',
-            assistant_title=assistant_title,
-            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
-            phases=[{'phase': 'external_preflight_blocked'}],
-            metadata={
-                'reason': reason or 'preflight_blocked',
-                'approval_required': governance.get('approval_required'),
-                'block_risky_action': governance.get('block_risky_action'),
-                'external_state_flags': list(governance.get('external_state_flags') or []),
-                'source': 'AutonomyGovernancePolicy.preflight_external_assistant',
-            },
-            user_help=(
-                (
-                    f'{assistant_title} quedo bloqueado por una verificacion de seguridad. '
-                    'La accion correcta es abrir una ventana visible del perfil del programa, resolver la verificacion, y luego reintentar o capturar vista.'
-                )
-                if security_blocked
-                else (
-                    'No hay navegador confirmado en este intento: IABV bloqueo la ruta antes de abrir o usar una ventana externa. '
-                    'Si tu ves una ventana real distinta, puedes permitirme observarla para cruzar esa realidad con el audit trail.'
-                )
-            ),
-            actions=panel_actions,
-        )
-        if security_blocked:
-            self._open_external_assistant_for_human_verification(
-                assistant_kind,
-                reason='security_preflight_block',
-                announce=False,
+
+        # P0.22: resource pressure gets explicit deferred message.
+        if is_resource_pressure:
+            message = (
+                f'No hice la consulta a {assistant_title}. '
+                'La bloquee antes de abrir la herramienta porque el entorno esta bajo presion de recursos. '
+                'No es problema de login ni captura. '
+                'Puedo reintentar cuando baje la presion o usar ruta local.'
             )
-        if approval_checkpoints:
+            meta = f'Consulta diferida por presion de recursos ({assistant_title}).'
+            terminal_state = 'blocked_by_resource_pressure'
+        elif approval_checkpoints:
             message = (
                 f'No voy a lanzar {assistant_title} todavia. '
                 f'{reason or f"Primero necesito tu permiso para observar esa ventana y verificar que {assistant_title} este usable."}'
             )
             meta = f'Permiso requerido para {assistant_title}.'
-        elif security_blocked:
-            message = (
-                f'{assistant_title} no pudo continuar porque el sitio activo una verificacion de seguridad. '
-                f'Estoy abriendo una ventana visible de {assistant_title}; resuelve la verificacion ahi y luego pulsa Reintentar o Capturar vista.'
-            )
-            meta = f'{assistant_title} bloqueado por verificacion de seguridad.'
+            terminal_state = 'failed_with_actionable_reason'
         else:
             message = (
                 f'No voy a lanzar {assistant_title} porque la ruta ya aparece bloqueada antes de intentarla. '
                 f'{reason or "Mantengo la via local hasta que el bloqueo cambie."}'
             )
             meta = f'Ruta bloqueada para {assistant_title}.'
+            terminal_state = 'failed_with_actionable_reason'
         self._latest_response_text = message
         self._latest_response_meta = meta
         self._busy_label = reason or f'Consulta externa bloqueada para {assistant_title}.'
@@ -8403,116 +11557,8 @@ class ControlCenterViewModel(QObject):
             'payload': payload,
             'assistant_title': assistant_title,
             'external_state_flags': list(governance.get('external_state_flags') or []),
-        }
-
-    def _unverified_reuse_guard_external_result(
-        self,
-        *,
-        assistant_kind: str,
-        assistant_title: str,
-        selected_tool_id: str,
-        tool_task: dict[str, Any],
-    ) -> dict[str, Any]:
-        reason = (
-            f'Detecte una consulta equivalente o guard anti-duplicado para {assistant_title}, '
-            'pero no tengo evidencia de que ChatGPT haya recibido una consulta nueva ni de que exista una respuesta verificable.'
-        )
-        checkpoint = {
-            'title': f'Permitir observacion de {assistant_title}',
-            'decision': 'pending',
-            'risk_level': 'medium',
-            'phase_key': 'observation_permission',
-            'detail': (
-                f'Necesito observar la ventana o sesion de {assistant_title} para confirmar si hay respuesta, '
-                'si esta en el hilo correcto o si debo reintentar.'
-            ),
-            'metadata': {
-                'assistant_kind': assistant_kind,
-                'tool_id': selected_tool_id,
-                'reuse_guard_active': True,
-                'permission_gates': [
-                    {
-                        'assistant_kind': assistant_kind,
-                        'tool_id': selected_tool_id,
-                        'reason': 'verify_unconfirmed_external_reuse',
-                    }
-                ],
-            },
-        }
-        payload = dict(self._last_adaptive_payload or {})
-        metadata = dict(payload.get('metadata') or {})
-        metadata['external_consultation'] = {
-            'status': 'blocked_external',
-            'assistant_kind': assistant_kind,
-            'actual_assistant_kind': assistant_kind,
-            'selected_tool_id': selected_tool_id,
-            'reuse_guard_active': True,
-            'response_captured': False,
-            'response_verified': False,
-            'requires_user_validation': True,
-            'reason': reason,
-            'tool_task_id': str(tool_task.get('task_id') or ''),
-        }
-        metadata['autonomous_evolution'] = dict(metadata['external_consultation'])
-        decision_context = dict(metadata.get('decision_context') or {})
-        decision_context['governance'] = {
-            'diagnostic_category': 'external_response_unverified',
-            'reason': reason,
-            'external_state_flags': ['capture_unverified'],
-            'recommended_action': 'request_user_observation_permission',
-        }
-        metadata['decision_context'] = decision_context
-        payload['metadata'] = metadata
-        payload['approval_checkpoints'] = [checkpoint]
-        payload['assistant_guidance'] = self._guidance_for_unverified_external_reuse(
-            assistant_kind=assistant_kind,
-            assistant_title=assistant_title,
-            reason=reason,
-        )
-        self._update_adaptive_state(payload)
-        self._set_external_evidence_panel(
-            title='Consulta externa no verificada',
-            status='blocked',
-            assistant_title=assistant_title,
-            interaction_id=str(getattr(self, '_active_interaction_id', '') or ''),
-            phases=[
-                {'phase': 'reuse_probe_done', 'selected_tool_id': selected_tool_id, 'reuse_guard_active': True},
-                {'phase': 'reuse_guard_short_circuit', 'selected_tool_id': selected_tool_id, 'response_verified': False},
-            ],
-            metadata={
-                'selected_tool_id': selected_tool_id,
-                'reuse_guard_active': True,
-                'response_verified': False,
-                'requires_user_validation': True,
-                'tool_task_id': str(tool_task.get('task_id') or ''),
-                'source': 'external_consultation_preflight',
-            },
-            user_help=(
-                'No abri una ventana nueva ni puedo afirmar que ChatGPT respondio. '
-                'Necesito observar la ventana existente con permiso o que pegues la respuesta externa.'
-            ),
-            actions=[
-                self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Verificar la ventana externa con permiso explicito.'),
-                self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia.'),
-                self._assistant_action('ingest_external_response', 'Pegar respuesta', 'Ingerir manualmente una respuesta que ya aparecio fuera de IABV.'),
-                self._assistant_action('audit_autonomy', 'Auditar ruta', 'Ver detalle del bloqueo operativo.'),
-            ],
-        )
-        message = (
-            f'No puedo dar por hecha la consulta con {assistant_title}. '
-            f'{reason} Necesito tu permiso para observar esa ventana, o que pegues aqui la respuesta si ya aparecio.'
-        )
-        meta = f'Respuesta externa no verificada: {assistant_title}.'
-        self._latest_response_text = message
-        self._latest_response_meta = meta
-        self._busy_label = f'Consulta externa no verificada para {assistant_title}.'
-        return {
-            'success': False,
-            'message': message,
-            'meta': meta,
-            'payload': payload,
-            'assistant_title': assistant_title,
-            'external_state_flags': ['capture_unverified'],
+            'terminal_state': terminal_state,
+            'block_type': 'resource_pressure' if is_resource_pressure else 'governance',
         }
 
     def _guidance_for_external_preflight_block(
@@ -8531,7 +11577,6 @@ class ControlCenterViewModel(QObject):
                 'prompt': prompt,
                 'actions': [
                     self._assistant_action('approve_observation_permission', 'Permitir observacion', 'Conceder permiso de observacion y reintentar la consulta.'),
-                    self._assistant_action('capture_visual_evidence', 'Capturar vista', 'Guardar la vista actual como evidencia.'),
                     self._assistant_action(f'consult_{assistant_kind}', f'Reintentar {assistant_title}', 'Volver a correr el preflight cuando cambie el estado.'),
                     self._assistant_action('audit_autonomy', 'Auditar autonomia', 'Revisar por que la ruta externa quedo bloqueada.'),
                 ],
@@ -8560,19 +11605,48 @@ class ControlCenterViewModel(QObject):
         }
 
     def _pending_observation_permission_assistant(self) -> str:
-        metadata = dict((self._last_adaptive_payload or {}).get('metadata') or {})
+        """Return assistant_kind only when a real observation_permission checkpoint exists.
+
+        P0.22 fix: previously this returned assistant_kind from any
+        external_consultation_preflight, even when the block was
+        resource_pressure/environment_guard — NOT observation permission.
+        Now it only returns a value when:
+        1. An approval_checkpoint with phase_key=='observation_permission' exists, OR
+        2. The preflight metadata explicitly says requires_observation_permission==True.
+        If the preflight was blocked by resource_pressure, returns '' so that
+        _try_resolve_pending_observation_permission() won't misinterpret user
+        messages as permission grants.
+        """
+        payload = dict(self._last_adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
         preflight = dict(metadata.get('external_consultation_preflight') or {})
-        assistant_kind = str(preflight.get('assistant_kind') or '').strip().lower()
-        if assistant_kind:
-            return assistant_kind
-        for item in (self._last_adaptive_payload or {}).get('approval_checkpoints') or []:
+
+        # Check approval_checkpoints for a real observation_permission gate.
+        for item in payload.get('approval_checkpoints') or []:
             checkpoint = dict(item or {})
+            phase_key = str(checkpoint.get('phase_key') or '').strip().lower()
+            if phase_key != 'observation_permission':
+                continue
             checkpoint_meta = dict(checkpoint.get('metadata') or {})
             gates = [dict(gate) for gate in (checkpoint_meta.get('permission_gates') or []) if isinstance(gate, dict)]
             gate = gates[0] if gates else {}
-            assistant_kind = str(gate.get('assistant_kind') or checkpoint_meta.get('assistant_kind') or '').strip().lower()
+            assistant_kind = str(
+                gate.get('assistant_kind')
+                or checkpoint_meta.get('assistant_kind')
+                or preflight.get('assistant_kind')
+                or '',
+            ).strip().lower()
             if assistant_kind:
                 return assistant_kind
+
+        # Explicit metadata flag from preflight.
+        if preflight.get('requires_observation_permission') is True:
+            assistant_kind = str(preflight.get('assistant_kind') or '').strip().lower()
+            if assistant_kind:
+                return assistant_kind
+
+        # P0.22: do NOT fall through to preflight.assistant_kind when the
+        # block reason is resource_pressure or environment_guard.
         return ''
 
     def _clear_observation_permission_artifacts(self) -> None:
@@ -8588,6 +11662,36 @@ class ControlCenterViewModel(QObject):
         payload['approval_checkpoints'] = filtered
         payload['metadata'] = metadata
         self._last_adaptive_payload = payload
+
+    def _has_live_observation_permission(self, assistant_kind: str) -> bool:
+        assistant_kind = str(assistant_kind or '').strip().lower()
+        if not assistant_kind:
+            return False
+        scope = f'observe_window_content:{assistant_kind}'
+        world_model_service = getattr(getattr(self.adaptive_orchestrator, 'context_assembler', None), 'world_model_service', None)
+        if world_model_service is None:
+            return False
+        try:
+            if hasattr(world_model_service, 'permission_snapshot'):
+                for item in world_model_service.permission_snapshot():
+                    record = dict(item or {})
+                    if str(record.get('scope') or '').strip().lower() == scope and bool(record.get('granted')):
+                        return True
+        except Exception:
+            pass
+        try:
+            model = (
+                world_model_service.current_model()
+                if hasattr(world_model_service, 'current_model')
+                else None
+            )
+            for gate in list(getattr(model, 'permission_gates', []) or []):
+                gate_scope = str(getattr(gate, 'scope', '') or '').strip().lower()
+                if gate_scope == scope and (bool(getattr(gate, 'granted', False)) or str(getattr(gate, 'status', '') or '') == 'concedido'):
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _grant_pending_observation_permission(self, *, announce: bool = True) -> bool:
         assistant_kind = self._pending_observation_permission_assistant()
@@ -8624,42 +11728,60 @@ class ControlCenterViewModel(QObject):
         except Exception:
             pass
         self._clear_observation_permission_artifacts()
-        visual_entry: dict[str, Any] = {}
-        try:
-            visual_entry = self._capture_visual_evidence_snapshot(
-                assistant_kind=assistant_kind,
-                reason='observation_permission_granted',
-                announce=False,
-            )
-        except Exception:
-            visual_entry = {'status': 'error', 'path': '', 'detail': 'visual_capture_exception'}
         if announce:
-            visual_path = str(visual_entry.get('path') or '').strip()
-            semantic = dict(visual_entry.get('semantic_summary') or {})
-            semantic_state = str(semantic.get('state_hypothesis') or '').strip()
-            visual_note = (
-                f' Tambien capture evidencia visual: {visual_path}.'
-                if visual_path
-                else ' Intente capturar evidencia visual, pero no quedo una imagen util.'
-            )
-            if semantic_state:
-                visual_note += f' Lectura visual: {semantic_state}.'
             self._append_message(
                 'assistant',
                 'IABV',
-                f'Registre el permiso para observar {assistant_title}.{visual_note} Voy a reintentar la consulta con esa evidencia y no repetir el bloqueo anterior.',
+                f'Registre el permiso para observar {assistant_title}. Voy a reintentar la consulta con preflight fresco.',
                 f'Permiso concedido para {assistant_title}.',
             )
         self._approval_dialog_visible = False
         self._approval_dialog_title = 'Permiso concedido'
-        self._approval_dialog_text = f'La observacion de {assistant_title} ya quedo permitida y se tomo evidencia visual para esta sesion.'
+        self._approval_dialog_text = f'La observacion de {assistant_title} ya quedo permitida para esta sesion.'
         self.dataChanged.emit()
         return self._run_external_consultation(assistant_kind, announce=False)
 
     def _run_external_consultation(self, assistant_kind: str, *, announce: bool = True) -> bool:
         assistant_title = self._assistant_display_name(assistant_kind)
+
+        # P0.39: Universal readiness check before attempting consultation
+        readiness = self._assess_external_readiness(assistant_kind)
+        if not readiness['action_possible']:
+            msg = (
+                f'No puedo iniciar la consulta a {assistant_title} ahora.\n'
+                f'Razon: {readiness["blocking_reason"]}\n'
+            )
+            if readiness['next_human_action']:
+                msg += f'Accion requerida: {readiness["next_human_action"]}\n'
+            msg += (
+                f'Sesion: {readiness["session_selected"]} | '
+                f'Build: {readiness["build_state"]} | '
+                f'Presion: {readiness["resource_pressure"]} | '
+                f'Confianza: {readiness["confidence"]}'
+            )
+            self._latest_response_text = msg
+            self._latest_response_meta = f'readiness_blocked:{readiness["blocking_reason"]}'
+            self._working = False
+            if announce:
+                self._append_message(
+                    'assistant', 'IABV', msg,
+                    f'readiness_blocked:{readiness["blocking_reason"]}',
+                    reasoning_path='capability_readiness',
+                    evidence_tag='observed',
+                )
+            self._set_live_status('idle')
+            try:
+                self.dataChanged.emit()
+            except Exception:
+                pass
+            if readiness['blocking_reason'].startswith('resource_pressure'):
+                self._schedule_deferred_consultation_retry(
+                    assistant_kind,
+                    readiness.get('retry_after_s', 15),
+                )
+            return False
+
         self._working = True
-        self._working_since = time.time()
         self._busy_label = f'Voy a preparar una consulta con {assistant_title}.'
         self._latest_response_text = (
             f'Consulta externa aceptada para {assistant_title}. '
@@ -8680,24 +11802,107 @@ class ControlCenterViewModel(QObject):
         )
         if announce:
             self._append_message('assistant', 'IABV', self._latest_response_text, self._latest_response_meta)
-        self._schedule_visible_work_timeout(
-            reason=f'external_consultation:{assistant_kind}',
-            timeout_ms=int(getattr(
-                self,
-                '_EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS',
-                ControlCenterViewModel._EXTERNAL_CONSULTATION_VISIBLE_TIMEOUT_MS,
-            )),
-        )
         self.dataChanged.emit()
 
+        _ext_done = threading.Event()
+        _dispatch_id = self._new_dispatch_id('external_consultation')
+        self._trace_dispatch_started(
+            task_name='external_consultation',
+            dispatch_id=_dispatch_id,
+            provider=assistant_kind,
+            source='_run_external_consultation',
+            user_goal_excerpt=self._last_user_goal or '',
+            visible_busy_label=self._busy_label,
+        )
+
         def worker() -> None:
+            _task_start = _time.time()
             try:
-                result_payload = self._execute_external_consultation_sync(assistant_kind)
+                result_payload = self._execute_external_consultation_sync(
+                    assistant_kind,
+                    dispatch_id=_dispatch_id,
+                )
+                if not self._is_dispatch_active('external_consultation', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('external_consultation worker %s discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='external_consultation', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', provider=assistant_kind,
+                        reason='stale_discarded: worker finished after dispatch invalidated',
+                        user_visible_message=False,
+                    )
+                    return
+                # Record execution time for dynamic timeout adjustment
+                self._record_task_execution_time(
+                    task_name='external_consultation',
+                    duration_seconds=_time.time() - _task_start,
+                    outcome='resolved',
+                    metadata={'assistant_kind': assistant_kind},
+                )
                 self.taskResolved.emit('external_consultation', result_payload)
             except Exception as exc:
-                self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
+                if not self._is_dispatch_active('external_consultation', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('external_consultation worker %s error discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='external_consultation', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', provider=assistant_kind,
+                        reason=f'stale_discarded: error discarded: {exc}',
+                        user_visible_message=False,
+                    )
+                    return
+                # P0.23 Task D: detect browser_security_verification errors and
+                # convert them into a structured handoff result instead of a
+                # generic NoneType exception.
+                exc_str = str(exc).lower()
+                if 'browser_security_verification' in exc_str or (
+                    "'nonetype'" in exc_str and "'get'" in exc_str
+                ):
+                    security_result = {
+                        'success': False,
+                        'message': (
+                            'No pude consultar ChatGPT todavia. Si intente abrir la sesion, '
+                            'pero ChatGPT mostro verificacion de seguridad o una pagina no usable. '
+                            'Necesito que completes esa verificacion o selecciones el navegador/perfil correcto. '
+                            'No voy a fingir que recibi respuesta.'
+                        ),
+                        'meta': f'ChatGPT: blocked_by_security_verification (dispatch {_dispatch_id[:12]})',
+                        'terminal_state': 'blocked_by_security_verification',
+                        'assistant_title': self._assistant_display_name(assistant_kind),
+                        'assistant_kind': assistant_kind,
+                        'external_state_flags': [],
+                        'payload': {
+                            'metadata': {
+                                'external_consultation': {
+                                    'status': 'blocked_by_security_verification',
+                                    'assistant_kind': assistant_kind,
+                                    'requires_human_verification': True,
+                                    'next_action': (
+                                        'abre la sesion controlada o tu navegador y completa '
+                                        'la verificacion; luego escribe "ya lo hice"'
+                                    ),
+                                },
+                            },
+                        },
+                        'evidence_refs': [
+                            f'browser_dom_capture failed (browser_security_verification)',
+                            f'dispatch_id={_dispatch_id[:12]}',
+                            f'original_error={str(exc)[:120]}',
+                        ],
+                    }
+                    self.taskResolved.emit('external_consultation', security_result)
+                else:
+                    self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
+            finally:
+                _ext_done.set()
 
         threading.Thread(target=worker, daemon=True).start()
+        self._schedule_worker_timeout(
+            done_event=_ext_done,
+            task_name='external_consultation',
+            timeout_s=self._EXTERNAL_WORKER_TIMEOUT_S,
+            dispatch_id=_dispatch_id,
+        )
         return True
 
     def _perform_guidance_action(self, action: str, *, announce: bool = True) -> bool:
@@ -8751,16 +11956,6 @@ class ControlCenterViewModel(QObject):
             return self._run_external_consultation('ollama', announce=announce)
         if action == 'approve_observation_permission':
             return self._grant_pending_observation_permission(announce=announce)
-        if action == 'capture_visual_evidence':
-            self._capture_visual_evidence_snapshot(reason='user_action', announce=announce)
-            return True
-        if action.startswith('open_external_assistant_'):
-            assistant_kind = action.replace('open_external_assistant_', '', 1).strip().lower()
-            return self._open_external_assistant_for_human_verification(
-                assistant_kind,
-                reason='user_action',
-                announce=announce,
-            )
         if action == 'run_self_test':
             self.runSelfTeach(self._last_user_goal or 'abre Wplay e inicia sesion')
             return True
@@ -8792,36 +11987,263 @@ class ControlCenterViewModel(QObject):
             return True
         return False
 
-    def _try_resolve_pending_observation_permission(self, message: str) -> bool:
-        """Auto-grant observation permission when the user sends a helpful message.
+    # P0.23: action verbs that signal external consultation intent.
+    # When these appear alongside a known assistant target, the message
+    # must NOT be captured as operational_status — it is an action request.
+    _EXTERNAL_ACTION_VERBS_FOR_EXCLUSION: tuple[str, ...] = (
+        'haz', 'hacer', 'hazle', 'hazla',
+        'consulta', 'consultar',
+        'pregunta', 'preguntale', 'pregúntale',
+        'pidele', 'pídele',
+        'envia', 'envía', 'manda',
+        'prueba con',
+    )
 
-        When IABV blocks an external route (e.g. ChatGPT) because it needs
-        observation permission, and the user writes something in the chat
-        indicating willingness to help (e.g. "si", "dale", "ayudame",
-        "interactua conmigo", "permite", "ok"), auto-trigger the approval
-        flow instead of ignoring the user's intent.
+    _EXTERNAL_TARGETS_FOR_EXCLUSION: tuple[str, ...] = (
+        'chatgpt', 'chat gpt', 'chat-gpt', 'chatgo',
+        'codex', 'claude', 'ollama', 'devin', 'windsurf',
+    )
+
+    def _is_operational_status_question(self, message: str) -> bool:
+        """Detect messages that are operational status questions, not permission grants.
+
+        P0.22: messages like "si puedes hacer la consulta si o no?" are
+        asking whether IABV *can* perform the consultation — they are NOT
+        granting observation permission.  This guard prevents
+        _try_resolve_pending_observation_permission() from misinterpreting
+        status inquiries as affirmative permission responses.
+
+        P0.23: messages containing an action verb + external assistant target
+        (e.g. "pero a chatgpt hazla para saber si te entiende") must NOT be
+        captured here — they are explicit external consultation requests.
+        """
+        lower = message.lower().strip()
+
+        # P0.23: if the message has an action verb + assistant target, it is
+        # an external consultation request, NOT an operational status question.
+        has_action = any(v in lower for v in self._EXTERNAL_ACTION_VERBS_FOR_EXCLUSION)
+        has_target = any(t in lower for t in self._EXTERNAL_TARGETS_FOR_EXCLUSION)
+        if has_action and has_target:
+            return False
+
+        question_markers = ('?', '¿')
+        has_question = any(m in lower for m in question_markers)
+
+        status_patterns = (
+            'puedes hacer',
+            'puedes realizar',
+            'puedes consultar',
+            'si o no',
+            'sí o no',
+            'por que no',
+            'por qué no',
+            'que paso',
+            'qué pasó',
+            'que sucedio',
+            'qué sucedió',
+            'que fallo',
+            'qué falló',
+            'funciona o no',
+            'va a funcionar',
+            'se puede o no',
+            'que esta pasando',
+            'qué está pasando',
+            'esta funcionando',
+            'está funcionando',
+            'sigue bloqueado',
+            'sigue fallando',
+            'lo vas a hacer',
+            'lo puedes hacer',
+            'lo hiciste',
+            'lo lograste',
+            'ya lo hiciste',
+        )
+        if has_question and any(p in lower for p in status_patterns):
+            return True
+        if any(p in lower for p in ('si o no', 'sí o no')):
+            return True
+        return False
+
+    # ── P0.69: Discernment frame response ──────────────────────
+
+    _DISCERNMENT_PHRASES: tuple[str, ...] = (
+        'me entiendes', '¿me entiendes',
+        'me comprendes', '¿me comprendes',
+        'que sabes', 'qué sabes',
+        'que entiendes', 'qué entiendes',
+        'que no sabes', 'qué no sabes',
+        'que no puedes confirmar', 'qué no puedes confirmar',
+        'por que no puedes', 'por qué no puedes',
+        'que esta fallando', 'qué está fallando',
+        'que te confunde', 'qué te confunde',
+        'que sesgo tienes', 'qué sesgo tienes',
+        'que evidencia tienes', 'qué evidencia tienes',
+        'en que te basas', 'en qué te basas',
+        'como decidiste', 'cómo decidiste',
+        'que vas a hacer', 'qué vas a hacer',
+        'que necesitas observar', 'qué necesitas observar',
+        'por donde vamos', 'por dónde vamos', '¿por dónde vamos',
+        'que falta', 'qué falta', '¿qué falta',
+    )
+
+    def _is_discernment_question(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        return any(phrase in normalized for phrase in self._DISCERNMENT_PHRASES)
+
+    _ROADMAP_PHRASES: tuple[str, ...] = (
+        'por donde vamos', 'por dónde vamos', '¿por dónde vamos',
+        'que falta', 'qué falta', '¿qué falta',
+    )
+
+    def _is_roadmap_question(self, message: str) -> bool:
+        normalized = self._normalized_command_text(message)
+        if not normalized:
+            return False
+        return any(phrase in normalized for phrase in self._ROADMAP_PHRASES)
+
+    def _answer_discernment_question(self, message: str) -> None:
+        """P0.69/P0.70: answer from DiscernmentFrame or roadmap matrix."""
+        if self._is_roadmap_question(message):
+            self._answer_roadmap_question(message)
+            return
+        try:
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService()
+            frame = svc.latest_frame()
+            if frame is None:
+                wm = getattr(self, '_world_model', None)
+                wm_dict = wm.model_dump() if wm and hasattr(wm, 'model_dump') else None
+                esm = getattr(self, '_environment_self_model', None)
+                esm_dict = esm.model_dump() if esm and hasattr(esm, 'model_dump') else None
+                frame = svc.build_frame(
+                    phase='observe',
+                    trigger_source='user',
+                    raw_inputs=[message[:100]],
+                    world_model=wm_dict,
+                    environment_self_model=esm_dict,
+                )
+            summary = svc.human_summary(frame)
+            parts = []
+            parts.append(f"**Lo que sé:** {summary['what_i_know']}")
+            parts.append(f"**Lo que veo:** {summary['what_i_see']}")
+            parts.append(f"**Lo que no puedo confirmar:** {summary['what_i_cannot_confirm']}")
+            parts.append(f"**Posible sesgo:** {summary['possible_bias']}")
+            parts.append(f"**Lo que necesito observar:** {summary['what_i_need_to_observe']}")
+            parts.append(f"**Siguiente acción:** {summary['next_action']}")
+            if frame.confidence < 0.4:
+                parts.append("\n⚠️ Mi confianza es baja. No debería actuar sin más evidencia.")
+            response = '\n'.join(parts)
+        except Exception as exc:
+            response = f'No puedo generar un frame de discernimiento ahora: {exc}'
+        self._append_message('assistant', 'IABV', response)
+        self.dataChanged.emit()
+
+    def _answer_roadmap_question(self, message: str) -> None:
+        """P0.70: answer from roadmap matrix + discernment frame + OSES."""
+        parts: list[str] = []
+        try:
+            import json as _json
+            from pathlib import Path as _Path
+            workspace = getattr(self, '_workspace_root', '') or ''
+            p = _Path(workspace) / 'data' / 'evolution' / 'platform_pending' / 'task_metacognitive_autonomy_roadmap_matrix_p070.json'
+            if p.exists():
+                raw = _json.loads(p.read_text(encoding='utf-8'))
+                phases = raw.get('phases', [])
+                parts.append('**Roadmap metacognitivo:**')
+                for ph in phases:
+                    status_icon = {'completed': 'OK', 'partial': 'PARCIAL', 'unresolved': 'PENDIENTE'}.get(ph.get('status', ''), '?')
+                    missing = ph.get('missing_links', [])
+                    line = f"- **{ph.get('phase', '?')}**: {status_icon}"
+                    if missing:
+                        line += f" — falta: {', '.join(missing[:2])}"
+                    parts.append(line)
+                global_unresolved = raw.get('unresolved', [])
+                if global_unresolved:
+                    parts.append('\n**UNRESOLVED global:**')
+                    for u in global_unresolved[:5]:
+                        parts.append(f'- {u}')
+            else:
+                parts.append('No se encontró el archivo de roadmap metacognitivo.')
+        except Exception as exc:
+            parts.append(f'Error leyendo roadmap: {exc}')
+
+        try:
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService()
+            frame = svc.latest_frame()
+            if frame:
+                parts.append(f'\n**Frame actual:** phase={frame.phase}, grounding={frame.grounding_status}, confidence={round(frame.confidence, 2)}')
+                if frame.unresolved_fields:
+                    parts.append(f'Campos sin resolver: {", ".join(frame.unresolved_fields[:5])}')
+        except Exception:
+            pass
+
+        response = '\n'.join(parts) if parts else 'No tengo datos de roadmap metacognitivo disponibles.'
+        self._append_message('assistant', 'IABV', response)
+        self.dataChanged.emit()
+
+    def _try_resolve_pending_observation_permission(self, message: str) -> bool:
+        """Auto-grant observation permission only for explicit permission replies.
+
+        P0.22 hardened version:
+        - Rejects operational status questions ("si puedes hacer la consulta?")
+        - Only grants when a real observation_permission checkpoint exists
+          AND the user sends an explicit permission phrase.
+        - A bare "sí" only works when the last visible guidance was an
+          observation permission dialog, not a resource-pressure block.
         """
         assistant_kind = self._pending_observation_permission_assistant()
         if not assistant_kind:
             return False
-        if self._is_external_consultation_diagnosis_question(message):
+
+        if self._is_operational_status_question(message):
             return False
+
         lower = message.lower().strip()
-        affirmative_keywords = {
+
+        # Explicit permission phrases — unambiguous observation permission grants.
+        explicit_permission_phrases = (
+            'permito observar',
+            'autoriza la captura',
+            'autorizo la captura',
+            'acepto el permiso',
+            'puedes observar',
+            'permitir observacion',
+            'permitir observación',
+            'concedo permiso',
+            'concedo el permiso',
+            'apruebo la observacion',
+            'apruebo la observación',
+            'grant observation',
+            'approve observation',
+            'allow observation',
+            'acepto observacion',
+            'acepto observación',
+        )
+        if any(phrase in lower for phrase in explicit_permission_phrases):
+            self._grant_pending_observation_permission(announce=True)
+            self._set_live_status('idle')
+            self.dataChanged.emit()
+            return True
+
+        # Short affirmatives only if guidance was explicitly a permission dialog.
+        short_affirmatives = {
             'si', 'sí', 'ok', 'dale', 'permite', 'permiso', 'aprueba',
-            'aprobar', 'adelante', 'hazlo', 'ayuda', 'ayudame', 'ayúdame',
-            'interactua', 'interactúa', 'verificar', 'verificacion',
-            'verificación', 'seguridad', 'login', 'sesion', 'sesión',
-            'credencial', 'credenciales', 'acceso', 'acepto', 'aceptar',
+            'aprobar', 'adelante', 'hazlo', 'acepto', 'aceptar',
             'grant', 'approve', 'yes', 'go', 'proceed',
         }
         tokens = set(lower.replace(',', ' ').replace('.', ' ').split())
-        if not tokens.intersection(affirmative_keywords):
-            return False
-        self._grant_pending_observation_permission(announce=True)
-        self._set_live_status('idle')
-        self.dataChanged.emit()
-        return True
+        if tokens.intersection(short_affirmatives):
+            last_guidance = str(getattr(self, '_last_guidance_action', '') or '').lower()
+            if last_guidance == 'approve_observation_permission':
+                self._grant_pending_observation_permission(announce=True)
+                self._set_live_status('idle')
+                self.dataChanged.emit()
+                return True
+
+        return False
 
     def _normalized_command_text(self, message: str) -> str:
         return ' '.join(message.lower().strip().split())
@@ -9692,77 +13114,18 @@ class ControlCenterViewModel(QObject):
         entry = {'name': name, 'path': path, 'size': size, 'type': file_type}
         self._attached_files.append(entry)
         self.fileAttached.emit(entry)
-        self.chatChanged.emit()
+        self.dataChanged.emit()
 
     @Slot(str)
     def detachFile(self, path: str) -> None:
         self._attached_files = [f for f in self._attached_files if f['path'] != path]
         self.fileDetached.emit(path)
-        self.chatChanged.emit()
+        self.dataChanged.emit()
 
     @Slot()
     def clearAttachedFiles(self) -> None:
         self._attached_files.clear()
-        self.chatChanged.emit()
-
-    @staticmethod
-    def _attachment_context_pack(attachments: list[dict[str, Any]] | None) -> str:
-        """Return bounded, UI-safe text extracted from lightweight attachments."""
-        rows: list[str] = []
-        text_suffixes = {
-            '.txt', '.md', '.markdown', '.csv', '.json', '.jsonl', '.yaml', '.yml',
-            '.py', '.js', '.ts', '.tsx', '.jsx', '.qml', '.html', '.css', '.xml',
-            '.log', '.ini', '.cfg', '.toml', '.ps1', '.bat', '.cmd',
-        }
-        total_chars = 0
-        max_total_chars = 18000
-        max_file_chars = 6000
-        for attachment in list(attachments or [])[:6]:
-            path = str(attachment.get('path') or '').strip()
-            name = str(attachment.get('name') or Path(path).name or 'archivo').strip()
-            if not path:
-                rows.append(f'- {name}: UNRESOLVED:path_missing')
-                continue
-            resolved = Path(path)
-            if not resolved.exists() or not resolved.is_file():
-                rows.append(f'- {name}: UNRESOLVED:file_not_found ({path})')
-                continue
-            suffix = resolved.suffix.lower()
-            file_size = 0
-            try:
-                file_size = resolved.stat().st_size
-            except Exception:
-                file_size = 0
-            if suffix not in text_suffixes:
-                rows.append(
-                    f'- {name}: metadata_only suffix={suffix or "none"} size={file_size} '
-                    'UNRESOLVED:binary_or_rich_document_extraction_not_enabled'
-                )
-                continue
-            remaining = max_total_chars - total_chars
-            if remaining <= 0:
-                rows.append('- attachment_context_truncated: max_total_chars_reached')
-                break
-            limit = min(max_file_chars, remaining)
-            try:
-                text = resolved.read_text(encoding='utf-8', errors='replace')[:limit]
-            except Exception as exc:
-                rows.append(f'- {name}: UNRESOLVED:read_error {type(exc).__name__}')
-                continue
-            total_chars += len(text)
-            rows.append(f'### {name} ({suffix or "text"}, {file_size} bytes)\n{text}')
-        return '\n\n'.join(rows).strip()
-
-    @staticmethod
-    def _message_with_attachment_context(message: str, attachments: list[dict[str, Any]] | None) -> str:
-        context = ControlCenterViewModel._attachment_context_pack(attachments)
-        if not context:
-            return message
-        return (
-            f'{message}\n\n'
-            '[Contexto de archivos adjuntos verificado por IABV]\n'
-            f'{context}'
-        )
+        self.dataChanged.emit()
 
     @Property(list, notify=dataChanged)
     def attachedFiles(self) -> list[dict[str, Any]]:
@@ -9785,10 +13148,15 @@ class ControlCenterViewModel(QObject):
         ]
         self.chatSearchResults.emit(filtered)
 
-    @Property(str, notify=liveStatusChanged)
+    @Property(str, notify=dataChanged)
     def liveStatus(self) -> str:
         with self._ui_state_lock:
             return self._live_status
+
+    # P0.23 Task F: threshold (seconds) above which a task result is
+    # considered "heavy" and the subsequent _set_live_status('idle')
+    # should defer its dataChanged.emit to avoid a UI stall.
+    _HEAVY_RESULT_THRESHOLD_S: float = 10.0
 
     def _set_live_status(self, status: str) -> None:
         with self._ui_state_lock:
@@ -9797,6 +13165,30 @@ class ControlCenterViewModel(QObject):
                 return
             self._live_status = status
         self.liveStatusChanged.emit(status)
+        # P0.23 Task F: if we are transitioning to idle right after a heavy
+        # task result, defer the dataChanged.emit so the main thread is not
+        # blocked for tens of seconds.
+        if status == 'idle' and getattr(self, '_heavy_result_guard_active', False):
+            self._heavy_result_guard_active = False
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'ui_status_emit_deferred',
+                    detail='dataChanged.emit deferred after heavy task result',
+                )
+            except Exception:
+                pass
+            import threading as _thr
+            def _deferred_emit() -> None:
+                import time as _time
+                _time.sleep(0.05)
+                try:
+                    self.dataChanged.emit()
+                except Exception:
+                    pass
+            _thr.Thread(target=_deferred_emit, name='iabv-deferred-emit', daemon=True).start()
+        else:
+            self.dataChanged.emit()
         # Audible notification when processing finishes
         if previous == 'processing' and status == 'idle':
             self._play_completion_sound()
@@ -9826,6 +13218,59 @@ class ControlCenterViewModel(QObject):
     @Property(list, notify=dataChanged)
     def contextualSuggestions(self) -> list[dict[str, Any]]:
         return list(self._contextual_suggestions)
+
+    @Property('QVariant', notify=dataChanged)
+    def latestDispatchLifecycle(self) -> dict[str, Any]:
+        """Read-only summary of the most recent dispatch lifecycle.
+
+        ``recent_dispatch_lifecycles`` returns dispatched entries
+        (correlated and unresolved) sorted by ``started_at`` desc,
+        followed by orphan terminals.  The first entry with a non-empty
+        ``dispatch_id`` is the newest real lifecycle.  Falls back to
+        orphan only if no dispatched entry exists.
+        """
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            cycles = get_runtime_tracer().recent_dispatch_lifecycles(limit=20)
+            if not cycles:
+                return {}
+            best = cycles[0]
+            for c in cycles:
+                if c.get('dispatch_id'):
+                    best = c
+                    break
+            return {
+                'task_name': best.get('task_name', ''),
+                'terminal_state': best.get('terminal_state', ''),
+                'duration_ms': best.get('duration_ms', 0.0),
+                'unresolved': best.get('unresolved', False),
+                'provider': best.get('provider', ''),
+                'dispatch_id': best.get('dispatch_id', ''),
+                'orphan_terminal': best.get('orphan_terminal', False),
+            }
+        except Exception:
+            return {}
+
+    @Property('QVariant', notify=dataChanged)
+    def latestRuntimeBuildFingerprint(self) -> dict[str, Any]:
+        """Read-only build fingerprint from the last runtime_build_fingerprint event."""
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            fps = get_runtime_tracer().events(kind='runtime_build_fingerprint', limit=1)
+            if not fps:
+                return {}
+            data = dict(fps[-1].get('data', {}))
+            return {
+                'branch': data.get('branch', ''),
+                'head': data.get('head', ''),
+                'dirty': data.get('dirty', False),
+                'origin_main_head': data.get('origin_main_head', ''),
+                'stale': data.get('stale', False),
+                'missing_markers': data.get('missing_markers', []),
+                'feature_markers': data.get('feature_markers', {}),
+            }
+        except Exception:
+            return {}
 
     def _refresh_contextual_suggestions(self) -> None:
         suggestions: list[dict[str, Any]] = []
@@ -9929,13 +13374,12 @@ class ControlCenterViewModel(QObject):
         self.sendChat(text)
 
     def _try_handle_lightweight_chat(self, message: str) -> bool:
-        if self._handle_user_browser_session_request(message):
-            return True
-        if self._is_external_consultation_diagnosis_question(message):
-            self._answer_external_consultation_diagnosis_question(message)
-            return True
         if self._is_world_model_question(message):
             self._answer_world_model_question(message)
+            return True
+        # P0.69: discernment questions before self-awareness
+        if self._is_discernment_question(message):
+            self._answer_discernment_question(message)
             return True
         if self._is_self_awareness_question(message):
             self._answer_self_awareness_question(message)
@@ -10046,29 +13490,9 @@ class ControlCenterViewModel(QObject):
         message = text.strip()
         if not message:
             return
-        self._autonomy_dock_rest_window_started_at = time.monotonic()
-        validation_cycle = getattr(self, 'autonomous_validation_cycle', None)
-        if validation_cycle is not None and hasattr(validation_cycle, 'note_user_activity'):
-            try:
-                validation_cycle.note_user_activity(reason='control_center_chat')
-            except Exception:
-                pass
-        oses = self.self_examination_service or getattr(self, '_oses_ref', None)
-        if oses is not None and hasattr(oses, 'note_user_activity'):
-            try:
-                oses.note_user_activity(reason='control_center_chat')
-            except Exception:
-                pass
-        bootstrap = getattr(self, '_bootstrap_ref', None)
-        if bootstrap is not None and hasattr(bootstrap, 'note_user_activity_for_operational_budget'):
-            try:
-                bootstrap.note_user_activity_for_operational_budget(reason='control_center_chat')
-            except Exception:
-                pass
+        logger.info(f'[PROGRESS] Chat message received: length={len(message)} chars, word_count={len(message.split())}')
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
-        self._interaction_pending_followup_outcome = ''
-        self._interaction_pending_followup_provider = ''
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         interaction_id: str | None = None
         if lifecycle is not None:
@@ -10096,10 +13520,66 @@ class ControlCenterViewModel(QObject):
         # APRENDIDO: _working puede quedar en True si worker() lanza excepcion
         # no capturada o si el signal taskFailed no se emite correctamente.
         if self._working:
+            import time
             elapsed = time.time() - getattr(self, '_working_since', 0)
             if elapsed < 60:
-                self._resolve_active_interaction(outcome='abandoned')
-                return
+                explicit_override = ''
+                semantic_override: dict[str, Any] = {}
+                try:
+                    explicit_override = self._explicit_assistant_preference(message)
+                except Exception:
+                    explicit_override = ''
+                try:
+                    semantic_override = self._classify_external_action_followup(
+                        message,
+                        failure_payload=getattr(self, '_last_external_failure_payload', None),
+                        active_incident=self._get_active_incident(),
+                    )
+                except Exception:
+                    semantic_override = {}
+                semantic_intent = str(semantic_override.get('intent') or '').strip()
+                semantic_actionable = bool(semantic_intent and semantic_intent != 'none')
+                chat_dispatch_id = ''
+                external_dispatch_id = ''
+                try:
+                    chat_dispatch_id = str(self._active_dispatch_ids.get('chat') or '')
+                    external_dispatch_id = str(self._active_dispatch_ids.get('external_consultation') or '')
+                except Exception:
+                    pass
+                should_preempt_local = bool(
+                    (explicit_override or semantic_actionable)
+                    and (chat_dispatch_id or not external_dispatch_id)
+                )
+                if should_preempt_local:
+                    if chat_dispatch_id:
+                        self._invalidate_dispatch('chat')
+                        self._trace_dispatch_terminal(
+                            task_name='chat',
+                            dispatch_id=chat_dispatch_id,
+                            terminal_state='superseded_by_external_intent',
+                            provider='local',
+                            reason='new external intent/action follow-up arrived while local worker was active',
+                            user_visible_message=False,
+                        )
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        get_runtime_tracer().trace(
+                            'external_intent_preempted_local_worker',
+                            explicit_assistant=explicit_override,
+                            semantic_intent=semantic_intent,
+                            chat_dispatch_id=chat_dispatch_id,
+                            elapsed_ms=int(elapsed * 1000),
+                            message_excerpt=message[:120],
+                        )
+                    except Exception:
+                        pass
+                    self._working = False
+                    self._busy_label = ''
+                    self._set_live_status('idle')
+                    self._clear_autonomy_activity_override()
+                else:
+                    self._resolve_active_interaction(outcome='abandoned')
+                    return
             # Reset forzado: _working stuck por mas de 60 segundos
             self._working = False
             self._set_live_status('idle')
@@ -10109,54 +13589,103 @@ class ControlCenterViewModel(QObject):
                             attachments=user_attachments)
         if self._attached_files:
             self._attached_files.clear()
-            self.chatChanged.emit()
-        processing_message = ControlCenterViewModel._message_with_attachment_context(message, user_attachments)
         self._set_live_status('processing')
         if self._try_handle_chat_command(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        _external_diag_checker = getattr(self, '_is_external_consultation_diagnosis_question', None)
-        if callable(_external_diag_checker) and _external_diag_checker(message):
-            self._answer_external_consultation_diagnosis_question(message)
+        if self._try_resolve_pending_observation_permission(message):
+            # P0.22: if permission grant fired _run_external_consultation(),
+            # the external worker is now alive — keep the interaction open
+            # so dispatch_terminal inherits the interaction_id.
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_shared_reality_followup(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        if self._try_resolve_pending_observation_permission(message):
+        # P0.37: Active Incident Frame resolver — catches help-offer,
+        # show-problem, visibility-dispute, and profile-mismatch intents
+        # that the older pattern-based handlers would miss.
+        if self._try_handle_incident_followup(message):
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        explicit_for_ingestion = ''
-        explicit_checker = getattr(self, '_explicit_assistant_preference', None)
-        if callable(explicit_checker):
+        if self._try_handle_security_verification_retest(message):
+            # P0.22: security retest spawns a background worker — keep
+            # interaction open until the worker reaches terminal state.
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.73: semantic external action binding. Broad human phrases such
+        # as "usa un navegador mio" must become a governed action before the
+        # older explanatory failure-followup guard can claim them.
+        if self._try_handle_external_action_followup(message):
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.32: governed user Chrome bridge — session selection
+        if self._try_handle_user_chrome_bridge_selection(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_cdp_permission_revoke(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.38 Task F: consultation follow-ups must not fall to local chat.
+        if self._try_handle_consultation_followup(message):
+            if self._working:
+                self._resolve_active_interaction(outcome='awaiting_external_response', provider='local')
+            else:
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        if self._try_handle_external_failure_followup(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
+        # P0.40 Task A: External Intent Sovereignty — any message with
+        # explicit external assistant intent MUST pass through readiness
+        # gate before anything else can claim it.  This prevents
+        # _try_handle_lightweight_chat / _is_general_chat_message from
+        # resolving "haz una consulta a ChatGPT: ..." locally.
+        _p040_explicit = self._explicit_assistant_preference(message)
+        if _p040_explicit:
             try:
-                explicit_for_ingestion = str(explicit_checker(message) or '')
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                get_runtime_tracer().trace(
+                    'external_intent_detected',
+                    assistant_kind=_p040_explicit,
+                    message_excerpt=message[:120],
+                    source='sendChat_sovereignty_guard',
+                )
             except Exception:
-                explicit_for_ingestion = ''
-        if not explicit_for_ingestion:
-            # Escucha pasiva de capacidades y directivas operativas declaradas
-            # en mensajes locales. Debe correr antes del chat local rapido para
-            # que "una sola ventana" o "testea tus algoritmos" no se pierdan,
-            # pero no debe contaminar aprobaciones de permiso ni el camino
-            # liviano de consulta externa explicita.
-            bg_pool = getattr(self, '_bg_pool', None)
-            submit = getattr(bg_pool, 'submit', None)
-            ingest = getattr(self, '_ingest_chat_capabilities', None)
-            if callable(submit) and callable(ingest):
-                submit(ingest, processing_message)
+                pass
+            self._last_user_goal = message
+            self._interaction_has_pending_followup = True
+            self._run_external_consultation(_p040_explicit, announce=True)
+            return
+        # P0.30 Task B: structured self-audit guard — answer from artifacts,
+        # not from Adaptive local orchestrator / Ollama.
+        if self._try_handle_structured_self_audit(message):
+            self._resolve_active_interaction(outcome='resolved', provider='local')
+            return
         if self._try_handle_lightweight_chat(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        explicit_assistant = explicit_for_ingestion or self._explicit_assistant_preference(message)
-        if explicit_assistant:
-            self._last_user_goal = processing_message
-            self._interaction_has_pending_followup = True
-            self._trace_external_consultation_phase(
-                'explicit_assistant_light_path',
-                assistant_kind=explicit_assistant,
-                skipped_capability_ingestion=True,
-                skipped_development_packet=True,
-                skipped_shortcut_analysis=True,
-            )
-            self._run_external_consultation(explicit_assistant, announce=True)
-            return
-        self._refresh_development_packet_async(processing_message)
+        # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
+        # Persiste detecciones a data/chat_research_backlog/*.jsonl para que OSES
+        # y ExperimentLab las consuman despues como areas de investigacion. No
+        # modifica el ruteo; solo anota y avisa al usuario en una linea corta
+        # para que sepa que su dato quedo registrado (antes se perdian en memoria).
+        # Ingerir capabilities y actualizar packet en background (thread pool
+        # compartido — evita crear 2+ threads por mensaje).
+        self._bg_pool.submit(self._ingest_chat_capabilities, message)
+        self._bg_pool.submit(self._refresh_development_packet, message)
         # _chat_shortcut_analysis puede llamar a LLM — ejecutar con timeout
         # APRENDIDO: NO usar 'with ThreadPoolExecutor' en hilo de UI porque
         # pool.shutdown(wait=True) bloquea al salir del with aunque el timeout
@@ -10167,7 +13696,7 @@ class ControlCenterViewModel(QObject):
         _sa_done = threading.Event()
         def _sa_worker() -> None:
             try:
-                _sa_result.update(self._chat_shortcut_analysis(processing_message))
+                _sa_result.update(self._chat_shortcut_analysis(message))
             except Exception:
                 pass
             finally:
@@ -10182,7 +13711,7 @@ class ControlCenterViewModel(QObject):
         self._trace_chat_stall(
             elapsed_ms=_sa_elapsed_ms,
             timed_out=not _sa_completed,
-            message_summary=processing_message[:120],
+            message_summary=message[:120],
         )
         allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
         if allow_chat_shortcuts and self._is_world_model_question(message):
@@ -10209,11 +13738,13 @@ class ControlCenterViewModel(QObject):
             self._answer_general_chat(message)
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
+        # NOTE: explicit_assistant check was here pre-P0.40 but is now
+        # handled earlier in the sovereignty guard (line ~11576).
+        # If we reach this point the message has no external intent.
         import time as _time
         self._working = True
         self._working_since = _time.time()
         self._busy_label = 'Estoy entendiendo tu mensaje y preparando la mejor respuesta.'
-        self._schedule_visible_work_timeout(reason='local_chat_worker')
         self._set_autonomy_activity_override(
             visible=True,
             title='Analizando consulta',
@@ -10228,17 +13759,49 @@ class ControlCenterViewModel(QObject):
         )
         self.dataChanged.emit()
 
+        _worker_done = threading.Event()
+        _dispatch_id = self._new_dispatch_id('chat')
+        self._trace_dispatch_started(
+            task_name='chat',
+            dispatch_id=_dispatch_id,
+            source='sendChat',
+            user_goal_excerpt=message,
+            visible_busy_label=self._busy_label,
+        )
+
         def worker() -> None:
+            _task_start = _time.time()
             try:
                 # Mark lifecycle phase: first_technical_response
                 if interaction_id and lifecycle is not None:
                     try:
                         lifecycle.mark_phase(interaction_id, 'first_technical_response')
+                        lifecycle.update_progress(
+                            interaction_id,
+                            reason='local_llm_processing',
+                            waiting_on='local_llm',
+                        )
                     except Exception:
                         pass
-                request = self._build_request(processing_message)
+                request = self._build_request(message)
                 record = self.inference_service.infer_task(request)
                 adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+                if not self._is_dispatch_active('chat', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('chat worker %s discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='chat', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason='stale_discarded: worker finished after dispatch invalidated',
+                        user_visible_message=False,
+                    )
+                    return
+                # Record execution time for dynamic timeout adjustment
+                self._record_task_execution_time(
+                    task_name='chat',
+                    duration_seconds=_time.time() - _task_start,
+                    outcome='resolved',
+                    metadata={'interaction_id': interaction_id},
+                )
                 self.taskResolved.emit(
                     'chat',
                     {
@@ -10261,9 +13824,26 @@ class ControlCenterViewModel(QObject):
                     },
                 )
             except Exception as exc:
+                if not self._is_dispatch_active('chat', _dispatch_id):
+                    import logging
+                    logging.getLogger(__name__).debug('chat worker %s error discarded (stale)', _dispatch_id[:8])
+                    self._trace_dispatch_terminal(
+                        task_name='chat', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason=f'stale_discarded: error discarded: {exc}',
+                        user_visible_message=False,
+                    )
+                    return
                 self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+            finally:
+                _worker_done.set()
 
         threading.Thread(target=worker, daemon=True).start()
+        self._schedule_worker_timeout(
+            done_event=_worker_done,
+            task_name='chat',
+            timeout_s=self._CHAT_WORKER_TIMEOUT_S,
+            dispatch_id=_dispatch_id,
+        )
 
     def _role_title_from_task(self, role: TaskRole) -> str:
         return next((profile.title for profile in self.role_router.role_profiles if profile.role == role), role.value)
@@ -10276,7 +13856,17 @@ class ControlCenterViewModel(QObject):
         self._busy_label = busy_text
         self.dataChanged.emit()
 
+        _aa_done = threading.Event()
+        _dispatch_id = self._new_dispatch_id('adaptive_action')
+        self._trace_dispatch_started(
+            task_name='adaptive_action',
+            dispatch_id=_dispatch_id,
+            source=f'_run_adaptive_action:{action_name}',
+            visible_busy_label=busy_text,
+        )
+
         def worker() -> None:
+            _task_start = _time.time()
             try:
                 if action_name == 'approve_strategy':
                     session = self.adaptive_orchestrator.approve_strategy(self._adaptive_session_id)
@@ -10294,11 +13884,40 @@ class ControlCenterViewModel(QObject):
                     raise ValueError(f'Accion adaptativa desconocida: {action_name}')
                 if session is None:
                     raise ValueError('No encontre la sesion adaptativa activa.')
+                if not self._is_dispatch_active('adaptive_action', _dispatch_id):
+                    self._trace_dispatch_terminal(
+                        task_name='adaptive_action', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason='stale_discarded: adaptive worker finished after dispatch invalidated',
+                        user_visible_message=False,
+                    )
+                    return
+                # Record execution time for dynamic timeout adjustment
+                self._record_task_execution_time(
+                    task_name='adaptive_action',
+                    duration_seconds=_time.time() - _task_start,
+                    outcome='resolved',
+                    metadata={'action_name': action_name},
+                )
                 self.taskResolved.emit('adaptive_action', session.model_dump(mode='json'))
             except Exception as exc:
+                if not self._is_dispatch_active('adaptive_action', _dispatch_id):
+                    self._trace_dispatch_terminal(
+                        task_name='adaptive_action', dispatch_id=_dispatch_id,
+                        terminal_state='cancelled', reason=f'stale_discarded: adaptive error discarded: {exc}',
+                        user_visible_message=False,
+                    )
+                    return
                 self.taskFailed.emit('adaptive_action', f'No pude completar la accion adaptativa: {exc}')
+            finally:
+                _aa_done.set()
 
         threading.Thread(target=worker, daemon=True).start()
+        self._schedule_worker_timeout(
+            done_event=_aa_done,
+            task_name='adaptive_action',
+            timeout_s=self._CHAT_WORKER_TIMEOUT_S,
+            dispatch_id=_dispatch_id,
+        )
 
     @Slot(str)
     def applySuggestedAction(self, action: str) -> None:
@@ -10395,8 +14014,8 @@ class ControlCenterViewModel(QObject):
 
     @Slot(str)
     def buildDevelopmentPacket(self, text: str) -> None:
-        self._refresh_development_packet_async(text, force=True)
-        self._busy_label = 'Paquete para Codex actualizandose en segundo plano.'
+        self._refresh_development_packet(text, force=True)
+        self._busy_label = 'Paquete para Codex actualizado.'
         self.dataChanged.emit()
 
     @Slot()
@@ -10507,7 +14126,7 @@ class ControlCenterViewModel(QObject):
         if task_name == 'provider_health':
             self._provider_refreshing = False
             self._provider_cards = list(payload)
-            self._refresh_agent_cards_async()
+            self._agent_cards = self._build_agent_cards()
             if not self._working:
                 self._busy_label = self._startup_readiness_text(validating_local_stack=False)
             self._diagnostic_text = self._build_provider_diagnostic()
@@ -10597,14 +14216,6 @@ class ControlCenterViewModel(QObject):
                 _autonomy_status = str((autonomy_result or {}).get('status') or '')
                 if _autonomy_status in {'awaiting_response', 'prepared'}:
                     self._interaction_has_pending_followup = True
-                    self._interaction_pending_followup_outcome = (
-                        'awaiting_external_response'
-                        if _autonomy_status == 'awaiting_response'
-                        else 'prepared'
-                    )
-                    self._interaction_pending_followup_provider = self._assistant_display_name(
-                        str((autonomy_result or {}).get('assistant_kind') or '')
-                    )
                 self._clear_autonomy_activity_override()
         elif task_name == 'adaptive_action':
             self._clear_autonomy_activity_override()
@@ -10660,6 +14271,7 @@ class ControlCenterViewModel(QObject):
             if adaptive_payload:
                 self._maybe_run_autonomous_evolution(adaptive_payload, source='self_teach')
         elif task_name == 'external_consultation':
+            self._last_external_consultation_ts = time.time()
             self._clear_autonomy_activity_override()
             external_payload = dict(payload or {})
             adaptive_payload = dict(external_payload.get('payload') or {})
@@ -10671,14 +14283,11 @@ class ControlCenterViewModel(QObject):
             _ext_path = 'external_consultation' if _ext_success else 'external_blocked'
             _ext_evidence = 'observed' if _ext_success else 'inferred'
             _ext_assistant = str(external_payload.get('assistant_title') or 'external')
-            from iabv_v15.services.evolution.decision_audit_trail import DecisionOutcome
             self._append_message('assistant', 'IABV', message, meta,
                                  reasoning_path=_ext_path, evidence_tag=_ext_evidence,
                                  trace_metadata={'assistant': _ext_assistant, 'blocked': not _ext_success})
             self._record_chat_audit(
                 reasoning_path=_ext_path,
-                provider_id=_ext_assistant,
-                outcome=(DecisionOutcome.SUCCESS if _ext_success else DecisionOutcome.FAILED),
                 user_goal=self._last_user_goal or '',
                 metadata={'assistant': _ext_assistant, 'blocked': not _ext_success},
             )
@@ -10687,6 +14296,23 @@ class ControlCenterViewModel(QObject):
             assistant_title = str(external_payload.get('assistant_title') or 'Asistente externo')
             external_notice = self._external_state_notice(list(external_payload.get('external_state_flags') or []))
             _external_consultation_outcome = self._derive_external_consultation_outcome(external_payload)
+            if _ext_success and _external_consultation_outcome != 'blocked':
+                self._clear_external_failure_memory()
+                try:
+                    self._resolve_incident_frame('resolved')
+                except Exception:
+                    pass
+            else:
+                self._remember_external_failure(
+                    assistant_title=assistant_title,
+                    message=message,
+                    meta=meta,
+                    outcome=_external_consultation_outcome,
+                    success=_ext_success,
+                    assistant_kind=str(external_payload.get('assistant_kind') or ''),
+                    terminal_state=str(external_payload.get('terminal_state') or ''),
+                    dispatch_id=str(self._active_dispatch_ids.get('external_consultation', '') or ''),
+                )
             self._set_external_consultation_activity(
                 external_payload=external_payload,
                 adaptive_payload=adaptive_payload,
@@ -10703,6 +14329,24 @@ class ControlCenterViewModel(QObject):
         elif task_name == 'payload':
             self._append_message('assistant', 'Payload', f"Payload archivado con {payload.get('episodes')} episodios, {payload.get('artifacts')} artefactos y {payload.get('knowledge')} items de conocimiento.", Path(str(payload.get('path'))).name)
             self._busy_label = f"Payload listo: {Path(str(payload.get('path'))).name}."
+        elif task_name == 'security_retest':
+            retest_data = dict(payload) if isinstance(payload, dict) else {}
+            _rt_title = str(retest_data.get('assistant_title', 'herramienta'))
+            if retest_data.get('success'):
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Retest de {_rt_title} exitoso — la verificacion de seguridad ya no bloquea.',
+                    'security_retest_success',
+                )
+            else:
+                _rt_detail = str(retest_data.get('detail', ''))[:200]
+                self._append_message(
+                    'assistant', 'IABV',
+                    f'Retest de {_rt_title} sigue bloqueado. Evidencia: {_rt_detail}. '
+                    'Queda UNRESOLVED — prueba con otro perfil de navegador o reinicia la sesion del navegador.',
+                    'security_retest_still_blocked',
+                )
+            self._set_live_status('idle')
         elif task_name == 'pbt':
             self._pbt_state = dict(payload)
             self._pbt_candidates = list(payload.get('candidates', []))[:4]
@@ -10710,8 +14354,45 @@ class ControlCenterViewModel(QObject):
             self._busy_label = f"PBT actualizado en generacion {payload.get('generation', 0)}."
         if task_name != 'provider_health':
             self._working = False
-            self._visible_work_timeout_generation = int(getattr(self, '_visible_work_timeout_generation', 0)) + 1
-            self.chatChanged.emit()
+        # --- Trace dispatch terminal audit ---
+        if task_name in ('chat', 'external_consultation', 'adaptive_action', 'self_teach'):
+            _dispatch_id_for_trace = self._active_dispatch_ids.get(task_name, '')
+            _trace_provider = ''
+            if isinstance(payload, dict):
+                _trace_provider = str(
+                    payload.get('provider_name')
+                    or payload.get('assistant_title')
+                    or payload.get('assistant_kind')
+                    or '',
+                )
+            _trace_terminal = 'success'
+            _trace_reason = 'resolved'
+            if task_name == 'external_consultation' and isinstance(payload, dict) and not payload.get('success'):
+                _meta_raw = str(payload.get('meta') or '')
+                # P0.22: use explicit terminal_state from result payload when available
+                # (e.g. blocked_by_resource_pressure from _blocked_external_consultation_result).
+                _trace_terminal = str(payload.get('terminal_state') or 'failed_with_actionable_reason')
+                if _trace_terminal == 'failed_with_actionable_reason':
+                    for _candidate in (
+                        'blocked_by_permission', 'blocked_by_security_verification',
+                        'blocked_by_quota', 'timeout', 'needs_human_handoff',
+                        'blocked_by_resource_pressure',
+                        'failed_with_actionable_reason',
+                    ):
+                        if _candidate in _meta_raw:
+                            _trace_terminal = _candidate
+                            break
+                _trace_reason = f'external_consultation_blocked: {_meta_raw[:120]}'
+            self._trace_dispatch_terminal(
+                task_name=task_name,
+                dispatch_id=_dispatch_id_for_trace,
+                terminal_state=_trace_terminal,
+                provider=_trace_provider,
+                reason=_trace_reason,
+                user_visible_message=True,
+            )
+            if _dispatch_id_for_trace:
+                self._invalidate_dispatch(task_name)
         # --- Close canonical interaction episode on resolution ---
         # Do NOT close the interaction if follow-up work is still pending
         # (external consultation dispatched, autonomy awaiting_response, etc.).
@@ -10740,11 +14421,8 @@ class ControlCenterViewModel(QObject):
                 )
             else:
                 # Non-final: record the semantic outcome but keep the
-                # interaction open for eventual true resolution.  The
-                # foreground wait is released because the user already got a
-                # visible dispatch/reuse answer; otherwise the UI stays stuck
-                # in "consultando..." and background governance defers forever.
-                self._record_non_final_external_outcome(
+                # interaction open for eventual true resolution.
+                self._resolve_active_interaction(
                     outcome=_ext_outcome,
                     provider=_provider,
                 )
@@ -10758,23 +14436,17 @@ class ControlCenterViewModel(QObject):
                 _provider = ''
             self._resolve_active_interaction(outcome='resolved', provider=_provider)
         elif _has_pending_followup:
-            # Record the background follow-up but release the foreground wait:
-            # the user already received a visible answer, so UI stalls after
-            # this point must not be counted as "query pending".
-            _pending_outcome = (
-                getattr(self, '_interaction_pending_followup_outcome', '') or 'prepared'
-            )
-            _pending_provider = getattr(self, '_interaction_pending_followup_provider', '') or ''
-            self._resolve_active_interaction(
-                outcome=_pending_outcome,
-                provider=_pending_provider,
-            )
-            self._release_visible_query_wait(reason=f'background_followup:{_pending_outcome}')
+            # Mark lifecycle phase but keep episode open
             _lc = getattr(self, '_chat_interaction_lifecycle', None)
             _iid = getattr(self, '_active_interaction_id', None)
             if _iid and _lc is not None:
                 try:
                     _lc.mark_phase(_iid, 'dispatch_pending')
+                    _lc.update_progress(
+                        _iid,
+                        reason='waiting_user_permission',
+                        waiting_on='user_permission',
+                    )
                 except Exception:
                     pass
         else:
@@ -10792,12 +14464,64 @@ class ControlCenterViewModel(QObject):
                 outcome='resolved',
                 provider=_provider,
             )
-        self._refresh_post_task_surfaces_after_result(task_name)
+        self._update_progress_cards()
+        # P0.23 Task F: activate heavy result guard when the chat task took
+        # longer than the threshold.  The guard is consumed by _set_live_status
+        # so the subsequent dataChanged.emit in _resolve_active_interaction is
+        # deferred to avoid a UI stall.
+        if task_name == 'chat':
+            _task_elapsed = time.time() - getattr(self, '_task_start_ts', time.time())
+            if _task_elapsed > self._HEAVY_RESULT_THRESHOLD_S:
+                self._heavy_result_guard_active = True
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'post_result_ui_update_coalesced',
+                        detail=f'chat result took {_task_elapsed:.1f}s, guard activated',
+                    )
+                except Exception:
+                    pass
+        # Gate heavy deferred work under resource pressure (Sub-objective B).
+        if not self._should_defer_heavy_work():
+            self._update_evolution_snapshot()
+            self._agent_cards = self._build_agent_cards()
+            self._refresh_development_packet()
+            self._refresh_autonomy_dock()
+        self.dataChanged.emit()
 
     @Slot(str, str)
     def _apply_task_failure(self, task_name: str, message: str) -> None:
+        if task_name == 'security_retest':
+            self._append_message(
+                'assistant', 'IABV',
+                f'Error en retest de seguridad: {message[:200]}. Queda UNRESOLVED.',
+                'security_retest_error',
+            )
+            self._working = False
+            self._set_live_status('idle')
+            self.dataChanged.emit()
+            return
         title = 'IABV' if task_name == 'chat' else task_name.upper()
         visible_message, visible_meta = self._humanize_task_failure(task_name, message)
+        if task_name == 'external_consultation':
+            self._remember_external_failure(
+                assistant_title='Asistente externo',
+                message=visible_message,
+                meta=visible_meta,
+                outcome='failed',
+                success=False,
+                dispatch_id=str(self._active_dispatch_ids.get(task_name, '') or ''),
+            )
+        # P0.23 Task E: preserve the active dispatch_id so the terminal trace
+        # carries the same id that dispatch_started recorded.
+        _failure_dispatch_id = self._active_dispatch_ids.get(task_name, '')
+        self._trace_dispatch_terminal(
+            task_name=task_name,
+            dispatch_id=_failure_dispatch_id,
+            terminal_state=visible_meta,
+            reason=message[:200],
+            user_visible_message=True,
+        )
         self._clear_autonomy_activity_override()
         _failure_path = f'{task_name}_failure'
         self._append_message('assistant', title, visible_message, visible_meta,
@@ -10817,13 +14541,10 @@ class ControlCenterViewModel(QObject):
             self._provider_refreshing = False
         else:
             self._working = False
-            self._visible_work_timeout_generation = int(getattr(self, '_visible_work_timeout_generation', 0)) + 1
-            self.chatChanged.emit()
         # --- Close canonical interaction episode on failure ---
         self._interaction_has_pending_followup = False
         self._resolve_active_interaction(outcome='failed')
         self._busy_label = visible_message
-        self._update_evolution_snapshot()
         self._diagnostic_text = (
             'Ultimo error\n'
             f"Modo de ruteo: {'automatico' if self._auto_route_enabled else 'manual'}\n"
@@ -10836,8 +14557,12 @@ class ControlCenterViewModel(QObject):
             f"Detalle: {message}"
         )
         self._diagnostic_truth_state = 'observed'
-        self._refresh_development_packet_async()
-        self._refresh_autonomy_dock_async()
+        # Gate heavy deferred work under resource pressure (Sub-objective B).
+        if not self._should_defer_heavy_work():
+            self._update_evolution_snapshot()
+            self._refresh_development_packet()
+            self._refresh_autonomy_dock()
+        self.dataChanged.emit()
 
     def _build_provider_diagnostic(self) -> str:
         goal_context = self._goal_context_for_display(self._current_site_id() or None)
@@ -10860,16 +14585,13 @@ class ControlCenterViewModel(QObject):
                 lines.append(f"- {card['name']}: {card['status']} | {card['detail']}")
         return '\n'.join(lines)
 
-    chatMessages = Property(list, get_chat_messages_preview, notify=chatChanged)
+    chatMessages = Property(list, get_chat_messages, notify=dataChanged)
     providerCards = Property(list, get_provider_cards, notify=dataChanged)
     progressCards = Property(list, get_progress_cards, notify=dataChanged)
-    liveProcessSummary = Property(dict, get_live_process_summary, notify=autonomyDockChanged)
-    liveWorkItems = Property(list, get_live_work_items, notify=autonomyDockChanged)
-    assistantSessionCards = Property(list, get_assistant_session_cards, notify=autonomyDockChanged)
-    autonomyTimeline = Property(list, get_autonomy_timeline, notify=autonomyDockChanged)
-    autonomyDockStatus = Property(str, get_autonomy_dock_status, notify=autonomyDockStatusChanged)
-    autonomyDockLastResult = Property(str, get_autonomy_dock_last_result, notify=autonomyDockStatusChanged)
-    autonomyDockLastSummary = Property(str, get_autonomy_dock_last_summary, notify=autonomyDockStatusChanged)
+    liveProcessSummary = Property(dict, get_live_process_summary, notify=dataChanged)
+    liveWorkItems = Property(list, get_live_work_items, notify=dataChanged)
+    assistantSessionCards = Property(list, get_assistant_session_cards, notify=dataChanged)
+    autonomyTimeline = Property(list, get_autonomy_timeline, notify=dataChanged)
     evolutionOverview = Property(dict, get_evolution_overview, notify=dataChanged)
     evolutionAreaCards = Property(list, get_evolution_area_cards, notify=dataChanged)
     evolutionBlockers = Property(list, get_evolution_blockers, notify=dataChanged)
@@ -10882,8 +14604,8 @@ class ControlCenterViewModel(QObject):
     autoRouteEnabled = Property(bool, get_auto_route_enabled, notify=dataChanged)
     advancedVisible = Property(bool, get_advanced_visible, notify=dataChanged)
     routingModeLabel = Property(str, get_routing_mode_label, notify=dataChanged)
-    working = Property(bool, get_working, notify=chatChanged)
-    busyLabel = Property(str, get_busy_label, notify=chatChanged)
+    working = Property(bool, get_working, notify=dataChanged)
+    busyLabel = Property(str, get_busy_label, notify=dataChanged)
     autonomyActivity = Property(dict, get_autonomy_activity, notify=dataChanged)
     strategyText = Property(str, get_strategy_text, constant=True)
     recommendationText = Property(str, get_recommendation_text, constant=True)
@@ -10893,16 +14615,15 @@ class ControlCenterViewModel(QObject):
     repoBridgeText = Property(str, get_repo_bridge_text, notify=dataChanged)
     localStackText = Property(str, get_local_stack_text, notify=dataChanged)
     developmentPacket = Property(str, get_development_packet, notify=dataChanged)
-    assistantGuidanceMode = Property(str, get_assistant_guidance_mode, notify=chatChanged)
-    assistantGuidanceText = Property(str, get_assistant_guidance_text, notify=chatChanged)
-    assistantActionButtons = Property(list, get_assistant_action_buttons, notify=chatChanged)
-    externalEvidencePanel = Property(dict, get_external_evidence_panel, notify=chatChanged)
-    approvalDialogVisible = Property(bool, get_approval_dialog_visible, notify=chatChanged)
-    approvalDialogTitle = Property(str, get_approval_dialog_title, notify=chatChanged)
-    approvalDialogText = Property(str, get_approval_dialog_text, notify=chatChanged)
-    latestResponseText = Property(str, get_latest_response_text, notify=chatChanged)
-    latestResponseMeta = Property(str, get_latest_response_meta, notify=chatChanged)
-    clipboardNotice = Property(str, get_clipboard_notice, notify=chatChanged)
+    assistantGuidanceMode = Property(str, get_assistant_guidance_mode, notify=dataChanged)
+    assistantGuidanceText = Property(str, get_assistant_guidance_text, notify=dataChanged)
+    assistantActionButtons = Property(list, get_assistant_action_buttons, notify=dataChanged)
+    approvalDialogVisible = Property(bool, get_approval_dialog_visible, notify=dataChanged)
+    approvalDialogTitle = Property(str, get_approval_dialog_title, notify=dataChanged)
+    approvalDialogText = Property(str, get_approval_dialog_text, notify=dataChanged)
+    latestResponseText = Property(str, get_latest_response_text, notify=dataChanged)
+    latestResponseMeta = Property(str, get_latest_response_meta, notify=dataChanged)
+    clipboardNotice = Property(str, get_clipboard_notice, notify=dataChanged)
     adaptiveSessionId = Property(str, get_adaptive_session_id, notify=dataChanged)
     adaptiveStatusText = Property(str, get_adaptive_status_text, notify=dataChanged)
     adaptiveIntentText = Property(str, get_adaptive_intent_text, notify=dataChanged)

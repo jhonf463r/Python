@@ -207,6 +207,7 @@ from iabv_v15.infra.persistence.scenario_run_repository import ScenarioRunReposi
 from iabv_v15.infra.persistence.replay_annotation_repository import ReplayAnnotationRepository
 from iabv_v15.infra.persistence.screenshot_store import ScreenshotStore
 from iabv_v15.infra.persistence.chat_message_repository import ChatMessageRepository
+from iabv_v15.services.evolution.chat_state_dumper import get_chat_state_dumper
 from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
 from iabv_v15.infra.persistence.session_state_store import SessionStateStore
 from iabv_v15.infra.persistence.snapshot_version_manager import SnapshotVersionManager
@@ -301,6 +302,7 @@ from iabv_v15.services.evolution.metacognition_evolution_mixin import Metacognit
 from iabv_v15.services.evolution.self_check_orchestrator import SelfCheckOrchestrator
 from iabv_v15.services.evolution.session_health_service import SessionHealthService
 from iabv_v15.services.evolution.user_clue_service import UserClueService
+from iabv_v15.services.evolution.universal_metacognitive_scanner import UniversalMetacognitiveScanner
 from iabv_v15.services.inference.inference_service import InferenceService
 from iabv_v15.services.self_teach.execution_probe_service import ExecutionProbeService
 from iabv_v15.services.self_teach.expectation_matcher import ExpectationMatcher
@@ -513,6 +515,14 @@ class AppBootstrap:
         self.tool_record_repository = ToolRecordRepository(self.db, self.tool_teaching_storage)
         self.experiment_lab_repository = ExperimentLabRepository(self.db, self.evolution_storage)
         self.chat_message_repository = ChatMessageRepository(self.db)
+        try:
+            self.chat_state_dumper = get_chat_state_dumper(
+                workspace_root=self.config.workspace_root,
+            )
+            logger.info(f"Chat State Dumper created successfully")
+        except Exception as e:
+            logger.error(f"Failed to create Chat State Dumper: {e}", exc_info=True)
+            self.chat_state_dumper = None
         self.adaptive_session_repository = AdaptiveSessionRepository(self.db, self.evolution_storage)
         self.scenario_run_repository = ScenarioRunRepository(self.db, self.evolution_storage)
         self.runtime_tuning_repository = RuntimeTuningRepository(self.db, self.evolution_storage)
@@ -979,6 +989,19 @@ class AppBootstrap:
             tool_discovery_service=self.tool_discovery_service,
         )
         self.autonomous_validation_cycle.tool_evolution_monitor = self.tool_evolution_monitor
+        # Universal Metacognitive Scanner - El cerebro central de IABV
+        # Integra todos los órganos metacognitivos en un sistema centralizado
+        self.universal_metacognitive_scanner = UniversalMetacognitiveScanner(
+            workspace_root=self.config.workspace_root,
+            evolution_dir=self.config.evolution_dir,
+            scan_interval_seconds=60.0,
+        )
+        # Conectar scanner con servicios metacognitivos existentes (algunos se asignan más tarde)
+        self.universal_metacognitive_scanner.world_model_service = self.world_model_service
+        self.universal_metacognitive_scanner.environment_self_awareness_service = self.environment_self_awareness_service
+        self.universal_metacognitive_scanner.operational_self_examination_service = self.operational_self_examination_service
+        self.universal_metacognitive_scanner.tool_registry = self.tool_registry
+        # decision_audit_trail y metacognition_evolution se asignan más tarde cuando estén disponibles
         self.incident_packet_service = IncidentPacketService(
             dossier_repository=self.execution_dossier_repository,
             hidden_incident_repository=self.hidden_incident_repository,
@@ -1462,6 +1485,9 @@ class AppBootstrap:
         self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
         self.operational_self_examination_service.chat_message_repository = self.chat_message_repository
         self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
+        # Conectar Universal Metacognitive Scanner con decision_audit_trail ahora que está disponible
+        if hasattr(self, 'universal_metacognitive_scanner'):
+            self.universal_metacognitive_scanner.decision_audit_trail = self.decision_audit_trail
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
         self.portable_context_service.chat_message_repository = self.chat_message_repository
         self.portable_context_service.code_audit_trail = self.code_audit_trail
@@ -1533,6 +1559,9 @@ class AppBootstrap:
         # Wire metacognition into OSES so build_review() picks up evolution findings
         if self.metacognition_evolution is not None:
             self.operational_self_examination_service.metacognition_evolution = self.metacognition_evolution
+        # Conectar Universal Metacognitive Scanner con metacognition_evolution ahora que está disponible
+        if hasattr(self, 'universal_metacognitive_scanner') and self.metacognition_evolution is not None:
+            self.universal_metacognitive_scanner.metacognition_evolution = self.metacognition_evolution
 
         self.inference_service = InferenceService(
             self.role_router,
@@ -1786,6 +1815,14 @@ class AppBootstrap:
                 self._deferred_auto_install_missing_tools()
             except Exception as exc:
                 logger.debug('deferred_auto_install failed: %s', exc)
+            # Iniciar Universal Metacognitive Scanner - El cerebro central de IABV
+            try:
+                scanner = getattr(self, 'universal_metacognitive_scanner', None)
+                if scanner is not None:
+                    scanner.start()
+                    logger.info('Universal Metacognitive Scanner started - Cerebro central activo')
+            except Exception as exc:
+                logger.warning('universal_metacognitive_scanner start failed: %s', exc)
             try:
                 self._timeline.mark(
                     'deferred_metacognition_done', rss_mb=_rss_mb(),
@@ -3170,6 +3207,7 @@ class AppBootstrap:
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             chat_message_repository=self.chat_message_repository,
+            chat_state_dumper=self.chat_state_dumper,
             defer_initial_refresh=True,
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
