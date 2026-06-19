@@ -5,6 +5,12 @@ Tu trabajo no es improvisar: debes leer el estado real del repo, respetar
 la arquitectura vigente y dejar cada sesion con mejor evidencia, mejor
 contexto operativo y menos trabajo redundante.
 
+## 🚀 Quick Links (Lee Primero)
+- **Sesion rapida?** → Lee [.github/copilot-instructions.md](.github/copilot-instructions.md) (5 min)
+- **Buscar algo rapido?** → Lee [docs/AGENT_QUICK_REFERENCE.md](docs/AGENT_QUICK_REFERENCE.md) 
+- **Completo?** → Sigue leyendo este archivo (20 min)
+- **Pre-scan metacognitivo** → Ver seccion "Forma De Trabajo En Sesiones Nuevas" (#forma-de-trabajo)
+
 ## Identidad Del Proyecto
 - Nombre: `IABV v1.5`
 - Workspace: `C:\Python\IABV_v1.5`
@@ -358,3 +364,77 @@ Al empezar una sesion nueva:
 - que resultado dieron
 - que quedo `UNRESOLVED`
 - cual es el siguiente paso recomendado
+
+## Troubleshooting Y FAQ
+
+### "Tool reported as unavailable"
+1. Lee `data/evolution/tool_discovery/latest.json` para ver el estado ultimo conocido
+2. Corre `ToolRegistry.current_state(tool_name)` para una verificacion viva
+3. Verifica `WorldModelSnapshot` para bloqueos activos (network, permisos, locks)
+4. Si es un bloqueo de permiso, marca `UNRESOLVED` — no asumas permisos que no confirmaste
+
+### "Decision seems stuck or timeout"
+1. Lee `DecisionAuditTrail.self_examination_summary()` para patrones repetidos
+2. Revisa `OperationalSelfExaminationService._temporal_awareness_findings()` para anomalias de latencia (z-score > 2.0)
+3. Busca operaciones estancadas en audit trail (> 5 min sin completar)
+4. Consulta `ExperimentLab` para ver si hay rutas alternativas que rindieron mejor
+5. Si localizas la causa, registra en audit trail y alimenta `StrategySelector` para la proxima sesion
+
+### "Not sure if I'm allowed to do X"
+1. Lee la seccion "Contratos Que No Debes Romper"
+2. Verifica si X tocaria P1-P4 (capas cerradas)
+3. Si X toca un contrato en `domain/models.py`, marca `UNRESOLVED` a menos que tengas aprobacion explicita
+4. Si X requiere decision humana, pregunta al usuario en lugar de asumir
+
+### "Test suite is failing"
+1. Corre solo el test afectado: `pytest tests/test_module.py::test_func -v`
+2. Lee el trace de error completo — busca el punto donde el contrato se rompio
+3. Compara contra `domain/models.py` para asegurar que el test respeta contratos
+4. Si la falla es de arquitectura, marca `UNRESOLVED` — no continues sin clarificacion
+
+### "I changed something and now WorldModel seems stale"
+1. No modifiques `WorldModelSnapshot` directamente — `WorldModelService` es la unica fuente
+2. Si crees que el world model tiene informacion stale, reporta hallazgo a `OperationalSelfExaminationService`
+3. Si la informacion contradice el live state, el live state prevalece siempre
+4. Si necesitas forzar un refresh, llama a `WorldModelService.refresh()` — no manipules el JSON
+
+### "How do I know if my change will break something?"
+1. Antes de cambiar, lee el contrato en `domain/models.py`
+2. Verifica que no tocas P1-P4
+3. Corre pruebas focalizadas en tu slice
+4. Luego corre pruebas en modulos que consumen tu slice (cascada ascendente)
+5. Si una prueba falla, no mergees — diagnostica primero
+
+### "I need to add a new service, where do I put it?"
+1. Si es un servicio de dominio puro (no interactua con UI o tools externas):
+   - → `src/iabv_v15/services/adaptive/` o `src/iabv_v15/services/inference/`
+2. Si es para herramientas externas:
+   - → `src/iabv_v15/services/tools/`
+3. Si es para UI:
+   - → `src/iabv_v15/services/ux/`
+4. Siempre:
+   - Respeta los contratos de `domain/models.py`
+   - Inyecta dependencias via `bootstrap.py`
+   - Registra resultados para aprendizaje (audit trail, experiment lab)
+   - No crees otro orchestrator o cerebro
+
+### "Decision pipeline seems slow"
+1. Activa `OperationalSelfExaminationService._temporal_awareness_findings()`
+2. Revisa `data/evolution/decision_audit/decisions.jsonl` para latencias por proveedor
+3. Compara providers: `decision_audit/decisions.jsonl | grep 'provider' | sort | uniq -c`
+4. Si un proveedor es lento, reduce peso en `AdaptiveWeightLayer` o descubrelo con `ApiKeyDiscoveryService`
+
+### "I can't verify a tool is available, but I need to use it"
+Regla: **No asumas disponibilidad que no confirmaste.**
+1. Si WorldModel dice que esta bloqueado, esta bloqueado — no intentes
+2. Si no hay confirmacion de disponibilidad, marca con `UNRESOLVED` en tu respuesta
+3. Pide al usuario: "Permiso explicito: ¿Puedo usar [tool] en tu pantalla ahora?"
+4. Sin permiso explici
+to, la ruta es NO VIABLE
+
+### "Session is running out of context, what do I save?"
+Usa `PortableContextService.build_package()`:
+1. Comprime estado actual en `data/evolution/portable_context/latest.json`
+2. Incluye: estrategias ganadores, tendencias de errores, recomendaciones, timestamp
+3. La proxima sesion lo lee automaticamente via `TaskContextAssembler`
+4. No guardes historial bruto — solo hallazgos comprimidos y evidencia resumen

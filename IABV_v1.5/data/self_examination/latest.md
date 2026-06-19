@@ -1,0 +1,33 @@
+# IABV v1.5 - Operational Self Examination
+
+Generado: 2026-05-26T20:39:42.731667+00:00
+Resumen: Autoexaminacion needs_attention: 16 hallazgos activos. Lo mas fuerte ahora es congelamientos con cpu/ram estables detectados. Mejoras validadas: 0 | issues recurrentes: 5.
+
+Usa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.
+
+## Hallazgos
+- Congelamientos con CPU/RAM estables detectados: 3 freeze(s) recientes ocurrieron con CPU/RAM estables. La causa dominante inferida es unknown_main_thread_stall (3/3); el peor stall fue 30348747ms. Esto indica bloqueo del hilo UI, no falta global de recursos. | recomendacion: Tratar estos freezes como main-thread starvation: mover lecturas JSON/SQLite/proyecciones del autonomy dock y refreshes amplios de QML a workers o snapshots cacheados. No bloquear consultas externas solo por resource_pressure si CPU/RAM estan normales. | confianza 0.88
+- RSS crecio 540MB durante startup: RSS paso de 101MB (bootstrap_init_start) a 642MB (dashboard_vm_refresh_query_runs_done), un crecimiento de 540MB (umbral 150MB). Esto puede causar presion de memoria y GC stalls. | recomendacion: Revisar que ViewModels con defer_initial_refresh=True no hagan queries pesados en el constructor. Verificar que _log_tool_availability() no cree objetos grandes. | confianza 0.90
+- Loop introspectivo abierto: 4 mecanismo(s) inactivo(s):  | recomendacion: sin ajuste concreto | confianza 0.00
+- Herramienta faltante reportada en logs: Detectadas 6 ocurrencias de "tool_missing" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-05-26 00:29:08,625 | INFO | iabv_v15.bootstrap | tool_missing: aider_coder — adapter=aider | fix: pip install aider-chat (optional, heavy ~200MB; installed in background) | recomendacion: Verificar si la herramienta faltante es necesaria para el flujo actual o si existe un fallback disponible. | confianza 0.90
+- Failed interaction episodes: 1 of 5 recent: 1 of the last 5 interaction episodes ended with outcome=failed. Episodes: [chat-b5b109b9e8eb] "intenta nuevamen" provider=local duration=74537.3ms stalls=0 early_technical=True window_inactive=True | recomendacion: Review failed interactions for patterns. | confianza 0.90
+- Blocked interaction episodes: 2 of 5 recent: 2 of the last 5 interaction episodes were blocked (terminal, not resolved). Episodes: [chat-bb1a6969c7e0] "haz una consulta a chat gpt: responde so" outcome=blocked provider=ChatGPT web asistido; [chat-46aad159da03] "has una consulta en chatgpt" outcome=blocked provider=ChatGPT web asistido | recomendacion: Review blocked interactions for access, quota or preflight issues. | confianza 0.90
+
+## Ajustes recomendados
+- Congelamientos con CPU/RAM estables detectados: Tratar estos freezes como main-thread starvation: mover lecturas JSON/SQLite/proyecciones del autonomy dock y refreshes amplios de QML a workers o snapshots cacheados. No bloquear consultas externas solo por resource_pressure si CPU/RAM estan normales. | fuente data/evolution/incident_reports/freeze_*.json, data/logs/runtime_audit.jsonl
+- RSS crecio 540MB durante startup: Revisar que ViewModels con defer_initial_refresh=True no hagan queries pesados en el constructor. Verificar que _log_tool_availability() no cree objetos grandes. | fuente data/logs/startup_timeline.jsonl
+- Herramienta faltante reportada en logs: Verificar si la herramienta faltante es necesaria para el flujo actual o si existe un fallback disponible. | fuente runtime_log, C:\Python\IABV_v1.5\data\logs\iabv_v15.log
+- Failed interaction episodes: 1 of 5 recent: Review failed interactions for patterns. | fuente n/d
+- Blocked interaction episodes: 2 of 5 recent: Review blocked interactions for access, quota or preflight issues. | fuente n/d
+- Human-machine visual alignment loop is not fully closed: When an external consultation is blocked and the user offers help, answer from the same incident frame: "IABV ve / IABV no ve / necesito que hagas". The follow-up must close as external_consultation_audit, not generic local chat, and must use visual calibration/metavision evidence. | fuente data/logs/runtime_audit.jsonl
+
+## Mejoras validadas
+- Sin mejoras validadas fuertes todavia.
+
+## Retroalimentacion de ajustes
+- Congelamientos con CPU/RAM estables detectados: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.
+- RSS crecio 540MB durante startup: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.
+- Herramienta faltante reportada en logs: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.
+- Failed interaction episodes: 1 of 5 recent: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.
+
+UNRESOLVED: UNRESOLVED:world_model, UNRESOLVED:validation_cycle, autonomy_score, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions

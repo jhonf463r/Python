@@ -1,0 +1,19 @@
+# IABV v1.5 - Tool Evolution Monitor
+
+Generado: 2026-05-09T22:43:03.765435+00:00
+Resumen: Superviso 5 contexto(s) con 6 propuesta(s) activa(s), 6 ya decidida(s) y 4 contexto(s) degradado(s). Mejor panorama actual: general favorece ollama con score 0.66 y propuesta collect_more_evidence Validacion autonoma: deferred. La validacion de la propuesta se aplazo porque El entorno reporta ram_pressure con severidad high.
+
+## Rendimiento por herramienta
+- general: ollama | route=local | score=0.66 | exito=100% | bloqueos=25%
+- 0f2c37a6-92d4-43ef-bdd0-3bfcca8e0b66: ollama | route=local | score=0.47 | exito=100% | bloqueos=100%
+- general:te-ayudo-con-esa-verificacion-de-seguridad: ollama | route=local | score=0.47 | exito=100% | bloqueos=100%
+- chatgpt_web_assisted: chatgpt web asistido | route=ui | score=-0.11 | exito=0% | bloqueos=0%
+- cloud_provider:groq: cloud_provider | route=cloud | score=1.10 | exito=100% | bloqueos=0%
+
+## Propuestas
+- Recolectar mas evidencia para general: La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir. | accion=collect_more_runs | confianza=0.58
+- Recolectar mas evidencia para 0f2c37a6-92d4-43ef-bdd0-3bfcca8e0b66: La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir. | accion=collect_more_runs | confianza=0.58
+- Probar Claude web asistido para 0f2c37a6-92d4-43ef-bdd0-3bfcca8e0b66: Claude web asistido aparece disponible y compatible con 0f2c37a6-92d4-43ef-bdd0-3bfcca8e0b66. Conviene validarlo frente a ollama. | accion=validate_in_sandbox | confianza=0.89
+- Probar ChatGPT web asistido para 0f2c37a6-92d4-43ef-bdd0-3bfcca8e0b66: ChatGPT web asistido aparece disponible y compatible con 0f2c37a6-92d4-43ef-bdd0-3bfcca8e0b66. Conviene validarlo frente a ollama. | accion=validate_in_sandbox | confianza=0.79
+- Recolectar mas evidencia para general:te-ayudo-con-esa-verificacion-de-seguridad: La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir. | accion=collect_more_runs | confianza=0.58
+- Recolectar mas evidencia para chatgpt_web_assisted: La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir. | accion=collect_more_runs | confianza=0.58

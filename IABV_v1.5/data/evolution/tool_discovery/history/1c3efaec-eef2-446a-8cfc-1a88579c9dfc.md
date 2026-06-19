@@ -1,0 +1,14 @@
+# IABV v1.5 - Tool Discovery
+
+Generado: 2026-05-10T04:28:33.336915+00:00
+Resumen: Detecte 24 senal(es) de descubrimiento: 12 activa(s), 5 en evaluacion, 0 promovida(s), 7 descartada(s).
+
+## Senales
+- general: ChatGPT web asistido | estado=discarded | confianza=0.74 | ChatGPT web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.
+- general: ChatGPT instalado | estado=deferred | confianza=0.74 | ChatGPT instalado aparece disponible y compatible con general. Conviene validarlo frente a ollama.
+- general: Claude instalado | estado=discarded | confianza=0.84 | Claude instalado aparece disponible y compatible con general. Conviene validarlo frente a ollama.
+- general: Claude web asistido | estado=discarded | confianza=0.84 | Claude web asistido aparece disponible y compatible con general. Conviene validarlo frente a ollama.
+- general: Desktop human runner | estado=deferred | confianza=0.73 | Desktop human runner aparece disponible y compatible con general. Conviene validarlo frente a ollama.
+- general: Ollama local | estado=discarded | confianza=0.90 | Ollama local aparece disponible y compatible con general. Conviene validarlo frente a ollama.
+- general: Playwright browser | estado=discarded | confianza=0.75 | Playwright browser aparece disponible y compatible con general. Conviene validarlo frente a ollama.
+- general: Site explorer v1 | estado=deferred | confianza=0.73 | Site explorer v1 aparece disponible y compatible con general. Conviene validarlo frente a ollama.
