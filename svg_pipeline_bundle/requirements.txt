@@ -1,0 +1,5 @@
+lxml
+streamlit
+cairosvg
+pillow
+pyinstaller
