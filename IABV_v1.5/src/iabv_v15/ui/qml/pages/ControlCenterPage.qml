@@ -22,6 +22,14 @@ Item {
     property var autonomyActivityModel: controlCenterViewModel ? controlCenterViewModel.autonomyActivity : ({})
     property var assistantActionButtonsModel: controlCenterViewModel ? controlCenterViewModel.assistantActionButtons : []
     property bool advancedVisible: controlCenterViewModel ? controlCenterViewModel.advancedVisible : false
+    
+    // System identity properties
+    property string systemIdentityCanonicalRoot: controlCenterViewModel ? controlCenterViewModel.systemIdentityCanonicalRoot : ""
+    property string systemIdentityGlobalHealth: controlCenterViewModel ? controlCenterViewModel.systemIdentityGlobalHealth : "unknown"
+    property int systemIdentityTotalSubsystems: controlCenterViewModel ? controlCenterViewModel.systemIdentityTotalSubsystems : 0
+    property int systemIdentityLiveSubsystems: controlCenterViewModel ? controlCenterViewModel.systemIdentityLiveSubsystems : 0
+    property int systemIdentityPartialSubsystems: controlCenterViewModel ? controlCenterViewModel.systemIdentityPartialSubsystems : 0
+    property var subsystemCardsModel: controlCenterViewModel ? controlCenterViewModel.subsystemCards : []
     property bool workingState: controlCenterViewModel ? controlCenterViewModel.working : false
     property bool canApproveStrategyValue: controlCenterViewModel ? controlCenterViewModel.canApproveStrategy : false
     property bool canApproveNextPhaseValue: controlCenterViewModel ? controlCenterViewModel.canApproveNextPhase : false
@@ -194,6 +202,114 @@ Item {
                         font.pixelSize: 12
                         wrapMode: Label.WordWrap
                         font.family: "Segoe UI"
+                    }
+                }
+            }
+
+            GlassPanel {
+                width: parent.width
+                fillColor: "#1c2630"
+                strokeColor: borderSoft
+                implicitHeight: identityCol.implicitHeight + 34
+
+                Column {
+                    id: identityCol
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    spacing: 10
+
+                    Label { text: "Identidad del sistema"; color: textPrimary; font.pixelSize: 20; font.family: "Segoe UI" }
+                    Label {
+                        width: identityCol.width
+                        text: "Raíz canónica: " + (systemIdentityCanonicalRoot || "No disponible")
+                        color: textSecondary
+                        font.pixelSize: 11
+                        wrapMode: Label.WordWrap
+                        font.family: "Segoe UI"
+                    }
+                    Label {
+                        width: identityCol.width
+                        text: "Salud global: " + (systemIdentityGlobalHealth || "unknown") + " | Subsistemas: " + systemIdentityTotalSubsystems + " total, " + systemIdentityLiveSubsystems + " vivos, " + systemIdentityPartialSubsystems + " parciales"
+                        color: systemIdentityGlobalHealth === "healthy" ? "#8ccf8b" : (systemIdentityGlobalHealth === "mostly_healthy" ? "#d9b15f" : "#cf7e7e")
+                        font.pixelSize: 12
+                        wrapMode: Label.WordWrap
+                        font.family: "Segoe UI"
+                    }
+                    
+                    Rectangle {
+                        width: identityCol.width
+                        height: 1
+                        color: borderSoft
+                        visible: subsystemCardsModel.length > 0
+                    }
+                    
+                    Repeater {
+                        model: subsystemCardsModel
+                        delegate: Rectangle {
+                            width: identityCol.width
+                            implicitHeight: subCol.implicitHeight + 12
+                            radius: 8
+                            color: "#17212a"
+                            border.width: 1
+                            border.color: modelData.status === "REAL_WIRED" ? "#8ccf8b" : (modelData.status === "PARCIAL" ? "#d9b15f" : (modelData.status === "PLACEHOLDER" ? "#42505d" : "#cf7e7e"))
+                            
+                            Column {
+                                id: subCol
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 6
+                                
+                                RowLayout {
+                                    width: subCol.width
+                                    spacing: 8
+                                    Label {
+                                        text: modelData.name || ""
+                                        color: textPrimary
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        font.family: "Segoe UI"
+                                    }
+                                    Label {
+                                        text: modelData.status || ""
+                                        color: modelData.status === "REAL_WIRED" ? "#8ccf8b" : (modelData.status === "PARCIAL" ? "#d9b15f" : (modelData.status === "PLACEHOLDER" ? "#42505d" : "#cf7e7e"))
+                                        font.pixelSize: 10
+                                        font.family: "Segoe UI"
+                                    }
+                                    Label {
+                                        text: modelData.maturity_pct + "%"
+                                        color: textSecondary
+                                        font.pixelSize: 10
+                                        font.family: "Segoe UI"
+                                    }
+                                }
+                                Label {
+                                    width: subCol.width
+                                    text: modelData.description || ""
+                                    color: textSecondary
+                                    font.pixelSize: 11
+                                    wrapMode: Label.WordWrap
+                                    font.family: "Segoe UI"
+                                }
+                                Label {
+                                    width: subCol.width
+                                    text: "Archivo: " + (modelData.file_path || "")
+                                    color: "#42505d"
+                                    font.pixelSize: 10
+                                    wrapMode: Label.WordWrap
+                                    font.family: "Segoe UI"
+                                    visible: modelData.file_path && modelData.file_path.length > 0
+                                }
+                                Label {
+                                    width: subCol.width
+                                    text: "Bloqueos: " + (modelData.active_blockers.length > 0 ? modelData.active_blockers.join(", ") : "Ninguno")
+                                    color: modelData.active_blockers.length > 0 ? "#d9b15f" : textSecondary
+                                    font.pixelSize: 10
+                                    wrapMode: Label.WordWrap
+                                    font.family: "Segoe UI"
+                                    visible: modelData.active_blockers && modelData.active_blockers.length > 0
+                                }
+                            }
+                        }
                     }
                 }
             }

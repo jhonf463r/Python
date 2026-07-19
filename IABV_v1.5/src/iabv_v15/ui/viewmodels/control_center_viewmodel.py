@@ -52,6 +52,7 @@ from iabv_v15.services.roles.local_role_router import LocalRoleRouter
 from iabv_v15.services.training.pbt_control_service import PBTControlService
 from iabv_v15.services.training.training_orchestrator import TrainingOrchestrator
 from iabv_v15.services.capture.universal_perception_service import UniversalPerceptionService
+from iabv_v15.services.system_identity_registry import SystemIdentityRegistry
 from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, Slot
 
 
@@ -146,6 +147,7 @@ class ControlCenterViewModel(QObject):
         self_audit_service: Any | None = None,
         chat_capability_ingestion_service: Any | None = None,
         chat_message_repository: Any | None = None,
+        system_identity_registry: SystemIdentityRegistry | None = None,
         defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
@@ -193,9 +195,16 @@ class ControlCenterViewModel(QObject):
         # esta inyectado, sendChat funciona igual (comportamiento legacy).
         self.chat_capability_ingestion_service = chat_capability_ingestion_service
         self.chat_message_repository = chat_message_repository
+        self.system_identity_registry = system_identity_registry or SystemIdentityRegistry()
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
         self._last_reasoning_path: str = ''
+        
+        # System identity tracking
+        self._system_identity_summary: dict[str, Any] = {}
+        self._subsystem_cards: list[dict[str, Any]] = []
+        self._system_identity_last_refresh: float = 0.0
+        self._system_identity_refresh_interval: float = 60.0  # 1 minute
 
         self._selected_role = config.default_task_role.value
         self._auto_route_enabled = True
@@ -561,6 +570,62 @@ class ControlCenterViewModel(QObject):
             {'title': 'Indice', 'value': str(index_state.get('knowledge_count', 0)), 'hint': 'Base semantica reflejada por embeddings locales'},
             {'title': 'PBT', 'value': str(pbt_generation), 'hint': 'Generaciones exploradas con tuner local'},
         ]
+    
+    def _refresh_system_identity(self) -> None:
+        """Refresh system identity snapshot from registry."""
+        import time as _time
+        now = _time.time()
+        
+        # Respect refresh interval
+        if now - self._system_identity_last_refresh < self._system_identity_refresh_interval:
+            return
+        
+        try:
+            self._system_identity_summary = self.system_identity_registry.get_summary_for_ui()
+            self._system_identity_last_refresh = now
+            
+            # Build subsystem cards for UI
+            self._subsystem_cards = []
+            for subsystem in self._system_identity_summary.get('subsystems', []):
+                self._subsystem_cards.append({
+                    'name': subsystem['name'],
+                    'category': subsystem['category'],
+                    'file_path': subsystem['file_path'],
+                    'status': subsystem['status'],
+                    'maturity_pct': subsystem['maturity_pct'],
+                    'last_verified': subsystem['last_verified'],
+                    'dependencies': subsystem['dependencies'],
+                    'active_blockers': subsystem['active_blockers'],
+                    'description': subsystem['description'],
+                    'evidence': subsystem['evidence'],
+                })
+        except Exception as exc:
+            logger.warning('Failed to refresh system identity: %s', exc)
+    
+    # --- Properties for system identity ---
+    @Property(str, notify=dataChanged)
+    def systemIdentityCanonicalRoot(self) -> str:
+        return self._system_identity_summary.get('canonical_root', '')
+    
+    @Property(str, notify=dataChanged)
+    def systemIdentityGlobalHealth(self) -> str:
+        return self._system_identity_summary.get('global_health', 'unknown')
+    
+    @Property(int, notify=dataChanged)
+    def systemIdentityTotalSubsystems(self) -> int:
+        return self._system_identity_summary.get('total_subsystems', 0)
+    
+    @Property(int, notify=dataChanged)
+    def systemIdentityLiveSubsystems(self) -> int:
+        return self._system_identity_summary.get('live_subsystems', 0)
+    
+    @Property(int, notify=dataChanged)
+    def systemIdentityPartialSubsystems(self) -> int:
+        return self._system_identity_summary.get('partial_subsystems', 0)
+    
+    @Property('QVariantList', notify=dataChanged)
+    def subsystemCards(self) -> list:
+        return self._subsystem_cards
 
     def _latest_replay_visual_summary(self) -> dict[str, Any]:
         viewmodel = self.capture_studio_viewmodel
@@ -1121,6 +1186,9 @@ class ControlCenterViewModel(QObject):
         }
 
     def _update_evolution_snapshot(self) -> None:
+        # Refresh system identity as part of evolution snapshot update
+        self._refresh_system_identity()
+        
         health_snapshot = self.evolution_review_service.build_project_health().model_dump(mode='json') if self.evolution_review_service is not None else {}
         experiment_runs = self.experiment_lab_repository.list_runs(limit=12) if self.experiment_lab_repository is not None else []
         experiment_recommendations = self.experiment_lab_repository.list_recommendations(limit=3) if self.experiment_lab_repository is not None else []
