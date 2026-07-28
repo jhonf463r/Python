@@ -327,6 +327,31 @@ def try_algorithm_fitness(root: Path) -> tuple[dict[str, Any], list[str]]:
             pass
 
 
+def try_organism_state_snapshot(root: Path) -> dict[str, Any]:
+    """Read-only organism state snapshot for observability."""
+    try:
+        sys.path.insert(0, str(root / "src"))
+        from iabv_v15.services.evolution.organism_state_snapshot import (
+            export_organism_state_snapshot,
+        )
+
+        snapshot = export_organism_state_snapshot(root)
+        return {
+            "available": True,
+            "snapshot": snapshot,
+        }
+    except Exception as exc:
+        return {
+            "available": False,
+            "error": str(exc)[:200],
+        }
+    finally:
+        try:
+            sys.path.remove(str(root / "src"))
+        except ValueError:
+            pass
+
+
 def build_pre_snapshot(root: Path, agent: str) -> dict[str, Any]:
     tasks = load_platform_pending(root)
     context = load_optional_context(root)
@@ -334,6 +359,7 @@ def build_pre_snapshot(root: Path, agent: str) -> dict[str, Any]:
     pending_summary = summarize_platform_pending(root, tasks)
     duplicates = detect_duplicate_definitions(root)
     fitness, unresolved = try_algorithm_fitness(root)
+    organism_state = try_organism_state_snapshot(root)
     if not context["portable_context_available"]:
         unresolved.append("UNRESOLVED:portable_context_latest_missing")
     if not context["self_examination_available"]:
@@ -365,6 +391,7 @@ def build_pre_snapshot(root: Path, agent: str) -> dict[str, Any]:
         "existing_organs": existing_organs(root, bootstrap_services),
         "duplicate_risks": duplicates,
         "algorithm_fitness": fitness,
+        "organism_state": organism_state,
         "recent_audits": recent_audits(root),
         "forbidden_patterns": DEFAULT_FORBIDDEN_PATTERNS,
         "recommended_next_action": recommended_next_action,
@@ -408,6 +435,59 @@ def render_pre_markdown(snapshot: dict[str, Any]) -> str:
     lines.extend(["", "## Existing Organs"])
     for name, info in (snapshot.get("existing_organs", {}).get("key_organs") or {}).items():
         lines.append(f"- {name}: exists={info.get('exists')} wired_hint={info.get('wired_hint')} path={info.get('path')}")
+
+    lines.extend(["", "## Organism State Snapshot"])
+    org_state = snapshot.get("organism_state", {})
+    if org_state.get("available"):
+        snapshot_data = org_state.get("snapshot", {})
+        lines.append(f"- Status: available")
+        lines.append(f"- Timestamp: {snapshot_data.get('timestamp', 'unknown')}")
+        lines.append(f"- Evidence sources: {', '.join(snapshot_data.get('evidence_sources', []))}")
+        lines.extend(["", "### Runtime Knowledge"])
+        rk = snapshot_data.get("runtime_knowledge", {})
+        lines.append(f"- Runtime organs: {rk.get('runtime_organ_state', {}).get('status', 'unknown')}")
+        lines.append(f"- Portable context: {rk.get('portable_context_summary', {}).get('status', 'unknown')}")
+        lines.extend(["", "### Self Examination"])
+        se = snapshot_data.get("self_examination", {})
+        lines.append(f"- Status: {se.get('status', 'unknown')}")
+        if se.get("status") == "ok":
+            lines.append(f"- Source: {se.get('source', 'unknown')}")
+            lines.append(f"- Findings: {se.get('findings_count', 0)}")
+            if se.get("source") == "file_fallback":
+                lines.append(f"- Stale-capable: {se.get('stale_capable', False)}")
+                lines.append(f"- Age: {se.get('age_seconds', 0):.0f}s")
+        lines.extend(["", "### World Model"])
+        wm = snapshot_data.get("world_model", {})
+        lines.append(f"- Status: {wm.get('status', 'unknown')}")
+        if wm.get("status") == "ok":
+            lines.append(f"- Source: {wm.get('source', 'unknown')}")
+            lines.append(f"- Windows: {wm.get('windows_count', 0)}")
+            lines.append(f"- Tools: {wm.get('tools_count', 0)}")
+            if wm.get("source") == "file_fallback":
+                lines.append(f"- Stale-capable: {wm.get('stale_capable', False)}")
+                lines.append(f"- Age: {wm.get('age_seconds', 0):.0f}s")
+        lines.extend(["", "### Control Master"])
+        cm = snapshot_data.get("control_master", {})
+        lines.append(f"- Status: {cm.get('status', 'unknown')}")
+        if cm.get("status") == "ok":
+            lines.append(f"- Source: {cm.get('source', 'unknown')}")
+            lines.append(f"- Active objectives: {cm.get('active_objectives_count', 0)}")
+            if cm.get("source") == "file_fallback":
+                lines.append(f"- Stale-capable: {cm.get('stale_capable', False)}")
+                lines.append(f"- Age: {cm.get('age_seconds', 0):.0f}s")
+        lines.extend(["", "### Operational Learning"])
+        ol = snapshot_data.get("operational_learning", {})
+        lines.append(f"- Status: {ol.get('status', 'unknown')}")
+        if ol.get("status") == "ok":
+            lines.append(f"- Source: {ol.get('source', 'unknown')}")
+            lines.append(f"- Recent runs: {ol.get('recent_runs_count', 0)}")
+            if ol.get("source") == "file_fallback":
+                lines.append(f"- Stale-capable: {ol.get('stale_capable', False)}")
+                lines.append(f"- Age: {ol.get('age_seconds', 0):.0f}s")
+    else:
+        lines.append(f"- Status: unavailable")
+        if org_state.get("error"):
+            lines.append(f"- Error: {org_state.get('error')}")
 
     lines.extend(["", "## Forbidden To Create"])
     for pattern in snapshot.get("forbidden_patterns", []):
