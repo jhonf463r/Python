@@ -299,7 +299,6 @@ def test_organism_state_snapshot_surface_readout() -> None:
         assert org_state.get('available') is True, "Organism state should be available"
 
         snapshot_data = org_state.get('snapshot', {})
-        
         # Verificar que las secciones principales están presentes
         assert 'runtime_knowledge' in snapshot_data
         assert 'self_examination' in snapshot_data
@@ -317,6 +316,7 @@ def test_organism_state_snapshot_surface_readout() -> None:
         # Verificar que aparece metadata de source/staleness cuando hay file_fallback
         # Esto depende de si los archivos de fallback existen en el workspace real
         # Al menos verificamos que las claves de metadata están presentes en el snapshot
+        has_fallback = False
         for section in ['self_examination', 'world_model', 'control_master', 'operational_learning']:
             section_data = snapshot_data[section]
             if section_data.get('status') == 'ok' and section_data.get('source') == 'file_fallback':
@@ -326,6 +326,76 @@ def test_organism_state_snapshot_surface_readout() -> None:
                 assert 'age_seconds' in section_data
                 assert 'stale_capable' in section_data
                 assert section_data['stale_capable'] is True
+                has_fallback = True
+
+        # Si no hay fallback en el workspace real, usar snapshot controlado
+        if not has_fallback:
+            # Crear snapshot controlado con fallback stale
+            controlled_snapshot = snapshot.copy()
+            controlled_snapshot['organism_state'] = {
+                'available': True,
+                'snapshot': {
+                    'timestamp': utc_now().isoformat(),
+                    'workspace_root': str(root),
+                    'runtime_knowledge': {
+                        'runtime_organ_state': {'status': 'unavailable'},
+                        'portable_context_summary': {'status': 'unavailable'},
+                    },
+                    'self_examination': {
+                        'status': 'ok',
+                        'source': 'file_fallback',
+                        'source_path': str(root / 'data' / 'evolution' / 'self_examination' / 'latest.json'),
+                        'updated_at': 1234567890.0,
+                        'age_seconds': 3600.0,
+                        'stale_capable': True,
+                        'findings_count': 0,
+                    },
+                    'world_model': {
+                        'status': 'ok',
+                        'source': 'file_fallback',
+                        'source_path': str(root / 'data' / 'evolution' / 'world_model' / 'latest.json'),
+                        'updated_at': 1234567890.0,
+                        'age_seconds': 7200.0,
+                        'stale_capable': True,
+                        'windows_count': 0,
+                        'tools_count': 0,
+                    },
+                    'control_master': {
+                        'status': 'ok',
+                        'source': 'file_fallback',
+                        'source_path': str(root / 'data' / 'evolution' / 'control_master' / 'latest.json'),
+                        'updated_at': 1234567890.0,
+                        'age_seconds': 10800.0,
+                        'stale_capable': True,
+                        'active_objectives_count': 0,
+                    },
+                    'operational_learning': {
+                        'status': 'ok',
+                        'source': 'file_fallback',
+                        'source_path': str(root / 'data' / 'evolution' / 'experiment_lab' / 'latest.json'),
+                        'updated_at': 1234567890.0,
+                        'age_seconds': 14400.0,
+                        'stale_capable': True,
+                        'recent_runs_count': 0,
+                    },
+                    'evidence_sources': [],
+                },
+            }
+            controlled_markdown = render_pre_markdown(controlled_snapshot)
+
+            # Validar directamente en el markdown las cadenas requeridas
+            assert '## Organism State Snapshot' in controlled_markdown
+            assert 'Source:' in controlled_markdown
+            assert 'Age:' in controlled_markdown
+            assert 'Stale-capable:' in controlled_markdown
+            assert 'file_fallback' in controlled_markdown
+        else:
+            # Si hay fallback real, validar en el markdown real
+            assert 'Source:' in markdown or 'source' in markdown.lower()
+            # Age y Stale-capable pueden aparecer condicionalmente
+            if 'file_fallback' in markdown:
+                assert 'Age:' in markdown or 'age' in markdown.lower()
+                assert 'Stale-capable:' in markdown or 'stale' in markdown.lower()
 
     finally:
         try:
