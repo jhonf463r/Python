@@ -113,6 +113,13 @@ class ReplayAnnotationSource(str, Enum):
 
 
 class ExternalStateFlag(str, Enum):
+    # Consultation lifecycle states (truth gate separation)
+    WEB_AVAILABLE = "web_available"
+    SESSION_AVAILABLE = "session_available"
+    PROMPT_SUBMITTED = "prompt_submitted"
+    RESPONSE_STREAMING = "response_streaming"
+    RESPONSE_CAPTURED = "response_captured"
+    # Legacy states
     AWAITING_RESPONSE = "awaiting_response"
     ASSISTANT_LOGIN_REQUIRED = "assistant_login_required"
     MISSING_THREAD_TRACKING = "missing_thread_tracking"
@@ -127,6 +134,14 @@ class ExternalStateFlag(str, Enum):
 
 
 _EXTERNAL_STATE_FLAG_ALIASES = {
+    # Consultation lifecycle states
+    'web_available': ExternalStateFlag.WEB_AVAILABLE.value,
+    'session_available': ExternalStateFlag.SESSION_AVAILABLE.value,
+    'prompt_submitted': ExternalStateFlag.PROMPT_SUBMITTED.value,
+    'message_sent': ExternalStateFlag.PROMPT_SUBMITTED.value,
+    'response_streaming': ExternalStateFlag.RESPONSE_STREAMING.value,
+    'response_captured': ExternalStateFlag.RESPONSE_CAPTURED.value,
+    # Legacy states
     'awaiting_response': ExternalStateFlag.AWAITING_RESPONSE.value,
     'assistant_login_required': ExternalStateFlag.ASSISTANT_LOGIN_REQUIRED.value,
     'login_required': ExternalStateFlag.ASSISTANT_LOGIN_REQUIRED.value,
@@ -196,6 +211,14 @@ class ToolValidationStatus(str, Enum):
     SANDBOX_FAIL = "sandbox_fail"
     APPROVED = "approved"
     BLOCKED = "blocked"
+
+
+class ToolAvailabilityStatus(str, Enum):
+    """Estado de disponibilidad de una herramienta con verdad operativa."""
+    READY = "ready"
+    CONFIGURED = "configured"
+    BLOCKED = "blocked"
+    UNKNOWN = "unknown"
 
 
 class ToolTaskStatus(str, Enum):
@@ -357,6 +380,12 @@ class AppConfig(BaseModel):
     ollama_embedding_model: str = "qwen3-embedding:0.6b"
     ollama_embedding_light_model: str = "embeddinggemma"
     provider_timeout_seconds: float = 45.0
+    groq_api_key: str = ''
+    groq_base_url: str = 'https://api.groq.com/openai/v1'
+    gemini_api_key: str = ''
+    gemini_base_url: str = 'https://generativelanguage.googleapis.com/v1beta'
+    openrouter_api_key: str = ''
+    openrouter_base_url: str = 'https://openrouter.ai/api/v1'
     api_capture_mode: str = 'smart'
     periodic_screenshot_seconds: float = 3.0
     default_task_role: TaskRole = TaskRole.TRAINING
@@ -395,6 +424,7 @@ class ProviderConfig(BaseModel):
     enabled: bool = True
     requires_api_key: bool = False
     api_key: str | None = None
+    extra_headers: dict[str, str] = {}
     supports_vision: bool = True
     supports_tools: bool = True
     optional: bool = False
@@ -1245,6 +1275,7 @@ class ToolCard(BaseModel):
     validation_status: ToolValidationStatus = ToolValidationStatus.UNVALIDATED
     local_first: bool = True
     available: bool = True
+    availability_status: ToolAvailabilityStatus = ToolAvailabilityStatus.UNKNOWN
     supports_sandbox: bool = True
     supports_write: bool = False
     requires_human_approval: bool = False
@@ -2102,6 +2133,9 @@ class ExternalWorkerTelemetry(BaseModel):
     automatically into ``ExperimentRun.metadata`` via
     ``TaskOutcomeRecorder``, into ``PortableContext`` summaries, and
     into OSES pattern detection.
+
+    P0.96: External Consultation Contract - response_captured es obligatorio
+    para declarar éxito en consultas externas (ChatGPT, Devin, etc.).
     """
 
     worker_kind: str = ""
@@ -2118,6 +2152,11 @@ class ExternalWorkerTelemetry(BaseModel):
     correction_rounds: int = 0
     merge_success: bool | None = None
     files_touched_scope: list[str] = Field(default_factory=list)
+
+    # P0.96: External Consultation Contract
+    message_sent: bool = False
+    response_captured: bool = False
+    response_timestamp_utc: datetime | None = None
 
     # Scientific proxy variables (calculated by scientific_proxy_engine)
     compression_ratio: float | None = None
@@ -3019,6 +3058,28 @@ class AccountInventorySnapshot(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class AgentDeliveryAuditContract(BaseModel):
+    """P0.100: Agent Delivery Audit Contract - Contract for tracking agent deliveries.
+
+    Used to audit agent (Devin, Codex, etc.) deliveries and ensure proper wiring
+    before accepting changes into the runtime.
+    """
+
+    agent_name: str = ""
+    prompt_hash: str = ""
+    claimed_tasks: list[str] = Field(default_factory=list)
+    files_touched: list[str] = Field(default_factory=list)
+    new_modules: list[str] = Field(default_factory=list)
+    productive_call_sites: list[str] = Field(default_factory=list)
+    tests_added: list[str] = Field(default_factory=list)
+    tests_run: list[str] = Field(default_factory=list)
+    claims_without_wiring: list[str] = Field(default_factory=list)
+    architecture_violations: list[str] = Field(default_factory=list)
+    verdict: str = "pending"  # pending, done, partial, not_wired, invalid
+    created_at_utc: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class AccountApproval(BaseModel):
     """User-approved account selection for a specific tool.
 
@@ -3038,4 +3099,94 @@ class AccountApproval(BaseModel):
     reason: str = ""
     snapshot_id: str = ""
     valid: bool = True
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Operational Continuity Contract
+# ---------------------------------------------------------------------------
+# Contrato Ãºnico de continuidad operativa para tareas externas, handoff
+# entre sesiones/cuentas y trazabilidad multiagente. Se almacena en metadata
+# de TaskContext, PlatformPendingTask y PortableContext para mantener una
+# sola fuente de verdad sin crear nuevas capas ni memorias paralelas.
+
+
+class ContinuityState(str, Enum):
+    """Estado de continuidad de una tarea externa."""
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    PAUSED = "paused"
+    AWAITING_ACCOUNT = "awaiting_account"
+    AWAITING_APPROVAL = "awaiting_approval"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    TRANSFERRED = "transferred"
+
+
+class AgentHandoff(BaseModel):
+    """Registro de handoff entre agentes."""
+    from_agent: str = ""
+    to_agent: str = ""
+    handoff_reason: str = ""
+    handoff_timestamp: datetime = Field(default_factory=utc_now)
+    context_snapshot: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AccountSession(BaseModel):
+    """Registro de sesiÃ³n de cuenta usada para una tarea."""
+    email: str = ""
+    browser: str = ""
+    profile: str = ""
+    tool: str = ""
+    session_started_at: datetime = Field(default_factory=utc_now)
+    session_ended_at: datetime | None = None
+    quota_used: int = 0
+    success: bool = False
+    failure_reason: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class OperationalContinuity(BaseModel):
+    """Contrato Ãºnico de continuidad operativa.
+
+    Este modelo se usa como metadata en:
+    - TaskContext.metadata['operational_continuity']
+    - PlatformPendingTask.metadata['operational_continuity']
+    - PortableContextPackage.metadata['operational_continuity']
+
+    PropÃ³sito: mantener una sola fuente de verdad para progreso, bloqueos,
+    siguiente paso y evidencia de tareas externas, handoffs y sesiones.
+    """
+
+    continuity_id: str = Field(default_factory=lambda: str(uuid4()))
+    task_id: str = ""
+    objective: str = ""
+    
+    # Estado y progreso
+    state: ContinuityState = ContinuityState.NOT_STARTED
+    progress_percentage: float = 0.0
+    current_step: str = ""
+    next_step: str = ""
+    completed_steps: list[str] = Field(default_factory=list)
+    blocked_reason: str = ""
+    
+    # Agente y cuenta actual
+    current_agent: str = ""
+    current_account_session: AccountSession | None = None
+    
+    # Historial de handoffs y sesiones
+    agent_handoffs: list[AgentHandoff] = Field(default_factory=list)
+    account_sessions: list[AccountSession] = Field(default_factory=list)
+    
+    # Evidencia y trazabilidad
+    evidence_refs: list[str] = Field(default_factory=list)
+    decision_audit_trail_refs: list[str] = Field(default_factory=list)
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    last_activity_at: datetime = Field(default_factory=utc_now)
+    
+    # Metadata adicional
     metadata: dict[str, Any] = Field(default_factory=dict)

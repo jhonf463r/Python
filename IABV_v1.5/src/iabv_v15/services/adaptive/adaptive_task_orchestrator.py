@@ -6,12 +6,15 @@ from types import SimpleNamespace
 from typing import Any
 
 from iabv_v15.domain.models import (
+    AccountSession,
     AdaptiveSession,
     AdaptiveSessionStatus,
+    AgentHandoff,
     ApprovalCheckpoint,
     AssistantConfigurationSnapshot,
     CapabilityReadiness,
     ClarificationItem,
+    ContinuityState,
     DecisionContext,
     EnvironmentSelfModel,
     EvaluationRoute,
@@ -22,6 +25,7 @@ from iabv_v15.domain.models import (
     InferenceResult,
     IssueSeverity,
     IntentSchema,
+    OperationalContinuity,
     PerceptionSnapshot,
     ReasoningMode,
     ReportKind,
@@ -232,6 +236,206 @@ class AdaptiveTaskOrchestrator:
         # Shadow mode (Brecha 2.1): timestamp of last shadow dispatch.
         self._last_shadow_at: float = 0.0
         self._SHADOW_COOLDOWN_SECONDS: float = 300.0
+
+    def _create_or_update_continuity(self, *, task_id: str, objective: str, current_agent: str, state: ContinuityState = ContinuityState.NOT_STARTED, current_step: str = "", next_step: str = "", account_session: AccountSession | None = None) -> OperationalContinuity:
+        continuity = OperationalContinuity(task_id=task_id, objective=objective, state=state, current_step=current_step, next_step=next_step, current_agent=current_agent, current_account_session=account_session, updated_at=datetime.now(timezone.utc), last_activity_at=datetime.now(timezone.utc))
+        return continuity
+    def _register_continuity_decision(
+        self,
+        *,
+        task_id: str,
+        decision_type: str,
+        decision_data: dict[str, Any],
+        agent: str,
+        evidence_refs: list[str] | None = None,
+    ) -> None:
+        """Register a continuity-related decision in the DecisionAuditTrail.
+        
+        Args:
+            task_id: The task/session ID.
+            decision_type: Type of decision (e.g., 'continuity_created', 'agent_handoff', 'account_session').
+            decision_data: The decision data including continuity state.
+            agent: The agent making the decision.
+            evidence_refs: Optional evidence references.
+        """
+        if self.decision_audit_trail is None:
+            return
+        try:
+            record = {
+                'decision_id': str(uuid4()),
+                'task_id': task_id,
+                'decision_type': decision_type,
+                'decision_data': decision_data,
+                'agent': agent,
+                'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+                'evidence_refs': evidence_refs or [],
+                'metadata': {
+                    'continuity_contract': True,
+                },
+            }
+            # Call the audit trail service if it has a record method
+            if hasattr(self.decision_audit_trail, 'record'):
+                self.decision_audit_trail.record(record)
+            elif hasattr(self.decision_audit_trail, 'log_decision'):
+                self.decision_audit_trail.log_decision(record)
+        except Exception:
+            # Never break the flow due to audit trail failures
+            pass
+
+
+    def _record_agent_handoff(self, *, continuity: OperationalContinuity, from_agent: str, to_agent: str, reason: str) -> OperationalContinuity:
+        handoff = AgentHandoff(from_agent=from_agent, to_agent=to_agent, handoff_reason=reason, handoff_timestamp=datetime.now(timezone.utc))
+        continuity.agent_handoffs.append(handoff)
+        continuity.current_agent = to_agent
+        continuity.state = ContinuityState.TRANSFERRED
+        continuity.updated_at = datetime.now(timezone.utc)
+        continuity.last_activity_at = datetime.now(timezone.utc)
+        return continuity
+    def _register_continuity_decision(
+        self,
+        *,
+        task_id: str,
+        decision_type: str,
+        decision_data: dict[str, Any],
+        agent: str,
+        evidence_refs: list[str] | None = None,
+    ) -> None:
+        """Register a continuity-related decision in the DecisionAuditTrail.
+        
+        Args:
+            task_id: The task/session ID.
+            decision_type: Type of decision (e.g., 'continuity_created', 'agent_handoff', 'account_session').
+            decision_data: The decision data including continuity state.
+            agent: The agent making the decision.
+            evidence_refs: Optional evidence references.
+        """
+        if self.decision_audit_trail is None:
+            return
+        try:
+            record = {
+                'decision_id': str(uuid4()),
+                'task_id': task_id,
+                'decision_type': decision_type,
+                'decision_data': decision_data,
+                'agent': agent,
+                'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+                'evidence_refs': evidence_refs or [],
+                'metadata': {
+                    'continuity_contract': True,
+                },
+            }
+            # Call the audit trail service if it has a record method
+            if hasattr(self.decision_audit_trail, 'record'):
+                self.decision_audit_trail.record(record)
+            elif hasattr(self.decision_audit_trail, 'log_decision'):
+                self.decision_audit_trail.log_decision(record)
+        except Exception:
+            # Never break the flow due to audit trail failures
+            pass
+
+
+    def _record_account_session(self, *, continuity: OperationalContinuity, email: str, browser: str, profile: str, tool: str, quota_used: int = 0, success: bool = False, failure_reason: str = "") -> OperationalContinuity:
+        session = AccountSession(email=email, browser=browser, profile=profile, tool=tool, quota_used=quota_used, success=success, failure_reason=failure_reason, session_ended_at=datetime.now(timezone.utc) if success else None)
+        continuity.account_sessions.append(session)
+        continuity.current_account_session = session
+        continuity.updated_at = datetime.now(timezone.utc)
+        continuity.last_activity_at = datetime.now(timezone.utc)
+        return continuity
+    def _register_continuity_decision(
+        self,
+        *,
+        task_id: str,
+        decision_type: str,
+        decision_data: dict[str, Any],
+        agent: str,
+        evidence_refs: list[str] | None = None,
+    ) -> None:
+        """Register a continuity-related decision in the DecisionAuditTrail.
+        
+        Args:
+            task_id: The task/session ID.
+            decision_type: Type of decision (e.g., 'continuity_created', 'agent_handoff', 'account_session').
+            decision_data: The decision data including continuity state.
+            agent: The agent making the decision.
+            evidence_refs: Optional evidence references.
+        """
+        if self.decision_audit_trail is None:
+            return
+        try:
+            record = {
+                'decision_id': str(uuid4()),
+                'task_id': task_id,
+                'decision_type': decision_type,
+                'decision_data': decision_data,
+                'agent': agent,
+                'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+                'evidence_refs': evidence_refs or [],
+                'metadata': {
+                    'continuity_contract': True,
+                },
+            }
+            # Call the audit trail service if it has a record method
+            if hasattr(self.decision_audit_trail, 'record'):
+                self.decision_audit_trail.record(record)
+            elif hasattr(self.decision_audit_trail, 'log_decision'):
+                self.decision_audit_trail.log_decision(record)
+        except Exception:
+            # Never break the flow due to audit trail failures
+            pass
+
+
+    def _update_continuity_progress(self, *, continuity: OperationalContinuity, completed_step: str, next_step: str, progress_percentage: float) -> OperationalContinuity:
+        if completed_step and completed_step not in continuity.completed_steps:
+            continuity.completed_steps.append(completed_step)
+        continuity.current_step = completed_step
+        continuity.next_step = next_step
+        continuity.progress_percentage = progress_percentage
+        continuity.updated_at = datetime.now(timezone.utc)
+        continuity.last_activity_at = datetime.now(timezone.utc)
+        return continuity
+    def _register_continuity_decision(
+        self,
+        *,
+        task_id: str,
+        decision_type: str,
+        decision_data: dict[str, Any],
+        agent: str,
+        evidence_refs: list[str] | None = None,
+    ) -> None:
+        """Register a continuity-related decision in the DecisionAuditTrail.
+        
+        Args:
+            task_id: The task/session ID.
+            decision_type: Type of decision (e.g., 'continuity_created', 'agent_handoff', 'account_session').
+            decision_data: The decision data including continuity state.
+            agent: The agent making the decision.
+            evidence_refs: Optional evidence references.
+        """
+        if self.decision_audit_trail is None:
+            return
+        try:
+            record = {
+                'decision_id': str(uuid4()),
+                'task_id': task_id,
+                'decision_type': decision_type,
+                'decision_data': decision_data,
+                'agent': agent,
+                'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+                'evidence_refs': evidence_refs or [],
+                'metadata': {
+                    'continuity_contract': True,
+                },
+            }
+            # Call the audit trail service if it has a record method
+            if hasattr(self.decision_audit_trail, 'record'):
+                self.decision_audit_trail.record(record)
+            elif hasattr(self.decision_audit_trail, 'log_decision'):
+                self.decision_audit_trail.log_decision(record)
+        except Exception:
+            # Never break the flow due to audit trail failures
+            pass
+
+
 
     def _load_resume_context(self) -> dict[str, Any]:
         """Read startup_summary from AutonomyCycleService.
@@ -1498,6 +1702,16 @@ class AdaptiveTaskOrchestrator:
         )
         approvals = self.approval_gate_service.evaluate(intent=intent, pack=pack, strategy_candidates=strategy_candidates)
         session_status = self._derive_session_status(intent=intent, playbook=playbook, approvals=approvals)
+        # Create operational continuity contract for this task
+        continuity = self._create_or_update_continuity(
+            task_id=str(session.session_id),
+            objective=request.user_goal,
+            current_agent=str(route_decision.provider_name or ''),
+            state=ContinuityState.IN_PROGRESS,
+            current_step='session_created',
+            next_step='awaiting_execution',
+        )
+        
         session = AdaptiveSession(
             user_goal=request.user_goal,
             intent=intent,
@@ -1528,6 +1742,11 @@ class AdaptiveTaskOrchestrator:
                 },
             },
         )
+        
+        # Inject continuity contract into TaskContext metadata
+        ctx_meta = dict(context.metadata or {})
+        ctx_meta['operational_continuity'] = continuity.model_dump(mode='json')
+        context.metadata = ctx_meta
         # Opt-in Control Master link. When the consumer passes
         # ``control_master_objective_id`` in the request metadata, carry
         # it into the session so that downstream closers (e.g. the

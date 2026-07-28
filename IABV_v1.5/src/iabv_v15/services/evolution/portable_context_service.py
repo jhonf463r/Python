@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -9,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import (
+    AutonomousValidationSnapshot,
     EnvironmentSelfModel,
     ObjectiveNodeKind,
     PortableContextPackage,
@@ -18,9 +20,18 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
-from iabv_v15.services.adaptive.autonomy_governance_policy import (
-    summarize_operational_budget_calibration,
-)
+try:
+    from iabv_v15.services.adaptive.autonomy_governance_policy import (
+        summarize_operational_budget_calibration,
+    )
+except ImportError:
+    def summarize_operational_budget_calibration(*args, **kwargs) -> dict[str, Any]:
+        return {
+            'status': 'unavailable',
+            'reason': 'autonomy_governance_operational_budget_helpers_missing',
+            'sample_count': 0,
+            'confidence': 0.0,
+        }
 
 
 class PortableContextService:
@@ -135,16 +146,40 @@ class PortableContextService:
         operational_budget_learning = self._operational_budget_learning_snapshot()
         code_audit_status = self._code_audit_snapshot()
         startup_health = self._startup_health_snapshot()
+        birth_stability = self._birth_stability_snapshot()
         account_resource = self._account_resource_snapshot()
+        tool_autonomy_status = self._tool_autonomy_status_snapshot(account_resource=account_resource)
         boot_profile = self._boot_profile_snapshot()
+        audit_control_master = self._audit_control_master_snapshot()
+        learning_history = self._learning_history_snapshot()
         evidence_basis = self._evidence_basis_snapshot(
             environment=environment,
             world=world,
             task_context=task_context,
         )
         task_packet_summary = self._task_packet_summary_snapshot()
+        visual_target_binding = self._visual_target_binding_snapshot()
+        formal_semantic_reasoning = self._formal_semantic_reasoning_snapshot()
+        concept_weight_evidence = self._concept_weight_evidence_snapshot()
+        algorithm_fitness = self._algorithm_fitness_snapshot()
+        runtime_organ_matrix = self._runtime_organ_matrix_snapshot()
+        runtime_learning_closure = self._runtime_learning_closure_snapshot()
+        worker_timeout = self._worker_timeout_snapshot()
         pending_items = self._pending_items()
+        platform_pending_items = self._platform_pending_items()
+        module_progress = self._module_progress_snapshot()
         backlog_items = self._backlog_items()
+        genesis_readiness = self._genesis_readiness_snapshot(
+            startup_health=startup_health,
+            birth_stability=birth_stability,
+            evidence_basis=evidence_basis,
+            visual_target_binding=visual_target_binding,
+            runtime_learning_closure=runtime_learning_closure,
+            self_examination=self_examination,
+            validation=validation,
+            pending_items=[*pending_items, *platform_pending_items],
+        )
+        universal_evolution_scorecard = self._universal_evolution_scorecard_snapshot(account_resource=account_resource)
         decision_history = self._decision_history(recommendations=recommendations)
         unresolved = self._unresolved_fields(
             environment=environment,
@@ -154,6 +189,12 @@ class PortableContextService:
             goal_context=goal_context,
         )
         unresolved = list(dict.fromkeys([*unresolved, *list(self_examination.get('unresolved_risks') or [])]))
+        
+        # Extract operational continuity from task context if available
+        operational_continuity = {}
+        if task_context and hasattr(task_context, 'metadata'):
+            operational_continuity = dict(task_context.metadata.get('operational_continuity') or {})
+        
         sections = [
             self._project_state_section(
                 goal_context=goal_context,
@@ -188,16 +229,49 @@ class PortableContextService:
             self._tool_evolution_section(status=tool_evolution, now=now),
             self._tool_evolution_decisions_section(snapshot=tool_evolution_decisions, now=now),
             self._self_examination_section(review=self_examination, now=now),
+            self._runtime_stability_section(now=now),  # P0.130
             self._code_audit_section(status=code_audit_status, now=now),
             self._cloud_reasoning_section(status=cloud_reasoning_status, now=now),
             self._startup_health_section(status=startup_health, now=now),
+            self._birth_stability_section(status=birth_stability, now=now),
             self._interaction_lifecycle_section(now=now),
-            self._account_resource_section(status=account_resource, now=now),
-            self._account_inventory_continuity_section(now=now),
+            self._worker_timeout_section(snapshot=worker_timeout, now=now),
+        ]
+        
+        # Build account inventory continuity section first to reuse its snapshot
+        # Pass account_resource to reuse raw pool/quota data and avoid duplicate scans
+        inventory_section, inventory_snapshot = self._account_inventory_continuity_section(
+            now=now,
+            account_resource=account_resource,
+        )
+        sections.append(inventory_section)
+        
+        # Reuse the inventory snapshot for account resource section to avoid duplicate scanning
+        sections.append(
+            self._account_resource_section(
+                status=account_resource,
+                inventory_snapshot=inventory_snapshot,
+                now=now,
+            )
+        )
+        
+        sections.extend([
+            self._audit_control_master_section(snapshot=audit_control_master, now=now),
+            self._learning_history_section(snapshot=learning_history, now=now),
             self._tool_coordination_section(now=now),
+            self._tool_autonomy_status_section(snapshot=tool_autonomy_status, now=now),
             self._boot_profile_section(status=boot_profile, now=now),
             self._evidence_basis_section(evidence=evidence_basis, now=now),
             self._task_packet_summary_section(snapshot=task_packet_summary, now=now),
+            self._visual_target_binding_section(snapshot=visual_target_binding, now=now),
+            self._formal_semantic_reasoning_section(snapshot=formal_semantic_reasoning, now=now),
+            self._concept_weight_evidence_section(snapshot=concept_weight_evidence, now=now),
+            self._algorithm_fitness_section(snapshot=algorithm_fitness, now=now),
+            self._runtime_organ_matrix_section(snapshot=runtime_organ_matrix, now=now),
+            self._artifact_lifecycle_section(now=now),  # P0.134/P0.136
+            self._runtime_learning_closure_section(snapshot=runtime_learning_closure, now=now),
+            self._universal_evolution_scorecard_section(snapshot=universal_evolution_scorecard, now=now),
+            self._genesis_readiness_section(snapshot=genesis_readiness, now=now),
             self._recommended_routes_section(recommendations=recommendations, now=now),
             self._operational_blocks_section(world=world, recommendations=recommendations, now=now),
             self._validated_decisions_section(
@@ -206,13 +280,14 @@ class PortableContextService:
                 now=now,
             ),
             self._decision_history_section(decision_history=decision_history, now=now),
+            self._module_progress_section(snapshot=module_progress, now=now),
             self._pending_section(pending_items=pending_items, backlog_items=backlog_items, now=now),
             self._canonical_work_queue_section(now=now),
             self._unresolved_section(unresolved=unresolved, now=now),
             self._hard_rules_section(now=now),
             self._user_identity_section(now=now),
             self._long_term_goals_section(now=now),
-        ]
+        ])
         package = PortableContextPackage(
             created_at_utc=now,
             updated_at_utc=now,
@@ -242,10 +317,18 @@ class PortableContextService:
                 'tool_evolution_validated_proposals': list(tool_evolution_decisions.get('entries') or []),
                 'cloud_reasoning_status': dict(cloud_reasoning_status),
                 'startup_health': dict(startup_health),
+                'birth_stability': dict(birth_stability),
                 'account_resource': dict(account_resource),
                 'boot_profile': dict(boot_profile),
                 'evidence_basis': dict(evidence_basis),
                 'task_packet_summary': dict(task_packet_summary),
+                'visual_target_binding': dict(visual_target_binding),
+                'formal_semantic_reasoning': dict(formal_semantic_reasoning),
+                'concept_weight_evidence': dict(concept_weight_evidence),
+                'runtime_learning_closure': dict(runtime_learning_closure),
+                'worker_timeout_summary': dict(worker_timeout),
+                'genesis_readiness': dict(genesis_readiness),
+                'module_progress': dict(module_progress),
                 'coordination_patterns': coordination_patterns,
                 'chat_stats': self._chat_stats_snapshot(),
                 'autoexamination_summary': dict(self_examination.get('summary_payload') or {}),
@@ -255,6 +338,7 @@ class PortableContextService:
                     'recommendation_feedback': list(self_examination.get('recommendation_feedback') or []),
                     'feedback_summary': dict(self_examination.get('feedback_summary') or {}),
                     'unresolved_risks': list(self_examination.get('unresolved_risks') or []),
+                'operational_continuity': operational_continuity,
                 },
             )
         package = package.model_copy(
@@ -516,21 +600,63 @@ class PortableContextService:
     def _environment_self_model(self) -> EnvironmentSelfModel:
         service = self.environment_self_awareness_service
         if service is None or not hasattr(service, 'current_model'):
+            persisted = self._load_persisted_environment_self_model()
+            if persisted is not None:
+                return persisted
             return EnvironmentSelfModel(scan_status='unavailable', unresolved_fields=['UNRESOLVED:environment_self_model'])
         try:
             return service.current_model()
         except Exception:
+            persisted = self._load_persisted_environment_self_model()
+            if persisted is not None:
+                return persisted
             return EnvironmentSelfModel(scan_status='degraded', unresolved_fields=['UNRESOLVED:environment_self_model'])
 
     def _world_model(self) -> WorldModelSnapshot:
         service = self.world_model_service
         if service is None or not hasattr(service, 'current_model'):
+            persisted = self._load_persisted_world_model()
+            if persisted is not None:
+                return persisted
             return WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
         try:
             model = service.current_model()
             return model if model is not None else WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
         except Exception:
+            persisted = self._load_persisted_world_model()
+            if persisted is not None:
+                return persisted
             return WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
+
+    def _load_persisted_environment_self_model(self) -> EnvironmentSelfModel | None:
+        path = Path(self.workspace_root) / 'data' / 'evolution' / 'environment_self_model' / 'latest.json'
+        if not path.exists():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding='utf-8', errors='replace'))
+            if not isinstance(payload, dict):
+                return None
+            metadata = dict(payload.get('metadata') or {})
+            metadata['portable_context_source'] = 'persisted_environment_self_model_latest'
+            payload['metadata'] = metadata
+            return EnvironmentSelfModel.model_validate(payload)
+        except Exception:
+            return None
+
+    def _load_persisted_world_model(self) -> WorldModelSnapshot | None:
+        path = Path(self.workspace_root) / 'data' / 'evolution' / 'world_model' / 'latest.json'
+        if not path.exists():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding='utf-8', errors='replace'))
+            if not isinstance(payload, dict):
+                return None
+            metadata = dict(payload.get('metadata') or {})
+            metadata['portable_context_source'] = 'persisted_world_model_latest'
+            payload['metadata'] = metadata
+            return WorldModelSnapshot.model_validate(payload)
+        except Exception:
+            return None
 
     def _validation_snapshot(self) -> dict[str, Any]:
         service = self.autonomous_validation_cycle
@@ -791,6 +917,196 @@ class PortableContextService:
             'unresolved_fields': unresolved,
         }
 
+    def _birth_stability_snapshot(self) -> dict[str, Any]:
+        """Summarize whether IABV learned from its own startup/freezes.
+
+        This is the portable counterpart to OSES runtime-birth findings. It
+        reads only durable artifacts so a new IA/session can see if the
+        organism observed its birth, whether duplicate launches were handled,
+        and whether stable-resource freezes still point to main-thread blind
+        spots.
+        """
+        reports = self._birth_recent_freeze_reports(limit=5)
+        stable = [
+            r for r in reports
+            if self._birth_freeze_resources_are_stable(r)
+            and str(r.get('trigger') or '') == 'auto_ui_heartbeat_stall'
+        ]
+        cause_counts = Counter(self._birth_classify_freeze_cause(r) for r in stable)
+        worst_ms = max((self._birth_freeze_duration_ms(r) for r in stable), default=0.0)
+        duplicate_summary = self._birth_startup_duplicate_summary()
+        metacognition_skipped = self._birth_metacognition_was_skipped()
+        unresolved: list[str] = []
+        if stable and metacognition_skipped:
+            unresolved.append('UNRESOLVED:idle_budgeted_startup_metacognition_policy')
+        if not reports:
+            unresolved.append('UNRESOLVED:freeze_reports_missing')
+        status = 'analyzed' if reports or duplicate_summary.get('status') == 'analyzed' else 'no_data'
+        dominant_cause = ''
+        if cause_counts:
+            dominant_cause = cause_counts.most_common(1)[0][0]
+        return {
+            'status': status,
+            'stable_resource_freeze_count': len(stable),
+            'worst_freeze_ms': worst_ms,
+            'dominant_cause': dominant_cause,
+            'cause_counts': dict(cause_counts),
+            'startup_duplicate_summary': duplicate_summary,
+            'startup_metacognition_skipped': metacognition_skipped,
+            'recent_freeze_reports': [
+                {
+                    'file': r.get('_file', ''),
+                    'trigger': r.get('trigger', ''),
+                    'duration_ms': self._birth_freeze_duration_ms(r),
+                    'resources_stable': self._birth_freeze_resources_are_stable(r),
+                    'cause': self._birth_classify_freeze_cause(r),
+                }
+                for r in reports[:3]
+            ],
+            'unresolved_fields': unresolved,
+        }
+
+    def _birth_recent_freeze_reports(self, *, limit: int = 5) -> list[dict[str, Any]]:
+        reports_dir = Path(self.workspace_root) / 'data' / 'evolution' / 'incident_reports'
+        if not reports_dir.exists() or not reports_dir.is_dir():
+            return []
+        try:
+            paths = sorted(
+                reports_dir.glob('freeze_*.json'),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )[:limit]
+        except OSError:
+            return []
+        reports: list[dict[str, Any]] = []
+        root = Path(self.workspace_root)
+        for path in paths:
+            try:
+                payload = json.loads(path.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            payload['_file'] = path.name
+            try:
+                payload['_relative_path'] = str(path.relative_to(root))
+            except ValueError:
+                payload['_relative_path'] = str(path)
+            reports.append(payload)
+        return reports
+
+    @staticmethod
+    def _birth_freeze_duration_ms(report: dict[str, Any]) -> float:
+        for source in (
+            report.get('duration_ms'),
+            (report.get('extra') or {}).get('duration_ms'),
+            (report.get('metadata') or {}).get('duration_ms'),
+        ):
+            try:
+                value = float(source)
+                if value > 0:
+                    return value
+            except (TypeError, ValueError):
+                pass
+        match = re.search(r'(\d+(?:\.\d+)?)\s*ms', str(report.get('user_description') or ''))
+        if match:
+            try:
+                return float(match.group(1))
+            except ValueError:
+                return 0.0
+        return 0.0
+
+    @staticmethod
+    def _birth_freeze_resources_are_stable(report: dict[str, Any]) -> bool:
+        resources = dict(report.get('resources') or {})
+        try:
+            cpu = float(resources.get('cpu_load') or resources.get('cpu_percent') or 0.0)
+        except (TypeError, ValueError):
+            cpu = 0.0
+        try:
+            ram_available = float(resources.get('ram_available_mb') or 0.0)
+        except (TypeError, ValueError):
+            ram_available = 0.0
+        try:
+            ram_used_pct = float(resources.get('ram_used_pct') or 0.0)
+        except (TypeError, ValueError):
+            ram_used_pct = 0.0
+        return cpu < 45.0 and (ram_available >= 1024.0 or ram_used_pct < 85.0)
+
+    @staticmethod
+    def _birth_classify_freeze_cause(report: dict[str, Any]) -> str:
+        parts: list[str] = []
+        for container in (report, dict(report.get('extra') or {})):
+            for key in ('main_thread_stack_during_stall', 'main_thread_stack', 'stack'):
+                value = container.get(key)
+                if isinstance(value, list):
+                    parts.extend(str(item) for item in value)
+                elif value:
+                    parts.append(str(value))
+        recent = json.dumps(
+            ((report.get('runtime_audit_context') or {}).get('recent_events') or []),
+            ensure_ascii=False,
+        )
+        text = f'{" ".join(parts)} {recent}'.lower()
+        if 'execution_dossier_repository' in text or 'json.loads' in text:
+            return 'main_thread_dossier_json_io'
+        if 'autonomy_activity_projector' in text or 'tool_record_repository' in text:
+            return 'main_thread_autonomy_dock_db_projection'
+        if 'datachanged.emit' in text or '_apply_task_result' in text:
+            return 'qml_datachanged_emit_refresh'
+        if 'control_autonomy_dock_refresh' in text:
+            return 'autonomy_dock_refresh_churn'
+        if 'browser_security_verification' in text or 'external_consultation' in text:
+            return 'external_consultation_handoff_ui_churn'
+        if 'app.exec' in text:
+            return 'qt_event_loop_starvation_observed'
+        return 'unknown_main_thread_stall'
+
+    def _birth_metacognition_was_skipped(self) -> bool:
+        timeline = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
+        if not timeline.exists():
+            return False
+        try:
+            lines = timeline.read_text(encoding='utf-8', errors='replace').splitlines()[-120:]
+        except OSError:
+            return False
+        return any(
+            'deferred_metacognition_skipped' in line
+            or 'startup_metacognition_disabled_for_interactivity' in line
+            for line in lines
+        )
+
+    def _birth_startup_duplicate_summary(self) -> dict[str, Any]:
+        audit = Path(self.workspace_root) / 'data' / 'logs' / 'startup_audit.jsonl'
+        if not audit.exists():
+            return {'status': 'no_startup_audit'}
+        try:
+            lines = audit.read_text(encoding='utf-8', errors='replace').splitlines()[-80:]
+        except OSError:
+            return {'status': 'unreadable'}
+        blocked = 0
+        focused = 0
+        reasons: Counter[str] = Counter()
+        for line in lines:
+            try:
+                event = json.loads(line)
+            except Exception:
+                continue
+            if event.get('event') != 'startup_duplicate_blocked':
+                continue
+            data = dict(event.get('data') or {})
+            blocked += 1
+            reason = str(data.get('reason') or 'unknown')
+            reasons[reason] += 1
+            if data.get('focus_success') is True:
+                focused += 1
+        return {
+            'status': 'analyzed',
+            'blocked_count': blocked,
+            'focus_success_count': focused,
+            'reasons': dict(reasons),
+        }
+
     def _account_resource_snapshot(self) -> dict[str, Any]:
         """Return a cached summary of account health, quotas and workers.
 
@@ -823,6 +1139,9 @@ class PortableContextService:
         Separated from ``_account_resource_snapshot`` so the TTL cache
         logic stays clean.  Failures are swallowed — the portable context
         build never crashes because of a scanner issue.
+        
+        Returns a dict with the processed status and also includes the raw
+        pool and all_quota data for reuse by build_inventory_snapshot().
         """
         try:
             from iabv_v15.services.account_resource_scanner import (
@@ -841,7 +1160,8 @@ class PortableContextService:
 
         workers: dict[str, Any] = {}
         try:
-            workers = estimate_available_workers()
+            # Pass all_quota to avoid duplicate call to get_all_quota_status()
+            workers = estimate_available_workers(all_quota=quotas if 'error' not in quotas else None)
         except Exception:
             workers = {'error': 'worker_read_failed'}
 
@@ -874,7 +1194,7 @@ class PortableContextService:
         ]
 
         status = 'partial_failure' if failures else 'ok'
-        return {
+        result = {
             'status': status,
             'read_failures': failures,
             'quota_total_tracked': quotas.get('total_tracked', 0),
@@ -889,44 +1209,91 @@ class PortableContextService:
             'secrets_configured': secrets.get('configured_count', 0),
             'secrets_missing': list(secrets.get('missing', []))[:5],
         }
+        
+        # Include raw data for reuse by build_inventory_snapshot()
+        # Each source is preserved independently to handle partial failures
+        if 'error' not in workers:
+            result['_raw_pool'] = workers
+        if 'error' not in quotas:
+            result['_raw_quota'] = quotas
+        
+        return result
 
-    def _account_resource_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+    def _account_resource_section(self, *, status: dict[str, Any] | None, inventory_snapshot: Any | None, now) -> PortableContextSection:
         """Export account/quota/worker health to portable context.
 
         Ensures the next session knows: which accounts have messages left,
         which are exhausted, what tools have active workers, and what
         secrets are missing — without re-scanning everything.
+
+        If inventory_snapshot is provided, reuses its data to avoid
+        duplicate scanning of the same underlying sources.
         """
         items: list[dict[str, Any]] = []
-        st = str(status.get('status') or 'scanner_unavailable')
-
-        if st in ('ok', 'partial_failure'):
-            for w in status.get('available_workers', [])[:8]:
+        
+        # Reuse data from inventory snapshot if available to avoid duplicate scanning
+        if inventory_snapshot is not None:
+            st = 'ok'
+            # Extract data from the typed snapshot
+            for entry in inventory_snapshot.continuity_queue[:8]:
                 items.append({
-                    'label': f"{w['tool']}: {w['email']}",
-                    'remaining': w['remaining'],
-                    'limit': w['limit'],
+                    'label': f"{entry.tool}: {entry.email}",
+                    'remaining': entry.quota_remaining,
+                    'limit': entry.quota_limit,
                     'status': 'available',
                 })
-            for e in status.get('exhausted_accounts', [])[:5]:
-                items.append({
-                    'label': f"{e['tool']}: {e['email']}",
-                    'status': 'exhausted',
-                    'resets_at': e.get('resets_at', ''),
-                })
-            for m in status.get('secrets_missing', [])[:3]:
-                items.append({
-                    'label': f'Secreto faltante: {m}',
-                    'status': 'missing',
-                })
+            for entry in inventory_snapshot.entries[:5]:
+                if entry.exhausted:
+                    resets = entry.quota_resets_at.isoformat() if entry.quota_resets_at else ''
+                    items.append({
+                        'label': f"{entry.tool}: {entry.email}",
+                        'status': 'exhausted',
+                        'resets_at': resets,
+                    })
+            
+            avail = inventory_snapshot.active_count
+            exhausted = inventory_snapshot.exhausted_count
+            remaining = inventory_snapshot.total_remaining_messages
+            # Preserve tools_available and secrets_missing from status if available
+            tools = status.get('workers_by_tool', []) if status else []
+            missing_secrets = status.get('secrets_missing', []) if status else []
+            read_failures = []
+        elif status is not None:
+            st = str(status.get('status') or 'scanner_unavailable')
+            if st in ('ok', 'partial_failure'):
+                for w in status.get('available_workers', [])[:8]:
+                    items.append({
+                        'label': f"{w['tool']}: {w['email']}",
+                        'remaining': w['remaining'],
+                        'limit': w['limit'],
+                        'status': 'available',
+                    })
+                for e in status.get('exhausted_accounts', [])[:5]:
+                    items.append({
+                        'label': f"{e['tool']}: {e['email']}",
+                        'status': 'exhausted',
+                        'resets_at': e.get('resets_at', ''),
+                    })
+                for m in status.get('secrets_missing', [])[:3]:
+                    items.append({
+                        'label': f'Secreto faltante: {m}',
+                        'status': 'missing',
+                    })
 
-        avail = status.get('worker_available_count', 0)
-        exhausted = status.get('quota_exhausted_count', 0)
-        remaining = status.get('worker_total_remaining_messages', 0)
-        tools = status.get('workers_by_tool', [])
-        missing_secrets = status.get('secrets_missing', [])
-
-        read_failures = status.get('read_failures', [])
+            avail = status.get('worker_available_count', 0)
+            exhausted = status.get('quota_exhausted_count', 0)
+            remaining = status.get('worker_total_remaining_messages', 0)
+            tools = status.get('workers_by_tool', [])
+            missing_secrets = status.get('secrets_missing', [])
+            read_failures = status.get('read_failures', [])
+        else:
+            st = 'scanner_unavailable'
+            avail = 0
+            exhausted = 0
+            remaining = 0
+            tools = []
+            missing_secrets = []
+            read_failures = []
 
         if st == 'scanner_unavailable':
             summary = 'AccountResourceScanner no disponible. Cuotas y workers desconocidos.'
@@ -976,22 +1343,35 @@ class PortableContextService:
     # Account inventory continuity — formal snapshot for next session
     # ------------------------------------------------------------------
 
-    def _account_inventory_continuity_section(self, *, now) -> PortableContextSection:
+    def _account_inventory_continuity_section(self, *, now, account_resource: dict[str, Any] | None = None) -> tuple[PortableContextSection, Any]:
         """Export formal account inventory for session continuity.
 
         Ensures the next session inherits: which accounts exist, their
         quota status, the continuity queue (ranked next-best accounts),
         and any UNRESOLVED items.  This section complements the lighter
         ``account_resource_health`` section with the full typed snapshot.
+        
+        Returns a tuple of (section, snapshot) so the snapshot can be
+        reused by _account_resource_section to avoid duplicate scanning.
+        
+        If account_resource is provided and contains raw pool/quota data,
+        those are reused to avoid duplicate calls to estimate_available_workers()
+        and get_all_quota_status().
         """
         items: list[dict[str, Any]] = []
         unresolved_fields: list[str] = []
+        snapshot = None
 
         try:
             from iabv_v15.services.account_resource_scanner import (
                 build_inventory_snapshot,
             )
-            snapshot = build_inventory_snapshot()
+            
+            # Reuse raw data from account_resource if available to avoid duplicate scans
+            pool = account_resource.get('_raw_pool') if account_resource else None
+            all_quota = account_resource.get('_raw_quota') if account_resource else None
+            
+            snapshot = build_inventory_snapshot(pool=pool, all_quota=all_quota)
 
             # Active accounts
             for entry in snapshot.continuity_queue[:6]:
@@ -1043,7 +1423,7 @@ class PortableContextService:
                 'UNRESOLVED:account_inventory_snapshot_unavailable',
             ]
 
-        return self._section(
+        section = self._section(
             section_id='account_inventory_continuity',
             title='Inventario de cuentas y cola de continuidad',
             summary=summary,
@@ -1056,6 +1436,90 @@ class PortableContextService:
             metadata={
                 'section_purpose': 'continuity_for_next_session',
                 'requires_human_approval': True,
+            },
+        )
+        
+        return section, snapshot
+
+    # ------------------------------------------------------------------
+    # Audit control master — agent session gate snapshot
+    # ------------------------------------------------------------------
+
+    def _audit_control_master_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        """Export agent session gate snapshot as audit control master section.
+
+        P0.136B: PortableContext exporta snapshot de agent_session_gate/latest.json
+        como sección audit_control_master para que OSES pueda detectar riesgos
+        (stale tasks, duplicate findings, agent delivery without gate) sin
+        escanear filesystem pesado.
+        """
+        st = str(snapshot.get('status') or 'no_snapshot')
+        items: list[dict[str, Any]] = []
+        unresolved_fields: list[str] = list(snapshot.get('unresolved_fields') or [])
+
+        if st == 'ok':
+            agent = str(snapshot.get('agent') or 'unknown')
+            generated_at = str(snapshot.get('generated_at') or '')
+            active_count = snapshot.get('active_objectives_count', 0)
+            stale_count = snapshot.get('stale_or_partial_count', 0)
+            duplicate_count = snapshot.get('duplicate_risks_count', 0)
+            human_review = snapshot.get('human_review_required', False)
+
+            items.append({'label': 'agent', 'value': agent})
+            items.append({'label': 'generated_at', 'value': generated_at})
+            items.append({'label': 'active_objectives_count', 'value': active_count})
+            items.append({'label': 'stale_or_partial_count', 'value': stale_count})
+            items.append({'label': 'duplicate_risks_count', 'value': duplicate_count})
+            items.append({'label': 'human_review_required', 'value': human_review})
+
+            # Raw snapshot preview
+            raw = snapshot.get('raw_snapshot', {})
+            if raw:
+                for key in ['active_objectives', 'stale_or_partial', 'duplicate_risks']:
+                    values = list(raw.get(key) or [])
+                    if values:
+                        items.append({
+                            'label': f'{key}_preview',
+                            'value': f'{len(values)} items',
+                            'detail': str(values[0]) if values else '',
+                        })
+
+            summary = (
+                f'Agent session gate ({agent}): {active_count} objetivos activos, '
+                f'{stale_count} stale/partial, {duplicate_count} duplicate risks, '
+                f'human_review={human_review}.'
+            )
+            confidence = 0.85
+        elif st == 'no_snapshot':
+            summary = 'Agent session gate snapshot no disponible. PortableContext marca UNRESOLVED.'
+            confidence = 0.0
+            unresolved_fields.append('UNRESOLVED:agent_session_gate_snapshot_missing')
+        elif st == 'read_error':
+            summary = 'Error al leer agent session gate snapshot.'
+            confidence = 0.0
+            unresolved_fields.append('UNRESOLVED:agent_session_gate_read_error')
+        else:
+            summary = f'Agent session gate status: {st}'
+            confidence = 0.0
+
+        return self._section(
+            section_id='audit_control_master',
+            title='Control maestro de auditoría (agent session gate)',
+            summary=summary,
+            items=items,
+            source_kind='agent_session_gate',
+            source_refs=['scripts/devin_session_gate.py', 'data/evolution/agent_session_gate/latest.json'],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=list(dict.fromkeys(unresolved_fields)),
+            metadata={
+                'status': st,
+                'agent': snapshot.get('agent', ''),
+                'generated_at': snapshot.get('generated_at', ''),
+                'active_objectives_count': snapshot.get('active_objectives_count', 0),
+                'stale_or_partial_count': snapshot.get('stale_or_partial_count', 0),
+                'duplicate_risks_count': snapshot.get('duplicate_risks_count', 0),
+                'human_review_required': snapshot.get('human_review_required', False),
             },
         )
 
@@ -1074,8 +1538,23 @@ class PortableContextService:
         summary = 'Sin datos de coordinacion de herramientas.'
         confidence = 0.3
         unresolved_fields: list[str] = []
+        readiness: dict[str, Any] = {}
 
         try:
+            discovery = self.tool_discovery_service
+            if discovery is not None and hasattr(discovery, 'external_coordination_readiness'):
+                readiness = dict(discovery.external_coordination_readiness() or {})
+                for family, payload in list(dict(readiness.get('families') or {}).items())[:6]:
+                    if not isinstance(payload, dict):
+                        continue
+                    items.append({
+                        'label': f"familia:{family}",
+                        'value': (
+                            f"readiness={payload.get('readiness', '')} "
+                            f"tool={payload.get('best_tool_id', '')} lane={payload.get('capture_lane', '')}"
+                        ),
+                        'detail': str(payload.get('next_human_action') or payload.get('recommended_use') or ''),
+                    })
             sessions = list((self.adaptive_session_repository.list_recent(limit=5) if self.adaptive_session_repository else []) or [])
             for session in sessions[:3]:
                 meta = dict(session.metadata or {})
@@ -1092,10 +1571,15 @@ class PortableContextService:
                     'detail': f"alternativas_descartadas={len(tss.get('alternatives_discarded', []))}",
                 })
             if items:
-                summary = f'{len(items)} selecciones recientes de herramienta registradas con trazabilidad.'
-                confidence = 0.7
+                readiness_status = str(readiness.get('status') or '').strip()
+                if readiness_status:
+                    summary = f'{len(items)} senales de coordinacion; readiness={readiness_status}.'
+                else:
+                    summary = f'{len(items)} selecciones recientes de herramienta registradas con trazabilidad.'
+                confidence = 0.78
             else:
                 unresolved_fields.append('UNRESOLVED:no_recent_tool_selections')
+            unresolved_fields.extend(list(readiness.get('unresolved_fields') or []))
         except Exception:
             unresolved_fields.append('UNRESOLVED:tool_coordination_read_error')
 
@@ -1105,10 +1589,110 @@ class PortableContextService:
             summary=summary,
             items=items,
             source_kind='adaptive_task_orchestrator',
-            source_refs=['tool_selection_summary', 'worker_gate'],
+            source_refs=['tool_selection_summary', 'worker_gate', 'ToolDiscoveryService.external_coordination_readiness'],
             confidence=confidence,
             last_updated=now,
-            unresolved_fields=unresolved_fields,
+            unresolved_fields=list(dict.fromkeys(unresolved_fields)),
+            metadata={
+                'external_coordination_readiness': readiness,
+            },
+        )
+
+    def _tool_autonomy_status_snapshot(self, *, account_resource: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Strict live-readiness contract for external tools.
+
+        This complements the broader coordination section.  It is intentionally
+        read-only and fail-closed: missing evidence becomes UNRESOLVED instead
+        of an optimistic capability claim.
+        
+        Args:
+            account_resource: Optional account resource snapshot containing raw data
+                (_raw_pool, _raw_quota) to reuse for inventory snapshot construction.
+        """
+        discovery = self.tool_discovery_service
+        if discovery is None or not hasattr(discovery, 'tool_autonomy_status'):
+            return {
+                'status': 'unavailable',
+                'tools': [],
+                'unresolved_fields': ['UNRESOLVED:tool_autonomy_status_service_missing'],
+            }
+        account_inventory = None
+        # Skip build_inventory_snapshot when account_resource is provided to avoid duplicate calls
+        # The data will be extracted from account_resource directly
+        if account_resource is None:
+            try:
+                from iabv_v15.services.account_resource_scanner import build_inventory_snapshot
+                account_inventory = build_inventory_snapshot()
+            except Exception:
+                account_inventory = None
+
+        devin_status: dict[str, Any] | None = None
+        try:
+            from iabv_v15.services.evolution.devin_runtime_concierge import devin_runtime_status
+            registry = getattr(discovery, 'tool_registry', None)
+            adapters = getattr(registry, 'adapters', {}) if registry is not None else {}
+            adapter = adapters.get('devin_api') if isinstance(adapters, dict) else None
+            devin_status = devin_runtime_status(adapter=adapter, probe=False)
+        except Exception:
+            devin_status = {
+                'ready': False,
+                'unresolved_fields': ['UNRESOLVED:devin_runtime_status_read_error'],
+            }
+        try:
+            return dict(discovery.tool_autonomy_status(
+                account_inventory=account_inventory,
+                devin_status=devin_status,
+            ) or {})
+        except Exception as exc:
+            return {
+                'status': 'read_error',
+                'tools': [],
+                'unresolved_fields': ['UNRESOLVED:tool_autonomy_status_read_error'],
+                'error': f'{type(exc).__name__}: {exc}'[:200],
+            }
+
+    def _tool_autonomy_status_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        tools = list(snapshot.get('tools') or [])
+        usable = [item for item in tools if isinstance(item, dict) and item.get('can_use_now')]
+        blocked = [item for item in tools if isinstance(item, dict) and not item.get('can_use_now')]
+        items: list[dict[str, Any]] = []
+        for item in tools[:8]:
+            if not isinstance(item, dict):
+                continue
+            items.append({
+                'label': f"{item.get('assistant_kind', '')}:{item.get('tool_id', '')}",
+                'value': (
+                    f"can_use_now={bool(item.get('can_use_now'))} "
+                    f"live_verified={bool(item.get('live_verified'))} "
+                    f"readiness={item.get('readiness', '')}"
+                ),
+                'detail': str(item.get('last_failure_reason') or item.get('next_human_action') or item.get('next_machine_action') or ''),
+            })
+        summary = str(snapshot.get('summary') or '')
+        if not summary:
+            summary = f'{len(usable)} herramientas usables, {len(blocked)} no verificadas o bloqueadas.'
+        return self._section(
+            section_id='tool_autonomy_status',
+            title='Estado vivo de herramientas externas',
+            summary=summary,
+            items=items,
+            source_kind='tool_discovery',
+            source_refs=list(snapshot.get('source_refs') or [
+                'ToolRegistry',
+                'WorldModelSnapshot',
+                'AccountInventorySnapshot',
+                'DevinRuntimeConcierge',
+            ]),
+            confidence=0.82 if tools else 0.2,
+            last_updated=now,
+            unresolved_fields=list(dict.fromkeys(list(snapshot.get('unresolved_fields') or []))),
+            metadata={
+                'status': snapshot.get('status', ''),
+                'usable_tool_ids': list(snapshot.get('usable_tool_ids') or []),
+                'human_actions': list(snapshot.get('human_actions') or [])[:6],
+                'machine_actions': list(snapshot.get('machine_actions') or [])[:6],
+                'policy': snapshot.get('policy', 'do_not_report_tool_success_without_live_verification'),
+            },
         )
 
     # ------------------------------------------------------------------
@@ -1144,6 +1728,260 @@ class PortableContextService:
 
         summary.setdefault('status', 'no_data' if summary.get('boot_count', 0) == 0 else 'ok')
         return summary
+
+    def _audit_control_master_snapshot(self) -> dict[str, Any]:
+        """Read agent session gate snapshot as compact audit control master.
+
+        P0.136B: PortableContext exporta snapshot de agent_session_gate/latest.json
+        como sección audit_control_master para que OSES pueda detectar riesgos
+        (stale tasks, duplicate findings, agent delivery without gate) sin
+        escanear filesystem pesado.
+
+        Returns a dict with:
+            - ``status``: ``no_snapshot`` / ``read_error`` / ``ok``
+            - ``agent``: agent name from snapshot
+            - ``generated_at``: ISO timestamp when snapshot was generated
+            - ``active_objectives_count``: number of active objectives
+            - ``stale_or_partial_count``: number of stale/partial tasks
+            - ``duplicate_risks_count``: number of duplicate risks
+            - ``human_review_required``: boolean from snapshot
+            - ``unresolved_fields``: list of UNRESOLVED tags
+        """
+        gate_path = Path(self.workspace_root) / 'data' / 'evolution' / 'agent_session_gate' / 'latest.json'
+        if not gate_path.exists():
+            return {
+                'status': 'no_snapshot',
+                'unresolved_fields': ['UNRESOLVED:agent_session_gate_snapshot_missing'],
+            }
+        try:
+            import json
+            snapshot = json.loads(gate_path.read_text(encoding='utf-8', errors='ignore'))
+        except Exception as exc:
+            return {
+                'status': 'read_error',
+                'unresolved_fields': ['UNRESOLVED:agent_session_gate_read_error'],
+                'error': str(exc)[:200],
+            }
+
+        active_objectives = list(snapshot.get('active_objectives') or [])
+        stale_or_partial = list(snapshot.get('stale_or_partial_tasks') or [])
+        duplicate_risks = list(snapshot.get('duplicate_risks') or [])
+        unresolved = list(snapshot.get('unresolved') or [])
+
+        return {
+            'status': 'ok',
+            'agent': str(snapshot.get('agent') or 'unknown'),
+            'generated_at': str(snapshot.get('generated_at') or ''),
+            'active_objectives_count': len(active_objectives),
+            'stale_or_partial_count': len(stale_or_partial),
+            'duplicate_risks_count': len(duplicate_risks),
+            'human_review_required': bool(snapshot.get('human_review_required')),
+            'unresolved_fields': unresolved,
+            'raw_snapshot': {
+                'active_objectives': active_objectives[:5],
+                'stale_or_partial': stale_or_partial[:5],
+                'duplicate_risks': duplicate_risks[:5],
+            },
+        }
+
+    def _learning_history_snapshot(self) -> dict[str, Any]:
+        """Read gate POST and OSES findings to build learning history.
+
+        P0.136B: PortableContext captura validación cruzada entre teoría previa
+        (gate PRE) y realidad posterior (gate POST + OSES findings) para que
+        la siguiente sesión parta de experiencia acumulativa.
+
+        Returns a dict with:
+            - ``status``: ``no_history`` / ``read_error`` / ``ok``
+            - ``recent_theory_validations``: list of recent gate theory validations
+            - ``repeated_patterns``: patterns detected across sessions
+            - ``learning_signals``: signals for future sessions
+            - ``unresolved_fields``: list of UNRESOLVED tags
+        """
+        post_path = Path(self.workspace_root) / 'data' / 'evolution' / 'agent_session_gate' / 'latest_post.json'
+        oses_path = Path(self.workspace_root) / 'data' / 'evolution' / 'self_examination' / 'latest.json'
+
+        if not post_path.exists() and not oses_path.exists():
+            return {
+                'status': 'no_history',
+                'unresolved_fields': ['UNRESOLVED:learning_history_no_data'],
+            }
+
+        try:
+            recent_theory_validations: list[dict[str, Any]] = []
+            
+            # Leer historial acumulado bajo history/ no solo latest.json
+            history_dir = Path(self.workspace_root) / 'data' / 'evolution' / 'agent_session_gate' / 'history'
+            if history_dir.exists():
+                for json_file in sorted(history_dir.glob('*.json'))[-10:]:  # Últimos 10 archivos de historial
+                    data = safe_read_json(json_file)
+                    if '_read_error' not in data:
+                        if data.get('mode') == 'post':
+                            theory_validation = data.get('theory_validation', {})
+                            if theory_validation.get('pre_available'):
+                                recent_theory_validations.append({
+                                    'session_time': data.get('generated_at', ''),
+                                    'agent': data.get('agent', ''),
+                                    'pre_theory': theory_validation.get('pre_theory', {}),
+                                    'post_reality': theory_validation.get('post_reality', {}),
+                                    'divergences': theory_validation.get('divergences', []),
+                                    'verdict': data.get('verdict', ''),
+                                })
+            
+            # Leer latest_post.json si no hay suficiente historial
+            if len(recent_theory_validations) < 5 and post_path.exists():
+                post = safe_read_json(post_path)
+                if '_read_error' not in post:
+                    theory_validation = post.get('theory_validation', {})
+                    if theory_validation.get('pre_available'):
+                        recent_theory_validations.append({
+                            'session_time': post.get('generated_at', ''),
+                            'agent': post.get('agent', ''),
+                            'pre_theory': theory_validation.get('pre_theory', {}),
+                            'post_reality': theory_validation.get('post_reality', {}),
+                            'divergences': theory_validation.get('divergences', []),
+                            'verdict': post.get('verdict', ''),
+                        })
+
+            repeated_patterns: list[dict[str, Any]] = []
+            if oses_path.exists():
+                oses = safe_read_json(oses_path)
+                if '_read_error' not in oses:
+                    findings = list(oses.get('findings', []))
+                    # Detectar patrones repetidos
+                    from collections import Counter
+                    categories = [f.get('category', '') for f in findings if f.get('category')]
+                    category_counts = Counter(categories)
+                    for category, count in category_counts.most_common(5):
+                        if count >= 2:
+                            repeated_patterns.append({
+                                'pattern': category,
+                                'occurrence_count': count,
+                                'severity': 'recurring',
+                            })
+
+            learning_signals: list[str] = []
+            # Usar slices seguros que no fallen si hay menos datos
+            validation_slice = recent_theory_validations[-3:] if len(recent_theory_validations) >= 3 else recent_theory_validations
+            if recent_theory_validations:
+                for validation in validation_slice:
+                    divergences = validation.get('divergences', [])
+                    if divergences:
+                        learning_signals.append(f"Theory divergence detected: {divergences[0][:100]}")
+                    if validation.get('verdict') == 'ready':
+                        learning_signals.append(f"Session completed successfully at {validation.get('session_time', '')}")
+
+            if repeated_patterns:
+                pattern_slice = repeated_patterns[:3] if len(repeated_patterns) >= 3 else repeated_patterns
+                for pattern in pattern_slice:
+                    learning_signals.append(f"Recurring pattern: {pattern['pattern']} ({pattern['occurrence_count']} occurrences)")
+
+            # Validar que hay datos suficientes
+            if len(recent_theory_validations) == 0 and len(repeated_patterns) == 0:
+                return {
+                    'status': 'insufficient_data',
+                    'unresolved_fields': ['UNRESOLVED:learning_history_insufficient_data'],
+                    'recent_theory_validations': [],
+                    'repeated_patterns': [],
+                    'learning_signals': ['Insufficient data for learning history analysis'],
+                }
+
+            return {
+                'status': 'ok',
+                'recent_theory_validations': recent_theory_validations[-5:] if len(recent_theory_validations) >= 5 else recent_theory_validations,
+                'repeated_patterns': repeated_patterns,
+                'learning_signals': learning_signals[-10:] if len(learning_signals) >= 10 else learning_signals,
+                'unresolved_fields': [],
+            }
+        except Exception as exc:
+            return {
+                'status': 'read_error',
+                'unresolved_fields': ['UNRESOLVED:learning_history_read_error'],
+                'error': str(exc)[:200],
+            }
+
+    def _learning_history_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        """Export learning history as portable context section.
+
+        P0.136B: PortableContext exporta historial de aprendizaje para que
+        la siguiente sesión pueda responder "esto ya pasó antes" o "esta
+        teoría local falló en este contexto".
+        """
+        st = str(snapshot.get('status') or 'no_history')
+        items: list[dict[str, Any]] = []
+        unresolved_fields: list[str] = list(snapshot.get('unresolved_fields') or [])
+
+        if st == 'ok':
+            recent_validations = list(snapshot.get('recent_theory_validations', []))
+            repeated_patterns = list(snapshot.get('repeated_patterns', []))
+            learning_signals = list(snapshot.get('learning_signals', []))
+
+            for validation in recent_validations[:3]:
+                session_time = str(validation.get('session_time', '') or '')[:19]
+                verdict = str(validation.get('verdict', '') or '')
+                divergences = list(validation.get('divergences', []))
+                items.append({
+                    'label': f'Session {session_time}',
+                    'value': f'verdict={verdict}, divergences={len(divergences)}',
+                    'detail': str(divergences[0][:80]) if divergences else 'No divergences',
+                })
+
+            for pattern in repeated_patterns[:3]:
+                pattern_name = str(pattern.get('pattern', ''))
+                count = pattern.get('occurrence_count', 0)
+                items.append({
+                    'label': f'Recurring pattern: {pattern_name}',
+                    'value': f'{count} occurrences',
+                    'detail': f'severity={pattern.get("severity", "")}',
+                })
+
+            for signal in learning_signals[:5]:
+                items.append({
+                    'label': 'Learning signal',
+                    'value': signal[:100],
+                })
+
+            validation_count = len(recent_validations)
+            pattern_count = len(repeated_patterns)
+            signal_count = len(learning_signals)
+            summary = (
+                f'Learning history: {validation_count} validaciones recientes, '
+                f'{pattern_count} patrones recurrentes, {signal_count} señales de aprendizaje.'
+            )
+            confidence = 0.85
+        elif st == 'no_history':
+            summary = 'Learning history no disponible aún. PortableContext marcará UNRESOLVOLED.'
+            confidence = 0.0
+            unresolved_fields.append('UNRESOLVED:learning_history_no_data')
+        elif st == 'read_error':
+            summary = 'Error al leer learning history.'
+            confidence = 0.0
+            unresolved_fields.append('UNRESOLVED:learning_history_read_error')
+        else:
+            summary = f'Learning history status: {st}'
+            confidence = 0.0
+
+        return self._section(
+            section_id='learning_history',
+            title='Historial de aprendizaje (teoría vs realidad)',
+            summary=summary,
+            items=items,
+            source_kind='agent_session_gate_cross_oses',
+            source_refs=[
+                'scripts/devin_session_gate.py',
+                'data/evolution/agent_session_gate/latest_post.json',
+                'data/evolution/self_examination/latest.json',
+            ],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=list(dict.fromkeys(unresolved_fields)),
+            metadata={
+                'status': st,
+                'recent_validation_count': snapshot.get('recent_theory_validations_count', 0),
+                'repeated_pattern_count': snapshot.get('repeated_pattern_count', 0),
+                'learning_signal_count': snapshot.get('learning_signal_count', 0),
+            },
+        )
 
     def _boot_profile_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
         """Export boot profile telemetry as a portable context section.
@@ -1300,10 +2138,18 @@ class PortableContextService:
             )
         live: list[str] = []
         persisted: list[str] = []
+        world_source = str((world.metadata or {}).get('portable_context_source') or '')
+        environment_source = str((environment.metadata or {}).get('portable_context_source') or '')
         if has_world_model:
-            live.append('world_model')
+            if world_source.startswith('persisted_'):
+                persisted.append('world_model_latest')
+            else:
+                live.append('world_model')
         if has_environment:
-            live.append('environment_self_model')
+            if environment_source.startswith('persisted_'):
+                persisted.append('environment_self_model_latest')
+            else:
+                live.append('environment_self_model')
         if has_persisted_learning:
             persisted.append('adaptive_learning')
         if has_ia_trace:
@@ -1764,9 +2610,12 @@ class PortableContextService:
                 'summary_payload': {},
                 'signals': [],
                 'unresolved_fields': ['UNRESOLVED:tool_discovery'],
-            }
+        }
         try:
-            status = service.current_status(refresh=True)
+            try:
+                status = service.current_status(refresh=False, max_age_seconds=900)
+            except TypeError:
+                status = service.current_status(refresh=False)
             summary_payload = dict(service.status_summary(status) or {}) if hasattr(service, 'status_summary') else {}
             return {
                 'summary': str(getattr(status, 'summary', '') or ''),
@@ -2643,6 +3492,7 @@ class PortableContextService:
                 'in_validation_signal_count': len(list(summary_payload.get('in_validation_signals') or [])),
                 'promoted_signal_count': len(list(summary_payload.get('promoted_signals') or [])),
                 'discarded_signal_count': len(list(summary_payload.get('discarded_signals') or [])),
+                'external_coordination_readiness': dict(summary_payload.get('external_coordination_readiness') or {}),
             },
         )
 
@@ -2778,6 +3628,100 @@ class PortableContextService:
                 'feedback_summary': dict(review.get('feedback_summary') or {}),
             },
         )
+
+    def _runtime_stability_section(self, *, now) -> PortableContextSection:
+        """P0.130: Export runtime stability nervous system section."""
+        try:
+            from iabv_v15.services.evolution.runtime_organ_state import (
+                build_runtime_stability_dossier,
+                load_runtime_organ_snapshot,
+            )
+
+            dossier = build_runtime_stability_dossier(self.workspace_root)
+            organs_snapshot = load_runtime_organ_snapshot(self.workspace_root)
+
+            # Build compact items
+            items: list[dict[str, Any]] = []
+
+            # Total stalls summary
+            if dossier.get("total_stalls", 0) > 0:
+                items.append({
+                    'label': 'Total stalls',
+                    'summary': f'{dossier["total_stalls"]} stalls, max {dossier["max_stall_ms"]:.0f}ms',
+                    'severity': 'HIGH' if dossier["total_stalls"] >= 5 else 'MEDIUM',
+                    'confidence': 0.85,
+                    'source_refs': ['runtime_audit.jsonl', 'build_runtime_stability_dossier'],
+                })
+
+            # Suspected organs
+            if dossier.get("suspected_organs"):
+                items.append({
+                    'label': 'Órganos sospechosos',
+                    'summary': ', '.join(set(dossier["suspected_organs"])),
+                    'severity': 'HIGH',
+                    'confidence': 0.75,
+                    'source_refs': ['runtime_organs/latest.json', 'build_runtime_stability_dossier'],
+                })
+
+            # Active heavy organs
+            if dossier.get("active_heavy_organs"):
+                items.append({
+                    'label': 'Órganos heavy activos',
+                    'summary': ', '.join(dossier["active_heavy_organs"]),
+                    'severity': 'MEDIUM',
+                    'confidence': 0.80,
+                    'source_refs': ['runtime_organs/latest.json'],
+                })
+
+            # Degraded organs
+            degraded = [o.get("organ_id") for o in organs_snapshot.get("organs", []) if o.get("mode") in {"throttled", "on_demand", "disabled"}]
+            if degraded:
+                items.append({
+                    'label': 'Órganos degradados',
+                    'summary': ', '.join(degraded),
+                    'severity': 'LOW',
+                    'confidence': 0.90,
+                    'source_refs': ['runtime_organs/latest.json'],
+                })
+
+            summary = (
+                f'Sistema de estabilidad runtime: {dossier["total_stalls"]} stalls, '
+                f'{len(dossier.get("suspected_organs", []))} órganos sospechosos, '
+                f'{len(dossier.get("active_heavy_organs", []))} heavy activos.'
+            )
+
+            return self._section(
+                section_id='runtime_stability_nervous_system',
+                title='Sistema de Estabilidad Runtime',
+                summary=summary,
+                items=items[:5],  # Top 5 items
+                source_kind='derived_dossier',
+                source_refs=['runtime_audit.jsonl', 'runtime_organs/latest.json', 'build_runtime_stability_dossier'],
+                confidence=0.80,
+                last_updated=now,
+                unresolved_fields=dossier.get("unresolved_fields", []),
+                metadata={
+                    'total_stalls': dossier.get("total_stalls"),
+                    'max_stall_ms': dossier.get("max_stall_ms"),
+                    'suspected_organs': dossier.get("suspected_organs", []),
+                    'active_heavy_organs': dossier.get("active_heavy_organs", []),
+                    'next_recommendation': dossier.get("next_recommendation", ""),
+                },
+            )
+        except Exception as exc:
+            logger.debug(f"PortableContext runtime stability section failed: {exc}")
+            return self._section(
+                section_id='runtime_stability_nervous_system',
+                title='Sistema de Estabilidad Runtime',
+                summary='UNRESOLVED: runtime_stability_nervous_system',
+                items=[],
+                source_kind='derived_dossier',
+                source_refs=['runtime_audit.jsonl', 'runtime_organs/latest.json'],
+                confidence=0.0,
+                last_updated=now,
+                unresolved_fields=['UNRESOLVED:runtime_stability_nervous_system'],
+                metadata={},
+            )
 
     def _code_audit_snapshot(self) -> dict[str, Any]:
         """Build code audit summary from CodeAuditTrail."""
@@ -3009,6 +3953,1406 @@ class PortableContextService:
             metadata=lifecycle_data,
         )
 
+    def _worker_timeout_snapshot(self, *, limit: int = 80) -> dict[str, Any]:
+        """Summarize recent worker timeout/progress events from runtime_audit."""
+        audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return {
+                'status': 'no_runtime_audit',
+                'recent_worker_timeouts': [],
+                'event_counts': {},
+                'unresolved_fields': ['UNRESOLVED:worker_timeout_audit_missing'],
+            }
+        events: list[dict[str, Any]] = []
+        try:
+            for line in audit_path.read_text(encoding='utf-8', errors='replace').splitlines()[-limit:]:
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except Exception:
+                    continue
+                if str(event.get('kind') or '').startswith('worker_'):
+                    events.append(event)
+        except OSError as exc:
+            return {
+                'status': 'error',
+                'reason': str(exc),
+                'recent_worker_timeouts': [],
+                'event_counts': {},
+                'unresolved_fields': ['UNRESOLVED:worker_timeout_audit_read_failed'],
+            }
+        counts: dict[str, int] = {}
+        recent_terminal: list[dict[str, Any]] = []
+        recovery_attempted = False
+        recovery_result = ''
+        unresolved_fields: list[str] = []
+        for event in events:
+            kind = str(event.get('kind') or '')
+            counts[kind] = counts.get(kind, 0) + 1
+            data = dict(event.get('data') or {})
+            if kind == 'worker_recovery_attempted':
+                recovery_attempted = True
+            if kind == 'worker_recovery_result':
+                recovery_result = str(data.get('result') or recovery_result)
+            if kind == 'worker_timeout_terminal':
+                recent_terminal.append({
+                    'task_name': data.get('task_name', ''),
+                    'dispatch_id': str(data.get('dispatch_id') or '')[:12],
+                    'interaction_id': str(data.get('interaction_id') or '')[:12],
+                    'terminal_state': data.get('terminal_state', ''),
+                    'waiting_on': data.get('waiting_on', ''),
+                    'elapsed_s': data.get('elapsed_s', 0),
+                })
+        if counts.get('worker_no_progress_detected', 0):
+            unresolved_fields.append('UNRESOLVED:worker_no_progress_detected')
+        if any(item.get('terminal_state') == 'blocked_no_progress' for item in recent_terminal):
+            unresolved_fields.append('UNRESOLVED:external_consultation_blocked_no_progress')
+        if counts.get('worker_recovery_result', 0) and recovery_result == 'failed':
+            unresolved_fields.append('UNRESOLVED:worker_timeout_recovery_failed')
+        status = 'observed' if events else 'no_worker_timeout_events'
+        return {
+            'status': status,
+            'event_counts': counts,
+            'recent_worker_timeouts': recent_terminal[-5:],
+            'last_timeout_task': (recent_terminal[-1].get('task_name') if recent_terminal else ''),
+            'last_timeout_phase': (recent_terminal[-1].get('waiting_on') if recent_terminal else ''),
+            'recovery_attempted': recovery_attempted,
+            'recovery_result': recovery_result,
+            'unresolved_fields': unresolved_fields,
+        }
+
+    def _worker_timeout_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        recent = list(snapshot.get('recent_worker_timeouts') or [])
+        counts = dict(snapshot.get('event_counts') or {})
+        if recent:
+            summary = f'{len(recent)} timeout(s) terminales recientes; eventos={counts}.'
+        elif counts:
+            summary = f'Eventos de progreso/timeout observados sin terminal reciente; eventos={counts}.'
+        else:
+            summary = 'Sin eventos recientes de timeout de worker.'
+        return self._section(
+            section_id='worker_timeout_summary',
+            title='Resumen de timeouts y recuperacion de workers',
+            summary=summary,
+            items=recent,
+            source_kind='runtime_audit_jsonl',
+            source_refs=['data/logs/runtime_audit.jsonl'],
+            confidence=0.86 if counts else 0.0,
+            last_updated=now,
+            unresolved_fields=list(snapshot.get('unresolved_fields') or []),
+            metadata=snapshot,
+        )
+
+    def _visual_target_binding_snapshot(self, *, limit: int = 30) -> dict[str, Any]:
+        audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return {
+                'status': 'no_runtime_audit',
+                'recent_binding_statuses': {},
+                'recent_concepts': [],
+                'unresolved_fields': ['UNRESOLVED:visual_target_binding_audit_missing'],
+            }
+        events: list[dict[str, Any]] = []
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()[-400:]
+            for line in reversed(lines):
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except Exception:
+                    continue
+                kind = str(event.get('kind') or '')
+                if kind in {
+                    'visual_target_binding_result',
+                    'visual_concept_read_result',
+                    'visual_capability_calibration_result',
+                    'human_visual_help_requested',
+                    'visual_self_capture_prevented',
+                    'external_consultation_audit_visual_context_reported',
+                }:
+                    events.append(event)
+                if len(events) >= limit:
+                    break
+        except OSError:
+            return {
+                'status': 'unreadable',
+                'recent_binding_statuses': {},
+                'recent_concepts': [],
+                'unresolved_fields': ['UNRESOLVED:visual_target_binding_audit_unreadable'],
+            }
+        events.reverse()
+        statuses: Counter[str] = Counter()
+        concepts: list[str] = []
+        latest_binding: dict[str, Any] = {}
+        latest_calibration: dict[str, Any] = {}
+        latest_help: dict[str, Any] = {}
+        latest_metavision: dict[str, Any] = {}
+        latest_web_surface: dict[str, Any] = {}
+        latest_alignment_handoff: dict[str, Any] = {}
+        unresolved: list[str] = []
+        for event in events:
+            kind = str(event.get('kind') or '')
+            data = dict(event.get('data') or {})
+            if kind == 'visual_target_binding_result':
+                status = str(data.get('binding_status') or data.get('status') or '').strip()
+                if status:
+                    statuses[status] += 1
+                latest_binding = {
+                    'assistant_kind': str(data.get('assistant_kind') or data.get('requested_assistant_kind') or '')[:40],
+                    'binding_status': status,
+                    'confidence': data.get('confidence', 0.0),
+                    'candidate_count': len(data.get('candidate_windows') or []),
+                    'selected_title': str((data.get('selected_window') or {}).get('title') or '')[:120]
+                    if isinstance(data.get('selected_window'), dict)
+                    else '',
+                    'next_human_action': str(data.get('next_human_action') or '')[:180],
+                }
+            elif kind == 'visual_concept_read_result':
+                for label in list(data.get('labels') or [])[:8]:
+                    if str(label):
+                        concepts.append(str(label)[:80])
+                for label in list(data.get('metavision_concepts') or [])[:8]:
+                    if str(label):
+                        concepts.append(str(label)[:80])
+                if data.get('metavision_status') or data.get('metavision_concepts') or data.get('metavision_affordances'):
+                    latest_metavision = {
+                        'status': str(data.get('metavision_status') or '')[:60],
+                        'confidence': data.get('metavision_confidence', 0.0),
+                        'concepts': [str(item)[:80] for item in list(data.get('metavision_concepts') or [])[:8] if str(item)],
+                        'affordances': [str(item)[:80] for item in list(data.get('metavision_affordances') or [])[:8] if str(item)],
+                        'missing_sources': [str(item)[:60] for item in list(data.get('metavision_missing_sources') or [])[:8] if str(item)],
+                        'next_action': str(data.get('metavision_next_action') or '')[:180],
+                    }
+                if data.get('web_surface_status') or data.get('web_surface_readiness') or data.get('web_surface_controls'):
+                    latest_web_surface = {
+                        'status': str(data.get('web_surface_status') or '')[:60],
+                        'readiness': str(data.get('web_surface_readiness') or '')[:80],
+                        'concepts': [str(item)[:80] for item in list(data.get('web_surface_concepts') or [])[:8] if str(item)],
+                        'controls': [str(item)[:80] for item in list(data.get('web_surface_controls') or [])[:8] if str(item)],
+                        'next_action': str(data.get('web_surface_next_action') or '')[:180],
+                    }
+                for field in list(data.get('unresolved_fields') or [])[:6]:
+                    if str(field):
+                        unresolved.append(str(field)[:120])
+            elif kind == 'visual_capability_calibration_result':
+                latest_calibration = {
+                    'assistant_kind': str(data.get('assistant_kind') or '')[:40],
+                    'status': str(data.get('status') or '')[:60],
+                    'target_binding_status': str(data.get('target_binding_status') or '')[:60],
+                    'window_count': int(data.get('window_count') or 0),
+                    'selected_window_title': str(data.get('selected_window_title') or '')[:120],
+                    'semantic_reader_available': bool(data.get('semantic_reader_available')),
+                    'ocr_status': str(data.get('ocr_status') or '')[:60],
+                    'capability_score': data.get('capability_score', 0.0),
+                }
+                for field in list(data.get('unresolved_fields') or [])[:6]:
+                    if str(field):
+                        unresolved.append(str(field)[:120])
+            elif kind == 'human_visual_help_requested':
+                latest_help = {
+                    'assistant_kind': str(data.get('assistant_kind') or '')[:40],
+                    'binding_status': str(data.get('binding_status') or '')[:40],
+                    'next_human_action': str(data.get('next_human_action') or '')[:180],
+                }
+            elif kind == 'external_consultation_audit_visual_context_reported':
+                latest_alignment_handoff = {
+                    'interaction_id': str(data.get('interaction_id') or '')[:80],
+                    'provider': str(data.get('provider') or '')[:80],
+                    'final': str(data.get('final') or '')[:60],
+                    'calibration_status': str(data.get('calibration_status') or '')[:60],
+                    'binding_status': str(data.get('binding_status') or '')[:60],
+                    'unresolved_fields': [str(item)[:120] for item in list(data.get('unresolved_fields') or [])[:6] if str(item)],
+                }
+        return {
+            'status': 'analyzed' if events else 'no_visual_events',
+            'recent_binding_statuses': dict(statuses),
+            'latest_binding': latest_binding,
+            'latest_calibration': latest_calibration,
+            'latest_help_request': latest_help,
+            'latest_metavision': latest_metavision,
+            'latest_web_surface': latest_web_surface,
+            'latest_alignment_handoff': latest_alignment_handoff,
+            'recent_concepts': list(dict.fromkeys(concepts))[:12],
+            'unresolved_fields': list(dict.fromkeys(unresolved))[:12],
+            'events_analyzed': len(events),
+        }
+
+    def _visual_target_binding_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        status = str(snapshot.get('status') or 'unknown')
+        latest = dict(snapshot.get('latest_binding') or {})
+        items: list[dict[str, Any]] = []
+        if latest:
+            items.append({
+                'label': 'latest_binding',
+                'assistant_kind': latest.get('assistant_kind', ''),
+                'binding_status': latest.get('binding_status', ''),
+                'confidence': latest.get('confidence', 0.0),
+                'candidate_count': latest.get('candidate_count', 0),
+                'selected_title': latest.get('selected_title', ''),
+                'next_human_action': latest.get('next_human_action', ''),
+            })
+        calibration = dict(snapshot.get('latest_calibration') or {})
+        if calibration:
+            items.append({
+                'label': 'latest_visual_calibration',
+                'assistant_kind': calibration.get('assistant_kind', ''),
+                'status': calibration.get('status', ''),
+                'target_binding_status': calibration.get('target_binding_status', ''),
+                'window_count': calibration.get('window_count', 0),
+                'semantic_reader_available': calibration.get('semantic_reader_available', False),
+                'ocr_status': calibration.get('ocr_status', ''),
+                'capability_score': calibration.get('capability_score', 0.0),
+            })
+        for label in list(snapshot.get('recent_concepts') or [])[:8]:
+            items.append({'label': 'visual_concept', 'value': str(label)})
+        metavision = dict(snapshot.get('latest_metavision') or {})
+        if metavision:
+            items.append({
+                'label': 'latest_metavision',
+                'status': metavision.get('status', ''),
+                'confidence': metavision.get('confidence', 0.0),
+                'concepts': list(metavision.get('concepts') or [])[:6],
+                'affordances': list(metavision.get('affordances') or [])[:6],
+                'missing_sources': list(metavision.get('missing_sources') or [])[:6],
+                'next_action': metavision.get('next_action', ''),
+            })
+        web_surface = dict(snapshot.get('latest_web_surface') or {})
+        if web_surface:
+            items.append({
+                'label': 'latest_web_surface',
+                'status': web_surface.get('status', ''),
+                'readiness': web_surface.get('readiness', ''),
+                'concepts': list(web_surface.get('concepts') or [])[:6],
+                'controls': list(web_surface.get('controls') or [])[:6],
+                'next_action': web_surface.get('next_action', ''),
+            })
+        alignment = dict(snapshot.get('latest_alignment_handoff') or {})
+        if alignment:
+            items.append({
+                'label': 'latest_human_machine_alignment_handoff',
+                'provider': alignment.get('provider', ''),
+                'final': alignment.get('final', ''),
+                'calibration_status': alignment.get('calibration_status', ''),
+                'binding_status': alignment.get('binding_status', ''),
+                'unresolved_fields': list(alignment.get('unresolved_fields') or [])[:6],
+            })
+        if status == 'analyzed':
+            summary = (
+                'Visual target binding activo: '
+                f'estados recientes={snapshot.get("recent_binding_statuses", {})}.'
+            )
+        elif status == 'no_visual_events':
+            summary = 'Sin eventos recientes de binding visual.'
+        else:
+            summary = 'Binding visual sin evidencia durable reciente.'
+        return self._section(
+            section_id='visual_target_binding',
+            title='Binding visual y conceptos universales',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_jsonl',
+            source_refs=['data/logs/runtime_audit.jsonl', 'UniversalPerceptionService', 'WorldModelService'],
+            confidence=0.85 if status == 'analyzed' else 0.0,
+            last_updated=now,
+            unresolved_fields=list(snapshot.get('unresolved_fields') or []),
+            metadata=snapshot,
+        )
+
+    def _formal_semantic_reasoning_snapshot(self) -> dict[str, Any]:
+        try:
+            from iabv_v15.services.evolution.formal_semantic_reasoning_probe import (
+                FormalSemanticReasoningProbe,
+                load_runtime_audit_events,
+            )
+        except Exception:
+            return {
+                'status': 'unavailable',
+                'score': 0.0,
+                'metrics': {},
+                'findings': [],
+                'unresolved_fields': ['UNRESOLVED:formal_semantic_reasoning_probe_import'],
+            }
+
+        events = load_runtime_audit_events(self.workspace_root, limit=900)
+        decisions: list[dict[str, Any]] = []
+        audit = getattr(self, 'decision_audit_trail', None)
+        if audit is not None and hasattr(audit, 'load_recent'):
+            try:
+                decisions = list(audit.load_recent(180) or [])
+            except Exception:
+                decisions = []
+        probe = FormalSemanticReasoningProbe()
+        result = probe.evaluate(events=events, decisions=decisions)
+        benchmark = probe.benchmark_candidates(events=events, decisions=decisions)
+        return {
+            **result,
+            'benchmark': benchmark,
+        }
+
+    def _formal_semantic_reasoning_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        metrics = dict(snapshot.get('metrics') or {})
+        findings = list(snapshot.get('findings') or [])
+        items = [
+            {'label': 'score', 'value': snapshot.get('score', 0.0)},
+            {'label': 'external_blocks', 'value': metrics.get('external_block_count', 0)},
+            {'label': 'deictic_followups', 'value': metrics.get('deictic_followup_count', 0)},
+            {'label': 'local_misroutes', 'value': metrics.get('local_misroute_after_external_block', 0)},
+            {'label': 'visual_binding_failures', 'value': metrics.get('visual_binding_failure_count', 0)},
+        ]
+        benchmark = dict(snapshot.get('benchmark') or {})
+        winner = dict(benchmark.get('winner') or {})
+        if winner:
+            items.append({
+                'label': 'symbolic_logic_winner',
+                'value': str(winner.get('candidate_id') or ''),
+                'score': float(winner.get('score') or 0.0),
+                'robustness': float(winner.get('robustness') or 0.0),
+            })
+        for finding in findings[:4]:
+            if isinstance(finding, dict):
+                items.append({
+                    'label': 'formal_semantic_gap',
+                    'kind': str(finding.get('kind') or ''),
+                    'count': finding.get('count', ''),
+                    'detail': str(finding.get('user_reference_text') or '')[:160],
+                })
+        status = str(snapshot.get('status') or 'unknown')
+        if status == 'pass':
+            summary = 'Probe formal-semantico sin gaps recientes de referencia, verdad y grounding.'
+        elif status == 'needs_attention':
+            summary = (
+                'Probe formal-semantico detecto gaps: '
+                f"score={float(snapshot.get('score') or 0.0):.2f}, "
+                f"{len(findings)} hallazgo(s)."
+            )
+        elif status == 'no_data':
+            summary = 'Sin evidencia suficiente para medir razonamiento formal-semantico.'
+        else:
+            summary = f'Probe formal-semantico en estado {status}.'
+        return self._section(
+            section_id='formal_semantic_reasoning',
+            title='Razonamiento formal, referencia y grounding',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_and_decision_audit',
+            source_refs=['data/logs/runtime_audit.jsonl', 'DecisionAuditTrail', 'ExperimentLab'],
+            confidence=0.82 if status in {'pass', 'needs_attention'} else 0.0,
+            last_updated=now,
+            unresolved_fields=list(snapshot.get('unresolved_fields') or []),
+            metadata=snapshot,
+        )
+
+    def _concept_weight_evidence_snapshot(self, *, limit: int = 40) -> dict[str, Any]:
+        path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not path.exists():
+            return {
+                'status': 'no_runtime_audit',
+                'events_analyzed': 0,
+                'latest': {},
+                'concept_counts': {},
+                'unresolved_fields': ['UNRESOLVED:concept_weight_runtime_audit_missing'],
+            }
+        events: list[dict[str, Any]] = []
+        try:
+            for line in reversed(path.read_text(encoding='utf-8', errors='replace').splitlines()[-500:]):
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except Exception:
+                    continue
+                if str(event.get('kind') or '') == 'visual_concept_read_result':
+                    events.append(dict(event.get('data') or {}))
+                if len(events) >= limit:
+                    break
+        except OSError:
+            return {
+                'status': 'unreadable',
+                'events_analyzed': 0,
+                'latest': {},
+                'concept_counts': {},
+                'unresolved_fields': ['UNRESOLVED:concept_weight_runtime_audit_unreadable'],
+            }
+        events.reverse()
+        concept_counts: Counter[str] = Counter()
+        contradiction_count = 0
+        missing_evidence = 0
+        latest: dict[str, Any] = {}
+        for data in events:
+            concepts = [str(item) for item in list(data.get('concept_weight_concepts') or []) if str(item)]
+            if not concepts and not data.get('concept_weight_status'):
+                missing_evidence += 1
+            for concept in concepts:
+                concept_counts[concept] += 1
+            contradiction_count += int(data.get('concept_weight_contradiction_count') or 0)
+            if data.get('concept_weight_status') or concepts:
+                latest = {
+                    'status': str(data.get('concept_weight_status') or ''),
+                    'confidence': float(data.get('concept_weight_confidence') or 0.0),
+                    'concepts': concepts[:8],
+                    'sources': list(data.get('concept_weight_sources') or [])[:8],
+                    'missing_sources': list(data.get('concept_weight_missing_sources') or [])[:8],
+                    'contradiction_count': int(data.get('concept_weight_contradiction_count') or 0),
+                    'next_action': str(data.get('concept_weight_next_action') or '')[:220],
+                }
+        status = 'analyzed' if events else 'no_concept_events'
+        unresolved: list[str] = []
+        if events and missing_evidence:
+            unresolved.append('UNRESOLVED:concept_weight_evidence_missing_in_some_visual_events')
+        if contradiction_count:
+            unresolved.append('UNRESOLVED:concept_weight_contradictions_present')
+        return {
+            'status': status,
+            'events_analyzed': len(events),
+            'latest': latest,
+            'concept_counts': dict(concept_counts.most_common(12)),
+            'contradiction_count': contradiction_count,
+            'missing_evidence_count': missing_evidence,
+            'unresolved_fields': unresolved,
+        }
+
+    def _concept_weight_evidence_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        latest = dict(snapshot.get('latest') or {})
+        items: list[dict[str, Any]] = []
+        if latest:
+            items.append({
+                'label': 'latest_concept_weight_evidence',
+                'status': latest.get('status', ''),
+                'confidence': latest.get('confidence', 0.0),
+                'concepts': list(latest.get('concepts') or [])[:8],
+                'sources': list(latest.get('sources') or [])[:8],
+                'missing_sources': list(latest.get('missing_sources') or [])[:8],
+                'contradiction_count': latest.get('contradiction_count', 0),
+                'next_action': latest.get('next_action', ''),
+            })
+        for concept, count in list(dict(snapshot.get('concept_counts') or {}).items())[:8]:
+            items.append({'label': 'concept_activation', 'concept': concept, 'count': count})
+        status = str(snapshot.get('status') or 'unknown')
+        if status == 'analyzed':
+            summary = (
+                f"ConceptWeightEvidence analizo {snapshot.get('events_analyzed', 0)} evento(s); "
+                f"contradicciones={snapshot.get('contradiction_count', 0)}."
+            )
+        elif status == 'no_concept_events':
+            summary = 'Sin eventos recientes con evidencia de pesos conceptuales.'
+        else:
+            summary = 'Evidencia de pesos conceptuales no disponible.'
+        return self._section(
+            section_id='concept_weight_evidence',
+            title='Activacion conceptual comun',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_jsonl',
+            source_refs=['data/logs/runtime_audit.jsonl', 'concept_weight_evidence', 'UniversalPerceptionService'],
+            confidence=0.82 if status == 'analyzed' else 0.0,
+            last_updated=now,
+            unresolved_fields=list(snapshot.get('unresolved_fields') or []),
+            metadata=snapshot,
+        )
+
+    def _algorithm_fitness_snapshot(self) -> dict[str, Any]:
+        """Build compact algorithm fitness inventory from source.
+
+        This is read-only and intentionally compact.  It makes the algorithm
+        governance contract visible to the next session without turning
+        PortableContext into a new analyzer or route decider.
+        """
+        try:
+            from iabv_v15.services.evolution.algorithm_fitness_contract import (
+                build_algorithm_observation_matrix,
+            )
+            matrix = build_algorithm_observation_matrix(
+                workspace_root=self.workspace_root,
+                src_dir=str(Path(self.workspace_root) / 'src'),
+            )
+        except Exception as exc:
+            return {
+                'status': 'error',
+                'error': str(exc)[:200],
+                'unresolved_fields': ['UNRESOLVED:algorithm_fitness_snapshot_failed'],
+            }
+
+        if matrix.get('error'):
+            return {
+                'status': 'unavailable',
+                'error': matrix.get('error'),
+                'unresolved_fields': ['UNRESOLVED:algorithm_fitness_source_missing'],
+            }
+
+        algorithms = list(matrix.get('algorithms') or [])
+        high_complexity = sorted(
+            algorithms,
+            key=lambda item: int(item.get('complexity') or 0),
+            reverse=True,
+        )[:8]
+        unknown = [
+            item for item in algorithms
+            if item.get('capability_area') == 'unknown'
+        ][:8]
+        without_public_calls = [
+            item for item in algorithms
+            if not item.get('runtime_call_sites')
+        ][:8]
+        unresolved: list[str] = []
+        if unknown:
+            unresolved.append('UNRESOLVED:algorithm_capability_unknown')
+        if without_public_calls:
+            unresolved.append('UNRESOLVED:algorithm_runtime_call_sites_missing')
+
+        return {
+            'status': 'observed',
+            'total_algorithms': matrix.get('total_algorithms', 0),
+            'by_capability_area': matrix.get('by_capability_area', {}),
+            'high_complexity': [
+                {
+                    'algorithm_id': item.get('algorithm_id'),
+                    'module_path': item.get('module_path'),
+                    'capability_area': item.get('capability_area'),
+                    'complexity': item.get('complexity'),
+                }
+                for item in high_complexity
+            ],
+            'unknown_capability': [
+                {
+                    'algorithm_id': item.get('algorithm_id'),
+                    'module_path': item.get('module_path'),
+                }
+                for item in unknown
+            ],
+            'without_public_call_sites': [
+                {
+                    'algorithm_id': item.get('algorithm_id'),
+                    'module_path': item.get('module_path'),
+                }
+                for item in without_public_calls
+            ],
+            'unresolved_fields': unresolved,
+        }
+
+    def _algorithm_fitness_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        status = str(snapshot.get('status') or 'unknown')
+        total = int(snapshot.get('total_algorithms', 0) or 0)
+        by_area = snapshot.get('by_capability_area') or {}
+        if status == 'observed':
+            summary = (
+                f'{total} algoritmos/modulos observados; '
+                f'{len(by_area)} areas de capacidad; '
+                f'{len(snapshot.get("high_complexity") or [])} candidatos de alta complejidad.'
+            )
+        else:
+            summary = f'Algorithm fitness no disponible: {snapshot.get("error", status)}'
+        return self._section(
+            section_id='algorithm_fitness',
+            title='Fitness de algoritmos y organos',
+            summary=summary,
+            items=[
+                {'label': 'capability_area_counts', 'value': by_area},
+                {'label': 'high_complexity', 'items': snapshot.get('high_complexity') or []},
+                {'label': 'unknown_capability', 'items': snapshot.get('unknown_capability') or []},
+                {'label': 'without_public_call_sites', 'items': snapshot.get('without_public_call_sites') or []},
+            ],
+            source_kind='source_inventory',
+            source_refs=[
+                'algorithm_fitness_contract.build_algorithm_observation_matrix',
+                'src/iabv_v15',
+            ],
+            confidence=0.72 if status == 'observed' else 0.25,
+            last_updated=now,
+            unresolved_fields=list(snapshot.get('unresolved_fields') or []),
+            metadata={'status': status, 'total_algorithms': total},
+        )
+
+    def _runtime_organ_matrix_snapshot(self) -> dict[str, Any]:
+        try:
+            from iabv_v15.services.evolution.runtime_organ_state import load_runtime_organ_snapshot
+            return load_runtime_organ_snapshot(self.workspace_root)
+        except Exception as exc:
+            return {'status': 'unavailable', 'organ_count': 0, 'organs': [], 'error': str(exc)}
+
+    def _runtime_organ_matrix_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        organs = list(snapshot.get('organs') or [])
+        try:
+            from iabv_v15.services.evolution.algorithm_fitness_contract import (
+                evaluate_runtime_organ_fitness,
+            )
+            fitness = evaluate_runtime_organ_fitness(runtime_organ_snapshot=snapshot)
+        except Exception as exc:
+            fitness = {'status': 'unavailable', 'error': str(exc), 'organ_scores': []}
+        heavy_active = [
+            item for item in organs
+            if item.get('cost_class') == 'heavy' and item.get('mode') == 'active'
+        ]
+        throttled = [item for item in organs if item.get('mode') == 'throttled']
+        items = [
+            {
+                'label': str(item.get('organ_id') or 'unknown'),
+                'mode': str(item.get('mode') or ''),
+                'cost_class': str(item.get('cost_class') or ''),
+                'can_run_now': bool(item.get('can_run_now')),
+                'detail': str(item.get('human_visible_reason') or '')[:240],
+                'blocked_reason': str(item.get('last_blocked_reason') or '')[:160],
+            }
+            for item in organs[:12]
+        ]
+        return self._section(
+            section_id='runtime_organ_matrix',
+            title='Matriz de organos runtime',
+            summary=(
+                f"{len(organs)} organos observados; "
+                f"{len(heavy_active)} pesados activos; {len(throttled)} throttled/on-demand."
+            ),
+            items=items,
+            source_kind='runtime',
+            source_refs=['data/evolution/runtime_organs/latest.json'],
+            confidence=0.8 if organs else 0.25,
+            last_updated=now,
+            unresolved_fields=[] if organs else ['UNRESOLVED:runtime_organ_matrix_missing'],
+            metadata={
+                'status': snapshot.get('status', 'unknown'),
+                'active_heavy_count': len(heavy_active),
+                'throttled_count': len(throttled),
+                'average_fitness_score': fitness.get('average_fitness_score', 0.0),
+                'degraded_count': fitness.get('degraded_count', 0),
+            },
+        )
+
+    def _artifact_lifecycle_snapshot(self) -> dict[str, Any]:
+        """P0.134/P0.136: Read artifact lifecycle inventory from latest.json."""
+        try:
+            inventory_path = Path(self.workspace_root) / 'data' / 'evolution' / 'artifact_lifecycle' / 'latest.json'
+            if not inventory_path.exists():
+                return {
+                    'status': 'missing',
+                    'error': 'artifact_lifecycle_inventory_not_found',
+                    'unresolved_fields': ['UNRESOLVED:artifact_lifecycle_inventory_missing'],
+                }
+            
+            with open(inventory_path, 'r', encoding='utf-8') as f:
+                inventory = json.load(f)
+            
+            return {
+                'status': 'observed',
+                'scanned_at': inventory.get('scanned_at'),
+                'total_size_mb': inventory.get('total_scanned_size_bytes', 0) / 1024 / 1024,
+                'total_files': inventory.get('total_file_count', 0),
+                'reclaimable_mb': inventory.get('reclaimable_bytes_estimate', 0) / 1024 / 1024,
+                'keep_count': inventory.get('keep_count', 0),
+                'quarantine_count': inventory.get('quarantine_candidates_count', 0),
+                'delete_approval_count': inventory.get('delete_requires_approval_count', 0),
+                'unknown_count': inventory.get('unknown_count', 0),
+                'duplicate_groups': inventory.get('duplicate_groups', [])[:5],
+                'top_heavy_folders': inventory.get('top_heavy_folders', [])[:5],
+                'unresolved_fields': inventory.get('unresolved_fields', []),
+            }
+        except Exception as exc:
+            return {
+                'status': 'error',
+                'error': str(exc)[:200],
+                'unresolved_fields': ['UNRESOLVED:artifact_lifecycle_read_failed'],
+            }
+
+
+    def _runtime_learning_closure_snapshot(self, *, limit: int = 80) -> dict[str, Any]:
+        """Convert recent runtime observations into learning candidates.
+
+        This does not validate or apply changes.  It only prevents visual and
+        communication failures from remaining as loose logs when OSES or
+        ExperimentLab are not available in the current process.
+        """
+        audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        if not audit_path.exists():
+            return {
+                'status': 'no_runtime_audit',
+                'events_analyzed': 0,
+                'pattern_counts': {},
+                'repeated_patterns': [],
+                'learning_candidates': [],
+                'next_learning_action': 'Ejecutar una interaccion viva para producir runtime_audit antes de inferir aprendizaje.',
+                'unresolved_fields': ['UNRESOLVED:runtime_audit_learning_source'],
+            }
+        try:
+            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()[-800:]
+        except OSError:
+            return {
+                'status': 'unreadable',
+                'events_analyzed': 0,
+                'pattern_counts': {},
+                'repeated_patterns': [],
+                'learning_candidates': [],
+                'next_learning_action': 'Reparar lectura de runtime_audit antes de inferir aprendizaje.',
+                'unresolved_fields': ['UNRESOLVED:runtime_audit_learning_unreadable'],
+            }
+
+        events: list[dict[str, Any]] = []
+        interesting_kinds = {
+            'visual_target_binding_result',
+            'visual_concept_read_result',
+            'visual_capability_calibration_result',
+            'human_visual_help_requested',
+            'visual_self_capture_prevented',
+            'interaction_resolved',
+            'interaction_outcome',
+            'dispatch_terminal',
+            'external_consultation_audit_visual_context_reported',
+        }
+
+        def is_stability_event(kind: str) -> bool:
+            normalized = kind.lower().strip()
+            stability_kinds = {
+                'ui_event_loop_stall',
+                'runtime_freeze_incident',
+                'freeze_incident',
+                'post_load_ui_stall',
+                'recent_ui_stall',
+                'startup_heavy_work_deferred',
+                'post_load_dev_packet_refresh_budget_exceeded',
+            }
+            return (
+                normalized in stability_kinds
+                or normalized.endswith('_stall')
+                or normalized.endswith('_freeze')
+                or normalized.startswith('freeze_')
+            )
+
+        for line in reversed(lines):
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except Exception:
+                continue
+            kind = str(event.get('kind') or '')
+            if kind in interesting_kinds or is_stability_event(kind):
+                events.append(event)
+            if len(events) >= limit:
+                break
+        events.reverse()
+
+        pattern_counts: Counter[str] = Counter()
+        candidates: list[dict[str, Any]] = []
+        successful_groundings = 0
+        communication_success = 0
+        latest_event_kind = ''
+        unresolved: list[str] = []
+
+        def add_candidate(kind: str, reason: str, event_kind: str, details: dict[str, Any] | None = None) -> None:
+            pattern_counts[kind] += 1
+            if len(candidates) >= 10:
+                return
+            candidates.append({
+                'candidate_kind': kind,
+                'reason': reason[:180],
+                'source_event': event_kind,
+                'details': details or {},
+                'recommended_sink': 'OSES + ExperimentLab + AdaptiveWeightLayer',
+            })
+
+        for event in events:
+            kind = str(event.get('kind') or '')
+            latest_event_kind = kind or latest_event_kind
+            data = dict(event.get('data') or {})
+            if kind == 'visual_target_binding_result':
+                status = str(data.get('binding_status') or data.get('status') or '').strip()
+                if status == 'bound':
+                    successful_groundings += 1
+                elif status in {'missing', 'ambiguous', 'wrong_surface', 'self_capture'}:
+                    add_candidate(
+                        'visual_target_binding_gap',
+                        f'Binding visual termino en {status}; no debe capturar superficie equivocada.',
+                        kind,
+                        {
+                            'binding_status': status,
+                            'assistant_kind': str(data.get('assistant_kind') or data.get('requested_assistant_kind') or '')[:40],
+                            'candidate_count': len(data.get('candidate_windows') or []),
+                        },
+                    )
+            elif kind == 'visual_concept_read_result':
+                fields = [str(item)[:120] for item in list(data.get('unresolved_fields') or [])[:6] if str(item)]
+                missing_sources = [str(item)[:80] for item in list(data.get('metavision_missing_sources') or [])[:6] if str(item)]
+                web_readiness = str(data.get('web_surface_readiness') or '')
+                if web_readiness in {'target_missing', 'semantic_reader_missing', 'blocked_by_security_verification', 'authentication_required'}:
+                    add_candidate(
+                        'web_surface_interpretation_gap',
+                        f'Web surface readiness={web_readiness}; requiere accion guiada antes de actuar.',
+                        kind,
+                        {
+                            'readiness': web_readiness[:80],
+                            'controls': [str(item)[:80] for item in list(data.get('web_surface_controls') or [])[:6] if str(item)],
+                            'concepts': [str(item)[:80] for item in list(data.get('web_surface_concepts') or [])[:6] if str(item)],
+                        },
+                    )
+                if fields or missing_sources:
+                    add_candidate(
+                        'visual_semantic_reader_gap',
+                        'La lectura conceptual visual tuvo fuentes faltantes o unresolved_fields.',
+                        kind,
+                        {
+                            'unresolved_fields': fields,
+                            'missing_sources': missing_sources,
+                            'labels': [str(item)[:80] for item in list(data.get('labels') or [])[:6] if str(item)],
+                        },
+                    )
+                    unresolved.extend(fields)
+            elif kind == 'visual_capability_calibration_result':
+                status = str(data.get('status') or '')
+                if status not in {'ready', 'pass', 'ok'}:
+                    add_candidate(
+                        'visual_calibration_gap',
+                        f'Calibracion visual en estado {status or "unknown"}.',
+                        kind,
+                        {
+                            'target_binding_status': str(data.get('target_binding_status') or '')[:60],
+                            'ocr_status': str(data.get('ocr_status') or '')[:60],
+                            'capability_score': data.get('capability_score', 0.0),
+                        },
+                    )
+            elif kind == 'human_visual_help_requested':
+                add_candidate(
+                    'human_visual_help_needed',
+                    'El sistema pidio ayuda humana para resolver una referencia visual.',
+                    kind,
+                    {
+                        'assistant_kind': str(data.get('assistant_kind') or '')[:40],
+                        'binding_status': str(data.get('binding_status') or '')[:60],
+                    },
+                )
+            elif kind == 'visual_self_capture_prevented':
+                add_candidate(
+                    'visual_self_capture_prevented',
+                    'Se evito capturar IABV/Codex como si fuera la herramienta objetivo.',
+                    kind,
+                    {},
+                )
+            elif kind in {'interaction_resolved', 'interaction_outcome'}:
+                outcome = str(data.get('outcome') or '')
+                if outcome == 'resolved' or bool(data.get('resolved')):
+                    communication_success += 1
+                elif outcome in {'failed', 'blocked', 'timeout'}:
+                    add_candidate(
+                        'communication_terminal_gap',
+                        f'Interaccion termino en {outcome}; requiere clasificacion causal y estrategia distinta.',
+                        kind,
+                        {
+                            'provider': str(data.get('provider') or '')[:60],
+                            'message_preview': str(data.get('message_preview') or '')[:120],
+                        },
+                    )
+            elif kind == 'dispatch_terminal':
+                terminal = str(data.get('terminal_state') or data.get('state') or '')
+                if terminal and terminal not in {'success', 'response_captured', 'resolved'}:
+                    add_candidate(
+                        'external_dispatch_terminal_gap',
+                        f'Dispatch externo termino en {terminal}.',
+                        kind,
+                        {
+                            'task_name': str(data.get('task_name') or '')[:80],
+                            'terminal_state': terminal[:80],
+                        },
+                    )
+            elif kind == 'external_consultation_audit_visual_context_reported':
+                unresolved_fields = [str(item)[:120] for item in list(data.get('unresolved_fields') or [])[:6] if str(item)]
+                if unresolved_fields:
+                    add_candidate(
+                        'external_visual_context_gap',
+                        'La consulta externa reporto contexto visual sin resolver.',
+                        kind,
+                        {'unresolved_fields': unresolved_fields},
+                    )
+                    unresolved.extend(unresolved_fields)
+            elif is_stability_event(kind):
+                add_candidate(
+                    'runtime_stability_gap',
+                    f'Evento de estabilidad detectado: {kind}.',
+                    kind,
+                    {'duration_ms': data.get('duration_ms') or data.get('elapsed_ms')},
+                )
+
+        repeated = [
+            {
+                'pattern': name,
+                'count': count,
+                'priority': (
+                    'critical' if name in {'runtime_stability_gap', 'visual_target_binding_gap'} and count >= 2 else 'high'
+                ),
+            }
+            for name, count in pattern_counts.most_common()
+            if count >= 2
+        ]
+        if repeated:
+            status = 'learning_signal_repeated'
+            next_action = 'Convertir el patron repetido de mayor prioridad en hallazgo OSES y prueba antes/despues.'
+        elif candidates:
+            status = 'learning_signal_detected'
+            next_action = 'Esperar otra muestra comparable o ejecutar una prueba focalizada antes de ajustar pesos.'
+        elif events:
+            status = 'observed_no_learning_gap'
+            next_action = 'Mantener observacion; no hay patron negativo suficiente para adaptar.'
+        else:
+            status = 'no_learning_events'
+            next_action = 'Generar eventos de runtime con una interaccion viva antes de evaluar aprendizaje.'
+            unresolved.append('UNRESOLVED:runtime_learning_events')
+
+        return {
+            'status': status,
+            'events_analyzed': len(events),
+            'pattern_counts': dict(pattern_counts),
+            'repeated_patterns': repeated[:8],
+            'learning_candidates': candidates[:8],
+            'successful_groundings': successful_groundings,
+            'communication_success': communication_success,
+            'latest_event_kind': latest_event_kind,
+            'next_learning_action': next_action,
+            'unresolved_fields': list(dict.fromkeys(unresolved))[:12],
+        }
+
+    def _runtime_learning_closure_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        status = str(snapshot.get('status') or 'unknown')
+        items: list[dict[str, Any]] = []
+        for item in list(snapshot.get('repeated_patterns') or [])[:6]:
+            items.append({
+                'label': 'repeated_pattern',
+                'pattern': item.get('pattern', ''),
+                'count': item.get('count', 0),
+                'priority': item.get('priority', ''),
+            })
+        for candidate in list(snapshot.get('learning_candidates') or [])[:6]:
+            items.append({
+                'label': 'learning_candidate',
+                'candidate_kind': candidate.get('candidate_kind', ''),
+                'reason': candidate.get('reason', ''),
+                'source_event': candidate.get('source_event', ''),
+                'recommended_sink': candidate.get('recommended_sink', ''),
+            })
+        if status == 'learning_signal_repeated':
+            summary = 'RuntimeAudit contiene patrones repetidos listos para OSES/ExperimentLab.'
+            confidence = 0.78
+        elif status == 'learning_signal_detected':
+            summary = 'RuntimeAudit contiene señales de aprendizaje, pero falta repeticion comparable.'
+            confidence = 0.55
+        elif status == 'observed_no_learning_gap':
+            summary = 'RuntimeAudit fue observado sin gap de aprendizaje claro.'
+            confidence = 0.62
+        elif status == 'no_learning_events':
+            summary = 'Sin eventos recientes para cerrar aprendizaje desde runtime.'
+            confidence = 0.0
+        else:
+            summary = 'Cierre de aprendizaje runtime sin evidencia legible.'
+            confidence = 0.0
+        return self._section(
+            section_id='runtime_learning_closure',
+            title='Cierre de aprendizaje desde runtime',
+            summary=summary,
+            items=items,
+            source_kind='runtime_audit_jsonl',
+            source_refs=['data/logs/runtime_audit.jsonl', 'OperationalSelfExaminationService', 'ExperimentLab', 'AdaptiveWeightLayer'],
+            confidence=confidence,
+            last_updated=now,
+            unresolved_fields=list(snapshot.get('unresolved_fields') or []),
+            metadata=snapshot,
+        )
+
+    def _genesis_phase(
+        self,
+        *,
+        phase: str,
+        status: str,
+        score: float,
+        evidence_refs: list[str],
+        summary: str,
+        next_test: str,
+        unresolved_fields: list[str] | None = None,
+    ) -> dict[str, Any]:
+        return {
+            'phase': phase,
+            'status': status,
+            'score': round(max(0.0, min(float(score), 1.0)), 3),
+            'summary': summary[:260],
+            'evidence_refs': evidence_refs[:6],
+            'next_test': next_test[:260],
+            'unresolved_fields': list(dict.fromkeys(unresolved_fields or []))[:8],
+        }
+
+    def _genesis_readiness_snapshot(
+        self,
+        *,
+        startup_health: dict[str, Any],
+        birth_stability: dict[str, Any],
+        evidence_basis: dict[str, Any],
+        visual_target_binding: dict[str, Any],
+        runtime_learning_closure: dict[str, Any] | None = None,
+        self_examination: dict[str, Any],
+        validation: AutonomousValidationSnapshot | None,
+        pending_items: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Summarize the root metacognitive loop as a portable test matrix.
+
+        This is intentionally not a new brain.  It only folds already-existing
+        evidence into the cycle described by the Genesis Kernel proposal:
+        birth -> observe -> ground -> communicate -> act -> learn -> reorganize.
+        The output is compact enough for other devices/sessions to compare
+        readiness without re-parsing every low-level log.
+        """
+        phases: list[dict[str, Any]] = []
+
+        startup_status = str(startup_health.get('status') or 'unknown')
+        startup_unresolved = list(startup_health.get('unresolved_fields') or [])
+        startup_blockers = list(startup_health.get('recent_blockers') or [])
+        if startup_status == 'analyzed' and not startup_blockers and not startup_unresolved:
+            phases.append(self._genesis_phase(
+                phase='birth',
+                status='pass',
+                score=1.0,
+                evidence_refs=['data/logs/startup_timeline.jsonl'],
+                summary='El arranque tiene timeline analizado y no muestra blockers recientes.',
+                next_test='Repetir arranque en otro dispositivo y comparar run_to_window_ms, RSS pico y phases_seen.',
+            ))
+        elif startup_status == 'analyzed':
+            phases.append(self._genesis_phase(
+                phase='birth',
+                status='warn',
+                score=0.58,
+                evidence_refs=['data/logs/startup_timeline.jsonl'],
+                summary='El arranque es observable, pero hay blockers o campos sin resolver.',
+                next_test='Aislar el blocker de startup dominante antes de ejecutar metacognicion profunda.',
+                unresolved_fields=startup_unresolved,
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='birth',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['data/logs/startup_timeline.jsonl'],
+                summary='No hay evidencia suficiente del nacimiento del proceso.',
+                next_test='Ejecutar IABV con startup_timeline activo y confirmar BirthEvent/timeline persistido.',
+                unresolved_fields=startup_unresolved or ['UNRESOLVED:startup_timeline'],
+            ))
+
+        stable_freezes = int(birth_stability.get('stable_resource_freeze_count') or 0)
+        worst_freeze = float(birth_stability.get('worst_freeze_ms') or 0.0)
+        birth_unresolved = list(birth_stability.get('unresolved_fields') or [])
+        if str(birth_stability.get('status') or '') == 'analyzed' and stable_freezes == 0:
+            phases.append(self._genesis_phase(
+                phase='stabilize',
+                status='pass',
+                score=1.0,
+                evidence_refs=['data/evolution/incident_reports/freeze_*.json', 'data/logs/runtime_audit.jsonl'],
+                summary='No hay congelamientos recientes con recursos estables en la evidencia analizada.',
+                next_test='Mantener watchdog activo y validar que nuevas consultas no produzcan ui_event_loop_stall.',
+            ))
+        elif stable_freezes:
+            phases.append(self._genesis_phase(
+                phase='stabilize',
+                status='fail',
+                score=0.25,
+                evidence_refs=['data/evolution/incident_reports/freeze_*.json', 'data/logs/runtime_audit.jsonl'],
+                summary=f'{stable_freezes} freeze(s) con recursos estables; peor stall {worst_freeze:.0f}ms.',
+                next_test='Mover o presupuestar el trabajo pesado que aparece en el stack dominante y repetir prueba viva.',
+                unresolved_fields=birth_unresolved,
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='stabilize',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['data/evolution/incident_reports/freeze_*.json'],
+                summary='No hay suficiente evidencia de estabilidad post-arranque.',
+                next_test='Esperar 90s tras abrir IABV y verificar que no se emite freeze report.',
+                unresolved_fields=birth_unresolved or ['UNRESOLVED:birth_stability'],
+            ))
+
+        evidence_state = str(evidence_basis.get('state') or 'unresolved')
+        live_sources = list(evidence_basis.get('live_sources') or [])
+        persisted_sources = list(evidence_basis.get('persisted_sources') or [])
+        evidence_unresolved = list(evidence_basis.get('unresolved') or [])
+        if evidence_state == 'observed':
+            phases.append(self._genesis_phase(
+                phase='observe',
+                status='pass' if not evidence_unresolved else 'warn',
+                score=0.9 if not evidence_unresolved else 0.62,
+                evidence_refs=['WorldModelSnapshot', 'EnvironmentSelfModel', 'TaskContextAssembler'],
+                summary=f'Fuentes vivas disponibles: {", ".join(live_sources) or "n/d"}.',
+                next_test='Cruzar WorldModel y EnvironmentSelfModel contra lo visible en pantalla en una prueba viva.',
+                unresolved_fields=evidence_unresolved,
+            ))
+        elif evidence_state == 'inferred':
+            phases.append(self._genesis_phase(
+                phase='observe',
+                status='warn',
+                score=0.45,
+                evidence_refs=['TaskContextAssembler', 'PortableContextService'],
+                summary=f'Solo hay fuentes persistidas/inferidas: {", ".join(persisted_sources) or "n/d"}.',
+                next_test='Tomar snapshot vivo del dispositivo antes de decidir una accion externa.',
+                unresolved_fields=evidence_unresolved,
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='observe',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['WorldModelSnapshot', 'EnvironmentSelfModel'],
+                summary='El sistema no tiene base evidencial viva suficiente para saber en que entorno esta.',
+                next_test='Conectar WorldModel/EnvironmentSelfModel al paquete antes de juzgar capacidad universal.',
+                unresolved_fields=evidence_unresolved or ['UNRESOLVED:evidence_basis'],
+            ))
+
+        visual_status = str(visual_target_binding.get('status') or 'unknown')
+        binding_statuses = dict(visual_target_binding.get('recent_binding_statuses') or {})
+        visual_unresolved = list(visual_target_binding.get('unresolved_fields') or [])
+        latest_metavision = dict(visual_target_binding.get('latest_metavision') or {})
+        has_semantic_visual = bool(binding_statuses or latest_metavision or visual_target_binding.get('latest_calibration'))
+        bad_bindings = sum(int(binding_statuses.get(key) or 0) for key in ('missing', 'wrong_surface', 'self_capture'))
+        if visual_status == 'analyzed' and bad_bindings == 0:
+            phases.append(self._genesis_phase(
+                phase='ground',
+                status='pass',
+                score=0.88,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'UniversalPerceptionService', 'WorldModelService'],
+                summary='Hay eventos visuales recientes y no predominan missing/self_capture/wrong_surface.',
+                next_test='Pedir "esa ventana" con dos candidatos visibles y confirmar binding_status bound/ambiguous correcto.',
+                unresolved_fields=visual_unresolved,
+            ))
+        elif has_semantic_visual:
+            phases.append(self._genesis_phase(
+                phase='ground',
+                status='warn' if bad_bindings else 'pass',
+                score=0.5 if bad_bindings else 0.78,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'UniversalPerceptionService'],
+                summary=f'Binding visual con estados recientes={binding_statuses}; requiere calibracion viva si hay target_missing.',
+                next_test='Ejecutar calibracion visual con ChatGPT visible y verificar que no capture IABV/Codex como objetivo.',
+                unresolved_fields=visual_unresolved,
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='ground',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'UniversalPerceptionService'],
+                summary='No hay eventos recientes de binding visual/metavision para probar referencias como "esa ventana".',
+                next_test='Generar visual_target_binding_result antes de capturar pantalla completa.',
+                unresolved_fields=visual_unresolved or ['UNRESOLVED:visual_grounding'],
+            ))
+
+        lifecycle = self._interaction_lifecycle_summary()
+        recent_interactions = list(lifecycle.get('recent_completed') or [])
+        resolved_count = sum(1 for item in recent_interactions if item.get('resolved') or item.get('outcome') == 'resolved')
+        failed_count = sum(1 for item in recent_interactions if item.get('outcome') == 'failed')
+        blocked_count = sum(1 for item in recent_interactions if item.get('outcome') == 'blocked')
+        if recent_interactions and failed_count == 0:
+            phases.append(self._genesis_phase(
+                phase='communicate',
+                status='pass' if blocked_count == 0 else 'warn',
+                score=0.82 if blocked_count == 0 else 0.62,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
+                summary=f'{len(recent_interactions)} interaccion(es) recientes reconstruidas; resueltas={resolved_count}, bloqueadas={blocked_count}.',
+                next_test='Hacer pregunta metacognitiva y confirmar respuesta <5s con evidencia, diagnostico y siguiente accion.',
+            ))
+        elif recent_interactions:
+            phases.append(self._genesis_phase(
+                phase='communicate',
+                status='fail',
+                score=0.28,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
+                summary=f'Interacciones recientes incluyen fallos: failed={failed_count}, blocked={blocked_count}.',
+                next_test='Clasificar si el fallo fue ruta local indebida, falta de ventana, permiso o congelamiento.',
+                unresolved_fields=['UNRESOLVED:communication_reliability'],
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='communicate',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
+                summary='No hay interacciones recientes reconstruibles.',
+                next_test='Enviar una pregunta de estado y verificar interaction_open -> interaction_resolved.',
+                unresolved_fields=['UNRESOLVED:interaction_lifecycle'],
+            ))
+
+        findings = list(self_examination.get('findings') or [])
+        feedback = list(self_examination.get('recommendation_feedback') or [])
+        validated = list(self_examination.get('validated_improvements') or [])
+        learning_closure = dict(runtime_learning_closure or {})
+        closure_status = str(learning_closure.get('status') or '')
+        closure_repeated = list(learning_closure.get('repeated_patterns') or [])
+        closure_candidates = list(learning_closure.get('learning_candidates') or [])
+        if validated:
+            phases.append(self._genesis_phase(
+                phase='learn',
+                status='pass',
+                score=0.9,
+                evidence_refs=['OperationalSelfExaminationService', 'ExperimentLab'],
+                summary=f'{len(validated)} mejora(s) validadas con evidencia.',
+                next_test='Repetir un caso fallido y comprobar que el sistema cambia de estrategia.',
+            ))
+        elif findings:
+            phases.append(self._genesis_phase(
+                phase='learn',
+                status='warn',
+                score=0.48,
+                evidence_refs=['OperationalSelfExaminationService', 'runtime_audit', 'ExperimentLab'],
+                summary=f'{len(findings)} hallazgo(s) activos, pero sin mejoras validadas todavia.',
+                next_test='Cerrar un hallazgo con prueba antes/despues y registrar feedback de recomendacion.',
+                unresolved_fields=list(self_examination.get('unresolved_risks') or [])[:6],
+            ))
+        elif closure_repeated or closure_status == 'learning_signal_repeated':
+            phases.append(self._genesis_phase(
+                phase='learn',
+                status='warn',
+                score=0.44,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'OperationalSelfExaminationService', 'ExperimentLab'],
+                summary=(
+                    f'RuntimeAudit detecto {len(closure_repeated)} patron(es) repetidos; '
+                    'falta validar la adaptacion.'
+                ),
+                next_test=str(learning_closure.get('next_learning_action') or 'Cerrar patron repetido con OSES y prueba antes/despues.'),
+                unresolved_fields=list(learning_closure.get('unresolved_fields') or ['UNRESOLVED:learning_outcome_not_validated'])[:6],
+            ))
+        elif closure_candidates:
+            phases.append(self._genesis_phase(
+                phase='learn',
+                status='warn',
+                score=0.36,
+                evidence_refs=['data/logs/runtime_audit.jsonl', 'OperationalSelfExaminationService'],
+                summary=f'RuntimeAudit tiene {len(closure_candidates)} candidato(s) de aprendizaje sin repeticion suficiente.',
+                next_test=str(learning_closure.get('next_learning_action') or 'Recolectar otra muestra comparable antes de ajustar pesos.'),
+                unresolved_fields=list(learning_closure.get('unresolved_fields') or ['UNRESOLVED:learning_candidate_needs_second_sample'])[:6],
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='learn',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['OperationalSelfExaminationService'],
+                summary='No hay autoexaminacion fuerte disponible para aprendizaje.',
+                next_test='Generar OSES current_review y comprobar que sus hallazgos aparecen en portable_context.',
+                unresolved_fields=['UNRESOLVED:self_examination'],
+            ))
+
+        validation_status = str(getattr(validation, 'status', '') or '')
+        validation_unresolved = list(getattr(validation, 'unresolved_fields', []) or [])
+        validation_metadata = dict(getattr(validation, 'metadata', {}) or {})
+        promoted_count = int(validation_metadata.get('promoted_count') or 0)
+        if promoted_count > 0:
+            phases.append(self._genesis_phase(
+                phase='reorganize',
+                status='pass',
+                score=0.86,
+                evidence_refs=['AutonomousValidationCycleService', 'SandboxExperimentService'],
+                summary=f'Hay {promoted_count} promocion(es) validadas por el ciclo autonomo.',
+                next_test='Verificar que cada promocion tenga rollback o evidencia de sandbox.',
+            ))
+        elif validation_status and validation_status != 'bootstrapping':
+            phases.append(self._genesis_phase(
+                phase='reorganize',
+                status='warn',
+                score=0.42,
+                evidence_refs=['AutonomousValidationCycleService', 'SandboxExperimentService'],
+                summary=f'Ciclo de validacion presente en estado {validation_status}, pero sin promocion validada.',
+                next_test='Correr un candidato pequeno en sandbox y exigir veredicto antes de tocar runtime.',
+                unresolved_fields=validation_unresolved,
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='reorganize',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['AutonomousValidationCycleService', 'SandboxExperimentService'],
+                summary='La reorganizacion gobernada no tiene ciclo activo/promociones observables.',
+                next_test='Conectar evidencia del ciclo de validacion o mantener automodificacion bloqueada.',
+                unresolved_fields=validation_unresolved or ['UNRESOLVED:autonomous_validation_cycle'],
+            ))
+
+        relevant_pending = [
+            item for item in pending_items
+            if any(token in str(item.get('id') or item.get('title') or '').lower()
+                   for token in ('genesis', 'birth', 'metavision', 'visual', 'communication', 'universal', 'device'))
+        ][:8]
+        if relevant_pending:
+            phases.append(self._genesis_phase(
+                phase='portability',
+                status='warn',
+                score=0.58,
+                evidence_refs=['data/evolution/platform_pending/*.json'],
+                summary=f'{len(relevant_pending)} pendiente(s) relevantes guian pruebas para otros dispositivos.',
+                next_test='Convertir cada pendiente critico en test de contrato reproducible por dispositivo.',
+                unresolved_fields=[
+                    str(item.get('dependency_missing') or item.get('id') or '')[:120]
+                    for item in relevant_pending
+                    if item.get('dependency_missing') or item.get('id')
+                ],
+            ))
+        else:
+            phases.append(self._genesis_phase(
+                phase='portability',
+                status='unresolved',
+                score=0.0,
+                evidence_refs=['data/evolution/platform_pending/*.json'],
+                summary='No hay backlog portable visible para replicar el aprendizaje en otros dispositivos.',
+                next_test='Registrar matriz de pruebas por dispositivo: arranque, ventana, comunicacion, vision y aprendizaje.',
+                unresolved_fields=['UNRESOLVED:portable_device_test_matrix'],
+            ))
+
+        scores = [float(item.get('score') or 0.0) for item in phases]
+        overall_score = round(sum(scores) / len(scores), 3) if scores else 0.0
+        weakest = min(phases, key=lambda item: float(item.get('score') or 0.0)) if phases else {}
+        status_counts = Counter(str(item.get('status') or '') for item in phases)
+        if status_counts.get('fail', 0) > 0 or overall_score < 0.45:
+            readiness_status = 'blocked'
+        elif status_counts.get('unresolved', 0) > 0 or overall_score < 0.75:
+            readiness_status = 'needs_evidence'
+        else:
+            readiness_status = 'ready_for_cross_device_trials'
+        return {
+            'status': readiness_status,
+            'overall_score': overall_score,
+            'phase_count': len(phases),
+            'status_counts': dict(status_counts),
+            'weakest_phase': weakest.get('phase', ''),
+            'weakest_next_test': weakest.get('next_test', ''),
+            'phases': phases,
+            'priority_equation': (
+                'communication + observability + uncertainty_reduction + learning_value + '
+                'portability - resource_cost - user_friction - risk'
+            ),
+            'source_contract': 'Nucleo Genesis Metacognitivo: birth->observe->ground->communicate->act->learn->reorganize',
+        }
+
+    def _genesis_readiness_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        phases = list(snapshot.get('phases') or [])
+        weakest = str(snapshot.get('weakest_phase') or 'n/d')
+        score = float(snapshot.get('overall_score') or 0.0)
+        status = str(snapshot.get('status') or 'unknown')
+        if status == 'ready_for_cross_device_trials':
+            summary = f'Nucleo Genesis listo para pruebas entre dispositivos (score={score:.2f}).'
+        elif status == 'blocked':
+            summary = f'Nucleo Genesis bloqueado por fase {weakest} (score={score:.2f}).'
+        else:
+            summary = f'Nucleo Genesis requiere mas evidencia; fase mas debil: {weakest} (score={score:.2f}).'
+        unresolved: list[str] = []
+        for phase in phases:
+            unresolved.extend(str(item) for item in list(phase.get('unresolved_fields') or []) if str(item))
+        return self._section(
+            section_id='genesis_readiness',
+            title='Nucleo Genesis metacognitivo',
+            summary=summary,
+            items=phases,
+            source_kind='aggregated_runtime_contract',
+            source_refs=[
+                'data/logs/startup_timeline.jsonl',
+                'data/logs/runtime_audit.jsonl',
+                'data/evolution/incident_reports/freeze_*.json',
+                'WorldModelSnapshot',
+                'EnvironmentSelfModel',
+                'OperationalSelfExaminationService',
+                'AutonomousValidationCycleService',
+            ],
+            confidence=score,
+            last_updated=now,
+            unresolved_fields=list(dict.fromkeys(unresolved))[:12],
+            metadata=snapshot,
+        )
+
     def _interaction_episodes_from_audit(
         self, *, limit: int = 3,
     ) -> list[dict[str, Any]]:
@@ -3165,6 +5509,61 @@ class PortableContextService:
             },
         )
 
+    def _birth_stability_section(self, *, status: dict[str, Any], now) -> PortableContextSection:
+        st = str(status.get('status') or 'no_data')
+        stable_count = int(status.get('stable_resource_freeze_count') or 0)
+        worst_ms = float(status.get('worst_freeze_ms') or 0.0)
+        dominant = str(status.get('dominant_cause') or '')
+        duplicate_summary = dict(status.get('startup_duplicate_summary') or {})
+        metacog_skipped = bool(status.get('startup_metacognition_skipped'))
+        unresolved = list(status.get('unresolved_fields') or [])
+        items: list[dict[str, Any]] = [
+            {
+                'label': 'stable_resource_freezes',
+                'count': stable_count,
+                'worst_ms': worst_ms,
+                'dominant_cause': dominant,
+            },
+            {
+                'label': 'startup_duplicates',
+                'blocked_count': duplicate_summary.get('blocked_count', 0),
+                'focus_success_count': duplicate_summary.get('focus_success_count', 0),
+                'reasons': duplicate_summary.get('reasons', {}),
+            },
+            {
+                'label': 'deferred_metacognition',
+                'startup_metacognition_skipped': metacog_skipped,
+            },
+        ]
+        items.extend(list(status.get('recent_freeze_reports') or [])[:3])
+        if stable_count and dominant:
+            summary = (
+                f'{stable_count} freeze(s) con recursos estables; causa dominante '
+                f'{dominant}; peor stall {worst_ms:.0f}ms.'
+            )
+        elif st == 'analyzed':
+            summary = 'Nacimiento auditado sin freeze estable reciente.'
+        else:
+            summary = 'Sin evidencia suficiente de nacimiento/congelamiento para analizar.'
+        if metacog_skipped and stable_count:
+            summary += ' Falta ejecutar aprendizaje metacognitivo diferido post-idle.'
+        return self._section(
+            section_id='birth_stability',
+            title='Estabilidad del nacimiento consciente',
+            summary=summary,
+            items=items,
+            source_kind='startup_and_freeze_artifacts',
+            source_refs=[
+                'data/logs/startup_audit.jsonl',
+                'data/logs/startup_timeline.jsonl',
+                'data/evolution/incident_reports/freeze_*.json',
+            ],
+            confidence=0.86 if st == 'analyzed' else 0.0,
+            last_updated=now,
+            unresolved_fields=unresolved,
+            metadata=dict(status),
+        )
+
     def _recommended_routes_section(self, *, recommendations: list[dict[str, Any]], now) -> PortableContextSection:
         items = [
             {
@@ -3288,6 +5687,174 @@ class PortableContextService:
             unresolved_fields=[] if decision_history else ['UNRESOLVED:decision_history'],
         )
 
+    def _module_progress_snapshot(self) -> dict[str, Any]:
+        """Summarize platform_pending as organ/module progress.
+
+        This is a read-only control map for the evolutionary roadmap. It does
+        not decide execution; it tells the next session which organs are
+        incomplete, how complex they look, and what should be handled first.
+        """
+
+        pending_dir = Path(self.workspace_root) / 'data' / 'evolution' / 'platform_pending'
+        if not pending_dir.exists():
+            return {
+                'status': 'unavailable',
+                'total_tasks': 0,
+                'overall_progress_percent': 0.0,
+                'modules': [],
+                'top_open_tasks': [],
+                'unresolved_fields': ['UNRESOLVED:platform_pending_dir'],
+            }
+
+        tasks: list[dict[str, Any]] = []
+        for path in sorted(pending_dir.glob('*.json')):
+            try:
+                payload = json.loads(path.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            tasks.append({
+                'id': str(payload.get('id') or path.stem),
+                'title': str(payload.get('title') or path.stem),
+                'status': str(payload.get('status') or 'PENDING'),
+                'priority': str(payload.get('priority') or 'medium').lower(),
+                'category': str(payload.get('category') or 'uncategorized'),
+                'next_action': str(payload.get('next_action') or ''),
+            })
+
+        if not tasks:
+            return {
+                'status': 'empty',
+                'total_tasks': 0,
+                'overall_progress_percent': 0.0,
+                'modules': [],
+                'top_open_tasks': [],
+                'unresolved_fields': ['UNRESOLVED:platform_pending_tasks'],
+            }
+
+        completed_count = sum(1 for task in tasks if task['status'] == 'COMPLETED')
+        priority_weight = {'critical': 5.0, 'high': 3.0, 'medium': 2.0, 'low': 1.0}
+        by_category: dict[str, list[dict[str, Any]]] = {}
+        for task in tasks:
+            by_category.setdefault(task['category'], []).append(task)
+
+        modules: list[dict[str, Any]] = []
+        for category, items in sorted(by_category.items()):
+            completed = sum(1 for item in items if item['status'] == 'COMPLETED')
+            open_items = [item for item in items if item['status'] != 'COMPLETED']
+            complexity_score = round(
+                sum(priority_weight.get(item['priority'], 1.5) for item in open_items),
+                2,
+            )
+            critical_open = sum(1 for item in open_items if item['priority'] == 'critical')
+            progress_percent = round((completed / max(len(items), 1)) * 100.0, 1)
+            next_focus = sorted(
+                open_items,
+                key=lambda item: (
+                    -priority_weight.get(item['priority'], 1.5),
+                    item['status'],
+                    item['id'],
+                ),
+            )[:3]
+            modules.append({
+                'category': category,
+                'total': len(items),
+                'completed': completed,
+                'open': len(open_items),
+                'critical_open': critical_open,
+                'progress_percent': progress_percent,
+                'missing_percent': round(100.0 - progress_percent, 1),
+                'complexity_score': complexity_score,
+                'next_focus': [
+                    {
+                        'id': item['id'][:120],
+                        'status': item['status'],
+                        'priority': item['priority'],
+                        'next_action': item['next_action'][:220],
+                    }
+                    for item in next_focus
+                ],
+            })
+
+        top_open = sorted(
+            [task for task in tasks if task['status'] != 'COMPLETED'],
+            key=lambda item: (
+                -priority_weight.get(item['priority'], 1.5),
+                item['status'],
+                item['category'],
+                item['id'],
+            ),
+        )[:8]
+
+        return {
+            'status': 'tracked',
+            'total_tasks': len(tasks),
+            'completed_tasks': completed_count,
+            'open_tasks': len(tasks) - completed_count,
+            'overall_progress_percent': round((completed_count / max(len(tasks), 1)) * 100.0, 1),
+            'modules': sorted(
+                modules,
+                key=lambda item: (
+                    -int(item.get('critical_open') or 0),
+                    -float(item.get('complexity_score') or 0.0),
+                    str(item.get('category') or ''),
+                ),
+            )[:16],
+            'top_open_tasks': [
+                {
+                    'id': item['id'][:120],
+                    'category': item['category'][:100],
+                    'status': item['status'],
+                    'priority': item['priority'],
+                    'next_action': item['next_action'][:220],
+                }
+                for item in top_open
+            ],
+            'unresolved_fields': [],
+        }
+
+    def _module_progress_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        modules = list(snapshot.get('modules') or [])
+        top_open = list(snapshot.get('top_open_tasks') or [])
+        progress = float(snapshot.get('overall_progress_percent') or 0.0)
+        summary = (
+            f"Progreso global {progress:.1f}%: "
+            f"{int(snapshot.get('completed_tasks') or 0)} completadas, "
+            f"{int(snapshot.get('open_tasks') or 0)} abiertas."
+        )
+        items = [
+            {
+                'label': str(item.get('category') or ''),
+                'value': (
+                    f"{float(item.get('progress_percent') or 0.0):.1f}% listo | "
+                    f"faltante {float(item.get('missing_percent') or 0.0):.1f}% | "
+                    f"complejidad {float(item.get('complexity_score') or 0.0):.1f} | "
+                    f"criticos abiertos {int(item.get('critical_open') or 0)}"
+                ),
+                'next_focus': list(item.get('next_focus') or [])[:3],
+            }
+            for item in modules[:10]
+        ]
+        if top_open:
+            items.append({
+                'label': 'top_open_tasks',
+                'value': 'Primeras tareas abiertas por criticidad y complejidad.',
+                'items': top_open[:6],
+            })
+        return self._section(
+            section_id='module_progress',
+            title='Progreso por organo/modulo',
+            summary=summary if modules else 'No hay matriz de progreso disponible.',
+            items=items,
+            source_kind='platform_pending_progress',
+            source_refs=['data/evolution/platform_pending/*.json'],
+            confidence=0.86 if modules else 0.0,
+            last_updated=now,
+            unresolved_fields=list(snapshot.get('unresolved_fields') or []),
+            metadata=snapshot,
+        )
+
     def _pending_section(self, *, pending_items: list[dict[str, Any]], backlog_items: list[dict[str, Any]], now) -> PortableContextSection:
         platform_items = self._platform_pending_items()
         items = pending_items[:4] + backlog_items[:4] + platform_items[:4]
@@ -3310,12 +5877,18 @@ class PortableContextService:
         )
 
     def _platform_pending_items(self) -> list[dict[str, Any]]:
-        """Read structured pending items from PlatformPendingQueue."""
+        """Read structured pending items from PlatformPendingQueue (canonical contract)."""
         queue = self.platform_pending_queue
-        if queue is None or not hasattr(queue, 'to_portable_items'):
-            return []
+        if queue is not None and hasattr(queue, 'to_portable_items'):
+            try:
+                return queue.to_portable_items(limit=6)
+            except Exception:
+                pass
+        # Fallback: instantiate queue directly and use canonical contract
         try:
-            return queue.to_portable_items(limit=6)
+            from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+            fallback_queue = PlatformPendingQueue(self.workspace_root / 'data' / 'evolution')
+            return fallback_queue.to_portable_items(limit=6)
         except Exception:
             return []
 
@@ -3624,4 +6197,318 @@ class PortableContextService:
             last_updated=last_updated,
             unresolved_fields=list(unresolved_fields or []),
             metadata=dict(metadata or {}),
+        )
+
+    def _universal_evolution_scorecard_snapshot(self, *, account_resource: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Build universal evolution scorecard comparing current vs previous state.
+
+        This is read-only and uses the UniversalEvolutionScorecard module to
+        determine if the system improved, regressed, or stayed stuck after changes.
+        """
+        try:
+            from iabv_v15.services.evolution.universal_evolution_scorecard import (
+                build_universal_evolution_scorecard,
+                normalize_evolution_metrics,
+            )
+        except Exception:
+            return {
+                'status': 'unavailable',
+                'error': 'universal_evolution_scorecard_module_missing',
+                'unresolved_fields': ['UNRESOLVED:scorecard_module_not_available'],
+            }
+
+        # Load previous scorecard from storage
+        previous = None
+        try:
+            prev_path = Path(self.workspace_root) / 'data' / 'evolution' / 'universal_evolution' / 'previous_scorecard.json'
+            if prev_path.exists():
+                previous = json.loads(prev_path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+
+        # Build current metrics from existing snapshots
+        current_metrics: dict[str, Any] = {}
+
+        # Extract from algorithm fitness
+        algorithm_fitness = self._algorithm_fitness_snapshot()
+        if algorithm_fitness.get('status') != 'error':
+            current_metrics['algorithm_count'] = len(algorithm_fitness.get('algorithms', []))
+            current_metrics['unknown_capability_count'] = len([
+                a for a in algorithm_fitness.get('algorithms', [])
+                if a.get('capability_area') == 'unknown'
+            ])
+
+        # Extract from tool autonomy status
+        tool_autonomy = self._tool_autonomy_status_snapshot(account_resource=account_resource)
+        if tool_autonomy.get('status') != 'error':
+            tools = tool_autonomy.get('tools', [])
+            current_metrics['tools'] = {
+                'total': len(tools),
+                'live_verified': sum(1 for t in tools if t.get('live_verified')),
+                'response_capture_verified': sum(1 for t in tools if t.get('response_capture_verified')),
+            }
+
+        # Extract from runtime organ state
+        runtime_organ = self._runtime_organ_matrix_snapshot()
+        if runtime_organ.get('status') != 'unavailable':
+            organs = runtime_organ.get('organs', [])
+            current_metrics['runtime'] = {
+                'organ_count': len(organs),
+                'heavy_active': sum(1 for o in organs if o.get('cost_class') == 'heavy' and o.get('mode') == 'active'),
+            }
+
+        # Normalize metrics
+        current = normalize_evolution_metrics(current_metrics)
+
+        # Build scorecard
+        scorecard = build_universal_evolution_scorecard(
+            previous=previous,
+            current=current,
+            repeated_unresolved=self._load_repeated_unresolved(),
+            cycle_markers=self._load_cycle_markers(),
+        )
+
+        # Save current as previous for next comparison
+        try:
+            scorecard_path = Path(self.workspace_root) / 'data' / 'evolution' / 'universal_evolution' / 'previous_scorecard.json'
+            scorecard_path.parent.mkdir(parents=True, exist_ok=True)
+            scorecard_path.write_text(json.dumps(current, default=str, indent=2), encoding='utf-8')
+        except Exception:
+            pass
+
+        return scorecard
+
+    def _load_repeated_unresolved(self) -> list[str]:
+        """Load unresolved fields that have persisted across multiple sessions."""
+        try:
+            path = Path(self.workspace_root) / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+            if not path.exists():
+                return []
+            payload = json.loads(path.read_text(encoding='utf-8'))
+            unresolved = list(payload.get('unresolved_fields', []))
+            # Filter for UNRESOLVED that are likely persistent
+            persistent = [u for u in unresolved if 'UNRESOLVED:' in u and 'pending' not in u.lower()]
+            return persistent[:20]
+        except Exception:
+            return []
+
+    def _load_cycle_markers(self) -> list[str]:
+        """Load markers that indicate the system is stuck in a cycle."""
+        try:
+            path = Path(self.workspace_root) / 'data' / 'evolution' / 'operational_self_examination' / 'latest.json'
+            if not path.exists():
+                return []
+            payload = json.loads(path.read_text(encoding='utf-8'))
+            findings = list(payload.get('findings', []))
+            # Look for repeated patterns
+            categories = [f.get('category', '') for f in findings]
+            from collections import Counter
+            counts = Counter(categories)
+            repeated = [cat for cat, count in counts.items() if count >= 3]
+            return repeated[:10]
+        except Exception:
+            return []
+
+    def _universal_evolution_scorecard_section(self, *, snapshot: dict[str, Any], now) -> PortableContextSection:
+        """Build universal evolution scorecard section for PortableContext.
+
+        This section answers the metacognitive question: did the system improve,
+        regress, or stay stuck after changes?
+        """
+        verdict = str(snapshot.get('verdict') or 'UNRESOLVED')
+        summary = str(snapshot.get('summary') or 'Scorecard no disponible')
+        items: list[dict[str, Any]] = []
+
+        # Add verdict item
+        items.append({
+            'label': 'Veredicto de evolución',
+            'value': verdict,
+            'detail': summary[:200],
+        })
+
+        # Add metric changes
+        metric_changes = list(snapshot.get('metric_changes') or [])
+        for change in metric_changes[:8]:
+            items.append({
+                'label': str(change.get('metric') or 'n/d'),
+                'value': str(change.get('direction') or 'n/d'),
+                'detail': f"{change.get('previous', 0):.3f} → {change.get('current', 0):.3f}",
+            })
+
+        # Add repeated unresolved if present
+        repeated = list(snapshot.get('repeated_unresolved') or [])
+        if repeated:
+            items.append({
+                'label': 'UNRESOLVED recurrentes',
+                'value': str(len(repeated)),
+                'detail': ', '.join(repeated[:4]),
+            })
+
+        # Add cycle markers if present
+        cycles = list(snapshot.get('cycle_markers') or [])
+        if cycles:
+            items.append({
+                'label': 'Marcadores de ciclo',
+                'value': str(len(cycles)),
+                'detail': ', '.join(cycles[:4]),
+            })
+
+        unresolved = list(snapshot.get('unresolved_fields') or [])
+        if verdict == 'UNRESOLVED':
+            unresolved.append('UNRESOLVED:scorecard_verdict_unknown')
+
+        return self._section(
+            section_id='universal_evolution_scorecard',
+            title='Universal Evolution Scorecard',
+            summary=f'{verdict}: {summary}',
+            items=items,
+            source_kind='metacognitive_comparison',
+            source_refs=['UniversalEvolutionScorecard', 'PortableContext'],
+            confidence=float(snapshot.get('confidence') or 0.0),
+            last_updated=now,
+            unresolved_fields=list(dict.fromkeys(unresolved)),
+            metadata={
+                'verdict': verdict,
+                'epsilon': snapshot.get('epsilon', 0.015),
+                'metric_count': len(metric_changes),
+            },
+        )
+
+    def _artifact_lifecycle_section(self, *, now) -> PortableContextSection:
+        """Artifact lifecycle storage governance summary (P0.134/P0.136).
+        
+        Reads the artifact lifecycle inventory from data/evolution/artifact_lifecycle/latest.json
+        and exposes storage hygiene metrics, reclaimable space, and quarantine candidates.
+        """
+        path = Path(self.workspace_root) / 'data' / 'evolution' / 'artifact_lifecycle' / 'latest.json'
+        if not path.exists():
+            return self._section(
+                section_id='artifact_lifecycle',
+                title='Gobernanza de ciclo de vida de artifacts',
+                summary='Inventario de artifact lifecycle no ejecutado aún.',
+                items=[],
+                source_kind='storage_governance',
+                source_refs=['ArtifactLifecycleService'],
+                confidence=0.0,
+                last_updated=now,
+                unresolved_fields=['UNRESOLVED:artifact_lifecycle_inventory_missing'],
+            )
+        
+        try:
+            inventory = json.loads(path.read_text(encoding='utf-8'))
+        except Exception as exc:
+            logger.debug(f'PortableContext: failed to read artifact lifecycle inventory: {exc}')
+            return self._section(
+                section_id='artifact_lifecycle',
+                title='Gobernanza de ciclo de vida de artifacts',
+                summary='Error al leer inventario de artifact lifecycle.',
+                items=[],
+                source_kind='storage_governance',
+                source_refs=['ArtifactLifecycleService'],
+                confidence=0.0,
+                last_updated=now,
+                unresolved_fields=['UNRESOLVED:artifact_lifecycle_inventory_error'],
+            )
+        
+        # Build items from inventory
+        items: list[dict[str, Any]] = []
+        
+        # Summary metrics
+        total_size = inventory.get('total_scanned_size_bytes', 0)
+        total_files = inventory.get('total_file_count', 0)
+        reclaimable = inventory.get('reclaimable_bytes_estimate', 0)
+        keep_count = inventory.get('keep_count', 0)
+        quarantine_count = inventory.get('quarantine_candidates_count', 0)
+        delete_approval_count = inventory.get('delete_requires_approval_count', 0)
+        unknown_count = inventory.get('unknown_count', 0)
+        
+        items.append({
+            'label': 'Total escaneado',
+            'value': f'{total_size / (1024*1024):.1f}MB en {total_files} archivos',
+        })
+        
+        items.append({
+            'label': 'Espacio recuperable',
+            'value': f'{reclaimable / (1024*1024):.1f}MB ({reclaimable / max(total_size, 1):.1%})',
+        })
+        
+        items.append({
+            'label': 'Archivos a mantener',
+            'value': str(keep_count),
+        })
+        
+        items.append({
+            'label': 'Candidatos a quarantine',
+            'value': str(quarantine_count),
+        })
+        
+        items.append({
+            'label': 'Requieren aprobación',
+            'value': str(delete_approval_count),
+        })
+        
+        if unknown_count > 0:
+            items.append({
+                'label': 'Sin clasificar',
+                'value': str(unknown_count),
+            })
+        
+        # Top heavy folders
+        for folder in inventory.get('top_heavy_folders', [])[:3]:
+            items.append({
+                'label': f'Carpeta pesada: {folder.get("path", "n/d")[:60]}',
+                'value': f'{folder.get("size_bytes", 0) / (1024*1024):.1f}MB',
+            })
+        
+        # Top heavy files
+        for file in inventory.get('top_heavy_files', [])[:3]:
+            items.append({
+                'label': f'Archivo pesado: {file.get("path", "n/d")[:60]}',
+                'value': f'{file.get("size_bytes", 0) / (1024*1024):.1f}MB',
+            })
+        
+        # Duplicate groups
+        duplicate_groups = inventory.get('duplicate_groups', [])
+        if duplicate_groups:
+            items.append({
+                'label': 'Grupos de duplicados',
+                'value': str(len(duplicate_groups)),
+            })
+        
+        # Build summary
+        summary_parts = [
+            f'{total_files} archivos escaneados ({total_size / (1024*1024):.1f}MB)',
+            f'{reclaimable / (1024*1024):.1f}MB recuperables',
+            f'{quarantine_count} candidatos a quarantine',
+        ]
+        if delete_approval_count > 0:
+            summary_parts.append(f'{delete_approval_count} requieren aprobación')
+        
+        # Unresolved fields
+        unresolved = list(inventory.get('unresolved_fields', []))
+        if unknown_count > 0:
+            unresolved.append(f'unknown_artifacts:{unknown_count}')
+        if delete_approval_count > 0:
+            unresolved.append(f'delete_requires_approval:{delete_approval_count}')
+        
+        return self._section(
+            section_id='artifact_lifecycle',
+            title='Gobernanza de ciclo de vida de artifacts',
+            summary=', '.join(summary_parts),
+            items=items,
+            source_kind='storage_governance',
+            source_refs=['ArtifactLifecycleService', 'data/evolution/artifact_lifecycle/latest.json'],
+            confidence=0.85 if total_files > 0 else 0.0,
+            last_updated=now,
+            unresolved_fields=list(dict.fromkeys(unresolved)),
+            metadata={
+                'total_size_bytes': total_size,
+                'total_file_count': total_files,
+                'reclaimable_bytes_estimate': reclaimable,
+                'keep_count': keep_count,
+                'quarantine_candidates_count': quarantine_count,
+                'delete_requires_approval_count': delete_approval_count,
+                'unknown_count': unknown_count,
+                'duplicate_group_count': len(duplicate_groups),
+            },
         )

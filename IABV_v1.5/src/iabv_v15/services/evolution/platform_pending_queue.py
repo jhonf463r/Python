@@ -51,8 +51,12 @@ class PlatformPendingQueue:
     # Pending tasks
     # ------------------------------------------------------------------
 
-    def upsert(self, task: PlatformPendingTask) -> PlatformPendingTask:
+    def upsert(self, task: PlatformPendingTask, operational_continuity: dict | None = None) -> PlatformPendingTask:
         """Insert or update a pending task.  Returns the persisted copy."""
+        # Inject operational continuity into metadata if provided
+        if operational_continuity:
+            task.metadata = dict(task.metadata or {})
+            task.metadata['operational_continuity'] = operational_continuity
         task = task.model_copy(update={'updated_at': utc_now()})
         path = self._task_path(task.id)
         path.write_text(
@@ -119,21 +123,33 @@ class PlatformPendingQueue:
             'blocked': len(self.list_blocked()),
         }
 
-    def to_portable_items(self, *, limit: int = 8) -> list[dict[str, Any]]:
+    def to_portable_items(self, *, limit: int = 8, include_completed: bool = False) -> list[dict[str, Any]]:
         """Return a list of dicts suitable for PortableContext pending section.
 
-        Only includes tasks with actionable statuses (PENDING,
-        READY_FOR_NEXT_SLICE, BLOCKED).  COMPLETED tasks are excluded
-        because they are not pending work.
+        This is the canonical read contract for platform_pending. All consumers
+        (PortableContextService, SuperAuditViewModel) MUST use this method
+        to avoid divergent parsing semantics.
+
+        Args:
+            limit: Maximum number of items to return.
+            include_completed: If True, include COMPLETED tasks. If False (default),
+                only include actionable statuses (PENDING, READY_FOR_NEXT_SLICE, BLOCKED).
+
+        Returns:
+            List of dicts with canonical field structure including verification_status
+            and reconciliation_evidence from metadata.
         """
-        actionable_statuses = {
-            PendingTaskStatus.PENDING,
-            PendingTaskStatus.READY_FOR_NEXT_SLICE,
-            PendingTaskStatus.BLOCKED,
-        }
+        if include_completed:
+            actionable_statuses = None  # Include all tasks
+        else:
+            actionable_statuses = {
+                PendingTaskStatus.PENDING,
+                PendingTaskStatus.READY_FOR_NEXT_SLICE,
+                PendingTaskStatus.BLOCKED,
+            }
         items: list[dict[str, Any]] = []
         for t in self.list_all():
-            if t.status not in actionable_statuses:
+            if actionable_statuses is not None and t.status not in actionable_statuses:
                 continue
             if len(items) >= limit:
                 break
@@ -148,6 +164,9 @@ class PlatformPendingQueue:
                 'status': t.status.value,
                 'category': t.category,
                 'resume_hint': t.resume_hint,
+                'verification_status': t.metadata.get('verification_status') if t.metadata else None,
+                'reconciliation_evidence': t.metadata.get('reconciliation_evidence') if t.metadata else None,
+                'operational_continuity': t.metadata.get('operational_continuity') if t.metadata else None,
             })
         return items
 
@@ -155,8 +174,12 @@ class PlatformPendingQueue:
     # Resume hints (Fix 18d)
     # ------------------------------------------------------------------
 
-    def save_resume_hint(self, hint: PlatformResumeHint) -> PlatformResumeHint:
+    def save_resume_hint(self, hint: PlatformResumeHint, operational_continuity: dict | None = None) -> PlatformResumeHint:
         """Persist a resume hint for a task."""
+        # Inject operational continuity into metadata if provided
+        if operational_continuity:
+            hint.metadata = dict(hint.metadata or {})
+            hint.metadata['operational_continuity'] = operational_continuity
         path = self._resume_dir / f'hint_{hint.task_id}.json'
         path.write_text(hint.model_dump_json(indent=2), encoding='utf-8')
         return hint
