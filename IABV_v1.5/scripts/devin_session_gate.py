@@ -327,31 +327,6 @@ def try_algorithm_fitness(root: Path) -> tuple[dict[str, Any], list[str]]:
             pass
 
 
-def try_runtime_knowledge_snapshot(root: Path) -> dict[str, Any]:
-    """Read-only runtime knowledge snapshot for observability."""
-    try:
-        sys.path.insert(0, str(root / "src"))
-        from iabv_v15.services.evolution.runtime_knowledge_snapshot import (
-            export_compact_runtime_dossier,
-        )
-
-        dossier = export_compact_runtime_dossier(root)
-        return {
-            "available": True,
-            "dossier": dossier,
-        }
-    except Exception as exc:
-        return {
-            "available": False,
-            "error": str(exc)[:200],
-        }
-    finally:
-        try:
-            sys.path.remove(str(root / "src"))
-        except ValueError:
-            pass
-
-
 def build_pre_snapshot(root: Path, agent: str) -> dict[str, Any]:
     tasks = load_platform_pending(root)
     context = load_optional_context(root)
@@ -359,7 +334,6 @@ def build_pre_snapshot(root: Path, agent: str) -> dict[str, Any]:
     pending_summary = summarize_platform_pending(root, tasks)
     duplicates = detect_duplicate_definitions(root)
     fitness, unresolved = try_algorithm_fitness(root)
-    runtime_knowledge = try_runtime_knowledge_snapshot(root)
     if not context["portable_context_available"]:
         unresolved.append("UNRESOLVED:portable_context_latest_missing")
     if not context["self_examination_available"]:
@@ -391,7 +365,6 @@ def build_pre_snapshot(root: Path, agent: str) -> dict[str, Any]:
         "existing_organs": existing_organs(root, bootstrap_services),
         "duplicate_risks": duplicates,
         "algorithm_fitness": fitness,
-        "runtime_knowledge": runtime_knowledge,
         "recent_audits": recent_audits(root),
         "forbidden_patterns": DEFAULT_FORBIDDEN_PATTERNS,
         "recommended_next_action": recommended_next_action,
@@ -435,18 +408,6 @@ def render_pre_markdown(snapshot: dict[str, Any]) -> str:
     lines.extend(["", "## Existing Organs"])
     for name, info in (snapshot.get("existing_organs", {}).get("key_organs") or {}).items():
         lines.append(f"- {name}: exists={info.get('exists')} wired_hint={info.get('wired_hint')} path={info.get('path')}")
-
-    lines.extend(["", "## Runtime Knowledge"])
-    rk = snapshot.get("runtime_knowledge", {})
-    if rk.get("available"):
-        dossier = rk.get("dossier", {})
-        lines.append(f"- total_organs: {dossier.get('total_organs', 0)}")
-        lines.append(f"- active_organs: {dossier.get('active_organs', 0)}")
-        lines.append(f"- heavy_active_organs: {dossier.get('heavy_active_organs', 0)}")
-        lines.append(f"- degraded_organs: {dossier.get('degraded_organs', 0)}")
-        lines.append(f"- evidence_sources: {dossier.get('evidence_sources', [])}")
-    else:
-        lines.append(f"- unavailable: {rk.get('error', 'unknown')}")
 
     lines.extend(["", "## Forbidden To Create"])
     for pattern in snapshot.get("forbidden_patterns", []):
