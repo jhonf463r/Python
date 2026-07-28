@@ -274,3 +274,61 @@ def test_oses_detects_agent_gate_snapshot_missing() -> None:
         if root.exists():
             import shutil
             shutil.rmtree(root)
+
+
+def test_organism_state_snapshot_surface_readout() -> None:
+    """P0.170b: Verifica que el Organism State Snapshot aparece en el markdown del gate."""
+    import sys
+    root = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / 'scripts'))
+
+    try:
+        from devin_session_gate import build_pre_snapshot, render_pre_markdown
+
+        # Ejecutar build_pre_snapshot y render_pre_markdown
+        snapshot = build_pre_snapshot(root, 'devin')
+        markdown = render_pre_markdown(snapshot)
+
+        # Verificar que aparece la sección ## Organism State Snapshot
+        assert '## Organism State Snapshot' in markdown, "Missing ## Organism State Snapshot section"
+
+        # Verificar que aparece metadata de staleness cuando hay file_fallback
+        # El snapshot debe tener organism_state disponible
+        assert 'organism_state' in snapshot, "Missing organism_state in snapshot"
+        org_state = snapshot['organism_state']
+        assert org_state.get('available') is True, "Organism state should be available"
+
+        snapshot_data = org_state.get('snapshot', {})
+        
+        # Verificar que las secciones principales están presentes
+        assert 'runtime_knowledge' in snapshot_data
+        assert 'self_examination' in snapshot_data
+        assert 'world_model' in snapshot_data
+        assert 'control_master' in snapshot_data
+        assert 'operational_learning' in snapshot_data
+
+        # Verificar que el markdown contiene información de las secciones
+        assert 'Runtime Knowledge' in markdown
+        assert 'Self Examination' in markdown
+        assert 'World Model' in markdown
+        assert 'Control Master' in markdown
+        assert 'Operational Learning' in markdown
+
+        # Verificar que aparece metadata de source/staleness cuando hay file_fallback
+        # Esto depende de si los archivos de fallback existen en el workspace real
+        # Al menos verificamos que las claves de metadata están presentes en el snapshot
+        for section in ['self_examination', 'world_model', 'control_master', 'operational_learning']:
+            section_data = snapshot_data[section]
+            if section_data.get('status') == 'ok' and section_data.get('source') == 'file_fallback':
+                # Si es file_fallback, debe tener metadata de staleness
+                assert 'source_path' in section_data
+                assert 'updated_at' in section_data
+                assert 'age_seconds' in section_data
+                assert 'stale_capable' in section_data
+                assert section_data['stale_capable'] is True
+
+    finally:
+        try:
+            sys.path.remove(str(root / 'scripts'))
+        except ValueError:
+            pass
