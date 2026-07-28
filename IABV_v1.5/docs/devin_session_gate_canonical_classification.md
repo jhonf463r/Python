@@ -72,7 +72,7 @@ The `runtime_knowledge_snapshot.py` integration is a **separate read-only bridge
 ### Files EXCLUDED from Gate Package
 - `src/iabv_v15/services/evolution/runtime_knowledge_snapshot.py` - Separate read-only bridge
 - `tests/test_runtime_knowledge_snapshot.py` - Runtime knowledge tests
-- `tests/test_devin_session_gate_runtime_knowledge.py` - Bridge integration tests
+- `tests/test_devin_session_gate_runtime_knowledge.py` - Bridge integration tests (removed in P0.166b)
 
 ### Gate Responsibilities
 1. Read `platform_pending` tasks
@@ -80,11 +80,10 @@ The `runtime_knowledge_snapshot.py` integration is a **separate read-only bridge
 3. Read `self_examination/latest.json`
 4. Read `bootstrap.py` for service wiring
 5. Call `AlgorithmFitnessContract.build_algorithm_observation_matrix()` (optional)
-6. Call `export_compact_runtime_dossier()` (optional, read-only bridge)
-7. Write gate operational snapshots to `agent_session_gate/latest.*`
-8. Render markdown briefings
-9. Verify post-session file delivery
-10. Call `CodeAuditTrail.record_agent_delivery()` for audit trail
+6. Write gate operational snapshots to `agent_session_gate/latest.*`
+7. Render markdown briefings
+8. Verify post-session file delivery
+9. Call `CodeAuditTrail.record_agent_delivery()` for audit trail
 
 ### Gate Does NOT
 - Decide organism routes

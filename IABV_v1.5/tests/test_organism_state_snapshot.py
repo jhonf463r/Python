@@ -203,6 +203,15 @@ def test_organism_state_snapshot_fallback_behavior():
         # runtime_knowledge has nested status fields
         assert "runtime_organ_state" in snapshot["runtime_knowledge"]
         assert "portable_context_summary" in snapshot["runtime_knowledge"]
+
+        # Fallbacks should have stale_capable metadata when ok
+        for section in ["self_examination", "world_model", "control_master", "operational_learning"]:
+            if snapshot[section].get("status") == "ok" and snapshot[section].get("source") == "file_fallback":
+                assert "source_path" in snapshot[section]
+                assert "updated_at" in snapshot[section]
+                assert "age_seconds" in snapshot[section]
+                assert "stale_capable" in snapshot[section]
+                assert snapshot[section]["stale_capable"] is True
     finally:
         try:
             sys.path.remove(str(root / "src"))

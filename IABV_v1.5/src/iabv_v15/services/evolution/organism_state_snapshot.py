@@ -1,7 +1,7 @@
 """
-Organism State Snapshot - Unified Read-Only View (P0.165)
+Organism State Snapshot - Derived Read-Only Observability View (P0.165)
 
-Single source of truth for organism state.
+Derived read-only observability view of organism state.
 This is a read-only, unified snapshot that consolidates existing pieces
 without creating new authority, memory, or orchestration.
 
@@ -14,6 +14,8 @@ The snapshot reuses existing services and models:
 - Operational Learning (via ExperimentLab)
 
 This is NOT a decision layer. It is purely for observability.
+This is NOT a single source of truth - it is a derived view that
+projects existing canonical state for inspection.
 """
 
 from datetime import datetime, timezone
@@ -24,7 +26,6 @@ from typing import Any
 def export_organism_state_snapshot(
     workspace_root: str | Path,
     *,
-    portable_context_service: Any = None,
     self_examination_service: Any = None,
     world_model_service: Any = None,
     control_master_service: Any = None,
@@ -37,7 +38,6 @@ def export_organism_state_snapshot(
 
     Args:
         workspace_root: Path to the IABV workspace root
-        portable_context_service: Optional PortableContextService instance
         self_examination_service: Optional OperationalSelfExaminationService instance
         world_model_service: Optional WorldModelService instance
         control_master_service: Optional ControlMasterService instance
@@ -129,13 +129,15 @@ def _load_self_examination(
                 "source": "live_service",
             }
 
-    # Fallback: read from file
+    # Fallback: read from file (stale-capable)
     path = workspace / "data" / "evolution" / "self_examination" / "latest.json"
     try:
         if path.exists():
             import json
 
             data = json.loads(path.read_text(encoding="utf-8"))
+            updated_at = path.stat().st_mtime
+            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
             return {
                 "status": "ok",
                 "findings_count": len(data.get("findings", [])),
@@ -143,6 +145,9 @@ def _load_self_examination(
                 "health_indicators": data.get("health_indicators", {}),
                 "source": "file_fallback",
                 "source_path": str(path),
+                "updated_at": updated_at,
+                "age_seconds": age_seconds,
+                "stale_capable": True,
             }
         return {
             "status": "unavailable",
@@ -178,13 +183,15 @@ def _load_world_model(workspace: Path, service: Any = None) -> dict[str, Any]:
                 "source": "live_service",
             }
 
-    # Fallback: read from file
+    # Fallback: read from file (stale-capable)
     path = workspace / "data" / "evolution" / "world_model" / "latest.json"
     try:
         if path.exists():
             import json
 
             data = json.loads(path.read_text(encoding="utf-8"))
+            updated_at = path.stat().st_mtime
+            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
             return {
                 "status": "ok",
                 "windows_count": len(data.get("windows", [])),
@@ -193,6 +200,9 @@ def _load_world_model(workspace: Path, service: Any = None) -> dict[str, Any]:
                 "blockers_count": len(data.get("blockers", [])),
                 "source": "file_fallback",
                 "source_path": str(path),
+                "updated_at": updated_at,
+                "age_seconds": age_seconds,
+                "stale_capable": True,
             }
         return {
             "status": "unavailable",
@@ -231,13 +241,15 @@ def _load_control_master(workspace: Path, service: Any = None) -> dict[str, Any]
                 "source": "live_service",
             }
 
-    # Fallback: read from file
+    # Fallback: read from file (stale-capable)
     path = workspace / "data" / "evolution" / "control_master" / "latest.json"
     try:
         if path.exists():
             import json
 
             data = json.loads(path.read_text(encoding="utf-8"))
+            updated_at = path.stat().st_mtime
+            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
             return {
                 "status": "ok",
                 "vision": data.get("current_vision", ""),
@@ -251,6 +263,9 @@ def _load_control_master(workspace: Path, service: Any = None) -> dict[str, Any]
                 "unresolved_items_count": len(data.get("unresolved_items", [])),
                 "source": "file_fallback",
                 "source_path": str(path),
+                "updated_at": updated_at,
+                "age_seconds": age_seconds,
+                "stale_capable": True,
             }
         return {
             "status": "unavailable",
@@ -288,13 +303,15 @@ def _load_operational_learning(workspace: Path, experiment_lab: Any = None) -> d
                 "source": "live_service",
             }
 
-    # Fallback: read from file
+    # Fallback: read from file (stale-capable)
     path = workspace / "data" / "evolution" / "experiment_lab" / "latest.json"
     try:
         if path.exists():
             import json
 
             data = json.loads(path.read_text(encoding="utf-8"))
+            updated_at = path.stat().st_mtime
+            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
             return {
                 "status": "ok",
                 "recent_runs_count": len(data.get("recent_runs", [])),
@@ -303,6 +320,9 @@ def _load_operational_learning(workspace: Path, experiment_lab: Any = None) -> d
                 ),
                 "source": "file_fallback",
                 "source_path": str(path),
+                "updated_at": updated_at,
+                "age_seconds": age_seconds,
+                "stale_capable": True,
             }
         return {
             "status": "unavailable",
