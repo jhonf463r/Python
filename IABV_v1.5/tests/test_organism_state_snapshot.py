@@ -56,6 +56,13 @@ def test_organism_state_snapshot_structure():
         assert "world_model" in snapshot
         assert "control_master" in snapshot
         assert "operational_learning" in snapshot
+        assert "organ_health_matrix" in snapshot
+        assert "stability_signals" in snapshot
+        assert "learning_reuse_summary" in snapshot
+        assert "active_hypotheses" in snapshot
+        assert "discarded_hypotheses" in snapshot
+        assert "temporal_delta_summary" in snapshot
+        assert "source_confidence" in snapshot
         assert "evidence_sources" in snapshot
     finally:
         try:
@@ -134,6 +141,11 @@ def test_organism_state_markdown_render():
         assert "## World Model" in markdown
         assert "## Control Master" in markdown
         assert "## Operational Learning" in markdown
+        assert "## Organ Health Matrix" in markdown
+        assert "## Stability Signals" in markdown
+        assert "## Learning Reuse Summary" in markdown
+        assert "## Temporal Delta Summary" in markdown
+        assert "## Source Confidence" in markdown
         assert "## Evidence Sources" in markdown
     finally:
         try:
@@ -194,18 +206,34 @@ def test_organism_state_snapshot_fallback_behavior():
         assert "world_model" in snapshot
         assert "control_master" in snapshot
         assert "operational_learning" in snapshot
+        assert "organ_health_matrix" in snapshot
+        assert "stability_signals" in snapshot
+        assert "learning_reuse_summary" in snapshot
+        assert "active_hypotheses" in snapshot
+        assert "discarded_hypotheses" in snapshot
+        assert "temporal_delta_summary" in snapshot
+        assert "source_confidence" in snapshot
 
         # Each section should have a status (runtime_knowledge has nested status)
         assert "status" in snapshot["self_examination"]
         assert "status" in snapshot["world_model"]
         assert "status" in snapshot["control_master"]
         assert "status" in snapshot["operational_learning"]
+        assert "status" in snapshot["organ_health_matrix"]
+        assert "status" in snapshot["stability_signals"]
+        assert "status" in snapshot["learning_reuse_summary"]
+        assert "status" in snapshot["active_hypotheses"]
+        assert "status" in snapshot["discarded_hypotheses"]
+        assert "status" in snapshot["temporal_delta_summary"]
+        assert "status" in snapshot["source_confidence"]
         # runtime_knowledge has nested status fields
         assert "runtime_organ_state" in snapshot["runtime_knowledge"]
         assert "portable_context_summary" in snapshot["runtime_knowledge"]
 
         # Fallbacks should have stale_capable metadata when ok
-        for section in ["self_examination", "world_model", "control_master", "operational_learning"]:
+        for section in ["self_examination", "world_model", "control_master", "operational_learning",
+                        "organ_health_matrix", "stability_signals", "learning_reuse_summary",
+                        "active_hypotheses", "discarded_hypotheses", "temporal_delta_summary"]:
             if snapshot[section].get("status") == "ok" and snapshot[section].get("source") == "file_fallback":
                 assert "source_path" in snapshot[section]
                 assert "updated_at" in snapshot[section]
