@@ -3157,6 +3157,9 @@ class AppBootstrap:
         elif route == 'knowledge':
             self._build_knowledge_base_vm()
             ctx.setContextProperty('knowledgeBaseViewModel', self.knowledge_base_viewmodel)
+        elif route == 'observatory':
+            self._build_observatory_viewmodel()
+            ctx.setContextProperty('observatoryViewModel', self.observatory_viewmodel)
         elif route == 'providers':
             self._build_provider_settings_vm()
             ctx.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
@@ -3341,6 +3344,13 @@ class AppBootstrap:
             evolution_review_service=self.evolution_review_service,
             data_root=self.config.data_dir,
             defer_initial_refresh=True,
+        )
+
+    def _build_observatory_viewmodel(self) -> None:
+        """Build minimal read-only ObservatoryViewModel (P0.188)."""
+        from iabv_v15.ui.viewmodels.observatory_viewmodel import ObservatoryViewModel
+        self.observatory_viewmodel = ObservatoryViewModel(
+            workspace_root=self.config.workspace_root,
         )
 
     # -- Resource-governed lazy VM prebuild state --
@@ -3886,6 +3896,7 @@ class AppBootstrap:
         self._build_provider_settings_vm()
         self._build_run_history_vm()
         self._build_centro_vivo_vm()
+        self._build_observatory_viewmodel()
         self._wire_task_a_signals()
 
     def _build_ui_objects(self) -> None:
@@ -4043,6 +4054,7 @@ class AppBootstrap:
             ctx.setContextProperty('providerSettingsViewModel', self.provider_settings_viewmodel)
             ctx.setContextProperty('runHistoryViewModel', self.run_history_viewmodel)
             ctx.setContextProperty('centroVivoViewModel', self.centro_vivo_viewmodel)
+            ctx.setContextProperty('observatoryViewModel', self.observatory_viewmodel)
 
         context = engine.rootContext()
 
@@ -4054,6 +4066,7 @@ class AppBootstrap:
                 'captureStudioViewModel', 'evolutionCenterViewModel',
                 'knowledgeBaseViewModel', 'providerSettingsViewModel',
                 'runHistoryViewModel', 'centroVivoViewModel',
+                'observatoryViewModel',
             ]
             for name in _vm_names:
                 context.setContextProperty(name, None)

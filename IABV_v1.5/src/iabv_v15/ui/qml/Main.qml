@@ -16,6 +16,7 @@ ApplicationWindow {
 
     property var navRoutes: navigationController ? navigationController.routes : [
         { key: "dashboard", title: "Resumen", subtitle: "Pulso local del sistema, modelos y memoria" },
+        { key: "observatory", title: "Observatorio", subtitle: "Vista read-only del estado del organismo" },
         { key: "control", title: "Centro de Control", subtitle: "Roles de trabajo, paquete Codex y PBT" },
         { key: "capture", title: "Estudio de Ensenanza", subtitle: "Formulario de ensenanza, captura y revision multimodal" },
         { key: "evolution", title: "Centro Evolutivo", subtitle: "Autodiagnostico, dossiers y backlog priorizado" },
@@ -49,6 +50,7 @@ ApplicationWindow {
     }
 
     function routeSource(route) {
+        if (route === "observatory") return Qt.resolvedUrl("pages/ObservatoryPage.qml")
         if (route === "control") return Qt.resolvedUrl("pages/ControlCenterPage.qml")
         if (route === "capture") return Qt.resolvedUrl("pages/CaptureStudioPage.qml")
         if (route === "knowledge") return Qt.resolvedUrl("pages/KnowledgeBasePage.qml")

@@ -58,6 +58,7 @@ def export_organism_state_snapshot(
         - active_hypotheses (active learning hypotheses)
         - discarded_hypotheses (discarded hypotheses)
         - temporal_delta_summary (temporal changes)
+        - human_vision_readout (project direction, phase, AI recommendations)
         - source_confidence (confidence in sources)
         - evidence_sources (traceability)
     """
@@ -99,6 +100,9 @@ def export_organism_state_snapshot(
         ),
         "temporal_delta_summary": _load_temporal_delta_summary(
             workspace
+        ),
+        "human_vision_readout": _load_human_vision_readout(
+            workspace, control_master_service
         ),
         "source_confidence": _load_source_confidence(
             workspace
@@ -331,38 +335,50 @@ def _load_operational_learning(workspace: Path, experiment_lab: Any = None) -> d
                 "source": "live_service",
             }
 
-    # Fallback: read from file (stale-capable)
-    path = workspace / "data" / "evolution" / "experiment_lab" / "latest.json"
-    try:
-        if path.exists():
-            import json
+    # Fallback: read from actual data directories
+    # Count experiment runs from experiment_runs directory
+    runs_dir = workspace / "data" / "evolution" / "experiment_runs"
+    recommendations_dir = workspace / "data" / "evolution" / "experiment_recommendations"
 
-            data = json.loads(path.read_text(encoding="utf-8"))
-            updated_at = path.stat().st_mtime
+    try:
+        runs_count = 0
+        recommendations_count = 0
+        updated_at = None
+        age_seconds = None
+
+        if runs_dir.exists():
+            import json
+            runs_files = list(runs_dir.glob("*.json"))
+            runs_count = len(runs_files)
+            if runs_files:
+                updated_at = max(f.stat().st_mtime for f in runs_files)
+
+        if recommendations_dir.exists():
+            recommendations_files = list(recommendations_dir.glob("*.json"))
+            recommendations_count = len(recommendations_files)
+            if recommendations_files:
+                rec_mtime = max(f.stat().st_mtime for f in recommendations_files)
+                updated_at = max(updated_at, rec_mtime) if updated_at else rec_mtime
+
+        if updated_at is not None:
             age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
-            return {
-                "status": "ok",
-                "recent_runs_count": len(data.get("recent_runs", [])),
-                "recent_recommendations_count": len(
-                    data.get("recent_recommendations", [])
-                ),
-                "source": "file_fallback",
-                "source_path": str(path),
-                "updated_at": updated_at,
-                "age_seconds": age_seconds,
-                "stale_capable": True,
-            }
+
         return {
-            "status": "unavailable",
+            "status": "ok",
+            "recent_runs_count": runs_count,
+            "recent_recommendations_count": recommendations_count,
             "source": "file_fallback",
-            "source_path": str(path),
+            "source_path": f"{runs_dir}, {recommendations_dir}",
+            "updated_at": updated_at,
+            "age_seconds": age_seconds,
+            "stale_capable": True,
         }
     except Exception as e:
         return {
             "status": "error",
             "error": str(e),
             "source": "file_fallback",
-            "source_path": str(path),
+            "source_path": f"{runs_dir}, {recommendations_dir}",
         }
 
 
@@ -435,34 +451,49 @@ def _load_stability_signals(workspace: Path, experiment_lab: Any = None) -> dict
             except Exception:
                 pass
 
-        # Fallback: read from experiment_lab file
-        path = workspace / "data" / "evolution" / "experiment_lab" / "latest.json"
-        if path.exists():
+        # Fallback: read from experiment_runs directory (real source)
+        experiment_runs_dir = workspace / "data" / "evolution" / "experiment_runs"
+        if experiment_runs_dir.exists():
             import json
 
-            data = json.loads(path.read_text(encoding="utf-8"))
-            recent_runs = data.get("recent_runs", [])
-            if recent_runs:
-                success_rate = sum(1 for r in recent_runs if r.get("success")) / len(recent_runs)
-            else:
-                success_rate = 0.0
-            updated_at = path.stat().st_mtime
-            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
-            return {
-                "status": "ok",
-                "success_rate": success_rate,
-                "recent_runs_count": len(recent_runs),
-                "source": "file_fallback",
-                "source_path": str(path),
-                "updated_at": updated_at,
-                "age_seconds": age_seconds,
-                "stale_capable": True,
-            }
+            # Read recent experiment runs
+            run_files = list(experiment_runs_dir.glob("*.json"))
+            if run_files:
+                # Sort by modification time, get most recent 20
+                run_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+                recent_files = run_files[:20]
+
+                recent_runs = []
+                for f in recent_files:
+                    try:
+                        data = json.loads(f.read_text(encoding="utf-8"))
+                        recent_runs.append(data)
+                    except Exception:
+                        continue
+
+                if recent_runs:
+                    success_rate = sum(1 for r in recent_runs if r.get("success", False)) / len(recent_runs)
+                else:
+                    success_rate = 0.0
+
+                updated_at = recent_files[0].stat().st_mtime if recent_files else None
+                age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at) if updated_at else None
+
+                return {
+                    "status": "ok",
+                    "success_rate": success_rate,
+                    "recent_runs_count": len(recent_runs),
+                    "source": "file_fallback",
+                    "source_path": str(experiment_runs_dir),
+                    "updated_at": updated_at,
+                    "age_seconds": age_seconds,
+                    "stale_capable": True,
+                }
 
         return {
             "status": "unavailable",
             "source": "file_fallback",
-            "source_path": str(path),
+            "source_path": str(experiment_runs_dir),
         }
     except Exception as e:
         return {
@@ -490,32 +521,56 @@ def _load_learning_reuse_summary(workspace: Path, experiment_lab: Any = None) ->
             except Exception:
                 pass
 
-        # Fallback: read from experiment_lab file
-        path = workspace / "data" / "evolution" / "experiment_lab" / "latest.json"
-        if path.exists():
+        # Fallback: read from experience directory (real source)
+        experience_dir = workspace / "data" / "evolution" / "experience"
+        if experience_dir.exists():
             import json
 
-            data = json.loads(path.read_text(encoding="utf-8"))
-            recent_runs = data.get("recent_runs", [])
-            reused_count = sum(1 for r in recent_runs if r.get("metadata", {}).get("reused_pattern"))
-            updated_at = path.stat().st_mtime
-            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
-            return {
-                "status": "ok",
-                "total_runs": len(recent_runs),
-                "reused_patterns_count": reused_count,
-                "reuse_rate": reused_count / len(recent_runs) if recent_runs else 0.0,
-                "source": "file_fallback",
-                "source_path": str(path),
-                "updated_at": updated_at,
-                "age_seconds": age_seconds,
-                "stale_capable": True,
-            }
+            # Read experience JSONL files
+            experience_files = list(experience_dir.glob("*.jsonl"))
+            if experience_files:
+                total_runs = 0
+                reused_patterns_count = 0
+
+                for exp_file in experience_files:
+                    try:
+                        lines = exp_file.read_text(encoding="utf-8").strip().split("\n")
+                        for line in lines:
+                            if line.strip():
+                                try:
+                                    data = json.loads(line)
+                                    total_runs += 1
+                                    # Check for reuse indicators in experience data
+                                    if data.get("reused") or data.get("pattern_reused"):
+                                        reused_patterns_count += 1
+                                except Exception:
+                                    continue
+                    except Exception:
+                        continue
+
+                reuse_rate = reused_patterns_count / total_runs if total_runs > 0 else 0.0
+
+                # Get most recent file for timestamp
+                experience_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+                updated_at = experience_files[0].stat().st_mtime if experience_files else None
+                age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at) if updated_at else None
+
+                return {
+                    "status": "ok",
+                    "total_runs": total_runs,
+                    "reused_patterns_count": reused_patterns_count,
+                    "reuse_rate": reuse_rate,
+                    "source": "file_fallback",
+                    "source_path": str(experience_dir),
+                    "updated_at": updated_at,
+                    "age_seconds": age_seconds,
+                    "stale_capable": True,
+                }
 
         return {
             "status": "unavailable",
             "source": "file_fallback",
-            "source_path": str(path),
+            "source_path": str(experience_dir),
         }
     except Exception as e:
         return {
@@ -547,21 +602,30 @@ def _load_active_hypotheses(workspace: Path, experiment_lab: Any = None) -> dict
             except Exception:
                 pass
 
-        # Fallback: read from experiment_lab file
-        path = workspace / "data" / "evolution" / "experiment_lab" / "latest.json"
-        if path.exists():
+        # Fallback: read from experiment_recommendations directory
+        recommendations_dir = workspace / "data" / "evolution" / "experiment_recommendations"
+        if recommendations_dir.exists():
             import json
 
-            data = json.loads(path.read_text(encoding="utf-8"))
-            recent_recommendations = data.get("recent_recommendations", [])
-            updated_at = path.stat().st_mtime
-            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
+            recommendations_files = list(recommendations_dir.glob("*.json"))
+            # Read up to 5 most recent recommendations
+            recommendations_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+            recent_recommendations = []
+            for f in recommendations_files[:5]:
+                try:
+                    data = json.loads(f.read_text(encoding="utf-8"))
+                    recent_recommendations.append(data)
+                except Exception:
+                    pass
+
+            updated_at = recommendations_files[0].stat().st_mtime if recommendations_files else None
+            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at) if updated_at else None
             return {
                 "status": "ok",
-                "active_count": len(recent_recommendations),
+                "active_count": len(recommendations_files),
                 "hypotheses": recent_recommendations[:5],
                 "source": "file_fallback",
-                "source_path": str(path),
+                "source_path": str(recommendations_dir),
                 "updated_at": updated_at,
                 "age_seconds": age_seconds,
                 "stale_capable": True,
@@ -570,7 +634,7 @@ def _load_active_hypotheses(workspace: Path, experiment_lab: Any = None) -> dict
         return {
             "status": "unavailable",
             "source": "file_fallback",
-            "source_path": str(path),
+            "source_path": str(recommendations_dir),
         }
     except Exception as e:
         return {
@@ -595,30 +659,12 @@ def _load_discarded_hypotheses(workspace: Path, experiment_lab: Any = None) -> d
             except Exception:
                 pass
 
-        # Fallback: read from experiment_lab file
-        path = workspace / "data" / "evolution" / "experiment_lab" / "latest.json"
-        if path.exists():
-            import json
-
-            data = json.loads(path.read_text(encoding="utf-8"))
-            discarded = data.get("discarded_hypotheses", [])
-            updated_at = path.stat().st_mtime
-            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
-            return {
-                "status": "ok",
-                "discarded_count": len(discarded),
-                "hypotheses": discarded[:5],
-                "source": "file_fallback",
-                "source_path": str(path),
-                "updated_at": updated_at,
-                "age_seconds": age_seconds,
-                "stale_capable": True,
-            }
-
+        # Fallback: No canonical source for discarded hypotheses
+        # This data is not currently tracked in a dedicated file
         return {
             "status": "unavailable",
             "source": "file_fallback",
-            "source_path": str(path),
+            "note": "No canonical source for discarded hypotheses - unresolved",
         }
     except Exception as e:
         return {
@@ -631,19 +677,29 @@ def _load_discarded_hypotheses(workspace: Path, experiment_lab: Any = None) -> d
 def _load_temporal_delta_summary(workspace: Path) -> dict[str, Any]:
     """Load temporal delta summary from audit trail."""
     try:
-        # Try to read from decision audit trail
-        path = workspace / "data" / "evolution" / "decision_audit_trail" / "latest.json"
+        # Try to read from decision audit trail (actual path: decision_audit/decisions.jsonl)
+        path = workspace / "data" / "evolution" / "decision_audit" / "decisions.jsonl"
         if path.exists():
             import json
 
-            data = json.loads(path.read_text(encoding="utf-8"))
-            decisions = data.get("recent_decisions", [])
+            # Read JSONL file and count recent decisions
+            decisions = []
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            decisions.append(json.loads(line))
+                        except Exception:
+                            pass
+
+            # Get last 10 decisions
+            recent_decisions = decisions[-10:] if decisions else []
             updated_at = path.stat().st_mtime
             age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
             return {
                 "status": "ok",
-                "recent_decisions_count": len(decisions),
-                "last_decision_timestamp": decisions[0].get("timestamp") if decisions else None,
+                "recent_decisions_count": len(recent_decisions),
+                "last_decision_timestamp": recent_decisions[-1].get("timestamp") if recent_decisions else None,
                 "source": "file_fallback",
                 "source_path": str(path),
                 "updated_at": updated_at,
@@ -662,6 +718,304 @@ def _load_temporal_delta_summary(workspace: Path) -> dict[str, Any]:
             "error": str(e),
             "source": "file_fallback",
         }
+
+
+def _load_human_vision_readout(workspace: Path, control_master_service: Any = None) -> dict[str, Any]:
+    """Load human vision readout (project direction, phase, AI recommendations).
+
+    This is a derived read-only section that aggregates:
+    - PortableContext for persistent user intent
+    - ControlMaster for vision/objectives
+    - platform_pending for open tasks
+    - agent_session_gate for current briefing
+    - DecisionAuditTrail/ExperimentLab only if evidence exists for better AI by task type
+    """
+    import json
+
+    unresolved_fields = []
+    evidence_sources = []
+
+    # Load from PortableContext (persistent user intent)
+    portable_context_path = workspace / "data" / "evolution" / "portable_context" / "latest.json"
+    portable_context_data = None
+    user_intent_summary = "UNRESOLVED"
+    stable_principles = []
+    ai_preference = None  # Initialize before conditional block
+
+    if portable_context_path.exists():
+        try:
+            portable_context_data = json.loads(portable_context_path.read_text(encoding="utf-8"))
+            sections = portable_context_data.get("sections", [])
+
+            # Extract user intent from user_metacognitive_intent section
+            for section in sections:
+                if section.get("section_id") == "user_metacognitive_intent":
+                    user_intent_summary = section.get("summary", "UNRESOLVED")
+                    for item in section.get("items", []):
+                        stable_principles.append({
+                            "label": item.get("label", ""),
+                            "detail": item.get("detail", "")
+                        })
+                    evidence_sources.append("portable_context:user_metacognitive_intent")
+                    break
+
+            # Extract project state
+            for section in sections:
+                if section.get("section_id") == "project_state":
+                    project_state_items = section.get("items", [])
+                    for item in project_state_items:
+                        if item.get("label") == "Objetivo activo":
+                            user_intent_summary = item.get("value", user_intent_summary)
+                    evidence_sources.append("portable_context:project_state")
+                    break
+
+            # Extract learning for AI recommendations
+            for section in sections:
+                if section.get("section_id") == "learning":
+                    learning_items = section.get("items", [])
+                    for item in learning_items:
+                        if item.get("label") == "Preferencia actual":
+                            ai_preference = {
+                                "assistant_kind": item.get("assistant_kind"),
+                                "route": item.get("route"),
+                                "reasons": item.get("reasons", []),
+                                "confidence": item.get("confidence", 0.0)
+                            }
+                            evidence_sources.append("portable_context:learning")
+                            break
+        except Exception as e:
+            unresolved_fields.append(f"portable_context_read_error:{str(e)}")
+    else:
+        unresolved_fields.append("portable_context_file_not_found")
+
+    # Load from ControlMaster (vision/objectives)
+    control_master_path = workspace / "data" / "evolution" / "control_master" / "latest.json"
+    control_master_vision = "UNRESOLVED"
+    active_objectives = []
+
+    if control_master_service is not None:
+        try:
+            state = control_master_service.current_state()
+            control_master_vision = state.current_vision or "UNRESOLVED"
+            active_objectives = state.active_objective_ids or []
+            evidence_sources.append("control_master:live_service")
+        except Exception as e:
+            unresolved_fields.append(f"control_master_service_error:{str(e)}")
+    elif control_master_path.exists():
+        try:
+            control_master_data = json.loads(control_master_path.read_text(encoding="utf-8"))
+            control_master_vision = control_master_data.get("current_vision", "UNRESOLVED")
+            active_objectives = control_master_data.get("active_objective_ids", [])
+            evidence_sources.append("control_master:file_fallback")
+        except Exception as e:
+            unresolved_fields.append(f"control_master_file_error:{str(e)}")
+    else:
+        unresolved_fields.append("control_master_not_available")
+
+    # Load from agent_session_gate (current briefing)
+    session_gate_path = workspace / "data" / "evolution" / "agent_session_gate" / "latest.json"
+    current_briefing = "UNRESOLVED"
+    current_phase = "UNRESOLVED"
+
+    if session_gate_path.exists():
+        try:
+            session_gate_data = json.loads(session_gate_path.read_text(encoding="utf-8"))
+            active_objectives_gate = session_gate_data.get("active_objectives", [])
+            if active_objectives_gate:
+                # Get the first critical objective as current briefing
+                for obj in active_objectives_gate:
+                    if obj.get("priority") == "critical":
+                        current_briefing = obj.get("title", "UNRESOLVED")
+                        current_phase = obj.get("status", "UNRESOLVED")
+                        break
+                if current_briefing == "UNRESOLVED" and active_objectives_gate:
+                    current_briefing = active_objectives_gate[0].get("title", "UNRESOLVED")
+                    current_phase = active_objectives_gate[0].get("status", "UNRESOLVED")
+                evidence_sources.append("agent_session_gate:latest.json")
+        except Exception as e:
+            unresolved_fields.append(f"agent_session_gate_error:{str(e)}")
+    else:
+        unresolved_fields.append("agent_session_gate_not_available")
+
+    # Load from platform_pending (open tasks)
+    platform_pending_dir = workspace / "data" / "evolution" / "platform_pending"
+    pending_tasks_count = 0
+    recommended_next_step = "UNRESOLVED"
+    selected_task_evidence = None
+
+    if platform_pending_dir.exists():
+        try:
+            task_files = list(platform_pending_dir.glob("*.json"))
+            pending_tasks_count = len(task_files)
+
+            if task_files:
+                # Load all tasks and sort by priority and status
+                actionable_tasks = []
+
+                for task_file in task_files:
+                    try:
+                        task_data = json.loads(task_file.read_text(encoding="utf-8"))
+                        status = task_data.get("status", "")
+                        priority = task_data.get("priority", "")
+
+                        # Exclude COMPLETED tasks
+                        if status == "COMPLETED":
+                            continue
+
+                        # Score tasks for selection
+                        score = 0
+                        if priority == "critical":
+                            score += 100
+                        elif priority == "high":
+                            score += 50
+
+                        if status == "PENDING":
+                            score += 20
+                        elif status == "READY_FOR_NEXT_SLICE":
+                            score += 10
+
+                        actionable_tasks.append({
+                            "score": score,
+                            "task": task_data,
+                            "file": str(task_file.name)
+                        })
+                    except Exception:
+                        continue
+
+                # Sort by score (descending)
+                actionable_tasks.sort(key=lambda x: x["score"], reverse=True)
+
+                if actionable_tasks:
+                    selected = actionable_tasks[0]
+                    task = selected["task"]
+                    selected_task_evidence = {
+                        "id": task.get("id", ""),
+                        "title": task.get("title", ""),
+                        "status": task.get("status", ""),
+                        "priority": task.get("priority", ""),
+                        "file": selected["file"]
+                    }
+
+                    # Use next_action if exists, otherwise title
+                    recommended_next_step = task.get("next_action") or task.get("title", "UNRESOLVED")
+                    evidence_sources.append(f"platform_pending:{selected['file']}")
+                else:
+                    unresolved_fields.append("platform_pending_no_actionable_tasks")
+        except Exception as e:
+            unresolved_fields.append(f"platform_pending_error:{str(e)}")
+    else:
+        unresolved_fields.append("platform_pending_directory_not_found")
+
+    # Determine AI recommendation (only if evidence exists and is fresh)
+    recommended_ai_route = "UNRESOLVED"
+    ai_evidence = []
+    ai_preference_stale = False
+
+    # Calculate freshness thresholds (in seconds)
+    FRESHNESS_THRESHOLD = 86400  # 24 hours
+    STALE_THRESHOLD = 604800  # 7 days
+
+    # Calculate source freshness
+    source_freshness = {}
+    now = datetime.now(timezone.utc).timestamp()
+
+    if portable_context_path.exists():
+        pc_age = now - portable_context_path.stat().st_mtime
+        source_freshness["portable_context"] = {
+            "age_seconds": pc_age,
+            "is_fresh": pc_age < FRESHNESS_THRESHOLD,
+            "is_stale": pc_age > STALE_THRESHOLD
+        }
+        if pc_age > STALE_THRESHOLD:
+            unresolved_fields.append(f"portable_context_stale:{int(pc_age)}s")
+            ai_preference_stale = True
+
+    if control_master_path.exists():
+        cm_age = now - control_master_path.stat().st_mtime
+        source_freshness["control_master"] = {
+            "age_seconds": cm_age,
+            "is_fresh": cm_age < FRESHNESS_THRESHOLD,
+            "is_stale": cm_age > STALE_THRESHOLD
+        }
+        if cm_age > STALE_THRESHOLD:
+            unresolved_fields.append(f"control_master_stale:{int(cm_age)}s")
+
+    if session_gate_path.exists():
+        sg_age = now - session_gate_path.stat().st_mtime
+        source_freshness["agent_session_gate"] = {
+            "age_seconds": sg_age,
+            "is_fresh": sg_age < FRESHNESS_THRESHOLD,
+            "is_stale": sg_age > STALE_THRESHOLD
+        }
+        if sg_age > STALE_THRESHOLD:
+            unresolved_fields.append(f"agent_session_gate_stale:{int(sg_age)}s")
+
+    if platform_pending_dir.exists():
+        pp_age = now - platform_pending_dir.stat().st_mtime
+        source_freshness["platform_pending"] = {
+            "age_seconds": pp_age,
+            "is_fresh": pp_age < FRESHNESS_THRESHOLD,
+            "is_stale": pp_age > STALE_THRESHOLD
+        }
+        if pp_age > STALE_THRESHOLD:
+            unresolved_fields.append(f"platform_pending_stale:{int(pp_age)}s")
+
+    # Only use AI preference if it's from a fresh source
+    if ai_preference:
+        if ai_preference_stale:
+            # AI preference exists but is from stale source
+            recommended_ai_route = f"{ai_preference.get('assistant_kind', 'unknown')}:{ai_preference.get('route', 'unknown')}_STALE"
+            ai_evidence = ai_preference.get("reasons", [])
+            evidence_sources.append("portable_context:ai_preference_stale")
+            unresolved_fields.append("ai_preference_source_stale")
+        else:
+            recommended_ai_route = f"{ai_preference.get('assistant_kind', 'unknown')}:{ai_preference.get('route', 'unknown')}"
+            ai_evidence = ai_preference.get("reasons", [])
+            evidence_sources.append("portable_context:ai_preference")
+    else:
+        unresolved_fields.append("ai_preference_no_evidence")
+
+    # Build current project direction from available sources
+    if user_intent_summary != "UNRESOLVED":
+        current_project_direction = user_intent_summary
+    elif control_master_vision != "UNRESOLVED":
+        current_project_direction = control_master_vision
+    elif current_briefing != "UNRESOLVED":
+        current_project_direction = current_briefing
+    else:
+        current_project_direction = "UNRESOLVED"
+        unresolved_fields.append("project_direction_no_source")
+
+    # Calculate staleness metadata (use most recent source)
+    updated_at = None
+    age_seconds = None
+    stale_capable = False
+
+    if source_freshness:
+        # Use the freshest source for overall staleness
+        freshest_source = min(source_freshness.items(), key=lambda x: x[1]["age_seconds"])
+        updated_at = now - freshest_source[1]["age_seconds"]
+        age_seconds = freshest_source[1]["age_seconds"]
+        stale_capable = any(s["is_stale"] for s in source_freshness.values())
+
+    return {
+        "status": "ok",
+        "current_project_direction": current_project_direction,
+        "stable_user_principles": stable_principles,
+        "current_phase": current_phase,
+        "recommended_next_step": recommended_next_step,
+        "recommended_ai_route": recommended_ai_route,
+        "ai_evidence": ai_evidence,
+        "evidence_sources": evidence_sources,
+        "unresolved_fields": unresolved_fields,
+        "selected_task_evidence": selected_task_evidence,
+        "source": "derived",
+        "source_path": str(portable_context_path) if portable_context_path.exists() else "multiple_sources",
+        "updated_at": updated_at,
+        "age_seconds": age_seconds,
+        "stale_capable": stale_capable,
+        "source_freshness": source_freshness,
+    }
 
 
 def _load_source_confidence(workspace: Path) -> dict[str, Any]:
@@ -746,6 +1100,8 @@ def _track_evidence_sources(snapshot: dict[str, Any]) -> None:
         sources.append(f"discarded_hypotheses:{snapshot['discarded_hypotheses']['source']}")
     if snapshot["temporal_delta_summary"].get("status") == "ok":
         sources.append(f"temporal_delta_summary:{snapshot['temporal_delta_summary']['source']}")
+    if snapshot["human_vision_readout"].get("status") == "ok":
+        sources.append(f"human_vision_readout:{snapshot['human_vision_readout']['source']}")
     if snapshot["source_confidence"].get("status") == "ok":
         sources.append(f"source_confidence:{snapshot['source_confidence']['source']}")
 
@@ -841,6 +1197,19 @@ def render_organism_state_markdown(snapshot: dict[str, Any]) -> str:
         lines.append(f"- Recent decisions: {tds.get('recent_decisions_count', 0)}")
         lines.append(f"- Source: {tds.get('source', 'unknown')}")
 
+    lines.extend(["", "## Human Vision Readout"])
+    hvr = snapshot.get("human_vision_readout", {})
+    lines.append(f"- Status: {hvr.get('status', 'unknown')}")
+    if hvr.get("status") == "ok":
+        lines.append(f"- Project direction: {hvr.get('current_project_direction', 'UNRESOLVED')[:100]}")
+        lines.append(f"- Current phase: {hvr.get('current_phase', 'UNRESOLVED')}")
+        lines.append(f"- Recommended next step: {hvr.get('recommended_next_step', 'UNRESOLVED')[:100]}")
+        lines.append(f"- Recommended AI route: {hvr.get('recommended_ai_route', 'UNRESOLVED')}")
+        lines.append(f"- Evidence sources: {', '.join(hvr.get('evidence_sources', []))}")
+        if hvr.get("unresolved_fields"):
+            lines.append(f"- UNRESOLVED: {', '.join(hvr.get('unresolved_fields', []))}")
+        lines.append(f"- Source: {hvr.get('source', 'unknown')}")
+
     lines.extend(["", "## Source Confidence"])
     sc = snapshot.get("source_confidence", {})
     lines.append(f"- Status: {sc.get('status', 'unknown')}")
@@ -853,3 +1222,194 @@ def render_organism_state_markdown(snapshot: dict[str, Any]) -> str:
         lines.append(f"- {source}")
 
     return "\n".join(lines) + "\n"
+
+
+def export_observatory_surface_contract(
+    workspace_root: str | Path,
+    *,
+    self_examination_service: Any = None,
+    world_model_service: Any = None,
+    control_master_service: Any = None,
+    experiment_lab: Any = None,
+) -> dict[str, Any]:
+    """Export a compact read-only surface contract for living interface.
+
+    This is a derived, compact view of organism state designed for future
+    UI consumption without introducing new authority, memory, or orchestration.
+
+    It extracts the most relevant observability data from the full snapshot
+    for display purposes: human vision, health, stability, learning, and
+    confidence metrics.
+
+    This is NOT a decision layer. It is purely for observability.
+    This is NOT a single source of truth - it is a derived view.
+
+    Args:
+        workspace_root: Path to the IABV workspace root
+        self_examination_service: Optional OperationalSelfExaminationService instance
+        world_model_service: Optional WorldModelService instance
+        control_master_service: Optional ControlMasterService instance
+        experiment_lab: Optional ExperimentLab instance
+
+    Returns:
+        Compact surface contract dictionary with:
+        - timestamp
+        - workspace_root
+        - human_vision (project direction, phase, next step, AI route)
+        - organ_health (health metrics with temporal metadata)
+        - stability (stability signals with temporal metadata)
+        - learning (learning reuse with temporal metadata)
+        - confidence (source confidence with temporal metadata)
+        - evidence_sources (traceability)
+        - unresolved_fields (missing evidence markers)
+    """
+    # Get the full snapshot first
+    full_snapshot = export_organism_state_snapshot(
+        workspace_root,
+        self_examination_service=self_examination_service,
+        world_model_service=world_model_service,
+        control_master_service=control_master_service,
+        experiment_lab=experiment_lab,
+    )
+
+    # Extract compact surface contract
+    surface_contract = {
+        "timestamp": full_snapshot["timestamp"],
+        "workspace_root": full_snapshot["workspace_root"],
+        "human_vision": _extract_human_vision_surface(full_snapshot.get("human_vision_readout", {})),
+        "organ_health": _extract_health_surface(full_snapshot.get("organ_health_matrix", {})),
+        "stability": _extract_stability_surface(full_snapshot.get("stability_signals", {})),
+        "learning": _extract_learning_surface(full_snapshot.get("learning_reuse_summary", {})),
+        "confidence": _extract_confidence_surface(full_snapshot.get("source_confidence", {})),
+        "evidence_sources": full_snapshot.get("evidence_sources", []),
+        "unresolved_fields": _extract_unresolved_fields(full_snapshot),
+    }
+
+    return surface_contract
+
+
+def _extract_human_vision_surface(hvr: dict[str, Any]) -> dict[str, Any]:
+    """Extract compact human vision data with temporal metadata."""
+    if hvr.get("status") != "ok":
+        return {
+            "status": hvr.get("status", "unavailable"),
+            "current_project_direction": "UNRESOLVED",
+            "current_phase": "UNRESOLVED",
+            "recommended_next_step": "UNRESOLVED",
+            "recommended_ai_route": "UNRESOLVED",
+            "source": hvr.get("source", "unknown"),
+        }
+
+    return {
+        "status": hvr["status"],
+        "current_project_direction": hvr.get("current_project_direction", "UNRESOLVED"),
+        "current_phase": hvr.get("current_phase", "UNRESOLVED"),
+        "recommended_next_step": hvr.get("recommended_next_step", "UNRESOLVED"),
+        "recommended_ai_route": hvr.get("recommended_ai_route", "UNRESOLVED"),
+        "evidence_sources": hvr.get("evidence_sources", []),
+        "source": hvr.get("source", "derived"),
+        "updated_at": hvr.get("updated_at"),
+        "age_seconds": hvr.get("age_seconds"),
+        "stale_capable": hvr.get("stale_capable", False),
+        "source_freshness": hvr.get("source_freshness", {}),
+    }
+
+
+def _extract_health_surface(health: dict[str, Any]) -> dict[str, Any]:
+    """Extract compact organ health data with temporal metadata."""
+    if health.get("status") != "ok":
+        return {
+            "status": health.get("status", "unavailable"),
+            "overall_health": "UNRESOLVED",
+            "source": health.get("source", "unknown"),
+        }
+
+    return {
+        "status": health["status"],
+        "overall_health": health.get("overall_health", "unknown"),
+        "critical_findings_count": health.get("critical_findings_count", 0),
+        "warning_findings_count": health.get("warning_findings_count", 0),
+        "source": health.get("source", "derived"),
+        "source_path": health.get("source_path"),
+        "updated_at": health.get("updated_at"),
+        "age_seconds": health.get("age_seconds"),
+        "stale_capable": health.get("stale_capable", False),
+    }
+
+
+def _extract_stability_surface(stability: dict[str, Any]) -> dict[str, Any]:
+    """Extract compact stability signals with temporal metadata."""
+    if stability.get("status") != "ok":
+        return {
+            "status": stability.get("status", "unavailable"),
+            "success_rate": 0.0,
+            "source": stability.get("source", "unknown"),
+        }
+
+    return {
+        "status": stability["status"],
+        "success_rate": stability.get("success_rate", 0.0),
+        "recent_runs_count": stability.get("recent_runs_count", 0),
+        "source": stability.get("source", "derived"),
+        "source_path": stability.get("source_path"),
+        "updated_at": stability.get("updated_at"),
+        "age_seconds": stability.get("age_seconds"),
+        "stale_capable": stability.get("stale_capable", False),
+    }
+
+
+def _extract_learning_surface(learning: dict[str, Any]) -> dict[str, Any]:
+    """Extract compact learning reuse data with temporal metadata."""
+    if learning.get("status") != "ok":
+        return {
+            "status": learning.get("status", "unavailable"),
+            "reuse_rate": 0.0,
+            "source": learning.get("source", "unknown"),
+        }
+
+    return {
+        "status": learning["status"],
+        "total_runs": learning.get("total_runs", 0),
+        "reused_patterns_count": learning.get("reused_patterns_count", 0),
+        "reuse_rate": learning.get("reuse_rate", 0.0),
+        "source": learning.get("source", "derived"),
+        "source_path": learning.get("source_path"),
+        "updated_at": learning.get("updated_at"),
+        "age_seconds": learning.get("age_seconds"),
+        "stale_capable": learning.get("stale_capable", False),
+    }
+
+
+def _extract_confidence_surface(confidence: dict[str, Any]) -> dict[str, Any]:
+    """Extract compact source confidence data."""
+    if confidence.get("status") != "ok":
+        return {
+            "status": confidence.get("status", "unavailable"),
+            "overall_confidence": 0.0,
+            "source": confidence.get("source", "unknown"),
+        }
+
+    return {
+        "status": confidence["status"],
+        "overall_confidence": confidence.get("overall_confidence", 0.0),
+        "source_confidences": confidence.get("source_confidences", {}),
+        "source": confidence.get("source", "derived"),
+    }
+
+
+def _extract_unresolved_fields(snapshot: dict[str, Any]) -> list[str]:
+    """Extract all unresolved fields from snapshot sections."""
+    unresolved = []
+
+    # Check human vision readout
+    hvr = snapshot.get("human_vision_readout", {})
+    if hvr.get("unresolved_fields"):
+        unresolved.extend(hvr["unresolved_fields"])
+
+    # Check if any section is unavailable
+    for section_name in ["organ_health_matrix", "stability_signals", "learning_reuse_summary", "source_confidence"]:
+        section = snapshot.get(section_name, {})
+        if section.get("status") in ["unavailable", "error"]:
+            unresolved.append(f"{section_name}:{section.get('status', 'unknown')}")
+
+    return unresolved
