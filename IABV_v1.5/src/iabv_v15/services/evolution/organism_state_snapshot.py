@@ -30,6 +30,7 @@ def export_organism_state_snapshot(
     world_model_service: Any = None,
     control_master_service: Any = None,
     experiment_lab: Any = None,
+    environment_self_awareness_service: Any = None,
 ) -> dict[str, Any]:
     """Export a unified read-only snapshot of the organism state.
 
@@ -42,6 +43,7 @@ def export_organism_state_snapshot(
         world_model_service: Optional WorldModelService instance
         control_master_service: Optional ControlMasterService instance
         experiment_lab: Optional ExperimentLab instance
+        environment_self_awareness_service: Optional EnvironmentSelfAwarenessService instance for fresh GPU data
 
     Returns:
         Unified snapshot dictionary with:
@@ -60,6 +62,8 @@ def export_organism_state_snapshot(
         - temporal_delta_summary (temporal changes)
         - human_vision_readout (project direction, phase, AI recommendations)
         - source_confidence (confidence in sources)
+        - gpu_health (GPU health status from environment self-awareness)
+        - unresolved_fields (unresolved signals including GPU degradation)
         - evidence_sources (traceability)
     """
     workspace = Path(workspace_root)
@@ -107,6 +111,8 @@ def export_organism_state_snapshot(
         "source_confidence": _load_source_confidence(
             workspace
         ),
+        "gpu_health": _load_gpu_health(workspace, environment_self_awareness_service),
+        "unresolved_fields": _load_unresolved_fields(workspace, environment_self_awareness_service),
         "evidence_sources": [],
     }
 
@@ -842,6 +848,7 @@ def _load_human_vision_readout(workspace: Path, control_master_service: Any = No
     pending_tasks_count = 0
     recommended_next_step = "UNRESOLVED"
     selected_task_evidence = None
+    active_external_blocks = []
 
     if platform_pending_dir.exists():
         try:
@@ -861,6 +868,22 @@ def _load_human_vision_readout(workspace: Path, control_master_service: Any = No
                         # Exclude COMPLETED tasks
                         if status == "COMPLETED":
                             continue
+
+                        execution_evidence = task_data.get("execution_evidence", {})
+                        if execution_evidence.get("external_dependency_blocked"):
+                            active_external_blocks.append({
+                                "task_id": task_data.get("id", ""),
+                                "dependency": task_data.get("dependency_missing", ""),
+                                "type": execution_evidence.get("external_dependency_type", ""),
+                                "reason": task_data.get("reason", ""),
+                                "status": task_data.get("status", ""),
+                                "verification_status": task_data.get("verification_status", ""),
+                                "verdict": execution_evidence.get("verdict", ""),
+                                "execution_summary": execution_evidence.get("execution_summary", ""),
+                                "execution_error": execution_evidence.get("error", ""),
+                                "human_review_required": execution_evidence.get("human_review_required", True),
+                                "evidence_source": f"platform_pending:{task_file.name}",
+                            })
 
                         # Score tasks for selection
                         score = 0
@@ -899,6 +922,23 @@ def _load_human_vision_readout(workspace: Path, control_master_service: Any = No
                     # Use next_action if exists, otherwise title
                     recommended_next_step = task.get("next_action") or task.get("title", "UNRESOLVED")
                     evidence_sources.append(f"platform_pending:{selected['file']}")
+                    
+                    # Include external dependency block information if present
+                    if task.get("dependency_missing"):
+                        selected_task_evidence["dependency_missing"] = task.get("dependency_missing")
+                    if task.get("reason"):
+                        selected_task_evidence["reason"] = task.get("reason")
+                    
+                    # Include execution evidence if present
+                    execution_evidence = task.get("execution_evidence", {})
+                    if execution_evidence.get("external_dependency_blocked"):
+                        selected_task_evidence["external_dependency_blocked"] = execution_evidence.get("external_dependency_blocked")
+                    if execution_evidence.get("external_dependency_type"):
+                        selected_task_evidence["external_dependency_type"] = execution_evidence.get("external_dependency_type")
+                    if execution_evidence.get("error"):
+                        selected_task_evidence["execution_error"] = execution_evidence.get("error")
+                    if execution_evidence.get("execution_summary"):
+                        selected_task_evidence["execution_summary"] = execution_evidence.get("execution_summary")
                 else:
                     unresolved_fields.append("platform_pending_no_actionable_tasks")
         except Exception as e:
@@ -1009,6 +1049,7 @@ def _load_human_vision_readout(workspace: Path, control_master_service: Any = No
         "evidence_sources": evidence_sources,
         "unresolved_fields": unresolved_fields,
         "selected_task_evidence": selected_task_evidence,
+        "active_external_blocks": active_external_blocks,
         "source": "derived",
         "source_path": str(portable_context_path) if portable_context_path.exists() else "multiple_sources",
         "updated_at": updated_at,
@@ -1065,6 +1106,125 @@ def _load_source_confidence(workspace: Path) -> dict[str, Any]:
         }
 
 
+def _load_gpu_health(workspace: Path, environment_self_awareness_service: Any = None) -> dict[str, Any]:
+    """Load GPU health from environment self-awareness service.
+    
+    Prefers fresh data from the live service if available, otherwise falls back
+    to the persisted file. This ensures the surface reflects the current GPU state
+    rather than stale cached data.
+    """
+    # Try to get fresh data from the live service first
+    if environment_self_awareness_service is not None:
+        try:
+            current_model = environment_self_awareness_service.current_model()
+            hardware_profile = current_model.hardware_profile if hasattr(current_model, 'hardware_profile') else {}
+            
+            if hardware_profile:
+                gpu_status = hardware_profile.get("gpu_status", "unavailable")
+                gpu_name = hardware_profile.get("gpu_name", "")
+                gpu_degradation_reason = hardware_profile.get("gpu_degradation_reason", "")
+                gpu_degradation_detail = hardware_profile.get("gpu_degradation_detail", "")
+                
+                return {
+                    "status": "ok",
+                    "gpu_status": gpu_status,
+                    "gpu_name": gpu_name,
+                    "gpu_driver": hardware_profile.get("gpu_driver", ""),
+                    "gpu_memory_total_mb": hardware_profile.get("gpu_memory_total_mb"),
+                    "gpu_memory_free_mb": hardware_profile.get("gpu_memory_free_mb"),
+                    "gpu_temperature_c": hardware_profile.get("gpu_temperature_c"),
+                    "gpu_utilization_pct": hardware_profile.get("gpu_utilization_pct"),
+                    "gpu_degradation_reason": gpu_degradation_reason,
+                    "gpu_degradation_detail": gpu_degradation_detail,
+                    "source": "live_service",
+                    "updated_at": current_model.last_scan.isoformat() if hasattr(current_model, 'last_scan') else None,
+                    "age_seconds": 0.0,
+                    "stale_capable": False,
+                }
+        except Exception:
+            # Fall back to file if live service fails
+            pass
+    
+    # Fallback: read from persisted file (stale-capable)
+    path = workspace / "data" / "evolution" / "environment_self_model" / "latest.json"
+    try:
+        if path.exists():
+            import json
+            data = json.loads(path.read_text(encoding="utf-8"))
+            hardware_profile = data.get("hardware_profile", {})
+            
+            # Extract GPU status information
+            gpu_status = hardware_profile.get("gpu_status", "unavailable")
+            gpu_name = hardware_profile.get("gpu_name", "")
+            gpu_degradation_reason = hardware_profile.get("gpu_degradation_reason", "")
+            gpu_degradation_detail = hardware_profile.get("gpu_degradation_detail", "")
+            
+            updated_at = path.stat().st_mtime
+            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
+            
+            return {
+                "status": "ok",
+                "gpu_status": gpu_status,
+                "gpu_name": gpu_name,
+                "gpu_driver": hardware_profile.get("gpu_driver", ""),
+                "gpu_memory_total_mb": hardware_profile.get("gpu_memory_total_mb"),
+                "gpu_memory_free_mb": hardware_profile.get("gpu_memory_free_mb"),
+                "gpu_temperature_c": hardware_profile.get("gpu_temperature_c"),
+                "gpu_utilization_pct": hardware_profile.get("gpu_utilization_pct"),
+                "gpu_degradation_reason": gpu_degradation_reason,
+                "gpu_degradation_detail": gpu_degradation_detail,
+                "source": "environment_self_model",
+                "source_path": str(path),
+                "updated_at": updated_at,
+                "age_seconds": age_seconds,
+                "stale_capable": True,
+            }
+        return {
+            "status": "unavailable",
+            "gpu_status": "unavailable",
+            "source": "environment_self_model",
+            "source_path": str(path),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "gpu_status": "error",
+            "source": "environment_self_model",
+            "source_path": str(path),
+        }
+
+
+def _load_unresolved_fields(workspace: Path, environment_self_awareness_service: Any = None) -> list[str]:
+    """Load unresolved fields from environment self-awareness service.
+    
+    Prefers fresh data from the live service if available, otherwise falls back
+    to the persisted file. This ensures the surface reflects current unresolved
+    signals including GPU degradation.
+    """
+    # Try to get fresh data from the live service first
+    if environment_self_awareness_service is not None:
+        try:
+            current_model = environment_self_awareness_service.current_model()
+            if hasattr(current_model, 'unresolved_fields'):
+                return current_model.unresolved_fields
+        except Exception:
+            # Fall back to file if live service fails
+            pass
+    
+    # Fallback: read from persisted file (stale-capable)
+    path = workspace / "data" / "evolution" / "environment_self_model" / "latest.json"
+    try:
+        if path.exists():
+            import json
+            data = json.loads(path.read_text(encoding="utf-8"))
+            unresolved = data.get("unresolved_fields", [])
+            return unresolved if isinstance(unresolved, list) else []
+        return []
+    except Exception:
+        return []
+
+
 def _track_evidence_sources(snapshot: dict[str, Any]) -> None:
     """Track which evidence sources were successfully read."""
     sources = []
@@ -1104,6 +1264,8 @@ def _track_evidence_sources(snapshot: dict[str, Any]) -> None:
         sources.append(f"human_vision_readout:{snapshot['human_vision_readout']['source']}")
     if snapshot["source_confidence"].get("status") == "ok":
         sources.append(f"source_confidence:{snapshot['source_confidence']['source']}")
+    if snapshot["gpu_health"].get("status") == "ok":
+        sources.append(f"gpu_health:{snapshot['gpu_health']['source']}")
 
     snapshot["evidence_sources"] = sources
 
@@ -1217,6 +1379,25 @@ def render_organism_state_markdown(snapshot: dict[str, Any]) -> str:
         lines.append(f"- Overall confidence: {sc.get('overall_confidence', 0.0):.2%}")
         lines.append(f"- Source: {sc.get('source', 'unknown')}")
 
+    lines.extend(["", "## GPU Health"])
+    gh = snapshot.get("gpu_health", {})
+    lines.append(f"- Status: {gh.get('status', 'unknown')}")
+    if gh.get("status") == "ok":
+        lines.append(f"- GPU Status: {gh.get('gpu_status', 'unknown')}")
+        lines.append(f"- GPU Name: {gh.get('gpu_name', 'N/A')}")
+        if gh.get('gpu_status') == 'degraded':
+            lines.append(f"- Degradation Reason: {gh.get('gpu_degradation_reason', 'N/A')}")
+            lines.append(f"- Detail: {gh.get('gpu_degradation_detail', 'N/A')}")
+        lines.append(f"- Source: {gh.get('source', 'unknown')}")
+
+    lines.extend(["", "## Unresolved Fields"])
+    unresolved = snapshot.get("unresolved_fields", [])
+    if unresolved:
+        for field in unresolved:
+            lines.append(f"- {field}")
+    else:
+        lines.append("- None")
+
     lines.extend(["", "## Evidence Sources"])
     for source in snapshot.get("evidence_sources", []):
         lines.append(f"- {source}")
@@ -1231,6 +1412,7 @@ def export_observatory_surface_contract(
     world_model_service: Any = None,
     control_master_service: Any = None,
     experiment_lab: Any = None,
+    environment_self_awareness_service: Any = None,
 ) -> dict[str, Any]:
     """Export a compact read-only surface contract for living interface.
 
@@ -1270,6 +1452,7 @@ def export_observatory_surface_contract(
         world_model_service=world_model_service,
         control_master_service=control_master_service,
         experiment_lab=experiment_lab,
+        environment_self_awareness_service=environment_self_awareness_service,
     )
 
     # Extract compact surface contract
@@ -1281,6 +1464,7 @@ def export_observatory_surface_contract(
         "stability": _extract_stability_surface(full_snapshot.get("stability_signals", {})),
         "learning": _extract_learning_surface(full_snapshot.get("learning_reuse_summary", {})),
         "confidence": _extract_confidence_surface(full_snapshot.get("source_confidence", {})),
+        "gpu_health": _extract_gpu_health_surface(full_snapshot.get("gpu_health", {})),
         "evidence_sources": full_snapshot.get("evidence_sources", []),
         "unresolved_fields": _extract_unresolved_fields(full_snapshot),
     }
@@ -1312,6 +1496,8 @@ def _extract_human_vision_surface(hvr: dict[str, Any]) -> dict[str, Any]:
         "age_seconds": hvr.get("age_seconds"),
         "stale_capable": hvr.get("stale_capable", False),
         "source_freshness": hvr.get("source_freshness", {}),
+        "selected_task_evidence": hvr.get("selected_task_evidence", {}),
+        "active_external_blocks": hvr.get("active_external_blocks", []),
     }
 
 
@@ -1381,7 +1567,7 @@ def _extract_learning_surface(learning: dict[str, Any]) -> dict[str, Any]:
 
 
 def _extract_confidence_surface(confidence: dict[str, Any]) -> dict[str, Any]:
-    """Extract compact source confidence data."""
+    """Extract compact source confidence data with temporal metadata."""
     if confidence.get("status") != "ok":
         return {
             "status": confidence.get("status", "unavailable"),
@@ -1392,14 +1578,50 @@ def _extract_confidence_surface(confidence: dict[str, Any]) -> dict[str, Any]:
     return {
         "status": confidence["status"],
         "overall_confidence": confidence.get("overall_confidence", 0.0),
-        "source_confidences": confidence.get("source_confidences", {}),
         "source": confidence.get("source", "derived"),
+        "source_path": confidence.get("source_path"),
+        "updated_at": confidence.get("updated_at"),
+        "age_seconds": confidence.get("age_seconds"),
+        "stale_capable": confidence.get("stale_capable", False),
+    }
+
+
+def _extract_gpu_health_surface(gpu_health: dict[str, Any]) -> dict[str, Any]:
+    """Extract compact GPU health data with temporal metadata."""
+    if gpu_health.get("status") != "ok":
+        return {
+            "status": gpu_health.get("status", "unavailable"),
+            "gpu_status": "unavailable",
+            "source": gpu_health.get("source", "unknown"),
+        }
+
+    return {
+        "status": gpu_health["status"],
+        "gpu_status": gpu_health.get("gpu_status", "unknown"),
+        "gpu_name": gpu_health.get("gpu_name", ""),
+        "gpu_driver": gpu_health.get("gpu_driver", ""),
+        "gpu_memory_total_mb": gpu_health.get("gpu_memory_total_mb"),
+        "gpu_memory_free_mb": gpu_health.get("gpu_memory_free_mb"),
+        "gpu_temperature_c": gpu_health.get("gpu_temperature_c"),
+        "gpu_utilization_pct": gpu_health.get("gpu_utilization_pct"),
+        "gpu_degradation_reason": gpu_health.get("gpu_degradation_reason"),
+        "gpu_degradation_detail": gpu_health.get("gpu_degradation_detail"),
+        "source": gpu_health.get("source", "derived"),
+        "source_path": gpu_health.get("source_path"),
+        "updated_at": gpu_health.get("updated_at"),
+        "age_seconds": gpu_health.get("age_seconds"),
+        "stale_capable": gpu_health.get("stale_capable", False),
     }
 
 
 def _extract_unresolved_fields(snapshot: dict[str, Any]) -> list[str]:
     """Extract all unresolved fields from snapshot sections."""
     unresolved = []
+
+    # Include global unresolved fields from environment self-awareness (includes GPU degradation)
+    global_unresolved = snapshot.get("unresolved_fields", [])
+    if global_unresolved:
+        unresolved.extend(global_unresolved)
 
     # Check human vision readout
     hvr = snapshot.get("human_vision_readout", {})

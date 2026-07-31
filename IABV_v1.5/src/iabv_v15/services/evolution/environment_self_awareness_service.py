@@ -39,9 +39,9 @@ class EnvironmentSelfAwarenessService:
     _GPU_TEMP_CRITICAL_C = 85.0
     _DEFAULT_SCAN_INTERVAL = 90.0
     _DEFAULT_FULL_SCAN_INTERVAL = 480.0
-    _POWERSHELL_TIMEOUT_SECONDS = 1.0
+    _POWERSHELL_TIMEOUT_SECONDS = 5.0
     _TYPEPERF_TIMEOUT_SECONDS = 1.5
-    _GPU_QUERY_TIMEOUT_SECONDS = 1.5
+    _GPU_QUERY_TIMEOUT_SECONDS = 5.0
     _OLLAMA_LIST_TIMEOUT_SECONDS = 2.0
 
     def __init__(
@@ -277,6 +277,9 @@ class EnvironmentSelfAwarenessService:
             'gpu_memory_free_mb': gpu_info.get('memory_free_mb'),
             'gpu_temperature_c': gpu_info.get('temperature_c'),
             'gpu_utilization_pct': gpu_info.get('utilization_pct'),
+            'gpu_status': gpu_info.get('status'),
+            'gpu_degradation_reason': gpu_info.get('reason'),
+            'gpu_degradation_detail': gpu_info.get('detail'),
             'battery_percent': battery_info.get('percent'),
             'battery_status': battery_info.get('status'),
             'throttling_detected': self._detect_throttling(cpu_info=cpu_info, gpu_info=gpu_info),
@@ -294,6 +297,10 @@ class EnvironmentSelfAwarenessService:
         # query fallo -> sigue siendo UNRESOLVED real.
         if hardware.get('gpu_name') and hardware.get('gpu_temperature_c') is None:
             unresolved.append('UNRESOLVED:gpu_temperature')
+        
+        # gpu_status degraded: GPU detectada por Windows pero nvidia-smi falló
+        if hardware.get('gpu_status') == 'degraded':
+            unresolved.append('DEGRADED:gpu_nvidia_smi_failed')
         # battery: hardware opcional (desktops no tienen bateria). Si la query
         # no devuelve nada, lo tratamos como "no expuesto" en vez de UNRESOLVED.
         if hardware.get('battery_percent') is None:
@@ -981,43 +988,111 @@ class EnvironmentSelfAwarenessService:
         return snapshot
 
     def _gpu_snapshot(self, *, full: bool) -> dict[str, Any]:
-        if self._in_test_mode() and not full:
+        """Snapshot GPU state via nvidia-smi.
+        
+        If nvidia-smi fails for any reason (including "GPU is lost"), mark as degraded.
+        This is sufficient evidence of GPU degradation without needing Windows WMI.
+        """
+        if not full:
             return {}
-        nvidia = shutil.which('nvidia-smi')
-        if not nvidia:
+        
+        # Check if nvidia-smi is available
+        nvidia_smi = shutil.which('nvidia-smi')
+        if not nvidia_smi:
             return {}
+        
+        # Query nvidia-smi
         result = self._run_command(
-            [
-                nvidia,
-                '--query-gpu=name,driver_version,temperature.gpu,memory.total,memory.used,utilization.gpu',
-                '--format=csv,noheader,nounits',
-            ],
+            [nvidia_smi, '--query-gpu=name,driver_version,memory.total,memory.free,temperature.gpu,utilization.gpu', '--format=csv,noheader,nounits'],
             timeout_seconds=self._GPU_QUERY_TIMEOUT_SECONDS,
         )
+        
         if not result or result.get('returncode') != 0:
-            return {}
-        lines = str(result.get('stdout') or '').strip().splitlines()
+            # nvidia-smi failed - this is evidence of GPU degradation
+            # The presence of nvidia-smi.exe indicates NVIDIA hardware exists
+            stderr = str(result.get('stderr') or '') if result else 'command not found'
+            # Preserve full stderr for maximum fidelity, only limit if extremely long
+            stderr_display = stderr[:500] if len(stderr) > 500 else stderr
+            return {
+                'name': 'NVIDIA GPU',
+                'driver': 'unknown',
+                'status': 'degraded',
+                'reason': 'nvidia_smi_failed',
+                'detail': f'nvidia-smi falló (exit code {result.get("returncode") if result else "not found"}): {stderr_display}',
+            }
+        
+        stdout = str(result.get('stdout') or '').strip()
+        if not stdout:
+            return {
+                'name': 'NVIDIA GPU',
+                'driver': 'unknown',
+                'status': 'degraded',
+                'reason': 'nvidia_smi_no_output',
+                'detail': 'nvidia-smi no produjo salida',
+            }
+        
+        lines = stdout.splitlines()
         if not lines:
-            return {}
+            return {
+                'name': 'NVIDIA GPU',
+                'driver': 'unknown',
+                'status': 'degraded',
+                'reason': 'nvidia_smi_no_output',
+                'detail': 'nvidia-smi no produjo líneas de salida',
+            }
+        
         parts = [item.strip() for item in lines[0].split(',')]
         if len(parts) < 6:
-            return {}
+            return {
+                'name': parts[0] if parts else 'NVIDIA GPU',
+                'driver': parts[1] if len(parts) > 1 else 'unknown',
+                'status': 'degraded',
+                'reason': 'nvidia_smi_malformed_output',
+                'detail': 'nvidia-smi produjo salida malformada',
+            }
+        
         try:
             memory_total = int(float(parts[3]))
             memory_used = int(float(parts[4]))
             utilization = float(parts[5])
             temperature = float(parts[2])
         except ValueError:
-            return {'name': parts[0], 'driver': parts[1]}
+            return {
+                'name': parts[0],
+                'driver': parts[1],
+                'status': 'degraded',
+                'reason': 'nvidia_smi_parse_error',
+                'detail': 'nvidia-smi produjo datos no parseables',
+            }
+        
         return {
             'name': parts[0],
             'driver': parts[1],
-            'temperature_c': temperature,
             'memory_total_mb': memory_total,
-            'memory_used_mb': memory_used,
             'memory_free_mb': max(memory_total - memory_used, 0),
+            'temperature_c': temperature,
             'utilization_pct': utilization,
+            'status': 'healthy',
         }
+
+    def _windows_detect_nvidia_gpu(self) -> dict[str, Any]:
+        """Detect if Windows sees NVIDIA GPU hardware via WMI."""
+        if os.name != 'nt':
+            return {}
+        
+        try:
+            payload = self._powershell_json(
+                "Get-CimInstance Win32_VideoController | Where-Object { $_.Name -like '*NVIDIA*' } | Select-Object -First 1 Name,DriverVersion,DriverDate | ConvertTo-Json -Compress"
+            )
+            if isinstance(payload, dict) and payload.get('Name'):
+                return {
+                    'name': payload.get('Name'),
+                    'driver_version': payload.get('DriverVersion'),
+                    'driver_date': payload.get('DriverDate'),
+                }
+        except Exception:
+            pass
+        return {}
 
     def _battery_snapshot(self, *, full: bool) -> dict[str, Any]:
         if os.name != 'nt' or (self._in_test_mode() and not full):

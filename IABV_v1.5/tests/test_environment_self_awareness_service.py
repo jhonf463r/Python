@@ -184,3 +184,278 @@ def test_environment_self_awareness_light_scan_reuses_cached_provider_health() -
         assert light_model.metadata.get('provider_health')
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_degradation_when_nvidia_smi_fails_but_windows_detects_gpu() -> None:
+    """Test that GPU degradation is detected when nvidia-smi fails but Windows sees GPU."""
+    workspace = _workspace('gpu_degradation')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        
+        # Mock nvidia-smi failure (presence of nvidia-smi.exe indicates NVIDIA hardware)
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 1,
+            'stdout': '',
+            'stderr': 'NVIDIA-SMI has failed because it couldn\'t communicate with the NVIDIA driver',
+        }
+        
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+        
+        hardware, unresolved = service._scan_hardware(full=True)
+        
+        # Verify GPU is marked as degraded
+        assert hardware.get('gpu_status') == 'degraded'
+        assert hardware.get('gpu_name') == 'NVIDIA GPU'
+        assert hardware.get('gpu_degradation_reason') == 'nvidia_smi_failed'
+        assert 'nvidia-smi falló' in hardware.get('gpu_degradation_detail', '')
+        assert 'DEGRADED:gpu_nvidia_smi_failed' in unresolved
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_healthy_when_nvidia_smi_succeeds() -> None:
+    """Test that GPU is marked as healthy when nvidia-smi succeeds."""
+    workspace = _workspace('gpu_healthy')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        
+        # Mock Windows detecting NVIDIA GPU
+        service._windows_detect_nvidia_gpu = lambda: {  # type: ignore[method-assign]
+            'name': 'NVIDIA GeForce RTX 4050',
+            'driver_version': '31.0.15.3229',
+            'driver_date': '20240101',
+        }
+        
+        # Mock nvidia-smi success
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 0,
+            'stdout': 'RTX 4050,31.0.15.3229,45,6144,2048,12',
+            'stderr': '',
+        }
+        
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+        
+        hardware, unresolved = service._scan_hardware(full=True)
+        
+        # Verify GPU is marked as healthy
+        assert hardware.get('gpu_status') == 'healthy'
+        assert hardware.get('gpu_name') == 'RTX 4050'
+        assert hardware.get('gpu_driver') == '31.0.15.3229'
+        assert hardware.get('gpu_memory_total_mb') == 6144
+        assert hardware.get('gpu_memory_free_mb') == 4096
+        assert hardware.get('gpu_temperature_c') == 45
+        assert hardware.get('gpu_utilization_pct') == 12
+        assert 'DEGRADED:gpu_nvidia_smi_failed' not in unresolved
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_health_surface_uses_live_service_over_stale_file() -> None:
+    """Test that GPU health surface prefers live service data over stale persisted file."""
+    import sys
+    sys.path.insert(0, str(REPO_ROOT / 'src'))
+    from iabv_v15.services.evolution.organism_state_snapshot import _load_gpu_health
+    
+    workspace = _workspace('gpu_surface_live')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        
+        # Mock live service with degraded GPU
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 1,
+            'stdout': '',
+            'stderr': 'NVIDIA-SMI has failed',
+        }
+        
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+        
+        # Now create a stale file with "healthy" state to simulate old data
+        import json
+        # _load_gpu_health looks in workspace / "data" / "evolution" / "environment_self_model" / "latest.json"
+        stale_file = workspace / 'data' / 'evolution' / 'environment_self_model' / 'latest.json'
+        stale_file.parent.mkdir(parents=True, exist_ok=True)
+        stale_data = {
+            'hardware_profile': {
+                'gpu_name': 'RTX 4050',
+                'gpu_driver': '31.0.15.3229',
+                'gpu_status': 'healthy',  # Stale: says healthy
+                'gpu_degradation_reason': '',
+                'gpu_degradation_detail': '',
+                'gpu_memory_total_mb': 6144,
+                'gpu_memory_free_mb': 4096,
+                'gpu_temperature_c': 45,
+                'gpu_utilization_pct': 12,
+            }
+        }
+        stale_file.write_text(json.dumps(stale_data), encoding='utf-8')
+        
+        # Perform a scan to get degraded state in live service (this writes to service's state_dir)
+        service.scan_now(reason='manual', full=True)
+        
+        # Restore the stale file with "healthy" state again after scan
+        stale_file.write_text(json.dumps(stale_data), encoding='utf-8')
+        
+        # Load GPU health with live service - should use fresh degraded data
+        gpu_health = _load_gpu_health(workspace, environment_self_awareness_service=service)
+        
+        # Verify it uses live service data (degraded) not stale file (healthy)
+        assert gpu_health.get('status') == 'ok'
+        assert gpu_health.get('gpu_status') == 'degraded'
+        assert gpu_health.get('gpu_degradation_reason') == 'nvidia_smi_failed'
+        assert gpu_health.get('source') == 'live_service'
+        assert gpu_health.get('age_seconds') == 0.0
+        assert gpu_health.get('stale_capable') is False
+        
+        # Load GPU health without live service - should use stale file data
+        gpu_health_stale = _load_gpu_health(workspace, environment_self_awareness_service=None)
+        
+        # Verify it uses stale file data (healthy)
+        assert gpu_health_stale.get('status') == 'ok'
+        assert gpu_health_stale.get('gpu_status') == 'healthy'
+        assert gpu_health_stale.get('source') == 'environment_self_model'
+        assert gpu_health_stale.get('stale_capable') is True
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_degradation_propagates_to_unresolved_fields() -> None:
+    """Test that GPU degradation is propagated to unresolved_fields in organism snapshot."""
+    import sys
+    sys.path.insert(0, str(REPO_ROOT / 'src'))
+    from iabv_v15.services.evolution.organism_state_snapshot import (
+        export_organism_state_snapshot,
+        _load_unresolved_fields,
+    )
+    
+    workspace = _workspace('gpu_unresolved_propagation')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        
+        # Mock nvidia-smi failure
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 1,
+            'stdout': '',
+            'stderr': 'NVIDIA-SMI has failed',
+        }
+        
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+        
+        # Perform a scan to get degraded state
+        service.scan_now(reason='manual', full=True)
+        
+        # Load unresolved fields from live service
+        unresolved = _load_unresolved_fields(workspace, environment_self_awareness_service=service)
+        
+        # Verify GPU degradation signal is in unresolved fields
+        assert 'DEGRADED:gpu_nvidia_smi_failed' in unresolved
+        
+        # Export organism state snapshot with live service
+        snapshot = export_organism_state_snapshot(
+            workspace,
+            environment_self_awareness_service=service,
+        )
+        
+        # Verify unresolved_fields in snapshot includes GPU degradation
+        snapshot_unresolved = snapshot.get('unresolved_fields', [])
+        assert 'DEGRADED:gpu_nvidia_smi_failed' in snapshot_unresolved
+        
+        # Verify gpu_health is also degraded
+        gpu_health = snapshot.get('gpu_health', {})
+        assert gpu_health.get('gpu_status') == 'degraded'
+        assert gpu_health.get('gpu_degradation_reason') == 'nvidia_smi_failed'
+        
+        # Verify surface contract also includes unresolved fields
+        from iabv_v15.services.evolution.organism_state_snapshot import export_observatory_surface_contract
+        surface = export_observatory_surface_contract(
+            workspace,
+            environment_self_awareness_service=service,
+        )
+        
+        surface_unresolved = surface.get('unresolved_fields', [])
+        assert 'DEGRADED:gpu_nvidia_smi_failed' in surface_unresolved
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_degradation_preserves_real_stderr() -> None:
+    """Test that real nvidia-smi stderr is preserved in gpu_degradation_detail."""
+    workspace = _workspace('gpu_stderr_preservation')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+        
+        # Mock nvidia-smi failure with real stderr
+        real_stderr = 'Unable to determine the device handle for GPU0: 0000:01:00.0: GPU is lost.  Reboot the system to recover this GPU'
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 6,
+            'stdout': '',
+            'stderr': real_stderr,
+        }
+        
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+        
+        hardware, unresolved = service._scan_hardware(full=True)
+        
+        # Verify GPU is marked as degraded
+        assert hardware.get('gpu_status') == 'degraded'
+        assert hardware.get('gpu_degradation_reason') == 'nvidia_smi_failed'
+        
+        # Verify real stderr is preserved in detail
+        detail = hardware.get('gpu_degradation_detail', '')
+        assert 'GPU is lost' in detail
+        assert 'Unable to determine the device handle' in detail
+        assert real_stderr in detail
+        
+        # Verify unresolved fields includes degradation signal
+        assert 'DEGRADED:gpu_nvidia_smi_failed' in unresolved
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
