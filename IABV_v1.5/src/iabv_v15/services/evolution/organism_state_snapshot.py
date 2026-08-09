@@ -42,6 +42,7 @@ def export_organism_state_snapshot(
         world_model_service: Optional WorldModelService instance
         control_master_service: Optional ControlMasterService instance
         experiment_lab: Optional ExperimentLab instance
+        environment_self_awareness_service: Optional EnvironmentSelfAwarenessService instance for fresh GPU data
 
     Returns:
         Unified snapshot dictionary with:
@@ -52,6 +53,8 @@ def export_organism_state_snapshot(
         - world_model (environment, tools, network)
         - control_master (governance state)
         - operational_learning (experiments, recommendations)
+        - gpu_health (GPU health status from environment self-awareness)
+        - unresolved_fields (unresolved signals including GPU degradation)
         - evidence_sources (traceability)
     """
     workspace = Path(workspace_root)
@@ -75,6 +78,8 @@ def export_organism_state_snapshot(
         "operational_learning": _load_operational_learning(
             workspace, experiment_lab
         ),
+        "gpu_health": _load_gpu_health(workspace, environment_self_awareness_service),
+        "unresolved_fields": _load_unresolved_fields(workspace, environment_self_awareness_service),
         "evidence_sources": [],
     }
 
@@ -403,8 +408,146 @@ def render_organism_state_markdown(snapshot: dict[str, Any]) -> str:
         lines.append(f"- Recent recommendations: {ol.get('recent_recommendations_count', 0)}")
         lines.append(f"- Source: {ol.get('source', 'unknown')}")
 
+    lines.extend(["", "## GPU Health"])
+    gh = snapshot.get("gpu_health", {})
+    lines.append(f"- Status: {gh.get('status', 'unknown')}")
+    if gh.get("status") == "ok":
+        lines.append(f"- GPU Status: {gh.get('gpu_status', 'unknown')}")
+        lines.append(f"- GPU Name: {gh.get('gpu_name', 'unknown')}")
+        lines.append(f"- GPU Driver: {gh.get('gpu_driver', 'unknown')}")
+        lines.append(f"- GPU Temp: {gh.get('gpu_temperature_c', 'N/A')}°C")
+        lines.append(f"- GPU Util: {gh.get('gpu_utilization_pct', 'N/A')}%")
+        lines.append(f"- Degradation Reason: {gh.get('gpu_degradation_reason', 'none')}")
+        lines.append(f"- Source: {gh.get('source', 'unknown')}")
+
+    lines.extend(["", "## Unresolved Fields"])
+    uf = snapshot.get("unresolved_fields", [])
+    lines.append(f"- Count: {len(uf)}")
+    if uf:
+        lines.extend([f"- {field}" for field in uf[:10]])
+
     lines.extend(["", "## Evidence Sources"])
     for source in snapshot.get("evidence_sources", []):
         lines.append(f"- {source}")
 
     return "\n".join(lines) + "\n"
+
+
+def _load_gpu_health(workspace: Path, environment_self_awareness_service: Any = None) -> dict[str, Any]:
+    """Load GPU health from environment self-awareness service.
+
+    Prefers fresh data from the live service if available, otherwise falls back
+    to the persisted file. This ensures the surface reflects the current GPU state
+    rather than stale cached data.
+    """
+    # Try to get fresh data from the live service first
+    if environment_self_awareness_service is not None:
+        try:
+            current_model = environment_self_awareness_service.current_model()
+            hardware_profile = current_model.hardware_profile if hasattr(current_model, 'hardware_profile') else {}
+
+            if hardware_profile:
+                gpu_status = hardware_profile.get("gpu_status", "unavailable")
+                gpu_name = hardware_profile.get("gpu_name", "")
+                gpu_degradation_reason = hardware_profile.get("gpu_degradation_reason", "")
+                gpu_degradation_detail = hardware_profile.get("gpu_degradation_detail", "")
+
+                return {
+                    "status": "ok",
+                    "gpu_status": gpu_status,
+                    "gpu_name": gpu_name,
+                    "gpu_driver": hardware_profile.get("gpu_driver", ""),
+                    "gpu_memory_total_mb": hardware_profile.get("gpu_memory_total_mb"),
+                    "gpu_memory_free_mb": hardware_profile.get("gpu_memory_free_mb"),
+                    "gpu_temperature_c": hardware_profile.get("gpu_temperature_c"),
+                    "gpu_utilization_pct": hardware_profile.get("gpu_utilization_pct"),
+                    "gpu_degradation_reason": gpu_degradation_reason,
+                    "gpu_degradation_detail": gpu_degradation_detail,
+                    "source": "live_service",
+                    "updated_at": current_model.last_scan.isoformat() if hasattr(current_model, 'last_scan') else None,
+                    "age_seconds": 0.0,
+                    "stale_capable": False,
+                }
+        except Exception:
+            # Fall back to file if live service fails
+            pass
+
+    # Fallback: read from persisted file (stale-capable)
+    path = workspace / "data" / "evolution" / "environment_self_model" / "latest.json"
+    try:
+        if path.exists():
+            import json
+            data = json.loads(path.read_text(encoding="utf-8"))
+            hardware_profile = data.get("hardware_profile", {})
+
+            # Extract GPU status information
+            gpu_status = hardware_profile.get("gpu_status", "unavailable")
+            gpu_name = hardware_profile.get("gpu_name", "")
+            gpu_degradation_reason = hardware_profile.get("gpu_degradation_reason", "")
+            gpu_degradation_detail = hardware_profile.get("gpu_degradation_detail", "")
+
+            updated_at = path.stat().st_mtime
+            age_seconds = (datetime.now(timezone.utc).timestamp() - updated_at)
+
+            return {
+                "status": "ok",
+                "gpu_status": gpu_status,
+                "gpu_name": gpu_name,
+                "gpu_driver": hardware_profile.get("gpu_driver", ""),
+                "gpu_memory_total_mb": hardware_profile.get("gpu_memory_total_mb"),
+                "gpu_memory_free_mb": hardware_profile.get("gpu_memory_free_mb"),
+                "gpu_temperature_c": hardware_profile.get("gpu_temperature_c"),
+                "gpu_utilization_pct": hardware_profile.get("gpu_utilization_pct"),
+                "gpu_degradation_reason": gpu_degradation_reason,
+                "gpu_degradation_detail": gpu_degradation_detail,
+                "source": "environment_self_model",
+                "source_path": str(path),
+                "updated_at": datetime.fromtimestamp(updated_at, tz=timezone.utc).isoformat(),
+                "age_seconds": age_seconds,
+                "stale_capable": True,
+            }
+        return {
+            "status": "unavailable",
+            "gpu_status": "unavailable",
+            "source": "file_fallback",
+            "source_path": str(path),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "gpu_status": "unavailable",
+            "source": "file_fallback",
+            "source_path": str(path),
+        }
+
+
+def _load_unresolved_fields(workspace: Path, environment_self_awareness_service: Any = None) -> list[str]:
+    """Load unresolved fields from environment self-awareness service.
+
+    Includes GPU degradation signals and other unresolved hardware states.
+    """
+    unresolved = []
+
+    # Try to get fresh data from the live service first
+    if environment_self_awareness_service is not None:
+        try:
+            current_model = environment_self_awareness_service.current_model()
+            if hasattr(current_model, 'unresolved_fields'):
+                unresolved.extend(current_model.unresolved_fields)
+        except Exception:
+            # Fall back to file if live service fails
+            pass
+
+    # Fallback: read from persisted file
+    path = workspace / "data" / "evolution" / "environment_self_model" / "latest.json"
+    try:
+        if path.exists():
+            import json
+            data = json.loads(path.read_text(encoding="utf-8"))
+            file_unresolved = data.get("unresolved_fields", [])
+            unresolved.extend(file_unresolved)
+    except Exception:
+        pass
+
+    return unresolved
