@@ -184,3 +184,131 @@ def test_environment_self_awareness_light_scan_reuses_cached_provider_health() -
         assert light_model.metadata.get('provider_health')
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_degradation_when_nvidia_smi_fails_but_windows_detects_gpu() -> None:
+    """Test that GPU degradation is detected when nvidia-smi fails but Windows sees GPU."""
+    workspace = _workspace('gpu_degradation')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+
+        # Mock nvidia-smi failure (presence of nvidia-smi.exe indicates NVIDIA hardware)
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 1,
+            'stdout': '',
+            'stderr': 'NVIDIA-SMI has failed because it couldn\'t communicate with the NVIDIA driver',
+        }
+
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+
+        hardware, unresolved = service._scan_hardware(full=True)
+
+        # Verify GPU is marked as degraded
+        assert hardware.get('gpu_status') == 'degraded'
+        assert hardware.get('gpu_name') == 'NVIDIA GPU'
+        assert hardware.get('gpu_degradation_reason') == 'nvidia_smi_failed'
+        assert 'nvidia-smi falló' in hardware.get('gpu_degradation_detail', '')
+        assert 'DEGRADED:gpu_nvidia_smi_failed' in unresolved
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_healthy_when_nvidia_smi_succeeds() -> None:
+    """Test that GPU is marked as healthy when nvidia-smi succeeds."""
+    workspace = _workspace('gpu_healthy')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+
+        # Mock Windows detecting NVIDIA GPU
+        service._windows_detect_nvidia_gpu = lambda: {  # type: ignore[method-assign]
+            'name': 'NVIDIA GeForce RTX 4050',
+            'driver_version': '31.0.15.3229',
+            'driver_date': '20240101',
+        }
+
+        # Mock nvidia-smi success
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 0,
+            'stdout': 'RTX 4050,31.0.15.3229,45,6144,2048,12',
+            'stderr': '',
+        }
+
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+
+        hardware, unresolved = service._scan_hardware(full=True)
+
+        # Verify GPU is marked as healthy
+        assert hardware.get('gpu_status') == 'healthy'
+        assert hardware.get('gpu_name') == 'RTX 4050'
+        assert hardware.get('gpu_driver') == '31.0.15.3229'
+        assert hardware.get('gpu_memory_total_mb') == 6144
+        assert hardware.get('gpu_memory_free_mb') == 4096
+        assert hardware.get('gpu_temperature_c') == 45
+        assert hardware.get('gpu_utilization_pct') == 12
+        assert 'DEGRADED:gpu_nvidia_smi_failed' not in unresolved
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_gpu_degradation_preserves_real_stderr() -> None:
+    """Test that real nvidia-smi stderr is preserved in gpu_degradation_detail."""
+    workspace = _workspace('gpu_stderr_preservation')
+    try:
+        service = EnvironmentSelfAwarenessService(
+            workspace_root=str(workspace),
+            evolution_dir=str(workspace / 'evolution'),
+            auto_start=False,
+            bootstrap_scan=False,
+        )
+
+        # Mock nvidia-smi failure with real stderr
+        real_stderr = 'Unable to determine the device handle for GPU0: 0000:01:00.0: GPU is lost.  Reboot the system to recover this GPU'
+        service._run_command = lambda cmd, **_: {  # type: ignore[method-assign]
+            'returncode': 6,
+            'stdout': '',
+            'stderr': real_stderr,
+        }
+
+        service._scan_runtime = lambda *, full: ({  # type: ignore[method-assign]
+            'python_executable': 'python',
+            'python_version': '3.13.2',
+            'workspace_writeable': True,
+            'missing_project_dependencies': [],
+        }, [])
+
+        hardware, unresolved = service._scan_hardware(full=True)
+
+        # Verify GPU is marked as degraded
+        assert hardware.get('gpu_status') == 'degraded'
+        assert hardware.get('gpu_degradation_reason') == 'nvidia_smi_failed'
+
+        # Verify real stderr is preserved in detail
+        detail = hardware.get('gpu_degradation_detail', '')
+        assert 'GPU is lost' in detail
+        assert 'Unable to determine the device handle' in detail
+        assert real_stderr in detail
+
+        # Verify unresolved fields includes degradation signal
+        assert 'DEGRADED:gpu_nvidia_smi_failed' in unresolved
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
