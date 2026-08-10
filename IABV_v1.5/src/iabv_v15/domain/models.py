@@ -3036,9 +3036,110 @@ class AccountInventorySnapshot(BaseModel):
 
     ``continuity_queue`` is the ranked list of non-exhausted entries
     sorted by score descending — the first entry is the recommended
-    next account.  The user must approve before any account is used.
-    """
+    next account.  The user must approve before any account is used."""
 
+
+# ---------------------------------------------------------------------------
+# Cross-Agent Synchronization — Handoff Knowledge
+# ---------------------------------------------------------------------------
+#
+# Contratos para el handoff entre IAs (Devin → Claude → Codex, etc.)
+# Permiten reconstruir de forma verificable quién hizo qué, cómo fue auditado,
+# y qué IA debe continuar el trabajo.
+
+
+class EvidenceStatus(str, Enum):
+    """Estado de evidencia en el conocimiento handoff.
+
+    DECLARED: IA ejecutora declara un estado (no verificado)
+    VERIFIED: IA auditora verificó que la declaración es correcta
+    REPRODUCED: IA auditora reprodujo el resultado y coincidió
+    INFERRED: Derivado de evidencia indirecta
+    UNKNOWN: Estado desconocido o no verificable
+    """
+    DECLARED = "declared"
+    VERIFIED = "verified"
+    REPRODUCED = "reproduced"
+    INFERRED = "inferred"
+    UNKNOWN = "unknown"
+
+
+class AuthorizationStatus(str, Enum):
+    """Estado de autorización para next_agent/next_action.
+
+    DECLARED: IA anterior declaró una preferencia (no autorizada)
+    RECOMMENDED: Sistema recomienda basado en evidencia histórica
+    AUTHORIZED: Sistema autoriza explícitamente la transición
+    PENDING: Pendiente de autorización
+    REVOKED: Autorización revocada
+    """
+    DECLARED = "declared"
+    RECOMMENDED = "recommended"
+    AUTHORIZED = "authorized"
+    PENDING = "pending"
+    REVOKED = "revoked"
+
+
+class AgentHandoffRecord(BaseModel):
+    """Registro completo de handoff entre IAs.
+
+    Persistido en ``data/evolution/agent_handoff/handoffs.jsonl`` por
+    ``AgentHandoffTrail``. Es la fuente única para reconstruir el estado
+    de una tarea entre diferentes IAs y sesiones.
+
+    Este registro NO es una autoridad de ejecución — es puramente
+    observacional y verificativa. No dispara acciones por sí mismo.
+    """
+    handoff_id: str = Field(default_factory=lambda: str(uuid4()))
+    task_id: str
+    task_name: str
+    executor_agent: str
+    auditor_agent: str
+    session_id: str
+    timestamp_utc: datetime = Field(default_factory=utc_now)
+
+    # Git synchronization state
+    repository: str
+    baseline_sha: str
+    local_branch: str
+    public_branch: str
+    head_sha: str
+    task_commits: list[str] = Field(default_factory=list)
+    changed_files: list[str] = Field(default_factory=list)
+    sync_verified: bool = False
+
+    # Evidence states
+    tests_executed: list[str] = Field(default_factory=list)
+    tests_status: EvidenceStatus = EvidenceStatus.DECLARED
+    inherited_failures: list[str] = Field(default_factory=list)
+    new_failures: list[str] = Field(default_factory=list)
+
+    # Authority
+    authority: str = ""
+    audit_verdict: str = ""
+    audit_evidence: dict[str, Any] = Field(default_factory=dict)
+
+    # Next steps
+    next_agent: str = ""
+    next_agent_authorization: AuthorizationStatus = AuthorizationStatus.DECLARED
+    next_action: str = ""
+    next_action_authorization: AuthorizationStatus = AuthorizationStatus.DECLARED
+
+    # Learning signals
+    learning_signals: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AccountInventorySnapshot(BaseModel):
+    """Point-in-time snapshot of every known account across all browsers.
+
+    Built by ``build_inventory_snapshot()`` in ``account_resource_scanner``.
+    Consumed by Control Master (governance), PortableContext (continuity)
+    and CentroVivo (UI).
+
+    ``continuity_queue`` is the ranked list of non-exhausted entries
+    sorted by score descending — the first entry is the recommended
+    next account.  The user must approve before any account is used."""
     entries: list[AccountInventoryEntry] = Field(default_factory=list)
     continuity_queue: list[AccountInventoryEntry] = Field(default_factory=list)
     scanned_at: datetime = Field(default_factory=utc_now)
