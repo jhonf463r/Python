@@ -443,6 +443,7 @@ def test_tool_agent_combination_analysis(handoff_trail):
     analysis = handoff_trail.analyze_tool_agent_combination("pytest", "Devin")
     assert analysis['total_handoffs'] == 3
     assert analysis['success_rate'] == 1.0
+    # With 3 samples and 100% success rate, recommendation should be 'use'
     assert analysis['recommendation'] == 'use'
 
 
@@ -768,8 +769,12 @@ def test_attack_isolated_success_strong_recommendation(handoff_trail):
     # Try to get a strong recommendation from single data point
     analysis = handoff_trail.analyze_tool_agent_combination("pytest", "Devin")
     assert analysis['total_handoffs'] == 1
-    # With only 1 sample, recommendation should be cautious, not strong
-    assert analysis['recommendation'] != 'use' or analysis['sample_count'] < 3
+    assert analysis['sample_count'] == 1
+    # With only 1 sample, recommendation MUST be cautious, not strong
+    assert analysis['recommendation'] == 'cautious'
+    # Explicitly verify it's NOT use or avoid with insufficient evidence
+    assert analysis['recommendation'] != 'use'
+    assert analysis['recommendation'] != 'avoid'
 
 
 def test_attack_contradictory_agent_results(handoff_trail):
@@ -919,6 +924,36 @@ def test_authorized_next_agent_consistency(handoff_trail):
     assert issues['unauthorized_next_agent'] is False
     assert issues['unauthorized_next_action'] is False
     assert issues['is_consistent'] is True
+
+
+def test_strong_recommendation_with_sufficient_evidence(handoff_trail):
+    """Test that strong recommendation 'use' is allowed with sufficient evidence."""
+    # Create 3 successful handoffs (meets minimum threshold)
+    for i in range(3):
+        handoff_trail.record(AgentHandoffRecord(
+            task_id=f"SUFFICIENT_EVIDENCE_{i}",
+            task_name=f"Sufficient evidence test {i}",
+            executor_agent="Devin",
+            auditor_agent="Claude",
+            session_id=str(uuid4()),
+            repository="test/repo",
+            baseline_sha="abc123",
+            local_branch=f"branch-{i}",
+            public_branch=f"public-{i}",
+            head_sha=f"sha{i}",
+            task_commits=[f"commit{i}"],
+            sync_verified=True,
+            tests_status=EvidenceStatus.REPRODUCED,
+            audit_verdict="PASS",
+            metadata={"tools_used": ["pytest"]}
+        ))
+
+    analysis = handoff_trail.analyze_tool_agent_combination("pytest", "Devin")
+    assert analysis['total_handoffs'] == 3
+    assert analysis['success_rate'] == 1.0
+    assert analysis['sample_count'] == 3
+    # With 3 samples and 100% success rate, recommendation should be 'use'
+    assert analysis['recommendation'] == 'use'
 
 
 def test_learning_with_multiple_episodes(handoff_trail):

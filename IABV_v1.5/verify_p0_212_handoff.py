@@ -57,8 +57,9 @@ def verify_p0_212_handoff():
         print(f"\nDevin performance analysis:")
         print(f"  Total handoffs: {devin_analysis['total_handoffs']}")
         print(f"  Successful handoffs: {devin_analysis['successful_handoffs']}")
+        print(f"  Failure count: {devin_analysis['failure_count']}")
         print(f"  Failure rate: {devin_analysis['failure_rate']}")
-        print(f"  Common failures: {devin_analysis['common_failures']}")
+        print(f"  Failure modes: {devin_analysis['failure_modes']}")
 
         # Analyze tool+agent combination
         pytest_analysis = handoff_trail.analyze_tool_agent_combination("pytest", "Devin")

@@ -269,17 +269,26 @@ class AgentHandoffTrail:
         successful = sum(1 for e in tool_agent_entries if e.get('audit_verdict', '').endswith('PASS'))
         failure_count = len(tool_agent_entries) - successful
         success_rate = successful / len(tool_agent_entries)
+        sample_count = len(tool_agent_entries)
 
         # Extract task types
         task_types = list(set(e.get('task_id', '') for e in tool_agent_entries))
 
+        # Guardrail: insufficient evidence for strong recommendations
+        # Require minimum sample count before allowing strong recommendations
+        MIN_SAMPLES_FOR_STRONG_RECOMMENDATION = 3
+        if sample_count < MIN_SAMPLES_FOR_STRONG_RECOMMENDATION:
+            recommendation = 'cautious'
+        else:
+            recommendation = 'use' if success_rate > 0.7 else 'avoid' if success_rate < 0.3 else 'cautious'
+
         return {
-            'total_handoffs': len(tool_agent_entries),
+            'total_handoffs': sample_count,
             'success_rate': round(success_rate, 3),
             'success_count': successful,
             'failure_count': failure_count,
-            'sample_count': len(tool_agent_entries),
+            'sample_count': sample_count,
             'task_types': task_types,
             'patterns': [],  # Would need pattern extraction logic
-            'recommendation': 'use' if success_rate > 0.7 else 'avoid' if success_rate < 0.3 else 'cautious',
+            'recommendation': recommendation,
         }
