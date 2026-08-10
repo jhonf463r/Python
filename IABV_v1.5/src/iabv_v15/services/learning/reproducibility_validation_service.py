@@ -63,15 +63,8 @@ class ReproducibilityValidationService:
         knowledge_item = self._get_knowledge_item(knowledge_id)
         if knowledge_item is None:
             return self._build_error_result(knowledge_id, "KnowledgeItem not found")
-        
-        # Determinar tipo de aprendizaje
-        learning_type = knowledge_item.learning_type or "unknown"
-        
-        # Si es enseñanza, intentar validar el patrón de interacción
-        if learning_type == "teaching" and knowledge_item.teaching_session_id:
-            return self._validate_teaching(knowledge_item)
-        
-        # Si es otro tipo, validación simplificada
+
+        # Validación genérica para KnowledgeItem
         return self._validate_generic(knowledge_item)
     
     def validate_interaction_pattern(self, pattern_id: str) -> ReproducibilityValidationResult:
@@ -135,49 +128,21 @@ class ReproducibilityValidationService:
         self._save_validation(result)
         return result
     
-    def _validate_teaching(self, knowledge_item: KnowledgeItem) -> ReproducibilityValidationResult:
-        """Valida una enseñanza específica."""
-        # Buscar patrón de interacción asociado
-        patterns = self.tool_record_repository.list_interaction_patterns()
-        teaching_pattern = None
-        
-        for pattern in patterns:
-            if pattern.metadata.get('source') == 'teaching_session':
-                # Intentar vincular por teaching_session_id si está disponible
-                if pattern.metadata.get('teaching_session_id') == knowledge_item.teaching_session_id:
-                    teaching_pattern = pattern
-                    break
-        
-        if teaching_pattern is None:
-            return ReproducibilityValidationResult(
-                validation_id=self._generate_id(),
-                knowledge_id=knowledge_item.knowledge_id,
-                learning_type="teaching",
-                reproduction_attempted=False,
-                reproduction_successful=False,
-                confidence_score=0.0,
-                failure_reason="No associated InteractionPattern found for this teaching",
-                validated_at_utc=datetime.now(timezone.utc).isoformat(),
-            )
-        
-        # Validar el patrón
-        return self.validate_interaction_pattern(teaching_pattern.pattern_id)
-    
     def _validate_generic(self, knowledge_item: KnowledgeItem) -> ReproducibilityValidationResult:
-        """Validación genérica para tipos de aprendizaje no-enseñanza."""
+        """Validación genérica para KnowledgeItem."""
         # Para conocimiento genérico, la reproducibilidad se basa en:
         # - Si tiene suficiente contexto en payload
         # - Si la confianza es razonable
         # - Si puede recuperarse correctamente
-        
+
         payload = knowledge_item.payload or {}
         has_context = bool(payload.get('route') or payload.get('result') or payload.get('decision_context'))
-        
+
         if has_context and knowledge_item.confidence >= 0.5:
             result = ReproducibilityValidationResult(
                 validation_id=self._generate_id(),
                 knowledge_id=knowledge_item.knowledge_id,
-                learning_type=knowledge_item.learning_type or "unknown",
+                learning_type="generic",
                 reproduction_attempted=True,
                 reproduction_successful=True,
                 confidence_score=knowledge_item.confidence,
@@ -192,7 +157,7 @@ class ReproducibilityValidationService:
             result = ReproducibilityValidationResult(
                 validation_id=self._generate_id(),
                 knowledge_id=knowledge_item.knowledge_id,
-                learning_type=knowledge_item.learning_type or "unknown",
+                learning_type="generic",
                 reproduction_attempted=True,
                 reproduction_successful=False,
                 confidence_score=knowledge_item.confidence,
@@ -203,7 +168,7 @@ class ReproducibilityValidationService:
                 },
                 validated_at_utc=datetime.now(timezone.utc).isoformat(),
             )
-        
+
         self._save_validation(result)
         return result
     
