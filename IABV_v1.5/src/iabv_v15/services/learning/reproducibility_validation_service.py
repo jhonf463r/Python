@@ -1,7 +1,8 @@
-"""ReproducibilityValidationService: validación de que lo aprendido se puede reproducir.
+"""ReproducibilityValidationService: validación histórica de reproducibilidad.
 
-Este servicio toma conocimiento aprendido, intenta reproducirlo y reporta
-si la reproducción fue exitosa o no, con evidencia trazable.
+Este servicio valida si el conocimiento aprendido ha demostrado ser reproducible
+basándose en evidencia histórica (tasas de éxito, número de operaciones, etc.).
+No ejecuta la reproducción real, sino que evalúa la evidencia acumulada.
 """
 from __future__ import annotations
 
@@ -35,7 +36,12 @@ class ReproducibilityValidationResult:
 
 
 class ReproducibilityValidationService:
-    """Servicio que valida si el conocimiento aprendido se puede reproducir."""
+    """Servicio que valida reproducibilidad basándose en evidencia histórica.
+
+    Evalúa si el conocimiento aprendido ha demostrado ser reproducible
+    según tasas de éxito, número de operaciones y otros indicadores históricos.
+    No ejecuta reproducción real, solo analiza evidencia acumulada.
+    """
     
     def __init__(
         self,

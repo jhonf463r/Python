@@ -1,6 +1,11 @@
 """Canonical tests for reproducibility validation (P1)."""
 import sys
-sys.path.insert(0, 'C:/Users/faber/Python/IABV_v1.5/src')
+from pathlib import Path
+
+# Add src directory to path relative to this test file
+test_dir = Path(__file__).resolve().parent
+src_dir = test_dir.parent / 'src'
+sys.path.insert(0, str(src_dir))
 
 from pathlib import Path
 import tempfile
