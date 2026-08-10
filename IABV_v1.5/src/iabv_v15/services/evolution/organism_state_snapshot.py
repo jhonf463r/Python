@@ -29,6 +29,7 @@ def export_organism_state_snapshot(
     world_model_service: Any = None,
     control_master_service: Any = None,
     experiment_lab: Any = None,
+    environment_self_awareness_service: Any = None,
 ) -> dict[str, Any]:
     """Export a unified read-only snapshot of the organism state.
 
