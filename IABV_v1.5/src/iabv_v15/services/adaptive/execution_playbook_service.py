@@ -53,13 +53,18 @@ class NullOperationalExecutor:
 
 
 class ExecutionPlaybookService:
-    def __init__(self, executor: OperationalExecutor | None = None) -> None:
+    def __init__(self, executor: OperationalExecutor | None = None, knowledge_executor: OperationalExecutor | None = None) -> None:
         self.executor = executor or NullOperationalExecutor()
+        self.knowledge_executor = knowledge_executor
 
     def annotate_execution_capability(self, session: AdaptiveSession) -> AdaptiveSession:
         execute_step = self._execute_step(session)
         simulation_only = bool(execute_step.simulation_only) if execute_step is not None else False
-        executor_available = bool(execute_step is not None and not simulation_only and self.executor.supports(session))
+        
+        # Select appropriate executor for this session
+        active_executor = self._select_executor(session)
+        executor_available = bool(execute_step is not None and not simulation_only and active_executor.supports(session))
+        
         state = 'not_applicable'
         if execute_step is not None:
             if simulation_only:
@@ -68,10 +73,10 @@ class ExecutionPlaybookService:
                 state = 'ready'
             else:
                 state = 'adapter_missing'
-        detail = self._describe_execution_capability(session, execute_step, executor_available, simulation_only)
+        detail = self._describe_execution_capability(session, execute_step, executor_available, simulation_only, active_executor)
         execution_state = {
             'state': state,
-            'executor_name': getattr(self.executor, 'name', 'unknown'),
+            'executor_name': getattr(active_executor, 'name', 'unknown'),
             'executor_available': executor_available,
             'simulation_only': simulation_only,
             'detail': detail,
@@ -171,10 +176,11 @@ class ExecutionPlaybookService:
                 metadata={'mode': 'execute_simulation_only'},
             )
         elif not bool(execution_state.get('executor_available')):
+            active_executor = self._select_executor(session)
             result = OperationalExecutorResult(
                 executed=False,
                 status=RunStatus.PARTIAL,
-                summary=self.executor.describe(session),
+                summary=active_executor.describe(session),
                 next_actions=['Simular', 'Ver evolutivo', 'Preparar Codex'],
                 metadata={'mode': 'adapter_missing'},
             )
@@ -192,13 +198,14 @@ class ExecutionPlaybookService:
                 metadata={'mode': 'execute_waiting_adapter', **result.metadata},
             )
         else:
+            active_executor = self._select_executor(session)
             self._update_execution_state(
                 session,
                 state='executing',
                 detail='La fase operativa fue enviada al adaptador del dominio.',
                 last_action='execute',
             )
-            result = self.executor.execute(session)
+            result = active_executor.execute(session)
             self._update_execution_state(
                 session,
                 state='executed' if result.status == RunStatus.SUCCESS else 'failed',
@@ -287,14 +294,31 @@ class ExecutionPlaybookService:
             return ['Simular', 'Ejecutar ahora']
         return ['Simular', 'Ver evolutivo', 'Preparar Codex']
 
-    def _describe_execution_capability(self, session: AdaptiveSession, execute_step, executor_available: bool, simulation_only: bool) -> str:
+    def _describe_execution_capability(self, session: AdaptiveSession, execute_step, executor_available: bool, simulation_only: bool, active_executor: OperationalExecutor) -> str:
         if execute_step is None:
             return 'La sesion no declaro una fase execute todavia.'
         if simulation_only:
             return 'La fase execute queda intencionalmente en simulacion o guiado porque el pack es sensible o de alto riesgo.'
         if executor_available:
-            return f'Hay un adaptador operativo disponible ({getattr(self.executor, "name", "executor")}) para intentar la fase real.'
-        return self.executor.describe(session)
+            return f'Hay un adaptador operativo disponible ({getattr(active_executor, "name", "executor")}) para intentar la fase real.'
+        return active_executor.describe(session)
+
+    def _select_executor(self, session: AdaptiveSession) -> OperationalExecutor:
+        """Select the appropriate executor for the given session.
+        
+        Priority:
+        1. knowledge_executor if session.chosen_pack_id == 'knowledge.query' and executor is available
+        2. default executor for all other cases
+        
+        Args:
+            session: AdaptiveSession to select executor for
+            
+        Returns:
+            Selected OperationalExecutor
+        """
+        if self.knowledge_executor and session.chosen_pack_id == 'knowledge.query':
+            return self.knowledge_executor
+        return self.executor
 
     def _update_execution_state(self, session: AdaptiveSession, *, state: str, detail: str, last_action: str) -> None:
         execution_state = self._execution_state(session)

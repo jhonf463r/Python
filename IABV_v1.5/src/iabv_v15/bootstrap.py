@@ -228,6 +228,7 @@ from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovern
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
 from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
 from iabv_v15.services.adaptive.execution_playbook_service import ExecutionPlaybookService, NullOperationalExecutor
+from iabv_v15.services.adaptive.knowledge_operational_executor import KnowledgeOperationalExecutor
 from iabv_v15.services.adaptive.goal_engine import GoalEngine
 from iabv_v15.services.adaptive.intent_understanding_service import IntentUnderstandingService
 from iabv_v15.services.adaptive.strategy_pack_registry import StrategyPackRegistry
@@ -841,6 +842,8 @@ class AppBootstrap:
         )
         self.environment_self_awareness_service.role_router = self.role_router
         self.environment_self_awareness_service.request_refresh(reason='role_router_ready', full=False)
+        # KnowledgeOperationalExecutor for knowledge.query domain
+        self.knowledge_executor = KnowledgeOperationalExecutor(role_router=self.role_router)
         self.world_model_service.role_router = self.role_router
         self.world_model_service.request_refresh(reason='role_router_ready', full=False)
         from iabv_v15.services.evolution.perception_cross_validator import PerceptionCrossValidator
@@ -1357,7 +1360,10 @@ class AppBootstrap:
         self.adaptive_planner_service = AdaptivePlannerService()
         self.approval_gate_service = ApprovalGateService()
         self.operational_executor = ToolOperationalExecutor(self.tool_teach_service)
-        self.execution_playbook_service = ExecutionPlaybookService(executor=self.operational_executor)
+        self.execution_playbook_service = ExecutionPlaybookService(
+            executor=self.operational_executor,
+            knowledge_executor=self.knowledge_executor,
+        )
         self.task_outcome_recorder = TaskOutcomeRecorder(
             adaptive_session_repository=self.adaptive_session_repository,
             capability_repository=self.capability_repository,
