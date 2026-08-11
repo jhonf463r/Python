@@ -134,16 +134,17 @@ def test_knowledge_executor_describes_capability() -> None:
 
 
 def test_knowledge_executor_describes_insufficient_context() -> None:
-    """Test that executor reports insufficient context when required."""
+    """Test that executor reports insufficient context when user_goal is empty."""
     mock_router = Mock(spec=LocalRoleRouter)
     executor = KnowledgeOperationalExecutor(mock_router)
     
-    session = _knowledge_session(with_context=False)
+    session = _knowledge_session()
+    session.user_goal = ""  # Empty user goal
     
     description = executor.describe(session)
     
-    assert 'contexto insuficiente' in description.lower()
-    assert 'knowledge_hits' in description or 'recent_runs' in description
+    # With empty user_goal, it should report insufficient context
+    assert 'insuficiente' in description.lower()
 
 
 def test_knowledge_executor_executes_with_sufficient_context() -> None:
@@ -179,12 +180,59 @@ def test_knowledge_executor_executes_with_sufficient_context() -> None:
     assert ToolCapability.EMBEDDINGS in request.allowed_tools
 
 
-def test_knowledge_executor_fails_with_insufficient_context() -> None:
-    """Test that executor returns PARTIAL when context is insufficient."""
+def test_knowledge_executor_executes_with_empty_context() -> None:
+    """Test that executor executes even when context is empty (no pre-existing knowledge or runs).
+    
+    The legacy route _route_knowledge() performs its own retrieval via
+    KnowledgeRepository.search() and EmbeddingIndexService.search(), so
+    pre-existing context is useful but NOT required for execution.
+    """
+    mock_router = Mock(spec=LocalRoleRouter)
+    mock_router.execute_knowledge_query.return_value = (
+        _mock_role_route(),
+        _mock_inference_result(),
+    )
+    
+    executor = KnowledgeOperationalExecutor(mock_router)
+    session = _knowledge_session(with_context=False)
+    
+    result = executor.execute(session)
+    
+    # Should execute even with empty context
+    assert result.executed is True
+    assert result.status == RunStatus.SUCCESS
+    assert result.summary == 'El sistema de archivos está basado en SQLite con persistencia JSON para artefactos.'
+    
+    # Verify that execute_knowledge_query WAS called
+    mock_router.execute_knowledge_query.assert_called_once()
+
+
+def test_knowledge_executor_fails_with_empty_user_goal() -> None:
+    """Test that executor returns PARTIAL when user_goal is empty."""
     mock_router = Mock(spec=LocalRoleRouter)
     executor = KnowledgeOperationalExecutor(mock_router)
     
-    session = _knowledge_session(with_context=False)
+    session = _knowledge_session()
+    session.user_goal = ""  # Empty user goal
+    
+    result = executor.execute(session)
+    
+    assert result.executed is False
+    assert result.status == RunStatus.PARTIAL
+    assert 'Contexto insuficiente' in result.summary
+    assert result.metadata['precondition'] == 'insufficient_context'
+    
+    # Verify that execute_knowledge_query was NOT called
+    mock_router.execute_knowledge_query.assert_not_called()
+
+
+def test_knowledge_executor_fails_with_null_context() -> None:
+    """Test that executor returns PARTIAL when context is None."""
+    mock_router = Mock(spec=LocalRoleRouter)
+    executor = KnowledgeOperationalExecutor(mock_router)
+    
+    session = _knowledge_session()
+    session.context = None  # No context at all
     
     result = executor.execute(session)
     

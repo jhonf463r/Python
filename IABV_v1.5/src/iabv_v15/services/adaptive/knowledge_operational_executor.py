@@ -68,8 +68,8 @@ class KnowledgeOperationalExecutor:
             )
         else:
             return (
-                'Consulta local de conocimiento disponible pero contexto insuficiente. '
-                'Requiere knowledge_hits y recent_runs en el contexto.'
+                'Contexto insuficiente para ejecutar knowledge query. '
+                'Requiere user_goal válido y contexto inicializado.'
             )
     
     def execute(self, session: AdaptiveSession) -> OperationalExecutorResult:
@@ -122,21 +122,29 @@ class KnowledgeOperationalExecutor:
     def _check_preconditions(self, session: AdaptiveSession) -> bool:
         """Check if required context is available for knowledge query execution.
         
+        Preconditions:
+        - session.user_goal must be valid and non-empty
+        - session.context must exist (but can be empty)
+        
+        The legacy route _route_knowledge() performs its own retrieval via
+        KnowledgeRepository.search() and EmbeddingIndexService.search(), so
+        pre-existing knowledge_hits or recent_runs are useful context but NOT
+        required for execution. A new query on a topic not yet in memory should
+        still attempt real retrieval.
+        
         Args:
             session: AdaptiveSession to check
             
         Returns:
             True if preconditions are met, False otherwise
         """
-        context = session.context
-        if context is None:
+        # Require user_goal to be valid and non-empty
+        if not session.user_goal or not session.user_goal.strip():
             return False
         
-        # Check required_context from pack definition
-        knowledge_hits = context.knowledge_hits if hasattr(context, 'knowledge_hits') else []
-        recent_runs = context.recent_runs if hasattr(context, 'recent_runs') else []
-        
-        return len(knowledge_hits) > 0 or len(recent_runs) > 0
+        # Require context to exist (but it can be empty)
+        # This allows new queries to attempt retrieval without pre-existing context
+        return session.context is not None
     
     def _build_inference_request(self, session: AdaptiveSession):
         """Construct InferenceRequest from AdaptiveSession for knowledge query.
