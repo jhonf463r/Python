@@ -43,7 +43,6 @@ class KnowledgeOperationalExecutor:
         
         Supports sessions where:
         - chosen_pack_id is 'knowledge.query'
-        - OR detected_role is TaskRole.KNOWLEDGE (for backward compatibility)
         
         Args:
             session: AdaptiveSession to check
@@ -51,9 +50,7 @@ class KnowledgeOperationalExecutor:
         Returns:
             True if this executor can handle the session, False otherwise
         """
-        return session.chosen_pack_id == 'knowledge.query' or (
-            session.intent.detected_role == TaskRole.KNOWLEDGE and session.chosen_pack_id is None
-        )
+        return session.chosen_pack_id == 'knowledge.query'
     
     def describe(self, session: AdaptiveSession) -> str:
         """Describe the executor's capability for the given session.
@@ -84,7 +81,7 @@ class KnowledgeOperationalExecutor:
         
         This method:
         1. Constructs InferenceRequest from AdaptiveSession
-        2. Invokes LocalRoleRouter._route_knowledge()
+        2. Invokes LocalRoleRouter.execute_knowledge_query()
         3. Converts InferenceResult to OperationalExecutorResult
         4. Does NOT duplicate persistence (handled by InferenceService)
         
@@ -99,7 +96,7 @@ class KnowledgeOperationalExecutor:
             return OperationalExecutorResult(
                 executed=False,
                 status=RunStatus.PARTIAL,
-                summary='Contexto insuficiente para ejecutar knowledge query. Faltan knowledge_hits o recent_runs.',
+                summary='Contexto insuficiente para ejecutar knowledge query. Se requiere user_goal válido y contexto inicializado.',
                 next_actions=['Ver evolutivo'],
                 metadata={'precondition': 'insufficient_context'},
             )
@@ -109,7 +106,7 @@ class KnowledgeOperationalExecutor:
         
         # Execute using existing LocalRoleRouter infrastructure
         try:
-            route, result = self.role_router._route_knowledge(request)
+            route, result = self.role_router.execute_knowledge_query(request)
             
             # Convert InferenceResult to OperationalExecutorResult
             return self._build_executor_result(result, route)
