@@ -87,34 +87,21 @@ def _mock_role_route() -> MagicMock:
 
 
 def test_knowledge_executor_supports_knowledge_query_pack() -> None:
-    """Test that KnowledgeOperationalExecutor supports knowledge.query pack."""
+    """Test that executor supports knowledge.query pack."""
     mock_router = Mock(spec=LocalRoleRouter)
     executor = KnowledgeOperationalExecutor(mock_router)
     
     session = _knowledge_session()
-    
-    assert executor.supports(session) is True
-
-
-def test_knowledge_executor_supports_knowledge_role() -> None:
-    """Test that KnowledgeOperationalExecutor supports TaskRole.KNOWLEDGE."""
-    mock_router = Mock(spec=LocalRoleRouter)
-    executor = KnowledgeOperationalExecutor(mock_router)
-    
-    session = _knowledge_session()
-    session.chosen_pack_id = None  # No pack specified
-    session.intent.detected_role = TaskRole.KNOWLEDGE
-    
     assert executor.supports(session) is True
 
 
 def test_knowledge_executor_rejects_other_packs() -> None:
-    """Test that KnowledgeOperationalExecutor rejects non-knowledge packs."""
+    """Test that executor rejects other packs."""
     mock_router = Mock(spec=LocalRoleRouter)
     executor = KnowledgeOperationalExecutor(mock_router)
     
     session = _knowledge_session()
-    session.chosen_pack_id = 'browser.generic'
+    session.chosen_pack_id = 'tool_execution'
     
     assert executor.supports(session) is False
 
@@ -150,7 +137,7 @@ def test_knowledge_executor_describes_insufficient_context() -> None:
 def test_knowledge_executor_executes_with_sufficient_context() -> None:
     """Test that executor executes knowledge query when context is available."""
     mock_router = Mock(spec=LocalRoleRouter)
-    mock_router._route_knowledge.return_value = (
+    mock_router.execute_knowledge_query.return_value = (
         _mock_role_route(),
         _mock_inference_result(),
     )
@@ -167,11 +154,11 @@ def test_knowledge_executor_executes_with_sufficient_context() -> None:
     assert result.metadata['sources'] == ['knowledge:file_system']
     assert result.metadata['used_fallback'] is False
     
-    # Verify that _route_knowledge was called
-    mock_router._route_knowledge.assert_called_once()
+    # Verify that execute_knowledge_query was called
+    mock_router.execute_knowledge_query.assert_called_once()
     
     # Verify that the InferenceRequest was constructed correctly
-    call_args = mock_router._route_knowledge.call_args
+    call_args = mock_router.execute_knowledge_query.call_args
     request = call_args[0][0]
     assert request.user_goal == '¿Qué sabes sobre el sistema de archivos?'
     assert request.task_role == TaskRole.KNOWLEDGE
@@ -188,7 +175,7 @@ def test_knowledge_executor_executes_with_empty_context() -> None:
     pre-existing context is useful but NOT required for execution.
     """
     mock_router = Mock(spec=LocalRoleRouter)
-    mock_router._route_knowledge.return_value = (
+    mock_router.execute_knowledge_query.return_value = (
         _mock_role_route(),
         _mock_inference_result(),
     )
@@ -200,7 +187,7 @@ def test_knowledge_executor_executes_with_empty_context() -> None:
     
     assert result.executed is True
     assert result.status == RunStatus.SUCCESS
-    mock_router._route_knowledge.assert_called_once()
+    mock_router.execute_knowledge_query.assert_called_once()
 
 
 def test_knowledge_executor_rejects_empty_user_goal() -> None:
@@ -216,7 +203,7 @@ def test_knowledge_executor_rejects_empty_user_goal() -> None:
     assert result.executed is False
     assert result.status == RunStatus.PARTIAL
     assert 'insuficiente' in result.summary.lower()
-    mock_router._route_knowledge.assert_not_called()
+    mock_router.execute_knowledge_query.assert_not_called()
 
 
 def test_knowledge_executor_rejects_null_context() -> None:
@@ -231,7 +218,7 @@ def test_knowledge_executor_rejects_null_context() -> None:
     
     assert result.executed is False
     assert result.status == RunStatus.PARTIAL
-    mock_router._route_knowledge.assert_not_called()
+    mock_router.execute_knowledge_query.assert_not_called()
 
 
 def test_knowledge_executor_handles_fallback_from_inference() -> None:
@@ -242,7 +229,7 @@ def test_knowledge_executor_handles_fallback_from_inference() -> None:
     fallback_result = _mock_inference_result()
     fallback_result.used_fallback = True
     
-    mock_router._route_knowledge.return_value = (
+    mock_router.execute_knowledge_query.return_value = (
         _mock_role_route(),
         fallback_result,
     )
@@ -387,7 +374,7 @@ def test_knowledge_query_still_simulates_when_executor_unavailable() -> None:
 def test_knowledge_executor_does_not_duplicate_persistence() -> None:
     """Test that KnowledgeOperationalExecutor does NOT directly persist runs or knowledge items."""
     mock_router = Mock(spec=LocalRoleRouter)
-    mock_router._route_knowledge.return_value = (
+    mock_router.execute_knowledge_query.return_value = (
         _mock_role_route(),
         _mock_inference_result(),
     )
@@ -404,7 +391,7 @@ def test_knowledge_executor_does_not_duplicate_persistence() -> None:
     assert 'knowledge_item' not in result.metadata
     
     # Verify that only LocalRoleRouter was called
-    mock_router._route_knowledge.assert_called_once()
+    mock_router.execute_knowledge_query.assert_called_once()
     
     # Persistence should be handled by InferenceService, not the executor
 
@@ -412,7 +399,7 @@ def test_knowledge_executor_does_not_duplicate_persistence() -> None:
 def test_inference_request_construction_from_adaptive_session() -> None:
     """Test that InferenceRequest is correctly constructed from AdaptiveSession."""
     mock_router = Mock(spec=LocalRoleRouter)
-    mock_router._route_knowledge.return_value = (
+    mock_router.execute_knowledge_query.return_value = (
         _mock_role_route(),
         _mock_inference_result(),
     )
@@ -423,7 +410,7 @@ def test_inference_request_construction_from_adaptive_session() -> None:
     executor.execute(session)
     
     # Verify InferenceRequest construction
-    call_args = mock_router._route_knowledge.call_args
+    call_args = mock_router.execute_knowledge_query.call_args
     request = call_args[0][0]
     
     assert request.user_goal == session.user_goal

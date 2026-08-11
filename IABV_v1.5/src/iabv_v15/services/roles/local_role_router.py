@@ -602,6 +602,20 @@ class LocalRoleRouter:
         result.raw_output['teaching_gaps'] = gap_report
         return route, result
 
+    def execute_knowledge_query(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
+        """Public wrapper for knowledge query execution.
+        
+        This method provides a public API for knowledge query execution
+        by delegating to the internal _route_knowledge implementation.
+        
+        Args:
+            request: InferenceRequest with knowledge query context
+            
+        Returns:
+            Tuple of RoleRoute and InferenceResult
+        """
+        return self._route_knowledge(request)
+
     def _route_knowledge(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
         hits = self.knowledge_repository.search(request.user_goal, limit=10)
         documents = [
