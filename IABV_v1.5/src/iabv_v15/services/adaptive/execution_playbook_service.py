@@ -53,13 +53,27 @@ class NullOperationalExecutor:
 
 
 class ExecutionPlaybookService:
-    def __init__(self, executor: OperationalExecutor | None = None) -> None:
-        self.executor = executor or NullOperationalExecutor()
+    def __init__(
+        self, 
+        executor: OperationalExecutor | None = None,
+        knowledge_executor: OperationalExecutor | None = None,
+    ) -> None:
+        self.tool_executor = executor or NullOperationalExecutor()
+        self.knowledge_executor = knowledge_executor or NullOperationalExecutor()
+        # Default to tool executor for backward compatibility
+        self.executor = self.tool_executor
 
     def annotate_execution_capability(self, session: AdaptiveSession) -> AdaptiveSession:
         execute_step = self._execute_step(session)
         simulation_only = bool(execute_step.simulation_only) if execute_step is not None else False
-        executor_available = bool(execute_step is not None and not simulation_only and self.executor.supports(session))
+        
+        # Select appropriate executor based on pack_id
+        if session.chosen_pack_id == 'knowledge.query':
+            executor = self.knowledge_executor
+        else:
+            executor = self.tool_executor
+        
+        executor_available = bool(execute_step is not None and not simulation_only and executor.supports(session))
         state = 'not_applicable'
         if execute_step is not None:
             if simulation_only:
@@ -71,7 +85,7 @@ class ExecutionPlaybookService:
         detail = self._describe_execution_capability(session, execute_step, executor_available, simulation_only)
         execution_state = {
             'state': state,
-            'executor_name': getattr(self.executor, 'name', 'unknown'),
+            'executor_name': getattr(executor, 'name', 'unknown'),
             'executor_available': executor_available,
             'simulation_only': simulation_only,
             'detail': detail,
@@ -142,6 +156,13 @@ class ExecutionPlaybookService:
 
         execute_step = self._execute_step(session)
         execution_state = self._execution_state(session)
+        
+        # Select appropriate executor based on pack_id
+        if session.chosen_pack_id == 'knowledge.query':
+            executor = self.knowledge_executor
+        else:
+            executor = self.tool_executor
+        
         if execute_step is None:
             self._update_execution_state(
                 session,
@@ -174,7 +195,7 @@ class ExecutionPlaybookService:
             result = OperationalExecutorResult(
                 executed=False,
                 status=RunStatus.PARTIAL,
-                summary=self.executor.describe(session),
+                summary=executor.describe(session),
                 next_actions=['Simular', 'Ver evolutivo', 'Preparar Codex'],
                 metadata={'mode': 'adapter_missing'},
             )
@@ -198,7 +219,7 @@ class ExecutionPlaybookService:
                 detail='La fase operativa fue enviada al adaptador del dominio.',
                 last_action='execute',
             )
-            result = self.executor.execute(session)
+            result = executor.execute(session)
             self._update_execution_state(
                 session,
                 state='executed' if result.status == RunStatus.SUCCESS else 'failed',

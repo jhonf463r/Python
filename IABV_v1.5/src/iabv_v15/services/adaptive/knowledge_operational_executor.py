@@ -1,0 +1,200 @@
+"""Knowledge operational executor for the knowledge.query domain.
+
+This executor bridges the adaptive session runtime with the existing
+knowledge query implementation in LocalRoleRouter, allowing knowledge.query
+packs to execute real knowledge retrieval and generation instead of simulation.
+"""
+
+from __future__ import annotations
+
+from iabv_v15.domain.models import (
+    AdaptiveSession,
+    InferenceRequest,
+    RunStatus,
+    TaskRole,
+    ToolCapability,
+)
+from iabv_v15.services.adaptive.execution_playbook_service import OperationalExecutorResult
+from iabv_v15.services.roles.local_role_router import LocalRoleRouter
+
+
+class KnowledgeOperationalExecutor:
+    """Executor for knowledge.query domain using existing LocalRoleRouter infrastructure."""
+    
+    name = 'knowledge_query_executor'
+    
+    def __init__(self, role_router: LocalRoleRouter) -> None:
+        """Initialize with LocalRoleRouter to reuse existing knowledge query implementation.
+        
+        Args:
+            role_router: LocalRoleRouter that contains execute_knowledge_query() method
+        """
+        self.role_router = role_router
+    
+    def supports(self, session: AdaptiveSession) -> bool:
+        """Check if this executor supports the given session.
+        
+        Supports sessions where:
+        - chosen_pack_id is 'knowledge.query'
+        - OR detected_role is TaskRole.KNOWLEDGE (for backward compatibility)
+        
+        Args:
+            session: AdaptiveSession to check
+            
+        Returns:
+            True if this executor can handle the session, False otherwise
+        """
+        return session.chosen_pack_id == 'knowledge.query' or (
+            session.intent.detected_role == TaskRole.KNOWLEDGE and session.chosen_pack_id is None
+        )
+    
+    def describe(self, session: AdaptiveSession) -> str:
+        """Describe the executor's capability for the given session.
+        
+        Args:
+            session: AdaptiveSession to describe
+            
+        Returns:
+            Human-readable description of what this executor can do
+        """
+        if not self.supports(session):
+            pack = session.chosen_pack_title or session.chosen_pack_id or 'esta tarea'
+            return f'Este executor no soporta {pack}.'
+        
+        if self._check_preconditions(session):
+            return (
+                'Consulta local de conocimiento con contexto. '
+                'Utiliza KnowledgeRepository, búsqueda semántica y modelo local.'
+            )
+        else:
+            return (
+                'Consulta local de conocimiento disponible pero contexto insuficiente. '
+                'Requiere knowledge_hits y recent_runs en el contexto.'
+            )
+    
+    def execute(self, session: AdaptiveSession) -> OperationalExecutorResult:
+        """Execute knowledge query using existing LocalRoleRouter infrastructure.
+        
+        This method:
+        1. Constructs InferenceRequest from AdaptiveSession
+        2. Invokes LocalRoleRouter.execute_knowledge_query()
+        3. Converts InferenceResult to OperationalExecutorResult
+        4. Does NOT duplicate persistence (handled by InferenceService)
+        
+        Args:
+            session: AdaptiveSession with knowledge.query context
+            
+        Returns:
+            OperationalExecutorResult with execution status and results
+        """
+        # Check preconditions
+        if not self._check_preconditions(session):
+            return OperationalExecutorResult(
+                executed=False,
+                status=RunStatus.PARTIAL,
+                summary='Contexto insuficiente para ejecutar knowledge query. Faltan knowledge_hits o recent_runs.',
+                next_actions=['Ver evolutivo'],
+                metadata={'precondition': 'insufficient_context'},
+            )
+        
+        # Construct InferenceRequest from AdaptiveSession
+        request = self._build_inference_request(session)
+        
+        # Execute using existing LocalRoleRouter infrastructure
+        try:
+            route, result = self.role_router.execute_knowledge_query(request)
+            
+            # Convert InferenceResult to OperationalExecutorResult
+            return self._build_executor_result(result, route)
+            
+        except Exception as exc:
+            return OperationalExecutorResult(
+                executed=False,
+                status=RunStatus.FAILED,
+                summary=f'Error en ejecución de knowledge query: {str(exc)}',
+                next_actions=['Ver evolutivo'],
+                metadata={
+                    'error': str(exc),
+                    'error_type': type(exc).__name__,
+                },
+            )
+    
+    def _check_preconditions(self, session: AdaptiveSession) -> bool:
+        """Check if required context is available for knowledge query execution.
+        
+        Args:
+            session: AdaptiveSession to check
+            
+        Returns:
+            True if preconditions are met, False otherwise
+        """
+        context = session.context
+        if context is None:
+            return False
+        
+        # Check required_context from pack definition
+        knowledge_hits = context.knowledge_hits if hasattr(context, 'knowledge_hits') else []
+        recent_runs = context.recent_runs if hasattr(context, 'recent_runs') else []
+        
+        return len(knowledge_hits) > 0 or len(recent_runs) > 0
+    
+    def _build_inference_request(self, session: AdaptiveSession):
+        """Construct InferenceRequest from AdaptiveSession for knowledge query.
+        
+        Args:
+            session: AdaptiveSession with user_goal and context
+            
+        Returns:
+            InferenceRequest configured for TaskRole.KNOWLEDGE
+        """
+        from iabv_v15.domain.models import InferenceRequest
+        
+        return InferenceRequest(
+            user_goal=session.user_goal,
+            task_role=TaskRole.KNOWLEDGE,
+            knowledge_scope=['episodes', 'knowledge_items', 'run_records', 'docs', 'dossiers', 'adaptive_sessions'],
+            read_only_sql=True,  # Knowledge role is read-only
+            allowed_tools=[ToolCapability.KNOWLEDGE_SEARCH, ToolCapability.EMBEDDINGS],
+            # Preserve existing metadata if present
+            metadata=session.metadata if session.metadata else {},
+        )
+    
+    def _build_executor_result(self, result, route) -> OperationalExecutorResult:
+        """Convert InferenceResult to OperationalExecutorResult.
+        
+        Args:
+            result: InferenceResult from LocalRoleRouter
+            route: RoleRoute from LocalRoleRouter
+            
+        Returns:
+            OperationalExecutorResult with appropriate status and metadata
+        """
+        # Determine status based on result
+        if result.used_fallback:
+            status = RunStatus.PARTIAL
+        else:
+            status = RunStatus.SUCCESS
+        
+        # Extract knowledge hits count
+        knowledge_hits = result.raw_output.get('knowledge_hits', []) if result.raw_output else []
+        knowledge_hits_count = len(knowledge_hits)
+        
+        # Determine next actions
+        if status == RunStatus.SUCCESS:
+            next_actions = ['Ver evidencia relacionada', 'Revisar resultado']
+        else:
+            next_actions = ['Ver evidencia relacionada', 'Revisar resultado']  # Still show results even with fallback
+        
+        return OperationalExecutorResult(
+            executed=True,
+            status=status,
+            summary=result.summary,
+            next_actions=next_actions,
+            metadata={
+                'knowledge_hits_count': knowledge_hits_count,
+                'sources': result.sources if result.sources else [],
+                'inference_result': result.model_dump() if result else {},
+                'route_summary': route.model_dump() if route else {},
+                'used_fallback': result.used_fallback if hasattr(result, 'used_fallback') else False,
+            },
+        )

@@ -631,6 +631,22 @@ class LocalRoleRouter:
         result.raw_output['knowledge_hits'] = semantic_hits
         return route, result
 
+    def execute_knowledge_query(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
+        """Public API for knowledge query execution.
+        
+        This method provides a public interface for executing knowledge queries,
+        delegating to the internal _route_knowledge() implementation.
+        This allows external components (like KnowledgeOperationalExecutor) to invoke
+        knowledge queries without breaking encapsulation.
+        
+        Args:
+            request: InferenceRequest with user_goal and appropriate TaskRole
+            
+        Returns:
+            Tuple of (RoleRoute, InferenceResult) from the knowledge query execution
+        """
+        return self._route_knowledge(request)
+
     def _route_analytics(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
         report = self.analytics_service.build_report()
         prompt = (
