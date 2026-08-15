@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from iabv_v15.domain.models import MetacognitiveDiscernmentFrame
+from iabv_v15.domain.models import MetacognitiveDiscernmentFrame, EpistemicHypothesis
 
 _logger = logging.getLogger(__name__)
 
@@ -52,6 +52,8 @@ class DiscernmentFrameService:
         startup_events: list[dict[str, Any]] | None = None,
         freeze_reports: list[dict[str, Any]] | None = None,
         concept_weight_evidence: dict[str, Any] | None = None,
+        human_evidence: list[dict[str, Any]] | None = None,
+        diagnostic_request: bool = False,  # P0.18G: diagnostic intent marker
     ) -> MetacognitiveDiscernmentFrame:
         """Build a new discernment frame from available state."""
         frame = MetacognitiveDiscernmentFrame(
@@ -59,6 +61,10 @@ class DiscernmentFrameService:
             trigger_source=trigger_source,
             raw_inputs=list(raw_inputs or []),
         )
+
+        # P0.18G: Set diagnostic_request flag in frame metadata during construction
+        if diagnostic_request:
+            frame.metadata['diagnostic_request'] = True
 
         # Sensor sources
         sensors = self._collect_sensor_sources(
@@ -106,8 +112,144 @@ class DiscernmentFrameService:
             if f not in frame.unresolved_fields
         )
 
+        selected_test = self._propose_diagnostic_test(frame, world_model=world_model)
+        if selected_test:
+            # P0.20b: Generate epistemic hypothesis from contradiction
+            epistemic_hypothesis = self._generate_epistemic_hypothesis(frame, selected_test)
+            if epistemic_hypothesis:
+                frame.metadata['epistemic_hypothesis'] = epistemic_hypothesis
+                # Propagate hypothesis_id and expected_result to selected_test
+                selected_test['hypothesis_id'] = epistemic_hypothesis.hypothesis_id
+                selected_test['expected_result'] = epistemic_hypothesis.expected_result
+            frame.metadata['selected_test'] = selected_test
+        if human_evidence:
+            frame.metadata['human_evidence'] = [dict(item) for item in human_evidence if isinstance(item, dict)]
+
         self._frame_history.append(frame)
         return frame
+
+    @staticmethod
+    def _propose_diagnostic_test(
+        frame: MetacognitiveDiscernmentFrame,
+        *,
+        world_model: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """Derive one read-only diagnostic proposal from structured evidence.
+
+        This is two-tier:
+        1. First, check for structured provider health contradictions (most specific)
+        2. Second, check for diagnostic intent marker with available evidence (general case)
+        It never executes a test.
+        """
+        # Tier 1: Structured provider health contradictions (most specific)
+        for contradiction in frame.contradictions:
+            if str(contradiction.get('type') or '') != 'provider_health_vs_inference_failure':
+                continue
+            evidence = contradiction.get('evidence')
+            if not isinstance(evidence, dict):
+                continue
+            provider = str(evidence.get('provider') or '').strip()
+            target = str(evidence.get('diagnostic_target') or '').strip()
+            if not provider or not target:
+                continue
+            return {
+                'test_id': f'{provider}_availability_probe',
+                'test_type': 'provider_availability',
+                'target': target,
+                'reason': 'Structured provider health contradicts its inference result.',
+                'cost_class': 'low',
+                'status': 'proposed',
+                'contradiction_type': 'provider_health_vs_inference_failure',
+                'diagnostic': True,
+                'read_only': True,
+                'requires_approval': False,
+                'timeout_seconds': 2.0,
+            }
+
+        # Tier 2: General diagnostic intent with available evidence (P0.18G integration)
+        # Check if this is a diagnostic request via frame metadata
+        is_diagnostic = bool(frame.metadata.get('diagnostic_request', False))
+        if not is_diagnostic:
+            return {}
+
+        # For general diagnostic requests, propose a minimal self-diagnostic test
+        # Only if we have at least one trusted source to work with
+        if not frame.trusted_sources:
+            return {}
+
+        # Determine minimal diagnostic target from available sources
+        diagnostic_target = 'system_self_diagnostic'
+        if 'world_model' in frame.trusted_sources:
+            diagnostic_target = 'world_model_state'
+        elif 'environment_self_model' in frame.trusted_sources:
+            diagnostic_target = 'environment_state'
+
+        return {
+            'test_id': 'general_system_diagnostic',
+            'test_type': 'self_diagnostic',
+            'target': diagnostic_target,
+            'reason': 'Diagnostic intent detected with available trusted sources for self-analysis.',
+            'cost_class': 'low',
+            'status': 'proposed',
+            'contradiction_type': 'diagnostic_intent',
+            'diagnostic': True,
+            'read_only': True,
+            'requires_approval': False,
+            'timeout_seconds': 5.0,
+        }
+
+    @staticmethod
+    def _generate_epistemic_hypothesis(
+        frame: MetacognitiveDiscernmentFrame,
+        selected_test: dict[str, Any],
+    ) -> EpistemicHypothesis | None:
+        """Generate minimal epistemic hypothesis from contradiction.
+
+        P0.20b: Creates a traceable hypothesis that explains the contradiction
+        and provides an expected_result for verification.
+
+        Returns None if no sufficient evidence exists.
+        """
+        # Only generate hypothesis if we have contradictions and trusted sources
+        if not frame.contradictions or not frame.trusted_sources:
+            return None
+
+        # Use the first contradiction as the source
+        contradiction = frame.contradictions[0]
+        contradiction_type = str(contradiction.get('type') or 'unknown')
+
+        # Build evidence refs from frame sources
+        evidence_refs = []
+        if frame.frame_id:
+            evidence_refs.append(f'frame:{frame.frame_id}')
+        for source in frame.trusted_sources[:3]:
+            evidence_refs.append(f'source:{source}')
+        if frame.sensor_sources:
+            evidence_refs.append(f'sensors:{len(frame.sensor_sources)}')
+
+        # Build contradiction refs
+        contradiction_refs = [f'contradiction:{contradiction_type}']
+
+        # Generate hypothesis statement based on contradiction type
+        statement = f"Contradiction {contradiction_type} suggests a diagnostic gap."
+
+        # Generate expected_result based on selected_test target
+        target = str(selected_test.get('target', ''))
+        if 'provider' in target.lower():
+            expected_result = 'provider_available'
+        elif 'world_model' in target.lower():
+            expected_result = 'world_model_consistent'
+        elif 'environment' in target.lower():
+            expected_result = 'environment_stable'
+        else:
+            expected_result = 'system_healthy'
+
+        return EpistemicHypothesis(
+            statement=statement,
+            expected_result=expected_result,
+            evidence_refs=evidence_refs,
+            contradiction_refs=contradiction_refs,
+        )
 
     def build_birth_frame(
         self,
@@ -481,6 +623,29 @@ class DiscernmentFrameService:
                     'detail': str(getattr(finding, 'summary', category)),
                     'severity': 'high',
                 })
+
+        # Structured provider evidence can identify a health/inference mismatch.
+        # A target must be supplied by the observed provider state; no endpoint is
+        # invented here for a particular provider.
+        provider_health = dict((world_model or {}).get('metadata', {}).get('provider_health') or {})
+        for provider, health in provider_health.items():
+            if not isinstance(health, dict):
+                continue
+            health_status = str(health.get('health_status') or '').lower()
+            inference_status = str(health.get('inference_status') or '').lower()
+            target = str(health.get('diagnostic_target') or '').strip()
+            if health_status != 'healthy' or inference_status not in {'timeout', 'failed', 'error'} or not target:
+                continue
+            contradictions.append({
+                'type': 'provider_health_vs_inference_failure',
+                'detail': f'Provider {provider} is healthy but inference is {inference_status}.',
+                'evidence': {
+                    'provider': str(provider),
+                    'health_status': health_status,
+                    'inference_status': inference_status,
+                    'diagnostic_target': target,
+                },
+            })
 
         return {'risks': risks, 'contradictions': contradictions}
 

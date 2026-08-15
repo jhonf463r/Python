@@ -3167,6 +3167,25 @@ class AccountInventorySnapshot(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class EpistemicHypothesis(BaseModel):
+    """P0.20b: Minimal epistemic hypothesis contract for contradiction resolution.
+
+    This is NOT a hypothesis service/store/validator — it is a minimal
+    traceable representation that allows IABV to move from contradiction
+    to verifiable prediction.
+
+    The hypothesis lives in MetacognitiveDiscernmentFrame.metadata["epistemic_hypothesis"]
+    and propagates to selected_test → AdaptiveSession.metadata → verification → ExperimentRun.
+    """
+
+    hypothesis_id: str = Field(default_factory=lambda: str(uuid4()))
+    statement: str = ""
+    expected_result: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    contradiction_refs: list[str] = Field(default_factory=list)
+    created_at_utc: datetime = Field(default_factory=utc_now)
+
+
 class MetacognitiveDiscernmentFrame(BaseModel):
     """P0.69: evidence-based discernment frame for pre-action reasoning.
 
