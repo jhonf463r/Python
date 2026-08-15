@@ -92,6 +92,20 @@ class PersistStrategy(str, Enum):
     FRESH_PROFILE = "fresh_profile"
 
 
+class VerificationStatus(str, Enum):
+    """Epistemic verification status for test results."""
+    UNVERIFIED = "unverified"
+    VERIFIED = "verified"
+    REFUTED = "refuted"
+    INCONCLUSIVE = "inconclusive"
+
+
+class LearningDecision(str, Enum):
+    """Learning eligibility decision for verified results."""
+    NOT_ELIGIBLE = "not_eligible"
+    ELIGIBLE = "eligible"
+
+
 class CaptureChannel(str, Enum):
     VISIBLE = "visible"
     BACKGROUND = "background"

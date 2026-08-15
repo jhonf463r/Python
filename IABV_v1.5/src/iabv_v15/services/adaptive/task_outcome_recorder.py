@@ -9,10 +9,13 @@ from iabv_v15.domain.models import (
     AssistantConfigurationSnapshot,
     EvaluationRoute,
     ExperimentDomain,
+    ExperimentRun,
+    LearningDecision,
     RoleRoute,
     RunRecord,
     RunStatus,
     TaskRole,
+    VerificationStatus,
 )
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
@@ -97,10 +100,14 @@ class TaskOutcomeRecorder:
         return saved
 
     def _persist_diagnostic_result(self, session_id: str, result: dict[str, Any]) -> None:
-        """Persist the sole terminal result without reopening the learning loop."""
+        """Persist the sole terminal result with verification boundary without reopening the learning loop."""
         session = self.adaptive_session_repository.get(session_id)
         if session is None or isinstance(session.metadata.get('test_result'), dict):
             return
+        
+        # P0.19d: Apply verification boundary
+        verification_metadata = self._compute_verification_metadata(session, result)
+        
         session.metadata['test_result'] = dict(result)
         session.metadata['diagnostic_execution'] = {
             'state': 'completed',
@@ -108,8 +115,317 @@ class TaskOutcomeRecorder:
             'worker_still_running': bool(result.get('worker_still_running')),
             'timed_out': bool(result.get('timed_out')),
         }
+        
+        # P0.19d: Attach verification metadata
+        session.metadata['verification'] = verification_metadata
+        
+        # P0.19e: Leave contract for epistemic_hypothesis (UNRESOLVED)
+        # When hypothesis system exists, this will be populated by DiscernmentFrameService
+        # For now, we document the expected contract:
+        # session.metadata['epistemic_hypothesis'] = {
+        #     'hypothesis_id': str,
+        #     'statement': str,
+        #     'expected_result': Any,
+        #     'evidence_refs': list[str],
+        #     'contradiction_refs': list[str],
+        # }
+        # This is UNRESOLVED until hypothesis system is implemented
+        
         session.updated_at_utc = datetime.now(timezone.utc)
         self.adaptive_session_repository.save(session)
+    
+    def _compute_verification_metadata(self, session: AdaptiveSession, result: dict[str, Any]) -> dict[str, Any]:
+        """Compute verification status and learning decision for a diagnostic test result.
+        
+        Verification Rule: A result can only be VERIFIED if:
+        1. Real test execution occurred
+        2. Observable result exists
+        3. Explicit hypothesis or expectation exists
+        4. expected_result is available
+        5. actual_result is available
+        6. Sufficient evidence to compare both
+        7. No critical unresolved contradiction
+        8. Traceable evidence_refs exist
+        
+        Otherwise: UNVERIFIED, REFUTED, or INCONCLUSIVE
+        """
+        verification_status = VerificationStatus.UNVERIFIED
+        learning_decision = LearningDecision.NOT_ELIGIBLE
+        verification_evidence_refs = []
+        verification_reason = ""
+        
+        # Extract test metadata
+        selected_test = session.metadata.get('selected_test', {})
+        test_id = result.get('test_id', selected_test.get('test_id', ''))
+        frame_id = result.get('frame_id', session.metadata.get('frame_id', ''))
+        interaction_id = result.get('interaction_id', session.metadata.get('interaction_id', ''))
+        
+        # Build evidence refs for traceability
+        evidence_refs = []
+        if frame_id:
+            evidence_refs.append(f'frame:{frame_id}')
+        if session.session_id:
+            evidence_refs.append(f'session:{session.session_id}')
+        if test_id:
+            evidence_refs.append(f'test:{test_id}')
+        if interaction_id:
+            evidence_refs.append(f'interaction:{interaction_id}')
+        
+        # Rule 1: Check for real test execution
+        test_status = result.get('status', '')
+        if test_status == 'skipped':
+            verification_status = VerificationStatus.UNVERIFIED
+            verification_reason = 'test_skipped'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 2: Check for timeout
+        if result.get('timed_out'):
+            verification_status = VerificationStatus.UNVERIFIED
+            verification_reason = 'test_timeout'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 3: Check for error or failed status
+        test_error = result.get('error', '')
+        test_status = result.get('status', '')
+        if test_error or test_status == 'failed':
+            verification_status = VerificationStatus.UNVERIFIED
+            verification_reason = f'test_error:{test_error or "status_failed"}'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 4: Check for expected_result (from selected_test or frame)
+        expected_result = selected_test.get('expected_result')
+        if not expected_result:
+            # For now, without hypothesis system, we cannot verify
+            verification_status = VerificationStatus.INCONCLUSIVE
+            verification_reason = 'missing_expected_result'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 5: Check for actual_result
+        actual_result = result.get('actual_result') or result.get('evidence')
+        if not actual_result:
+            verification_status = VerificationStatus.UNVERIFIED
+            verification_reason = 'missing_actual_result'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 6: Check for sufficient evidence
+        test_evidence = result.get('evidence', [])
+        if not test_evidence or not isinstance(test_evidence, list):
+            verification_status = VerificationStatus.INCONCLUSIVE
+            verification_reason = 'insufficient_evidence'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 7: Check for critical unresolved contradictions
+        frame_metadata = session.metadata.get('frame_metadata', {})
+        contradictions = frame_metadata.get('contradictions', [])
+        critical_contradictions = [
+            c for c in contradictions 
+            if isinstance(c, dict) and c.get('severity') == 'critical'
+        ]
+        if critical_contradictions:
+            verification_status = VerificationStatus.INCONCLUSIVE
+            verification_reason = 'critical_contradiction_unresolved'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 8: Check for traceable evidence_refs
+        if not evidence_refs:
+            verification_status = VerificationStatus.UNVERIFIED
+            verification_reason = 'missing_traceability'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # Rule 9: Compare expected_result vs actual_result (P0.19e)
+        comparison_result = self._compare_results(expected_result, actual_result)
+        if comparison_result == 'MISMATCH':
+            verification_status = VerificationStatus.REFUTED
+            verification_reason = 'expected_vs_actual_mismatch'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        elif comparison_result == 'INSUFFICIENT_EVIDENCE':
+            verification_status = VerificationStatus.INCONCLUSIVE
+            verification_reason = 'insufficient_evidence_for_comparison'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+        
+        # All verification rules passed including comparison
+        verification_status = VerificationStatus.VERIFIED
+        verification_reason = 'expected_vs_actual_match'
+        
+        # Learning decision: Only ELIGIBLE if VERIFIED
+        learning_decision = LearningDecision.ELIGIBLE
+        
+        return self._build_verification_metadata(
+            verification_status, learning_decision, evidence_refs, verification_reason,
+            selected_test, result
+        )
+    
+    def _compare_results(self, expected_result: Any, actual_result: Any) -> str:
+        """Compare expected_result vs actual_result explicitly.
+        
+        Returns:
+            'MATCH': Results are compatible
+            'MISMATCH': Results are incompatible
+            'INSUFFICIENT_EVIDENCE': Cannot determine compatibility
+        """
+        # Handle None cases
+        if expected_result is None or actual_result is None:
+            return 'INSUFFICIENT_EVIDENCE'
+        
+        # Handle string comparison (most common case)
+        if isinstance(expected_result, str) and isinstance(actual_result, str):
+            if expected_result.strip() == actual_result.strip():
+                return 'MATCH'
+            # Check for substring match (actual contains expected)
+            if expected_result.strip() in actual_result.strip():
+                return 'MATCH'
+            return 'MISMATCH'
+        
+        # Handle numeric comparison
+        if isinstance(expected_result, (int, float)) and isinstance(actual_result, (int, float)):
+            if abs(expected_result - actual_result) < 1e-9:
+                return 'MATCH'
+            return 'MISMATCH'
+        
+        # Handle boolean comparison
+        if isinstance(expected_result, bool) and isinstance(actual_result, bool):
+            return 'MATCH' if expected_result == actual_result else 'MISMATCH'
+        
+        # Handle dict comparison
+        if isinstance(expected_result, dict) and isinstance(actual_result, dict):
+            # Simple key existence check for now
+            expected_keys = set(expected_result.keys())
+            actual_keys = set(actual_result.keys())
+            if expected_keys.issubset(actual_keys):
+                return 'MATCH'
+            return 'MISMATCH'
+        
+        # Handle list comparison
+        if isinstance(expected_result, list) and isinstance(actual_result, list):
+            if expected_result == actual_result:
+                return 'MATCH'
+            return 'MISMATCH'
+        
+        # For other types, use string representation comparison
+        try:
+            if str(expected_result) == str(actual_result):
+                return 'MATCH'
+            return 'MISMATCH'
+        except Exception:
+            return 'INSUFFICIENT_EVIDENCE'
+    
+    def _create_experiment_run_from_verification(
+        self,
+        session: AdaptiveSession,
+        verification: dict[str, Any],
+        test_result: dict[str, Any],
+        selected_test: dict[str, Any],
+    ) -> ExperimentRun | None:
+        """Create an ExperimentRun from a verified diagnostic result.
+        
+        This bridges the verification boundary to the learning system:
+        VERIFIED + ELIGIBLE → ExperimentRun → Learning
+        
+        Returns None if creation fails (defensive).
+        """
+        try:
+            from iabv_v15.domain.models import EvaluationRoute
+            
+            # Extract key metadata
+            test_id = selected_test.get('test_id', test_result.get('test_id', ''))
+            expected_result = verification.get('expected_result')
+            actual_result = test_result.get('actual_result') or test_result.get('evidence')
+            
+            # Build ExperimentRun with minimal required fields
+            experiment_run = ExperimentRun(
+                domain=ExperimentDomain.TOOL_VALIDATION,  # Default domain for diagnostic tests
+                suite_name='diagnostic_verification',
+                objective=f"verified_diagnostic:{test_id}",
+                subject_key=session.session_id,
+                comparison_scope_key=f"session:{session.session_id}",
+                route=EvaluationRoute.DIAGNOSTIC,  # Diagnostic route
+                assistant_kind='diagnostic_executor',
+                assistant_configuration=AssistantConfigurationSnapshot(
+                    assistant_kind='diagnostic_executor',
+                    route=EvaluationRoute.DIAGNOSTIC,
+                    config_signature='diagnostic_verification',
+                    metadata={'diagnostic_test_id': test_id},
+                ),
+                expected=expected_result,
+                actual=actual_result,
+                precision=1.0,  # Verified results are considered precise
+                execution_ms=int(test_result.get('duration_ms', 0)),
+                operational_cost=0.0,  # Diagnostic tests are low cost
+                robustness=1.0,  # Verified results are robust
+                metadata={
+                    'verification_status': verification.get('verification_status'),
+                    'learning_decision': verification.get('learning_decision'),
+                    'verification_reason': verification.get('verification_reason'),
+                    'verification_evidence_refs': verification.get('verification_evidence_refs', []),
+                    'hypothesis_id': verification.get('hypothesis_id'),
+                    'selected_test_id': verification.get('selected_test_id'),
+                    'frame_id': verification.get('frame_id'),
+                    'interaction_id': verification.get('interaction_id'),
+                    'verified_at': verification.get('verified_at'),
+                    'test_id': test_id,
+                    'test_status': test_result.get('status'),
+                    'session_id': session.session_id,
+                    'diagnostic_cycle': True,
+                },
+            )
+            
+            return experiment_run
+        except Exception:
+            return None
+    
+    def _build_verification_metadata(
+        self,
+        verification_status: VerificationStatus,
+        learning_decision: LearningDecision,
+        evidence_refs: list[str],
+        verification_reason: str,
+        selected_test: dict[str, Any],
+        result: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Build verification metadata contract."""
+        return {
+            'verification_status': verification_status.value,
+            'learning_decision': learning_decision.value,
+            'verification_reason': verification_reason,
+            'verification_evidence_refs': evidence_refs,
+            'hypothesis_id': selected_test.get('hypothesis_id'),  # Future: when hypothesis system exists
+            'expected_result': selected_test.get('expected_result'),
+            'actual_result_ref': f"test_result:{result.get('test_id', '')}",
+            'selected_test_id': selected_test.get('test_id'),
+            'frame_id': result.get('frame_id'),
+            'interaction_id': result.get('interaction_id'),
+            'verified_at': datetime.now(timezone.utc).isoformat(),
+        }
 
     def _propagate_to_control_master(self, session: AdaptiveSession) -> None:
         """Close the learning loop: if the session opted in by tagging its
@@ -224,7 +540,44 @@ class TaskOutcomeRecorder:
         # diagnostic results from contaminating normal learning signals
         is_diagnostic_cycle = bool(session.metadata.get('diagnostic_cycle', False))
         if is_diagnostic_cycle:
-            # Skip all learning for diagnostic cycles
+            # P0.19d: Apply verification boundary for diagnostic cycles
+            # Only allow learning if VERIFIED + ELIGIBLE
+            verification = session.metadata.get('verification', {})
+            verification_status = verification.get('verification_status', VerificationStatus.UNVERIFIED.value)
+            learning_decision = verification.get('learning_decision', LearningDecision.NOT_ELIGIBLE.value)
+            
+            # Only proceed with learning if VERIFIED + ELIGIBLE
+            if verification_status != VerificationStatus.VERIFIED.value or learning_decision != LearningDecision.ELIGIBLE.value:
+                # Result is not learning-eligible, but evidence is preserved in session.metadata
+                return session
+            
+            # VERIFIED + ELIGIBLE: proceed with learning (P0.19e)
+            # Create ExperimentRun from verified diagnostic result
+            if self.experiment_lab is not None:
+                try:
+                    # Extract verification metadata
+                    verification = session.metadata.get('verification', {})
+                    test_result = session.metadata.get('test_result', {})
+                    selected_test = session.metadata.get('selected_test', {})
+                    
+                    # Build ExperimentRun from verified diagnostic result
+                    experiment_run = self._create_experiment_run_from_verification(
+                        session=session,
+                        verification=verification,
+                        test_result=test_result,
+                        selected_test=selected_test
+                    )
+                    
+                    # Save ExperimentRun via ExperimentLab repository
+                    if experiment_run is not None:
+                        self.experiment_lab.repository.save(experiment_run)
+                        # Store ExperimentRun ID in session metadata for traceability
+                        session.metadata['experiment_run_id'] = str(experiment_run.run_id)
+                except Exception:
+                    # If ExperimentRun creation fails, still preserve evidence
+                    # Don't break the verification boundary
+                    pass
+            
             return session
         
         if self.experiment_lab is None:
