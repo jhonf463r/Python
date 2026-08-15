@@ -354,34 +354,36 @@ class TaskOutcomeRecorder:
         Returns None if creation fails (defensive).
         """
         try:
-            from iabv_v15.domain.models import EvaluationRoute
+            from iabv_v15.domain.models import EvaluationRoute, ExperimentMetric
             
             # Extract key metadata
             test_id = selected_test.get('test_id', test_result.get('test_id', ''))
             expected_result = verification.get('expected_result')
             actual_result = test_result.get('actual_result') or test_result.get('evidence')
             
-            # Build ExperimentRun with minimal required fields
+            # Build ExperimentRun with canonical enum values and structure
             experiment_run = ExperimentRun(
-                domain=ExperimentDomain.TOOL_VALIDATION,  # Default domain for diagnostic tests
+                domain=ExperimentDomain.CODE,  # Canonical domain for diagnostic tests
                 suite_name='diagnostic_verification',
                 objective=f"verified_diagnostic:{test_id}",
                 subject_key=session.session_id,
                 comparison_scope_key=f"session:{session.session_id}",
-                route=EvaluationRoute.DIAGNOSTIC,  # Diagnostic route
+                route=EvaluationRoute.FALLBACK,  # Canonical route for diagnostic tests
                 assistant_kind='diagnostic_executor',
                 assistant_configuration=AssistantConfigurationSnapshot(
                     assistant_kind='diagnostic_executor',
-                    route=EvaluationRoute.DIAGNOSTIC,
+                    route=EvaluationRoute.FALLBACK,
                     config_signature='diagnostic_verification',
                     metadata={'diagnostic_test_id': test_id},
                 ),
-                expected=expected_result,
-                actual=actual_result,
-                precision=1.0,  # Verified results are considered precise
-                execution_ms=int(test_result.get('duration_ms', 0)),
-                operational_cost=0.0,  # Diagnostic tests are low cost
-                robustness=1.0,  # Verified results are robust
+                expected_summary=str(expected_result)[:240] if expected_result else '',
+                observed_summary=str(actual_result)[:240] if actual_result else '',
+                metrics=ExperimentMetric(
+                    precision=1.0,  # Verified results are considered precise
+                    execution_ms=int(test_result.get('duration_ms', 0)),
+                    operational_cost=0.0,  # Diagnostic tests are low cost
+                    robustness=1.0,  # Verified results are robust
+                ),
                 metadata={
                     'verification_status': verification.get('verification_status'),
                     'learning_decision': verification.get('learning_decision'),
@@ -400,7 +402,11 @@ class TaskOutcomeRecorder:
             )
             
             return experiment_run
-        except Exception:
+        except Exception as e:
+            # Log error but don't hide it - this is critical for learning
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create ExperimentRun from verification: {e}", exc_info=True)
             return None
     
     def _build_verification_metadata(
@@ -568,12 +574,30 @@ class TaskOutcomeRecorder:
                         selected_test=selected_test
                     )
                     
-                    # Save ExperimentRun via ExperimentLab repository
+                    # Save ExperimentRun via ExperimentLab repository using canonical contract
                     if experiment_run is not None:
-                        self.experiment_lab.repository.save(experiment_run)
+                        self.experiment_lab.repository.save_run(experiment_run)
                         # Store ExperimentRun ID in session metadata for traceability
                         session.metadata['experiment_run_id'] = str(experiment_run.run_id)
-                except Exception:
+                    else:
+                        # ExperimentRun creation failed - mark as NOT_ELIGIBLE
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"ExperimentRun creation failed for VERIFIED+ELIGIBLE session {session.session_id}")
+                        # Update learning decision to NOT_ELIGIBLE since ExperimentRun was not created
+                        verification['learning_decision'] = LearningDecision.NOT_ELIGIBLE.value
+                        verification['verification_reason'] = 'experiment_run_creation_failed'
+                        session.metadata['verification'] = verification
+                except Exception as e:
+                    # Log error but don't hide it - this is critical for learning
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to save ExperimentRun for VERIFIED+ELIGIBLE session {session.session_id}: {e}", exc_info=True)
+                    # Update learning decision to NOT_ELIGIBLE since ExperimentRun was not persisted
+                    verification = session.metadata.get('verification', {})
+                    verification['learning_decision'] = LearningDecision.NOT_ELIGIBLE.value
+                    verification['verification_reason'] = 'experiment_run_persistence_failed'
+                    session.metadata['verification'] = verification
                     # If ExperimentRun creation fails, still preserve evidence
                     # Don't break the verification boundary
                     pass
