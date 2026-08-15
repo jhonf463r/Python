@@ -753,6 +753,8 @@ class IntentUnderstandingService:
             return finalize(intent, hypotheses)
 
         if self._is_self_awareness_prompt(text) and not bool(analysis.get('mixed_actionable')):
+            # P0.18C: Detect diagnostic_request marker for precedence gate
+            is_diagnostic = self._is_diagnostic_request(text)
             intent = build(
                 intent_key='system.self_awareness',
                 title='Autodiagnostico conversacional del sistema',
@@ -766,6 +768,7 @@ class IntentUnderstandingService:
                     'conversational_prompt': True,
                     'self_awareness_prompt': True,
                     'meta_assistant_prompt': self._contains_any(text, ['codex', 'chatgpt', 'claude', 'ollama', 'devin', 'windsurf', 'ia', 'ias']),
+                    'diagnostic_request': is_diagnostic,  # P0.18C: precedence gate marker
                 },
             )
             hypotheses.append(
@@ -1632,32 +1635,43 @@ class IntentUnderstandingService:
             'que desajustes detectas',
             'tu propio funcionamiento',
             'tu funcionamiento',
-            'como funciones',
-            'como funcionas',
-            'como estas funcionando',
-            'diagnosticate',
-            'autodiagnostico',
-            'autodiagnosticarte',
-            'examinate',
-            'autoexaminate',
         )
-        if any(phrase in text for phrase in direct_phrases):
-            return True
-        word_tokens = set(re.findall(r'[a-z0-9_]+', text))
-        asks_system_state = any(token in word_tokens for token in (
-            'entorno', 'arquitectura', 'herramienta', 'herramientas',
-            'ias', 'ia', 'estado', 'conexiones',
-            'funcionamiento', 'desajustes', 'problemas', 'degradacion',
-            'diagnostico', 'autoexaminacion', 'salud',
-        ))
-        asks_directly = any(token in text for token in (
-            'conoces', 'sabes', 'tienes', 'disponibles',
-            'te conectas', 'te puedes conectar', 'puedes usar',
-            'consciente', 'que tan bien', 'como estas', 'como estÃ¡s',
-            'como te sientes', 'que problemas', 'que desajustes',
-            'detectas', 'funcionando', 'tu propio',
-        ))
-        return asks_system_state and asks_directly
+        text_lower = text.lower()
+        return any(phrase in text_lower for phrase in direct_phrases)
+
+    def _is_diagnostic_request(self, text: str) -> bool:
+        """Detect explicit diagnostic request markers for P0.18C precedence gate.
+        
+        Returns True when user explicitly requests:
+        - comprobar/investigar/diagnosticar
+        - una prueba
+        - read-only
+        - bounded
+        - sin cambios
+        """
+        if not text:
+            return False
+        text_lower = text.lower()
+        diagnostic_markers = (
+            'comprobar',
+            'investigar',
+            'diagnosticar',
+            'diagnostica',
+            'diagnostico',
+            'prueba',
+            'read-only',
+            'read only',
+            'readonly',
+            'bounded',
+            'sin cambios',
+            'sin cambio',
+            'verificar',
+            'check',
+            'test',
+            'auditar',
+            'audita',
+        )
+        return any(marker in text_lower for marker in diagnostic_markers)
 
     def _is_evolution_status_prompt(self, text: str) -> bool:
         if not text:

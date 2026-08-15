@@ -29,6 +29,9 @@ class StrategyPackRegistry:
             'general.assistance': 'knowledge.query',
             'tools.local_workflow': 'tools.local_first',
             'tools.sandbox': 'tools.sandbox',
+            # P0.18C: Direct mapping for system.self_awareness to prevent fallback to browser.generic
+            'system.self_awareness': 'knowledge.query',
+            'system.metacognition': 'knowledge.query',
         }
         pack_id = direct_map.get(intent.intent_key, 'browser.generic')
         pack = self._packs.get(pack_id)

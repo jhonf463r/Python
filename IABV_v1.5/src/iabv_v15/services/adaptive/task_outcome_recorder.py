@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -17,6 +18,7 @@ from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessi
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
 from iabv_v15.infra.persistence.capability_repository import CapabilityRepository
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
+from iabv_v15.services.evolution.diagnostic_test_executor import DiagnosticTestExecutor
 
 
 # Maps AdaptiveSession terminal status -> ControlMasterService.mark_objective
@@ -44,6 +46,7 @@ class TaskOutcomeRecorder:
         adaptive_weight_layer: Any | None = None,
         control_master_service: Any | None = None,
         intent_understanding_service: Any | None = None,
+        diagnostic_test_executor: DiagnosticTestExecutor | None = None,
     ) -> None:
         self.adaptive_session_repository = adaptive_session_repository
         self.capability_repository = capability_repository
@@ -52,9 +55,15 @@ class TaskOutcomeRecorder:
         self.adaptive_weight_layer = adaptive_weight_layer
         self.control_master_service = control_master_service
         self.intent_understanding_service = intent_understanding_service
+        self.diagnostic_test_executor = diagnostic_test_executor or DiagnosticTestExecutor()
 
     def record(self, session: AdaptiveSession, run_record: RunRecord | None = None) -> AdaptiveSession:
-        if run_record is not None and self.experiment_lab is not None:
+        diagnostic_cycle = bool(session.metadata.get('diagnostic_cycle'))
+        if run_record is not None and isinstance(session.metadata.get('selected_test'), dict) and 'test_result' not in session.metadata:
+            session.metadata['diagnostic_cycle'] = True
+            session.metadata['diagnostic_execution'] = {'state': 'scheduled'}
+            diagnostic_cycle = True
+        if run_record is not None and self.experiment_lab is not None and not diagnostic_cycle:
             session = self._record_learning(session=session, run_record=run_record)
             self._check_intent_correction(session=session, run_record=run_record)
         if session.capability_readiness:
@@ -73,7 +82,34 @@ class TaskOutcomeRecorder:
                 self._save_resume_hint_if_interrupted(saved, run_record=run_record)
         else:
             self._save_resume_hint_if_interrupted(saved, run_record=run_record)
+        if diagnostic_cycle and 'test_result' not in saved.metadata:
+            # P0.18C: Handle diagnostic_cycle when run_record is None (precedence gate path)
+            run_id = str(run_record.run_id) if run_record is not None else ''
+            execution = self.diagnostic_test_executor.start(
+                saved.metadata['selected_test'],
+                session_id=saved.session_id,
+                frame_id=str(saved.metadata.get('frame_id') or ''),
+                interaction_id=str(saved.metadata.get('interaction_id') or ''),
+                run_id=run_id,
+                on_result=lambda result, session_id=saved.session_id: self._persist_diagnostic_result(session_id, result),
+            )
+            saved.metadata['diagnostic_execution'] = execution
         return saved
+
+    def _persist_diagnostic_result(self, session_id: str, result: dict[str, Any]) -> None:
+        """Persist the sole terminal result without reopening the learning loop."""
+        session = self.adaptive_session_repository.get(session_id)
+        if session is None or isinstance(session.metadata.get('test_result'), dict):
+            return
+        session.metadata['test_result'] = dict(result)
+        session.metadata['diagnostic_execution'] = {
+            'state': 'completed',
+            'deduplication_key': f"{session_id}:{result.get('frame_id', '')}:{result.get('test_id', '')}",
+            'worker_still_running': bool(result.get('worker_still_running')),
+            'timed_out': bool(result.get('timed_out')),
+        }
+        session.updated_at_utc = datetime.now(timezone.utc)
+        self.adaptive_session_repository.save(session)
 
     def _propagate_to_control_master(self, session: AdaptiveSession) -> None:
         """Close the learning loop: if the session opted in by tagging its
@@ -183,6 +219,14 @@ class TaskOutcomeRecorder:
             pass
 
     def _record_learning(self, *, session: AdaptiveSession, run_record: RunRecord) -> AdaptiveSession:
+        # P0.15B-CANONICAL: Isolate diagnostic cycle from normal learning
+        # When diagnostic_cycle=True, skip ExperimentLab to prevent
+        # diagnostic results from contaminating normal learning signals
+        is_diagnostic_cycle = bool(session.metadata.get('diagnostic_cycle', False))
+        if is_diagnostic_cycle:
+            # Skip all learning for diagnostic cycles
+            return session
+        
         if self.experiment_lab is None:
             return session
         domain = self._experiment_domain(session=session, run_record=run_record)

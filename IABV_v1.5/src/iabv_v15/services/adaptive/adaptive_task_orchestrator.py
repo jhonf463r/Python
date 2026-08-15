@@ -48,6 +48,7 @@ from iabv_v15.services.adaptive.intent_understanding_service import IntentUnders
 from iabv_v15.services.adaptive.strategy_pack_registry import StrategyPackRegistry
 from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
 from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
+from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
 from iabv_v15.services.llm.system_prompt_builder import SystemPromptBuilder
 from iabv_v15.services.llm.tool_calling_bridge import ToolCallingBridge
 from iabv_v15.services.roles.local_role_router import LocalRoleRouter
@@ -254,6 +255,7 @@ class AdaptiveTaskOrchestrator:
         synaptic_router: Any | None = None,
         experiment_lab: Any | None = None,
         autonomy_cycle_service: Any | None = None,
+        discernment_frame_service: DiscernmentFrameService | None = None,
     ) -> None:
         self.role_router = role_router
         self.adaptive_session_repository = adaptive_session_repository
@@ -279,6 +281,7 @@ class AdaptiveTaskOrchestrator:
         # descriptivo; nunca decide ruta operativa.
         self.experiment_lab = experiment_lab
         self.autonomy_cycle_service = autonomy_cycle_service
+        self.discernment_frame_service = discernment_frame_service or DiscernmentFrameService()
         self.cloud_reasoning_planner: CloudReasoningPlannerService | None = None
         self.api_key_discovery_service: Any | None = None
         self.decision_audit_trail: Any | None = None
@@ -1585,6 +1588,7 @@ class AdaptiveTaskOrchestrator:
                 'approval_mode': request.approval_mode,
                 'execution_scope': request.execution_scope,
                 'goal_parameters': dict(request.goal_parameters),
+                'interaction_id': request.request_id,
                 'perception_snapshot': perception.model_dump(mode='json'),
                 'etapa2_conversation_analysis': {
                     'ambiguity_score': ambiguity_score,
@@ -1625,6 +1629,23 @@ class AdaptiveTaskOrchestrator:
             perception.task_context.goal_context = session.context.goal_context
         session.outcome = self._initial_outcome(session=session, pack=pack)
         session = self._refresh_session_metadata(session, request=request, pack=pack, perception_snapshot=perception)
+        frame = self.discernment_frame_service.build_frame(
+            phase='observe',
+            trigger_source='inference_request',
+            raw_inputs=[request.user_goal],
+            world_model=perception.world_model.model_dump(mode='json'),
+            environment_self_model=perception.environment_self_model.model_dump(mode='json'),
+            human_evidence=[{'source': 'human', 'observation': request.user_goal}],
+        )
+        session.metadata['frame_id'] = frame.frame_id
+        if frame.metadata.get('human_evidence'):
+            session.metadata['human_evidence'] = list(frame.metadata['human_evidence'])
+        selected_test = frame.metadata.get('selected_test')
+        if isinstance(selected_test, dict) and selected_test.get('status') == 'proposed':
+            session.metadata['selected_test'] = selected_test
+            # P0.18C: Set diagnostic_cycle=True when valid selected_test exists
+            # This must happen before TaskOutcomeRecorder.record()
+            session.metadata['diagnostic_cycle'] = True
         decision_context = DecisionContext.model_validate(
             session.metadata.get('decision_context') or session.context.metadata.get('decision_context') or {}
         )
@@ -1999,7 +2020,7 @@ class AdaptiveTaskOrchestrator:
         session = self._apply_run_feedback(session, run_record)
         session = self._refresh_session_metadata(session)
         saved_session = self.task_outcome_recorder.record(session, run_record=run_record)
-        if self._should_auto_replan(saved_session):
+        if not saved_session.metadata.get('diagnostic_cycle') and self._should_auto_replan(saved_session):
             replanned = self.replan_session(saved_session.session_id)
             if replanned is not None:
                 saved_session.metadata['auto_replanned_session_id'] = replanned.session_id
@@ -2640,6 +2661,42 @@ class AdaptiveTaskOrchestrator:
         perception_snapshot_payload = dict(session.metadata.get('perception_snapshot') or session.context.metadata.get('perception_snapshot') or {})
         assistant_guidance = dict(session.metadata.get('assistant_guidance') or decision_context_payload.get('assistant_guidance') or self._build_assistant_guidance(session, pack))
         llm_chat = self._maybe_invoke_local_chat_llm(session=session, request=request)
+        
+        # P0.18C: Handle UNRESOLVED state from diagnostic precedence gate
+        if llm_chat and llm_chat.get('unresolved'):
+            # Return UNRESOLVED result without invoking normal learning
+            return InferenceResult(
+                request_id=request.request_id,
+                provider_name='diagnostic_precedence_gate',
+                reasoning_mode=ReasoningMode.LOCAL,
+                summary='Solicitud diagnóstica sin evidencia suficiente. Proporcione más contexto o especifique la prueba deseada.',
+                inferred_task=session.intent.title,
+                confidence=session.intent.confidence,
+                clarifications=[],
+                used_tools=[],
+                sources=[],
+                follow_up_teachings=[],
+                report_kind='diagnostic_unresolved',
+                detected_role=session.intent.detected_role,
+                planner_used=False,
+                executor_model='',
+                improvement_hints=[],
+                recommended_next_checks=['Proporcionar más contexto', 'Especificar prueba deseada'],
+                intent=session.intent.model_dump(mode='json'),
+                chosen_pack=pack.model_dump(mode='json'),
+                strategy_candidates=[item.model_dump(mode='json') for item in session.strategy_candidates],
+                playbook=session.playbook.model_dump(mode='json') if session.playbook is not None else None,
+                approval_checkpoints=[],
+                capability_readiness=[item.model_dump(mode='json') for item in session.capability_readiness],
+                next_actions=['Proporcionar más contexto'],
+                raw_output={
+                    'adaptive_session_id': session.session_id,
+                    'adaptive_session': session.model_dump(mode='json'),
+                    'diagnostic_unresolved': True,
+                    'reason': llm_chat.get('reason', 'diagnostic_request without sufficient evidence'),
+                },
+            )
+        
         llm_summary = llm_chat.get('summary') if llm_chat else ''
         summary = str(llm_summary or assistant_guidance.get('prompt') or self._render_summary(session))
         role_profile = next((item for item in self.role_router.role_profiles if item.role == session.intent.detected_role), self.role_router.role_profiles[0])
@@ -2720,6 +2777,36 @@ class AdaptiveTaskOrchestrator:
             return None
         if not _is_local_chat_flow(session):
             return None
+        
+        # P0.18C: Check for diagnostic_request precedence gate
+        intent_metadata = dict(getattr(session.intent, 'metadata', None) or {})
+        is_diagnostic_request = bool(intent_metadata.get('diagnostic_request', False))
+        
+        if is_diagnostic_request:
+            # P0.18C: Evaluate frame before invoking LLM
+            selected_test = session.metadata.get('selected_test')
+            if isinstance(selected_test, dict) and selected_test.get('status') == 'proposed':
+                # Valid selected_test exists - set diagnostic_cycle and skip LLM
+                session.metadata['diagnostic_cycle'] = True
+                logger.info(
+                    'P0.18C: diagnostic_request with valid selected_test=%s - skipping LLM, using diagnostic_cycle',
+                    selected_test.get('test_id', 'unknown')
+                )
+                return None  # Skip LLM, use existing diagnostic cycle
+            else:
+                # No sufficient evidence for selected_test - return UNRESOLVED
+                logger.info(
+                    'P0.18C: diagnostic_request without sufficient evidence - returning UNRESOLVED, skipping LLM'
+                )
+                # Return a special marker to indicate UNRESOLVED state
+                return {
+                    'summary': '',
+                    'provider_name': 'diagnostic_precedence_gate',
+                    'available': True,
+                    'unresolved': True,
+                    'reason': 'diagnostic_request without sufficient evidence for selected_test',
+                }
+        
         provider = getattr(self.role_router, 'general_provider', None)
         if provider is None:
             return None

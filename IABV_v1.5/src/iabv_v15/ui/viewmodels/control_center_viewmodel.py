@@ -12392,6 +12392,14 @@ class ControlCenterViewModel(QObject):
         if not command:
             return False
 
+        # P0.18C: Diagnostic precedence gate - defer diagnostic requests to metacognitive pipeline
+        # Self-analysis requests should go through sendChat → _build_request → InferenceService →
+        # AdaptiveTaskOrchestrator → MetacognitiveDiscernmentFrame → selected_test → DiagnosticTestExecutor
+        # instead of being resolved early here.
+        if self._is_self_code_analysis_request(command):
+            # Return False to let diagnostic intent proceed to canonical metacognitive pipeline
+            return False
+
         if any(token in command for token in ('mostrar avanzado', 'ver avanzado', 'abrir avanzado')):
             self._advanced_visible = True
             self._busy_label = 'Modo avanzado visible.'
@@ -12467,9 +12475,9 @@ class ControlCenterViewModel(QObject):
         if 'ciclo pbt' in command or 'ejecutar pbt' in command:
             self.runQuickPbt()
             return True
-        if self._is_self_code_analysis_request(command):
-            self._run_self_code_analysis()
-            return True
+        # P0.18C: Self-analysis requests are now deferred to metacognitive pipeline via the gate at function start
+        # The _is_self_code_analysis_request() check and _run_self_code_analysis() call are removed here
+        # to prevent early resolution. Diagnostic intents now proceed through the canonical pipeline.
         return False
 
     def _is_self_code_analysis_request(self, command: str) -> bool:

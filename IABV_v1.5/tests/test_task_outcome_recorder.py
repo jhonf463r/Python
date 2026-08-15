@@ -8,10 +8,12 @@ to join runs back to their originating sessions.
 from __future__ import annotations
 
 import shutil
+import time
 import uuid
 from pathlib import Path
 
 from iabv_v15.bootstrap import AppBootstrap
+from iabv_v15.services.evolution.diagnostic_test_executor import DiagnosticTestExecutor
 from iabv_v15.domain.models import (
     AdaptiveSession,
     AdaptiveSessionStatus,
@@ -98,6 +100,101 @@ def test_record_learning_propagates_trace_id() -> None:
         trace_id = latest.metadata.get('trace_id', '')
         assert trace_id, 'trace_id should not be empty'
         assert len(trace_id) == 8, 'trace_id should be first 8 chars of session_id'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_diagnostic_result_is_persisted_without_starting_learning() -> None:
+    """P0.15 stops after the bounded diagnostic result, before ExperimentLab."""
+    root = _workspace('diagnostic_stop')
+    try:
+        boot = AppBootstrap(str(root))
+        class FakeDiagnosticExecutor:
+            def start(self, selected_test, *, session_id, frame_id, interaction_id='', run_id='', on_result=None):
+                result = {
+                    'test_id': selected_test['test_id'], 'frame_id': frame_id,
+                    'interaction_id': interaction_id, 'run_id': run_id,
+                    'status': 'success', 'duration_ms': 1, 'evidence': ['fake_probe'],
+                    'error': '', 'started_at': '2026-01-01T00:00:00+00:00',
+                    'finished_at': '2026-01-01T00:00:00+00:00',
+                }
+                if on_result is not None:
+                    on_result(result)
+                return {'state': 'running', 'deduplication_key': f'{session_id}:{frame_id}:{selected_test["test_id"]}'}
+
+        boot.task_outcome_recorder.diagnostic_test_executor = FakeDiagnosticExecutor()
+        session = _session(metadata={
+            'frame_id': 'frame-1',
+            'interaction_id': 'request-1',
+            'selected_test': {
+                'test_id': 'local_probe',
+                'test_type': 'provider_availability',
+                'target': 'http://127.0.0.1:11434/api/version',
+                'status': 'proposed',
+                'diagnostic': True,
+                'read_only': True,
+                'requires_approval': False,
+                'timeout_seconds': 0.02,
+            },
+        })
+        run_record = _run_record()
+
+        result = boot.task_outcome_recorder.record(session, run_record=run_record)
+
+        persisted = boot.adaptive_session_repository.get(result.session_id)
+        assert persisted is not None
+        assert persisted.metadata['test_result']['status'] == 'success'
+        assert persisted.metadata['test_result']['frame_id'] == 'frame-1'
+        boot.task_outcome_recorder.record(persisted, run_record=run_record)
+        runs = boot.experiment_lab.repository.list_runs(
+            domain=ExperimentDomain.LANGUAGE.value, subject_key='general', limit=10,
+        )
+        assert runs == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_repeated_record_does_not_start_a_second_diagnostic() -> None:
+    """The recorder delegates duplicate suppression to the shared executor key."""
+    root = _workspace('diagnostic_dedup')
+    try:
+        boot = AppBootstrap(str(root))
+        calls = []
+
+        def slow_runner(target, timeout, cancel_event):
+            calls.append(target)
+            time.sleep(0.2)
+            return {'status': 'success'}
+
+        boot.task_outcome_recorder.diagnostic_test_executor = DiagnosticTestExecutor(runner=slow_runner)
+        session = _session(metadata={
+            'frame_id': 'frame-1',
+            'interaction_id': 'request-1',
+            'selected_test': {
+                'test_id': 'local_probe',
+                'test_type': 'provider_availability',
+                'target': 'http://127.0.0.1:11434/api/version',
+                'status': 'proposed',
+                'diagnostic': True,
+                'read_only': True,
+                'requires_approval': False,
+                'timeout_seconds': 0.02,
+            },
+        })
+        run_record = _run_record()
+
+        boot.task_outcome_recorder.record(session, run_record=run_record)
+        boot.task_outcome_recorder.record(session, run_record=run_record)
+        time.sleep(0.08)
+
+        persisted = boot.adaptive_session_repository.get(session.session_id)
+        assert persisted is not None
+        assert calls == ['http://127.0.0.1:11434/api/version']
+        assert persisted.metadata['test_result']['status'] == 'timeout'
+        runs = boot.experiment_lab.repository.list_runs(
+            domain=ExperimentDomain.LANGUAGE.value, subject_key='general', limit=10,
+        )
+        assert runs == []
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
