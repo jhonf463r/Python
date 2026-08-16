@@ -59,6 +59,7 @@ class TestEpistemicHypothesisContract:
             'read_only': True,
             'requires_approval': False,
             'timeout_seconds': 2.0,
+            'observed_condition': 'provider_available',  # P0.20h: Mandatory field
         }
 
         # Generate hypothesis
@@ -105,6 +106,7 @@ class TestEpistemicHypothesisContract:
             'read_only': True,
             'requires_approval': False,
             'timeout_seconds': 2.0,
+            'observed_condition': 'provider_available',  # P0.20h: Mandatory field
         }
 
         hypothesis = service._generate_epistemic_hypothesis(frame, selected_test)
@@ -151,6 +153,7 @@ class TestEpistemicHypothesisContract:
             'read_only': True,
             'requires_approval': False,
             'timeout_seconds': 2.0,
+            'observed_condition': 'provider_available',  # P0.20h: Mandatory field
         }
 
         hypothesis = service._generate_epistemic_hypothesis(frame, selected_test)
@@ -160,7 +163,8 @@ class TestEpistemicHypothesisContract:
 
             assert 'epistemic_hypothesis' in frame.metadata, "epistemic_hypothesis should be in frame metadata"
             assert frame.metadata['epistemic_hypothesis'].expected_result != "", "expected_result should be non-empty"
-            assert frame.metadata['epistemic_hypothesis'].expected_result == 'provider_available', "expected_result should match target"
+            # P0.20c: expected_result is now structured with condition and expected
+            assert frame.metadata['epistemic_hypothesis'].expected_result['condition'] == 'provider_available', "expected_result.condition should match observed_condition"
 
     def test_d_selected_test_receives_hypothesis_id(self):
         """Test D: selected_test receives hypothesis_id."""
@@ -197,6 +201,7 @@ class TestEpistemicHypothesisContract:
             'read_only': True,
             'requires_approval': False,
             'timeout_seconds': 2.0,
+            'observed_condition': 'provider_available',  # P0.20h: Mandatory field
         }
 
         hypothesis = service._generate_epistemic_hypothesis(frame, selected_test)
@@ -243,6 +248,7 @@ class TestEpistemicHypothesisContract:
             'read_only': True,
             'requires_approval': False,
             'timeout_seconds': 2.0,
+            'observed_condition': 'provider_available',  # P0.20h: Mandatory field
         }
 
         hypothesis = service._generate_epistemic_hypothesis(frame, selected_test)
@@ -252,7 +258,8 @@ class TestEpistemicHypothesisContract:
 
             assert 'expected_result' in selected_test, "expected_result should be in selected_test"
             assert selected_test['expected_result'] != "", "expected_result should be non-empty"
-            assert selected_test['expected_result'] == 'provider_available', "expected_result should match target"
+            # P0.20c: expected_result is now structured with condition and expected
+            assert selected_test['expected_result']['condition'] == 'provider_available', "expected_result.condition should match observed_condition"
 
     def test_f_propagation_to_session_metadata(self):
         """Test F: Information reaches AdaptiveSession.metadata."""
@@ -292,6 +299,7 @@ class TestEpistemicHypothesisContract:
             'read_only': True,
             'requires_approval': False,
             'timeout_seconds': 2.0,
+            'observed_condition': 'provider_available',  # P0.20h: Mandatory field
         }
 
         hypothesis = service._generate_epistemic_hypothesis(frame, selected_test)
@@ -348,6 +356,7 @@ class TestEpistemicHypothesisContract:
             'read_only': True,
             'requires_approval': False,
             'timeout_seconds': 2.0,
+            'observed_condition': 'provider_available',  # P0.20h: Mandatory field
         }
 
         hypothesis = service._generate_epistemic_hypothesis(frame, selected_test)

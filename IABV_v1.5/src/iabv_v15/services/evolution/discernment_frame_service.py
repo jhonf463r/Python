@@ -164,9 +164,11 @@ class DiscernmentFrameService:
                 'read_only': True,
                 'requires_approval': False,
                 'timeout_seconds': 2.0,
+                'observed_condition': 'provider_available',  # P0.20h: Mandatory explicit dimension
             }
 
         # Tier 2: General diagnostic intent with available evidence (P0.18G integration)
+        # P0.20h: Do not create executable test without defined observed_condition
         # Check if this is a diagnostic request via frame metadata
         is_diagnostic = bool(frame.metadata.get('diagnostic_request', False))
         if not is_diagnostic:
@@ -184,19 +186,10 @@ class DiscernmentFrameService:
         elif 'environment_self_model' in frame.trusted_sources:
             diagnostic_target = 'environment_state'
 
-        return {
-            'test_id': 'general_system_diagnostic',
-            'test_type': 'self_diagnostic',
-            'target': diagnostic_target,
-            'reason': 'Diagnostic intent detected with available trusted sources for self-analysis.',
-            'cost_class': 'low',
-            'status': 'proposed',
-            'contradiction_type': 'diagnostic_intent',
-            'diagnostic': True,
-            'read_only': True,
-            'requires_approval': False,
-            'timeout_seconds': 5.0,
-        }
+        # P0.20h: Do not create executable test without observed_condition
+        # General diagnostic without defined dimension should not execute invented observation
+        # Return empty dict to indicate no executable test available
+        return {}
 
     @staticmethod
     def _generate_epistemic_hypothesis(
@@ -233,16 +226,17 @@ class DiscernmentFrameService:
         # Generate hypothesis statement based on contradiction type
         statement = f"Contradiction {contradiction_type} suggests a diagnostic gap."
 
-        # Generate expected_result based on selected_test target
-        target = str(selected_test.get('target', ''))
-        if 'provider' in target.lower():
-            expected_result = 'provider_available'
-        elif 'world_model' in target.lower():
-            expected_result = 'world_model_consistent'
-        elif 'environment' in target.lower():
-            expected_result = 'environment_stable'
-        else:
-            expected_result = 'system_healthy'
+        # Generate expected_result based on selected_test.observed_condition
+        # P0.20g: Use explicit observed_condition from selected_test instead of inferring from target text
+        # P0.20h: No fallback - observed_condition must be present in selected_test
+        observed_condition = selected_test.get('observed_condition')
+        if not observed_condition:
+            # P0.20h: Cannot generate hypothesis without observed_condition
+            return None
+        expected_result = {
+            'condition': observed_condition,
+            'expected': True,
+        }
 
         return EpistemicHypothesis(
             statement=statement,

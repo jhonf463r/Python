@@ -100,14 +100,14 @@ class TaskOutcomeRecorder:
         return saved
 
     def _persist_diagnostic_result(self, session_id: str, result: dict[str, Any]) -> None:
-        """Persist the sole terminal result with verification boundary without reopening the learning loop."""
+        """Persist the sole terminal result with verification boundary and re-enter learning gate if VERIFIED+ELIGIBLE."""
         session = self.adaptive_session_repository.get(session_id)
         if session is None or isinstance(session.metadata.get('test_result'), dict):
             return
-        
+
         # P0.19d: Apply verification boundary
         verification_metadata = self._compute_verification_metadata(session, result)
-        
+
         session.metadata['test_result'] = dict(result)
         session.metadata['diagnostic_execution'] = {
             'state': 'completed',
@@ -115,24 +115,31 @@ class TaskOutcomeRecorder:
             'worker_still_running': bool(result.get('worker_still_running')),
             'timed_out': bool(result.get('timed_out')),
         }
-        
+
         # P0.19d: Attach verification metadata
         session.metadata['verification'] = verification_metadata
-        
-        # P0.19e: Leave contract for epistemic_hypothesis (UNRESOLVED)
-        # When hypothesis system exists, this will be populated by DiscernmentFrameService
-        # For now, we document the expected contract:
-        # session.metadata['epistemic_hypothesis'] = {
-        #     'hypothesis_id': str,
-        #     'statement': str,
-        #     'expected_result': Any,
-        #     'evidence_refs': list[str],
-        #     'contradiction_refs': list[str],
-        # }
-        # This is UNRESOLVED until hypothesis system is implemented
-        
+
+        # P0.20c: Propagate epistemic_hypothesis from selected_test to session.metadata
+        selected_test = session.metadata.get('selected_test', {})
+        if selected_test.get('hypothesis_id'):
+            # Hypothesis exists in selected_test, propagate to session.metadata
+            session.metadata['hypothesis_id'] = selected_test.get('hypothesis_id')
+            session.metadata['expected_result'] = selected_test.get('expected_result')
+
         session.updated_at_utc = datetime.now(timezone.utc)
-        self.adaptive_session_repository.save(session)
+        saved_session = self.adaptive_session_repository.save(session)
+
+        # P0.20d: Re-enter learning gate if VERIFIED + ELIGIBLE using real result
+        verification_status = verification_metadata.get('verification_status', VerificationStatus.UNVERIFIED.value)
+        learning_decision = verification_metadata.get('learning_decision', LearningDecision.NOT_ELIGIBLE.value)
+
+        if verification_status == VerificationStatus.VERIFIED.value and learning_decision == LearningDecision.ELIGIBLE.value:
+            # VERIFIED + ELIGIBLE: proceed with learning using real diagnostic result
+            # P0.20d: NO synthetic RunRecord - use real result directly
+            saved_session = self._record_diagnostic_learning(session=saved_session, verification_metadata=verification_metadata, test_result=result)
+
+            # Save again with ExperimentRun metadata
+            self.adaptive_session_repository.save(saved_session)
     
     def _compute_verification_metadata(self, session: AdaptiveSession, result: dict[str, Any]) -> dict[str, Any]:
         """Compute verification status and learning decision for a diagnostic test result.
@@ -212,10 +219,10 @@ class TaskOutcomeRecorder:
                 selected_test, result
             )
         
-        # Rule 5: Check for actual_result
-        actual_result = result.get('actual_result') or result.get('evidence')
+        # Rule 5: Check for actual_result (P0.20e: Strict - no fallback to evidence)
+        actual_result = result.get('actual_result')
         if not actual_result:
-            verification_status = VerificationStatus.UNVERIFIED
+            verification_status = VerificationStatus.INCONCLUSIVE
             verification_reason = 'missing_actual_result'
             return self._build_verification_metadata(
                 verification_status, learning_decision, evidence_refs, verification_reason,
@@ -256,8 +263,25 @@ class TaskOutcomeRecorder:
                 selected_test, result
             )
         
-        # Rule 9: Compare expected_result vs actual_result (P0.19e)
-        comparison_result = self._compare_results(expected_result, actual_result)
+        # Rule 9: Validate structural requirements (P0.20e)
+        if not self._validate_structured_result(expected_result, 'expected_result'):
+            verification_status = VerificationStatus.INCONCLUSIVE
+            verification_reason = 'invalid_expected_result_structure'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+
+        if not self._validate_structured_result(actual_result, 'actual_result'):
+            verification_status = VerificationStatus.INCONCLUSIVE
+            verification_reason = 'invalid_actual_result_structure'
+            return self._build_verification_metadata(
+                verification_status, learning_decision, evidence_refs, verification_reason,
+                selected_test, result
+            )
+
+        # Rule 10: Compare expected_result vs actual_result (P0.20e: Strict)
+        comparison_result = self._compare_structured_results(expected_result, actual_result)
         if comparison_result == 'MISMATCH':
             verification_status = VerificationStatus.REFUTED
             verification_reason = 'expected_vs_actual_mismatch'
@@ -285,59 +309,75 @@ class TaskOutcomeRecorder:
             selected_test, result
         )
     
+    def _validate_structured_result(self, result: Any, result_name: str) -> bool:
+        """Validate that a result has the required structured format.
+
+        P0.20e: Strict structural validation for diagnostic verification.
+        Rejects extra keys to prevent ambiguity.
+
+        Args:
+            result: The result to validate
+            result_name: Name of the result (for error messages)
+
+        Returns:
+            True if result is a valid structured dict with exactly required keys
+        """
+        if not isinstance(result, dict):
+            return False
+
+        # For expected_result: must have exactly 'condition' and 'expected'
+        if result_name == 'expected_result':
+            required_keys = {'condition', 'expected'}
+            return set(result.keys()) == required_keys
+
+        # For actual_result: must have exactly 'condition' and 'observed'
+        if result_name == 'actual_result':
+            required_keys = {'condition', 'observed'}
+            return set(result.keys()) == required_keys
+
+        return False
+
+    def _compare_structured_results(self, expected_result: dict[str, Any], actual_result: dict[str, Any]) -> str:
+        """Compare structured expected_result vs actual_result with strict semantics.
+
+        P0.20e: Only structured dict comparison allowed. No fallbacks.
+
+        Args:
+            expected_result: Structured dict with 'condition' and 'expected'
+            actual_result: Structured dict with 'condition' and 'observed'
+
+        Returns:
+            'MATCH': condition matches AND expected == observed
+            'MISMATCH': condition mismatch OR expected != observed
+        """
+        # Extract values
+        expected_condition = expected_result.get('condition')
+        actual_condition = actual_result.get('condition')
+        expected_bool = expected_result.get('expected')
+        actual_observed = actual_result.get('observed')
+
+        # Condition must match exactly
+        if expected_condition != actual_condition:
+            return 'MISMATCH'
+
+        # Boolean values must match exactly
+        if expected_bool != actual_observed:
+            return 'MISMATCH'
+
+        return 'MATCH'
+
     def _compare_results(self, expected_result: Any, actual_result: Any) -> str:
         """Compare expected_result vs actual_result explicitly.
-        
+
+        P0.20e: DEPRECATED - Only _compare_structured_results should be used for diagnostic verification.
+        This method is kept for backward compatibility but should not be used for diagnostic verification.
+
         Returns:
-            'MATCH': Results are compatible
-            'MISMATCH': Results are incompatible
-            'INSUFFICIENT_EVIDENCE': Cannot determine compatibility
+            'INSUFFICIENT_EVIDENCE': Always returns this for non-structured inputs
         """
-        # Handle None cases
-        if expected_result is None or actual_result is None:
-            return 'INSUFFICIENT_EVIDENCE'
-        
-        # Handle string comparison (most common case)
-        if isinstance(expected_result, str) and isinstance(actual_result, str):
-            if expected_result.strip() == actual_result.strip():
-                return 'MATCH'
-            # Check for substring match (actual contains expected)
-            if expected_result.strip() in actual_result.strip():
-                return 'MATCH'
-            return 'MISMATCH'
-        
-        # Handle numeric comparison
-        if isinstance(expected_result, (int, float)) and isinstance(actual_result, (int, float)):
-            if abs(expected_result - actual_result) < 1e-9:
-                return 'MATCH'
-            return 'MISMATCH'
-        
-        # Handle boolean comparison
-        if isinstance(expected_result, bool) and isinstance(actual_result, bool):
-            return 'MATCH' if expected_result == actual_result else 'MISMATCH'
-        
-        # Handle dict comparison
-        if isinstance(expected_result, dict) and isinstance(actual_result, dict):
-            # Simple key existence check for now
-            expected_keys = set(expected_result.keys())
-            actual_keys = set(actual_result.keys())
-            if expected_keys.issubset(actual_keys):
-                return 'MATCH'
-            return 'MISMATCH'
-        
-        # Handle list comparison
-        if isinstance(expected_result, list) and isinstance(actual_result, list):
-            if expected_result == actual_result:
-                return 'MATCH'
-            return 'MISMATCH'
-        
-        # For other types, use string representation comparison
-        try:
-            if str(expected_result) == str(actual_result):
-                return 'MATCH'
-            return 'MISMATCH'
-        except Exception:
-            return 'INSUFFICIENT_EVIDENCE'
+        # P0.20e: Reject all non-structured comparisons
+        # Only structured dict comparison via _compare_structured_results is valid
+        return 'INSUFFICIENT_EVIDENCE'
     
     def _create_experiment_run_from_verification(
         self,
@@ -408,6 +448,71 @@ class TaskOutcomeRecorder:
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to create ExperimentRun from verification: {e}", exc_info=True)
             return None
+
+    def _record_diagnostic_learning(
+        self,
+        session: AdaptiveSession,
+        verification_metadata: dict[str, Any],
+        test_result: dict[str, Any],
+    ) -> AdaptiveSession:
+        """Record learning from a verified diagnostic result using real execution data.
+
+        P0.20d: This replaces the synthetic RunRecord bypass with real diagnostic result.
+        P0.20e: Degrades VERIFIED+ELIGIBLE to NOT_ELIGIBLE if experiment_lab is None.
+        Only called when VERIFIED + ELIGIBLE.
+
+        Args:
+            session: The adaptive session with metadata
+            verification_metadata: Verification boundary results
+            test_result: Real diagnostic test result from executor
+
+        Returns:
+            Updated session with ExperimentRun metadata if successful, or degraded learning decision
+        """
+        if self.experiment_lab is None:
+            # P0.20e: Degrade to NOT_ELIGIBLE if no ExperimentLab available
+            verification_metadata['learning_decision'] = LearningDecision.NOT_ELIGIBLE.value
+            verification_metadata['verification_reason'] = 'experiment_run_persistence_unavailable'
+            session.metadata['verification'] = verification_metadata
+            return session
+
+        try:
+            # Extract real data from test_result
+            selected_test = session.metadata.get('selected_test', {})
+
+            # Create ExperimentRun from real verification data
+            experiment_run = self._create_experiment_run_from_verification(
+                session=session,
+                verification=verification_metadata,
+                test_result=test_result,
+                selected_test=selected_test
+            )
+
+            # Save ExperimentRun via ExperimentLab repository using canonical contract
+            if experiment_run is not None:
+                self.experiment_lab.repository.save_run(experiment_run)
+                # Store ExperimentRun ID in session metadata for traceability
+                session.metadata['experiment_run_id'] = str(experiment_run.run_id)
+            else:
+                # ExperimentRun creation failed - mark as NOT_ELIGIBLE
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"ExperimentRun creation failed for VERIFIED+ELIGIBLE session {session.session_id}")
+                # Update learning decision to NOT_ELIGIBLE since ExperimentRun was not created
+                verification_metadata['learning_decision'] = LearningDecision.NOT_ELIGIBLE.value
+                verification_metadata['verification_reason'] = 'experiment_run_creation_failed'
+                session.metadata['verification'] = verification_metadata
+        except Exception as e:
+            # Log error but don't hide it - this is critical for learning
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to save ExperimentRun for VERIFIED+ELIGIBLE session {session.session_id}: {e}", exc_info=True)
+            # Update learning decision to NOT_ELIGIBLE since ExperimentRun was not persisted
+            verification_metadata['learning_decision'] = LearningDecision.NOT_ELIGIBLE.value
+            verification_metadata['verification_reason'] = 'experiment_run_persistence_failed'
+            session.metadata['verification'] = verification_metadata
+
+        return session
     
     def _build_verification_metadata(
         self,
@@ -544,66 +649,13 @@ class TaskOutcomeRecorder:
         # P0.15B-CANONICAL: Isolate diagnostic cycle from normal learning
         # When diagnostic_cycle=True, skip ExperimentLab to prevent
         # diagnostic results from contaminating normal learning signals
+        # P0.20e: Diagnostic learning now handled exclusively by _record_diagnostic_learning
         is_diagnostic_cycle = bool(session.metadata.get('diagnostic_cycle', False))
         if is_diagnostic_cycle:
-            # P0.19d: Apply verification boundary for diagnostic cycles
-            # Only allow learning if VERIFIED + ELIGIBLE
-            verification = session.metadata.get('verification', {})
-            verification_status = verification.get('verification_status', VerificationStatus.UNVERIFIED.value)
-            learning_decision = verification.get('learning_decision', LearningDecision.NOT_ELIGIBLE.value)
-            
-            # Only proceed with learning if VERIFIED + ELIGIBLE
-            if verification_status != VerificationStatus.VERIFIED.value or learning_decision != LearningDecision.ELIGIBLE.value:
-                # Result is not learning-eligible, but evidence is preserved in session.metadata
-                return session
-            
-            # VERIFIED + ELIGIBLE: proceed with learning (P0.19e)
-            # Create ExperimentRun from verified diagnostic result
-            if self.experiment_lab is not None:
-                try:
-                    # Extract verification metadata
-                    verification = session.metadata.get('verification', {})
-                    test_result = session.metadata.get('test_result', {})
-                    selected_test = session.metadata.get('selected_test', {})
-                    
-                    # Build ExperimentRun from verified diagnostic result
-                    experiment_run = self._create_experiment_run_from_verification(
-                        session=session,
-                        verification=verification,
-                        test_result=test_result,
-                        selected_test=selected_test
-                    )
-                    
-                    # Save ExperimentRun via ExperimentLab repository using canonical contract
-                    if experiment_run is not None:
-                        self.experiment_lab.repository.save_run(experiment_run)
-                        # Store ExperimentRun ID in session metadata for traceability
-                        session.metadata['experiment_run_id'] = str(experiment_run.run_id)
-                    else:
-                        # ExperimentRun creation failed - mark as NOT_ELIGIBLE
-                        import logging
-                        logger = logging.getLogger(__name__)
-                        logger.error(f"ExperimentRun creation failed for VERIFIED+ELIGIBLE session {session.session_id}")
-                        # Update learning decision to NOT_ELIGIBLE since ExperimentRun was not created
-                        verification['learning_decision'] = LearningDecision.NOT_ELIGIBLE.value
-                        verification['verification_reason'] = 'experiment_run_creation_failed'
-                        session.metadata['verification'] = verification
-                except Exception as e:
-                    # Log error but don't hide it - this is critical for learning
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Failed to save ExperimentRun for VERIFIED+ELIGIBLE session {session.session_id}: {e}", exc_info=True)
-                    # Update learning decision to NOT_ELIGIBLE since ExperimentRun was not persisted
-                    verification = session.metadata.get('verification', {})
-                    verification['learning_decision'] = LearningDecision.NOT_ELIGIBLE.value
-                    verification['verification_reason'] = 'experiment_run_persistence_failed'
-                    session.metadata['verification'] = verification
-                    # If ExperimentRun creation fails, still preserve evidence
-                    # Don't break the verification boundary
-                    pass
-            
+            # P0.20e: Diagnostic cycles use _record_diagnostic_learning, not this path
+            # This path is for normal learning only
             return session
-        
+
         if self.experiment_lab is None:
             return session
         domain = self._experiment_domain(session=session, run_record=run_record)

@@ -3176,11 +3176,13 @@ class EpistemicHypothesis(BaseModel):
 
     The hypothesis lives in MetacognitiveDiscernmentFrame.metadata["epistemic_hypothesis"]
     and propagates to selected_test → AdaptiveSession.metadata → verification → ExperimentRun.
+
+    P0.20c: expected_result can be a string or structured dict for epistemic comparison.
     """
 
     hypothesis_id: str = Field(default_factory=lambda: str(uuid4()))
     statement: str = ""
-    expected_result: str = ""
+    expected_result: str | dict[str, Any] = ""
     evidence_refs: list[str] = Field(default_factory=list)
     contradiction_refs: list[str] = Field(default_factory=list)
     created_at_utc: datetime = Field(default_factory=utc_now)
