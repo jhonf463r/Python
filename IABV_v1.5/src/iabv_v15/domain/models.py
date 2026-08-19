@@ -13,6 +13,21 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# P0.20: Epistemic authority classes (extensions for P0.213 support)
+class VerificationStatus(str, Enum):
+    """Epistemic verification status for test results."""
+    UNVERIFIED = "unverified"
+    VERIFIED = "verified"
+    REFUTED = "refuted"
+    INCONCLUSIVE = "inconclusive"
+
+
+class LearningDecision(str, Enum):
+    """Learning eligibility decision for verified results."""
+    NOT_ELIGIBLE = "not_eligible"
+    ELIGIBLE = "eligible"
+
+
 class ProviderKind(str, Enum):
     LOCAL = "local"
     CLOUD = "cloud"
