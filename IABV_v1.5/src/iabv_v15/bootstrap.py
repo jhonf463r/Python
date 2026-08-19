@@ -281,6 +281,7 @@ from iabv_v15.services.evolution.portable_context_service import PortableContext
 from iabv_v15.services.evolution.resource_metacognition_service import ResourceMetacognitionService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
+from iabv_v15.services.evolution.runtime_identity_authority import RuntimeIdentityAuthority
 from iabv_v15.services.evolution.session_start_briefing_service import (
     SessionStartBriefingService,
 )
@@ -1156,6 +1157,10 @@ class AppBootstrap:
         )
         self.autonomous_validation_cycle.set_promotion_pr_publisher(
             self.promotion_pr_publisher
+        )
+        # P0.213 V3: Initialize RuntimeIdentityAuthority for trusted execution identity
+        self.runtime_identity_authority = RuntimeIdentityAuthority(
+            storage_root=self.config.evolution_dir,
         )
         self.self_audit_service = SelfAuditService(
             tool_registry=self.tool_registry,
