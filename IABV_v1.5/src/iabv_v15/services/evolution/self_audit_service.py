@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from iabv_v15.domain.models import (
+    CanonicalExecutionIdentity,
     EnvironmentMatchResult,
     EnvironmentSelfModel,
     PortableContextPackage,
@@ -88,8 +89,37 @@ class SelfAuditService:
     # ------------------------------------------------------------------
     # API pública
 
-    def run(self, *, reason: str | None = None) -> SelfAuditSnapshot:
-        """Ejecuta la auditoría y persiste el snapshot resultante."""
+    def run(
+        self,
+        *,
+        reason: str | None = None,
+        canonical_identity: CanonicalExecutionIdentity | None = None,
+    ) -> SelfAuditSnapshot:
+        """Ejecuta la auditoría y persiste el snapshot resultante.
+        
+        P0.213 V3: Accepts optional canonical_identity for provenance tracking.
+        If provided, validates identity against RuntimeIdentityAuthority before
+        including in snapshot.
+        
+        Args:
+            reason: Optional reason for the audit
+            canonical_identity: Optional canonical execution identity for provenance
+            
+        Returns:
+            SelfAuditSnapshot with optional canonical identity
+        """
+        
+        # P0.213 V3: Validate canonical identity if provided
+        if canonical_identity is not None:
+            try:
+                from iabv_v15.services.evolution.runtime_identity_authority import RuntimeIdentityAuthority
+                authority = RuntimeIdentityAuthority()
+                if not authority.validate_identity(canonical_identity):
+                    logger.warning("Invalid canonical identity provided to SelfAuditService")
+                    canonical_identity = None
+            except Exception as e:
+                logger.warning(f"Failed to validate canonical identity: {e}")
+                canonical_identity = None
 
         generated_at = self._clock()
 
@@ -124,6 +154,8 @@ class SelfAuditService:
             world_model_digest=dict(world_model_digest),
             summary_markdown=summary_markdown,
             cross_source_truth=cross_source_truth,
+            # P0.213 V3: Include validated canonical identity
+            canonical_identity=canonical_identity,
         )
         self._persist(snapshot)
         self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)

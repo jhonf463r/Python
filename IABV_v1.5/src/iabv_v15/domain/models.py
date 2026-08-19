@@ -2721,6 +2721,8 @@ class SelfAuditSnapshot:
     `data/evolution/self_audit/{latest.json, latest.md, history/<ISO>.json}`.
     Es la fuente única consumida por el botón "Auditarme ahora" del
     Control Center y por la tool MCP `run_self_audit`.
+    
+    P0.213 V3: Added optional canonical_identity for provenance tracking.
     """
 
     generated_at: datetime
@@ -2731,6 +2733,8 @@ class SelfAuditSnapshot:
     world_model_digest: dict[str, Any]
     summary_markdown: str
     cross_source_truth: dict[str, Any] = field(default_factory=dict)
+    # P0.213 V3: Optional canonical identity for provenance
+    canonical_identity: CanonicalExecutionIdentity | None = None
 
 
 # ---------------------------------------------------------------------------
