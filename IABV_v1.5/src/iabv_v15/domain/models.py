@@ -13,6 +13,21 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# P0.20: Epistemic authority classes (extensions for P0.213 support)
+class VerificationStatus(str, Enum):
+    """Epistemic verification status for test results."""
+    UNVERIFIED = "unverified"
+    VERIFIED = "verified"
+    REFUTED = "refuted"
+    INCONCLUSIVE = "inconclusive"
+
+
+class LearningDecision(str, Enum):
+    """Learning eligibility decision for verified results."""
+    NOT_ELIGIBLE = "not_eligible"
+    ELIGIBLE = "eligible"
+
+
 class ProviderKind(str, Enum):
     LOCAL = "local"
     CLOUD = "cloud"
@@ -3213,3 +3228,296 @@ class AccountApproval(BaseModel):
     snapshot_id: str = ""
     valid: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# P0.213: Canonical execution identity and invocation envelope
+class AcceptanceStatus(str, Enum):
+    """P0.20: Epistemic acceptance status for verified results.
+    
+    DESIGN_RECONSTRUCTION: This class is a new P0.20 extension for P0.213 support.
+    It represents the acceptance decision for verified epistemic results.
+    """
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    DEFERRED = "deferred"
+
+
+@dataclass
+
+
+class EpistemicVerificationRecord:
+    """P0.20: Record of epistemic verification for a test result.
+    
+    DESIGN_RECONSTRUCTION: This class is a new P0.20 extension for P0.213 support.
+    It records the verification status and evidence for a specific test result.
+    """
+    result_id: str
+    verification_status: VerificationStatus
+    verification_id: str = field(default_factory=lambda: str(uuid4()))
+    verified_at_utc: datetime = field(default_factory=utc_now)
+    verifier: str = "system"
+    evidence_summary: str = ""
+    confidence: float = 0.0
+
+
+@dataclass
+
+
+class EpistemicAcceptanceRecord:
+    """P0.20: Record of epistemic acceptance for a verified result.
+    
+    DESIGN_RECONSTRUCTION: This class is a new P0.20 extension for P0.213 support.
+    It records the acceptance decision for a verified epistemic result.
+    """
+    verification_id: str
+    acceptance_status: AcceptanceStatus
+    acceptance_id: str = field(default_factory=lambda: str(uuid4()))
+    accepted_at_utc: datetime = field(default_factory=utc_now)
+    acceptor: str = "system"
+    rationale: str = ""
+
+
+@dataclass
+
+
+class InternalMcpInvocation:
+    """P0.213: Internal MCP invocation lease for canonical identity transport.
+    
+    DESIGN_RECONSTRUCTION: This class is a new implementation reconstructed from
+    experimental design evidence. It is NOT recovered historical code.
+    
+    Purpose: Act as a lease for transporting canonical execution identity
+    internally via IPC between parent runtime and MCP child process.
+    
+    Contract Requirements:
+    - Single-use invocation_id (prevents replay)
+    - Expiration for security
+    - Producer scope validation
+    - PID validation
+    - Separation: identity, authorization, lease, transport
+    """
+    canonical_identity: CanonicalExecutionIdentity
+    producer_pid: int
+    producer_scope: str
+    invocation_id: str = field(default_factory=lambda: str(uuid4()))
+    issued_at_utc: datetime = field(default_factory=utc_now)
+    expires_at_utc: datetime | None = None
+    consumed: bool = False
+    
+    def validate(self) -> bool:
+        """Validate the invocation lease.
+        
+        Returns:
+            True if invocation is valid, False otherwise
+        """
+        # Check if already consumed (single-use)
+        if self.consumed:
+            return False
+        
+        # Check if expired
+        if self.expires_at_utc and utc_now() > self.expires_at_utc:
+            return False
+        
+        # Check canonical identity validity
+        if not self.canonical_identity.validate():
+            return False
+        
+        # Check producer PID is valid
+        if self.producer_pid <= 0:
+            return False
+        
+        # Check producer scope is non-empty
+        if not self.producer_scope or not self.producer_scope.strip():
+            return False
+        
+        return True
+    
+    def consume(self) -> bool:
+        """Consume the invocation lease (single-use).
+        
+        Returns:
+            True if successfully consumed, False if already consumed
+        """
+        if self.consumed:
+            return False
+        self.consumed = True
+        return True
+    
+    def is_expired(self) -> bool:
+        """Check if the invocation is expired.
+        
+        Returns:
+            True if expired, False otherwise
+        """
+        if self.expires_at_utc is None:
+            return False
+        return utc_now() > self.expires_at_utc
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for IPC serialization.
+        
+        Returns:
+            Dictionary representation of the invocation
+        """
+        return {
+            'invocation_id': self.invocation_id,
+            'canonical_identity': {
+                'run_id': self.canonical_identity.run_id,
+                'episode_id': self.canonical_identity.episode_id,
+                'session_id': self.canonical_identity.session_id,
+            },
+            'producer_pid': self.producer_pid,
+            'producer_scope': self.producer_scope,
+            'issued_at_utc': self.issued_at_utc.isoformat(),
+            'expires_at_utc': self.expires_at_utc.isoformat() if self.expires_at_utc else None,
+            'consumed': self.consumed,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> InternalMcpInvocation:
+        """Create from dictionary (IPC deserialization).
+        
+        Args:
+            data: Dictionary representation of the invocation
+            
+        Returns:
+            InternalMcpInvocation instance
+        """
+        identity_data = data['canonical_identity']
+        canonical_identity = CanonicalExecutionIdentity(
+            run_id=identity_data['run_id'],
+            episode_id=identity_data.get('episode_id'),
+            session_id=identity_data.get('session_id'),
+        )
+        
+        return cls(
+            invocation_id=data['invocation_id'],
+            canonical_identity=canonical_identity,
+            producer_pid=data['producer_pid'],
+            producer_scope=data['producer_scope'],
+            issued_at_utc=datetime.fromisoformat(data['issued_at_utc']),
+            expires_at_utc=datetime.fromisoformat(data['expires_at_utc']) if data.get('expires_at_utc') else None,
+            consumed=data.get('consumed', False),
+        )
+
+
+@dataclass(frozen=True)
+
+
+class CanonicalExecutionIdentity:
+    """P0.213: Canonical execution identity derived from RunRecord and AdaptiveSession.
+    
+    DESIGN_RECONSTRUCTION: This class is a new implementation reconstructed from
+    experimental design evidence. It is NOT recovered historical code.
+    
+    Purpose: Aggregate canonical execution identity fields from RunRecord and AdaptiveSession
+    to provide a single identity reference for P0.213 execution context transport.
+    
+    Sources:
+    - run_id: Derived from RunRecord.run_id (canonical)
+    - episode_id: Derived from RunRecord.episode_id or ExecutionPlan.episode_id (canonical)
+    - session_id: Derived from AdaptiveSession.session_id (canonical)
+    
+    Invariants:
+    - run_id must be non-empty (validate() returns False if empty)
+    - episode_id and session_id can be None
+    - Frozen dataclass prevents modification after creation
+    """
+    run_id: str
+    episode_id: str | None = None
+    session_id: str | None = None
+    
+    def validate(self) -> bool:
+        """Validate that run_id is non-empty.
+        
+        Returns:
+            True if run_id is non-empty, False otherwise
+        """
+        return bool(self.run_id and self.run_id.strip())
+    
+    def get_run_id(self) -> str:
+        """Get the canonical run_id."""
+        return self.run_id
+    
+    def get_episode_id(self) -> str | None:
+        """Get the canonical episode_id."""
+        return self.episode_id
+    
+    def get_session_id(self) -> str | None:
+        """Get the canonical session_id."""
+        return self.session_id
+
+
+@dataclass(frozen=True)
+
+
+class PrivateInvocationEnvelope:
+    """P0.213: Private invocation envelope for canonical execution identity transport.
+    
+    DESIGN_RECONSTRUCTION: This class is a new implementation reconstructed from
+    experimental design evidence. It is NOT recovered historical code.
+    
+    Purpose: Transport canonical execution identity with fail-closed semantics
+    to MCP tools via execution context.
+    
+    Invariants:
+    - fail_closed: Invalid envelope must not be accepted silently
+    - identity_bound: Envelope must contain valid CanonicalExecutionIdentity
+    - immutable_after_creation: Frozen dataclass prevents modification
+    
+    Binding:
+    - Envelope must be created from RunRecord and AdaptiveSession
+    - Caller cannot fabricate envelope from arbitrary strings
+    """
+    identity: CanonicalExecutionIdentity
+    invocation_id: str = field(default_factory=lambda: str(uuid4()))
+    
+    def validate(self) -> bool:
+        """Validate that envelope contains valid identity.
+        
+        Returns:
+            True if identity is valid, False otherwise
+        """
+        return self.identity.validate()
+    
+    def get_invocation_id(self) -> str:
+        """Get the unique invocation identifier."""
+        return self.invocation_id
+    
+    def get_identity(self) -> CanonicalExecutionIdentity:
+        """Get the canonical execution identity."""
+        return self.identity
+    
+    @classmethod
+    def from_run_record_and_session(
+        cls,
+        run_record: RunRecord,
+        session: AdaptiveSession
+    ) -> PrivateInvocationEnvelope:
+        """Create envelope from canonical RunRecord and AdaptiveSession.
+        
+        This is the legitimate way to create an envelope. Caller cannot
+        fabricate envelope from arbitrary strings.
+        
+        Args:
+            run_record: Canonical RunRecord
+            session: Canonical AdaptiveSession
+            
+        Returns:
+            PrivateInvocationEnvelope with canonical identity
+            
+        Raises:
+            ValueError: If run_record.run_id is empty
+        """
+        if not run_record.run_id or not run_record.run_id.strip():
+            raise ValueError("RunRecord.run_id must be non-empty")
+        
+        identity = CanonicalExecutionIdentity(
+            run_id=run_record.run_id,
+            episode_id=getattr(run_record, 'episode_id', None),
+            session_id=session.session_id
+        )
+        
+        return cls(identity=identity)
+
