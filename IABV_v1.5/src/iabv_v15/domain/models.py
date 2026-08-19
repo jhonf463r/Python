@@ -1,4 +1,4 @@
-ï»¿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -364,7 +364,7 @@ class AppConfig(BaseModel):
     autonomous_external_launch: bool = True
     # Flag del ``SynapticRouter`` (PCS v1). Cuando queda en ``None`` el router
     # lee el env var ``SYNAPTIC_ROUTING`` / ``IABV_SYNAPTIC_ROUTING_ENABLED``
-    # como antes. Cuando se setea explÃ­citamente (``True``/``False``) tiene
+    # como antes. Cuando se setea explícitamente (``True``/``False``) tiene
     # precedencia sobre el env var. Default ``None`` preserva comportamiento
     # previo.
     synaptic_routing_enabled: bool | None = None
@@ -2672,7 +2672,7 @@ class ControlMasterDigest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# SelfAudit â€” resultados agregados de la revisiÃ³n read-only del sistema vivo
+# SelfAudit — resultados agregados de la revisión read-only del sistema vivo
 # ---------------------------------------------------------------------------
 #
 # Estos tres contratos son puros (read-only, frozen). Los consume
@@ -2686,7 +2686,7 @@ class ToolCheckResult:
 
     - `status` usa el vocabulario: `ready` | `degraded` | `missing` | `blocked`.
     - `evidence` es un diccionario abierto con pistas reproducibles
-      (adapter_key, validation_status, tool_type, Ãºltima observaciÃ³n, etc.).
+      (adapter_key, validation_status, tool_type, última observación, etc.).
     """
 
     tool_id: str
@@ -2703,7 +2703,7 @@ class EnvironmentMatchResult:
     - `matched=True` significa que los dos modelos son coherentes
       (mismas tools disponibles, sin risk signals que contradigan el
       world_model, etc.).
-    - `mismatches` son descripciones concretas y humanas, no cÃ³digos.
+    - `mismatches` son descripciones concretas y humanas, no códigos.
     - Los digests permiten trazabilidad sin exponer los modelos completos.
     """
 
@@ -2715,11 +2715,11 @@ class EnvironmentMatchResult:
 
 @dataclass(frozen=True)
 class SelfAuditSnapshot:
-    """Snapshot agregado de la autoauditorÃ­a operativa.
+    """Snapshot agregado de la autoauditoría operativa.
 
     Emitido por `SelfAuditService.run(...)` y persistido en
     `data/evolution/self_audit/{latest.json, latest.md, history/<ISO>.json}`.
-    Es la fuente Ãºnica consumida por el botÃ³n "Auditarme ahora" del
+    Es la fuente única consumida por el botón "Auditarme ahora" del
     Control Center y por la tool MCP `run_self_audit`.
     """
 
@@ -2734,17 +2734,17 @@ class SelfAuditSnapshot:
 
 
 # ---------------------------------------------------------------------------
-# PCS v1 â€” Embodiment Violation Records
+# PCS v1 — Embodiment Violation Records
 # ---------------------------------------------------------------------------
 #
 # Contratos para `EmbodimentViolationDetector` (PR E de PCS v1). Una
-# "violaciÃ³n" ocurre cuando la pregunta del usuario matchea un sensor
-# propio de IABV (segÃºn el mapeo declarado por `embodiment_manifest`)
-# pero el asistente externo no llamÃ³ a la tool del cuerpo correspondiente
-# y usÃ³ rutas externas. En v1 el detector NO bloquea
-# (`handshake_required=False` en el manifest); sÃ³lo reporta para
+# "violación" ocurre cuando la pregunta del usuario matchea un sensor
+# propio de IABV (según el mapeo declarado por `embodiment_manifest`)
+# pero el asistente externo no llamó a la tool del cuerpo correspondiente
+# y usó rutas externas. En v1 el detector NO bloquea
+# (`handshake_required=False` en el manifest); sólo reporta para
 # alimentar `metadata['embodiment_violations']` del snapshot de
-# autoexaminaciÃ³n y para consulta read-only vÃ­a MCP.
+# autoexaminación y para consulta read-only vía MCP.
 
 
 class EmbodimentViolationKind(str, Enum):
@@ -2772,12 +2772,12 @@ class EmbodimentViolationRecord(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# PCS v1 â€” Protocolo Cognitivo SinÃ¡ptico Inter-IA
+# PCS v1 — Protocolo Cognitivo Sináptico Inter-IA
 #
 # Contratos declarativos que describen a cada IA externa (ChatGPT, Claude,
 # Codex, Devin, Ollama local, etc.) como una "neurona especializada" con
-# fortalezas, tools nativas y frame cognitivo Ã³ptimo. IABV usa estos
-# perfiles para decidir a quiÃ©n consultar y en quÃ© formato presentarle el
+# fortalezas, tools nativas y frame cognitivo óptimo. IABV usa estos
+# perfiles para decidir a quién consultar y en qué formato presentarle el
 # contexto, sin duplicar el cerebro ni el orquestador.
 
 
@@ -2795,9 +2795,9 @@ class AssistantStrength(str, Enum):
 
 
 class AssistantFrameKind(str, Enum):
-    """Frame cognitivo Ã³ptimo para presentar contexto a esta IA."""
+    """Frame cognitivo óptimo para presentar contexto a esta IA."""
 
-    DIFF_AND_TESTS = "diff_and_tests"        # Codex / GPT-4o para cÃ³digo
+    DIFF_AND_TESTS = "diff_and_tests"        # Codex / GPT-4o para código
     LONG_NARRATIVE = "long_narrative"        # Claude (contexto largo)
     TASK_LIST_AND_PR = "task_list_and_pr"    # Devin
     STRUCTURED_QA = "structured_qa"          # ChatGPT general
@@ -2807,9 +2807,9 @@ class AssistantFrameKind(str, Enum):
 class AssistantCapabilityProfile(BaseModel):
     """Perfil declarativo de una IA externa consumible por PCS v1.
 
-    Se usa para que `SynapticRouter` decida a quiÃ©n consultar y para que
-    `CognitiveFrameTranslator` elija el frame Ã³ptimo del contexto. Es
-    puramente descriptivo: no dispara ninguna acciÃ³n por sÃ­ mismo.
+    Se usa para que `SynapticRouter` decida a quién consultar y para que
+    `CognitiveFrameTranslator` elija el frame óptimo del contexto. Es
+    puramente descriptivo: no dispara ninguna acción por sí mismo.
     """
 
     assistant_kind: str
@@ -2832,12 +2832,12 @@ class AssistantCapabilityProfile(BaseModel):
 
 
 class CognitiveFramePayload(BaseModel):
-    """RenderizaciÃ³n determinÃ­stica de un `PerceptionSnapshot` para una IA.
+    """Renderización determinística de un `PerceptionSnapshot` para una IA.
 
     Producto del `CognitiveFrameTranslator`: dado un perception + un
     ``AssistantFrameKind``, devuelve un payload estructurado + texto plano
     listo para inyectar como system/context prompt. No hace inferencia:
-    todo es format determinÃ­stico.
+    todo es format determinístico.
     """
 
     frame: AssistantFrameKind
@@ -2851,11 +2851,11 @@ class CognitiveFramePayload(BaseModel):
 
 
 class SynapticRoutingDecision(BaseModel):
-    """DecisiÃ³n del `SynapticRouter` (PCS v1 â€” Pieza 4).
+    """Decisión del `SynapticRouter` (PCS v1 — Pieza 4).
 
-    Producto puramente descriptivo de la decisiÃ³n de routing inter-IA. No
+    Producto puramente descriptivo de la decisión de routing inter-IA. No
     ejecuta la ruta, no modifica estado vivo; el orquestador actual sigue
-    siendo `LocalRoleRouter`. Este adaptador sÃ³lo devuelve la preferencia
+    siendo `LocalRoleRouter`. Este adaptador sólo devuelve la preferencia
     calculada para que otra capa la consuma (tool MCP, UI, etc.).
 
     ``alternatives`` se serializa como ``list[dict[str, Any]]`` con claves
@@ -2877,13 +2877,13 @@ class SynapticRoutingDecision(BaseModel):
 
 
 class ConsensusResult(BaseModel):
-    """Resultado de la fusiÃ³n de consenso (PCS v1 â€” Pieza 5).
+    """Resultado de la fusión de consenso (PCS v1 — Pieza 5).
 
     Producto del `ConsensusFusionService`: dada una lista de
     ``IATraceEntry`` del mismo ``comparison_scope_key``, devuelve un
-    ganador segÃºn la estrategia pedida (``weighted_vote``,
+    ganador según la estrategia pedida (``weighted_vote``,
     ``highest_confidence`` o ``first_success``). No muta los traces de
-    entrada; la decisiÃ³n es puramente descriptiva.
+    entrada; la decisión es puramente descriptiva.
     """
 
     comparison_scope_key: str = ""
@@ -2907,12 +2907,12 @@ class PendingTaskStatus(str, Enum):
 
 
 class PlatformPendingTask(BaseModel):
-    """Tarea pendiente de integraciÃ³n con la plataforma nativa.
+    """Tarea pendiente de integración con la plataforma nativa.
 
-    Registra capacidades faltantes, tareas bloqueadas por limitaciÃ³n del
-    entorno, o dependencias que aÃºn no pueden resolverse.  La cola se
+    Registra capacidades faltantes, tareas bloqueadas por limitación del
+    entorno, o dependencias que aún no pueden resolverse.  La cola se
     persiste en ``data/evolution/platform_pending/`` y es legible por
-    PortableContext, OSES y cualquier agente que retome la sesiÃ³n.
+    PortableContext, OSES y cualquier agente que retome la sesión.
     """
 
     id: str = Field(default_factory=lambda: str(uuid4()))
@@ -2931,11 +2931,11 @@ class PlatformPendingTask(BaseModel):
 
 
 class PlatformResumeHint(BaseModel):
-    """Checkpoint para reanudaciÃ³n de tareas incompletas.
+    """Checkpoint para reanudación de tareas incompletas.
 
-    Cuando una tarea se interrumpe (corte, cuota, sesiÃ³n, falta de
-    permiso), se guarda un checkpoint con el estado Ãºtil mÃ¡s reciente.
-    El siguiente agente o sesiÃ³n puede leer el hint y continuar desde
+    Cuando una tarea se interrumpe (corte, cuota, sesión, falta de
+    permiso), se guarda un checkpoint con el estado útil más reciente.
+    El siguiente agente o sesión puede leer el hint y continuar desde
     ese punto sin empezar de cero.
     """
 
@@ -2949,9 +2949,9 @@ class PlatformResumeHint(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# Test Evidence â€” P0.29
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ──────────────────────────────────────────────────────────────
+# Test Evidence — P0.29
+# ──────────────────────────────────────────────────────────────
 
 
 class TestEvidence(BaseModel):
@@ -2963,7 +2963,7 @@ class TestEvidence(BaseModel):
     (``current_tests_state``), and ``PortableContextService`` (compact
     summary without logs or PII).
 
-    No logs, no PII, no large output â€” only counts and metadata.
+    No logs, no PII, no large output — only counts and metadata.
     """
 
     evidence_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -2982,9 +2982,9 @@ class TestEvidence(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ──────────────────────────────────────────────────────────────
 # Account Inventory & Continuity Layer
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ──────────────────────────────────────────────────────────────
 
 
 class AccountStatus(str, Enum):
@@ -3035,25 +3035,25 @@ class AccountInventorySnapshot(BaseModel):
     and CentroVivo (UI).
 
     ``continuity_queue`` is the ranked list of non-exhausted entries
-    sorted by score descending â€” the first entry is the recommended
+    sorted by score descending — the first entry is the recommended
     next account.  The user must approve before any account is used."""
 
 
 # ---------------------------------------------------------------------------
-# Cross-Agent Synchronization â€” Handoff Knowledge
+# Cross-Agent Synchronization — Handoff Knowledge
 # ---------------------------------------------------------------------------
 #
-# Contratos para el handoff entre IAs (Devin â†’ Claude â†’ Codex, etc.)
-# Permiten reconstruir de forma verificable quiÃ©n hizo quÃ©, cÃ³mo fue auditado,
-# y quÃ© IA debe continuar el trabajo.
+# Contratos para el handoff entre IAs (Devin → Claude → Codex, etc.)
+# Permiten reconstruir de forma verificable quién hizo qué, cómo fue auditado,
+# y qué IA debe continuar el trabajo.
 
 
 class EvidenceStatus(str, Enum):
     """Estado de evidencia en el conocimiento handoff.
 
     DECLARED: IA ejecutora declara un estado (no verificado)
-    VERIFIED: IA auditora verificÃ³ que la declaraciÃ³n es correcta
-    REPRODUCED: IA auditora reprodujo el resultado y coincidiÃ³
+    VERIFIED: IA auditora verificó que la declaración es correcta
+    REPRODUCED: IA auditora reprodujo el resultado y coincidió
     INFERRED: Derivado de evidencia indirecta
     UNKNOWN: Estado desconocido o no verificable
     """
@@ -3065,13 +3065,13 @@ class EvidenceStatus(str, Enum):
 
 
 class AuthorizationStatus(str, Enum):
-    """Estado de autorizaciÃ³n para next_agent/next_action.
+    """Estado de autorización para next_agent/next_action.
 
-    DECLARED: IA anterior declarÃ³ una preferencia (no autorizada)
-    RECOMMENDED: Sistema recomienda basado en evidencia histÃ³rica
-    AUTHORIZED: Sistema autoriza explÃ­citamente la transiciÃ³n
-    PENDING: Pendiente de autorizaciÃ³n
-    REVOKED: AutorizaciÃ³n revocada
+    DECLARED: IA anterior declaró una preferencia (no autorizada)
+    RECOMMENDED: Sistema recomienda basado en evidencia histórica
+    AUTHORIZED: Sistema autoriza explícitamente la transición
+    PENDING: Pendiente de autorización
+    REVOKED: Autorización revocada
     """
     DECLARED = "declared"
     RECOMMENDED = "recommended"
@@ -3084,11 +3084,11 @@ class AgentHandoffRecord(BaseModel):
     """Registro completo de handoff entre IAs.
 
     Persistido en ``data/evolution/agent_handoff/handoffs.jsonl`` por
-    ``AgentHandoffTrail``. Es la fuente Ãºnica para reconstruir el estado
+    ``AgentHandoffTrail``. Es la fuente única para reconstruir el estado
     de una tarea entre diferentes IAs y sesiones.
 
-    Este registro NO es una autoridad de ejecuciÃ³n â€” es puramente
-    observacional y verificativa. No dispara acciones por sÃ­ mismo.
+    Este registro NO es una autoridad de ejecución — es puramente
+    observacional y verificativa. No dispara acciones por sí mismo.
     """
     handoff_id: str = Field(default_factory=lambda: str(uuid4()))
     task_id: str
@@ -3138,7 +3138,7 @@ class AccountInventorySnapshot(BaseModel):
     and CentroVivo (UI).
 
     ``continuity_queue`` is the ranked list of non-exhausted entries
-    sorted by score descending â€” the first entry is the recommended
+    sorted by score descending — the first entry is the recommended
     next account.  The user must approve before any account is used."""
     entries: list[AccountInventoryEntry] = Field(default_factory=list)
     continuity_queue: list[AccountInventoryEntry] = Field(default_factory=list)
@@ -3156,12 +3156,12 @@ class AccountInventorySnapshot(BaseModel):
 class MetacognitiveDiscernmentFrame(BaseModel):
     """P0.69: evidence-based discernment frame for pre-action reasoning.
 
-    This is NOT another cerebro â€” it is a shared evidence contract that
+    This is NOT another cerebro — it is a shared evidence contract that
     existing services (OSES, PortableContext, TaskContextAssembler,
     UniversalPerceptionService, ControlCenterViewModel) read and write
     to build a causal picture before acting.
 
-    Lifecycle phases: birth â†’ observe â†’ interpret â†’ decide â†’ act â†’ learn â†’ recover.
+    Lifecycle phases: birth → observe → interpret → decide → act → learn → recover.
     """
 
     frame_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -3199,7 +3199,7 @@ class AccountApproval(BaseModel):
     Created when the user clicks "Aprobar cambio de cuenta" in the UI.
     Consumed by the worker health gate in ``LocalRoleRouter`` to
     override the automatic ranking for the specified tool.  Other tools
-    are NOT affected â€” the selection is strictly per-tool.
+    are NOT affected — the selection is strictly per-tool.
     """
 
     tool: str
@@ -3781,7 +3781,7 @@ class AppConfig(BaseModel):
     autonomous_external_launch: bool = True
     # Flag del ``SynapticRouter`` (PCS v1). Cuando queda en ``None`` el router
     # lee el env var ``SYNAPTIC_ROUTING`` / ``IABV_SYNAPTIC_ROUTING_ENABLED``
-    # como antes. Cuando se setea explÃ­citamente (``True``/``False``) tiene
+    # como antes. Cuando se setea explícitamente (``True``/``False``) tiene
     # precedencia sobre el env var. Default ``None`` preserva comportamiento
     # previo.
     synaptic_routing_enabled: bool | None = None
@@ -6089,7 +6089,7 @@ class ControlMasterDigest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# SelfAudit â€” resultados agregados de la revisiÃ³n read-only del sistema vivo
+# SelfAudit — resultados agregados de la revisión read-only del sistema vivo
 # ---------------------------------------------------------------------------
 #
 # Estos tres contratos son puros (read-only, frozen). Los consume
@@ -6103,7 +6103,7 @@ class ToolCheckResult:
 
     - `status` usa el vocabulario: `ready` | `degraded` | `missing` | `blocked`.
     - `evidence` es un diccionario abierto con pistas reproducibles
-      (adapter_key, validation_status, tool_type, Ãºltima observaciÃ³n, etc.).
+      (adapter_key, validation_status, tool_type, última observación, etc.).
     """
 
     tool_id: str
@@ -6120,7 +6120,7 @@ class EnvironmentMatchResult:
     - `matched=True` significa que los dos modelos son coherentes
       (mismas tools disponibles, sin risk signals que contradigan el
       world_model, etc.).
-    - `mismatches` son descripciones concretas y humanas, no cÃ³digos.
+    - `mismatches` son descripciones concretas y humanas, no códigos.
     - Los digests permiten trazabilidad sin exponer los modelos completos.
     """
 
@@ -6132,11 +6132,11 @@ class EnvironmentMatchResult:
 
 @dataclass(frozen=True)
 class SelfAuditSnapshot:
-    """Snapshot agregado de la autoauditorÃ­a operativa.
+    """Snapshot agregado de la autoauditoría operativa.
 
     Emitido por `SelfAuditService.run(...)` y persistido en
     `data/evolution/self_audit/{latest.json, latest.md, history/<ISO>.json}`.
-    Es la fuente Ãºnica consumida por el botÃ³n "Auditarme ahora" del
+    Es la fuente única consumida por el botón "Auditarme ahora" del
     Control Center y por la tool MCP `run_self_audit`.
     """
 
@@ -6151,17 +6151,17 @@ class SelfAuditSnapshot:
 
 
 # ---------------------------------------------------------------------------
-# PCS v1 â€” Embodiment Violation Records
+# PCS v1 — Embodiment Violation Records
 # ---------------------------------------------------------------------------
 #
 # Contratos para `EmbodimentViolationDetector` (PR E de PCS v1). Una
-# "violaciÃ³n" ocurre cuando la pregunta del usuario matchea un sensor
-# propio de IABV (segÃºn el mapeo declarado por `embodiment_manifest`)
-# pero el asistente externo no llamÃ³ a la tool del cuerpo correspondiente
-# y usÃ³ rutas externas. En v1 el detector NO bloquea
-# (`handshake_required=False` en el manifest); sÃ³lo reporta para
+# "violación" ocurre cuando la pregunta del usuario matchea un sensor
+# propio de IABV (según el mapeo declarado por `embodiment_manifest`)
+# pero el asistente externo no llamó a la tool del cuerpo correspondiente
+# y usó rutas externas. En v1 el detector NO bloquea
+# (`handshake_required=False` en el manifest); sólo reporta para
 # alimentar `metadata['embodiment_violations']` del snapshot de
-# autoexaminaciÃ³n y para consulta read-only vÃ­a MCP.
+# autoexaminación y para consulta read-only vía MCP.
 
 
 class EmbodimentViolationKind(str, Enum):
@@ -6189,12 +6189,12 @@ class EmbodimentViolationRecord(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# PCS v1 â€” Protocolo Cognitivo SinÃ¡ptico Inter-IA
+# PCS v1 — Protocolo Cognitivo Sináptico Inter-IA
 #
 # Contratos declarativos que describen a cada IA externa (ChatGPT, Claude,
 # Codex, Devin, Ollama local, etc.) como una "neurona especializada" con
-# fortalezas, tools nativas y frame cognitivo Ã³ptimo. IABV usa estos
-# perfiles para decidir a quiÃ©n consultar y en quÃ© formato presentarle el
+# fortalezas, tools nativas y frame cognitivo óptimo. IABV usa estos
+# perfiles para decidir a quién consultar y en qué formato presentarle el
 # contexto, sin duplicar el cerebro ni el orquestador.
 
 
@@ -6212,9 +6212,9 @@ class AssistantStrength(str, Enum):
 
 
 class AssistantFrameKind(str, Enum):
-    """Frame cognitivo Ã³ptimo para presentar contexto a esta IA."""
+    """Frame cognitivo óptimo para presentar contexto a esta IA."""
 
-    DIFF_AND_TESTS = "diff_and_tests"        # Codex / GPT-4o para cÃ³digo
+    DIFF_AND_TESTS = "diff_and_tests"        # Codex / GPT-4o para código
     LONG_NARRATIVE = "long_narrative"        # Claude (contexto largo)
     TASK_LIST_AND_PR = "task_list_and_pr"    # Devin
     STRUCTURED_QA = "structured_qa"          # ChatGPT general
@@ -6224,9 +6224,9 @@ class AssistantFrameKind(str, Enum):
 class AssistantCapabilityProfile(BaseModel):
     """Perfil declarativo de una IA externa consumible por PCS v1.
 
-    Se usa para que `SynapticRouter` decida a quiÃ©n consultar y para que
-    `CognitiveFrameTranslator` elija el frame Ã³ptimo del contexto. Es
-    puramente descriptivo: no dispara ninguna acciÃ³n por sÃ­ mismo.
+    Se usa para que `SynapticRouter` decida a quién consultar y para que
+    `CognitiveFrameTranslator` elija el frame óptimo del contexto. Es
+    puramente descriptivo: no dispara ninguna acción por sí mismo.
     """
 
     assistant_kind: str
@@ -6249,12 +6249,12 @@ class AssistantCapabilityProfile(BaseModel):
 
 
 class CognitiveFramePayload(BaseModel):
-    """RenderizaciÃ³n determinÃ­stica de un `PerceptionSnapshot` para una IA.
+    """Renderización determinística de un `PerceptionSnapshot` para una IA.
 
     Producto del `CognitiveFrameTranslator`: dado un perception + un
     ``AssistantFrameKind``, devuelve un payload estructurado + texto plano
     listo para inyectar como system/context prompt. No hace inferencia:
-    todo es format determinÃ­stico.
+    todo es format determinístico.
     """
 
     frame: AssistantFrameKind
@@ -6268,11 +6268,11 @@ class CognitiveFramePayload(BaseModel):
 
 
 class SynapticRoutingDecision(BaseModel):
-    """DecisiÃ³n del `SynapticRouter` (PCS v1 â€” Pieza 4).
+    """Decisión del `SynapticRouter` (PCS v1 — Pieza 4).
 
-    Producto puramente descriptivo de la decisiÃ³n de routing inter-IA. No
+    Producto puramente descriptivo de la decisión de routing inter-IA. No
     ejecuta la ruta, no modifica estado vivo; el orquestador actual sigue
-    siendo `LocalRoleRouter`. Este adaptador sÃ³lo devuelve la preferencia
+    siendo `LocalRoleRouter`. Este adaptador sólo devuelve la preferencia
     calculada para que otra capa la consuma (tool MCP, UI, etc.).
 
     ``alternatives`` se serializa como ``list[dict[str, Any]]`` con claves
@@ -6294,13 +6294,13 @@ class SynapticRoutingDecision(BaseModel):
 
 
 class ConsensusResult(BaseModel):
-    """Resultado de la fusiÃ³n de consenso (PCS v1 â€” Pieza 5).
+    """Resultado de la fusión de consenso (PCS v1 — Pieza 5).
 
     Producto del `ConsensusFusionService`: dada una lista de
     ``IATraceEntry`` del mismo ``comparison_scope_key``, devuelve un
-    ganador segÃºn la estrategia pedida (``weighted_vote``,
+    ganador según la estrategia pedida (``weighted_vote``,
     ``highest_confidence`` o ``first_success``). No muta los traces de
-    entrada; la decisiÃ³n es puramente descriptiva.
+    entrada; la decisión es puramente descriptiva.
     """
 
     comparison_scope_key: str = ""
@@ -6324,12 +6324,12 @@ class PendingTaskStatus(str, Enum):
 
 
 class PlatformPendingTask(BaseModel):
-    """Tarea pendiente de integraciÃ³n con la plataforma nativa.
+    """Tarea pendiente de integración con la plataforma nativa.
 
-    Registra capacidades faltantes, tareas bloqueadas por limitaciÃ³n del
-    entorno, o dependencias que aÃºn no pueden resolverse.  La cola se
+    Registra capacidades faltantes, tareas bloqueadas por limitación del
+    entorno, o dependencias que aún no pueden resolverse.  La cola se
     persiste en ``data/evolution/platform_pending/`` y es legible por
-    PortableContext, OSES y cualquier agente que retome la sesiÃ³n.
+    PortableContext, OSES y cualquier agente que retome la sesión.
     """
 
     id: str = Field(default_factory=lambda: str(uuid4()))
@@ -6348,11 +6348,11 @@ class PlatformPendingTask(BaseModel):
 
 
 class PlatformResumeHint(BaseModel):
-    """Checkpoint para reanudaciÃ³n de tareas incompletas.
+    """Checkpoint para reanudación de tareas incompletas.
 
-    Cuando una tarea se interrumpe (corte, cuota, sesiÃ³n, falta de
-    permiso), se guarda un checkpoint con el estado Ãºtil mÃ¡s reciente.
-    El siguiente agente o sesiÃ³n puede leer el hint y continuar desde
+    Cuando una tarea se interrumpe (corte, cuota, sesión, falta de
+    permiso), se guarda un checkpoint con el estado útil más reciente.
+    El siguiente agente o sesión puede leer el hint y continuar desde
     ese punto sin empezar de cero.
     """
 
@@ -6366,9 +6366,9 @@ class PlatformResumeHint(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# Test Evidence â€” P0.29
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ──────────────────────────────────────────────────────────────
+# Test Evidence — P0.29
+# ──────────────────────────────────────────────────────────────
 
 
 class TestEvidence(BaseModel):
@@ -6380,7 +6380,7 @@ class TestEvidence(BaseModel):
     (``current_tests_state``), and ``PortableContextService`` (compact
     summary without logs or PII).
 
-    No logs, no PII, no large output â€” only counts and metadata.
+    No logs, no PII, no large output — only counts and metadata.
     """
 
     evidence_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -6399,9 +6399,9 @@ class TestEvidence(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ──────────────────────────────────────────────────────────────
 # Account Inventory & Continuity Layer
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ──────────────────────────────────────────────────────────────
 
 
 class AccountStatus(str, Enum):
@@ -6452,25 +6452,25 @@ class AccountInventorySnapshot(BaseModel):
     and CentroVivo (UI).
 
     ``continuity_queue`` is the ranked list of non-exhausted entries
-    sorted by score descending â€” the first entry is the recommended
+    sorted by score descending — the first entry is the recommended
     next account.  The user must approve before any account is used."""
 
 
 # ---------------------------------------------------------------------------
-# Cross-Agent Synchronization â€” Handoff Knowledge
+# Cross-Agent Synchronization — Handoff Knowledge
 # ---------------------------------------------------------------------------
 #
-# Contratos para el handoff entre IAs (Devin â†’ Claude â†’ Codex, etc.)
-# Permiten reconstruir de forma verificable quiÃ©n hizo quÃ©, cÃ³mo fue auditado,
-# y quÃ© IA debe continuar el trabajo.
+# Contratos para el handoff entre IAs (Devin → Claude → Codex, etc.)
+# Permiten reconstruir de forma verificable quién hizo qué, cómo fue auditado,
+# y qué IA debe continuar el trabajo.
 
 
 class EvidenceStatus(str, Enum):
     """Estado de evidencia en el conocimiento handoff.
 
     DECLARED: IA ejecutora declara un estado (no verificado)
-    VERIFIED: IA auditora verificÃ³ que la declaraciÃ³n es correcta
-    REPRODUCED: IA auditora reprodujo el resultado y coincidiÃ³
+    VERIFIED: IA auditora verificó que la declaración es correcta
+    REPRODUCED: IA auditora reprodujo el resultado y coincidió
     INFERRED: Derivado de evidencia indirecta
     UNKNOWN: Estado desconocido o no verificable
     """
@@ -6482,13 +6482,13 @@ class EvidenceStatus(str, Enum):
 
 
 class AuthorizationStatus(str, Enum):
-    """Estado de autorizaciÃ³n para next_agent/next_action.
+    """Estado de autorización para next_agent/next_action.
 
-    DECLARED: IA anterior declarÃ³ una preferencia (no autorizada)
-    RECOMMENDED: Sistema recomienda basado en evidencia histÃ³rica
-    AUTHORIZED: Sistema autoriza explÃ­citamente la transiciÃ³n
-    PENDING: Pendiente de autorizaciÃ³n
-    REVOKED: AutorizaciÃ³n revocada
+    DECLARED: IA anterior declaró una preferencia (no autorizada)
+    RECOMMENDED: Sistema recomienda basado en evidencia histórica
+    AUTHORIZED: Sistema autoriza explícitamente la transición
+    PENDING: Pendiente de autorización
+    REVOKED: Autorización revocada
     """
     DECLARED = "declared"
     RECOMMENDED = "recommended"
@@ -6501,11 +6501,11 @@ class AgentHandoffRecord(BaseModel):
     """Registro completo de handoff entre IAs.
 
     Persistido en ``data/evolution/agent_handoff/handoffs.jsonl`` por
-    ``AgentHandoffTrail``. Es la fuente Ãºnica para reconstruir el estado
+    ``AgentHandoffTrail``. Es la fuente única para reconstruir el estado
     de una tarea entre diferentes IAs y sesiones.
 
-    Este registro NO es una autoridad de ejecuciÃ³n â€” es puramente
-    observacional y verificativa. No dispara acciones por sÃ­ mismo.
+    Este registro NO es una autoridad de ejecución — es puramente
+    observacional y verificativa. No dispara acciones por sí mismo.
     """
     handoff_id: str = Field(default_factory=lambda: str(uuid4()))
     task_id: str
@@ -6555,7 +6555,7 @@ class AccountInventorySnapshot(BaseModel):
     and CentroVivo (UI).
 
     ``continuity_queue`` is the ranked list of non-exhausted entries
-    sorted by score descending â€” the first entry is the recommended
+    sorted by score descending — the first entry is the recommended
     next account.  The user must approve before any account is used."""
     entries: list[AccountInventoryEntry] = Field(default_factory=list)
     continuity_queue: list[AccountInventoryEntry] = Field(default_factory=list)
@@ -6573,12 +6573,12 @@ class AccountInventorySnapshot(BaseModel):
 class EpistemicHypothesis(BaseModel):
     """P0.20b: Minimal epistemic hypothesis contract for contradiction resolution.
 
-    This is NOT a hypothesis service/store/validator â€” it is a minimal
+    This is NOT a hypothesis service/store/validator — it is a minimal
     traceable representation that allows IABV to move from contradiction
     to verifiable prediction.
 
     The hypothesis lives in MetacognitiveDiscernmentFrame.metadata["epistemic_hypothesis"]
-    and propagates to selected_test â†’ AdaptiveSession.metadata â†’ verification â†’ ExperimentRun.
+    and propagates to selected_test → AdaptiveSession.metadata → verification → ExperimentRun.
 
     P0.20c: expected_result can be a string or structured dict for epistemic comparison.
     """
@@ -6594,12 +6594,12 @@ class EpistemicHypothesis(BaseModel):
 class MetacognitiveDiscernmentFrame(BaseModel):
     """P0.69: evidence-based discernment frame for pre-action reasoning.
 
-    This is NOT another cerebro â€” it is a shared evidence contract that
+    This is NOT another cerebro — it is a shared evidence contract that
     existing services (OSES, PortableContext, TaskContextAssembler,
     UniversalPerceptionService, ControlCenterViewModel) read and write
     to build a causal picture before acting.
 
-    Lifecycle phases: birth â†’ observe â†’ interpret â†’ decide â†’ act â†’ learn â†’ recover.
+    Lifecycle phases: birth → observe → interpret → decide → act → learn → recover.
     """
 
     frame_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -6637,7 +6637,7 @@ class AccountApproval(BaseModel):
     Created when the user clicks "Aprobar cambio de cuenta" in the UI.
     Consumed by the worker health gate in ``LocalRoleRouter`` to
     override the automatic ranking for the specified tool.  Other tools
-    are NOT affected â€” the selection is strictly per-tool.
+    are NOT affected — the selection is strictly per-tool.
     """
 
     tool: str
