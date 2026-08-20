@@ -418,8 +418,18 @@ class IpcTrustBoundary:
             # 1. Get actual client PID from OS
             actual_pid = pipe.get_client_pid()
             
-            # 2. Validate PID matches expected producer
-            if actual_pid != self.producer_pid:
+            # 2. Validate parent-child relationship (server is parent of client)
+            try:
+                import psutil
+                client_process = psutil.Process(actual_pid)
+                client_parent_pid = client_process.ppid()
+                
+                # Client must be child of the server (producer_pid)
+                if client_parent_pid != self.producer_pid:
+                    # Client is not a child of the server
+                    return False
+            except Exception:
+                # If psutil is not available or fails, reject (fail-closed)
                 return False
             
             # 3. Producer scope is validated at application level (via lease)

@@ -57,6 +57,9 @@ class TrustedExecutionIdentity:
     issuer_pid: int
     issuer_generation: int
     
+    # Consumer (process for which this identity is valid)
+    consumer_pid: int
+    
     # Execution (authority-generated)
     execution_id: str
     run_id: str
@@ -115,6 +118,7 @@ class RuntimeIdentityAuthority:
     
     def issue_identity(
         self,
+        consumer_pid: int | None = None,
         run_id: str | None = None,
         episode_id: str | None = None,
         session_id: str | None = None,
@@ -123,6 +127,7 @@ class RuntimeIdentityAuthority:
         """Issue a trusted execution identity.
         
         Args:
+            consumer_pid: PID of the consumer process (child). If None, defaults to current PID (self-issued).
             run_id: Optional run ID (generated if not provided)
             episode_id: Optional episode ID
             session_id: Optional session ID
@@ -146,10 +151,15 @@ class RuntimeIdentityAuthority:
         if run_id is None:
             run_id = execution_id
         
+        # Default consumer_pid to current PID if not provided (self-issued identity)
+        if consumer_pid is None:
+            consumer_pid = process_identity.pid
+        
         # Create identity (unsigned)
         identity = TrustedExecutionIdentity(
             issuer_pid=process_identity.pid,
             issuer_generation=runtime_identity.generation,
+            consumer_pid=consumer_pid,
             execution_id=execution_id,
             run_id=run_id,
             episode_id=episode_id,
@@ -194,11 +204,27 @@ class RuntimeIdentityAuthority:
             if identity.bootstrap_timestamp != current_bootstrap:
                 return False
             
-            # 4. Verify issuer PID (same process or authorized parent)
+            # 4. Verify consumer PID (identity is valid only for the specified consumer)
             current_pid = self._trust_anchor.get_process_identity().pid
-            if identity.issuer_pid != current_pid:
-                # TODO: Verify parent-child relationship
+            if identity.consumer_pid != current_pid:
+                # Identity is not valid for this process
                 return False
+            
+            # 5. Verify issuer is parent of consumer (parent-child relationship)
+            # Skip verification for self-issued identities (issuer_pid == consumer_pid)
+            if identity.issuer_pid != identity.consumer_pid:
+                try:
+                    import psutil
+                    current_process = psutil.Process(current_pid)
+                    parent_pid = current_process.ppid()
+                    
+                    # Identity must have been issued by parent process
+                    if identity.issuer_pid != parent_pid:
+                        # Identity was not issued by parent
+                        return False
+                except Exception:
+                    # If psutil is not available or fails, reject (fail-closed)
+                    return False
             
             # 5. Verify expiration
             if time.time() > identity.expires_at:

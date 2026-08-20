@@ -234,6 +234,7 @@ class TestTrustedLeaseVerification:
             invalid_identity = TrustedExecutionIdentity(
                 issuer_pid=os.getpid(),
                 issuer_generation=trust_anchor.get_runtime_identity().generation,
+                consumer_pid=os.getpid(),
                 execution_id=str(uuid4()),
                 run_id=str(uuid4()),
                 episode_id=str(uuid4()),

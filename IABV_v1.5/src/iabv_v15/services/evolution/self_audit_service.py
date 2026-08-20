@@ -62,6 +62,7 @@ class SelfAuditService:
         storage_root: Path | str | None = None,
         workspace_root: Path | str | None = None,
         token_rotation_ledger: Any | None = None,
+        identity_authority: Any | None = None,  # P0.213 V4: RuntimeIdentityAuthority for canonical_identity verification
     ) -> None:
         self.tool_registry = tool_registry
         self._environment_provider = environment_self_model_provider
@@ -74,6 +75,8 @@ class SelfAuditService:
         # ``OperationalSelfExaminationService`` pueda proyectar rotaciones
         # proactivas sin que el usuario lo note.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
+        # P0.213 V4: RuntimeIdentityAuthority for canonical_identity verification
+        self._identity_authority: Any | None = identity_authority
         resolved_root: Path | None
         if storage_root is not None:
             resolved_root = Path(storage_root)
@@ -128,6 +131,20 @@ class SelfAuditService:
             if 'signature' in canonical_identity:
                 if not isinstance(canonical_identity['signature'], str) or len(canonical_identity['signature']) != 64:
                     raise ValueError("Invalid signature in canonical_identity")
+            
+            # P0.213 V4 R-03: Verificar identidad con RuntimeIdentityAuthority si está disponible
+            if self._identity_authority is not None:
+                try:
+                    # Convert dict to TrustedExecutionIdentity object for verification
+                    from iabv_v15.services.evolution.trusted_execution_identity import TrustedExecutionIdentity
+                    identity_obj = TrustedExecutionIdentity.from_dict(canonical_identity)
+                    
+                    # Verify identity with authority
+                    if not self._identity_authority.verify_identity(identity_obj):
+                        raise ValueError("canonical_identity verification failed: identity is not valid")
+                except Exception as e:
+                    # If verification fails for any reason, reject (fail-closed)
+                    raise ValueError(f"canonical_identity verification failed: {e}")
 
         tool_checks = self._collect_tool_checks()
         environment = self._safe(self._environment_provider, default=None)

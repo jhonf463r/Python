@@ -125,6 +125,7 @@ class TestTrustedExecutionIdentityVerification:
             fabricated = TrustedExecutionIdentity(
                 issuer_pid=trust_anchor.get_process_identity().pid,
                 issuer_generation=trust_anchor.get_runtime_identity().generation,
+                consumer_pid=trust_anchor.get_process_identity().pid,
                 execution_id=str(uuid4()),
                 run_id=str(uuid4()),
                 episode_id=str(uuid4()),
@@ -240,6 +241,7 @@ class TestTrustedExecutionIdentityNegative:
             identity = TrustedExecutionIdentity(
                 issuer_pid=trust_anchor.get_process_identity().pid,
                 issuer_generation=trust_anchor.get_runtime_identity().generation,
+                consumer_pid=trust_anchor.get_process_identity().pid,
                 execution_id=str(uuid4()),
                 run_id=str(uuid4()),
                 episode_id=str(uuid4()),
@@ -267,6 +269,7 @@ class TestTrustedExecutionIdentityNegative:
             identity = TrustedExecutionIdentity(
                 issuer_pid=trust_anchor.get_process_identity().pid,
                 issuer_generation=wrong_generation,
+                consumer_pid=trust_anchor.get_process_identity().pid,
                 execution_id=str(uuid4()),
                 run_id=str(uuid4()),
                 episode_id=str(uuid4()),
