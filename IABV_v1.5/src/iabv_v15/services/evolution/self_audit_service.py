@@ -88,10 +88,46 @@ class SelfAuditService:
     # ------------------------------------------------------------------
     # API pública
 
-    def run(self, *, reason: str | None = None) -> SelfAuditSnapshot:
-        """Ejecuta la auditoría y persiste el snapshot resultante."""
+    def run(
+        self,
+        *,
+        reason: str | None = None,
+        canonical_identity: dict[str, Any] | None = None,
+    ) -> SelfAuditSnapshot:
+        """Ejecuta la auditoría y persiste el snapshot resultante.
+        
+        P0.213 V4: Si se proporciona canonical_identity, debe ser validada.
+        Si la identidad es inválida, la operación es rechazada (fail-closed).
+        
+        Args:
+            reason: Razón de la auditoría
+            canonical_identity: Identidad de ejecución canónica (opcional)
+            
+        Returns:
+            SelfAuditSnapshot con provenance de confianza
+            
+        Raises:
+            ValueError: Si canonical_identity es inválida
+        """
 
         generated_at = self._clock()
+
+        # P0.213 V4: Validar canonical_identity si se proporciona (fail-closed)
+        if canonical_identity is not None:
+            # Validación básica de estructura
+            if not isinstance(canonical_identity, dict):
+                raise ValueError("canonical_identity must be a dict")
+            
+            # Validación de campos requeridos
+            required_fields = ['execution_id', 'run_id', 'invocation_id', 'runtime_generation']
+            for field in required_fields:
+                if field not in canonical_identity:
+                    raise ValueError(f"Missing required field in canonical_identity: {field}")
+            
+            # Validación de firma (si está presente)
+            if 'signature' in canonical_identity:
+                if not isinstance(canonical_identity['signature'], str) or len(canonical_identity['signature']) != 64:
+                    raise ValueError("Invalid signature in canonical_identity")
 
         tool_checks = self._collect_tool_checks()
         environment = self._safe(self._environment_provider, default=None)
@@ -124,6 +160,7 @@ class SelfAuditService:
             world_model_digest=dict(world_model_digest),
             summary_markdown=summary_markdown,
             cross_source_truth=cross_source_truth,
+            canonical_identity=canonical_identity,  # P0.213 V4: Include validated identity
         )
         self._persist(snapshot)
         self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)
