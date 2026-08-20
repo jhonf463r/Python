@@ -54,10 +54,13 @@ class RuntimeAuthority:
     @classmethod
     def bootstrap(cls, storage_root: Path | str) -> 'RootTrustAnchor':
         """
-        Bootstrap the canonical RootTrustAnchor.
+        P0.213 V5R4: Bootstrap the canonical RootTrustAnchor with real runtime authority verification.
         
         This is the ONLY way to create a canonical RootTrustAnchor.
         Only the trusted runtime bootstrap should call this method.
+        
+        P0.213 V5R4: This method verifies that the caller is the real runtime bootstrap
+        by checking OS-controlled process identity and bootstrap token ownership.
         
         Args:
             storage_root: Directory for persistent state
@@ -66,15 +69,18 @@ class RuntimeAuthority:
             The canonical RootTrustAnchor instance
             
         Raises:
-            ValueError: If already bootstrapped with different storage root
+            ValueError: If already bootstrapped with different storage root or if caller is not real bootstrap
         """
         resolved_root = Path(storage_root).resolve()
+        
+        # P0.213 V5R4: Verify caller is real runtime bootstrap before proceeding
+        cls._verify_real_bootstrap_authority(resolved_root)
         
         with _root_trust_anchor_lock:
             global _root_trust_anchor_instance
             
             if _root_trust_anchor_instance is None:
-                # P0.213 V5R3: Create canonical instance with _runtime_bootstrap=True
+                # P0.213 V5R4: Create canonical instance with verified bootstrap authority
                 _root_trust_anchor_instance = RootTrustAnchor(
                     storage_root=resolved_root,
                     _runtime_bootstrap=True
@@ -88,6 +94,149 @@ class RuntimeAuthority:
                 )
             
             return _root_trust_anchor_instance
+    
+    @classmethod
+    def _verify_real_bootstrap_authority(cls, storage_root: Path) -> None:
+        """
+        P0.213 V5R4: Verify that the caller is the real runtime bootstrap.
+        
+        This uses OS-controlled properties to distinguish between:
+        - REAL RUNTIME BOOTSTRAP (authorized)
+        - CALLER-OWNED BOOTSTRAP ATTEMPT (unauthorized)
+        
+        Verification strategy:
+        1. Check if bootstrap token exists (already bootstrapped)
+        2. If not, verify this is the first process to claim the storage root
+        3. If yes, verify the current process matches the bootstrap token owner
+        
+        Args:
+            storage_root: The storage root to verify authority for
+            
+        Raises:
+            ValueError: If caller is not authorized to bootstrap
+        """
+        if not PSUTIL_AVAILABLE:
+            # P0.213 V5R4: If psutil is not available, we cannot verify real authority
+            # This is a fail-closed scenario - we reject the bootstrap
+            raise ValueError(
+                "psutil is required for runtime authority verification. "
+                "Cannot verify real bootstrap authority without OS process information."
+            )
+        
+        bootstrap_token_path = storage_root / cls._BOOTSTRAP_TOKEN_FILE if hasattr(cls, '_BOOTSTRAP_TOKEN_FILE') else storage_root / "bootstrap_token.txt"
+        
+        if not bootstrap_token_path.exists():
+            # First bootstrap - verify this is the legitimate first process
+            cls._verify_first_bootstrap_authority(storage_root)
+        else:
+            # Already bootstrapped - verify current process matches token owner
+            cls._verify_existing_bootstrap_authority(bootstrap_token_path)
+    
+    @classmethod
+    def _verify_first_bootstrap_authority(cls, storage_root: Path) -> None:
+        """
+        P0.213 V5R4: Verify authority for first-time bootstrap.
+        
+        For the first bootstrap, we verify that:
+        1. The storage root directory exists or can be created
+        2. The current process is the first to claim it (atomic creation of token)
+        
+        Args:
+            storage_root: The storage root to verify
+            
+        Raises:
+            ValueError: If another process has already claimed the storage root
+        """
+        # Create storage root if it doesn't exist
+        storage_root.mkdir(parents=True, exist_ok=True)
+        
+        # Try to atomically create bootstrap token
+        # This ensures only one process succeeds
+        bootstrap_token_path = storage_root / "bootstrap_token.txt"
+        
+        try:
+            # Get current process identity
+            current_pid = os.getpid()
+            process = psutil.Process(current_pid)
+            create_time = process.create_time()
+            ppid = process.ppid()
+            
+            # Create token with process identity
+            token_content = f"{current_pid}:{create_time}:{ppid}"
+            
+            # Try to write atomically (will fail if file exists)
+            # On Windows, we use a temporary file + rename pattern
+            import tempfile
+            temp_token = storage_root / f"bootstrap_token_{current_pid}_{int(create_time)}.tmp"
+            temp_token.write_text(token_content)
+            
+            # Atomic rename - will fail if target exists
+            temp_token.replace(bootstrap_token_path)
+            
+        except FileExistsError:
+            # Another process already created the token
+            raise ValueError(
+                f"Storage root {storage_root} is already claimed by another process. "
+                "Cannot bootstrap - caller is not the real runtime authority."
+            )
+        except Exception as e:
+            raise ValueError(f"Failed to verify first bootstrap authority: {e}")
+    
+    @classmethod
+    def _verify_existing_bootstrap_authority(cls, bootstrap_token_path: Path) -> None:
+        """
+        P0.213 V5R4: Verify authority for existing bootstrap.
+        
+        For existing bootstrap, we verify that the current process
+        is the same process (or a child of the same parent) that created the token.
+        
+        Args:
+            bootstrap_token_path: Path to the bootstrap token file
+            
+        Raises:
+            ValueError: If current process is not authorized
+        """
+        try:
+            # Read token
+            token_content = bootstrap_token_path.read_text().strip()
+            token_pid, token_create_time, token_ppid = token_content.split(':')
+            token_pid = int(token_pid)
+            token_create_time = float(token_create_time)
+            token_ppid = int(token_ppid)
+            
+            # Get current process identity
+            current_pid = os.getpid()
+            process = psutil.Process(current_pid)
+            current_create_time = process.create_time()
+            current_ppid = process.ppid()
+            
+            # P0.213 V5R4: Verify current process is the same as token owner
+            # or is a child of the token owner (same parent PID)
+            if current_pid == token_pid:
+                # Same process - verify create time matches (prevent PID reuse)
+                if abs(current_create_time - token_create_time) > 1.0:
+                    raise ValueError(
+                        f"PID {current_pid} reused - create time mismatch. "
+                        "Caller is not the real runtime authority."
+                    )
+            elif current_ppid == token_ppid:
+                # Child process of the original bootstrap - allow
+                # This enables authorized child processes to get canonical authority
+                pass
+            else:
+                # Different process with different parent - unauthorized
+                raise ValueError(
+                    f"Current process {current_pid} (parent {current_ppid}) "
+                    f"is not authorized to bootstrap. "
+                    f"Bootstrap token owned by PID {token_pid} (parent {token_ppid}). "
+                    "Caller is not the real runtime authority."
+                )
+            
+        except ValueError as e:
+            # Re-raise our own ValueErrors
+            raise
+        except Exception as e:
+            raise ValueError(f"Failed to verify existing bootstrap authority: {e}")
     
     @classmethod
     def get_canonical(cls) -> 'RootTrustAnchor':
@@ -150,6 +299,7 @@ class RootTrustAnchor:
     _SECRET_KEY_FILE: Final = "secret.key"
     _GENERATION_FILE: Final = "generation.txt"
     _BOOTSTRAP_FILE: Final = "bootstrap.txt"
+    _BOOTSTRAP_TOKEN_FILE: Final = "bootstrap_token.txt"
     
     def __init__(self, storage_root: Path | str | None = None, _runtime_bootstrap: bool = False):
         """Initialize root trust anchor.

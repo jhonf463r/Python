@@ -80,6 +80,7 @@ class SelfAuditService:
         workspace_root: Path | str | None = None,
         token_rotation_ledger: Any | None = None,
         root_trust_anchor: Any | None = None,  # P0.213 V5R2: For HMAC verification
+        trusted_request_registry: Any | None = None,  # P0.213 V5R4: For request binding
     ) -> None:
         self.tool_registry = tool_registry
         self._environment_provider = environment_self_model_provider
@@ -92,19 +93,41 @@ class SelfAuditService:
         # ``OperationalSelfExaminationService`` pueda proyectar rotaciones
         # proactivas sin que el usuario lo note.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
-        # P0.213 V5R3: RootTrustAnchor for HMAC verification
-        # P0.213 V5R3: If root_trust_anchor is provided, it must be the canonical instance.
+        # P0.213 V5R4: RootTrustAnchor for HMAC verification
+        # P0.213 V5R4: If root_trust_anchor is provided, it must be the canonical instance.
         # If not provided, the canonical instance is obtained via RuntimeAuthority.
         if root_trust_anchor is None:
-            # P0.213 V5R3: Get canonical instance from RuntimeAuthority
+            # P0.213 V5R4: Get canonical instance from RuntimeAuthority
             try:
                 from iabv_v15.services.evolution.root_trust_anchor import RuntimeAuthority
                 root_trust_anchor = RuntimeAuthority.get_canonical()
             except ValueError:
-                # P0.213 V5R3: If not bootstrapped, reject (fail-closed)
+                # P0.213 V5R4: If not bootstrapped, reject (fail-closed)
                 root_trust_anchor = None
         
         self._root_trust_anchor = root_trust_anchor
+        
+        # P0.213 V5R4: TrustedRequestRegistry for real request/execution binding
+        if trusted_request_registry is None:
+            # Try to create from storage root
+            if storage_root is not None:
+                try:
+                    from iabv_v15.services.evolution.capability_registry import TrustedRequestRegistry
+                    from iabv_v15.services.evolution.root_trust_anchor import RuntimeAuthority
+                    # Get runtime generation from canonical RootTrustAnchor
+                    root = RuntimeAuthority.get_canonical()
+                    runtime_generation = root.get_runtime_identity().generation
+                    trusted_request_registry = TrustedRequestRegistry(
+                        storage_root=storage_root,
+                        runtime_generation=runtime_generation
+                    )
+                except Exception:
+                    # P0.213 V5R4: Fail-closed if cannot create registry
+                    trusted_request_registry = None
+            else:
+                trusted_request_registry = None
+        
+        self._trusted_request_registry = trusted_request_registry
         # P0.213 V5: Removed optional identity_authority - SelfAudit must require
         # validated invocation context, not caller-asserted identity
         resolved_root: Path | None
@@ -309,60 +332,102 @@ class SelfAuditService:
     
     def _resolve_to_real_execution(self, validated_invocation_context: 'ValidatedInvocationContext') -> None:
         """
-        P0.213 V5R3: Resolve the invocation context to the actual RunRecord.
+        P0.213 V5R4: Resolve the invocation context to the actual RunRecord via TrustedRequestRegistry.
         
         This establishes the causal chain:
         CAPABILITY → INVOCATION_ID → REAL IPC REQUEST → AUTHORIZED CONSUMER → REGISTERED EXECUTION → SELF-AUDIT → SNAPSHOT
         
-        The verifier must be able to establish: "This exact capability was issued for this exact
-        invocation request, for this exact execution."
+        P0.213 V5R4: This method MUST resolve to a real registered request. Silent exceptions are removed.
+        Failure to resolve is a verification failure (fail-closed).
         
         Args:
             validated_invocation_context: The validated context to resolve
             
         Raises:
-            ValueError: If cannot resolve to real RunRecord or binding is invalid
+            ValueError: If cannot resolve to real request or binding is invalid
         """
-        # P0.213 V5R3: Try to resolve to actual RunRecord via RunRepository
-        # This requires access to the database to look up the real execution
-        try:
-            from iabv_v15.infra.persistence.run_repository import RunRepository
-            from iabv_v15.infra.persistence.database import AppDatabase
-            
-            # Get database path from storage root if available
-            db_path = None
-            if self._storage_root is not None:
-                # Try to find database in workspace
-                workspace_root = self._storage_root.parent.parent
-                db_path = workspace_root / "data" / "iabv.db"
-            
-            if db_path and db_path.exists():
-                db = AppDatabase(str(db_path))
-                run_repo = RunRepository(db)
-                
-                # Try to find RunRecord by invocation_id
-                # Note: RunRecord uses run_id, not invocation_id directly
-                # We need to match the capability's invocation_id to a real execution
-                # For now, we'll check if we can access the database and verify the execution exists
-                
-                # P0.213 V5R3: The actual resolution would require:
-                # 1. Mapping invocation_id to run_id (via some invocation registry)
-                # 2. Loading the RunRecord
-                # 3. Verifying the capability matches the actual execution details
-                
-                # For V5R3, we establish the requirement that this lookup must succeed
-                # If the database is not accessible or the execution cannot be found, fail closed
-                pass
-                
-        except Exception as e:
-            # P0.213 V5R3: If we cannot resolve to real execution, fail closed
-            # This is a strict requirement for causal binding
-            # In a production system, this would be a hard failure
-            # For V5R3, we log the requirement but don't block if infrastructure is missing
-            # The key architectural change is that the binding MUST resolve to real execution
-            pass
+        # P0.213 V5R4: Verify using TrustedRequestRegistry
+        if self._trusted_request_registry is None:
+            raise ValueError(
+                "TrustedRequestRegistry is required for execution binding. "
+                "Cannot verify real request/execution binding without registry (fail-closed)."
+            )
         
-        # P0.213 V5R3: Verify timestamp is recent (within last hour)
+        # Verify the binding using the trusted request registry
+        binding_valid = self._trusted_request_registry.verify_binding(
+            invocation_id=validated_invocation_context.invocation_id,
+            capability_id=validated_invocation_context.capability_id,
+            authorized_consumer_pid=validated_invocation_context.authorized_consumer_pid,
+            scope=validated_invocation_context.scope,
+        )
+        
+        if not binding_valid:
+            raise ValueError(
+                f"Execution binding verification failed: invocation_id {validated_invocation_context.invocation_id} "
+                f"does not match a registered request with capability_id {validated_invocation_context.capability_id} "
+                f"and authorized_consumer_pid {validated_invocation_context.authorized_consumer_pid} (fail-closed)."
+            )
+        
+        # P0.213 V5R4: Get the registered request to verify RunRecord binding
+        registered_request = self._trusted_request_registry.get_request(
+            validated_invocation_context.invocation_id
+        )
+        
+        if registered_request is None:
+            raise ValueError(
+                f"Invocation ID {validated_invocation_context.invocation_id} not found in trusted request registry (fail-closed)."
+            )
+        
+        # P0.213 V5R4: If run_id is available, verify it matches (when RunRecord exists)
+        if registered_request.run_id is not None:
+            # Try to verify against actual RunRecord
+            try:
+                from iabv_v15.infra.persistence.run_repository import RunRepository
+                from iabv_v15.infra.persistence.database import AppDatabase
+                
+                # Get database path from storage root if available
+                db_path = None
+                if self._storage_root is not None:
+                    workspace_root = self._storage_root.parent.parent
+                    db_path = workspace_root / "data" / "iabv.db"
+                
+                if db_path and db_path.exists():
+                    db = AppDatabase(str(db_path))
+                    run_repo = RunRepository(db)
+                    
+                    # Try to load the RunRecord
+                    run_record = run_repo.get_by_id(registered_request.run_id)
+                    
+                    if run_record is None:
+                        raise ValueError(
+                            f"RunRecord with run_id {registered_request.run_id} not found in database (fail-closed)."
+                        )
+                    
+                    # P0.213 V5R4: Verify episode_id and session_id match if available
+                    if registered_request.episode_id is not None:
+                        if hasattr(run_record, 'episode_id') and run_record.episode_id != registered_request.episode_id:
+                            raise ValueError(
+                                f"Episode ID mismatch: registered {registered_request.episode_id}, "
+                                f"RunRecord has {run_record.episode_id} (fail-closed)."
+                            )
+                    
+                    if registered_request.session_id is not None:
+                        if hasattr(run_record, 'session_id') and run_record.session_id != registered_request.session_id:
+                            raise ValueError(
+                                f"Session ID mismatch: registered {registered_request.session_id}, "
+                                f"RunRecord has {run_record.session_id} (fail-closed)."
+                            )
+                    
+            except ValueError:
+                # Re-raise our ValueErrors
+                raise
+            except Exception as e:
+                # P0.213 V5R4: If we cannot verify RunRecord but run_id was registered, fail closed
+                raise ValueError(
+                    f"Failed to verify RunRecord binding for run_id {registered_request.run_id}: {e} (fail-closed)."
+                )
+        
+        # P0.213 V5R4: Verify timestamp is recent (within last hour)
         # This is a secondary check, not the primary causal binding
         import time as time_module
         current_time = time_module.time()
