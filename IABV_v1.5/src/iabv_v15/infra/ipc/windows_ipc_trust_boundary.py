@@ -54,7 +54,19 @@ except (ImportError, AttributeError):
 
 
 class IpcMessage:
-    """IPC message for lease transport."""
+    """IPC message for lease transport with explicit validation."""
+    
+    # Message types
+    TYPE_LEASE_REQUEST = "lease_request"
+    TYPE_LEASE_RESPONSE = "lease_response"
+    TYPE_LEASE_CONSUME = "lease_consume"
+    
+    # Required fields per message type
+    REQUIRED_FIELDS = {
+        TYPE_LEASE_REQUEST: ["execution_id", "producer_scope"],
+        TYPE_LEASE_RESPONSE: ["lease"],
+        TYPE_LEASE_CONSUME: ["invocation_id"],
+    }
     
     def __init__(self, message_type: str, data: dict[str, Any]):
         self.message_type = message_type
@@ -69,9 +81,72 @@ class IpcMessage:
     
     @classmethod
     def from_json(cls, json_str: str) -> 'IpcMessage':
-        """Create from JSON (transport deserialization)."""
-        data = json.loads(json_str)
-        return cls(data['message_type'], data['data'])
+        """Create from JSON (transport deserialization).
+        
+        Args:
+            json_str: JSON string to parse
+            
+        Returns:
+            IpcMessage instance
+            
+        Raises:
+            ValueError: If JSON is malformed or validation fails
+        """
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Malformed JSON: {e}")
+        
+        # Validate structure
+        if not isinstance(data, dict):
+            raise ValueError("Message must be a JSON object")
+        
+        if 'message_type' not in data:
+            raise ValueError("Missing required field: message_type")
+        
+        if 'data' not in data:
+            raise ValueError("Missing required field: data")
+        
+        if not isinstance(data['data'], dict):
+            raise ValueError("Field 'data' must be a JSON object")
+        
+        message_type = data['message_type']
+        message_data = data['data']
+        
+        # Validate message type
+        valid_types = [cls.TYPE_LEASE_REQUEST, cls.TYPE_LEASE_RESPONSE, cls.TYPE_LEASE_CONSUME]
+        if message_type not in valid_types:
+            raise ValueError(f"Invalid message_type: {message_type}")
+        
+        # Validate required fields
+        required_fields = cls.REQUIRED_FIELDS.get(message_type, [])
+        for field in required_fields:
+            if field not in message_data:
+                raise ValueError(f"Missing required field for {message_type}: {field}")
+        
+        return cls(message_type, message_data)
+    
+    def validate(self) -> bool:
+        """Validate message structure and content.
+        
+        Returns:
+            True if validation succeeds, False otherwise
+        """
+        try:
+            # Validate message type
+            valid_types = [self.TYPE_LEASE_REQUEST, self.TYPE_LEASE_RESPONSE, self.TYPE_LEASE_CONSUME]
+            if self.message_type not in valid_types:
+                return False
+            
+            # Validate required fields
+            required_fields = self.REQUIRED_FIELDS.get(self.message_type, [])
+            for field in required_fields:
+                if field not in self.data:
+                    return False
+            
+            return True
+        except Exception:
+            return False
 
 
 class WindowsNamedPipe:

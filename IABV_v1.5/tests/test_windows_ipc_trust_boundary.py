@@ -24,28 +24,80 @@ class TestIpcMessage:
     
     def test_message_creation(self):
         """Test that message can be created."""
-        message = IpcMessage("test_type", {"key": "value"})
+        message = IpcMessage(IpcMessage.TYPE_LEASE_REQUEST, {"key": "value"})
         
-        assert message.message_type == "test_type"
+        assert message.message_type == IpcMessage.TYPE_LEASE_REQUEST
         assert message.data == {"key": "value"}
     
     def test_message_serialization(self):
         """Test that message can be serialized to JSON."""
-        message = IpcMessage("test_type", {"key": "value"})
+        message = IpcMessage(IpcMessage.TYPE_LEASE_REQUEST, {"key": "value"})
         json_str = message.to_json()
         
-        assert "test_type" in json_str
+        assert IpcMessage.TYPE_LEASE_REQUEST in json_str
         assert "key" in json_str
         assert "value" in json_str
     
     def test_message_deserialization(self):
         """Test that message can be deserialized from JSON."""
-        original = IpcMessage("test_type", {"key": "value"})
+        original = IpcMessage(
+            IpcMessage.TYPE_LEASE_REQUEST,
+            {"execution_id": "test_id", "producer_scope": "test_scope"}
+        )
         json_str = original.to_json()
         restored = IpcMessage.from_json(json_str)
         
         assert restored.message_type == original.message_type
         assert restored.data == original.data
+    
+    def test_message_validation_valid(self):
+        """Test that valid message validates successfully."""
+        message = IpcMessage(
+            IpcMessage.TYPE_LEASE_REQUEST,
+            {"execution_id": "test_id", "producer_scope": "test_scope"}
+        )
+        
+        assert message.validate() is True
+    
+    def test_message_validation_invalid_type(self):
+        """Test that invalid message type fails validation."""
+        message = IpcMessage("invalid_type", {"key": "value"})
+        
+        assert message.validate() is False
+    
+    def test_message_validation_missing_required_field(self):
+        """Test that missing required field fails validation."""
+        message = IpcMessage(
+            IpcMessage.TYPE_LEASE_REQUEST,
+            {"execution_id": "test_id"}  # Missing producer_scope
+        )
+        
+        assert message.validate() is False
+    
+    def test_message_from_json_malformed(self):
+        """Test that malformed JSON raises ValueError."""
+        with pytest.raises(ValueError, match="Malformed JSON"):
+            IpcMessage.from_json("not json")
+    
+    def test_message_from_json_missing_message_type(self):
+        """Test that missing message_type raises ValueError."""
+        with pytest.raises(ValueError, match="Missing required field: message_type"):
+            IpcMessage.from_json('{"data": {}}')
+    
+    def test_message_from_json_missing_data(self):
+        """Test that missing data raises ValueError."""
+        with pytest.raises(ValueError, match="Missing required field: data"):
+            IpcMessage.from_json('{"message_type": "lease_request"}')
+    
+    def test_message_from_json_invalid_message_type(self):
+        """Test that invalid message_type raises ValueError."""
+        with pytest.raises(ValueError, match="Invalid message_type"):
+            IpcMessage.from_json('{"message_type": "invalid", "data": {}}')
+    
+    def test_message_from_json_missing_required_field(self):
+        """Test that missing required field raises ValueError."""
+        with pytest.raises(ValueError, match="Missing required field"):
+            IpcMessage.from_json('{"message_type": "lease_request", "data": {}}')
 
 
 class TestWindowsNamedPipe:
