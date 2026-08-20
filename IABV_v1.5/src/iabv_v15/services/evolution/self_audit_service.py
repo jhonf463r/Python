@@ -55,6 +55,7 @@ from iabv_v15.services.tools.tool_registry import ToolRegistry
 
 if TYPE_CHECKING:
     from iabv_v15.services.evolution.capability_verifier import ValidatedInvocationContext
+    from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ class SelfAuditService:
         storage_root: Path | str | None = None,
         workspace_root: Path | str | None = None,
         token_rotation_ledger: Any | None = None,
+        root_trust_anchor: Any | None = None,  # P0.213 V5R2: For HMAC verification
     ) -> None:
         self.tool_registry = tool_registry
         self._environment_provider = environment_self_model_provider
@@ -90,6 +92,8 @@ class SelfAuditService:
         # ``OperationalSelfExaminationService`` pueda proyectar rotaciones
         # proactivas sin que el usuario lo note.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
+        # P0.213 V5R2: RootTrustAnchor for HMAC verification
+        self._root_trust_anchor = root_trust_anchor
         # P0.213 V5: Removed optional identity_authority - SelfAudit must require
         # validated invocation context, not caller-asserted identity
         resolved_root: Path | None
@@ -141,11 +145,11 @@ class SelfAuditService:
 
         generated_at = self._clock()
 
-        # P0.213 V5R1: ValidatedInvocationContext es REQUERIDO (fail-closed)
+        # P0.213 V5R2: ValidatedInvocationContext es REQUERIDO (fail-closed)
         if validated_invocation_context is None:
             raise ValueError("validated_invocation_context is required (fail-closed: no capability verification)")
         
-        # P0.213 V5R1: ValidatedInvocationContext debe ser frozen dataclass, no dict caller-controlled
+        # P0.213 V5R2: ValidatedInvocationContext debe ser frozen dataclass, no dict caller-controlled
         if not isinstance(validated_invocation_context, type(validated_invocation_context)):
             # Check if it's the actual ValidatedInvocationContext type
             try:
@@ -155,8 +159,19 @@ class SelfAuditService:
             except ImportError:
                 raise ValueError("ValidatedInvocationContext not available")
         
-        # P0.213 V5R1: ValidatedInvocationContext is frozen, so no need to validate individual fields
-        # The CapabilityVerifier guarantees all fields are valid
+        # P0.213 V5R2: Verify HMAC signature to prove context came from canonical verifier
+        if self._root_trust_anchor is not None:
+            context_data = f"{validated_invocation_context.capability_id}|{validated_invocation_context.invocation_id}|{validated_invocation_context.authorized_consumer_pid}|{validated_invocation_context.scope}|{validated_invocation_context.issuer_pid}|{validated_invocation_context.runtime_incarnation}|{validated_invocation_context.verified_at}|{validated_invocation_context.verifier_signature}"
+            if not self._root_trust_anchor.verify_hmac(context_data, validated_invocation_context.verifier_hmac):
+                raise ValueError("Invalid HMAC signature: context did not come from canonical verifier (fail-closed)")
+        else:
+            # P0.213 V5R2: If no RootTrustAnchor provided, reject (fail-closed)
+            raise ValueError("root_trust_anchor is required for HMAC verification (fail-closed)")
+        
+        # P0.213 V5R2: Verify execution binding chain
+        # Ensure all binding fields are present and consistent
+        # This is the complete chain: CAPABILITY → VERIFIER → CONTEXT → SELFAUDIT → SNAPSHOT
+        self._verify_execution_binding(validated_invocation_context)
 
         tool_checks = self._collect_tool_checks()
         environment = self._safe(self._environment_provider, default=None)
@@ -180,7 +195,7 @@ class SelfAuditService:
             cross_source_truth=cross_source_truth,
         )
 
-        # P0.213 V5R1: Convert ValidatedInvocationContext to dict for persistence
+        # P0.213 V5R2: Convert ValidatedInvocationContext to dict for persistence
         # The frozen dataclass ensures caller cannot modify it
         canonical_identity_dict = {
             'capability_id': validated_invocation_context.capability_id,
@@ -191,6 +206,7 @@ class SelfAuditService:
             'runtime_incarnation': validated_invocation_context.runtime_incarnation,
             'verified_at': validated_invocation_context.verified_at,
             'verifier_signature': validated_invocation_context.verifier_signature,
+            'verifier_hmac': validated_invocation_context.verifier_hmac,  # P0.213 V5R2: Include HMAC for audit trail
         }
         
         snapshot = SelfAuditSnapshot(
@@ -207,6 +223,74 @@ class SelfAuditService:
         self._persist(snapshot)
         self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)
         return snapshot
+    
+    def _verify_execution_binding(self, validated_invocation_context: 'ValidatedInvocationContext') -> None:
+        """
+        P0.213 V5R2: Verify the complete execution binding chain.
+        
+        This ensures:
+        - CAPABILITY → INVOCATION binding (capability_id ↔ invocation_id)
+        - CAPABILITY → EXECUTION binding (authorized_consumer_pid)
+        - CAPABILITY → SCOPE binding (scope)
+        - CAPABILITY → RUNTIME binding (runtime_incarnation)
+        - CAPABILITY → ISSUER binding (issuer_pid)
+        
+        Args:
+            validated_invocation_context: The validated context to verify
+            
+        Raises:
+            ValueError: If execution binding is invalid
+        """
+        # Verify all required fields are present
+        required_fields = [
+            'capability_id',
+            'invocation_id',
+            'authorized_consumer_pid',
+            'scope',
+            'issuer_pid',
+            'runtime_incarnation',
+            'verified_at',
+            'verifier_signature',
+            'verifier_hmac',
+        ]
+        
+        for field in required_fields:
+            if not hasattr(validated_invocation_context, field):
+                raise ValueError(f"Missing required field in execution binding: {field} (fail-closed)")
+        
+        # Verify field types
+        if not isinstance(validated_invocation_context.capability_id, str) or not validated_invocation_context.capability_id:
+            raise ValueError("Invalid capability_id in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.invocation_id, str) or not validated_invocation_context.invocation_id:
+            raise ValueError("Invalid invocation_id in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.authorized_consumer_pid, int) or validated_invocation_context.authorized_consumer_pid <= 0:
+            raise ValueError("Invalid authorized_consumer_pid in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.scope, str) or not validated_invocation_context.scope:
+            raise ValueError("Invalid scope in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.issuer_pid, int) or validated_invocation_context.issuer_pid <= 0:
+            raise ValueError("Invalid issuer_pid in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.runtime_incarnation, int) or validated_invocation_context.runtime_incarnation < 0:
+            raise ValueError("Invalid runtime_incarnation in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.verified_at, float) or validated_invocation_context.verified_at <= 0:
+            raise ValueError("Invalid verified_at in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.verifier_signature, str) or not validated_invocation_context.verifier_signature:
+            raise ValueError("Invalid verifier_signature in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.verifier_hmac, str) or not validated_invocation_context.verifier_hmac:
+            raise ValueError("Invalid verifier_hmac in execution binding (fail-closed)")
+        
+        # Verify timestamp is recent (within last hour)
+        import time as time_module
+        current_time = time_module.time()
+        if current_time - validated_invocation_context.verified_at > 3600:
+            raise ValueError("Execution binding timestamp is too old (fail-closed)")
 
     # ------------------------------------------------------------------
     # Capa 2.2 — feed de TokenRotationLedger

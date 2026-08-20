@@ -25,7 +25,7 @@ import json
 import time
 from pathlib import Path
 from typing import Optional, Set
-from threading import Lock
+from threading import RLock
 import msvcrt
 import ctypes
 from ctypes import wintypes
@@ -50,7 +50,7 @@ class CapabilityRegistry:
         """
         self._storage_root = Path(storage_root) if storage_root else Path.home() / ".iabv" / "capability_registry"
         self._registry_file = self._storage_root / "consumed_capabilities.json"
-        self._local_lock = Lock()
+        self._local_lock = RLock()  # P0.213 V5R2: Use RLock to prevent deadlock in nested calls
         
         # Ensure storage directory exists
         self._storage_root.mkdir(parents=True, exist_ok=True)
@@ -68,59 +68,61 @@ class CapabilityRegistry:
         """
         Load the set of consumed capability IDs from the registry.
         
-        P0.213 V5R1: Uses Windows file locking for interprocess atomicity.
+        P0.213 V5R2: Uses Windows file locking for interprocess atomicity.
+        Note: Does NOT acquire local lock - caller must hold lock.
         
         Returns:
             Set[str]: Set of consumed capability IDs
         """
-        with self._local_lock:
-            if not self._registry_file.exists():
-                return set()
+        if not self._registry_file.exists():
+            return set()
+        
+        with open(self._registry_file, "r") as f:
+            # Acquire Windows file lock for interprocess atomicity
+            self._acquire_windows_lock(f.fileno(), exclusive=False)
             
-            with open(self._registry_file, "r") as f:
-                # Acquire Windows file lock for interprocess atomicity
-                self._acquire_windows_lock(f.fileno(), exclusive=False)
-                
-                try:
-                    data = json.load(f)
-                    return set(data.get("consumed_capabilities", []))
-                finally:
-                    self._release_windows_lock(f.fileno())
+            try:
+                data = json.load(f)
+                return set(data.get("consumed_capabilities", []))
+            finally:
+                self._release_windows_lock(f.fileno())
     
     def _save_registry(self, consumed_capabilities: Set[str]) -> None:
         """
         Save the set of consumed capability IDs to the registry.
         
-        P0.213 V5R1: Uses Windows file locking for interprocess atomicity.
+        P0.213 V5R2: Uses Windows file locking for interprocess atomicity.
+        Note: Does NOT acquire local lock - caller must hold lock.
         
         Args:
             consumed_capabilities: Set of consumed capability IDs
         """
-        with self._local_lock:
-            # Write to temporary file first for atomicity
-            temp_file = self._registry_file.with_suffix(".tmp")
+        # Write to temporary file first for atomicity
+        temp_file = self._registry_file.with_suffix(".tmp")
+        
+        with open(temp_file, "w") as f:
+            # Acquire Windows file lock for interprocess atomicity
+            self._acquire_windows_lock(f.fileno(), exclusive=True)
             
-            with open(temp_file, "w") as f:
-                # Acquire Windows file lock for interprocess atomicity
-                self._acquire_windows_lock(f.fileno(), exclusive=True)
-                
-                try:
-                    json.dump(
-                        {"consumed_capabilities": list(consumed_capabilities)},
-                        f,
-                        indent=2
-                    )
-                    f.flush()
-                    os.fsync(f.fileno())
-                finally:
-                    self._release_windows_lock(f.fileno())
-            
-            # Atomic rename
-            temp_file.replace(self._registry_file)
+            try:
+                json.dump(
+                    {"consumed_capabilities": list(consumed_capabilities)},
+                    f,
+                    indent=2
+                )
+                f.flush()
+                os.fsync(f.fileno())
+            finally:
+                self._release_windows_lock(f.fileno())
+        
+        # Atomic rename
+        temp_file.replace(self._registry_file)
     
     def is_consumed(self, capability_id: str) -> bool:
         """
         Check if a capability has been consumed.
+        
+        P0.213 V5R2: Acquires local lock for thread safety.
         
         Args:
             capability_id: The capability ID to check
@@ -128,8 +130,9 @@ class CapabilityRegistry:
         Returns:
             bool: True if consumed, False otherwise
         """
-        consumed = self._load_registry()
-        return capability_id in consumed
+        with self._local_lock:
+            consumed = self._load_registry()
+            return capability_id in consumed
     
     def mark_consumed(self, capability_id: str) -> bool:
         """
@@ -162,11 +165,13 @@ class CapabilityRegistry:
     
     def consume_if_valid(self, capability_id: str) -> bool:
         """
-        P0.213 V5R1: Atomic consume_if_valid to eliminate TOCTOU.
+        P0.213 V5R2: Atomic consume_if_valid to eliminate TOCTOU.
         
         This single atomic operation checks if the capability is valid
         and consumes it if so. This prevents race conditions where multiple
         processes could pass the check and then all try to consume.
+        
+        Uses RLock to prevent deadlock in nested calls.
         
         Args:
             capability_id: The capability ID to consume

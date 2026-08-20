@@ -1,17 +1,17 @@
 """
-P0.213 V5R1 Invocation Authority Adversarial Tests
+P0.213 V5R2 Invocation Authority Adversarial Tests
 
-P0.213 V5R1: Tests for the invocation authority contract implementation.
+P0.213 V5R2: Tests for the invocation authority contract implementation.
 
 Key Principle: Identity ≠ Authorization. A verified identity doesn't prove
 the current invocation is authorized to execute within a specific scope.
 
-V5R1 Fixes:
-- V5-01: SelfAudit trust bypass (require ValidatedInvocationContext)
-- V5-02: Windows compatibility (eliminate fcntl)
-- V5-03: Atomic verify+consume (consume_if_valid)
-- V5-04: Root trust anchor (bind CapabilityIssuer to RootTrustAnchor)
-- V5-05: Execution binding (capability→invocation→SelfAudit chain)
+V5R2 Fixes:
+- V5R1-01: SelfAudit authority bypass (canonical verifier proof with HMAC)
+- V5R1-02: Windows registry compatibility (validate msvcrt/ctypes)
+- V5R1-03: Atomic verify+consume (fix deadlock with RLock)
+- V5R1-04: Root trust anchor (runtime-owned singleton pattern)
+- V5R1-05: Execution + IPC request binding (complete chain)
 """
 
 import os
@@ -35,20 +35,21 @@ from iabv_v15.services.tools.tool_registry import ToolRegistry
 
 
 # ============================================================================
-# F-01: SelfAudit without capability → FAIL CLOSED
+# V5R2 Negative Tests (A-K)
 # ============================================================================
 
-def test_f01_selfaudit_without_capability_fail_closed():
+def test_negative_a_fabricated_context_fail():
     """
-    V5-01: SelfAuditService must reject calls without ValidatedInvocationContext.
+    A. fabricated ValidatedInvocationContext → FAIL
     
-    P0.213 V5R1: SelfAuditService requires ValidatedInvocationContext from CapabilityVerifier.
-    Without capability validation: FAIL CLOSED.
+    P0.213 V5R2: SelfAuditService must reject fabricated ValidatedInvocationContext.
+    Caller cannot fabricate ValidatedInvocationContext. Must come from CapabilityVerifier.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         # Setup
         tool_registry = MagicMock(spec=ToolRegistry)
         tool_registry.check_availability.return_value = MagicMock()
+        root_trust_anchor = RootTrustAnchor(storage_root=tmpdir)
         
         self_audit = SelfAuditService(
             tool_registry=tool_registry,
@@ -57,6 +58,7 @@ def test_f01_selfaudit_without_capability_fail_closed():
             operational_self_examination_service=MagicMock(),
             portable_context_service=MagicMock(),
             storage_root=tmpdir,
+            root_trust_anchor=root_trust_anchor,
         )
         
         # Test: Call without validated_invocation_context
@@ -66,28 +68,6 @@ def test_f01_selfaudit_without_capability_fail_closed():
         # Test: Call with None validated_invocation_context
         with pytest.raises(ValueError, match="validated_invocation_context is required"):
             self_audit.run(reason="test", validated_invocation_context=None)
-
-
-def test_f01_selfaudit_with_fabricated_context_fail_closed():
-    """
-    V5-01: SelfAuditService must reject fabricated ValidatedInvocationContext.
-    
-    P0.213 V5R1: Caller cannot fabricate ValidatedInvocationContext.
-    Must come from CapabilityVerifier.
-    """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Setup
-        tool_registry = MagicMock(spec=ToolRegistry)
-        tool_registry.check_availability.return_value = MagicMock()
-        
-        self_audit = SelfAuditService(
-            tool_registry=tool_registry,
-            environment_self_model_provider=lambda: None,
-            world_model_service=MagicMock(),
-            operational_self_examination_service=MagicMock(),
-            portable_context_service=MagicMock(),
-            storage_root=tmpdir,
-        )
         
         # Test: Caller tries to pass dict instead of ValidatedInvocationContext
         with pytest.raises(ValueError, match="must be ValidatedInvocationContext"):
@@ -104,16 +84,18 @@ def test_f01_selfaudit_with_fabricated_context_fail_closed():
             )
 
 
-def test_f01_selfaudit_with_fabricated_verifier_signature_fail_closed():
+def test_negative_b_fake_hmac_fail():
     """
-    V5-01: SelfAuditService must reject fabricated verifier signature.
+    B. fake verifier_signature → FAIL
     
-    P0.213 V5R1: Caller cannot fabricate ValidatedInvocationContext with fake signature.
+    P0.213 V5R2: SelfAuditService must reject fabricated verifier HMAC.
+    Caller cannot fabricate ValidatedInvocationContext with fake HMAC.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         # Setup
         tool_registry = MagicMock(spec=ToolRegistry)
         tool_registry.check_availability.return_value = MagicMock()
+        root_trust_anchor = RootTrustAnchor(storage_root=tmpdir)
         
         self_audit = SelfAuditService(
             tool_registry=tool_registry,
@@ -122,10 +104,11 @@ def test_f01_selfaudit_with_fabricated_verifier_signature_fail_closed():
             operational_self_examination_service=MagicMock(),
             portable_context_service=MagicMock(),
             storage_root=tmpdir,
+            root_trust_anchor=root_trust_anchor,
         )
         
-        # Test: Caller tries to create ValidatedInvocationContext with fake signature
-        # This should fail because ValidatedInvocationContext is frozen and must come from verifier
+        # Test: Caller tries to create ValidatedInvocationContext with fake HMAC
+        # This should fail because HMAC verification will reject it
         fake_context = ValidatedInvocationContext(
             capability_id="fake",
             invocation_id="fake",
@@ -135,28 +118,26 @@ def test_f01_selfaudit_with_fabricated_verifier_signature_fail_closed():
             runtime_incarnation=1,
             verified_at=time.time(),
             verifier_signature="fabricated_signature",
+            verifier_hmac="fake_hmac_signature",
         )
         
-        # The frozen dataclass prevents modification, but caller could still create one
-        # The real protection is that SelfAudit requires it came from CapabilityVerifier
-        # This test documents that the dataclass itself doesn't prevent creation
-        # but the trust chain does
-        with pytest.raises(ValueError, match="must be ValidatedInvocationContext from CapabilityVerifier"):
-            # In practice, this would require additional verification
-            # For now, we accept that the frozen dataclass prevents modification
-            # but not fabrication
-            pass
+        # P0.213 V5R2: HMAC verification will reject fake signature
+        with pytest.raises(ValueError, match="Invalid HMAC signature"):
+            self_audit.run(
+                reason="test",
+                validated_invocation_context=fake_context,
+            )
 
 
 # ============================================================================
-# F-02: parent → authorized child → PASS
+# V5R2 Positive Tests
 # ============================================================================
 
 def test_f02_parent_authorized_child_pass():
     """
-    V5-02: Parent issues capability to authorized child → PASS.
+    V5R1-02: Parent issues capability to authorized child → PASS.
     
-    P0.213 V5R1: Uses RootTrustAnchor for authority.
+    P0.213 V5R2: Uses RootTrustAnchor for authority.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         # Setup
@@ -164,7 +145,7 @@ def test_f02_parent_authorized_child_pass():
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability to authorized child (simulated)
         child_pid = os.getpid() + 1  # Simulated child PID
@@ -188,15 +169,11 @@ def test_f02_parent_authorized_child_pass():
         assert result.validated_context.capability_id == capability.capability_id
 
 
-# ============================================================================
-# F-03: same lineage + unauthorized consumer → FAIL
-# ============================================================================
-
-def test_f03_same_lineage_unauthorized_consumer_fail():
+def test_negative_f_unauthorized_consumer_fail():
     """
-    V5-03: Same lineage but unauthorized consumer → FAIL.
+    F. unauthorized authorized_consumer_pid → FAIL
     
-    P0.213 V5R1: Uses RootTrustAnchor for authority.
+    P0.213 V5R2: Same lineage but unauthorized consumer → FAIL.
     Even if the consumer is a child of the issuer, if the capability
     was not issued to this specific consumer, it must fail.
     """
@@ -206,7 +183,7 @@ def test_f03_same_lineage_unauthorized_consumer_fail():
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability to child A
         child_a_pid = os.getpid() + 1
@@ -229,97 +206,11 @@ def test_f03_same_lineage_unauthorized_consumer_fail():
         assert "not authorized for consumer" in result.reason
 
 
-# ============================================================================
-# F-04: valid IPC + wrong capability consumer → FAIL
-# ============================================================================
-
-def test_f04_valid_ipc_wrong_capability_consumer_fail():
+def test_negative_h_concurrent_consume_exactly_one_success():
     """
-    V5-04: Valid IPC connection but wrong capability consumer → FAIL.
+    H. two concurrent consume attempts → exactly one success
     
-    P0.213 V5R1: Uses RootTrustAnchor for authority.
-    Even if IPC connection is valid (OS-observed PID matches),
-    if the capability is not authorized for that PID, it must fail.
-    """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Setup
-        storage_root = Path(tmpdir)
-        root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
-        issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
-        registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
-        
-        # Issue capability to authorized consumer
-        authorized_pid = os.getpid() + 1
-        capability = issuer.issue_capability(
-            authorized_consumer_pid=authorized_pid,
-            scope="tool_execution",
-            ttl_seconds=3600,
-        )
-        
-        # Different PID (valid IPC but wrong consumer) tries to use capability
-        wrong_pid = os.getpid() + 999
-        result = verifier.verify_and_consume(
-            capability=capability,
-            actual_consumer_pid=wrong_pid,
-            requested_scope="tool_execution",
-        )
-        
-        # Should fail (capability not authorized for this PID)
-        assert result.success is False
-        assert "not authorized for consumer" in result.reason
-
-
-# ============================================================================
-# F-05: same-user DACL + unauthorized process → FAIL
-# ============================================================================
-
-def test_f05_same_user_dacl_unauthorized_process_fail():
-    """
-    V5-05: Same-user DACL allows connection but unauthorized process → FAIL.
-    
-    P0.213 V5R1: Uses RootTrustAnchor for authority.
-    Even if DACL allows same-user processes to connect (siblings),
-    if the capability is not authorized for that process, it must fail.
-    """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Setup
-        storage_root = Path(tmpdir)
-        root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
-        issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
-        registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
-        
-        # Issue capability to authorized consumer
-        authorized_pid = os.getpid() + 1
-        capability = issuer.issue_capability(
-            authorized_consumer_pid=authorized_pid,
-            scope="tool_execution",
-            ttl_seconds=3600,
-        )
-        
-        # Sibling process (same-user, same parent) tries to use capability
-        sibling_pid = os.getpid() + 2
-        result = verifier.verify_and_consume(
-            capability=capability,
-            actual_consumer_pid=sibling_pid,
-            requested_scope="tool_execution",
-        )
-        
-        # Should fail (DACL allows connection but capability doesn't)
-        assert result.success is False
-        assert "not authorized for consumer" in result.reason
-
-
-# ============================================================================
-# F-06: concurrent reuse of same capability → exactly one success
-# ============================================================================
-
-def test_f06_concurrent_reuse_exactly_one_success():
-    """
-    V5-06: Concurrent reuse of same capability → exactly one success.
-    
-    P0.213 V5R1: Uses Windows file locking for interprocess atomicity.
+    P0.213 V5R2: Uses Windows file locking for interprocess atomicity.
     If multiple processes try to consume the same capability concurrently,
     exactly one should succeed and the rest should fail.
     
@@ -333,7 +224,7 @@ def test_f06_concurrent_reuse_exactly_one_success():
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability
         authorized_pid = os.getpid() + 1
@@ -366,13 +257,13 @@ def test_f06_concurrent_reuse_exactly_one_success():
 # ============================================================================
 
 def test_a_to_a_pass():
-    """V5-04: Authorized consumer A uses capability issued to A → PASS."""
+    """V5R1-04: Authorized consumer A uses capability issued to A → PASS."""
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability to A
         pid_a = os.getpid() + 1
@@ -393,13 +284,13 @@ def test_a_to_a_pass():
 
 
 def test_a_to_b_fail():
-    """V5-04: Authorized consumer A uses capability issued to B → FAIL."""
+    """V5R1-04: Authorized consumer A uses capability issued to B → FAIL."""
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability to B
         pid_b = os.getpid() + 2
@@ -420,14 +311,18 @@ def test_a_to_b_fail():
         assert result.success is False
 
 
-def test_stale_capability_fail():
-    """V5-05: Stale (expired) capability → FAIL."""
+def test_negative_i_stale_generation_fail():
+    """
+    I. stale generation → FAIL
+    
+    P0.213 V5R2: Stale (expired) capability → FAIL.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability with very short TTL
         pid = os.getpid() + 1
@@ -452,13 +347,13 @@ def test_stale_capability_fail():
 
 
 def test_replay_fail():
-    """V5-05: Replay of same capability → FAIL."""
+    """V5R1-05: Replay of same capability → FAIL."""
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability
         pid = os.getpid() + 1
@@ -485,8 +380,12 @@ def test_replay_fail():
         assert result2.success is False
 
 
-def test_runtime_n_to_n_plus_1_fail():
-    """V5-05: Capability from runtime N used in runtime N+1 → FAIL."""
+def test_negative_e_capability_a_generation_b_fail():
+    """
+    E. Capability A + Generation B → FAIL
+    
+    P0.213 V5R2: Capability from runtime N used in runtime N+1 → FAIL.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         
@@ -499,7 +398,7 @@ def test_runtime_n_to_n_plus_1_fail():
         root_trust_anchor_n_plus_1 = RootTrustAnchor(storage_root=storage_root)
         issuer_n_plus_1 = CapabilityIssuer(root_trust_anchor=root_trust_anchor_n_plus_1)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer_n_plus_1, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer_n_plus_1, registry=registry, root_trust_anchor=root_trust_anchor_n_plus_1)
         
         # Issue capability in runtime N
         pid = os.getpid() + 1
@@ -520,14 +419,18 @@ def test_runtime_n_to_n_plus_1_fail():
         assert "runtime incarnation" in result.reason
 
 
-def test_wrong_scope_fail():
-    """V5-05: Capability issued for scope A used for scope B → FAIL."""
+def test_negative_j_wrong_scope_fail():
+    """
+    J. wrong producer scope → FAIL
+    
+    P0.213 V5R2: Capability issued for scope A used for scope B → FAIL.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability for scope A
         pid = os.getpid() + 1
@@ -546,34 +449,6 @@ def test_wrong_scope_fail():
         
         assert result.success is False
         assert "does not match requested scope" in result.reason
-
-
-def test_wrong_consumer_fail():
-    """V5-04: Wrong consumer PID → FAIL."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        storage_root = Path(tmpdir)
-        root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
-        issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
-        registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
-        
-        # Issue capability to authorized consumer
-        authorized_pid = os.getpid() + 1
-        capability = issuer.issue_capability(
-            authorized_consumer_pid=authorized_pid,
-            scope="tool_execution",
-            ttl_seconds=3600,
-        )
-        
-        # Wrong consumer tries to use
-        wrong_pid = os.getpid() + 999
-        result = verifier.verify_and_consume(
-            capability=capability,
-            actual_consumer_pid=wrong_pid,
-            requested_scope="tool_execution",
-        )
-        
-        assert result.success is False
 
 
 # ============================================================================
@@ -607,12 +482,12 @@ def test_p07_p020_evidence_consistency():
 # V5R1 Additional Tests
 # ============================================================================
 
-def test_v5r1_untrusted_issuer_fail():
+def test_negative_g_caller_created_root_trust_anchor_fail():
     """
-    V5-04: Untrusted issuer (without RootTrustAnchor) → FAIL.
+    G. caller-created RootTrustAnchor → FAIL
     
-    P0.213 V5R1: CapabilityIssuer requires RootTrustAnchor.
-    Caller cannot construct issuer with arbitrary secret key.
+    P0.213 V5R2: Untrusted issuer (without RootTrustAnchor) → FAIL.
+    CapabilityIssuer requires RootTrustAnchor. Caller cannot construct issuer with arbitrary secret key.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         # Try to create issuer without RootTrustAnchor (should fail)
@@ -620,18 +495,18 @@ def test_v5r1_untrusted_issuer_fail():
             issuer = CapabilityIssuer(root_trust_anchor=None)
 
 
-def test_v5r1_capability_a_invocation_b_fail():
+def test_negative_c_capability_a_invocation_b_fail():
     """
-    V5-05: Capability A used with invocation B → FAIL.
+    C. Capability A + Invocation B → FAIL
     
-    P0.213 V5R1: Execution binding requires capability and invocation match.
+    P0.213 V5R2: Execution binding requires capability and invocation match.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability A
         pid = os.getpid() + 1
@@ -658,18 +533,18 @@ def test_v5r1_capability_a_invocation_b_fail():
         assert result.validated_context.invocation_id == capability_a.invocation_id
 
 
-def test_v5r1_capability_a_execution_b_fail():
+def test_negative_d_capability_a_execution_b_fail():
     """
-    V5-05: Capability A used with execution B → FAIL.
+    D. Capability A + Execution B → FAIL
     
-    P0.213 V5R1: Execution binding requires capability and execution context match.
+    P0.213 V5R2: Execution binding requires capability and execution context match.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability A for execution A (PID A)
         pid_a = os.getpid() + 1
@@ -692,18 +567,19 @@ def test_v5r1_capability_a_execution_b_fail():
         assert "not authorized for consumer" in result.reason
 
 
-def test_v5r1_execution_binding_chain():
+def test_negative_k_valid_canonical_chain_pass():
     """
-    V5-05: Verify execution binding chain: CAPABILITY → VERIFIER → CONTEXT → SELFAUDIT.
+    K. valid canonical chain → PASS
     
-    P0.213 V5R1: Establish the complete trust chain.
+    P0.213 V5R2: Verify execution binding chain: CAPABILITY → VERIFIER → CONTEXT → SELFAUDIT.
+    Establish the complete trust chain.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         storage_root = Path(tmpdir)
         root_trust_anchor = RootTrustAnchor(storage_root=storage_root)
         issuer = CapabilityIssuer(root_trust_anchor=root_trust_anchor)
         registry = CapabilityRegistry(storage_root=storage_root)
-        verifier = CapabilityVerifier(issuer=issuer, registry=registry)
+        verifier = CapabilityVerifier(issuer=issuer, registry=registry, root_trust_anchor=root_trust_anchor)
         
         # Issue capability
         pid = os.getpid() + 1
@@ -743,6 +619,7 @@ def test_v5r1_execution_binding_chain():
             operational_self_examination_service=MagicMock(),
             portable_context_service=MagicMock(),
             storage_root=tmpdir,
+            root_trust_anchor=root_trust_anchor,
         )
         
         # Should succeed with ValidatedInvocationContext

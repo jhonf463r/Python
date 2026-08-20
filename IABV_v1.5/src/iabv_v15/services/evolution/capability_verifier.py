@@ -27,21 +27,27 @@ SNAPSHOT
 import os
 import time
 import psutil
+import hmac
+import hashlib
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
 from iabv_v15.services.evolution.invocation_capability import InvocationCapability
 from iabv_v15.services.evolution.capability_issuer import CapabilityIssuer
 from iabv_v15.services.evolution.capability_registry import CapabilityRegistry
+from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor
 
 
 @dataclass(frozen=True)
 class ValidatedInvocationContext:
     """
-    P0.213 V5R1: Validated invocation context from CapabilityVerifier.
+    P0.213 V5R2: Validated invocation context from CapabilityVerifier.
     
     This is the ONLY acceptable input to SelfAuditService.
     It contains all the binding information from the consumed capability.
+    
+    P0.213 V5R2: Includes cryptographic signature from RootTrustAnchor
+    to prove it came from the canonical verifier.
     
     This is frozen to prevent caller modification.
     """
@@ -53,6 +59,7 @@ class ValidatedInvocationContext:
     runtime_incarnation: int
     verified_at: float
     verifier_signature: str
+    verifier_hmac: str  # P0.213 V5R2: Cryptographic proof from RootTrustAnchor
 
 
 class CapabilityVerificationResult:
@@ -90,16 +97,19 @@ class CapabilityVerifier:
         self,
         issuer: CapabilityIssuer,
         registry: CapabilityRegistry,
+        root_trust_anchor: RootTrustAnchor,
     ):
         """
-        P0.213 V5R1: Initialize the capability verifier.
+        P0.213 V5R2: Initialize the capability verifier.
         
         Args:
             issuer: The capability issuer (for signature verification)
             registry: The capability registry (for single-use enforcement)
+            root_trust_anchor: The root trust anchor for cryptographic signing
         """
         self._issuer = issuer
         self._registry = registry
+        self._root_trust_anchor = root_trust_anchor
         self._current_runtime_incarnation = issuer.runtime_incarnation
         self._verifier_signature = f"verifier:{os.getpid()}:{time.time()}"
     
@@ -187,7 +197,14 @@ class CapabilityVerifier:
                 reason="Capability already consumed (race condition detected)",
             )
         
-        # P0.213 V5R1: Create validated invocation context
+        # P0.213 V5R2: Create validated invocation context with cryptographic proof
+        verified_at = time.time()
+        
+        # Create HMAC signature using RootTrustAnchor secret key
+        # This proves the context came from a verifier with access to the canonical RootTrustAnchor
+        context_data = f"{capability.capability_id}|{capability.invocation_id}|{capability.authorized_consumer_pid}|{capability.scope}|{capability.issuer_pid}|{capability.runtime_incarnation}|{verified_at}|{self._verifier_signature}"
+        verifier_hmac = self._root_trust_anchor.compute_hmac(context_data)
+        
         validated_context = ValidatedInvocationContext(
             capability_id=capability.capability_id,
             invocation_id=capability.invocation_id,
@@ -195,8 +212,9 @@ class CapabilityVerifier:
             scope=capability.scope,
             issuer_pid=capability.issuer_pid,
             runtime_incarnation=capability.runtime_incarnation,
-            verified_at=time.time(),
+            verified_at=verified_at,
             verifier_signature=self._verifier_signature,
+            verifier_hmac=verifier_hmac,
         )
         
         # All checks passed - capability successfully verified and consumed

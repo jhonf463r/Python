@@ -3,11 +3,14 @@
 This module provides the root trust anchor that combines OS-controlled
 runtime state that cannot be forged by caller input.
 
+P0.213 V5R2: Singleton pattern to ensure only canonical instance.
+
 Design Principles:
 - OS-controlled: Process identity, creation time, parent PID from OS
 - Persisted: Secret key, generation, bootstrap timestamp survive restart
 - Verifiable: Can be validated against OS state
 - Immutable: Cannot be modified after issuance
+- Singleton: Only one canonical instance per runtime
 
 This is part of P0.213 V4 corrected implementation with real security controls.
 """
@@ -21,13 +24,17 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Final, Optional
 
 try:
     import psutil
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
+
+# P0.213 V5R2: Singleton instance
+_root_trust_anchor_instance: Optional['RootTrustAnchor'] = None
+_root_trust_anchor_lock = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -69,6 +76,9 @@ class RootTrustAnchor:
     def __init__(self, storage_root: Path | str | None = None):
         """Initialize root trust anchor.
         
+        P0.213 V5R2: Use get_instance() for canonical singleton.
+        Direct construction is allowed but discouraged.
+        
         Args:
             storage_root: Directory for persistent state (secret key, generation)
         """
@@ -87,6 +97,9 @@ class RootTrustAnchor:
         
         # Load or initialize bootstrap timestamp
         self._bootstrap_timestamp = self._load_or_initialize_bootstrap()
+        
+        # P0.213 V5R2: Store canonical path for verification
+        self._canonical_path = self._storage_root
     
     def get_process_identity(self) -> ProcessIdentity:
         """Get OS-controlled process identity.
@@ -243,3 +256,57 @@ class RootTrustAnchor:
         """
         expected = self.compute_hmac(message)
         return hmac.compare_digest(signature, expected)
+    
+    def is_canonical(self, expected_storage_root: Path | str) -> bool:
+        """
+        P0.213 V5R2: Verify this is the canonical RootTrustAnchor.
+        
+        Args:
+            expected_storage_root: The expected canonical storage root
+            
+        Returns:
+            True if this is the canonical instance, False otherwise
+        """
+        return self._storage_root == Path(expected_storage_root).resolve()
+    
+    @classmethod
+    def get_instance(cls, storage_root: Path | str) -> 'RootTrustAnchor':
+        """
+        P0.213 V5R2: Get or create the canonical singleton instance.
+        
+        This ensures only one RootTrustAnchor exists per storage root,
+        preventing caller from creating parallel authority.
+        
+        Args:
+            storage_root: Directory for persistent state
+            
+        Returns:
+            The canonical RootTrustAnchor instance
+        """
+        resolved_root = Path(storage_root).resolve()
+        
+        with _root_trust_anchor_lock:
+            global _root_trust_anchor_instance
+            
+            if _root_trust_anchor_instance is None:
+                _root_trust_anchor_instance = cls(storage_root=resolved_root)
+            elif not _root_trust_anchor_instance.is_canonical(resolved_root):
+                # Different storage root requested - this is an error
+                raise ValueError(
+                    f"RootTrustAnchor already initialized with different storage root: "
+                    f"{_root_trust_anchor_instance._storage_root} != {resolved_root}. "
+                    f"Cannot create parallel authority."
+                )
+            
+            return _root_trust_anchor_instance
+    
+    @classmethod
+    def reset_singleton(cls) -> None:
+        """
+        P0.213 V5R2: Reset the singleton instance (for testing only).
+        
+        WARNING: This should only be used in tests. Never call in production.
+        """
+        global _root_trust_anchor_instance
+        with _root_trust_anchor_lock:
+            _root_trust_anchor_instance = None

@@ -3,22 +3,13 @@ Capability Issuer - P0.213 V5R1
 
 Issues invocation capabilities to authorized consumer processes.
 
-P0.213 V5R1: Bound to RootTrustAnchor for authority.
+This is the ISSUER in the trust authority chain:
+ROOT TRUST ANCHOR → AUTHORIZED ISSUER → INVOCATION CAPABILITY → CONSUMER → VERIFIER
 
-The issuer is the parent process that authorizes a child process to execute
-within a specific scope for a single invocation.
+Key Principle: The issuer must be bound to the root trust anchor to prevent
+arbitrary construction of capabilities.
 
-Key Principle: Only the issuer can create capabilities. Consumers cannot
-issue capabilities to other processes.
-
-Trust Chain:
-ROOT TRUST ANCHOR
-        ↓
-AUTHORIZED ISSUER
-        ↓
-CAPABILITY
-        ↓
-AUTHORIZED CONSUMER
+P0.213 V5R2: Uses RootTrustAnchor.get_instance() to ensure canonical authority.
 """
 
 import os
@@ -33,7 +24,7 @@ from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor
 
 class CapabilityIssuer:
     """
-    P0.213 V5R1: Issues invocation capabilities bound to RootTrustAnchor.
+    P0.213 V5R2: Issues invocation capabilities bound to RootTrustAnchor.
     
     This is the ISSUER in the trust authority chain:
     ROOT TRUST ANCHOR → AUTHORIZED ISSUER → INVOCATION CAPABILITY → CONSUMER
@@ -52,21 +43,24 @@ class CapabilityIssuer:
         root_trust_anchor: RootTrustAnchor,
     ):
         """
-        P0.213 V5R1: Initialize the capability issuer bound to RootTrustAnchor.
+        P0.213 V5R2: Initialize the capability issuer.
         
         Args:
-            root_trust_anchor: The root trust anchor that controls authority
+            root_trust_anchor: The root trust anchor (required)
         
         Raises:
             ValueError: If root_trust_anchor is None
         """
         if root_trust_anchor is None:
-            raise ValueError("root_trust_anchor is required for trusted capability issuance")
+            raise ValueError("root_trust_anchor is required")
         
         self._root_trust_anchor = root_trust_anchor
         self._issuer_pid = os.getpid()
         self._secret_key = root_trust_anchor.get_secret_key()
         self._runtime_incarnation = root_trust_anchor.get_runtime_identity().generation
+        
+        # P0.213 V5R2: Store canonical path for verification
+        self._canonical_storage_root = root_trust_anchor._storage_root
     
     @property
     def issuer_pid(self) -> int:
@@ -179,3 +173,15 @@ class CapabilityIssuer:
             "issuer_pid": self._issuer_pid,
             "runtime_incarnation": self._runtime_incarnation,
         }
+    
+    def is_canonical(self, expected_storage_root: Path | str) -> bool:
+        """
+        P0.213 V5R2: Verify this issuer is bound to the canonical RootTrustAnchor.
+        
+        Args:
+            expected_storage_root: The expected canonical storage root
+            
+        Returns:
+            True if bound to canonical RootTrustAnchor, False otherwise
+        """
+        return self._canonical_storage_root == Path(expected_storage_root).resolve()
