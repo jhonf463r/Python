@@ -35,7 +35,7 @@ from dataclasses import dataclass
 from iabv_v15.services.evolution.invocation_capability import InvocationCapability
 from iabv_v15.services.evolution.capability_issuer import CapabilityIssuer
 from iabv_v15.services.evolution.capability_registry import CapabilityRegistry
-from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor
+from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor, RuntimeAuthority
 
 
 @dataclass(frozen=True)
@@ -97,18 +97,26 @@ class CapabilityVerifier:
         self,
         issuer: CapabilityIssuer,
         registry: CapabilityRegistry,
-        root_trust_anchor: RootTrustAnchor,
+        root_trust_anchor: RootTrustAnchor | None = None,
     ):
         """
-        P0.213 V5R2: Initialize the capability verifier.
+        P0.213 V5R3: Initialize the capability verifier.
+        
+        P0.213 V5R3: If root_trust_anchor is provided, it must be the canonical instance.
+        If not provided, the canonical instance is obtained via RuntimeAuthority.
         
         Args:
             issuer: The capability issuer (for signature verification)
             registry: The capability registry (for single-use enforcement)
-            root_trust_anchor: The root trust anchor for cryptographic signing
+            root_trust_anchor: The root trust anchor for cryptographic signing (optional)
         """
         self._issuer = issuer
         self._registry = registry
+        
+        if root_trust_anchor is None:
+            # P0.213 V5R3: Get canonical instance from RuntimeAuthority
+            root_trust_anchor = RuntimeAuthority.get_canonical()
+        
         self._root_trust_anchor = root_trust_anchor
         self._current_runtime_incarnation = issuer.runtime_incarnation
         self._verifier_signature = f"verifier:{os.getpid()}:{time.time()}"

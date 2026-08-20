@@ -37,6 +37,84 @@ _root_trust_anchor_instance: Optional['RootTrustAnchor'] = None
 _root_trust_anchor_lock = threading.Lock()
 
 
+class RuntimeAuthority:
+    """
+    P0.213 V5R3: Trusted runtime authority for bootstrapping canonical RootTrustAnchor.
+    
+    This class represents the trusted runtime bootstrap process that owns the
+    canonical RootTrustAnchor. Only this class can create the canonical authority
+    by passing _runtime_bootstrap=True to RootTrustAnchor.__init__.
+    
+    This ensures that:
+    - Caller cannot create RootTrustAnchor directly
+    - Caller cannot use get_instance() to bootstrap
+    - Only trusted runtime bootstrap can initialize canonical authority
+    """
+    
+    @classmethod
+    def bootstrap(cls, storage_root: Path | str) -> 'RootTrustAnchor':
+        """
+        Bootstrap the canonical RootTrustAnchor.
+        
+        This is the ONLY way to create a canonical RootTrustAnchor.
+        Only the trusted runtime bootstrap should call this method.
+        
+        Args:
+            storage_root: Directory for persistent state
+            
+        Returns:
+            The canonical RootTrustAnchor instance
+            
+        Raises:
+            ValueError: If already bootstrapped with different storage root
+        """
+        resolved_root = Path(storage_root).resolve()
+        
+        with _root_trust_anchor_lock:
+            global _root_trust_anchor_instance
+            
+            if _root_trust_anchor_instance is None:
+                # P0.213 V5R3: Create canonical instance with _runtime_bootstrap=True
+                _root_trust_anchor_instance = RootTrustAnchor(
+                    storage_root=resolved_root,
+                    _runtime_bootstrap=True
+                )
+            elif not _root_trust_anchor_instance.is_canonical(resolved_root):
+                # Different storage root requested - this is an error
+                raise ValueError(
+                    f"RootTrustAnchor already bootstrapped with different storage root: "
+                    f"{_root_trust_anchor_instance._storage_root} != {resolved_root}. "
+                    f"Cannot create parallel authority."
+                )
+            
+            return _root_trust_anchor_instance
+    
+    @classmethod
+    def get_canonical(cls) -> 'RootTrustAnchor':
+        """
+        Get the canonical RootTrustAnchor (must already be bootstrapped).
+        
+        Args:
+            None
+            
+        Returns:
+            The canonical RootTrustAnchor instance
+            
+        Raises:
+            ValueError: If not bootstrapped yet
+        """
+        with _root_trust_anchor_lock:
+            global _root_trust_anchor_instance
+            
+            if _root_trust_anchor_instance is None:
+                raise ValueError(
+                    "RootTrustAnchor not bootstrapped. "
+                    "Call RuntimeAuthority.bootstrap() first."
+                )
+            
+            return _root_trust_anchor_instance
+
+
 @dataclass(frozen=True)
 class ProcessIdentity:
     """OS-controlled process identity."""
@@ -73,15 +151,27 @@ class RootTrustAnchor:
     _GENERATION_FILE: Final = "generation.txt"
     _BOOTSTRAP_FILE: Final = "bootstrap.txt"
     
-    def __init__(self, storage_root: Path | str | None = None):
+    def __init__(self, storage_root: Path | str | None = None, _runtime_bootstrap: bool = False):
         """Initialize root trust anchor.
         
-        P0.213 V5R2: Use get_instance() for canonical singleton.
-        Direct construction is allowed but discouraged.
+        P0.213 V5R3: Direct construction is FORBIDDEN unless _runtime_bootstrap=True.
+        Only trusted runtime bootstrap can create canonical RootTrustAnchor.
         
         Args:
             storage_root: Directory for persistent state (secret key, generation)
+            _runtime_bootstrap: INTERNAL USE ONLY - must be True for runtime bootstrap
+            
+        Raises:
+            ValueError: If storage_root is None or if called without _runtime_bootstrap=True
         """
+        # P0.213 V5R3: Prevent caller from creating RootTrustAnchor
+        if not _runtime_bootstrap:
+            raise ValueError(
+                "Direct RootTrustAnchor construction is forbidden. "
+                "Use RootTrustAnchor.get_instance() or RuntimeAuthority.bootstrap(). "
+                "Only trusted runtime bootstrap can create canonical authority."
+            )
+        
         # Resolve storage root
         if storage_root is None:
             raise ValueError("storage_root is required")
@@ -272,16 +362,19 @@ class RootTrustAnchor:
     @classmethod
     def get_instance(cls, storage_root: Path | str) -> 'RootTrustAnchor':
         """
-        P0.213 V5R2: Get or create the canonical singleton instance.
+        P0.213 V5R3: Get or create the canonical singleton instance.
         
-        This ensures only one RootTrustAnchor exists per storage root,
-        preventing caller from creating parallel authority.
+        P0.213 V5R3: This method is FORBIDDEN. Only trusted runtime bootstrap
+        can create canonical RootTrustAnchor via _runtime_bootstrap=True.
         
         Args:
             storage_root: Directory for persistent state
             
+        Raises:
+            ValueError: Always - caller cannot create canonical authority
+            
         Returns:
-            The canonical RootTrustAnchor instance
+            The canonical RootTrustAnchor instance (if already bootstrapped)
         """
         resolved_root = Path(storage_root).resolve()
         
@@ -289,7 +382,12 @@ class RootTrustAnchor:
             global _root_trust_anchor_instance
             
             if _root_trust_anchor_instance is None:
-                _root_trust_anchor_instance = cls(storage_root=resolved_root)
+                # P0.213 V5R3: Caller cannot bootstrap - must use RuntimeAuthority
+                raise ValueError(
+                    "RootTrustAnchor not bootstrapped. "
+                    "Caller cannot create canonical authority. "
+                    "Use RuntimeAuthority.bootstrap() to initialize trusted authority."
+                )
             elif not _root_trust_anchor_instance.is_canonical(resolved_root):
                 # Different storage root requested - this is an error
                 raise ValueError(

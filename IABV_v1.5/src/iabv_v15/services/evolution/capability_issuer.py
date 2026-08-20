@@ -19,18 +19,18 @@ from uuid import uuid4
 from pathlib import Path
 
 from iabv_v15.services.evolution.invocation_capability import InvocationCapability
-from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor
+from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor, RuntimeAuthority
 
 
 class CapabilityIssuer:
     """
-    P0.213 V5R2: Issues invocation capabilities bound to RootTrustAnchor.
+    P0.213 V5R3: Issues invocation capabilities bound to canonical RootTrustAnchor.
     
     This is the ISSUER in the trust authority chain:
     ROOT TRUST ANCHOR → AUTHORIZED ISSUER → INVOCATION CAPABILITY → CONSUMER
     
-    The issuer cannot be freely constructed by caller. It must be bound to
-    the RootTrustAnchor, which controls:
+    P0.213 V5R3: The issuer cannot be freely constructed by caller. It must be bound to
+    the canonical RootTrustAnchor via RuntimeAuthority, which controls:
     - Secret key material
     - Runtime incarnation
     - Process identity
@@ -40,19 +40,23 @@ class CapabilityIssuer:
     
     def __init__(
         self,
-        root_trust_anchor: RootTrustAnchor,
+        root_trust_anchor: RootTrustAnchor | None = None,
     ):
         """
-        P0.213 V5R2: Initialize the capability issuer.
+        P0.213 V5R3: Initialize the capability issuer.
+        
+        P0.213 V5R3: If root_trust_anchor is provided, it must be the canonical instance.
+        If not provided, the canonical instance is obtained via RuntimeAuthority.
         
         Args:
-            root_trust_anchor: The root trust anchor (required)
+            root_trust_anchor: The root trust anchor (optional, will use canonical if None)
         
         Raises:
-            ValueError: If root_trust_anchor is None
+            ValueError: If root_trust_anchor is not canonical
         """
         if root_trust_anchor is None:
-            raise ValueError("root_trust_anchor is required")
+            # P0.213 V5R3: Get canonical instance from RuntimeAuthority
+            root_trust_anchor = RuntimeAuthority.get_canonical()
         
         self._root_trust_anchor = root_trust_anchor
         self._issuer_pid = os.getpid()
