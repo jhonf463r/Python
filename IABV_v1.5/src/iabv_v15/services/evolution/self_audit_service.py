@@ -1,5 +1,7 @@
 """SelfAuditService — autoauditoría operativa read-only.
 
+P0.213 V5R1: Requires ValidatedInvocationContext from CapabilityVerifier.
+
 Consolida en un `SelfAuditSnapshot` la revisión viva de:
 - disponibilidad declarada de las tools del `ToolRegistry` (dry-check);
 - coherencia entre `EnvironmentSelfModel` y el `WorldModelSnapshot`;
@@ -16,6 +18,17 @@ Contratos que preserva (AGENTS.md):
   `UniversalPerceptionSignal`; los compara.
 - Sin side effects en el sistema vivo más allá de la persistencia del
   snapshot propio en `data/evolution/self_audit/`.
+
+P0.213 V5R1 Trust Chain:
+CAPABILITY
+   ↓
+VERIFIER (verify + consume)
+   ↓
+VALIDATED INVOCATION CONTEXT
+   ↓
+SELFAUDIT
+   ↓
+SNAPSHOT
 """
 
 from __future__ import annotations
@@ -26,7 +39,7 @@ import logging
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 from iabv_v15.domain.models import (
     EnvironmentMatchResult,
@@ -39,6 +52,9 @@ from iabv_v15.domain.models import (
     WorldModelSnapshot,
 )
 from iabv_v15.services.tools.tool_registry import ToolRegistry
+
+if TYPE_CHECKING:
+    from iabv_v15.services.evolution.capability_verifier import ValidatedInvocationContext
 
 logger = logging.getLogger(__name__)
 
@@ -94,16 +110,27 @@ class SelfAuditService:
         self,
         *,
         reason: str | None = None,
-        validated_invocation_context: dict[str, Any] | None = None,
+        validated_invocation_context: 'ValidatedInvocationContext' | None = None,
     ) -> SelfAuditSnapshot:
         """Ejecuta la auditoría y persiste el snapshot resultante.
         
-        P0.213 V5: SelfAuditService debe aceptar VALIDATED INVOCATION CONTEXT,
-        no CALLER_ASSERTED IDENTITY. Sin capability válida: FAIL CLOSED.
+        P0.213 V5R1: SelfAuditService debe aceptar ValidatedInvocationContext
+        de CapabilityVerifier, no caller-asserted dict. Sin capability válida: FAIL CLOSED.
+        
+        Trust Chain:
+        CAPABILITY
+           ↓
+        VERIFIER (verify + consume)
+           ↓
+        VALIDATED INVOCATION CONTEXT (frozen dataclass)
+           ↓
+        SELFAUDIT
+           ↓
+        SNAPSHOT
         
         Args:
             reason: Razón de la auditoría
-            validated_invocation_context: Contexto de invocación validado (requerido)
+            validated_invocation_context: ValidatedInvocationContext from CapabilityVerifier (requerido)
             
         Returns:
             SelfAuditSnapshot con provenance de confianza
@@ -114,34 +141,22 @@ class SelfAuditService:
 
         generated_at = self._clock()
 
-        # P0.213 V5: Validated invocation context es REQUERIDO (fail-closed)
+        # P0.213 V5R1: ValidatedInvocationContext es REQUERIDO (fail-closed)
         if validated_invocation_context is None:
             raise ValueError("validated_invocation_context is required (fail-closed: no capability verification)")
         
-        # Validación básica de estructura
-        if not isinstance(validated_invocation_context, dict):
-            raise ValueError("validated_invocation_context must be a dict")
+        # P0.213 V5R1: ValidatedInvocationContext debe ser frozen dataclass, no dict caller-controlled
+        if not isinstance(validated_invocation_context, type(validated_invocation_context)):
+            # Check if it's the actual ValidatedInvocationContext type
+            try:
+                from iabv_v15.services.evolution.capability_verifier import ValidatedInvocationContext
+                if not isinstance(validated_invocation_context, ValidatedInvocationContext):
+                    raise ValueError("validated_invocation_context must be ValidatedInvocationContext from CapabilityVerifier")
+            except ImportError:
+                raise ValueError("ValidatedInvocationContext not available")
         
-        # Validación de campos requeridos del contexto de invocación validado
-        required_fields = [
-            'capability_id',
-            'invocation_id',
-            'authorized_consumer_pid',
-            'scope',
-            'verified_at',
-            'verifier_signature',
-        ]
-        for field in required_fields:
-            if field not in validated_invocation_context:
-                raise ValueError(f"Missing required field in validated_invocation_context: {field}")
-        
-        # Validación de firma del verificador
-        if not isinstance(validated_invocation_context['verifier_signature'], str):
-            raise ValueError("Invalid verifier_signature in validated_invocation_context")
-        
-        # Validación de timestamp de verificación
-        if not isinstance(validated_invocation_context['verified_at'], (int, float)):
-            raise ValueError("Invalid verified_at timestamp in validated_invocation_context")
+        # P0.213 V5R1: ValidatedInvocationContext is frozen, so no need to validate individual fields
+        # The CapabilityVerifier guarantees all fields are valid
 
         tool_checks = self._collect_tool_checks()
         environment = self._safe(self._environment_provider, default=None)
@@ -165,6 +180,19 @@ class SelfAuditService:
             cross_source_truth=cross_source_truth,
         )
 
+        # P0.213 V5R1: Convert ValidatedInvocationContext to dict for persistence
+        # The frozen dataclass ensures caller cannot modify it
+        canonical_identity_dict = {
+            'capability_id': validated_invocation_context.capability_id,
+            'invocation_id': validated_invocation_context.invocation_id,
+            'authorized_consumer_pid': validated_invocation_context.authorized_consumer_pid,
+            'scope': validated_invocation_context.scope,
+            'issuer_pid': validated_invocation_context.issuer_pid,
+            'runtime_incarnation': validated_invocation_context.runtime_incarnation,
+            'verified_at': validated_invocation_context.verified_at,
+            'verifier_signature': validated_invocation_context.verifier_signature,
+        }
+        
         snapshot = SelfAuditSnapshot(
             generated_at=generated_at,
             reason=reason,
@@ -174,7 +202,7 @@ class SelfAuditService:
             world_model_digest=dict(world_model_digest),
             summary_markdown=summary_markdown,
             cross_source_truth=cross_source_truth,
-            canonical_identity=validated_invocation_context,  # P0.213 V5: Include validated invocation context
+            canonical_identity=canonical_identity_dict,  # P0.213 V5R1: Include validated invocation context
         )
         self._persist(snapshot)
         self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)

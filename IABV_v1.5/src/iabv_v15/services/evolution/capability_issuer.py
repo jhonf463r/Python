@@ -1,58 +1,87 @@
 """
-Capability Issuer - P0.213 V5
+Capability Issuer - P0.213 V5R1
 
 Issues invocation capabilities to authorized consumer processes.
+
+P0.213 V5R1: Bound to RootTrustAnchor for authority.
 
 The issuer is the parent process that authorizes a child process to execute
 within a specific scope for a single invocation.
 
 Key Principle: Only the issuer can create capabilities. Consumers cannot
 issue capabilities to other processes.
+
+Trust Chain:
+ROOT TRUST ANCHOR
+        ↓
+AUTHORIZED ISSUER
+        ↓
+CAPABILITY
+        ↓
+AUTHORIZED CONSUMER
 """
 
 import os
 import time
 from typing import Optional
 from uuid import uuid4
+from pathlib import Path
 
 from iabv_v15.services.evolution.invocation_capability import InvocationCapability
+from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor
 
 
 class CapabilityIssuer:
     """
-    Issues invocation capabilities to authorized consumer processes.
+    P0.213 V5R1: Issues invocation capabilities bound to RootTrustAnchor.
     
     This is the ISSUER in the trust authority chain:
-    TRUST ANCHOR → AUTHORITY → ISSUER → INVOCATION CAPABILITY → CONSUMER
+    ROOT TRUST ANCHOR → AUTHORIZED ISSUER → INVOCATION CAPABILITY → CONSUMER
+    
+    The issuer cannot be freely constructed by caller. It must be bound to
+    the RootTrustAnchor, which controls:
+    - Secret key material
+    - Runtime incarnation
+    - Process identity
+    
+    This prevents caller from injecting arbitrary authority.
     """
     
     def __init__(
         self,
-        issuer_pid: Optional[int] = None,
-        secret_key: Optional[bytes] = None,
-        runtime_incarnation: Optional[int] = None,
+        root_trust_anchor: RootTrustAnchor,
     ):
         """
-        Initialize the capability issuer.
+        P0.213 V5R1: Initialize the capability issuer bound to RootTrustAnchor.
         
         Args:
-            issuer_pid: PID of the issuer process (defaults to current PID)
-            secret_key: Secret key for signing capabilities (defaults to random)
-            runtime_incarnation: Runtime generation identifier
+            root_trust_anchor: The root trust anchor that controls authority
+        
+        Raises:
+            ValueError: If root_trust_anchor is None
         """
-        self._issuer_pid = issuer_pid or os.getpid()
-        self._secret_key = secret_key or os.urandom(32)
-        self._runtime_incarnation = runtime_incarnation or 1
+        if root_trust_anchor is None:
+            raise ValueError("root_trust_anchor is required for trusted capability issuance")
+        
+        self._root_trust_anchor = root_trust_anchor
+        self._issuer_pid = os.getpid()
+        self._secret_key = root_trust_anchor.get_secret_key()
+        self._runtime_incarnation = root_trust_anchor.get_runtime_identity().generation
     
     @property
     def issuer_pid(self) -> int:
-        """Get the issuer PID."""
+        """Get the issuer PID (OS-controlled)."""
         return self._issuer_pid
     
     @property
     def runtime_incarnation(self) -> int:
-        """Get the runtime incarnation."""
+        """Get the runtime incarnation (from RootTrustAnchor)."""
         return self._runtime_incarnation
+    
+    @property
+    def root_trust_anchor(self) -> RootTrustAnchor:
+        """Get the root trust anchor."""
+        return self._root_trust_anchor
     
     def issue_capability(
         self,
@@ -126,10 +155,10 @@ class CapabilityIssuer:
     
     def verify_capability_signature(self, capability: InvocationCapability) -> bool:
         """
-        Verify the signature of a capability.
+        P0.213 V5R1: Verify the signature of a capability using RootTrustAnchor.
         
         This is used by the verifier to confirm the capability was issued
-        by this issuer.
+        by a trusted issuer bound to the RootTrustAnchor.
         
         Args:
             capability: The capability to verify
@@ -138,3 +167,15 @@ class CapabilityIssuer:
             bool: True if signature is valid, False otherwise
         """
         return capability.verify_signature(self._secret_key)
+    
+    def get_issuer_identity(self) -> dict:
+        """
+        P0.213 V5R1: Get the issuer identity for verification.
+        
+        Returns:
+            dict: Issuer identity including PID and runtime incarnation
+        """
+        return {
+            "issuer_pid": self._issuer_pid,
+            "runtime_incarnation": self._runtime_incarnation,
+        }

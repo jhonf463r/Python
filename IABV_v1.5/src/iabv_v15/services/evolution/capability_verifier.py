@@ -1,24 +1,58 @@
 """
-Capability Verifier - P0.213 V5
+Capability Verifier - P0.213 V5R1
 
 Verifies and consumes invocation capabilities atomically.
 
+P0.213 V5R1: Returns validated invocation context for SelfAudit.
+
 This is the VERIFIER in the trust authority chain:
-TRUST ANCHOR → AUTHORITY → ISSUER → INVOCATION CAPABILITY → CONSUMER → VERIFIER
+ROOT TRUST ANCHOR → AUTHORIZED ISSUER → INVOCATION CAPABILITY → CONSUMER → VERIFIER → SELFAUDIT
 
 Key Principle: VERIFY + CONSUME must be atomic from the perspective of
 the trust boundary. A local dict is not sufficient because it's not
 visible across processes.
+
+Trust Chain:
+CAPABILITY
+   ↓
+VERIFIER (verify + consume)
+   ↓
+VALIDATED INVOCATION CONTEXT
+   ↓
+SELFAUDIT
+   ↓
+SNAPSHOT
 """
 
 import os
 import time
 import psutil
 from typing import Optional, Tuple
+from dataclasses import dataclass
 
 from iabv_v15.services.evolution.invocation_capability import InvocationCapability
 from iabv_v15.services.evolution.capability_issuer import CapabilityIssuer
 from iabv_v15.services.evolution.capability_registry import CapabilityRegistry
+
+
+@dataclass(frozen=True)
+class ValidatedInvocationContext:
+    """
+    P0.213 V5R1: Validated invocation context from CapabilityVerifier.
+    
+    This is the ONLY acceptable input to SelfAuditService.
+    It contains all the binding information from the consumed capability.
+    
+    This is frozen to prevent caller modification.
+    """
+    capability_id: str
+    invocation_id: str
+    authorized_consumer_pid: int
+    scope: str
+    issuer_pid: int
+    runtime_incarnation: int
+    verified_at: float
+    verifier_signature: str
 
 
 class CapabilityVerificationResult:
@@ -29,10 +63,12 @@ class CapabilityVerificationResult:
         success: bool,
         reason: Optional[str] = None,
         invocation_id: Optional[str] = None,
+        validated_context: Optional[ValidatedInvocationContext] = None,
     ):
         self.success = success
         self.reason = reason
         self.invocation_id = invocation_id
+        self.validated_context = validated_context
 
 
 class CapabilityVerifier:
@@ -56,7 +92,7 @@ class CapabilityVerifier:
         registry: CapabilityRegistry,
     ):
         """
-        Initialize the capability verifier.
+        P0.213 V5R1: Initialize the capability verifier.
         
         Args:
             issuer: The capability issuer (for signature verification)
@@ -65,6 +101,7 @@ class CapabilityVerifier:
         self._issuer = issuer
         self._registry = registry
         self._current_runtime_incarnation = issuer.runtime_incarnation
+        self._verifier_signature = f"verifier:{os.getpid()}:{time.time()}"
     
     def verify_and_consume(
         self,
@@ -143,16 +180,30 @@ class CapabilityVerifier:
             )
         
         # Step 9: Atomic consume (single-use enforcement)
-        if not self._registry.mark_consumed(capability.capability_id):
+        # P0.213 V5R1: Use consume_if_valid for atomicity
+        if not self._registry.consume_if_valid(capability.capability_id):
             return CapabilityVerificationResult(
                 success=False,
                 reason="Capability already consumed (race condition detected)",
             )
         
+        # P0.213 V5R1: Create validated invocation context
+        validated_context = ValidatedInvocationContext(
+            capability_id=capability.capability_id,
+            invocation_id=capability.invocation_id,
+            authorized_consumer_pid=capability.authorized_consumer_pid,
+            scope=capability.scope,
+            issuer_pid=capability.issuer_pid,
+            runtime_incarnation=capability.runtime_incarnation,
+            verified_at=time.time(),
+            verifier_signature=self._verifier_signature,
+        )
+        
         # All checks passed - capability successfully verified and consumed
         return CapabilityVerificationResult(
             success=True,
             invocation_id=capability.invocation_id,
+            validated_context=validated_context,
         )
     
     def _verify_os_identity(self, pid: int) -> bool:
@@ -238,6 +289,8 @@ class CapabilityVerifier:
                 reason="Runtime incarnation mismatch",
             )
         
+        # P0.213 V5R1: Pre-flight verification does not return validated context
+        # Only full verify_and_consume returns validated context
         return CapabilityVerificationResult(
             success=True,
             invocation_id=capability.invocation_id,
