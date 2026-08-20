@@ -384,10 +384,14 @@ class WindowsNamedPipe:
 class IpcTrustBoundary:
     """IPC trust boundary enforcement.
     
-    This class enforces the trust boundary for IPC communication:
-    - OS-level PID verification
-    - Producer scope validation
-    - Fail-closed behavior
+    P0.213 V5: This class provides OS-observed client identity for capability validation.
+    The IPC layer does NOT validate capabilities - that is done by CapabilityVerifier.
+    
+    Separation of concerns:
+    - IPC layer: OS-observed client identity (GetNamedPipeClientProcessId)
+    - Application layer: Capability validation (CapabilityVerifier)
+    
+    This is fail-closed: any failure returns None.
     """
     
     def __init__(self, producer_pid: int, producer_scope: str):
@@ -400,11 +404,55 @@ class IpcTrustBoundary:
         self.producer_pid = producer_pid
         self.producer_scope = producer_scope
     
+    def get_os_observed_client_pid(
+        self,
+        pipe: WindowsNamedPipe,
+    ) -> int | None:
+        """Get OS-observed client PID for capability validation.
+        
+        P0.213 V5: This returns the OS-observed PID, which is then used by
+        CapabilityVerifier to validate the capability binding.
+        
+        This is fail-closed: any failure returns None.
+        
+        Args:
+            pipe: Windows named pipe
+            
+        Returns:
+            OS-observed client PID, or None if cannot be established
+        """
+        try:
+            # Get actual client PID from OS
+            actual_pid = pipe.get_client_pid()
+            
+            # Validate lineage as additional evidence (necessary but not sufficient)
+            try:
+                import psutil
+                client_process = psutil.Process(actual_pid)
+                client_parent_pid = client_process.ppid()
+                
+                # Client must be child of the server (producer_pid)
+                # This is lineage verification, NOT authorization
+                if client_parent_pid != self.producer_pid:
+                    # Client is not a child of the server
+                    return None
+            except Exception:
+                # If psutil is not available or fails, reject (fail-closed)
+                return None
+            
+            return actual_pid
+        except RuntimeError:
+            # If we cannot establish OS identity, fail closed
+            return None
+    
     def validate_connection(
         self,
         pipe: WindowsNamedPipe,
     ) -> bool:
         """Validate IPC connection with OS-level PID verification.
+        
+        P0.213 V5: This is a compatibility method for V4. New code should use
+        get_os_observed_client_pid() and CapabilityVerifier for full authorization.
         
         This is fail-closed: any failure returns False.
         
@@ -414,28 +462,4 @@ class IpcTrustBoundary:
         Returns:
             True if connection is valid, False otherwise
         """
-        try:
-            # 1. Get actual client PID from OS
-            actual_pid = pipe.get_client_pid()
-            
-            # 2. Validate parent-child relationship (server is parent of client)
-            try:
-                import psutil
-                client_process = psutil.Process(actual_pid)
-                client_parent_pid = client_process.ppid()
-                
-                # Client must be child of the server (producer_pid)
-                if client_parent_pid != self.producer_pid:
-                    # Client is not a child of the server
-                    return False
-            except Exception:
-                # If psutil is not available or fails, reject (fail-closed)
-                return False
-            
-            # 3. Producer scope is validated at application level (via lease)
-            # This is documented for future implementation
-            
-            return True
-        except RuntimeError:
-            # If we cannot establish OS identity, fail closed
-            return False
+        return self.get_os_observed_client_pid(pipe) is not None

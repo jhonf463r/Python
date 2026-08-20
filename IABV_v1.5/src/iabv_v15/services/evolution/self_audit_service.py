@@ -62,7 +62,6 @@ class SelfAuditService:
         storage_root: Path | str | None = None,
         workspace_root: Path | str | None = None,
         token_rotation_ledger: Any | None = None,
-        identity_authority: Any | None = None,  # P0.213 V4: RuntimeIdentityAuthority for canonical_identity verification
     ) -> None:
         self.tool_registry = tool_registry
         self._environment_provider = environment_self_model_provider
@@ -75,8 +74,8 @@ class SelfAuditService:
         # ``OperationalSelfExaminationService`` pueda proyectar rotaciones
         # proactivas sin que el usuario lo note.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
-        # P0.213 V4: RuntimeIdentityAuthority for canonical_identity verification
-        self._identity_authority: Any | None = identity_authority
+        # P0.213 V5: Removed optional identity_authority - SelfAudit must require
+        # validated invocation context, not caller-asserted identity
         resolved_root: Path | None
         if storage_root is not None:
             resolved_root = Path(storage_root)
@@ -95,56 +94,54 @@ class SelfAuditService:
         self,
         *,
         reason: str | None = None,
-        canonical_identity: dict[str, Any] | None = None,
+        validated_invocation_context: dict[str, Any] | None = None,
     ) -> SelfAuditSnapshot:
         """Ejecuta la auditoría y persiste el snapshot resultante.
         
-        P0.213 V4: Si se proporciona canonical_identity, debe ser validada.
-        Si la identidad es inválida, la operación es rechazada (fail-closed).
+        P0.213 V5: SelfAuditService debe aceptar VALIDATED INVOCATION CONTEXT,
+        no CALLER_ASSERTED IDENTITY. Sin capability válida: FAIL CLOSED.
         
         Args:
             reason: Razón de la auditoría
-            canonical_identity: Identidad de ejecución canónica (opcional)
+            validated_invocation_context: Contexto de invocación validado (requerido)
             
         Returns:
             SelfAuditSnapshot con provenance de confianza
             
         Raises:
-            ValueError: Si canonical_identity es inválida
+            ValueError: Si validated_invocation_context no se proporciona o es inválido
         """
 
         generated_at = self._clock()
 
-        # P0.213 V4: Validar canonical_identity si se proporciona (fail-closed)
-        if canonical_identity is not None:
-            # Validación básica de estructura
-            if not isinstance(canonical_identity, dict):
-                raise ValueError("canonical_identity must be a dict")
-            
-            # Validación de campos requeridos
-            required_fields = ['execution_id', 'run_id', 'invocation_id', 'runtime_generation']
-            for field in required_fields:
-                if field not in canonical_identity:
-                    raise ValueError(f"Missing required field in canonical_identity: {field}")
-            
-            # Validación de firma (si está presente)
-            if 'signature' in canonical_identity:
-                if not isinstance(canonical_identity['signature'], str) or len(canonical_identity['signature']) != 64:
-                    raise ValueError("Invalid signature in canonical_identity")
-            
-            # P0.213 V4 R-03: Verificar identidad con RuntimeIdentityAuthority si está disponible
-            if self._identity_authority is not None:
-                try:
-                    # Convert dict to TrustedExecutionIdentity object for verification
-                    from iabv_v15.services.evolution.trusted_execution_identity import TrustedExecutionIdentity
-                    identity_obj = TrustedExecutionIdentity.from_dict(canonical_identity)
-                    
-                    # Verify identity with authority
-                    if not self._identity_authority.verify_identity(identity_obj):
-                        raise ValueError("canonical_identity verification failed: identity is not valid")
-                except Exception as e:
-                    # If verification fails for any reason, reject (fail-closed)
-                    raise ValueError(f"canonical_identity verification failed: {e}")
+        # P0.213 V5: Validated invocation context es REQUERIDO (fail-closed)
+        if validated_invocation_context is None:
+            raise ValueError("validated_invocation_context is required (fail-closed: no capability verification)")
+        
+        # Validación básica de estructura
+        if not isinstance(validated_invocation_context, dict):
+            raise ValueError("validated_invocation_context must be a dict")
+        
+        # Validación de campos requeridos del contexto de invocación validado
+        required_fields = [
+            'capability_id',
+            'invocation_id',
+            'authorized_consumer_pid',
+            'scope',
+            'verified_at',
+            'verifier_signature',
+        ]
+        for field in required_fields:
+            if field not in validated_invocation_context:
+                raise ValueError(f"Missing required field in validated_invocation_context: {field}")
+        
+        # Validación de firma del verificador
+        if not isinstance(validated_invocation_context['verifier_signature'], str):
+            raise ValueError("Invalid verifier_signature in validated_invocation_context")
+        
+        # Validación de timestamp de verificación
+        if not isinstance(validated_invocation_context['verified_at'], (int, float)):
+            raise ValueError("Invalid verified_at timestamp in validated_invocation_context")
 
         tool_checks = self._collect_tool_checks()
         environment = self._safe(self._environment_provider, default=None)
@@ -177,7 +174,7 @@ class SelfAuditService:
             world_model_digest=dict(world_model_digest),
             summary_markdown=summary_markdown,
             cross_source_truth=cross_source_truth,
-            canonical_identity=canonical_identity,  # P0.213 V4: Include validated identity
+            canonical_identity=validated_invocation_context,  # P0.213 V5: Include validated invocation context
         )
         self._persist(snapshot)
         self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)
