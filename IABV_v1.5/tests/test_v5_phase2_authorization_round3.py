@@ -648,55 +648,5 @@ class TestAdversarialBinding:
 
 
 # ── L4 Real IPC Tests ──────────────────────────────────────────────────────────
-
-class TestRealIPCLifecycle:
-    """L4: Test real IPC lifecycle."""
-    
-    @pytest.fixture
-    def temp_storage(self):
-        """Create temporary storage for tests."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            storage = Path(tmpdir)
-            yield storage
-    
-    @pytest.fixture
-    def authority(self, temp_storage):
-        """Create AuthorityService instance."""
-        service = AuthorityService(storage_root=temp_storage)
-        yield service
-        if hasattr(service, '_shutdown'):
-            service._shutdown()
-    
-    def test_register_issue_consume_real_ipc(self, authority):
-        """Test 1: register → issue → consume real IPC."""
-        # This test requires AuthorityServer to be running
-        # For now, we test the client methods directly
-        # Full IPC test requires separate authority process
-        pytest.skip("Requires AuthorityServer process - L4 test")
-    
-    def test_same_connection_lifecycle(self, authority):
-        """Test 2: same connection lifecycle works."""
-        # Test that multiple requests work on same connection
-        pytest.skip("Requires AuthorityServer process - L4 test")
-    
-    def test_reconnection_lifecycle(self, authority):
-        """Test 3: reconnect lifecycle works if supported."""
-        pytest.skip("Requires AuthorityServer process - L4 test")
-
-
-# ── L5 Adversarial Runtime Tests ───────────────────────────────────────────────
-
-class TestAdversarialRuntime:
-    """L5: Test adversarial runtime scenarios."""
-    
-    def test_two_clients_exactly_once(self):
-        """Test 16: TWO real clients, ONE success / ONE reject."""
-        pytest.skip("Requires AuthorityServer process - L4 test")
-    
-    def test_replay_via_ipc_denied(self):
-        """Test 17: replay via IPC → DENY."""
-        pytest.skip("Requires AuthorityServer process - L4 test")
-    
-    def test_replay_after_restart_denied(self):
-        """Test 18: replay after restart → DENY."""
-        pytest.skip("Requires AuthorityServer process - L4 test")
+# NOTE: L4 tests moved to test_v5_phase2_authorization_round4_l4.py
+# These tests require AuthorityServer process and are in separate file
