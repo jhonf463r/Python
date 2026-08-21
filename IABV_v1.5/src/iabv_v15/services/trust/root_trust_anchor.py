@@ -1,27 +1,31 @@
-"""RootTrustAnchor: OS-controlled trust anchor for P0.213 V5.
+"""RootTrustAnchor: Data contract for OS-controlled trust anchor (P0.213 V5).
 
-This module provides the root trust anchor that combines OS-controlled
-runtime state that cannot be forged by caller input.
+CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
 
-Design Principles:
-- OS-controlled: Process identity, creation time, parent PID from OS
-- Persisted: Secret key, generation, bootstrap timestamp survive restart
-- Verifiable: Can be validated against OS state
-- Immutable: Cannot be modified after issuance
-- Singleton: Only one canonical instance per runtime
+In-process Python objects cannot be security boundaries because any caller
+can import and invoke public constructors. The real security boundary will be
+implemented in Phase 2 using a separate trusted authority process and OS/IPC
+enforcement.
 
-AUTHORITY OWNERSHIP MODEL:
-- ONLY the trusted bootstrap/authority owner may create the canonical authority
-- Other components receive references/issued artifacts, NOT authority-construction capability
-- Phase 1: Defines ownership model and data representation
-- Phase 2: Implements OS authority boundary through separate trusted process
+This module defines the DATA MODEL for:
+- Process identity (OS-observed in Phase 2)
+- Runtime identity (persisted in Phase 2)
+- Secret key requirements (OS-protected in Phase 2)
+- Generation requirements (persisted in Phase 2)
 
-Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-Phase 2 Status: RUNTIME_VERIFIED (OS authority boundary)
+Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative specification)
+Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
+
+SECURITY WARNING:
+- DO NOT treat this Python object as a security boundary
+- DO NOT rely on constructor restrictions for security
+- DO NOT assume in-process immutability provides authenticity
+- Phase 2 will implement the real authority boundary
 """
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Optional
@@ -29,148 +33,173 @@ from typing import Final, Optional
 
 @dataclass(frozen=True)
 class ProcessIdentity:
-    """OS-controlled process identity.
+    """Data contract for OS-controlled process identity.
     
-    This represents OS-observed process state that cannot be forged by caller input.
-    Phase 2: Obtained from OS via psutil/Windows API
-    Phase 1: Data structure defined
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
+    Phase 2: Obtained from OS via psutil/Windows API in trusted authority process
+    Phase 1: Data structure defined for contract specification
+    
+    SECURITY WARNING:
+    - Caller-constructed instances are NOT authoritative
+    - Phase 2 will enforce OS-derived values in trusted authority process
+    - This is a data model, not an authority
     """
     
     pid: int
     create_time: float
     ppid: int
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization.
+        
+        IMMUTABILITY: This is a serialization operation, NOT mutation.
+        """
+        return dataclasses.asdict(self)
 
 
 @dataclass(frozen=True)
 class RuntimeIdentity:
-    """OS-controlled runtime identity.
+    """Data contract for OS-controlled runtime identity.
     
-    This represents persisted runtime state that survives restarts.
-    Phase 2: Loaded from persistent storage
-    Phase 1: Data structure defined
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
+    Phase 2: Loaded from persistent storage in trusted authority process
+    Phase 1: Data structure defined for contract specification
+    
+    SECURITY WARNING:
+    - Caller-constructed instances are NOT authoritative
+    - Phase 2 will enforce persisted values in trusted authority process
     """
     
     generation: int
     bootstrap_timestamp: float
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization.
+        
+        IMMUTABILITY: This is a serialization operation, NOT mutation.
+        """
+        return dataclasses.asdict(self)
 
 
 class RootTrustAnchor:
-    """Root trust anchor combining OS-controlled runtime state.
+    """Data contract for root trust anchor (NON-AUTHORITATIVE).
     
-    This class provides the foundation for all security controls in P0.213 V5.
-    It manages:
-    - Process identity (OS-controlled)
-    - Runtime identity (persisted)
-    - Secret key (persisted, OS-protected)
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
     
-    AUTHORITY OWNERSHIP:
-    - ONLY the trusted bootstrap process may create the canonical instance
-    - Direct construction is FORBIDDEN for untrusted callers
-    - Phase 2: RuntimeAuthority.bootstrap() is the ONLY authorized creation path
-    - Phase 1: Ownership model defined, placeholder for Phase 2 implementation
+    In-process Python objects cannot be security boundaries. Any caller can
+    import and construct this class. The real security boundary will be
+    implemented in Phase 2 using a separate trusted authority process.
     
-    SINGLETON: Only one canonical instance per runtime.
-    OWNERSHIP: Owned by trusted bootstrap process.
+    This class defines the DATA MODEL for:
+    - Process identity (OS-observed in Phase 2)
+    - Runtime identity (persisted in Phase 2)
+    - Secret key requirements (OS-protected in Phase 2)
+    - Generation requirements (persisted in Phase 2)
     
-    Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-    Phase 2 Status: RUNTIME_VERIFIED (OS authority boundary)
+    AUTHORITY CONTRACT:
+    - Phase 2: Trusted authority process owns the real secret key
+    - Phase 2: Trusted authority process owns generation state
+    - Phase 2: Trusted authority process enforces OS-derived identity
+    - Phase 1: This is a non-authoritative data model for contract specification
+    
+    SECURITY WARNING:
+    - DO NOT treat this Python object as a security boundary
+    - DO NOT rely on constructor restrictions for security
+    - DO NOT assume in-process immutability provides authenticity
+    - Phase 2 will implement the real authority boundary
+    
+    Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative specification)
+    Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
     """
     
-    # Secret key file name
-    _SECRET_KEY_FILE: Final = "secret.key"
-    _GENERATION_FILE: Final = "generation.txt"
-    _BOOTSTRAP_FILE: Final = "bootstrap.txt"
-    
-    # Phase 1: Singleton instance tracking (ownership model)
-    # Phase 2: RuntimeAuthority.bootstrap() will be the ONLY authorized creation path
-    _canonical_instance: Optional['RootTrustAnchor'] = None
-    
-    def __init__(self, storage_root: Path | str, _authority_authorized: bool = False):
-        """Initialize root trust anchor.
+    def __init__(self, storage_root: Path | str):
+        """Initialize root trust anchor data contract.
         
-        AUTHORITY OWNERSHIP: Direct construction is FORBIDDEN unless _authority_authorized=True.
-        Phase 2: Only RuntimeAuthority.bootstrap() may call with _authority_authorized=True.
-        Phase 1: Ownership model defined, placeholder values for data representation.
+        CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
+        Any caller can construct this instance. The real security boundary
+        will be implemented in Phase 2 using a separate trusted authority process.
         
         Args:
-            storage_root: Directory for persistent state (secret key, generation)
-            _authority_authorized: INTERNAL USE ONLY - must be True for authorized creation
-            
-        Raises:
-            ValueError: If _authority_authorized is False (unauthorized construction)
+            storage_root: Directory for persistent state (Phase 2: OS-protected)
         """
-        # AUTHORITY OWNERSHIP: Reject unauthorized construction
-        if not _authority_authorized:
-            raise ValueError(
-                "Direct RootTrustAnchor construction is FORBIDDEN. "
-                "Only the trusted bootstrap process (RuntimeAuthority.bootstrap()) "
-                "may create the canonical authority instance. "
-                "This is an ownership model violation."
-            )
-        
         # Resolve storage root
         self._storage_root = Path(storage_root).resolve()
         self._storage_root.mkdir(parents=True, exist_ok=True)
         
-        # Phase 2: Load or generate secret key (OS-protected)
-        # Phase 2: Load or initialize generation (persisted)
-        # Phase 2: Load or initialize bootstrap timestamp (persisted)
-        
         # Phase 1: Placeholder values for data representation (NOT secret material)
-        # These are scaffolding for Phase 2 implementation
-        self._secret_key = None  # Phase 2: Will be real secret key
+        # Phase 2: Trusted authority process will manage real secret key
+        self._secret_key = None
         self._generation = 0
         self._bootstrap_timestamp = 0.0
     
     def get_process_identity(self) -> ProcessIdentity:
-        """Get OS-controlled process identity.
+        """Get process identity data contract.
         
-        Phase 2: Full implementation with psutil/Windows API.
-        Phase 1: Returns placeholder (NOT_IMPLEMENTED)
+        CRITICAL: This returns a DATA CONTRACT, NOT authoritative identity.
+        Phase 2: Trusted authority process will return OS-observed values.
+        Phase 1: Returns placeholder for data contract specification.
+        
+        SECURITY WARNING:
+        - Caller-constructed instances are NOT authoritative
+        - Phase 2 will enforce OS-derived values in trusted authority process
         
         Returns:
-            ProcessIdentity with OS-controlled values
+            ProcessIdentity data contract (non-authoritative)
         """
-        # Phase 1: Placeholder (NOT_IMPLEMENTED)
-        # Phase 2: Will return actual OS-observed process identity
+        # Phase 1: Placeholder for data contract specification
+        # Phase 2: Trusted authority process will return OS-observed values
         return ProcessIdentity(pid=0, create_time=0.0, ppid=0)
     
     def get_runtime_identity(self) -> RuntimeIdentity:
-        """Get OS-controlled runtime identity.
+        """Get runtime identity data contract.
         
-        Phase 2: Loaded from persistent storage.
-        Phase 1: Returns placeholder (NOT_IMPLEMENTED)
+        CRITICAL: This returns a DATA CONTRACT, NOT authoritative identity.
+        Phase 2: Trusted authority process will return persisted values.
+        Phase 1: Returns placeholder for data contract specification.
+        
+        SECURITY WARNING:
+        - Caller-constructed instances are NOT authoritative
+        - Phase 2 will enforce persisted values in trusted authority process
         
         Returns:
-            RuntimeIdentity with persisted values
+            RuntimeIdentity data contract (non-authoritative)
         """
-        # Phase 1: Placeholder (NOT_IMPLEMENTED)
-        # Phase 2: Will return actual persisted runtime identity
+        # Phase 1: Placeholder for data contract specification
+        # Phase 2: Trusted authority process will return persisted values
         return RuntimeIdentity(
             generation=self._generation,
             bootstrap_timestamp=self._bootstrap_timestamp,
         )
     
     def increment_generation(self) -> None:
-        """Increment generation counter (called on runtime restart).
+        """Increment generation counter (data contract operation).
         
-        This invalidates all old identities and leases.
+        CRITICAL: This is a DATA CONTRACT operation, NOT authoritative enforcement.
+        Phase 2: Trusted authority process will persist to OS-protected storage.
+        Phase 1: In-memory only for data contract specification.
         
-        Phase 2: Persists to storage.
-        Phase 1: In-memory only (NOT_IMPLEMENTED)
+        SECURITY WARNING:
+        - In-process increment is NOT authoritative
+        - Phase 2 will enforce atomic persistence in trusted authority process
         """
         self._generation += 1
-        # Phase 2: Persist generation to storage
+        # Phase 2: Trusted authority process will persist to OS-protected storage
     
     def get_secret_key(self) -> Optional[bytes]:
-        """Get secret key for HMAC signing.
+        """Get secret key data contract.
         
-        Phase 2: Returns actual secret key from OS-protected storage.
-        Phase 1: Returns None (NOT_IMPLEMENTED)
+        CRITICAL: This returns a DATA CONTRACT placeholder, NOT a real secret.
+        Phase 2: Trusted authority process will manage real secret key in OS-protected storage.
+        Phase 1: Returns None (no secret material in data contract).
+        
+        SECURITY WARNING:
+        - DO NOT use this for actual HMAC signing
+        - Phase 2 will provide real secret key in trusted authority process
+        - This is a data contract placeholder only
         
         Returns:
-            Secret key bytes, or None if not yet implemented
+            None (Phase 1: no secret material)
         """
-        # Phase 1: Returns None (NOT_IMPLEMENTED)
-        # Phase 2: Will return actual secret key from OS-protected storage
+        # Phase 1: Returns None (no secret material in data contract)
+        # Phase 2: Trusted authority process will manage real secret key
         return self._secret_key

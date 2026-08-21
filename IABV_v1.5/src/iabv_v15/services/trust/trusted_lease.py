@@ -1,33 +1,32 @@
-"""TrustedLease: Cryptographically bound capability for P0.213 V5.
+"""TrustedLease: Data contract for lease/capability (P0.213 V5).
 
-This module provides the trusted lease/capability that can ONLY be issued
-by the trusted lease issuer and verified against the trust anchor.
+CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
 
-Design Principles:
-- Issued by trusted lease issuer only
-- Cryptographically signed with HMAC-SHA256
-- Bound to trusted execution identity
-- Bound to process identity (producer PID)
-- Bound to runtime incarnation (generation)
-- Bound to producer scope (authorization)
-- Single-use semantics
-- Expiration-based validity
-- Fail-closed verification
+In-process Python objects cannot be security boundaries because any caller
+can import and invoke public constructors, methods, and deserializers.
+The real security boundary will be implemented in Phase 2 using a separate
+trusted authority process and OS/IPC enforcement.
 
-LEASE BINDING CONTRACT:
-- Issuer owns issuer/producer authority fields (NOT caller-controlled)
-- Caller CANNOT choose issuer_pid, producer_pid, issuer_generation
-- Unique lease ID is authority-generated (NOT caller-controlled)
-- Authorization context is authority-owned (NOT caller-controlled)
+This module defines the DATA MODEL for:
+- Lease/capability (cryptographically signed in Phase 2)
+- Lease issuance protocol (Phase 2)
+- Lease state ownership contract (Phase 2)
 
-IMMUTABILITY vs AUTHENTICITY vs AUTHORITY:
-- IMMUTABILITY: dataclass(frozen=True) prevents mutation
-- AUTHENTICITY: HMAC signature proves not tampered (Phase 2)
-- AUTHORITY: Only LeaseIssuerService can issue (Phase 1 ownership model)
+IMMUTABLE OBJECT != AUTHENTIC OBJECT != AUTHORIZED OBJECT:
+- IMMUTABILITY: dataclass(frozen=True) prevents mutation (serialization operation)
+- AUTHENTICITY: HMAC signature proves not tampered (Phase 2 only)
+- AUTHORITY: Only trusted authority process can issue (Phase 2 only)
 - from_dict() is deserialization ONLY, NOT automatic trust
+- Deserialized objects are NEVER automatically authoritative
 
-Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-Phase 2 Status: RUNTIME_VERIFIED (HMAC signature, OS identity)
+Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative specification)
+Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
+
+SECURITY WARNING:
+- DO NOT treat this Python object as a security boundary
+- DO NOT rely on class name "Trusted" for security
+- DO NOT assume immutability provides authenticity
+- Phase 2 will implement real authority boundary
 """
 
 from __future__ import annotations
@@ -48,43 +47,28 @@ from iabv_v15.services.trust.trusted_execution_identity import (
 
 @dataclass(frozen=True)
 class TrustedLease:
-    """Cryptographically bound lease/capability.
+    """Data contract for cryptographically bound lease/capability.
     
-    This lease can ONLY be issued by LeaseIssuerService and verified
-    against the trust anchor. Caller-constructed leases will be rejected.
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
     
-    Design Principles:
-    - Issuer: Trusted lease issuer (authority-owned, NOT caller-controlled)
-    - Identity: Bound to trusted execution identity
-    - Process: Bound to producer PID (OS-controlled, NOT caller-controlled)
-    - Runtime: Bound to runtime generation (authority-owned)
-    - Authorization: Bound to producer scope (authority-owned)
-    - Lifecycle: Issued at, expires at, consumed flag
-    - Cryptographic proof: HMAC-SHA256 signature (Phase 2)
+    IMMUTABLE OBJECT != AUTHENTIC OBJECT != AUTHORIZED OBJECT:
+    - IMMUTABILITY: dataclass(frozen=True) prevents mutation (serialization operation)
+    - AUTHENTICITY: HMAC signature proves not tampered (Phase 2 only)
+    - AUTHORITY: Only trusted authority process can issue (Phase 2 only)
     
-    LEASE BINDING CONTRACT:
-    - Issuer owns issuer_pid, producer_pid, issuer_generation (NOT caller-controlled)
-    - Unique lease_id is authority-generated (NOT caller-controlled)
-    - Authorization context is authority-owned (NOT caller-controlled)
+    Phase 2: Trusted authority process will issue with HMAC signature
+    Phase 1: Data structure defined for contract specification
     
-    IMMUTABILITY vs AUTHENTICITY vs AUTHORITY:
-    - IMMUTABILITY: dataclass(frozen=True) prevents mutation
-    - AUTHENTICITY: HMAC signature proves not tampered (Phase 2)
-    - AUTHORITY: Only LeaseIssuerService can issue (Phase 1 ownership model)
+    SECURITY WARNING:
+    - Caller-constructed instances are NOT authoritative
+    - Class name "Trusted" does NOT confer security
+    - Immutability does NOT provide authenticity
     - from_dict() is deserialization ONLY, NOT automatic trust
+    - Deserialized objects are NEVER automatically authoritative
+    - Phase 2 will implement real authority boundary
     
-    The verifier must establish:
-    - ISSUED_BY_TRUSTED_ISSUER (signature verification)
-    - NOT_TAMPERED (signature verification)
-    - CORRECT_IDENTITY (execution_id matches)
-    - CORRECT_PROCESS (producer_pid matches OS PID)
-    - CORRECT_RUNTIME (generation matches)
-    - CORRECT_SCOPE (producer_scope matches)
-    - NOT_EXPIRED (expiration check)
-    - NOT_CONSUMED (single-use check)
-    
-    Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-    Phase 2 Status: RUNTIME_VERIFIED (HMAC signature, OS identity)
+    Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative specification)
+    Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
     """
     
     # Issuer (authority-owned, NOT caller-controlled)
@@ -155,28 +139,29 @@ class TrustedLease:
 
 
 class LeaseIssuerService:
-    """Service that issues and verifies trusted leases.
+    """Data contract for lease issuer protocol (NON-AUTHORITATIVE).
     
-    This service is the ONLY source of valid TrustedLease instances.
-    It uses the RuntimeIdentityAuthority to verify execution identity.
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
     
-    LEASE BINDING CONTRACT:
+    This class defines the PROTOCOL INTERFACE for lease issuance,
+    but does NOT implement real security enforcement in Phase 1.
+    
+    LEASE BINDING CONTRACT (Phase 2):
     - Issuer owns issuer_pid, producer_pid, issuer_generation (NOT caller-controlled)
     - Caller CANNOT choose authoritative lease fields
     - Unique lease_id is authority-generated (NOT caller-controlled)
     
-    CANONICAL REJECTION CONDITIONS:
-    - Invalid signature
-    - Invalid issuer
-    - Stale generation
-    - Mismatched issuer
-    - Mismatched execution identity
-    - Expired lease
-    - Consumed lease
-    - Invalid binding
+    Phase 1: Data contract and protocol interface (non-authoritative)
+    Phase 2: Trusted authority process implements real security enforcement
     
-    Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-    Phase 2 Status: RUNTIME_VERIFIED (HMAC signature, OS identity)
+    SECURITY WARNING:
+    - DO NOT use this class as a security boundary
+    - DO NOT rely on issue_lease() for real authority in Phase 1
+    - DO NOT use verify_lease() -> False as fake security
+    - Phase 2 will implement real authority boundary
+    
+    Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative protocol)
+    Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
     """
     
     def __init__(
@@ -241,33 +226,33 @@ class LeaseIssuerService:
         lease: TrustedLease,
         expected_scope: str | None = None,
     ) -> bool:
-        """Verify a trusted lease.
+        """Verify a trusted lease (Phase 2 only).
         
-        This is a FAIL-CLOSED verification. Any failure returns False.
+        CRITICAL: This is a DATA CONTRACT method, NOT real security enforcement.
+        Phase 2: Trusted authority process will implement signature verification.
+        Phase 1: Raises Phase2Required (explicit, not fake security).
         
-        CANONICAL REJECTION CONDITIONS:
-        - Invalid signature
-        - Invalid issuer
-        - Stale generation
-        - Mismatched issuer
-        - Mismatched execution identity
-        - Expired lease
-        - Consumed lease
-        - Invalid binding
-        
-        Phase 2: Full implementation with signature verification.
-        Phase 1: Always returns False (fail-closed, NOT_IMPLEMENTED)
+        SECURITY WARNING:
+        - DO NOT use this method for real security in Phase 1
+        - DO NOT rely on return False as fail-closed security
+        - Phase 2 will implement real verification
         
         Args:
             lease: Lease to verify
             expected_scope: Optional scope to validate against
             
         Returns:
-            True if lease is valid, False otherwise
+            True if lease is valid (Phase 2 only)
+            
+        Raises:
+            Phase2Required: Real verification requires Phase 2 authority process
         """
-        # Phase 1: Always returns False (fail-closed, NOT_IMPLEMENTED)
-        # Phase 2: Will verify signature, generation, binding, expiration
-        return False
+        # Phase 1: Explicit Phase2Required (NOT fake security)
+        # Phase 2: Trusted authority process will implement real verification
+        raise NotImplementedError(
+            "Lease verification requires Phase 2 trusted authority process. "
+            "This is a data contract method, not real security enforcement."
+        )
     
     def consume_lease(self, lease: TrustedLease) -> TrustedLease:
         """Mark lease as consumed (single-use semantics).
@@ -289,84 +274,74 @@ class LeaseIssuerService:
 
 
 class LeaseRegistry:
-    """Registry for tracking issued leases.
+    """Data contract for lease state store (NON-AUTHORITATIVE).
     
-    This registry is responsible for:
-    - Storage of issued leases
-    - Tracking lease consumption (single-use)
-    - Tracking lease expiration
-    - Invalidating stale leases on runtime restart
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
     
-    LEASE STATE OWNERSHIP CONTRACT:
-    - ONE AUTHORITY: LeaseRegistry is the ONLY authoritative lease state owner
-    - ONE LEASE STATE OWNER: No duplicate registries
-    - ONE CONSUMPTION OWNER: Only LeaseRegistry can authorize consumption
-    - Rejects: invalid signature, expired lease, stale generation, duplicate lease ID, mismatched issuer, mismatched execution identity
+    Phase 1 must NOT pretend a Python dictionary is the authoritative
+    security registry. The real security boundary will be implemented in
+    Phase 2 using a separate trusted authority process.
     
-    CANONICAL REJECTION CONDITIONS:
-    - Invalid signature
-    - Expired lease
-    - Stale generation
-    - Duplicate lease ID
-    - Mismatched issuer
-    - Mismatched execution identity
-    - Already consumed
+    LEASE STATE OWNERSHIP CONTRACT (Phase 2):
+    - Phase 2 authority process is the sole authoritative lease state owner
+    - Phase 2 authority process is the sole consumption owner
+    - Phase 2: OS/interprocess atomic enforcement for single-use
     
-    SINGLE-USE SEMANTICS CONTRACT:
-    - Single-use is an authority invariant
-    - Phase 2 will provide OS/interprocess atomic enforcement
-    - Phase 1: Placeholder (NOT_IMPLEMENTED)
-    - dict.pop() is NOT interprocess exactly-once
+    Phase 1: In-process data structure for contract specification (NON_AUTHORITATIVE)
+    Phase 2: Trusted authority process implements real security enforcement
     
-    Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-    Phase 2 Status: RUNTIME_VERIFIED (interprocess atomicity)
+    SECURITY WARNING:
+    - DO NOT treat this Python dictionary as authoritative
+    - DO NOT assume dict.pop() is interprocess exactly-once
+    - DO NOT use this class as a security boundary
+    - Phase 2 will implement real authority boundary
+    
+    Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative test model)
+    Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
     """
     
     def __init__(self, trust_anchor: RootTrustAnchor):
-        """Initialize lease registry.
+        """Initialize lease state store (NON-AUTHORITATIVE).
         
-        LEASE STATE OWNERSHIP: This is the ONLY authoritative lease state owner.
+        CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
+        Phase 2: Trusted authority process will be the sole authoritative owner.
+        Phase 1: In-process data structure for contract specification.
         
         Args:
             trust_anchor: Root trust anchor for generation tracking
         """
         self._trust_anchor = trust_anchor
-        self._leases: dict[str, TrustedLease] = {}
+        self._leases: dict[str, TrustedLease] = {}  # NON_AUTHORITATIVE_TEST_MODEL
     
     def register(self, lease: TrustedLease) -> None:
-        """Register a lease in the registry.
+        """Register a lease in the state store (NON-AUTHORITATIVE).
         
-        LEASE STATE OWNERSHIP: Only this registry can authorize lease state.
+        CRITICAL: This is a DATA CONTRACT method, NOT real security enforcement.
+        Phase 2: Trusted authority process will implement canonical rejection.
+        Phase 1: In-process storage for contract specification.
         
-        CANONICAL REJECTION CONDITIONS:
-        - Invalid signature
-        - Expired lease
-        - Stale generation
-        - Duplicate lease ID
-        - Mismatched issuer
-        - Mismatched execution identity
-        - Already consumed
-        
-        Phase 2: Full implementation with rejection checks.
-        Phase 1: Placeholder (NOT_IMPLEMENTED)
+        SECURITY WARNING:
+        - DO NOT rely on this for real security in Phase 1
+        - Phase 2 will implement real rejection checks
         
         Args:
             lease: Lease to register
-            
-        Raises:
-            ValueError: If lease is invalid or already consumed
         """
-        # Phase 1: Placeholder (NOT_IMPLEMENTED)
-        # Phase 2: Will check signature, generation, expiration, duplicates
+        # Phase 1: In-process storage (NON_AUTHORITATIVE_TEST_MODEL)
+        # Phase 2: Trusted authority process will implement canonical rejection
         self._leases[lease.lease_id] = lease
     
     def consume(self, lease_id: str) -> TrustedLease | None:
-        """Consume a lease (mark as used).
+        """Consume a lease (NON-AUTHORITATIVE).
         
-        SINGLE-USE SEMANTICS CONTRACT:
-        - Single-use is an authority invariant
-        - Phase 2 will provide OS/interprocess atomic enforcement
-        - Phase 1: Placeholder (NOT_IMPLEMENTED)
+        CRITICAL: This is a DATA CONTRACT method, NOT real security enforcement.
+        Phase 2: Trusted authority process will implement OS/interprocess atomicity.
+        Phase 1: dict.pop() is NOT interprocess exactly-once.
+        
+        SECURITY WARNING:
+        - DO NOT rely on dict.pop() for interprocess exactly-once
+        - DO NOT use this for real security in Phase 1
+        - Phase 2 will implement real atomic enforcement
         
         Args:
             lease_id: Lease ID of lease to consume
@@ -374,37 +349,40 @@ class LeaseRegistry:
         Returns:
             Consumed lease, or None if not found
         """
+        # Phase 1: dict.pop() is NOT interprocess exactly-once (NON_AUTHORITATIVE_TEST_MODEL)
+        # Phase 2: Trusted authority process will implement OS/interprocess atomicity
         if lease_id not in self._leases:
             return None
         
         lease = self._leases.pop(lease_id)
-        # Mark as consumed
         return dataclasses.replace(lease, consumed=True)
     
     def cleanup_expired(self) -> int:
-        """Clean up expired leases.
+        """Clean up expired leases (NON-AUTHORITATIVE).
         
-        Phase 2: Full implementation with expiration check.
-        Phase 1: Placeholder (NOT_IMPLEMENTED)
+        CRITICAL: This is a DATA CONTRACT method, NOT real security enforcement.
+        Phase 2: Trusted authority process will implement expiration check.
+        Phase 1: Returns 0 (placeholder).
         
         Returns:
-            Number of leases cleaned up
+            Number of leases cleaned up (Phase 1: 0 placeholder)
         """
-        # Phase 1: Placeholder (NOT_IMPLEMENTED)
-        # Phase 2: Will check expiration and remove expired leases
+        # Phase 1: Returns 0 (NON_AUTHORITATIVE_TEST_MODEL)
+        # Phase 2: Trusted authority process will implement expiration check
         return 0
     
     def invalidate_stale(self) -> int:
-        """Invalidate leases from previous generation (runtime restart).
+        """Invalidate leases from previous generation (NON-AUTHORITATIVE).
         
-        Phase 2: Full implementation with generation check.
-        Phase 1: Placeholder (NOT_IMPLEMENTED)
+        CRITICAL: This is a DATA CONTRACT method, NOT real security enforcement.
+        Phase 2: Trusted authority process will implement generation check.
+        Phase 1: Returns 0 (placeholder).
         
         Returns:
-            Number of leases invalidated
+            Number of leases invalidated (Phase 1: 0 placeholder)
         """
-        # Phase 1: Placeholder (NOT_IMPLEMENTED)
-        # Phase 2: Will check generation and invalidate stale leases
+        # Phase 1: Returns 0 (NON_AUTHORITATIVE_TEST_MODEL)
+        # Phase 2: Trusted authority process will implement generation check
         return 0
     
     def count(self) -> int:

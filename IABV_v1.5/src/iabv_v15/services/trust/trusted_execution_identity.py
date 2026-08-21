@@ -1,29 +1,32 @@
-"""TrustedExecutionIdentity: Cryptographically bound execution identity for P0.213 V5.
+"""TrustedExecutionIdentity: Data contract for execution identity (P0.213 V5).
 
-This module provides the trusted execution identity that can ONLY be issued
-by the trusted runtime authority and verified against the trust anchor.
+CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
 
-Design Principles:
-- Issued by trusted runtime authority only
-- Cryptographically signed with HMAC-SHA256
-- Bound to runtime incarnation (generation, bootstrap timestamp)
-- Bound to process identity (issuer PID)
-- Fail-closed verification (rejects all invalid identities)
+In-process Python objects cannot be security boundaries because any caller
+can import and invoke public constructors, methods, and deserializers.
+The real security boundary will be implemented in Phase 2 using a separate
+trusted authority process and OS/IPC enforcement.
 
-IDENTITY ISSUE CONTRACT:
-- ObservedProcessIdentity is OS-derived (NOT caller-controlled)
-- CanonicalRunRecord is authority-owned (NOT caller-controlled)
-- TrustedIdentityAuthority.issue(observed_identity, canonical_run_record)
-- Caller CANNOT choose authoritative identity fields
+This module defines the DATA MODEL for:
+- Observed process identity (OS-derived in Phase 2)
+- Canonical run record (authority-owned in Phase 2)
+- Execution identity (cryptographically signed in Phase 2)
 
-IMMUTABILITY vs AUTHENTICITY vs AUTHORITY:
-- IMMUTABILITY: dataclass(frozen=True) prevents mutation
-- AUTHENTICITY: HMAC signature proves not tampered (Phase 2)
-- AUTHORITY: Only RuntimeIdentityAuthority can issue (Phase 1 ownership model)
+DATA OBJECT != AUTHORITY:
+- Immutable dataclass prevents mutation, but does NOT confer authenticity
+- HMAC signature proves not tampered (Phase 2), but Phase 1 has no signature
 - from_dict() is deserialization ONLY, NOT automatic trust
+- Deserialized objects are NEVER automatically authoritative
 
-Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-Phase 2 Status: RUNTIME_VERIFIED (HMAC signature, OS identity)
+Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative specification)
+Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
+
+SECURITY WARNING:
+- DO NOT treat this Python object as a security boundary
+- DO NOT rely on class name "Trusted" for security
+- DO NOT assume immutability provides authenticity
+- DO NOT use verify_identity() -> False as fake security
+- Phase 2 will implement real authority boundary
 """
 
 from __future__ import annotations
@@ -44,13 +47,16 @@ from iabv_v15.services.trust.root_trust_anchor import (
 
 @dataclass(frozen=True)
 class ObservedProcessIdentity:
-    """OS-derived process identity.
+    """Data contract for OS-derived process identity.
     
-    This represents OS-observed process state that CANNOT be forged by caller input.
-    Phase 2: Obtained from OS via psutil/Windows API
-    Phase 1: Data structure defined
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
+    Phase 2: Trusted authority process will obtain from OS via psutil/Windows API
+    Phase 1: Data structure defined for contract specification
     
-    CRITICAL: This is NOT caller-controlled. The authority observes this from OS.
+    SECURITY WARNING:
+    - Caller-constructed instances are NOT authoritative
+    - Phase 2 will enforce OS-derived values in trusted authority process
+    - This is a data model, not an authority
     """
     
     pid: int
@@ -60,14 +66,16 @@ class ObservedProcessIdentity:
 
 @dataclass(frozen=True)
 class CanonicalRunRecord:
-    """Authority-owned canonical run record.
+    """Data contract for authority-owned canonical run record.
     
-    This represents the authority's canonical view of a run/execution.
-    Phase 2: Created and owned by authority
-    Phase 1: Data structure defined
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
+    Phase 2: Trusted authority process will create and own this state
+    Phase 1: Data structure defined for contract specification
     
-    CRITICAL: This is NOT caller-controlled. The authority owns this state.
-    authority-owned: This is authority-owned (NOT caller-controlled)
+    SECURITY WARNING:
+    - Caller-constructed instances are NOT authoritative
+    - Phase 2 will enforce authority-owned values in trusted authority process
+    - This is a data model, not an authority
     """
     
     run_id: str
@@ -80,34 +88,28 @@ class CanonicalRunRecord:
 
 @dataclass(frozen=True)
 class TrustedExecutionIdentity:
-    """Cryptographically bound execution identity.
+    """Data contract for cryptographically bound execution identity.
     
-    This identity can ONLY be issued by RuntimeIdentityAuthority and verified
-    against the trust anchor. Caller-constructed identities will be rejected.
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
     
-    Design Principles:
-    - Issuer: Trusted runtime authority
-    - Execution: Authority-generated UUIDs
-    - Runtime binding: Generation and bootstrap timestamp
-    - Process binding: Issuer PID (OS-derived)
-    - Cryptographic proof: HMAC-SHA256 signature (Phase 2)
-    - Expiration: Time-based validity
+    IMMUTABLE OBJECT != AUTHENTIC OBJECT != AUTHORIZED OBJECT:
+    - IMMUTABILITY: dataclass(frozen=True) prevents mutation (serialization operation)
+    - AUTHENTICITY: HMAC signature proves not tampered (Phase 2 only)
+    - AUTHORITY: Only trusted authority process can issue (Phase 2 only)
     
-    IMMUTABILITY vs AUTHENTICITY vs AUTHORITY:
-    - IMMUTABILITY: dataclass(frozen=True) prevents mutation
-    - AUTHENTICITY: HMAC signature proves not tampered (Phase 2)
-    - AUTHORITY: Only RuntimeIdentityAuthority can issue (Phase 1 ownership model)
+    Phase 2: Trusted authority process will issue with HMAC signature
+    Phase 1: Data structure defined for contract specification
+    
+    SECURITY WARNING:
+    - Caller-constructed instances are NOT authoritative
+    - Class name "Trusted" does NOT confer security
+    - Immutability does NOT provide authenticity
     - from_dict() is deserialization ONLY, NOT automatic trust
+    - Deserialized objects are NEVER automatically authoritative
+    - Phase 2 will implement real authority boundary
     
-    The verifier must establish:
-    - ISSUED_BY_TRUSTED_AUTHORITY (signature verification)
-    - NOT_TAMPERED (signature verification)
-    - CORRECT_RUNTIME (generation and bootstrap match)
-    - CORRECT_PROCESS_CONTEXT (issuer PID matches OS)
-    - NOT_STALE (expiration check)
-    
-    Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-    Phase 2 Status: RUNTIME_VERIFIED (HMAC signature, OS identity)
+    Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative specification)
+    Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
     """
     
     # Issuer (authority-owned, NOT caller-controlled)
@@ -175,27 +177,30 @@ class TrustedExecutionIdentity:
 
 
 class RuntimeIdentityAuthority:
-    """Authority that issues and verifies trusted execution identities.
+    """Data contract for identity authority protocol (NON-AUTHORITATIVE).
     
-    This authority is the ONLY source of valid TrustedExecutionIdentity instances.
-    It uses the RootTrustAnchor to provide OS-controlled trust anchor.
+    CRITICAL: This is a DATA CONTRACT, NOT a security boundary.
     
-    IDENTITY ISSUE CONTRACT:
+    This class defines the PROTOCOL INTERFACE for identity issuance,
+    but does NOT implement real security enforcement in Phase 1.
+    
+    IDENTITY ISSUE CONTRACT (Phase 2):
     - ObservedProcessIdentity is OS-derived (NOT caller-controlled)
     - CanonicalRunRecord is authority-owned (NOT caller-controlled)
     - issue(observed_identity, canonical_run_record) is the canonical API
     - Caller CANNOT choose authoritative identity fields
     
-    CANONICAL REJECTION CONDITIONS:
-    - Missing identity
-    - Invalid issuer
-    - Stale generation
-    - Invalid signature
-    - Invalid binding
-    - Expired identity
+    Phase 1: Data contract and protocol interface (non-authoritative)
+    Phase 2: Trusted authority process implements real security enforcement
     
-    Phase 1 Status: DESIGNED (ownership model defined, NOT_IMPLEMENTED)
-    Phase 2 Status: RUNTIME_VERIFIED (HMAC signature, OS identity)
+    SECURITY WARNING:
+    - DO NOT use this class as a security boundary
+    - DO NOT rely on issue() for real authority in Phase 1
+    - DO NOT use verify_identity() -> False as fake security
+    - Phase 2 will implement real authority boundary
+    
+    Phase 1 Status: DATA_CONTRACT_ONLY (non-authoritative protocol)
+    Phase 2 Status: RUNTIME_VERIFIED (separate trusted authority process)
     """
     
     def __init__(self, trust_anchor: RootTrustAnchor):
@@ -249,27 +254,29 @@ class RuntimeIdentityAuthority:
         )
     
     def verify_identity(self, identity: TrustedExecutionIdentity) -> bool:
-        """Verify a trusted execution identity.
+        """Verify a trusted execution identity (Phase 2 only).
         
-        This is a FAIL-CLOSED verification. Any failure returns False.
+        CRITICAL: This is a DATA CONTRACT method, NOT real security enforcement.
+        Phase 2: Trusted authority process will implement signature verification.
+        Phase 1: Raises Phase2Required (explicit, not fake security).
         
-        CANONICAL REJECTION CONDITIONS:
-        - Missing identity
-        - Invalid issuer
-        - Stale generation
-        - Invalid signature
-        - Invalid binding
-        - Expired identity
-        
-        Phase 2: Full implementation with signature verification.
-        Phase 1: Always returns False (fail-closed, NOT_IMPLEMENTED)
+        SECURITY WARNING:
+        - DO NOT use this method for real security in Phase 1
+        - DO NOT rely on return False as fail-closed security
+        - Phase 2 will implement real verification
         
         Args:
             identity: Identity to verify
             
         Returns:
-            True if identity is valid, False otherwise
+            True if identity is valid (Phase 2 only)
+            
+        Raises:
+            Phase2Required: Real verification requires Phase 2 authority process
         """
-        # Phase 1: Always returns False (fail-closed, NOT_IMPLEMENTED)
-        # Phase 2: Will verify signature, generation, binding, expiration
-        return False
+        # Phase 1: Explicit Phase2Required (NOT fake security)
+        # Phase 2: Trusted authority process will implement real verification
+        raise NotImplementedError(
+            "Identity verification requires Phase 2 trusted authority process. "
+            "This is a data contract method, not real security enforcement."
+        )
