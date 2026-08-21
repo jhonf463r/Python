@@ -51,45 +51,45 @@ def main() -> int:
     storage_root = Path(args.storage_root)
     storage_root.mkdir(parents=True, exist_ok=True)
     
-    print(f"[Authority] Starting authority process")
-    print(f"[Authority] Storage root: {storage_root}")
-    print(f"[Authority] Pipe name: {args.pipe_name}")
-    print(f"[Authority] PID: {os.getpid()}")
+    print(f"[Authority] Starting authority process", flush=True)
+    print(f"[Authority] Storage root: {storage_root}", flush=True)
+    print(f"[Authority] Pipe name: {args.pipe_name}", flush=True)
+    print(f"[Authority] PID: {os.getpid()}", flush=True)
     
     # Phase 2: Initialize authority service
     try:
         authority = AuthorityService(storage_root=storage_root)
-        print(f"[Authority] Authority service initialized")
-        print(f"[Authority] Generation: {authority._generation}")
+        print(f"[Authority] Authority service initialized", flush=True)
+        print(f"[Authority] Generation: {authority._generation}", flush=True)
     except Exception as e:
-        print(f"[Authority] ERROR: Failed to initialize authority service: {e}")
+        print(f"[Authority] ERROR: Failed to initialize authority service: {e}", flush=True)
         return 1
     
     # Phase 2: Initialize authority server
     try:
         server = AuthorityServer(authority)
-        print(f"[Authority] Authority server initialized")
+        print(f"[Authority] Authority server initialized", flush=True)
     except Exception as e:
-        print(f"[Authority] ERROR: Failed to initialize authority server: {e}")
+        print(f"[Authority] ERROR: Failed to initialize authority server: {e}", flush=True)
         return 1
     
     # Phase 2: Start server
     try:
         server.start()
-        print(f"[Authority] Authority server started")
-        print(f"[Authority] Listening on Named Pipe: {args.pipe_name}")
+        print(f"[Authority] Authority server started", flush=True)
+        print(f"[Authority] Listening on Named Pipe: {args.pipe_name}", flush=True)
         
         # Phase 2: Create readiness signal after server is ready
         ready_file = storage_root / "authority_ready.txt"
         ready_file.write_text(str(os.getpid()))
-        print(f"[Authority] Ready signal created: {ready_file}")
+        print(f"[Authority] Ready signal created: {ready_file}", flush=True)
     except Exception as e:
-        print(f"[Authority] ERROR: Failed to start authority server: {e}")
+        print(f"[Authority] ERROR: Failed to start authority server: {e}", flush=True)
         return 1
     
     # Phase 2: Signal handling for graceful shutdown
     def signal_handler(signum, frame):
-        print(f"[Authority] Received signal {signum}, shutting down...")
+        print(f"[Authority] Received signal {signum}, shutting down...", flush=True)
         server.stop()
         sys.exit(0)
     
@@ -97,7 +97,7 @@ def main() -> int:
     signal.signal(signal.SIGTERM, signal_handler)
     
     # Phase 2: Keep process alive
-    print(f"[Authority] Authority process running...")
+    print(f"[Authority] Authority process running...", flush=True)
     try:
         while True:
             time.sleep(1)

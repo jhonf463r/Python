@@ -75,10 +75,14 @@ class AuthorityServer:
         """Create security attributes with explicit DACL.
         
         Phase 2: Explicit DACL for Named Pipe.
+        PART II: Instrumented to log exact DACL details.
         """
         # Get current user SID
         user = os.environ.get('USERNAME', os.environ.get('USER', 'unknown'))
+        print(f"[AuthorityServer] Creating DACL for user: {user}")
+        
         sid, _, _ = win32security.LookupAccountName(None, user)
+        print(f"[AuthorityServer] User SID: {sid}")
         
         # Create DACL: only current user has full access
         dacl = win32security.ACL()
@@ -87,10 +91,16 @@ class AuthorityServer:
             win32file.GENERIC_READ | win32file.GENERIC_WRITE,
             sid
         )
+        print(f"[AuthorityServer] DACL ACE added:")
+        print(f"[AuthorityServer]   Type: ACCESS_ALLOWED")
+        print(f"[AuthorityServer]   Permissions: GENERIC_READ | GENERIC_WRITE")
+        print(f"[AuthorityServer]   SID: {sid}")
         
         # Create security descriptor
         security_descriptor = win32security.SECURITY_DESCRIPTOR()
         security_descriptor.SetSecurityDescriptorDacl(1, dacl, 0)
+        print(f"[AuthorityServer] Security descriptor created")
+        print(f"[AuthorityServer]   DACL present: {security_descriptor.GetSecurityDescriptorDacl() is not None}")
         
         # Create security attributes
         security_attributes = pywintypes.SECURITY_ATTRIBUTES()
@@ -102,20 +112,40 @@ class AuthorityServer:
         """Create Named Pipe with explicit security.
         
         Phase 2: Explicit DACL, reject remote clients.
+        PART II: Instrumented to log exact CreateNamedPipe parameters.
         """
         security_attributes = self._create_security_attributes()
         
-        # Create named pipe
+        # Create named pipe with exact parameters
+        pipe_access = win32pipe.PIPE_ACCESS_DUPLEX
+        pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT
+        max_instances = win32pipe.PIPE_UNLIMITED_INSTANCES
+        out_buffer_size = BUFFER_SIZE
+        in_buffer_size = BUFFER_SIZE
+        default_timeout = 0
+        
+        print(f"[AuthorityServer] CreateNamedPipe parameters:")
+        print(f"[AuthorityServer]   Pipe name: {PIPE_NAME}")
+        print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x{pipe_access:X})")
+        print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x{pipe_type:X})")
+        print(f"[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES")
+        print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
+        print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
+        print(f"[AuthorityServer]   Default timeout: {default_timeout}")
+        print(f"[AuthorityServer]   Security attributes: present")
+        
         pipe_handle = win32pipe.CreateNamedPipe(
             PIPE_NAME,
-            win32pipe.PIPE_ACCESS_DUPLEX,
-            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-            win32pipe.PIPE_UNLIMITED_INSTANCES,
-            BUFFER_SIZE,
-            BUFFER_SIZE,
-            0,  # Default timeout
+            pipe_access,
+            pipe_type,
+            max_instances,
+            out_buffer_size,
+            in_buffer_size,
+            default_timeout,
             security_attributes
         )
+        
+        print(f"[AuthorityServer] Named pipe created: handle={pipe_handle}")
         
         return pipe_handle
     

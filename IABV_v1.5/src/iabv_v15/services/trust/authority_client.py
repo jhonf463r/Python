@@ -54,28 +54,52 @@ class AuthorityClient:
         """Connect to authority process via Named Pipe.
         
         Phase 2: Real IPC connection with retry logic.
+        PART II: Instrumented to log exact access parameters.
         """
         if self._pipe_handle is not None:
             raise RuntimeError("Already connected")
         
         print(f"[AuthorityClient] Connecting to {self._pipe_name}...")
+        print(f"[AuthorityClient] Desired access: GENERIC_READ | GENERIC_WRITE")
+        print(f"[AuthorityClient] Share mode: 0 (no sharing)")
+        print(f"[AuthorityClient] Creation disposition: OPEN_EXISTING")
+        print(f"[AuthorityClient] Flags/attributes: 0")
         
         for attempt in range(MAX_CONNECTION_ATTEMPTS):
             try:
+                desired_access = win32file.GENERIC_READ | win32file.GENERIC_WRITE
+                share_mode = 0
+                creation_disposition = win32file.OPEN_EXISTING
+                flags_and_attributes = 0
+                
+                print(f"[AuthorityClient] Attempt {attempt + 1}: CreateFile")
+                print(f"[AuthorityClient]   desired_access=0x{desired_access:X}")
+                print(f"[AuthorityClient]   share_mode=0x{share_mode:X}")
+                print(f"[AuthorityClient]   creation_disposition=0x{creation_disposition:X}")
+                print(f"[AuthorityClient]   flags_and_attributes=0x{flags_and_attributes:X}")
+                
                 self._pipe_handle = win32file.CreateFile(
                     self._pipe_name,
-                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                    0,
+                    desired_access,
+                    share_mode,
                     None,
-                    win32file.OPEN_EXISTING,
-                    0,
+                    creation_disposition,
+                    flags_and_attributes,
                     None
                 )
                 print(f"[AuthorityClient] Connected on attempt {attempt + 1}")
+                print(f"[AuthorityClient] Pipe handle: {self._pipe_handle}")
                 return
             except pywintypes.error as e:
+                print(f"[AuthorityClient] Win32 error on attempt {attempt + 1}:")
+                print(f"[AuthorityClient]   Error code: {e.winerror}")
+                print(f"[AuthorityClient]   Error message: {e.strerror}")
+                print(f"[AuthorityClient]   Function: {e.funcname}")
+                
                 if e.winerror == 2:  # ERROR_FILE_NOT_FOUND
                     print(f"[AuthorityClient] Pipe not found (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})")
+                elif e.winerror == 5:  # ERROR_ACCESS_DENIED
+                    print(f"[AuthorityClient] ACCESS DENIED (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})")
                 elif e.winerror == 231:  # ERROR_PIPE_BUSY
                     print(f"[AuthorityClient] Pipe busy (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})")
                 else:

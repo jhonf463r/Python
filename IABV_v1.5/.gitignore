@@ -36,3 +36,6 @@ src/data/metacognition/
 
 # Test run artifacts (generated at runtime)
 data/test_runs/
+
+# Frozen Phase 1 evidence (generated artifact)
+IABV_v1.5_phase1_frozen/

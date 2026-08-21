@@ -127,7 +127,10 @@ class TestRealWindowsIPC:
                     proc.wait(timeout=5)
     
     def test_client_connects_to_authority_process(self):
-        """Test that client connects to authority process."""
+        """Test that client connects to authority process.
+        
+        PART VII: Positive test - intended same-user client can connect.
+        """
         with tempfile.TemporaryDirectory() as tmpdir:
             # Start authority process
             authority_script = Path(__file__).parent.parent / "src" / "iabv_v15" / "services" / "trust" / "authority_process.py"
