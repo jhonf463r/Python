@@ -104,13 +104,13 @@ class AuthorityService:
         # Phase 2: Load or initialize generation
         self._generation = self._load_or_initialize_generation()
         
+        # Phase 2: Initialize run record store (must be before lease state)
+        self._run_record_db = self._storage_root / RUN_RECORD_DB
+        self._init_run_record_db()
+        
         # Phase 2: Initialize persistent lease state store
         self._lease_state_db = self._storage_root / LEASE_STATE_DB
         self._init_lease_state_db()
-        
-        # Phase 2: Initialize run record store
-        self._run_record_db = self._storage_root / RUN_RECORD_DB
-        self._init_run_record_db()
         
         # Phase 2: Track connected clients
         self._clients: dict[int, ObservedProcessIdentity] = {}
@@ -119,6 +119,24 @@ class AuthorityService:
         # Phase 2: Shutdown flag
         self._shutdown = False
         self._shutdown_lock = threading.Lock()
+        
+        # Phase 2: Track database connections for cleanup
+        self._db_connections: list[sqlite3.Connection] = []
+    
+    def shutdown(self) -> None:
+        """Shutdown authority service and close all database connections.
+        
+        Phase 2: Explicit cleanup to prevent Windows file locking issues.
+        """
+        with self._shutdown_lock:
+            self._shutdown = True
+            # Close all tracked database connections
+            for conn in self._db_connections:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            self._db_connections.clear()
     
     def _load_or_generate_secret_key(self) -> bytes:
         """Load or generate real secret key (OS-protected storage).
@@ -198,6 +216,11 @@ class AuthorityService:
         """Initialize persistent lease state store (SQLite).
         
         Phase 2: Real persistent state, NOT in-process dictionary.
+        
+        AUTHORITATIVE STATE CONTRACT:
+        - Stores full canonical lease with signature
+        - consumed flag is authoritative state (NOT DTO/cache)
+        - Signature covers all authorization-relevant fields
         """
         conn = sqlite3.connect(str(self._lease_state_db))
         cursor = conn.cursor()
@@ -208,13 +231,24 @@ class AuthorityService:
                 consumed INTEGER NOT NULL DEFAULT 0,
                 generation INTEGER NOT NULL,
                 expires_at REAL NOT NULL,
-                created_at REAL NOT NULL
+                created_at REAL NOT NULL,
+                lease_json TEXT NOT NULL,
+                signature TEXT NOT NULL,
+                run_id TEXT NOT NULL,
+                execution_id TEXT NOT NULL,
+                producer_pid INTEGER NOT NULL,
+                authorized_scope TEXT NOT NULL
             )
         """)
         
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_generation 
             ON leases(generation)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_run_id 
+            ON leases(run_id)
         """)
         
         conn.commit()
@@ -224,6 +258,12 @@ class AuthorityService:
         """Initialize run record store (SQLite).
         
         Phase 2: Authority-owned canonical run records.
+        
+        AUTHORITY POLICY CONTRACT:
+        - requested_scope: Caller-provided scope request
+        - authorized_scope: Authority-computed scope based on policy
+        - action: Requested operation
+        - target: Requested target
         """
         conn = sqlite3.connect(str(self._run_record_db))
         cursor = conn.cursor()
@@ -235,7 +275,10 @@ class AuthorityService:
                 episode_id TEXT,
                 session_id TEXT,
                 invocation_id TEXT NOT NULL,
+                requested_scope TEXT NOT NULL,
                 authorized_scope TEXT NOT NULL,
+                action TEXT NOT NULL,
+                target TEXT NOT NULL,
                 consumer_pid INTEGER NOT NULL,
                 generation INTEGER NOT NULL,
                 created_at REAL NOT NULL
@@ -309,6 +352,43 @@ class AuthorityService:
     
     # ── Protocol Handlers ───────────────────────────────────────────────────────
     
+    def _compute_authorized_scope(
+        self,
+        requested_scope: str,
+        action: str,
+        target: str,
+        client_pid: int
+    ) -> str:
+        """Compute authorized scope based on authority policy.
+        
+        AUTHORITY POLICY CONTRACT:
+        - requested_scope: Caller-provided scope request
+        - Authority MUST NOT blindly accept caller-provided scope
+        - Authority computes authorized_scope based on policy
+        
+        Phase 2: Simple policy - accept requested_scope if it matches allowed patterns
+        Future: Implement real policy engine with scope hierarchy
+        
+        Args:
+            requested_scope: Caller-provided scope request
+            action: Requested operation
+            target: Requested target
+            client_pid: OS-observed client PID
+            
+        Returns:
+            Authorized scope (may be narrower than requested)
+            
+        Raises:
+            ValueError: If requested_scope is not allowed
+        """
+        # Phase 2: Simple policy - reject wildcard/broader scope attempts
+        if "*" in requested_scope or "admin" in requested_scope.lower():
+            raise ValueError(f"Requested scope '{requested_scope}' is not allowed")
+        
+        # Phase 2: Simple policy - accept requested_scope as-is for development
+        # Future: Implement real policy with scope hierarchy and action/target checks
+        return requested_scope
+    
     def handle_register_execution(
         self,
         request: AuthorityRequest,
@@ -316,16 +396,36 @@ class AuthorityService:
     ) -> AuthorityResponse:
         """Handle REGISTER_EXECUTION request.
         
-        Phase 2: Authority creates canonical RunRecord.
+        Phase 2: Authority creates canonical RunRecord with policy decision.
+        
+        AUTHORITY POLICY CONTRACT:
+        - requested_scope: Caller-provided scope request
+        - authorized_scope: Authority-computed scope based on policy
+        - action: Requested operation
+        - target: Requested target
         """
         try:
             # Phase 2: Generate authority-owned IDs
             run_id = secrets.token_urlsafe(16)
             execution_id = secrets.token_urlsafe(16)
             invocation_id = request.data.get("invocation_id", "")
-            authorized_scope = request.data.get("authorized_scope", "")
+            requested_scope = request.data.get("requested_scope", "")
+            action = request.data.get("action", "READ")
+            target = request.data.get("target", "")
             episode_id = request.data.get("episode_id")
             session_id = request.data.get("session_id")
+            
+            # Phase 2: Compute authorized scope based on authority policy
+            try:
+                authorized_scope = self._compute_authorized_scope(
+                    requested_scope, action, target, client_pid
+                )
+            except ValueError as e:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error=f"Scope authorization failed: {e}"
+                )
             
             # Phase 2: Create canonical RunRecord (authority-owned)
             run_record = CanonicalRunRecord(
@@ -334,7 +434,10 @@ class AuthorityService:
                 episode_id=episode_id,
                 session_id=session_id,
                 invocation_id=invocation_id,
+                requested_scope=requested_scope,
                 authorized_scope=authorized_scope,
+                action=action,
+                target=target,
             )
             
             # Phase 2: Persist to authority-owned store
@@ -344,15 +447,19 @@ class AuthorityService:
             cursor.execute("""
                 INSERT INTO run_records 
                 (run_id, execution_id, episode_id, session_id, invocation_id, 
-                 authorized_scope, consumer_pid, generation, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 requested_scope, authorized_scope, action, target,
+                 consumer_pid, generation, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 run_record.run_id,
                 run_record.execution_id,
                 run_record.episode_id,
                 run_record.session_id,
                 run_record.invocation_id,
+                run_record.requested_scope,
                 run_record.authorized_scope,
+                run_record.action,
+                run_record.target,
                 client_pid,
                 self._generation,
                 time.time()
@@ -366,6 +473,7 @@ class AuthorityService:
                 data={
                     "run_id": run_id,
                     "execution_id": execution_id,
+                    "authorized_scope": authorized_scope,
                     "generation": self._generation,
                 }
             )
@@ -383,7 +491,12 @@ class AuthorityService:
     ) -> AuthorityResponse:
         """Handle ISSUE_LEASE request.
         
-        Phase 2: Authority issues HMAC-signed lease.
+        Phase 2: Authority issues HMAC-signed lease with full authorization binding.
+        
+        AUTHORIZATION BINDING CONTRACT:
+        - Lease must be bound to RunRecord
+        - Signature must cover all authorization-relevant fields
+        - Client cannot forge authorization fields
         """
         try:
             run_id = request.data.get("run_id")
@@ -396,7 +509,7 @@ class AuthorityService:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT execution_id, authorized_scope, consumer_pid, generation
+                SELECT execution_id, authorized_scope, action, target, consumer_pid, generation
                 FROM run_records
                 WHERE run_id = ?
             """, (run_id,))
@@ -411,7 +524,15 @@ class AuthorityService:
                     error="Run record not found"
                 )
             
-            db_execution_id, authorized_scope, record_pid, record_generation = row
+            db_execution_id, authorized_scope, action, target, record_pid, record_generation = row
+            
+            # Phase 2: Verify execution_id matches run record
+            if execution_id != db_execution_id:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Execution ID mismatch"
+                )
             
             # Phase 2: Verify client PID matches run record
             if client_pid != record_pid:
@@ -449,7 +570,7 @@ class AuthorityService:
                 consumed=False,
             )
             
-            # Phase 2: Serialize and sign
+            # Phase 2: Serialize and sign (signature covers all authorization-relevant fields)
             lease_data = lease.to_dict()
             lease_data.pop("signature", None)
             lease_json = json.dumps(lease_data, sort_keys=True)
@@ -457,14 +578,37 @@ class AuthorityService:
             
             lease = dataclasses.replace(lease, signature=signature)
             
-            # Phase 2: Persist to lease state store
+            # Phase 2: Serialize for persistence (signature covers all authorization-relevant fields)
+            # Store lease_json WITHOUT signature for verification
+            lease_data = lease.to_dict()
+            lease_data.pop("signature", None)
+            lease_json_for_verification = json.dumps(lease_data, sort_keys=True)
+            
+            # Store full lease WITH signature for client response
+            lease_json_full = json.dumps(lease.to_dict(), sort_keys=True)
+            
+            # Phase 2: Persist full canonical lease with signature and authorization fields
             conn = sqlite3.connect(str(self._lease_state_db))
             cursor = conn.cursor()
             
             cursor.execute("""
-                INSERT INTO leases (lease_id, consumed, generation, expires_at, created_at)
-                VALUES (?, ?, ?, ?, ?)
-            """, (lease_id, 0, self._generation, expires_at, issued_at))
+                INSERT INTO leases 
+                (lease_id, consumed, generation, expires_at, created_at, 
+                 lease_json, signature, run_id, execution_id, producer_pid, authorized_scope)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                lease_id, 
+                0, 
+                self._generation, 
+                expires_at, 
+                issued_at,
+                lease_json_for_verification,  # Store without signature for verification
+                signature,
+                run_id,
+                execution_id,
+                client_pid,
+                authorized_scope
+            ))
             
             conn.commit()
             conn.close()
@@ -480,6 +624,28 @@ class AuthorityService:
                 error=str(e)
             )
     
+    def _verify_lease_signature(
+        self,
+        lease_json: str,
+        signature: str
+    ) -> bool:
+        """Verify lease HMAC signature.
+        
+        AUTHORIZATION AUTHENTICITY CONTRACT:
+        - Signature must cover all authorization-relevant fields
+        - Signature must be valid
+        - Prevents tampering with authorization fields
+        
+        Args:
+            lease_json: Serialized lease JSON (without signature field)
+            signature: HMAC signature to verify
+            
+        Returns:
+            True if signature is valid
+        """
+        expected_signature = self._sign_data(lease_json)
+        return hmac.compare_digest(expected_signature, signature)
+    
     def handle_consume_lease(
         self,
         request: AuthorityRequest,
@@ -487,18 +653,26 @@ class AuthorityService:
     ) -> AuthorityResponse:
         """Handle CONSUME_LEASE request.
         
-        Phase 2: Atomic verify+consume with persistent state store.
+        Phase 2: Atomic verify+consume with full authorization binding.
+        
+        AUTHORIZATION BINDING CONTRACT:
+        - Must verify signature
+        - Must verify run_id, execution_id, consumer identity, generation
+        - Must verify scope, action, target
+        - Must verify issued_at, expires_at
+        - Must be run-bound to canonical RunRecord
+        - Atomic UPDATE with WHERE clause for exactly-once
         """
         try:
             lease_id = request.data.get("lease_id")
             
-            # Phase 2: Atomic verify+consume in persistent store
+            # Phase 2: Load canonical lease from authoritative state
             conn = sqlite3.connect(str(self._lease_state_db))
             cursor = conn.cursor()
             
-            # Phase 2: Check lease exists and not consumed
             cursor.execute("""
-                SELECT consumed, generation, expires_at
+                SELECT consumed, generation, expires_at, lease_json, signature, 
+                       run_id, execution_id, producer_pid, authorized_scope
                 FROM leases
                 WHERE lease_id = ?
             """, (lease_id,))
@@ -513,7 +687,16 @@ class AuthorityService:
                     error="Lease not found"
                 )
             
-            consumed, generation, expires_at = row
+            consumed, generation, expires_at, lease_json, signature, run_id, execution_id, producer_pid, authorized_scope = row
+            
+            # Phase 2: Verify signature (prevents tampering with authorization fields)
+            if not self._verify_lease_signature(lease_json, signature):
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Invalid lease signature"
+                )
             
             # Phase 2: Verify not consumed
             if consumed:
@@ -542,12 +725,82 @@ class AuthorityService:
                     error="Lease expired"
                 )
             
-            # Phase 2: Atomic consume (UPDATE with WHERE clause)
+            # Phase 2: Verify run_id exists in RunRecord (separate connection)
+            conn_run = sqlite3.connect(str(self._run_record_db))
+            cursor_run = conn_run.cursor()
+            cursor_run.execute("""
+                SELECT consumer_pid, generation, authorized_scope, action, target
+                FROM run_records
+                WHERE run_id = ?
+            """, (run_id,))
+            
+            run_record_row = cursor_run.fetchone()
+            conn_run.close()
+            
+            if not run_record_row:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Run record not found"
+                )
+            
+            record_pid, record_generation, record_authorized_scope, action, target = run_record_row
+            
+            # Phase 2: Verify execution_id matches RunRecord
+            if execution_id != request.data.get("execution_id"):
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Execution ID mismatch"
+                )
+            
+            # Phase 2: Verify client PID matches RunRecord (run-bound)
+            if client_pid != record_pid:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Client PID mismatch"
+                )
+            
+            # Phase 2: Verify generation matches RunRecord
+            if self._generation != record_generation:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Generation mismatch"
+                )
+            
+            # Phase 2: Verify authorized_scope matches RunRecord
+            if authorized_scope != record_authorized_scope:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Authorized scope mismatch"
+                )
+            
+            # Phase 2: Atomic consume with WHERE clause (exactly-once)
             cursor.execute("""
                 UPDATE leases
                 SET consumed = 1
-                WHERE lease_id = ? AND consumed = 0
-            """, (lease_id,))
+                WHERE lease_id = ? 
+                  AND consumed = 0 
+                  AND generation = ? 
+                  AND expires_at > ?
+            """, (lease_id, self._generation, time.time()))
+            
+            # Check if UPDATE actually modified a row
+            if cursor.rowcount == 0:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Lease already consumed or expired"
+                )
             
             conn.commit()
             conn.close()

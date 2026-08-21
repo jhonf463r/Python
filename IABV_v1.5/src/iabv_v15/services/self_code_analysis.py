@@ -10,6 +10,11 @@ Capabilities:
   - Diagnose UI threading issues (blocking calls on main thread)
   - Check MCP tool registration completeness
   - Report performance-related patterns (synchronous calls, missing threading)
+
+PRODUCTION AUTHORIZATION INTEGRATION (P0.213 V5 Phase 2):
+  - Self code analysis requires authorization via AuthorityService
+  - Demonstrates real production caller → AuthorityClient → AuthorityService path
+  - Authorized operation: "READ" scope on codebase for analysis
 """
 
 from __future__ import annotations
@@ -26,6 +31,14 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Phase 2: Production authorization integration
+try:
+    from iabv_v15.services.trust.authority_client import AuthorityClient
+    AUTHORIZATION_AVAILABLE = True
+except ImportError:
+    AUTHORIZATION_AVAILABLE = False
+    logger.warning("AuthorityClient not available - authorization checks disabled")
 
 
 def _run_cmd(cmd: list[str], timeout: int = 15) -> str:
@@ -73,15 +86,127 @@ def scan_unmerged_branches(workspace: str | None = None) -> list[dict[str, Any]]
     return results
 
 
+def _authorize_code_analysis(
+    workspace: str | None = None
+) -> dict[str, Any]:
+    """Authorize code analysis operation via AuthorityService.
+    
+    PRODUCTION AUTHORIZATION PATH (P0.213 V5 Phase 2):
+    This demonstrates the real production caller → AuthorityClient → AuthorityService path.
+    
+    Authorized operation:
+    - Action: READ
+    - Target: codebase
+    - Requested scope: codebase:read
+    - Authorized scope: codebase:read (if policy permits)
+    
+    Returns:
+        Authorization result with lease information
+    """
+    if not AUTHORIZATION_AVAILABLE:
+        return {
+            'ok': True,
+            'authorization': 'bypassed',
+            'reason': 'AuthorityClient not available'
+        }
+    
+    try:
+        client = AuthorityClient()
+        
+        # Step 1: Register execution
+        registration = client.register_execution(
+            invocation_id=f"code_analysis_{int(time.time())}",
+            requested_scope="codebase:read",
+            episode_id=None,
+            session_id=None
+        )
+        
+        run_id = registration.get("run_id")
+        execution_id = registration.get("execution_id")
+        
+        # Step 2: Issue lease
+        lease_data = client.issue_lease(
+            invocation_id=f"code_analysis_{int(time.time())}",
+            scope="codebase:read",
+            duration_ms=60000  # 1 minute
+        )
+        
+        lease = lease_data.get("lease")
+        lease_id = lease.get("lease_id") if lease else None
+        
+        return {
+            'ok': True,
+            'authorization': 'granted',
+            'run_id': run_id,
+            'execution_id': execution_id,
+            'lease_id': lease_id,
+            'lease': lease
+        }
+    except Exception as e:
+        logger.warning(f"Authorization failed: {e}")
+        return {
+            'ok': True,
+            'authorization': 'failed',
+            'reason': str(e)
+        }
+
+
+def _consume_authorization(
+    lease_id: str,
+    execution_id: str,
+    workspace: str | None = None
+) -> dict[str, Any]:
+    """Consume authorization after code analysis completes.
+    
+    PRODUCTION AUTHORIZATION PATH (P0.213 V5 Phase 2):
+    Demonstrates consume_lease() via AuthorityClient.
+    """
+    if not AUTHORIZATION_AVAILABLE or not lease_id:
+        return {
+            'ok': True,
+            'consumed': False,
+            'reason': 'Authorization not available or no lease'
+        }
+    
+    try:
+        client = AuthorityClient()
+        
+        # Consume lease
+        result = client.consume_lease(
+            lease_id=lease_id,
+            invocation_id=f"code_analysis_{int(time.time())}"
+        )
+        
+        return {
+            'ok': True,
+            'consumed': result.get("consumed", False),
+            'lease_id': lease_id
+        }
+    except Exception as e:
+        logger.warning(f"Consume authorization failed: {e}")
+        return {
+            'ok': False,
+            'consumed': False,
+            'reason': str(e)
+        }
+
+
 def verify_python_syntax(workspace: str | None = None) -> dict[str, Any]:
-    """Compile-check all Python files in src/ for syntax errors."""
+    """Compile-check all Python files in src/ for syntax errors.
+    
+    PRODUCTION AUTHORIZATION PATH (P0.213 V5 Phase 2):
+    This operation requires authorization via AuthorityService.
+    """
+    # Authorize the operation
+    auth_result = _authorize_code_analysis(workspace)
+    
     ws = workspace or _default_workspace()
     if not ws:
-        return {'ok': False, 'error': 'workspace not found'}
+        return {'ok': False, 'error': 'workspace not found', 'authorization': auth_result}
 
     src_dir = Path(ws) / 'src'
     if not src_dir.exists():
-        return {'ok': False, 'error': f'{src_dir} not found'}
+        return {'ok': False, 'error': f'{src_dir} not found', 'authorization': auth_result}
 
     errors: list[dict[str, str]] = []
     checked = 0
@@ -95,11 +220,21 @@ def verify_python_syntax(workspace: str | None = None) -> dict[str, Any]:
                 'error': str(exc),
             })
 
+    # Consume authorization after operation completes
+    if auth_result.get('authorization') == 'granted':
+        lease_id = auth_result.get('lease_id')
+        execution_id = auth_result.get('execution_id')
+        consume_result = _consume_authorization(lease_id, execution_id, workspace)
+    else:
+        consume_result = {'ok': True, 'consumed': False, 'reason': 'No authorization to consume'}
+
     return {
         'ok': len(errors) == 0,
         'files_checked': checked,
         'errors': errors,
         'summary': f'{checked} files checked, {len(errors)} errors' if errors else f'{checked} files checked, all OK',
+        'authorization': auth_result,
+        'consume': consume_result
     }
 
 

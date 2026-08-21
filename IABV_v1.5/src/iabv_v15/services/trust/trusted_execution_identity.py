@@ -76,6 +76,13 @@ class CanonicalRunRecord:
     - Caller-constructed instances are NOT authoritative
     - Phase 2 will enforce authority-owned values in trusted authority process
     - This is a data model, not an authority
+    
+    AUTHORITY POLICY CONTRACT (Phase 2):
+    - requested_scope: Caller-provided scope request
+    - authorized_scope: Authority-computed scope based on policy
+    - action: Requested operation (e.g., "READ", "WRITE", "EXECUTE")
+    - target: Requested target (e.g., resource identifier)
+    - Authority MUST NOT blindly accept caller-provided authorized_scope
     """
     
     run_id: str
@@ -83,7 +90,10 @@ class CanonicalRunRecord:
     episode_id: Optional[str]
     session_id: Optional[str]
     invocation_id: str
-    authorized_scope: str
+    requested_scope: str  # Caller-provided scope request
+    authorized_scope: str  # Authority-computed scope based on policy
+    action: str  # Requested operation
+    target: str  # Requested target
 
 
 @dataclass(frozen=True)
