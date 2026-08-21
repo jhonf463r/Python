@@ -55,15 +55,24 @@ class AuthorityClient:
         
         Phase 2: Real IPC connection with retry logic.
         PART II: Instrumented to log exact access parameters.
+        PART IV: Log client token SID for SID match verification.
         """
         if self._pipe_handle is not None:
             raise RuntimeError("Already connected")
         
-        print(f"[AuthorityClient] Connecting to {self._pipe_name}...")
-        print(f"[AuthorityClient] Desired access: GENERIC_READ | GENERIC_WRITE")
-        print(f"[AuthorityClient] Share mode: 0 (no sharing)")
-        print(f"[AuthorityClient] Creation disposition: OPEN_EXISTING")
-        print(f"[AuthorityClient] Flags/attributes: 0")
+        # PART IV: Get client token SID
+        import win32security
+        import win32api
+        token = win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32security.TOKEN_QUERY)
+        user_sid = win32security.GetTokenInformation(token, win32security.TokenUser)[0]
+        print(f"[AuthorityClient] Client token SID: {user_sid}", flush=True)
+        print(f"[AuthorityClient] Client PID: {os.getpid()}", flush=True)
+        
+        print(f"[AuthorityClient] Connecting to {self._pipe_name}...", flush=True)
+        print(f"[AuthorityClient] Desired access: GENERIC_READ | GENERIC_WRITE", flush=True)
+        print(f"[AuthorityClient] Share mode: 0 (no sharing)", flush=True)
+        print(f"[AuthorityClient] Creation disposition: OPEN_EXISTING", flush=True)
+        print(f"[AuthorityClient] Flags/attributes: 0", flush=True)
         
         for attempt in range(MAX_CONNECTION_ATTEMPTS):
             try:
@@ -72,11 +81,11 @@ class AuthorityClient:
                 creation_disposition = win32file.OPEN_EXISTING
                 flags_and_attributes = 0
                 
-                print(f"[AuthorityClient] Attempt {attempt + 1}: CreateFile")
-                print(f"[AuthorityClient]   desired_access=0x{desired_access:X}")
-                print(f"[AuthorityClient]   share_mode=0x{share_mode:X}")
-                print(f"[AuthorityClient]   creation_disposition=0x{creation_disposition:X}")
-                print(f"[AuthorityClient]   flags_and_attributes=0x{flags_and_attributes:X}")
+                print(f"[AuthorityClient] Attempt {attempt + 1}: CreateFile", flush=True)
+                print(f"[AuthorityClient]   desired_access=0x{desired_access:X}", flush=True)
+                print(f"[AuthorityClient]   share_mode=0x{share_mode:X}", flush=True)
+                print(f"[AuthorityClient]   creation_disposition=0x{creation_disposition:X}", flush=True)
+                print(f"[AuthorityClient]   flags_and_attributes=0x{flags_and_attributes:X}", flush=True)
                 
                 self._pipe_handle = win32file.CreateFile(
                     self._pipe_name,
@@ -87,23 +96,23 @@ class AuthorityClient:
                     flags_and_attributes,
                     None
                 )
-                print(f"[AuthorityClient] Connected on attempt {attempt + 1}")
-                print(f"[AuthorityClient] Pipe handle: {self._pipe_handle}")
+                print(f"[AuthorityClient] Connected on attempt {attempt + 1}", flush=True)
+                print(f"[AuthorityClient] Pipe handle: {self._pipe_handle}", flush=True)
                 return
             except pywintypes.error as e:
-                print(f"[AuthorityClient] Win32 error on attempt {attempt + 1}:")
-                print(f"[AuthorityClient]   Error code: {e.winerror}")
-                print(f"[AuthorityClient]   Error message: {e.strerror}")
-                print(f"[AuthorityClient]   Function: {e.funcname}")
+                print(f"[AuthorityClient] Win32 error on attempt {attempt + 1}:", flush=True)
+                print(f"[AuthorityClient]   Error code: {e.winerror}", flush=True)
+                print(f"[AuthorityClient]   Error message: {e.strerror}", flush=True)
+                print(f"[AuthorityClient]   Function: {e.funcname}", flush=True)
                 
                 if e.winerror == 2:  # ERROR_FILE_NOT_FOUND
-                    print(f"[AuthorityClient] Pipe not found (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})")
+                    print(f"[AuthorityClient] Pipe not found (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
                 elif e.winerror == 5:  # ERROR_ACCESS_DENIED
-                    print(f"[AuthorityClient] ACCESS DENIED (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})")
+                    print(f"[AuthorityClient] ACCESS DENIED (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
                 elif e.winerror == 231:  # ERROR_PIPE_BUSY
-                    print(f"[AuthorityClient] Pipe busy (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})")
+                    print(f"[AuthorityClient] Pipe busy (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
                 else:
-                    print(f"[AuthorityClient] Connection error: {e} (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})")
+                    print(f"[AuthorityClient] Connection error: {e} (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
                 
                 if attempt < MAX_CONNECTION_ATTEMPTS - 1:
                     time.sleep(CONNECTION_RETRY_DELAY)
@@ -150,7 +159,7 @@ class AuthorityClient:
         return bytes_read, data
     
     def _send_request(self, request: AuthorityRequest) -> AuthorityResponse:
-        """Send request to authority process and read response.
+        """Send request to authority process.
         
         Phase 2: Real IPC communication with framing.
         """
@@ -158,25 +167,28 @@ class AuthorityClient:
             raise RuntimeError("Not connected to authority")
         
         # Serialize request
-        request_data = dataclasses.asdict(request)
+        request_data = {
+            "type": request.request_type,
+            "data": request.data,
+            "request_id": request.request_id
+        }
         request_json = json.dumps(request_data).encode('utf-8')
         
-        print(f"[AuthorityClient] Sending request: {request.request_type}, {len(request_json)} bytes")
+        # Add framing
+        message_length = len(request_json).to_bytes(4, byteorder='little')
+        full_message = message_length + request_json
         
-        # Write message with framing
-        header = struct.pack("<I", len(request_json))
-        win32file.WriteFile(self._pipe_handle, header)
-        win32file.WriteFile(self._pipe_handle, request_json)
+        print(f"[AuthorityClient] Sending request: {request.request_type}, {len(full_message)} bytes", flush=True)
         
-        print(f"[AuthorityClient] Request sent, waiting for response...")
+        # Write message
+        win32file.WriteFile(self._pipe_handle, full_message)
         
-        # Read response immediately (no delay)
+        print(f"[AuthorityClient] Request sent, waiting for response...", flush=True)
+        
+        # Read response
         response = self._read_response()
         
-        print(f"[AuthorityClient] Response received")
-        
-        # DO NOT disconnect here - let the caller manage connection lifecycle
-        # This allows for multiple requests per connection if needed
+        print(f"[AuthorityClient] Response received", flush=True)
         
         return response
     
@@ -224,16 +236,17 @@ class AuthorityClient:
         except Exception as e:
             raise RuntimeError(f"Failed to parse response: {e}")
     
-    def get_status(self) -> dict[str, Any]:
+    def get_status(self) -> dict:
         """Get authority status.
         
-        Returns:
-            Authority status dictionary
+        Phase 2: Real IPC call to authority process.
         """
+        import uuid
+        request_id = str(uuid.uuid4())
         request = AuthorityRequest(
             request_type="GET_STATUS",
             data={},
-            request_id=""
+            request_id=request_id
         )
         response = self._send_request(request)
         

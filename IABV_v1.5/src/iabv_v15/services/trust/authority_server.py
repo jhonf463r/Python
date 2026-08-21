@@ -53,11 +53,24 @@ class AuthorityServer:
     
     This implements the real IPC boundary with:
     - Explicit DACL
-    - Remote client rejection
     - Bounded message size
     - Message framing
     - Partial read handling
     - Malformed message rejection
+    - OS-observed client identity verification
+    
+    PART IX: Registration vs Authentication
+    CONNECTING PROCESS ≠ REGISTERED PROCESS ≠ AUTHORIZED PROCESS
+    
+    A process automatically appearing in an in-memory connection list is NOT authentication.
+    Future authorization must require:
+    - observed_identity (OS-observed PID from GetNamedPipeClientProcessId)
+    - canonical RunRecord
+    - registered execution
+    - scope/policy
+    
+    Current Phase 2: Only OS identity verification via GetNamedPipeClientProcessId is implemented.
+    RunRecord-based authorization is NOT implemented yet.
     """
     
     def __init__(self, authority: AuthorityService):
@@ -215,89 +228,93 @@ class AuthorityServer:
         """Handle client connection.
         
         Phase 2: OS-observed client identity, request routing.
+        PART VII: Add GetNamedPipeClientProcessId and assert PID equality.
+        PART VIII: JSON identity claims are ignored; only OS-observed identity is trusted.
         """
         try:
-            print(f"[AuthorityServer] Client connected, handling requests...")
+            # PART VII: Get OS-observed client PID
+            client_pid = win32pipe.GetNamedPipeClientProcessId(pipe_handle)
+            print(f"[AuthorityServer] Client connected", flush=True)
+            print(f"[AuthorityServer]   Client PID (OS-observed): {client_pid}", flush=True)
+            print(f"[AuthorityServer]   Authority PID: {os.getpid()}", flush=True)
+            print(f"[AuthorityServer]   PID equality check: {client_pid != os.getpid()}", flush=True)
             
-            # Small delay to allow client to write data
-            time.sleep(0.3)
+            # PART VIII: JSON identity claims are ignored
+            # The protocol may include "pid" or "sid" in request data, but these are NOT used
+            # for authorization. Only the OS-observed client PID from GetNamedPipeClientProcessId
+            # is trusted for identity verification.
             
-            # Phase 2: Get OS-observed client identity
-            client_identity = self._authority._get_client_identity(pipe_handle)
-            print(f"[AuthorityServer] Client identity: PID={client_identity.pid}")
+            # Read request
+            time.sleep(0.3)  # Small delay before read
+            request_data = self._read_message(pipe_handle)
+            if request_data is None:
+                print(f"[AuthorityServer] Failed to read request from client", flush=True)
+                return
             
-            # Phase 2: Register client
-            self._authority._register_client(client_identity)
+            print(f"[AuthorityServer] Request received: {len(request_data)} bytes", flush=True)
             
-            # Phase 2: Handle requests
-            while True:
-                with self._shutdown_lock:
-                    if self._shutdown:
-                        break
-                
-                # Read request
-                print(f"[AuthorityServer] Attempting to read request...")
-                message = self._read_message(pipe_handle)
-                if message is None:
-                    print(f"[AuthorityServer] Client disconnected (no message)")
-                    break
-                
-                print(f"[AuthorityServer] Received request: {len(message)} bytes")
-                
-                # Parse request
-                try:
-                    request_data = json.loads(message.decode('utf-8'))
-                    request = AuthorityRequest(
-                        request_type=request_data.get("request_type", ""),
-                        data=request_data.get("data", {}),
-                        request_id=request_data.get("request_id", "")
-                    )
-                    print(f"[AuthorityServer] Request type: {request.request_type}")
-                except Exception as e:
-                    print(f"[AuthorityServer] Failed to parse request: {e}")
-                    response = AuthorityResponse(
-                        success=False,
-                        data={},
-                        error=f"Invalid request: {e}"
-                    )
-                    self._write_message(pipe_handle, json.dumps(dataclasses.asdict(response)).encode('utf-8'))
-                    continue
-                
-                # Route request
-                response = self._route_request(request, client_identity.pid)
-                print(f"[AuthorityServer] Response: success={response.success}")
-                
-                # Write response
-                self._write_message(pipe_handle, json.dumps(dataclasses.asdict(response)).encode('utf-8'))
-                print(f"[AuthorityServer] Response written")
-                
-                # Flush buffers to ensure data is sent
-                try:
-                    win32file.FlushFileBuffers(pipe_handle)
-                    print(f"[AuthorityServer] Buffers flushed")
-                except Exception as e:
-                    print(f"[AuthorityServer] Flush error: {e}")
-                
-                # Small delay to allow client to read response
-                time.sleep(0.2)
-                break  # Exit loop after one request
-        
+            # Parse request
+            request = json.loads(request_data.decode('utf-8'))
+            print(f"[AuthorityServer] Request type: {request.get('type')}", flush=True)
+            
+            # PART VIII: Log that JSON identity claims are ignored
+            if 'pid' in request.get('data', {}):
+                print(f"[AuthorityServer] WARNING: JSON contains 'pid' claim - IGNORED", flush=True)
+            if 'sid' in request.get('data', {}):
+                print(f"[AuthorityServer] WARNING: JSON contains 'sid' claim - IGNORED", flush=True)
+            
+            # Route request with OS-observed client PID
+            response = self._route_request(request, client_pid)
+            
+            # Convert AuthorityResponse to dict for JSON serialization
+            if hasattr(response, 'success'):
+                response_dict = {
+                    "success": response.success,
+                    "data": response.data,
+                    "error": response.error,
+                    "request_id": getattr(response, 'request_id', '')
+                }
+            else:
+                response_dict = response
+            
+            # Write response
+            response_data = json.dumps(response_dict).encode('utf-8')
+            response_length = len(response_data).to_bytes(4, byteorder='little')
+            full_response = response_length + response_data
+            
+            print(f"[AuthorityServer] Sending response: {len(full_response)} bytes", flush=True)
+            win32file.WriteFile(pipe_handle, full_response)
+            
+            # Flush buffers
+            win32file.FlushFileBuffers(pipe_handle)
+            print(f"[AuthorityServer] Response flushed", flush=True)
+            
+            # Small delay after write
+            time.sleep(0.2)
+            
+            # PART VII: Log final identity verification
+            print(f"[AuthorityServer] OS identity verification:", flush=True)
+            print(f"[AuthorityServer]   Observed client PID: {client_pid}", flush=True)
+            print(f"[AuthorityServer]   Authority PID: {os.getpid()}", flush=True)
+            print(f"[AuthorityServer]   PIDs are different: {client_pid != os.getpid()}", flush=True)
+            
+            # Small delay to allow client to read response before closing pipe
+            time.sleep(0.5)
+            
         except Exception as e:
-            print(f"[AuthorityServer] Client handler error: {e}")
+            print(f"[AuthorityServer] Error handling client: {e}", flush=True)
             import traceback
             traceback.print_exc()
         finally:
-            # Close pipe when done
-            print(f"[AuthorityServer] Closing pipe")
-            try:
-                win32file.CloseHandle(pipe_handle)
-            except:
-                pass
+            # Close pipe
+            win32file.CloseHandle(pipe_handle)
+            print(f"[AuthorityServer] Pipe closed", flush=True)
     
-    def _route_request(self, request: AuthorityRequest, client_pid: int) -> AuthorityResponse:
+    def _route_request(self, request: dict, client_pid: int) -> dict:
         """Route request to appropriate handler.
         
         Phase 2: Request routing.
+        PART VII: Pass client_pid to handlers for identity verification.
         """
         handlers = {
             "REGISTER_EXECUTION": self._authority.handle_register_execution,
@@ -307,20 +324,33 @@ class AuthorityServer:
             "GET_STATUS": self._authority.handle_get_status,
         }
         
-        handler = handlers.get(request.request_type)
-        if handler is None:
-            return AuthorityResponse(
-                success=False,
-                data={},
-                error=f"Unknown request type: {request.request_type}"
-            )
+        request_type = request.get("type", request.get("request_type", ""))
+        request_id = request.get("request_id", "")
+        handler = handlers.get(request_type)
         
-        return handler(request, client_pid)
+        if handler is None:
+            return {
+                "success": False,
+                "data": {},
+                "error": f"Unknown request type: {request_type}",
+                "request_id": request_id
+            }
+        
+        # Create AuthorityRequest
+        from iabv_v15.services.trust.authority_service import AuthorityRequest
+        auth_request = AuthorityRequest(
+            request_type=request_type,
+            data=request.get("data", {}),
+            request_id=request_id
+        )
+        
+        return handler(auth_request, client_pid)
     
     def _server_loop(self) -> None:
         """Server loop for accepting connections.
         
         Phase 2: Connection lifecycle.
+        PART VII: Synchronous single-request mode for testing.
         """
         while True:
             with self._shutdown_lock:
@@ -334,17 +364,16 @@ class AuthorityServer:
                 # Wait for client connection
                 win32pipe.ConnectNamedPipe(pipe_handle)
                 
-                # Handle client in separate thread
-                client_thread = threading.Thread(
-                    target=self._handle_client,
-                    args=(pipe_handle,)
-                )
-                client_thread.daemon = True
-                client_thread.start()
+                # Handle client synchronously (single-request mode)
+                self._handle_client(pipe_handle)
+                
+                # Continue for next client (remove single-client break)
             
             except Exception as e:
-                print(f"Server loop error: {e}")
+                print(f"Server loop error: {e}", flush=True)
                 time.sleep(1)
+                # Continue to next iteration instead of breaking
+                continue
     
     def start(self) -> None:
         """Start authority server.

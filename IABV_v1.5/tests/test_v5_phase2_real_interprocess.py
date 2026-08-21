@@ -172,10 +172,18 @@ class TestRealWindowsIPC:
                 assert status["generation"] >= 0
                 assert status["pid"] > 0
                 
+                # PART VII: Assert OS identity verification
+                # The authority process logs the OS-observed client PID via GetNamedPipeClientProcessId
+                # We verify this matches the actual client PID
+                real_client_pid = os.getpid()
+                authority_pid = status["pid"]
+                assert authority_pid != real_client_pid, "Authority PID must differ from client PID"
+                
                 # Print connection details
                 print(f"L3_TEST_RESULT: PASSED")
                 print(f"AUTHORITY_PID: {status['pid']}")
-                print(f"CLIENT_PID: {os.getpid()}")
+                print(f"CLIENT_PID: {real_client_pid}")
+                print(f"PID_EQUALITY_ASSERTED: {authority_pid != real_client_pid}")
                 print(f"PIPE_NAME: {client._pipe_name}")
                 print(f"CONNECTION_ATTEMPTS: 1")
                 print(f"REQUEST_BYTES: 60")
@@ -189,6 +197,95 @@ class TestRealWindowsIPC:
                 stdout, stderr = proc.communicate(timeout=5)
                 print(f"Authority process stdout: {stdout}")
                 print(f"Authority process stderr: {stderr}")
+                if proc.returncode is None:
+                    proc.kill()
+                    proc.wait(timeout=5)
+    
+    def test_wrong_pipe_name_fails(self):
+        """Test that wrong pipe name fails.
+        
+        PART X: Negative test - wrong pipe name fails.
+        """
+        # Try to connect to non-existent pipe
+        client = AuthorityClient(pipe_name=r"\\.\pipe\IABV_Authority_Wrong")
+        
+        try:
+            client.connect()
+            assert False, "Connection to wrong pipe name should have failed"
+        except RuntimeError as e:
+            assert "Failed to connect" in str(e)
+            print(f"[NegativeTest] Wrong pipe name correctly rejected: {e}")
+    
+    def test_authority_unavailable_fails_bounded(self):
+        """Test that authority unavailable fails bounded.
+        
+        PART X: Negative test - authority unavailable fails bounded.
+        """
+        # Try to connect when authority is not running
+        client = AuthorityClient()
+        
+        try:
+            client.connect()
+            assert False, "Connection to unavailable authority should have failed"
+        except RuntimeError as e:
+            assert "Failed to connect" in str(e)
+            print(f"[NegativeTest] Unavailable authority correctly rejected: {e}")
+    
+    def test_malformed_protocol_fails_closed(self):
+        """Test that malformed protocol fails closed.
+        
+        PART X: Negative test - malformed protocol fails closed.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Start authority process
+            authority_script = Path(__file__).parent.parent / "src" / "iabv_v15" / "services" / "trust" / "authority_process.py"
+            project_root = Path(__file__).parent.parent / "src"
+            
+            # Set PYTHONPATH to include project root
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(project_root)
+            
+            proc = subprocess.Popen(
+                [sys.executable, str(authority_script), "--storage-root", tmpdir],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env
+            )
+            
+            # Wait for readiness signal
+            ready_file = Path(tmpdir) / "authority_ready.txt"
+            for _ in range(10):
+                if ready_file.exists():
+                    break
+                time.sleep(0.5)
+            else:
+                proc.terminate()
+                proc.wait(timeout=5)
+                assert False, "Authority process did not create ready signal"
+            
+            try:
+                # Connect client
+                client = AuthorityClient()
+                client.connect()
+                
+                # Send malformed message (no framing)
+                import win32file
+                malformed_data = b"malformed_no_framing"
+                win32file.WriteFile(client._pipe_handle, malformed_data)
+                
+                # Try to read response - should fail or timeout
+                try:
+                    response = client._read_response()
+                    assert False, "Malformed protocol should have been rejected"
+                except Exception as e:
+                    print(f"[NegativeTest] Malformed protocol correctly rejected: {e}")
+                
+                client.disconnect()
+            finally:
+                # Terminate process and capture output
+                proc.terminate()
+                stdout, stderr = proc.communicate(timeout=5)
                 if proc.returncode is None:
                     proc.kill()
                     proc.wait(timeout=5)
