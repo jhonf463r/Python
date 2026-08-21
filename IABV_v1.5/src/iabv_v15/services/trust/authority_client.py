@@ -65,8 +65,35 @@ class AuthorityClient:
         import win32api
         token = win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32security.TOKEN_QUERY)
         user_sid = win32security.GetTokenInformation(token, win32security.TokenUser)[0]
-        print(f"[AuthorityClient] Client token SID: {user_sid}", flush=True)
-        print(f"[AuthorityClient] Client PID: {os.getpid()}", flush=True)
+        
+        # PART III: Capture client process identity from actual Windows token
+        print(f"[AuthorityClient] Client process identity:", flush=True)
+        print(f"[AuthorityClient]   PID: {os.getpid()}", flush=True)
+        print(f"[AuthorityClient]   Username: {os.environ.get('USERNAME', 'unknown')}", flush=True)
+        print(f"[AuthorityClient]   Token User SID: {user_sid}", flush=True)
+        
+        # Get session ID
+        try:
+            session_id = win32security.GetTokenInformation(token, win32security.TokenSessionId)
+            print(f"[AuthorityClient]   Session ID: {session_id}", flush=True)
+        except:
+            print(f"[AuthorityClient]   Session ID: (unavailable)", flush=True)
+        
+        # Get integrity level
+        try:
+            integrity = win32security.GetTokenInformation(token, win32security.TokenIntegrityLevel)
+            print(f"[AuthorityClient]   Integrity Level: {integrity}", flush=True)
+        except:
+            print(f"[AuthorityClient]   Integrity Level: (unavailable)", flush=True)
+        
+        # Check for thread token
+        try:
+            thread_token = win32security.OpenThreadToken(win32api.GetCurrentThread(), win32security.TOKEN_QUERY, True)
+            thread_sid = win32security.GetTokenInformation(thread_token, win32security.TokenUser)[0]
+            print(f"[AuthorityClient]   Thread Token SID: {thread_sid}", flush=True)
+            print(f"[AuthorityClient]   Thread token differs from process token: {thread_sid != user_sid}", flush=True)
+        except:
+            print(f"[AuthorityClient]   Thread Token: (none)", flush=True)
         
         print(f"[AuthorityClient] Connecting to {self._pipe_name}...", flush=True)
         print(f"[AuthorityClient] Desired access: GENERIC_READ | GENERIC_WRITE", flush=True)

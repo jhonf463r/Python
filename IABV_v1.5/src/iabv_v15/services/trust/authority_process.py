@@ -56,6 +56,45 @@ def main() -> int:
     print(f"[Authority] Pipe name: {args.pipe_name}", flush=True)
     print(f"[Authority] PID: {os.getpid()}", flush=True)
     
+    # PART II: Capture authority process identity from actual Windows token
+    import win32security
+    import win32api
+    try:
+        # Get process token
+        token = win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32security.TOKEN_QUERY)
+        
+        # Get user SID
+        user_sid = win32security.GetTokenInformation(token, win32security.TokenUser)[0]
+        print(f"[Authority] Authority process identity:", flush=True)
+        print(f"[Authority]   PID: {os.getpid()}", flush=True)
+        print(f"[Authority]   Username: {os.environ.get('USERNAME', 'unknown')}", flush=True)
+        print(f"[Authority]   Token User SID: {user_sid}", flush=True)
+        
+        # Get session ID
+        try:
+            session_id = win32security.GetTokenInformation(token, win32security.TokenSessionId)
+            print(f"[Authority]   Session ID: {session_id}", flush=True)
+        except:
+            print(f"[Authority]   Session ID: (unavailable)", flush=True)
+        
+        # Get integrity level
+        try:
+            integrity = win32security.GetTokenInformation(token, win32security.TokenIntegrityLevel)
+            print(f"[Authority]   Integrity Level: {integrity}", flush=True)
+        except:
+            print(f"[Authority]   Integrity Level: (unavailable)", flush=True)
+        
+        # Check for thread token
+        try:
+            thread_token = win32security.OpenThreadToken(win32api.GetCurrentThread(), win32security.TOKEN_QUERY, True)
+            thread_sid = win32security.GetTokenInformation(thread_token, win32security.TokenUser)[0]
+            print(f"[Authority]   Thread Token SID: {thread_sid}", flush=True)
+            print(f"[Authority]   Thread token differs from process token: {thread_sid != user_sid}", flush=True)
+        except:
+            print(f"[Authority]   Thread Token: (none)", flush=True)
+    except Exception as e:
+        print(f"[Authority] ERROR: Failed to capture process identity: {e}", flush=True)
+    
     # Phase 2: Initialize authority service
     try:
         authority = AuthorityService(storage_root=storage_root)
