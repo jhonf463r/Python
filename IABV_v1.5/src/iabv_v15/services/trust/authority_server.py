@@ -123,12 +123,20 @@ class AuthorityServer:
         """Read message with framing and partial read handling.
         
         Phase 2: Message framing, partial read handling.
+        ReadFile returns (bytes_read, data) tuple.
         """
         try:
             # Read message length header (4 bytes)
             header = b""
             while len(header) < MESSAGE_HEADER_SIZE:
-                chunk = win32file.ReadFile(pipe_handle, MESSAGE_HEADER_SIZE - len(header))
+                result = win32file.ReadFile(pipe_handle, MESSAGE_HEADER_SIZE - len(header))
+                # ReadFile returns (bytes_read, data) tuple
+                if isinstance(result, tuple):
+                    bytes_read = result[0]
+                    chunk = result[1] if len(result) > 1 else b""
+                else:
+                    chunk = result
+                    bytes_read = len(chunk)
                 if not chunk:
                     return None
                 header += chunk
@@ -142,7 +150,14 @@ class AuthorityServer:
             # Read message body
             body = b""
             while len(body) < message_length:
-                chunk = win32file.ReadFile(pipe_handle, min(BUFFER_SIZE, message_length - len(body)))
+                result = win32file.ReadFile(pipe_handle, min(BUFFER_SIZE, message_length - len(body)))
+                # ReadFile returns (bytes_read, data) tuple
+                if isinstance(result, tuple):
+                    bytes_read = result[0]
+                    chunk = result[1] if len(result) > 1 else b""
+                else:
+                    chunk = result
+                    bytes_read = len(chunk)
                 if not chunk:
                     return None
                 body += chunk
@@ -172,8 +187,14 @@ class AuthorityServer:
         Phase 2: OS-observed client identity, request routing.
         """
         try:
+            print(f"[AuthorityServer] Client connected, handling requests...")
+            
+            # Small delay to allow client to write data
+            time.sleep(0.3)
+            
             # Phase 2: Get OS-observed client identity
             client_identity = self._authority._get_client_identity(pipe_handle)
+            print(f"[AuthorityServer] Client identity: PID={client_identity.pid}")
             
             # Phase 2: Register client
             self._authority._register_client(client_identity)
@@ -185,9 +206,13 @@ class AuthorityServer:
                         break
                 
                 # Read request
+                print(f"[AuthorityServer] Attempting to read request...")
                 message = self._read_message(pipe_handle)
                 if message is None:
+                    print(f"[AuthorityServer] Client disconnected (no message)")
                     break
+                
+                print(f"[AuthorityServer] Received request: {len(message)} bytes")
                 
                 # Parse request
                 try:
@@ -197,7 +222,9 @@ class AuthorityServer:
                         data=request_data.get("data", {}),
                         request_id=request_data.get("request_id", "")
                     )
+                    print(f"[AuthorityServer] Request type: {request.request_type}")
                 except Exception as e:
+                    print(f"[AuthorityServer] Failed to parse request: {e}")
                     response = AuthorityResponse(
                         success=False,
                         data={},
@@ -208,14 +235,30 @@ class AuthorityServer:
                 
                 # Route request
                 response = self._route_request(request, client_identity.pid)
+                print(f"[AuthorityServer] Response: success={response.success}")
                 
                 # Write response
                 self._write_message(pipe_handle, json.dumps(dataclasses.asdict(response)).encode('utf-8'))
+                print(f"[AuthorityServer] Response written")
+                
+                # Flush buffers to ensure data is sent
+                try:
+                    win32file.FlushFileBuffers(pipe_handle)
+                    print(f"[AuthorityServer] Buffers flushed")
+                except Exception as e:
+                    print(f"[AuthorityServer] Flush error: {e}")
+                
+                # Small delay to allow client to read response
+                time.sleep(0.2)
+                break  # Exit loop after one request
         
         except Exception as e:
-            print(f"Client handler error: {e}")
+            print(f"[AuthorityServer] Client handler error: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
-            # Phase 2: Disconnect client
+            # Close pipe when done
+            print(f"[AuthorityServer] Closing pipe")
             try:
                 win32file.CloseHandle(pipe_handle)
             except:
