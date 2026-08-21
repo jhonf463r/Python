@@ -89,13 +89,33 @@ class AuthorityServer:
         
         Phase 2: Explicit DACL for Named Pipe.
         PART II: Instrumented to log exact DACL details.
+        PART I: Diagnose SID source - compare LookupAccountName vs actual token SID.
         """
-        # Get current user SID
-        user = os.environ.get('USERNAME', os.environ.get('USER', 'unknown'))
-        print(f"[AuthorityServer] Creating DACL for user: {user}")
+        # PART I: Get actual process token SID
+        import win32api
+        import win32security
+        process_token = win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32security.TOKEN_QUERY)
+        actual_token_sid = win32security.GetTokenInformation(process_token, win32security.TokenUser)[0]
+        print(f"[AuthorityServer] ACTUAL process token SID: {actual_token_sid}", flush=True)
         
-        sid, _, _ = win32security.LookupAccountName(None, user)
-        print(f"[AuthorityServer] User SID: {sid}")
+        # PART I: Get SID from username (current incorrect method)
+        user = os.environ.get('USERNAME', os.environ.get('USER', 'unknown'))
+        print(f"[AuthorityServer] Creating DACL for username: {user}", flush=True)
+        
+        username_sid, _, _ = win32security.LookupAccountName(None, user)
+        print(f"[AuthorityServer] LookupAccountName('{user}') SID: {username_sid}", flush=True)
+        
+        # PART I: Report mismatch
+        if actual_token_sid != username_sid:
+            print(f"[AuthorityServer] WARNING: SID MISMATCH DETECTED", flush=True)
+            print(f"[AuthorityServer]   Actual token SID: {actual_token_sid}", flush=True)
+            print(f"[AuthorityServer]   LookupAccountName SID: {username_sid}", flush=True)
+            print(f"[AuthorityServer]   This will cause DACL to deny actual process!", flush=True)
+        else:
+            print(f"[AuthorityServer] SID sources match: {actual_token_sid}", flush=True)
+        
+        # PART II: Use actual process token SID for DACL (fix)
+        sid = actual_token_sid
         
         # Create DACL: only current user has full access
         dacl = win32security.ACL()
@@ -104,16 +124,17 @@ class AuthorityServer:
             win32file.GENERIC_READ | win32file.GENERIC_WRITE,
             sid
         )
-        print(f"[AuthorityServer] DACL ACE added:")
-        print(f"[AuthorityServer]   Type: ACCESS_ALLOWED")
-        print(f"[AuthorityServer]   Permissions: GENERIC_READ | GENERIC_WRITE")
-        print(f"[AuthorityServer]   SID: {sid}")
+        print(f"[AuthorityServer] DACL ACE added:", flush=True)
+        print(f"[AuthorityServer]   Type: ACCESS_ALLOWED", flush=True)
+        print(f"[AuthorityServer]   Permissions: GENERIC_READ | GENERIC_WRITE", flush=True)
+        print(f"[AuthorityServer]   SID: {sid}", flush=True)
+        print(f"[AuthorityServer]   SID Source: ACTUAL PROCESS TOKEN (not LookupAccountName)", flush=True)
         
         # Create security descriptor
         security_descriptor = win32security.SECURITY_DESCRIPTOR()
         security_descriptor.SetSecurityDescriptorDacl(1, dacl, 0)
-        print(f"[AuthorityServer] Security descriptor created")
-        print(f"[AuthorityServer]   DACL present: {security_descriptor.GetSecurityDescriptorDacl() is not None}")
+        print(f"[AuthorityServer] Security descriptor created", flush=True)
+        print(f"[AuthorityServer]   DACL present: {security_descriptor.GetSecurityDescriptorDacl() is not None}", flush=True)
         
         # Create security attributes
         security_attributes = pywintypes.SECURITY_ATTRIBUTES()
