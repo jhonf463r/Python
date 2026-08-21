@@ -526,16 +526,149 @@ class TestRunBoundConsume:
 class TestRealIPCExactlyOnce:
     """L4 REAL IPC: Exactly-once with real AuthorityClient processes."""
     
+    @pytest.mark.skipif(os.name != "nt", reason="Windows-only test")
     def test_two_processes_one_success_one_rejection_via_ipc(self):
         """Test exactly-once with two real IPC client processes.
+        
+        BLOCKER 6: Rewrite exactly-once test with TWO REAL IPC CLIENT PROCESSES.
         
         This test uses AuthorityClient → Named Pipe → AuthorityService path.
         Both processes compete to consume the same lease.
         Exactly one should succeed, one should be rejected.
         """
-        # NOTE: This test requires AuthorityServer to be running
-        # For now, we skip this test as it requires full IPC setup
-        pytest.skip("Requires AuthorityServer IPC setup - implement in BLOCKER 6")
+        import sys
+        import subprocess
+        from pathlib import Path
+        
+        tmpdir = tempfile.mkdtemp()
+        tmpdir_path = Path(tmpdir)
+        
+        authority_proc = None
+        
+        try:
+            # Start authority process
+            authority_script = Path(__file__).parent.parent / "src" / "iabv_v15" / "services" / "trust" / "authority_process.py"
+            project_root = Path(__file__).parent.parent / "src"
+            
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(project_root)
+            
+            authority_proc = subprocess.Popen(
+                [sys.executable, str(authority_script), "--storage-root", str(tmpdir_path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env
+            )
+            
+            # Wait for readiness signal
+            ready_file = tmpdir_path / "authority_ready.txt"
+            for _ in range(20):
+                if ready_file.exists():
+                    break
+                time.sleep(0.5)
+            else:
+                assert False, "Authority process did not create ready signal"
+            
+            # Worker function for consume process
+            def consume_worker(worker_id: int, lease_id: str, execution_id: str, results: list) -> None:
+                """Worker process that attempts to consume the lease."""
+                try:
+                    client = AuthorityClient()
+                    client.connect()
+                    
+                    result = client.consume_lease(
+                        lease_id=lease_id,
+                        invocation_id=f"worker_{worker_id}"
+                    )
+                    
+                    results.append({
+                        "worker_id": worker_id,
+                        "success": result.get("consumed", False),
+                        "error": result.get("error")
+                    })
+                    
+                    client.disconnect()
+                except Exception as e:
+                    results.append({
+                        "worker_id": worker_id,
+                        "success": False,
+                        "error": str(e)
+                    })
+            
+            # First, register execution and issue lease via client
+            client = AuthorityClient()
+            client.connect()
+            
+            registration = client.register_execution(
+                invocation_id="test_inv",
+                requested_scope="codebase:read",
+                episode_id=None,
+                session_id=None
+            )
+            
+            run_id = registration.get("run_id")
+            execution_id = registration.get("execution_id")
+            
+            lease_data = client.issue_lease(
+                invocation_id="test_inv",
+                scope="codebase:read",
+                duration_ms=60000
+            )
+            
+            lease = lease_data.get("lease")
+            lease_id = lease.get("lease_id")
+            
+            client.disconnect()
+            
+            # Spawn two worker processes to compete for consume
+            import multiprocessing
+            manager = multiprocessing.Manager()
+            results = manager.list()
+            
+            worker1 = multiprocessing.Process(
+                target=consume_worker,
+                args=(1, lease_id, execution_id, results)
+            )
+            worker2 = multiprocessing.Process(
+                target=consume_worker,
+                args=(2, lease_id, execution_id, results)
+            )
+            
+            # Start both workers simultaneously
+            worker1.start()
+            worker2.start()
+            
+            # Wait for both to complete
+            worker1.join(timeout=10)
+            worker2.join(timeout=10)
+            
+            # Convert results to list
+            results_list = list(results)
+            
+            # Exactly one should succeed
+            assert len(results_list) == 2, f"Expected 2 results, got {len(results_list)}"
+            
+            success_count = sum(1 for r in results_list if r.get("success"))
+            assert success_count == 1, f"Expected exactly 1 success, got {success_count}"
+            
+            # One should fail with "already consumed" or similar
+            failure_count = sum(1 for r in results_list if not r.get("success"))
+            assert failure_count == 1, f"Expected exactly 1 failure, got {failure_count}"
+            
+            print(f"BLOCKER_6_TEST_PASSED: Exactly-once with two real IPC processes")
+            print(f"  Results: {results_list}")
+            
+        finally:
+            # Terminate authority process
+            if authority_proc:
+                authority_proc.terminate()
+                stdout, stderr = authority_proc.communicate(timeout=5)
+                if authority_proc.returncode is None:
+                    authority_proc.kill()
+                    authority_proc.wait(timeout=5)
+            
+            cleanup_authority_storage(tmpdir_path)
 
 
 class TestReplayProtection:
