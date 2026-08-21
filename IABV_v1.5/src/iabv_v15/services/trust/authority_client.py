@@ -24,6 +24,14 @@ from iabv_v15.services.trust.authority_service import (
     AuthorityRequest,
     AuthorityResponse
 )
+from iabv_v15.services.trust.authority_protocol import (
+    RegisterExecutionRequest,
+    RegisterExecutionResponse,
+    IssueLeaseRequest,
+    IssueLeaseResponse,
+    ConsumeLeaseRequest,
+    ConsumeLeaseResponse,
+)
 
 
 # Message framing constants
@@ -38,7 +46,23 @@ CONNECTION_RETRY_DELAY = 0.5
 class AuthorityClient:
     """Client for communicating with the authority process via Windows Named Pipe.
     
-    Phase 2: Real IPC communication with separate authority process.
+    Phase 2 Round 3: Persistent connection mode.
+    
+    CANONICAL IPC LIFECYCLE:
+    - connect(): Establishes one persistent connection to authority process
+    - register_execution(): Sends REGISTER_EXECUTION request on same connection
+    - issue_lease(): Sends ISSUE_LEASE request on same connection
+    - consume_lease(): Sends CONSUME_LEASE request on same connection
+    - disconnect(): Closes the connection
+    
+    The server processes multiple requests on the same connection until:
+    - Client explicitly calls disconnect()
+    - Connection timeout (5 minutes)
+    - Max requests reached (100)
+    - Protocol violation or error
+    - Authority shutdown
+    
+    This enables: REGISTER_EXECUTION → ISSUE_LEASE → CONSUME_LEASE on same connection.
     """
     
     def __init__(self, pipe_name: str = PIPE_NAME) -> None:
@@ -285,29 +309,38 @@ class AuthorityClient:
     def register_execution(
         self,
         invocation_id: str,
-        authorized_scope: str,
+        action: str,
+        target: str,
+        requested_scope: str,
+        task_context: Optional[str] = None,
         episode_id: Optional[str] = None,
         session_id: Optional[str] = None
     ) -> dict[str, Any]:
-        """Register execution with authority.
+        """Register execution with authority using canonical protocol.
         
         Args:
             invocation_id: Unique invocation identifier
-            authorized_scope: Authorized scope for this execution
+            action: Requested operation (e.g., "READ", "WRITE")
+            target: Requested target (e.g., "codebase", "repo")
+            requested_scope: Caller's requested authorization scope
+            task_context: Task/development objective context (e.g., "self_analysis")
             episode_id: Optional episode identifier
             session_id: Optional session identifier
         
         Returns:
-            Registration result dictionary
+            Registration result dictionary with authority-derived fields
         """
         request = AuthorityRequest(
             request_type="REGISTER_EXECUTION",
-            data={
-                "invocation_id": invocation_id,
-                "authorized_scope": authorized_scope,
-                "episode_id": episode_id,
-                "session_id": session_id
-            },
+            data=RegisterExecutionRequest(
+                invocation_id=invocation_id,
+                action=action,
+                target=target,
+                requested_scope=requested_scope,
+                task_context=task_context,
+                episode_id=episode_id,
+                session_id=session_id
+            ).to_dict(),
             request_id=invocation_id
         )
         response = self._send_request(request)
@@ -319,28 +352,28 @@ class AuthorityClient:
     
     def issue_lease(
         self,
-        invocation_id: str,
-        scope: str,
-        duration_ms: int
+        run_id: str,
+        execution_id: str,
+        requested_ttl_seconds: Optional[int] = None
     ) -> dict[str, Any]:
-        """Issue lease for execution.
+        """Issue lease using canonical protocol.
         
         Args:
-            invocation_id: Unique invocation identifier
-            scope: Lease scope
-            duration_ms: Lease duration in milliseconds
+            run_id: Authority-owned run identifier (from registration)
+            execution_id: Authority-owned execution identifier (from registration)
+            requested_ttl_seconds: Requested lease TTL in seconds (optional)
         
         Returns:
-            Lease data dictionary
+            Lease data dictionary with authority-derived fields
         """
         request = AuthorityRequest(
             request_type="ISSUE_LEASE",
-            data={
-                "invocation_id": invocation_id,
-                "scope": scope,
-                "duration_ms": duration_ms
-            },
-            request_id=invocation_id
+            data=IssueLeaseRequest(
+                run_id=run_id,
+                execution_id=execution_id,
+                requested_ttl_seconds=requested_ttl_seconds
+            ).to_dict(),
+            request_id=run_id
         )
         response = self._send_request(request)
         
@@ -352,24 +385,24 @@ class AuthorityClient:
     def consume_lease(
         self,
         lease_id: str,
-        invocation_id: str
+        execution_id: str
     ) -> dict[str, Any]:
-        """Consume lease.
+        """Consume lease using canonical protocol.
         
         Args:
-            lease_id: Lease identifier
-            invocation_id: Invocation identifier
+            lease_id: Authority-owned lease identifier
+            execution_id: Authority-owned execution identifier (from registration)
         
         Returns:
             Consumption result dictionary
         """
         request = AuthorityRequest(
             request_type="CONSUME_LEASE",
-            data={
-                "lease_id": lease_id,
-                "invocation_id": invocation_id
-            },
-            request_id=invocation_id
+            data=ConsumeLeaseRequest(
+                lease_id=lease_id,
+                execution_id=execution_id
+            ).to_dict(),
+            request_id=lease_id
         )
         response = self._send_request(request)
         

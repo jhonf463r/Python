@@ -30,6 +30,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from iabv_v15.services.trust.authority_client import AuthorityClient
+
 logger = logging.getLogger(__name__)
 
 # Phase 2: Production authorization integration
@@ -48,6 +50,65 @@ def _run_cmd(cmd: list[str], timeout: int = 15) -> str:
         return r.stdout.strip()
     except Exception:
         return ''
+
+
+def _authorize_code_analysis(invocation_id: str) -> dict[str, Any]:
+    """Authorize code analysis operation using canonical protocol.
+    
+    Phase 2 Round 3: Production caller uses canonical protocol.
+    - REGISTER_EXECUTION with action, target, requested_scope, task_context
+    - ISSUE_LEASE with run_id, execution_id
+    - CONSUME_LEASE with lease_id, execution_id
+    
+    All operations go through AuthorityClient/IPC, not direct service calls.
+    """
+    try:
+        client = AuthorityClient()
+        client.connect()
+        
+        # Register execution with canonical protocol
+        registration = client.register_execution(
+            invocation_id=invocation_id,
+            action="READ",
+            target="codebase",
+            requested_scope="codebase:read",
+            task_context="self_analysis",
+            episode_id=None,
+            session_id=None
+        )
+        
+        run_id = registration["run_id"]
+        execution_id = registration["execution_id"]
+        
+        # Issue lease with canonical protocol
+        lease = client.issue_lease(
+            run_id=run_id,
+            execution_id=execution_id,
+            requested_ttl_seconds=3600
+        )
+        
+        lease_id = lease["lease_id"]
+        
+        # Consume lease with canonical protocol
+        consumption = client.consume_lease(
+            lease_id=lease_id,
+            execution_id=execution_id
+        )
+        
+        client.disconnect()
+        
+        return {
+            "authorized": True,
+            "run_id": run_id,
+            "execution_id": execution_id,
+            "lease_id": lease_id,
+            "consumed": consumption["consumed"]
+        }
+    except Exception as e:
+        return {
+            "authorized": False,
+            "error": str(e)
+        }
 
 
 def scan_unmerged_branches(workspace: str | None = None) -> list[dict[str, Any]]:
@@ -434,11 +495,6 @@ def verify_slot_decorators(workspace: str | None = None) -> dict[str, Any]:
             if not m:
                 continue
             method_name = m.group(1)
-            if method_name.startswith('_'):
-                continue
-            if method_name not in qml_method_calls:
-                continue
-            checked += 1
             has_slot = False
             for j in range(max(0, i - 3), i):
                 if '@Slot' in lines[j]:

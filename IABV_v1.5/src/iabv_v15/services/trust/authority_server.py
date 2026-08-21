@@ -246,11 +246,15 @@ class AuthorityServer:
             raise RuntimeError(f"Failed to write message: {e}")
     
     def _handle_client(self, pipe_handle: int) -> None:
-        """Handle client connection.
+        """Handle client connection with persistent connection mode.
         
-        Phase 2: OS-observed client identity, request routing.
-        PART VII: Add GetNamedPipeClientProcessId and assert PID equality.
-        PART VIII: JSON identity claims are ignored; only OS-observed identity is trusted.
+        Phase 2 Round 3: Persistent connection mode.
+        - Accept one client connection
+        - Process multiple framed requests on same connection
+        - Keep connection alive until client disconnects or error
+        - Close only on explicit disconnect, protocol violation, timeout, or shutdown
+        
+        This enables: REGISTER_EXECUTION → ISSUE_LEASE → CONSUME_LEASE on same connection.
         """
         try:
             # PART VII: Get OS-observed client PID
@@ -265,62 +269,102 @@ class AuthorityServer:
             # for authorization. Only the OS-observed client PID from GetNamedPipeClientProcessId
             # is trusted for identity verification.
             
-            # Read request
-            time.sleep(0.3)  # Small delay before read
-            request_data = self._read_message(pipe_handle)
-            if request_data is None:
-                print(f"[AuthorityServer] Failed to read request from client", flush=True)
-                return
+            # Phase 2 Round 3: Process multiple requests on same connection
+            request_count = 0
+            max_requests_per_connection = 100  # Prevent abuse
+            connection_timeout = 300  # 5 minutes max connection time
+            connection_start = time.time()
             
-            print(f"[AuthorityServer] Request received: {len(request_data)} bytes", flush=True)
-            
-            # Parse request
-            request = json.loads(request_data.decode('utf-8'))
-            print(f"[AuthorityServer] Request type: {request.get('type')}", flush=True)
-            
-            # PART VIII: Log that JSON identity claims are ignored
-            if 'pid' in request.get('data', {}):
-                print(f"[AuthorityServer] WARNING: JSON contains 'pid' claim - IGNORED", flush=True)
-            if 'sid' in request.get('data', {}):
-                print(f"[AuthorityServer] WARNING: JSON contains 'sid' claim - IGNORED", flush=True)
-            
-            # Route request with OS-observed client PID
-            response = self._route_request(request, client_pid)
-            
-            # Convert AuthorityResponse to dict for JSON serialization
-            if hasattr(response, 'success'):
-                response_dict = {
-                    "success": response.success,
-                    "data": response.data,
-                    "error": response.error,
-                    "request_id": getattr(response, 'request_id', '')
-                }
-            else:
-                response_dict = response
-            
-            # Write response
-            response_data = json.dumps(response_dict).encode('utf-8')
-            response_length = len(response_data).to_bytes(4, byteorder='little')
-            full_response = response_length + response_data
-            
-            print(f"[AuthorityServer] Sending response: {len(full_response)} bytes", flush=True)
-            win32file.WriteFile(pipe_handle, full_response)
-            
-            # Flush buffers
-            win32file.FlushFileBuffers(pipe_handle)
-            print(f"[AuthorityServer] Response flushed", flush=True)
-            
-            # Small delay after write
-            time.sleep(0.2)
+            while True:
+                # Check shutdown
+                with self._shutdown_lock:
+                    if self._shutdown:
+                        print(f"[AuthorityServer] Shutdown requested, closing connection", flush=True)
+                        break
+                
+                # Check timeout
+                if time.time() - connection_start > connection_timeout:
+                    print(f"[AuthorityServer] Connection timeout, closing", flush=True)
+                    break
+                
+                # Check max requests
+                if request_count >= max_requests_per_connection:
+                    print(f"[AuthorityServer] Max requests reached, closing connection", flush=True)
+                    break
+                
+                # Read request with timeout check
+                try:
+                    # Small delay before read to allow client to be ready
+                    time.sleep(0.1)
+                    
+                    request_data = self._read_message(pipe_handle)
+                    if request_data is None:
+                        print(f"[AuthorityServer] Client disconnected (no data)", flush=True)
+                        break
+                    
+                    request_count += 1
+                    print(f"[AuthorityServer] Request #{request_count} received: {len(request_data)} bytes", flush=True)
+                    
+                    # Parse request
+                    request = json.loads(request_data.decode('utf-8'))
+                    request_type = request.get('type', request.get('request_type', ''))
+                    print(f"[AuthorityServer] Request type: {request_type}", flush=True)
+                    
+                    # PART VIII: Log that JSON identity claims are ignored
+                    if 'pid' in request.get('data', {}):
+                        print(f"[AuthorityServer] WARNING: JSON contains 'pid' claim - IGNORED", flush=True)
+                    if 'sid' in request.get('data', {}):
+                        print(f"[AuthorityServer] WARNING: JSON contains 'sid' claim - IGNORED", flush=True)
+                    
+                    # Route request with OS-observed client PID
+                    response = self._route_request(request, client_pid)
+                    
+                    # Convert AuthorityResponse to dict for JSON serialization
+                    if hasattr(response, 'success'):
+                        response_dict = {
+                            "success": response.success,
+                            "data": response.data,
+                            "error": response.error,
+                            "request_id": getattr(response, 'request_id', '')
+                        }
+                    else:
+                        response_dict = response
+                    
+                    # Write response
+                    response_data = json.dumps(response_dict).encode('utf-8')
+                    response_length = len(response_data).to_bytes(4, byteorder='little')
+                    full_response = response_length + response_data
+                    
+                    print(f"[AuthorityServer] Sending response #{request_count}: {len(full_response)} bytes", flush=True)
+                    win32file.WriteFile(pipe_handle, full_response)
+                    
+                    # Flush buffers
+                    win32file.FlushFileBuffers(pipe_handle)
+                    print(f"[AuthorityServer] Response #{request_count} flushed", flush=True)
+                    
+                    # Small delay after write to allow client to process
+                    time.sleep(0.1)
+                    
+                except pywintypes.error as e:
+                    if e.winerror == 109:  # ERROR_BROKEN_PIPE
+                        print(f"[AuthorityServer] Client disconnected (broken pipe)", flush=True)
+                        break
+                    else:
+                        print(f"[AuthorityServer] Win32 error: {e}", flush=True)
+                        break
+                except Exception as e:
+                    print(f"[AuthorityServer] Error processing request: {e}", flush=True)
+                    import traceback
+                    traceback.print_exc()
+                    break
             
             # PART VII: Log final identity verification
-            print(f"[AuthorityServer] OS identity verification:", flush=True)
+            print(f"[AuthorityServer] Connection closing", flush=True)
+            print(f"[AuthorityServer]   Total requests processed: {request_count}", flush=True)
+            print(f"[AuthorityServer]   OS identity verification:", flush=True)
             print(f"[AuthorityServer]   Observed client PID: {client_pid}", flush=True)
             print(f"[AuthorityServer]   Authority PID: {os.getpid()}", flush=True)
             print(f"[AuthorityServer]   PIDs are different: {client_pid != os.getpid()}", flush=True)
-            
-            # Small delay to allow client to read response before closing pipe
-            time.sleep(0.5)
             
         except Exception as e:
             print(f"[AuthorityServer] Error handling client: {e}", flush=True)
