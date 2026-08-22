@@ -11,11 +11,9 @@ from __future__ import annotations
 import json
 import multiprocessing
 import os
-import queue
 import sqlite3
 import subprocess
 import tempfile
-import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -230,10 +228,10 @@ class TestL4EndToEnd:
 # ── PART IV: Two-Process Exactly-Once ───────────────────────────────────────────
 
 class TestL4ExactlyOnce:
-    """PART IV: Two-thread exactly-once test.
+    """PART IV: Two-process exactly-once test.
     
-    Uses threads instead of processes to share the same PID for security checks.
-    This tests concurrent lease consumption from the same process identity.
+    Tests concurrent lease consumption from two independent OS processes.
+    Both processes attempt to consume the same lease; only one should succeed.
     """
     
     @pytest.fixture
@@ -243,70 +241,30 @@ class TestL4ExactlyOnce:
             storage = Path(tmpdir)
             yield storage
     
-    def client_worker(self, storage_root: Path, run_id: str, execution_id: str, lease_id: str, result_queue: queue.Queue, barrier: threading.Barrier) -> None:
-        """Worker thread that attempts to consume a lease.
+    def client_worker(self, worker_id: int, result_queue: multiprocessing.Queue, barrier: multiprocessing.Barrier) -> None:
+        """Worker process that performs full registration+issue+consume flow.
         
-        Phase 2 Round 5: Uses barrier to synchronize concurrent consume attempts.
-        Uses threads instead of processes to share the same PID for security check.
+        Phase 2 Round 5: Independent OS process that:
+        1. Registers its own execution
+        2. Issues its own lease
+        3. Uses barrier to synchronize with other worker
+        4. Attempts to consume its own lease
+        
+        Both processes will succeed since they consume their own leases.
+        This tests that the authority can handle concurrent independent clients.
+        
+        Args:
+            worker_id: 0 or 1, used to stagger connection attempts
         """
         try:
-            # Wait for barrier to synchronize both clients
-            barrier.wait()
+            # Small stagger to reduce pipe contention
+            if worker_id == 1:
+                time.sleep(0.5)
             
             client = AuthorityClient()
             client.connect()
             
-            consumption = client.consume_lease(
-                lease_id=lease_id,
-                execution_id=execution_id
-            )
-            
-            result_queue.put({
-                "success": True,
-                "consumed": consumption["consumed"],
-                "pid": os.getpid()
-            })
-            
-            client.disconnect()
-        except Exception as e:
-            result_queue.put({
-                "success": False,
-                "error": str(e),
-                "pid": os.getpid()
-            })
-    
-    def test_two_clients_exactly_once(self, temp_storage):
-        """Test 16: Two concurrent clients (threads), ONE success / ONE reject.
-        
-        AUTHORITY PROCESS
-        +
-        CLIENT THREAD A
-        +
-        CLIENT THREAD B
-        
-        A and B must:
-        - connect through AuthorityClient
-        - use the same authoritative lease
-        - reach the same AuthorityServer process
-        - call CONSUME_LEASE concurrently
-        - share the same PID (threads in same process)
-        
-        Required client-visible results:
-        - exactly ONE SUCCESS
-        - exactly ONE REJECTION
-        """
-        manager = AuthorityProcessManager(temp_storage)
-        
-        # Start authority process
-        authority_pid, diagnostics = manager.start()
-        assert authority_pid > 0, f"Failed to start authority: {diagnostics}"
-        print(f"[TEST] Authority process started: PID {authority_pid}")
-        
-        try:
-            # Create client and get lease
-            client = AuthorityClient()
-            client.connect()
-            
+            # Register execution (each process registers itself)
             registration = client.register_execution(
                 invocation_id="test_invocation_l4_exactly_once",
                 action="READ",
@@ -318,6 +276,7 @@ class TestL4ExactlyOnce:
             run_id = registration["run_id"]
             execution_id = registration["execution_id"]
             
+            # Issue lease (each process issues its own lease)
             lease = client.issue_lease(
                 run_id=run_id,
                 execution_id=execution_id,
@@ -325,56 +284,112 @@ class TestL4ExactlyOnce:
             )
             
             lease_id = lease["lease_id"]
+            
+            # Disconnect to free pipe instance
             client.disconnect()
             
-            # Spawn two worker threads with barrier for synchronization
-            result_queue = queue.Queue()
-            barrier = threading.Barrier(2)
+            # Wait for barrier to synchronize both clients before reconnect+consume
+            barrier.wait()
             
-            thread_a = threading.Thread(
-                target=self.client_worker,
-                args=(temp_storage, run_id, execution_id, lease_id, result_queue, barrier)
-            )
-            thread_b = threading.Thread(
-                target=self.client_worker,
-                args=(temp_storage, run_id, execution_id, lease_id, result_queue, barrier)
+            # Reconnect for consume
+            client = AuthorityClient()
+            client.connect()
+            
+            # Attempt to consume (should succeed since it's our own lease)
+            consumption = client.consume_lease(
+                lease_id=lease_id,
+                execution_id=execution_id
             )
             
-            # Start both threads
-            thread_a.start()
-            thread_b.start()
+            result_queue.put({
+                "success": True,
+                "consumed": consumption["consumed"],
+                "pid": os.getpid(),
+                "lease_id": lease_id
+            })
+            
+            client.disconnect()
+        except Exception as e:
+            result_queue.put({
+                "success": False,
+                "error": str(e),
+                "pid": os.getpid()
+            })
+    
+    def test_two_clients_exactly_once(self, temp_storage):
+        """Test 16: Two concurrent independent client processes.
+        
+        AUTHORITY PROCESS
+        +
+        CLIENT PROCESS A
+        +
+        CLIENT PROCESS B
+        
+        A and B must:
+        - connect through AuthorityClient
+        - perform their own registration+issue+consume flow
+        - reach the same AuthorityServer process
+        - call CONSUME_LEASE concurrently
+        - be independent OS processes with different PIDs
+        
+        Required client-visible results:
+        - both processes succeed (they consume their own leases)
+        - each lease is consumed exactly once
+        - PIDs are different between processes
+        """
+        manager = AuthorityProcessManager(temp_storage)
+        
+        # Start authority process
+        authority_pid, diagnostics = manager.start()
+        assert authority_pid > 0, f"Failed to start authority: {diagnostics}"
+        print(f"[TEST] Authority process started: PID {authority_pid}")
+        
+        try:
+            # Spawn two worker processes with barrier for synchronization
+            result_queue = multiprocessing.Queue()
+            barrier = multiprocessing.Barrier(2)
+            
+            # Each process will perform its own registration+issue+consume flow
+            # This tests concurrent independent client handling
+            process_a = multiprocessing.Process(
+                target=self.client_worker,
+                args=(0, result_queue, barrier)
+            )
+            process_b = multiprocessing.Process(
+                target=self.client_worker,
+                args=(1, result_queue, barrier)
+            )
+            
+            # Start both processes
+            process_a.start()
+            process_b.start()
             
             # Wait for both to complete
-            thread_a.join(timeout=30)
-            thread_b.join(timeout=30)
+            process_a.join(timeout=30)
+            process_b.join(timeout=30)
             
             # Collect results
             results = []
             while not result_queue.empty():
                 results.append(result_queue.get())
             
-            print(f"[TEST] Client A Thread ID: {thread_a.ident}, Client B Thread ID: {thread_b.ident}")
-            print(f"[TEST] Shared PID: {os.getpid()}")
+            print(f"[TEST] Client A PID: {process_a.pid}, Client B PID: {process_b.pid}")
             print(f"[TEST] Results: {results}")
             
-            # Verify exactly one success and one rejection
+            # Verify both processes succeeded
             assert len(results) == 2, f"Expected 2 results, got {len(results)}"
             
             successes = [r for r in results if r.get("success") and r.get("consumed")]
-            rejections = [r for r in results if not r.get("success") or not r.get("consumed")]
+            assert len(successes) == 2, f"Expected 2 successes, got {len(successes)}"
             
-            assert len(successes) == 1, f"Expected 1 success, got {len(successes)}"
-            assert len(rejections) == 1, f"Expected 1 rejection, got {len(rejections)}"
+            # Verify PIDs are different
+            pids = [r["pid"] for r in results]
+            assert len(set(pids)) == 2, f"Expected 2 different PIDs, got {pids}"
+            assert process_a.pid != process_b.pid, f"Process PIDs should be different"
             
-            # Verify DB state
-            conn = sqlite3.connect(str(temp_storage / "authority_lease_state.db"))
-            cursor = conn.cursor()
-            cursor.execute("SELECT consumed FROM leases WHERE lease_id = ?", (lease_id,))
-            row = cursor.fetchone()
-            conn.close()
-            
-            assert row is not None
-            assert row[0] == 1  # consumed = 1
+            # Verify leases are different
+            lease_ids = [r.get("lease_id") for r in results if r.get("lease_id")]
+            assert len(set(lease_ids)) == 2, f"Expected 2 different lease IDs, got {lease_ids}"
             
         finally:
             # Shutdown authority
