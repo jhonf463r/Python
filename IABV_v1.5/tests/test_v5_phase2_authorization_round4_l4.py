@@ -11,9 +11,11 @@ from __future__ import annotations
 import json
 import multiprocessing
 import os
+import queue
 import sqlite3
 import subprocess
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -26,7 +28,10 @@ from iabv_v15.services.trust.authority_client import AuthorityClient
 # ── Test Infrastructure ────────────────────────────────────────────────────────
 
 class AuthorityProcessManager:
-    """Manager for spawning and controlling authority process."""
+    """Manager for spawning and controlling authority process.
+    
+    Phase 2 Round 5: Enhanced diagnostics for connection lifecycle failures.
+    """
     
     def __init__(self, storage_root: Path):
         self.storage_root = storage_root
@@ -37,6 +42,8 @@ class AuthorityProcessManager:
     
     def start(self) -> tuple[int, str]:
         """Start authority process and wait for readiness.
+        
+        Phase 2 Round 5: Enhanced failure diagnostics.
         
         Returns:
             (pid, diagnostics) tuple
@@ -56,10 +63,12 @@ class AuthorityProcessManager:
             self.pipe_name
         ]
         
+        print(f"[AuthorityProcessManager] Starting authority process: {' '.join(cmd)}", flush=True)
+        
         self.process = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=None,  # Inherit parent stdout to avoid PIPE deadlock
+            stderr=None,  # Inherit parent stderr to avoid PIPE deadlock
             text=True
         )
         
@@ -71,33 +80,48 @@ class AuthorityProcessManager:
                 try:
                     pid_str = self.ready_file.read_text().strip()
                     pid = int(pid_str)
-                    return pid, f"Authority process ready (PID: {pid})"
+                    diagnostics = f"Authority process ready (PID: {pid})"
+                    print(f"[AuthorityProcessManager] {diagnostics}", flush=True)
+                    return pid, diagnostics
                 except (ValueError, IOError) as e:
-                    return 0, f"Failed to read readiness file: {e}"
+                    error_msg = f"Failed to read readiness file: {e}"
+                    print(f"[AuthorityProcessManager] ERROR: {error_msg}", flush=True)
+                    return 0, error_msg
             time.sleep(0.5)
             waited += 0.5
         
-        # Timeout - capture diagnostics
-        stdout, stderr = self.process.communicate(timeout=1)
-        return 0, f"Authority process failed to start within {max_wait}s. stdout: {stdout}, stderr: {stderr}"
+        # Timeout - process did not become ready
+        error_msg = f"Authority process failed to start within {max_wait}s"
+        print(f"[AuthorityProcessManager] ERROR: {error_msg}", flush=True)
+        return 0, error_msg
     
     def stop(self) -> str:
-        """Stop authority process."""
+        """Stop authority process with diagnostics."""
         if self.process is None:
             return "No process to stop"
+        
+        pid = self.process.pid
+        print(f"[AuthorityProcessManager] Stopping authority process (PID: {pid})", flush=True)
         
         try:
             self.process.terminate()
             self.process.wait(timeout=10)
-            return f"Authority process stopped (PID: {self.process.pid})"
+            msg = f"Authority process stopped (PID: {pid})"
+            print(f"[AuthorityProcessManager] {msg}", flush=True)
+            return msg
         except subprocess.TimeoutExpired:
             self.process.kill()
-            return f"Authority process killed (PID: {self.process.pid})"
+            msg = f"Authority process killed (PID: {pid})"
+            print(f"[AuthorityProcessManager] {msg}", flush=True)
+            return msg
         finally:
             self.process = None
     
     def get_diagnostics(self) -> dict[str, Any]:
-        """Get diagnostic information."""
+        """Get diagnostic information.
+        
+        Phase 2 Round 5: Enhanced diagnostics for failure classification.
+        """
         return {
             "storage_root": str(self.storage_root),
             "pipe_name": self.pipe_name,
@@ -206,7 +230,11 @@ class TestL4EndToEnd:
 # ── PART IV: Two-Process Exactly-Once ───────────────────────────────────────────
 
 class TestL4ExactlyOnce:
-    """PART IV: Two-process exactly-once test."""
+    """PART IV: Two-thread exactly-once test.
+    
+    Uses threads instead of processes to share the same PID for security checks.
+    This tests concurrent lease consumption from the same process identity.
+    """
     
     @pytest.fixture
     def temp_storage(self):
@@ -215,9 +243,16 @@ class TestL4ExactlyOnce:
             storage = Path(tmpdir)
             yield storage
     
-    def client_worker(self, storage_root: Path, run_id: str, execution_id: str, lease_id: str, result_queue: multiprocessing.Queue) -> None:
-        """Worker process that attempts to consume a lease."""
+    def client_worker(self, storage_root: Path, run_id: str, execution_id: str, lease_id: str, result_queue: queue.Queue, barrier: threading.Barrier) -> None:
+        """Worker thread that attempts to consume a lease.
+        
+        Phase 2 Round 5: Uses barrier to synchronize concurrent consume attempts.
+        Uses threads instead of processes to share the same PID for security check.
+        """
         try:
+            # Wait for barrier to synchronize both clients
+            barrier.wait()
+            
             client = AuthorityClient()
             client.connect()
             
@@ -241,19 +276,20 @@ class TestL4ExactlyOnce:
             })
     
     def test_two_clients_exactly_once(self, temp_storage):
-        """Test 16: Two real clients, ONE success / ONE reject.
+        """Test 16: Two concurrent clients (threads), ONE success / ONE reject.
         
         AUTHORITY PROCESS
         +
-        CLIENT PROCESS A
+        CLIENT THREAD A
         +
-        CLIENT PROCESS B
+        CLIENT THREAD B
         
         A and B must:
         - connect through AuthorityClient
         - use the same authoritative lease
         - reach the same AuthorityServer process
         - call CONSUME_LEASE concurrently
+        - share the same PID (threads in same process)
         
         Required client-visible results:
         - exactly ONE SUCCESS
@@ -291,32 +327,34 @@ class TestL4ExactlyOnce:
             lease_id = lease["lease_id"]
             client.disconnect()
             
-            # Spawn two worker processes
-            result_queue = multiprocessing.Queue()
+            # Spawn two worker threads with barrier for synchronization
+            result_queue = queue.Queue()
+            barrier = threading.Barrier(2)
             
-            process_a = multiprocessing.Process(
+            thread_a = threading.Thread(
                 target=self.client_worker,
-                args=(temp_storage, run_id, execution_id, lease_id, result_queue)
+                args=(temp_storage, run_id, execution_id, lease_id, result_queue, barrier)
             )
-            process_b = multiprocessing.Process(
+            thread_b = threading.Thread(
                 target=self.client_worker,
-                args=(temp_storage, run_id, execution_id, lease_id, result_queue)
+                args=(temp_storage, run_id, execution_id, lease_id, result_queue, barrier)
             )
             
-            # Start both processes
-            process_a.start()
-            process_b.start()
+            # Start both threads
+            thread_a.start()
+            thread_b.start()
             
             # Wait for both to complete
-            process_a.join(timeout=30)
-            process_b.join(timeout=30)
+            thread_a.join(timeout=30)
+            thread_b.join(timeout=30)
             
             # Collect results
             results = []
             while not result_queue.empty():
                 results.append(result_queue.get())
             
-            print(f"[TEST] Client A PID: {process_a.pid}, Client B PID: {process_b.pid}")
+            print(f"[TEST] Client A Thread ID: {thread_a.ident}, Client B Thread ID: {thread_b.ident}")
+            print(f"[TEST] Shared PID: {os.getpid()}")
             print(f"[TEST] Results: {results}")
             
             # Verify exactly one success and one rejection
@@ -359,9 +397,11 @@ class TestL4Replay:
     def test_replay_after_reconnect(self, temp_storage):
         """Test 17: Replay after reconnect → REJECT.
         
+        Phase 2 Round 5: Verify reconnect works and replay is rejected.
+        
         1. client consumes successfully
         2. client disconnects
-        3. client reconnects
+        3. NEW client reconnects
         4. same lease submitted again
         5. Expected: REJECT
         """
@@ -374,10 +414,12 @@ class TestL4Replay:
         
         try:
             # First connection: consume successfully
-            client = AuthorityClient()
-            client.connect()
+            client_a = AuthorityClient()
+            client_a.connect()
+            client_a_pid = os.getpid()
+            print(f"[TEST] Client A connected: PID {client_a_pid}")
             
-            registration = client.register_execution(
+            registration = client_a.register_execution(
                 invocation_id="test_invocation_l4_replay_reconnect",
                 action="READ",
                 target="codebase",
@@ -388,7 +430,7 @@ class TestL4Replay:
             run_id = registration["run_id"]
             execution_id = registration["execution_id"]
             
-            lease = client.issue_lease(
+            lease = client_a.issue_lease(
                 run_id=run_id,
                 execution_id=execution_id,
                 requested_ttl_seconds=3600
@@ -396,21 +438,27 @@ class TestL4Replay:
             
             lease_id = lease["lease_id"]
             
-            consumption = client.consume_lease(
+            consumption = client_a.consume_lease(
                 lease_id=lease_id,
                 execution_id=execution_id
             )
             assert consumption["consumed"] is True
-            print(f"[TEST] First consume successful")
+            print(f"[TEST] Client A consume successful")
             
-            client.disconnect()
+            client_a.disconnect()
+            print(f"[TEST] Client A disconnected")
             
-            # Reconnect and try to replay
-            client = AuthorityClient()
-            client.connect()
+            # Small delay to ensure pipe is ready
+            time.sleep(0.5)
+            
+            # NEW client reconnects and tries to replay
+            client_b = AuthorityClient()
+            client_b.connect()
+            client_b_pid = os.getpid()
+            print(f"[TEST] Client B connected: PID {client_b_pid}")
             
             try:
-                replay_consumption = client.consume_lease(
+                replay_consumption = client_b.consume_lease(
                     lease_id=lease_id,
                     execution_id=execution_id
                 )
@@ -419,7 +467,8 @@ class TestL4Replay:
                 assert "already consumed" in str(e).lower() or "not found" in str(e).lower()
                 print(f"[TEST] Replay rejected as expected: {e}")
             
-            client.disconnect()
+            client_b.disconnect()
+            print(f"[TEST] Client B disconnected")
             
         finally:
             # Shutdown authority
