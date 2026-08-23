@@ -38,7 +38,7 @@ from iabv_v15.services.trust.authority_protocol import (
 MESSAGE_HEADER_SIZE = 4  # 4-byte little-endian length header
 BUFFER_SIZE = 4096
 MAX_MESSAGE_SIZE = 1 * 1024 * 1024  # 1MB max message size
-PIPE_NAME = r"\\.\pipe\IABV_Authority_Test"
+PIPE_NAME = r"\\.\pipe\IABV_Authority"
 MAX_CONNECTION_ATTEMPTS = 30
 CONNECTION_RETRY_DELAY = 0.5
 

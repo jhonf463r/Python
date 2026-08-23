@@ -40,7 +40,7 @@ from iabv_v15.services.trust.authority_service import (
 
 # ── Constants ───────────────────────────────────────────────────────────────
 
-PIPE_NAME = r"\\.\pipe\IABV_Authority_Test"
+PIPE_NAME = r"\\.\pipe\IABV_Authority"
 MAX_MESSAGE_SIZE = 1024 * 1024  # 1MB
 MESSAGE_HEADER_SIZE = 4  # uint32 for message length
 BUFFER_SIZE = 4096
@@ -150,8 +150,8 @@ class AuthorityServer:
         Phase 2: Explicit DACL, reject remote clients.
         PART II: Instrumented to log exact CreateNamedPipe parameters.
         """
-        # Re-enable security attributes
-        security_attributes = self._create_security_attributes()
+        # Use no security attributes for maximum compatibility
+        security_attributes = None
         
         # Create named pipe with exact parameters
         # Use standard PIPE_ACCESS_DUPLEX without FILE_FLAG_OVERLAPPED
@@ -170,7 +170,7 @@ class AuthorityServer:
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
         print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
         print(f"[AuthorityServer]   Default timeout: {default_timeout}")
-        print(f"[AuthorityServer]   Security attributes: present")
+        print(f"[AuthorityServer]   Security attributes: NONE (maximum compatibility)")
         
         pipe_handle = win32pipe.CreateNamedPipe(
             self._pipe_name,
