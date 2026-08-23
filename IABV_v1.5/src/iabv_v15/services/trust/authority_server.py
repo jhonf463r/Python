@@ -150,15 +150,13 @@ class AuthorityServer:
         Phase 2: Explicit DACL, reject remote clients.
         PART II: Instrumented to log exact CreateNamedPipe parameters.
         """
-        # Temporarily disable security attributes to test if DACL is the issue
-        security_attributes = None
-        
-        print(f"[AuthorityServer] WARNING: Creating pipe without security attributes for debugging", flush=True)
+        # Re-enable security attributes
+        security_attributes = self._create_security_attributes()
         
         # Create named pipe with exact parameters
         pipe_access = win32pipe.PIPE_ACCESS_DUPLEX
-        # Use PIPE_NOWAIT to make pipe immediately available for connections
-        pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_NOWAIT
+        # Revert to PIPE_WAIT for proper blocking behavior
+        pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT
         max_instances = win32pipe.PIPE_UNLIMITED_INSTANCES
         out_buffer_size = BUFFER_SIZE
         in_buffer_size = BUFFER_SIZE
@@ -167,12 +165,12 @@ class AuthorityServer:
         print(f"[AuthorityServer] CreateNamedPipe parameters:")
         print(f"[AuthorityServer]   Pipe name: {self._pipe_name}")
         print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x{pipe_access:X})")
-        print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT (0x{pipe_type:X})")
+        print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x{pipe_type:X})")
         print(f"[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES")
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
         print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
         print(f"[AuthorityServer]   Default timeout: {default_timeout}")
-        print(f"[AuthorityServer]   Security attributes: None (disabled for debugging)")
+        print(f"[AuthorityServer]   Security attributes: present")
         
         pipe_handle = win32pipe.CreateNamedPipe(
             self._pipe_name,
@@ -445,12 +443,41 @@ class AuthorityServer:
                 print(f"[AuthorityServer] Pipe created successfully, now waiting for client connection...", flush=True)
                 print(f"[AuthorityServer] Pipe handle: {pipe_handle}", flush=True)
                 
-                # Use non-blocking mode with overlapped I/O
-                # This allows us to check for connections without blocking indefinitely
+                # Use overlapped I/O to make ConnectNamedPipe non-blocking
+                # This allows the pipe to be immediately available for client connections
                 try:
-                    print(f"[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...", flush=True)
-                    win32pipe.ConnectNamedPipe(pipe_handle)
-                    print(f"[AuthorityServer] Client connected successfully!", flush=True)
+                    print(f"[AuthorityServer] Calling ConnectNamedPipe with overlapped I/O...", flush=True)
+                    # Create an event for overlapped I/O
+                    import win32event
+                    overlapped = pywintypes.OVERLAPPED()
+                    overlapped.hEvent = win32event.CreateEvent(None, True, False, None)
+                    
+                    # Call ConnectNamedPipe with overlapped I/O
+                    win32pipe.ConnectNamedPipe(pipe_handle, overlapped)
+                    
+                    # Wait for connection with a timeout
+                    # Use a longer timeout to allow client to connect
+                    result = win32event.WaitForSingleObject(overlapped.hEvent, 5000)  # 5 second timeout
+                    
+                    if result == win32event.WAIT_OBJECT_0:
+                        print(f"[AuthorityServer] Client connected successfully!", flush=True)
+                    elif result == win32event.WAIT_TIMEOUT:
+                        # No client connected yet, but pipe is now listening
+                        print(f"[AuthorityServer] Pipe is listening (no client yet, closing and recreating)", flush=True)
+                        # Close and recreate the pipe to keep it fresh
+                        try:
+                            win32file.CloseHandle(pipe_handle)
+                        except:
+                            pass
+                        continue
+                    else:
+                        print(f"[AuthorityServer] ConnectNamedPipe wait result: {result}", flush=True)
+                        try:
+                            win32file.CloseHandle(pipe_handle)
+                        except:
+                            pass
+                        continue
+                        
                 except Exception as e:
                     # If pipe is already connected, that's OK
                     if "pipe is being connected" in str(e).lower() or "connected" in str(e).lower():
