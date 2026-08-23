@@ -463,13 +463,35 @@ class AuthorityServer:
                         print(f"[AuthorityServer] Client connected successfully!", flush=True)
                     elif result == win32event.WAIT_TIMEOUT:
                         # No client connected yet, but pipe is now listening
-                        print(f"[AuthorityServer] Pipe is listening (no client yet, closing and recreating)", flush=True)
-                        # Close and recreate the pipe to keep it fresh
-                        try:
-                            win32file.CloseHandle(pipe_handle)
-                        except:
-                            pass
-                        continue
+                        # Keep the pipe alive and continue waiting instead of recreating
+                        print(f"[AuthorityServer] Pipe is listening (waiting for client...)", flush=True)
+                        # Continue to wait for client in a loop
+                        # Use a polling approach with shorter timeouts
+                        while True:
+                            result = win32event.WaitForSingleObject(overlapped.hEvent, 1000)  # 1 second timeout
+                            if result == win32event.WAIT_OBJECT_0:
+                                print(f"[AuthorityServer] Client connected successfully!", flush=True)
+                                break
+                            elif result == win32event.WAIT_TIMEOUT:
+                                # Check for shutdown
+                                with self._shutdown_lock:
+                                    if self._shutdown:
+                                        print(f"[AuthorityServer] Shutdown requested, closing pipe", flush=True)
+                                        try:
+                                            win32file.CloseHandle(pipe_handle)
+                                        except:
+                                            pass
+                                        return
+                                # Continue waiting
+                                print(f"[AuthorityServer] Still waiting for client...", flush=True)
+                                continue
+                            else:
+                                print(f"[AuthorityServer] ConnectNamedPipe wait result: {result}", flush=True)
+                                try:
+                                    win32file.CloseHandle(pipe_handle)
+                                except:
+                                    pass
+                                continue
                     else:
                         print(f"[AuthorityServer] ConnectNamedPipe wait result: {result}", flush=True)
                         try:
