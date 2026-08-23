@@ -1,0 +1,228 @@
+name: Windows Phase 3 E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - p0213/phase3-r16-remediation
+    paths:
+      - 'tests/windows_e2e/**'
+      - 'src/iabv_v15/services/trust/**'
+      - 'src/iabv_v15/services/phase3/**'
+      - '.github/workflows/windows-phase3-e2e.yml'
+
+jobs:
+  windows-e2e:
+    name: Windows Phase 3 E2E Tests
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Print Git Information
+        shell: pwsh
+        run: |
+          Write-Host "========================================"
+          Write-Host "GIT INFORMATION"
+          Write-Host "========================================"
+          Write-Host "Commit SHA:"
+          git rev-parse HEAD
+          Write-Host ""
+          Write-Host "Git Status:"
+          git status --short
+          Write-Host ""
+          Write-Host "Branch:"
+          git rev-parse --abbrev-ref HEAD
+          Write-Host ""
+          Write-Host "Remote URL:"
+          git remote get-url origin
+      
+      - name: Windows System Information
+        shell: pwsh
+        run: |
+          Write-Host "========================================"
+          Write-Host "WINDOWS SYSTEM INFORMATION"
+          Write-Host "========================================"
+          systeminfo | Select-String "OS Name","OS Version","System Type"
+          Write-Host ""
+          Write-Host "Python Version:"
+          python --version
+          Write-Host ""
+          Write-Host "Python Executable:"
+          python -c "import sys; print(sys.executable)"
+          Write-Host ""
+          Write-Host "Architecture:"
+          python -c "import platform; print(platform.architecture())"
+          Write-Host ""
+          Write-Host "Processor:"
+          python -c "import platform; print(platform.processor())"
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-timeout psutil cryptography
+      
+      - name: Clean up any residual state
+        shell: pwsh
+        run: |
+          Write-Host "Cleaning up residual state..."
+          if (Test-Path "temp_authority_storage") {
+            Remove-Item -Recurse -Force "temp_authority_storage"
+            Write-Host "Removed temp_authority_storage"
+          }
+          if (Test-Path ".pytest_cache") {
+            Remove-Item -Recurse -Force ".pytest_cache"
+            Write-Host "Removed .pytest_cache"
+          }
+      
+      - name: Start Authority Process
+        shell: pwsh
+        run: |
+          Write-Host "========================================"
+          Write-Host "STARTING AUTHORITY PROCESS"
+          Write-Host "========================================"
+          
+          # Create temp storage directory
+          New-Item -ItemType Directory -Force -Path "temp_authority_storage"
+          
+          # Start authority process in background
+          $env:PYTHONPATH = "src"
+          $authorityProcess = Start-Process -FilePath "python" -ArgumentList "src/iabv_v15/services/trust/authority_process.py", "--storage-root", "temp_authority_storage", "--pipe-name", r"\\.\pipe\IABV_Authority" -PassThru -NoNewWindow -RedirectStandardOutput "authority_stdout.log" -RedirectStandardError "authority_stderr.log"
+          
+          Write-Host "Authority Process ID: $($authorityProcess.Id)"
+          
+          # Wait for authority ready signal
+          $readyFile = "temp_authority_storage\authority_ready.txt"
+          $maxWait = 30
+          $waitCount = 0
+          
+          Write-Host "Waiting for authority ready signal: $readyFile"
+          while ($waitCount -lt $maxWait) {
+            if (Test-Path $readyFile) {
+              Write-Host "Authority ready signal found"
+              $authorityPid = Get-Content $readyFile
+              Write-Host "Authority PID from ready file: $authorityPid"
+              break
+            }
+            Start-Sleep -Seconds 1
+            $waitCount++
+          }
+          
+          if ($waitCount -ge $maxWait) {
+            Write-Host "ERROR: Authority not ready after $maxWait seconds"
+            exit 1
+          }
+          
+          Write-Host "Authority process started successfully"
+          
+          # Save PID for cleanup
+          $authorityPid > "temp_authority_storage\authority_pid.txt"
+      
+      - name: Run Windows E2E Tests
+        shell: pwsh
+        run: |
+          Write-Host "========================================"
+          Write-Host "RUNNING WINDOWS E2E TESTS"
+          Write-Host "========================================"
+          
+          $env:PYTHONPATH = "src"
+          
+          # Run tests with pytest and JUnit output
+          pytest tests/windows_e2e/ -v --timeout=300 --junitxml=windows-phase3-results.xml -x
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: Tests failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          
+          Write-Host "All Windows E2E tests passed"
+      
+      - name: Verify Database State
+        shell: pwsh
+        run: |
+          Write-Host "========================================"
+          Write-Host "VERIFYING DATABASE STATE"
+          Write-Host "========================================"
+          
+          python tests/windows_e2e/check_db_state.py
+          
+          Write-Host "Database state verification complete"
+      
+      - name: Stop Authority Process
+        shell: pwsh
+        run: |
+          Write-Host "========================================"
+          Write-Host "STOPPING AUTHORITY PROCESS"
+          Write-Host "========================================"
+          
+          if (Test-Path "temp_authority_storage\authority_pid.txt") {
+            $authorityPid = Get-Content "temp_authority_storage\authority_pid.txt"
+            Write-Host "Stopping authority process PID: $authorityPid"
+            
+            try {
+              Stop-Process -Id $authorityPid -Force -ErrorAction Stop
+              Write-Host "Authority process stopped"
+            } catch {
+              Write-Host "Warning: Could not stop authority process: $_"
+            }
+          }
+          
+          # Clean up named pipe (Windows will handle this automatically)
+          Write-Host "Named pipe cleanup handled by Windows"
+      
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-phase3-test-results
+          path: |
+            windows-phase3-results.xml
+            authority_stdout.log
+            authority_stderr.log
+          retention-days: 30
+      
+      - name: Upload JUnit Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-phase3-junit
+          path: windows-phase3-results.xml
+          retention-days: 30
+      
+      - name: Publish Test Results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: windows-phase3-results.xml
+      
+      - name: Final Summary
+        shell: pwsh
+        if: always()
+        run: |
+          Write-Host "========================================"
+          Write-Host "WINDOWS E2E TEST SUMMARY"
+          Write-Host "========================================"
+          Write-Host "Commit SHA:"
+          git rev-parse HEAD
+          Write-Host ""
+          Write-Host "Test Results:"
+          if (Test-Path "windows-phase3-results.xml") {
+            [xml]$results = Get-Content "windows-phase3-results.xml"
+            Write-Host "Tests: $($results.testsuites.tests)"
+            Write-Host "Failures: $($results.testsuites.failures)"
+            Write-Host "Errors: $($results.testsuites.errors)"
+            Write-Host "Skipped: $($results.testsuites.skipped)"
+          }
+          Write-Host ""
+          Write-Host "Workflow Run ID: ${{ github.run_id }}"
+          Write-Host "Workflow Run Number: ${{ github.run_number }}"
