@@ -120,6 +120,8 @@ class AuthorityClient:
             print(f"[AuthorityClient]   Thread Token: (none)", flush=True)
         
         print(f"[AuthorityClient] Connecting to {self._pipe_name}...", flush=True)
+        print(f"[AuthorityClient] Pipe name length: {len(self._pipe_name)}", flush=True)
+        print(f"[AuthorityClient] Pipe name repr: {repr(self._pipe_name)}", flush=True)
         print(f"[AuthorityClient] Desired access: GENERIC_READ | GENERIC_WRITE", flush=True)
         print(f"[AuthorityClient] Share mode: 0 (no sharing)", flush=True)
         print(f"[AuthorityClient] Creation disposition: OPEN_EXISTING", flush=True)
