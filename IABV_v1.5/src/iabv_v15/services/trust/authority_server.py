@@ -423,6 +423,7 @@ class AuthorityServer:
         PART VII: Synchronous single-request mode for testing.
         """
         print(f"[AuthorityServer] Server loop starting", flush=True)
+        print(f"[AuthorityServer] Using pipe name: {self._pipe_name}", flush=True)
         while True:
             with self._shutdown_lock:
                 if self._shutdown:
@@ -437,6 +438,7 @@ class AuthorityServer:
                 # Wait for client connection (non-blocking mode)
                 # Use ConnectNamedPipe with overlapped I/O to avoid blocking indefinitely
                 try:
+                    print(f"[AuthorityServer] Calling ConnectNamedPipe...", flush=True)
                     win32pipe.ConnectNamedPipe(pipe_handle)
                     print(f"[AuthorityServer] Client connected via ConnectNamedPipe", flush=True)
                 except Exception as e:
