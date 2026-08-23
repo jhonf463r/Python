@@ -116,6 +116,10 @@ jobs:
           Write-Host "Waiting for pipe to be fully ready..."
           Start-Sleep -Seconds 3
           
+          # Test if we can connect to the pipe with a simple script
+          Write-Host "Testing pipe connectivity with simple script..."
+          python -c "import win32file; handle = win32file.CreateFile(r'\\.\pipe\IABV_Authority', win32file.GENERIC_READ | win32file.GENERIC_WRITE, 0, None, win32file.OPEN_EXISTING, 0, None); print(f'Connected! Handle: {handle}'); win32file.CloseHandle(handle)"
+          
           # Check if process is still running
           if (Get-Process -Id $authorityProcess.Id -ErrorAction SilentlyContinue) {
             Write-Host "Authority process is running"
