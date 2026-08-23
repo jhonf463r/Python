@@ -6,9 +6,9 @@ on:
     branches:
       - p0213/phase3-r16-remediation
     paths:
-      - 'tests/windows_e2e/**'
-      - 'src/iabv_v15/services/trust/**'
-      - 'src/iabv_v15/services/phase3/**'
+      - 'IABV_v1.5/tests/windows_e2e/**'
+      - 'IABV_v1.5/src/iabv_v15/services/trust/**'
+      - 'IABV_v1.5/src/iabv_v15/services/phase3/**'
       - '.github/workflows/windows-phase3-e2e.yml'
 
 jobs:
