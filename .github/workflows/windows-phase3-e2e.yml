@@ -168,22 +168,29 @@ jobs:
             Write-Host "Could not list pipes: $_"
           }
           
-          # Verify named pipe exists
+          # Verify named pipe exists (using pipe listing instead of Test-Path to avoid connecting)
           Write-Host "Verifying named pipe exists..."
-          $pipeExists = Test-Path "\\.\pipe\IABV_Authority"
-          if ($pipeExists) {
-            Write-Host "Named pipe exists: \\.\pipe\IABV_Authority"
-          } else {
-            Write-Host "ERROR: Named pipe does not exist: \\.\pipe\IABV_Authority"
-            Write-Host "This indicates the authority server failed to create the pipe"
-            Write-Host "Checking authority_stdout.log:"
-            if (Test-Path "authority_stdout.log") {
-              Get-Content "authority_stdout.log"
+          $iabvPipeExists = $false
+          try {
+            $pipes = [System.IO.Directory]::GetFiles("\\.\pipe\")
+            $iabvPipeExists = $pipes -contains "\\.\pipe\IABV_Authority"
+            if ($iabvPipeExists) {
+              Write-Host "Named pipe exists: \\.\pipe\IABV_Authority"
+            } else {
+              Write-Host "ERROR: Named pipe does not exist: \\.\pipe\IABV_Authority"
+              Write-Host "This indicates the authority server failed to create the pipe"
+              Write-Host "Checking authority_stdout.log:"
+              if (Test-Path "authority_stdout.log") {
+                Get-Content "authority_stdout.log"
+              }
+              Write-Host "Checking authority_stderr.log:"
+              if (Test-Path "authority_stderr.log") {
+                Get-Content "authority_stderr.log"
+              }
+              exit 1
             }
-            Write-Host "Checking authority_stderr.log:"
-            if (Test-Path "authority_stderr.log") {
-              Get-Content "authority_stderr.log"
-            }
+          } catch {
+            Write-Host "ERROR: Could not verify pipe existence: $_"
             exit 1
           }
           
