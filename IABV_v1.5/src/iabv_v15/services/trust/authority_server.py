@@ -40,7 +40,7 @@ from iabv_v15.services.trust.authority_service import (
 
 # ── Constants ───────────────────────────────────────────────────────────────
 
-PIPE_NAME = r"\\.\pipe\IABV_Authority"
+PIPE_NAME = r"\\.\pipe\IABV_Authority_Test"
 MAX_MESSAGE_SIZE = 1024 * 1024  # 1MB
 MESSAGE_HEADER_SIZE = 4  # uint32 for message length
 BUFFER_SIZE = 4096
