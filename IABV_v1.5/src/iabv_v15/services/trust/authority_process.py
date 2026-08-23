@@ -116,6 +116,12 @@ def main() -> int:
     try:
         server.start()
         print(f"[Authority] Authority server started", flush=True)
+        
+        # Wait for server to actually create the pipe
+        # The server runs in a separate thread, so we need to give it time
+        # to create the pipe before signaling readiness
+        time.sleep(1)
+        
         print(f"[Authority] Listening on Named Pipe: {args.pipe_name}", flush=True)
         
         # Phase 2: Create readiness signal after server is ready
