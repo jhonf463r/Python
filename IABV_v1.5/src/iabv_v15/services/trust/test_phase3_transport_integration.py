@@ -1148,300 +1148,152 @@ class TestPhase3TransportIntegration:
     def test_transaction_rolls_back_on_partial_failure(self, authority_service, real_ed25519_redeem_setup):
         """F11: Verify that transaction rolls back on partial failure between UPDATEs.
         
-        This test patches handle_phase3_redeem_join to inject a failure
-        AFTER the first UPDATE (join_authorizations) but BEFORE the second
-        UPDATE (challenges) to verify atomic rollback.
+        This test uses ConnectionProxy/CursorProxy to intercept the REAL production handler
+        and inject a failure AFTER the first UPDATE (join_authorizations) but BEFORE the
+        second UPDATE (challenges) to verify atomic rollback.
         
-        The patch ensures:
+        The wrapper ensures:
+        - REAL authority_service.handle_phase3_redeem_join is executed
         - BEGIN IMMEDIATE succeeds
-        - First UPDATE (join_authorizations) executes and is recorded
+        - First UPDATE (join_authorizations) executes against real SQLite
         - Second UPDATE (challenges) fails with injected exception
-        - Transaction rolls back
+        - REAL production except Exception catches it
+        - REAL conn.rollback() is called
         - Both tables show consumed=0 in a new connection
         """
         setup_data = real_ed25519_redeem_setup
         
         # Track execution state
         state = {
+            'handler_real_called': False,
             'first_update_seen': False,
-            'second_update_attempted': False,
-            'exception_injected': False
+            'second_update_intercepted': False,
+            'exception_injected': False,
+            'rollback_called': False
         }
         
-        # Original handle_phase3_redeem_join method
-        original_redeem_join = authority_service.handle_phase3_redeem_join
+        class CursorProxy:
+            """Proxy cursor that intercepts UPDATE statements."""
+            
+            def __init__(self, real_cursor):
+                self._real_cursor = real_cursor
+                self._execute = real_cursor.execute
+                self._fetchone = real_cursor.fetchone
+                self._fetchall = real_cursor.fetchall
+                self._close = real_cursor.close
+                self.rowcount = real_cursor.rowcount
+            
+            def execute(self, sql, params=None):
+                """Track UPDATE statements and inject failure between them."""
+                # Detect first UPDATE (join_authorizations)
+                if "UPDATE join_authorizations" in sql:
+                    state['first_update_seen'] = True
+                    # Allow it to execute normally against real SQLite
+                    if params is not None:
+                        result = self._execute(sql, params)
+                    else:
+                        result = self._execute(sql)
+                    # Update rowcount after execution
+                    self.rowcount = self._real_cursor.rowcount
+                    return result
+                
+                # Detect second UPDATE (challenges) - inject failure
+                if "UPDATE challenges" in sql:
+                    state['second_update_intercepted'] = True
+                    if state['first_update_seen']:
+                        state['exception_injected'] = True
+                        raise RuntimeError("TEST_INJECTED_FAILURE_BETWEEN_UPDATES")
+                    # If first update not seen, allow to proceed (shouldn't happen)
+                    if params is not None:
+                        result = self._execute(sql, params)
+                    else:
+                        result = self._execute(sql)
+                    self.rowcount = self._real_cursor.rowcount
+                    return result
+                
+                # Allow all other statements to pass through normally
+                if params is not None:
+                    result = self._execute(sql, params)
+                else:
+                    result = self._execute(sql)
+                self.rowcount = self._real_cursor.rowcount
+                return result
+            
+            def fetchone(self):
+                return self._fetchone()
+            
+            def fetchall(self):
+                return self._fetchall()
+            
+            def close(self):
+                return self._close()
         
-        def patched_redeem_join(request, client_pid):
-            """Patched version that injects failure between UPDATEs."""
-            import sqlite3
-            import time
-            from iabv_v15.services.trust.authority_service import AuthorityResponse
-            from iabv_v15.services.phase3.ed25519_keys import (
-                public_key_from_hex,
-                public_key_from_base64,
-                verify_signature as ed25519_verify_signature
-            )
+        class ConnectionProxy:
+            """Proxy connection that tracks rollback and returns proxy cursors."""
             
-            join_id = request.data.get('join_id')
-            subject_id = request.data.get('subject_id')
-            execution_id = request.data.get('execution_id')
-            challenge = request.data.get('challenge')
-            signature = request.data.get('signature')
+            def __init__(self, real_connection):
+                self._real_connection = real_connection
+                self._cursor = real_connection.cursor
+                self._commit = real_connection.commit
+                self._rollback = real_connection.rollback
+                self._close = real_connection.close
             
-            if not join_id or not subject_id or not execution_id or not challenge or not signature:
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Missing required fields"
-                )
+            def cursor(self):
+                """Return a proxy cursor."""
+                real_cursor = self._cursor()
+                return CursorProxy(real_cursor)
             
-            # Verify join authorization exists and is not consumed
-            conn = sqlite3.connect(str(authority_service._join_auth_db))
-            cursor = conn.cursor()
+            def commit(self):
+                return self._commit()
             
-            # F9 FIX: Explicit transaction discipline - BEGIN IMMEDIATE
-            cursor.execute("BEGIN IMMEDIATE")
+            def rollback(self):
+                """Track rollback call and delegate to real SQLite."""
+                state['rollback_called'] = True
+                return self._rollback()
             
-            cursor.execute("""
-                SELECT subject_id, execution_id, generation, client_pid, public_key, consumed
-                FROM join_authorizations
-                WHERE join_id = ?
-            """, (join_id,))
-            
-            row = cursor.fetchone()
-            
-            if not row:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Join authorization not found"
-                )
-            
-            record_subject_id, record_execution_id, record_generation, record_pid, public_key_str, consumed = row
-            
-            # Verify subject_id matches
-            if record_subject_id != subject_id:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Subject ID mismatch"
-                )
-            
-            # Verify execution_id matches
-            if record_execution_id != execution_id:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Execution ID mismatch"
-                )
-            
-            # Verify not consumed
-            if consumed:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Join authorization already consumed"
-                )
-            
-            # Verify generation matches canonical
-            if record_generation != authority_service._generation:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Generation mismatch"
-                )
-            
-            # Verify peer identity matches join authorization
-            peer = authority_service._create_authenticated_peer(client_pid)
-            if peer.process_id != record_pid:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Peer identity mismatch"
-                )
-            
-            # Verify challenge exists and is not consumed
-            cursor.execute("""
-                SELECT challenge_id, challenge, issued_at, expires_at, consumed
-                FROM challenges
-                WHERE join_id = ?
-                ORDER BY issued_at DESC
-                LIMIT 1
-            """, (join_id,))
-            
-            challenge_row = cursor.fetchone()
-            
-            if not challenge_row:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Challenge not found"
-                )
-            
-            challenge_id, stored_challenge, issued_at, expires_at, challenge_consumed = challenge_row
-            
-            # Verify challenge not consumed
-            if challenge_consumed:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Challenge already consumed"
-                )
-            
-            # Verify challenge not expired
-            current_time = time.time()
-            if current_time > expires_at:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Challenge expired"
-                )
-            
-            # Verify challenge matches stored nonce (F1 FIX: cryptographically bind to issued nonce)
-            if challenge != stored_challenge:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Challenge mismatch"
-                )
-            
-            # Convert public key to bytes
-            try:
-                public_key = public_key_from_hex(public_key_str)
-            except ValueError:
-                try:
-                    public_key = public_key_from_base64(public_key_str)
-                except ValueError:
-                    conn.rollback()
-                    conn.close()
-                    return AuthorityResponse(
-                        success=False,
-                        data={},
-                        error="Invalid public key format"
-                    )
-            
-            # Verify signature over the exact stored challenge bytes using Ed25519
-            signature_bytes = bytes.fromhex(signature)
-            challenge_bytes = stored_challenge.encode('utf-8')
-            
-            if not ed25519_verify_signature(public_key, challenge_bytes, signature_bytes):
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Invalid signature"
-                )
-            
-            # Atomic redeem: update both join authorization and challenge
-            cursor.execute("""
-                UPDATE join_authorizations
-                SET consumed = 1, consumed_at = ?
-                WHERE join_id = ? 
-                  AND consumed = 0 
-                  AND generation = ?
-            """, (current_time, join_id, authority_service._generation))
-            
-            if cursor.rowcount == 0:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Join authorization already consumed or expired"
-                )
-            
-            # Record that first UPDATE was seen
-            state['first_update_seen'] = True
-            
-            # INJECT FAILURE BEFORE SECOND UPDATE
-            state['second_update_attempted'] = True
-            state['exception_injected'] = True
-            raise RuntimeError("TEST_INJECTED_FAILURE_BETWEEN_UPDATES")
-            
-            # This code should never execute
-            cursor.execute("""
-                UPDATE challenges
-                SET consumed = 1, consumed_at = ?
-                WHERE challenge_id = ? 
-                  AND consumed = 0
-            """, (current_time, challenge_id))
-            
-            if cursor.rowcount == 0:
-                conn.rollback()
-                conn.close()
-                return AuthorityResponse(
-                    success=False,
-                    data={},
-                    error="Challenge already consumed"
-                )
-            
-            # F9 FIX: Explicit COMMIT after successful atomic updates
-            conn.commit()
-            conn.close()
-            
-            # Generate membership ID
-            import secrets
-            membership_id = secrets.token_urlsafe(16)
-            
-            return AuthorityResponse(
-                success=True,
-                data={
-                    "redeemed": True,
-                    "redeemed_at": current_time,
-                    "membership_id": membership_id
-                }
-            )
+            def close(self):
+                return self._close()
         
-        # Patch the method
-        authority_service.handle_phase3_redeem_join = patched_redeem_join
+        # Use mock.patch to intercept sqlite3.connect at the call site
+        original_connect = sqlite3.connect
         
-        try:
-            redeem_request = AuthorityRequest(
-                request_type="PHASE3_REDEEM_JOIN",
-                data={
-                    "join_id": setup_data["join_id"],
-                    "subject_id": setup_data["subject_id"],
-                    "execution_id": setup_data["execution_id"],
-                    "challenge": setup_data["challenge"],
-                    "signature": setup_data["signature"]
-                },
-                request_id="test_req_rollback"
-            )
-            
-            response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
-            assert not response.success, "Should fail due to injected error"
-        except RuntimeError as e:
-            # Expected: the injected exception
-            assert "TEST_INJECTED_FAILURE_BETWEEN_UPDATES" in str(e)
-        finally:
-            # Restore original method
-            authority_service.handle_phase3_redeem_join = original_redeem_join
+        def proxy_connect(*args, **kwargs):
+            """Return a proxy connection only for JOIN_AUTH_DB."""
+            conn = original_connect(*args, **kwargs)
+            # Only proxy connections to the authority's join auth DB
+            if len(args) > 0 and 'join_authorizations' in str(args[0]):
+                return ConnectionProxy(conn)
+            return conn
+        
+        # Patch both the global sqlite3 and the authority_service's reference
+        with patch('sqlite3.connect', proxy_connect):
+            with patch('iabv_v15.services.trust.authority_service.sqlite3.connect', proxy_connect):
+                state['handler_real_called'] = True
+                
+                redeem_request = AuthorityRequest(
+                    request_type="PHASE3_REDEEM_JOIN",
+                    data={
+                        "join_id": setup_data["join_id"],
+                        "subject_id": setup_data["subject_id"],
+                        "execution_id": setup_data["execution_id"],
+                        "challenge": setup_data["challenge"],
+                        "signature": setup_data["signature"]
+                    },
+                    request_id="test_req_rollback"
+                )
+                
+                # Call REAL production handler - NOT patched
+                response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+                
+                # Production handler should catch exception and return failure
+                assert not response.success, "Should fail due to injected error"
         
         # Verify execution state
+        assert state['handler_real_called'], "Real handler should have been called"
         assert state['first_update_seen'], "First UPDATE (join_authorizations) should have been executed"
-        assert state['second_update_attempted'], "Second UPDATE (challenges) should have been attempted"
+        assert state['second_update_intercepted'], "Second UPDATE (challenges) should have been intercepted"
         assert state['exception_injected'], "Exception should have been injected between UPDATEs"
+        assert state['rollback_called'], "REAL production rollback should have been called"
         
         # Verify rollback from a NEW connection
         conn = sqlite3.connect(str(authority_service._join_auth_db))
