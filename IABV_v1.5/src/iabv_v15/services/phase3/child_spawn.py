@@ -246,9 +246,14 @@ def spawn_child_with_credential(
         # Cleanup on error
         if attribute_list is not None:
             try:
-                win32procthread.DeleteProcThreadAttributeList(attribute_list)
-            except Exception:
-                pass
+                # R16-F6: Use ctypes for cleanup, consistent with initialization
+                kernel32.DeleteProcThreadAttributeList.restype = None
+                kernel32.DeleteProcThreadAttributeList.argtypes = [ctypes.c_void_p]
+                kernel32.DeleteProcThreadAttributeList(attribute_list)
+            except Exception as cleanup_error:
+                # Log cleanup error but don't suppress original error
+                import sys
+                print(f"Warning: Failed to cleanup attribute list: {cleanup_error}", file=sys.stderr)
         if transport is not None:
             transport.cleanup()
         

@@ -387,6 +387,7 @@ class AuthorityServer:
             "CONSUME_LEASE": self._authority.handle_consume_lease,
             "VERIFY_EXECUTION": self._authority.handle_verify_execution,
             "GET_STATUS": self._authority.handle_get_status,
+            "PHASE3_REQUEST_JOIN": self._authority.handle_phase3_request_join,
         }
         
         request_type = request.get("type", request.get("request_type", ""))
