@@ -70,7 +70,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pytest pytest-timeout psutil cryptography
+          pip install pytest pytest-timeout psutil cryptography pywin32
       
       - name: Clean up any residual state
         shell: pwsh
