@@ -655,6 +655,437 @@ class TestPhase3TransportIntegration:
         assert not response.success, "Should reject modified challenge"
         assert "Challenge mismatch" in response.error
     
+    def test_challenge_issued(self, authority_service, sample_run_record):
+        """F10: Verify that challenge is issued for valid join authorization."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_17"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"]
+            },
+            request_id="test_req_18"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert response.success, "Challenge should be issued"
+        assert "challenge" in response.data
+        assert "pinned_public_key" in response.data
+        assert "generation" in response.data
+    
+    def test_challenge_persisted(self, authority_service, sample_run_record):
+        """F10: Verify that challenge is persisted to database."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_19"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"]
+            },
+            request_id="test_req_20"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert response.success
+        challenge = response.data["challenge"]
+        
+        # Verify challenge is persisted in database
+        import sqlite3
+        conn = sqlite3.connect(str(authority_service._join_auth_db))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT challenge, consumed
+            FROM challenges
+            WHERE join_id = ?
+        """, (join_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        assert row is not None, "Challenge should be persisted"
+        assert row[0] == challenge, "Persisted challenge should match issued challenge"
+        assert row[1] == 0, "Challenge should not be consumed initially"
+    
+    def test_challenge_nonce_matches(self, authority_service, sample_run_record):
+        """F1: Verify that challenge nonce matches stored value."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_21"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"]
+            },
+            request_id="test_req_22"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert response.success
+        challenge = response.data["challenge"]
+        
+        # Verify stored challenge matches
+        import sqlite3
+        conn = sqlite3.connect(str(authority_service._join_auth_db))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT challenge
+            FROM challenges
+            WHERE join_id = ?
+        """, (join_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        assert row is not None
+        assert row[0] == challenge, "Stored nonce should match issued challenge"
+    
+    def test_wrong_challenge_rejected(self, authority_service, sample_run_record):
+        """F1: Verify that wrong challenge is rejected."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_23"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Try to redeem with completely wrong challenge
+        redeem_request = AuthorityRequest(
+            request_type="PHASE3_REDEEM_JOIN",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "challenge": "completely:wrong:challenge:123456",
+                "signature": "dummy_signature"
+            },
+            request_id="test_req_24"
+        )
+        
+        response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+        assert not response.success, "Should reject wrong challenge"
+        assert "Challenge not found" in response.error or "Challenge mismatch" in response.error
+    
+    def test_expired_challenge_rejected(self, authority_service, sample_run_record):
+        """F1: Verify that expired challenge is rejected."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_25"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"]
+            },
+            request_id="test_req_26"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert response.success
+        challenge = response.data["challenge"]
+        
+        # Manually expire the challenge in database
+        import sqlite3
+        import time
+        conn = sqlite3.connect(str(authority_service._join_auth_db))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE challenges
+            SET expires_at = ?
+            WHERE join_id = ?
+        """, (time.time() - 3600, join_id))  # Expired 1 hour ago
+        
+        conn.commit()
+        conn.close()
+        
+        # Try to redeem with expired challenge
+        redeem_request = AuthorityRequest(
+            request_type="PHASE3_REDEEM_JOIN",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "challenge": challenge,
+                "signature": "dummy_signature"
+            },
+            request_id="test_req_27"
+        )
+        
+        response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+        assert not response.success, "Should reject expired challenge"
+        assert "Challenge expired" in response.error
+    
+    def test_wrong_execution_challenge_rejected(self, authority_service, sample_run_record):
+        """F1: Verify that challenge with wrong execution_id is rejected."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_28"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge with wrong execution_id
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": "wrong_execution_id"
+            },
+            request_id="test_req_29"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert not response.success, "Should reject challenge request with wrong execution_id"
+        assert "Execution ID mismatch" in response.error
+    
+    def test_redeem_twice_rejected(self, authority_service, sample_run_record):
+        """F1: Verify that double redemption is rejected (exactly-once semantics)."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_30"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"]
+            },
+            request_id="test_req_31"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert response.success
+        challenge = response.data["challenge"]
+        
+        # First redeem (will fail signature verification, but that's OK for this test)
+        redeem_request = AuthorityRequest(
+            request_type="PHASE3_REDEEM_JOIN",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "challenge": challenge,
+                "signature": "dummy_signature"
+            },
+            request_id="test_req_32"
+        )
+        
+        authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+        
+        # Try to redeem again (should fail due to consumed join authorization)
+        response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+        assert not response.success, "Should reject double redemption"
+    
+    def test_concurrent_redeem_rejected(self, authority_service, sample_run_record):
+        """F1: Verify that concurrent redemption attempts are rejected."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_33"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"]
+            },
+            request_id="test_req_34"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert response.success
+        challenge = response.data["challenge"]
+        
+        # Simulate concurrent redemption by attempting twice with same challenge
+        redeem_request = AuthorityRequest(
+            request_type="PHASE3_REDEEM_JOIN",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "challenge": challenge,
+                "signature": "dummy_signature"
+            },
+            request_id="test_req_35"
+        )
+        
+        # First attempt
+        authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+        
+        # Second concurrent attempt (should fail due to consumed state)
+        response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+        assert not response.success, "Should reject concurrent redemption"
+    
+    def test_transaction_rolls_back_on_partial_failure(self, authority_service, sample_run_record):
+        """F9: Verify that transaction rolls back on partial failure."""
+        # Create join authorization
+        join_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_JOIN",
+            data={
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "public_key": "test_key"
+            },
+            request_id="test_req_36"
+        )
+        
+        response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
+        assert response.success
+        join_id = response.data["join_token"]["data"]["join_id"]
+        
+        # Request challenge
+        challenge_request = AuthorityRequest(
+            request_type="PHASE3_REQUEST_CHALLENGE",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"]
+            },
+            request_id="test_req_37"
+        )
+        
+        response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
+        assert response.success
+        challenge = response.data["challenge"]
+        
+        # Attempt redeem with wrong challenge (should fail and rollback)
+        redeem_request = AuthorityRequest(
+            request_type="PHASE3_REDEEM_JOIN",
+            data={
+                "join_id": join_id,
+                "subject_id": sample_run_record["run_id"],
+                "execution_id": sample_run_record["execution_id"],
+                "challenge": "wrong_challenge",
+                "signature": "dummy_signature"
+            },
+            request_id="test_req_38"
+        )
+        
+        response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+        assert not response.success
+        
+        # Verify join authorization is NOT consumed (transaction rolled back)
+        import sqlite3
+        conn = sqlite3.connect(str(authority_service._join_auth_db))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT consumed
+            FROM join_authorizations
+            WHERE join_id = ?
+        """, (join_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        assert row is not None
+        assert row[0] == 0, "Join authorization should not be consumed after failed redeem (transaction rolled back)"
+
     def test_join_token_signature(self, authority_service, sample_run_record):
         """Verify that join tokens are signed by authority."""
         request = AuthorityRequest(

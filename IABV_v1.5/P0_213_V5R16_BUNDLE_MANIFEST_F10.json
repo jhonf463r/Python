@@ -1,0 +1,3689 @@
+{
+  "bundle_name": "P0_213_V5R16_POST_REMEDIATION_AUDIT_BUNDLE_F10.zip",
+  "source_commit": "a77f8c637b7a7fc33b5f59ed7203f71d3ff089a6",
+  "commit_date": "2026-08-23 09:46:12 -0500",
+  "created_at": "2026-08-23T14:46:39.736262Z",
+  "files": [
+    {
+      "path": "docs\\continuation_prompt_reasoning_v2.md",
+      "role": "documentation",
+      "sha256": "c37f36d954ad0b8e7e8dbdd864257f4e25f1a4b169fb1059ab5c7beea033ec92",
+      "size_bytes": 13610
+    },
+    {
+      "path": "docs\\mcp-bridge.md",
+      "role": "documentation",
+      "sha256": "0979ffbbb2b15baa5d771835c39e83804a5c6addee9df4e2fe53f8dc22e072e8",
+      "size_bytes": 11835
+    },
+    {
+      "path": "docs\\P0_213_V5R16_AUTHORITY_CHAIN_ANALYSIS.md",
+      "role": "documentation",
+      "sha256": "2ce208a9a06efd1a196744fdcbe63d52a8ee2086d425f8972f16919bd989744a",
+      "size_bytes": 5788
+    },
+    {
+      "path": "docs\\P0_213_V5R16_BEFORE_AFTER_ARCHITECTURE.md",
+      "role": "documentation",
+      "sha256": "e040998e88a38af1fe6df007f8bb4bc8b1f0b79444fc990a519f1e9eda9e27f6",
+      "size_bytes": 26947
+    },
+    {
+      "path": "docs\\P0_213_V5R16_CRITICAL_FINDINGS_ROOT_CAUSE_REPORT.md",
+      "role": "documentation",
+      "sha256": "7e0a9bc0ff8a9c009fb39055dda4725ee127ea2afdcd6c2e9824d24594ef6b8c",
+      "size_bytes": 14793
+    },
+    {
+      "path": "docs\\P0_213_V5R16_CRITICAL_REMEDIATION_REPORT.md",
+      "role": "documentation",
+      "sha256": "266b9a3198d0baf8622673c7f8d8ddc8b814dbd5aa5e90b2273ded3c43b9061f",
+      "size_bytes": 26851
+    },
+    {
+      "path": "docs\\P0_213_V5R16_DUAL_STATE_AUTHORITY_ANALYSIS.md",
+      "role": "documentation",
+      "sha256": "47354985e0257f399aa097a3e105119bab7a478dbbc6b6c825addfaab3adecab",
+      "size_bytes": 7252
+    },
+    {
+      "path": "docs\\P0_213_V5R16_FINAL_SECURITY_CLOSURE_REPORT.md",
+      "role": "documentation",
+      "sha256": "0b9495c78833b52ba71e38e534a5c1007f2e56582ee9ddced6fb9e2ee688346f",
+      "size_bytes": 10666
+    },
+    {
+      "path": "docs\\P0_213_V5R16_IMPLEMENTATION_CONFORMANCE_MATRIX.md",
+      "role": "documentation",
+      "sha256": "ae0b55849dcacbbe3814db206ca3aa0cfb5743534632ac8d144a46d933618fcc",
+      "size_bytes": 21871
+    },
+    {
+      "path": "docs\\P0_213_V5R16_PHASE3_PROTOCOL_UNIFICATION.md",
+      "role": "documentation",
+      "sha256": "5b95f6a737b1c832a71f6417ee938b931dc22b7771f9b697605ab554029ada46",
+      "size_bytes": 15238
+    },
+    {
+      "path": "docs\\P0_213_V5R16_REMEDIATION_CANONICALIZATION_REPORT.md",
+      "role": "documentation",
+      "sha256": "471996a053145be7b5e7ee6e81a252a670c49afe5f32e8f25c2e232a171e5315",
+      "size_bytes": 14468
+    },
+    {
+      "path": "docs\\P0_213_V5R16_REMEDIATION_DESIGN.md",
+      "role": "documentation",
+      "sha256": "1c30138b7e06f9e550f8aa31cf9d726dfe309aba855115db8aa2e0e3f71457e9",
+      "size_bytes": 23147
+    },
+    {
+      "path": "docs\\P0_213_V5R16_REMEDIATION_IMPLEMENTATION_REPORT.md",
+      "role": "documentation",
+      "sha256": "ce2e770d26bf6119935f653624403a1554e34871283ac80cf0b6e6476243e70f",
+      "size_bytes": 15541
+    },
+    {
+      "path": "docs\\P0_213_V5R16_TRANSPORT_AUTHORITY_RECONCILIATION.md",
+      "role": "documentation",
+      "sha256": "4fe852ffab2bf15a4060697193c3f89dfc39e4a8b51b8e3fefed6924b49fe332",
+      "size_bytes": 19579
+    },
+    {
+      "path": "docs\\ROADMAP_ALGORITHMIC_AUDIT_PLATFORM.md",
+      "role": "documentation",
+      "sha256": "f49ec8fa34a0c000395c5409107cccb837a74c8161ac5f0bc7d9cb7cb1ae2355",
+      "size_bytes": 7141
+    },
+    {
+      "path": "docs\\windsurf_diagnostic_prompt.md",
+      "role": "documentation",
+      "sha256": "37f0a7ad81283ffb4ceee3cfe2aaa4058e50cfc460bb42e70effacc57597c60c",
+      "size_bytes": 23941
+    },
+    {
+      "path": "docs\\windsurf_live_report_prompt.md",
+      "role": "documentation",
+      "sha256": "14a460abdcf62a1e4a58b43ee6d74a7e7bc6135fed9e5c6e3d3130b61692345c",
+      "size_bytes": 17892
+    },
+    {
+      "path": "docs\\history\\2026-04-27_bootstrap_init_defer.md",
+      "role": "documentation",
+      "sha256": "cb4de353ec8c2a377f80fc4112f2a5f7c801096f93a49cfaa1d1c3659da6bec9",
+      "size_bytes": 5337
+    },
+    {
+      "path": "docs\\history\\2026-04-28_codex_live_audit_handoff.md",
+      "role": "documentation",
+      "sha256": "846153269e1df7123f4408ae84ebc9a5f9799ff62b694e76e7525ad239c686f9",
+      "size_bytes": 9155
+    },
+    {
+      "path": "docs\\history\\2026-04-28_codex_startup_timeline_live_followup.md",
+      "role": "documentation",
+      "sha256": "b5a2954714de2573c74c133fe7e47e26311fae16c135ee40832cccc27ae3120e",
+      "size_bytes": 3229
+    },
+    {
+      "path": "docs\\history\\2026-04-28_devin_prompt_live_audit_followup.md",
+      "role": "documentation",
+      "sha256": "7212f2efd7f754ad999bc82f7f2d197e12b5620f96db92914f9d98aadb28e202",
+      "size_bytes": 6469
+    },
+    {
+      "path": "docs\\history\\2026-04-29_startup_false_ready_fix.md",
+      "role": "documentation",
+      "sha256": "fa061347e28150677ca2a528d44fbe5cd48e1708cbe784b8653598efdac9d3b0",
+      "size_bytes": 8768
+    },
+    {
+      "path": "docs\\history\\2026-04-29_startup_instrumentation_fase_1.md",
+      "role": "documentation",
+      "sha256": "ad5284cbd24c877ece4df217033cd417f622deb8bd31367f60afe39a8970a8b6",
+      "size_bytes": 10062
+    },
+    {
+      "path": "docs\\history\\fix-dashboard-refresh-freeze.md",
+      "role": "documentation",
+      "sha256": "c876b1e2a87e1310e8fb00d45d4d96522aed96914f15e057ee3a4f1981976336",
+      "size_bytes": 2316
+    },
+    {
+      "path": "docs\\history\\INTEGRATION_GUIDE_TAREA_A.md",
+      "role": "documentation",
+      "sha256": "94e6e14a01868699888c110bbb6856735193e54ad5032b2af9e15a8f5b078c47",
+      "size_bytes": 8740
+    },
+    {
+      "path": "docs\\history\\PREFLIGHT_INVESTIGATION.md",
+      "role": "documentation",
+      "sha256": "b201671eb25567aa7866846703d644adef798d57bf08cea3d168fefa5ad8f4df",
+      "size_bytes": 13207
+    },
+    {
+      "path": "docs\\p0213\\v5_architecture_contract.md",
+      "role": "documentation",
+      "sha256": "16500dbf9f8502dd1ed38e49dadf494cf81875c57d82b1a7ca47f198f93346eb",
+      "size_bytes": 17205
+    },
+    {
+      "path": "docs\\p0213\\v5_phase2_completion_report.md",
+      "role": "documentation",
+      "sha256": "f904fb949b8f29eec47d1357a3a3f67780f952c9ba027d043a73095a1c494903",
+      "size_bytes": 7621
+    },
+    {
+      "path": "docs\\p0213\\v5_phase2_contract.md",
+      "role": "documentation",
+      "sha256": "070a966914451a0a8bbb121b004c586858845aac537c6078cc9704dd9b4969f1",
+      "size_bytes": 11791
+    },
+    {
+      "path": "docs\\p0213\\v5_phase2_metacognition.md",
+      "role": "documentation",
+      "sha256": "0d3b9b8111731fe3e5ed24703ab993a2dcc362eab94b6104808ce21fc5e0f0c4",
+      "size_bytes": 6219
+    },
+    {
+      "path": "docs\\p0213\\v5_production_call_graph.md",
+      "role": "documentation",
+      "sha256": "685cf449a85ee237b337ded9f0c1e095437c85a51c3011d96f4c01a388675fba",
+      "size_bytes": 3577
+    },
+    {
+      "path": "docs\\rfcs\\devin-iabv-teaching-handshake.md",
+      "role": "documentation",
+      "sha256": "96cc5953111834d9d605bb26740bb99cef3c234d74b6d9d99b0d63c4484dc026",
+      "size_bytes": 23660
+    },
+    {
+      "path": "docs\\rfcs\\prioritized_improvement_queue.md",
+      "role": "documentation",
+      "sha256": "ed5ee166d812e4ab9da109c5fc6f240262d5cf3a37c3c09973fd58557d5f4e57",
+      "size_bytes": 2646
+    },
+    {
+      "path": "docs\\rfcs\\unified_audit_evolution_contract.md",
+      "role": "documentation",
+      "sha256": "4a3a41b7c1cd4823fcc988793f0eceb141216d97eee7b38d1272cac09671cfef",
+      "size_bytes": 5076
+    },
+    {
+      "path": "docs\\runbooks\\audit-tools-runbook.md",
+      "role": "documentation",
+      "sha256": "4f58d52ad72d1a433570c0bdf3d60d7c75e180d1206671c9bbca3b5f79162a78",
+      "size_bytes": 15661
+    },
+    {
+      "path": "src\\iabv_v15\\bootstrap.py",
+      "role": "source",
+      "sha256": "b636286e37b34bff35fb04bbb0afbad3e1f47abc3011ae154074121ac520b2d7",
+      "size_bytes": 259905
+    },
+    {
+      "path": "src\\iabv_v15\\main.py",
+      "role": "source",
+      "sha256": "0b71c1a7cf26aa1db138d7b07431bb50312cb2a4380a050a2d447f88eb7ce1a5",
+      "size_bytes": 1175
+    },
+    {
+      "path": "src\\iabv_v15\\__init__.py",
+      "role": "source",
+      "sha256": "12992b0c5f7a2462c960cfdecdbbc2ffe344c6c472473d8b78c048f5d457ad30",
+      "size_bytes": 92
+    },
+    {
+      "path": "src\\iabv_v15\\__main__.py",
+      "role": "source",
+      "sha256": "88e7b352f8de481ee800409f7526276bd0c17c4b7d6195a32c3ef38f78820d3b",
+      "size_bytes": 2013
+    },
+    {
+      "path": "src\\iabv_v15\\app\\__init__.py",
+      "role": "source",
+      "sha256": "0fab25014fb9b1befec851b38ec8e733d4793c43ef389f8195a7f9fe395e8b3f",
+      "size_bytes": 123
+    },
+    {
+      "path": "src\\iabv_v15\\cli\\control_master.py",
+      "role": "source",
+      "sha256": "d817657d877c4bb44c7fb25e9376669a446e93856d31a8202cd63f5fba8ae5a8",
+      "size_bytes": 11533
+    },
+    {
+      "path": "src\\iabv_v15\\cli\\__init__.py",
+      "role": "source",
+      "sha256": "18836c5ea863d34f215ebed51ada2ddec1f2425a3662000e51623db2ff687402",
+      "size_bytes": 79
+    },
+    {
+      "path": "src\\iabv_v15\\domain\\models.py",
+      "role": "source",
+      "sha256": "09f2232b01294f1f0469192c093ac3440da577bb0c1012284f01c66c1ea52109",
+      "size_bytes": 118506
+    },
+    {
+      "path": "src\\iabv_v15\\domain\\__init__.py",
+      "role": "source",
+      "sha256": "df4742d7a27989b1fd888cbc9f726a4f2489dc6112964de4d286bb76be20239a",
+      "size_bytes": 46
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\config.py",
+      "role": "source",
+      "sha256": "1055cf2063edff523e61e273f390237062f635c2a154af3a38b154211d19a8cd",
+      "size_bytes": 3262
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\logging.py",
+      "role": "source",
+      "sha256": "27c01b697b06586832e5f07d1b15d570833d2d995ffdda190a1a6caa0d97f96d",
+      "size_bytes": 1785
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\startup_timeline.py",
+      "role": "source",
+      "sha256": "e6c276864c65741dac411c89d342c00d6ecda454e6322c1171fc602314c45eef",
+      "size_bytes": 7447
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\__init__.py",
+      "role": "source",
+      "sha256": "88bf5684842baff237ab2960d6cc1d3a3b1b9010833a6f381b7de9046d4793a2",
+      "size_bytes": 67
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\audit_tools_observation.py",
+      "role": "source",
+      "sha256": "4ed20a4167fc805dcc1b38c0670f56e2a586cf139e26eacdc2e65a0b71ec2d72",
+      "size_bytes": 15985
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\self_auto_merge.py",
+      "role": "source",
+      "sha256": "1b6d10522b579cd8094cd51010c6997e35673dc3767cfad7f8b028966de51b15",
+      "size_bytes": 12032
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\self_update_tools.py",
+      "role": "source",
+      "sha256": "e8dbc5df25024a01ef1b91d755b920ac4c7a19905a8aca83852d38020dd25c77",
+      "size_bytes": 10244
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\server.py",
+      "role": "source",
+      "sha256": "e2d04afd10062e10c240c9b5d2d68982db2fd71bea42962a4ce59af9a00a49fe",
+      "size_bytes": 153878
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\__init__.py",
+      "role": "source",
+      "sha256": "71dce6731ab8508f29e1ed4a5b4b1fca2498b13265b7d566327db2ed9a2adf2b",
+      "size_bytes": 623
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\audit_tools\\audit_capability.py",
+      "role": "source",
+      "sha256": "fe3a5f1271852531b73de1e7a3f3c90a720545bfbd7bbb2adcd9e8bbedefe010",
+      "size_bytes": 24780
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\audit_tools\\compare_perception_vs_ground_truth.py",
+      "role": "source",
+      "sha256": "d801dcbb2bb347b607492c73b40d63ddea51e2d0b5fefed8ca66b2ac2dcfe3d3",
+      "size_bytes": 6132
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\audit_tools\\probe_assistant_login.py",
+      "role": "source",
+      "sha256": "a301988dc51ebc5a679adf7926957237ac95e2032b61b97d9a1a851e4df7ae41",
+      "size_bytes": 28411
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\mcp\\audit_tools\\__init__.py",
+      "role": "source",
+      "sha256": "5208cc69baed737482c373da73691420ee428b4e968faecc245de10d23b5b9b7",
+      "size_bytes": 35369
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\adaptive_session_repository.py",
+      "role": "source",
+      "sha256": "4d0b2d02b8c07f7643d5e22dda832c1c1c0f249096ec88a65a3f2a374c0f414b",
+      "size_bytes": 4928
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\approval_checkpoint_repository.py",
+      "role": "source",
+      "sha256": "24f424ec9392e509658aa26970cc47eae0a978f2eaa02896904e5f4f33747c4d",
+      "size_bytes": 4042
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\capability_repository.py",
+      "role": "source",
+      "sha256": "17cdf70fb8b5b2bfc1349cfd5f0bb3b97104c69b7ed88cac474eb02b404ee82e",
+      "size_bytes": 4944
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\chat_message_repository.py",
+      "role": "source",
+      "sha256": "dc0ab3b80aae9f70b15788a5eace73b5e7d5f7f3ed90a02ca072d2e3e8e15f48",
+      "size_bytes": 8922
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\control_master_repository.py",
+      "role": "source",
+      "sha256": "aca85e2445f23bcb0eaac61d97ebe9a6fb6a80a8b6a7238e71c9e7ae3d9d024e",
+      "size_bytes": 8476
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\database.py",
+      "role": "source",
+      "sha256": "075930092ffc21a191e9410e43c032d9e35c11ff76592fb09e8bf845916b683b",
+      "size_bytes": 25850
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\episode_repository.py",
+      "role": "source",
+      "sha256": "18572cd6345dd2ab31f64bcafc459fa1a43a06177076189aa1a5a7b5c1a367dd",
+      "size_bytes": 4075
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\execution_dossier_repository.py",
+      "role": "source",
+      "sha256": "97bde383efc5942d8e83cd49bb4c477129f8596af9af4a7baba8f36966d87290",
+      "size_bytes": 5204
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\experiment_lab_repository.py",
+      "role": "source",
+      "sha256": "2d8d386c25202b249c4de87d8bb66eb9bb9dea3c895c2486d23e8ca40c33ec20",
+      "size_bytes": 8942
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\hidden_incident_repository.py",
+      "role": "source",
+      "sha256": "74bf9f7629435e94dfd90197da0bd20032a73b91b96fd9eab0ff1936e4387688",
+      "size_bytes": 4014
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\knowledge_repository.py",
+      "role": "source",
+      "sha256": "c603c43c333bd53e40c28f5dab6fa5ba10e97669e50cf2d939ff5c7a79cfcc1b",
+      "size_bytes": 2024
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\objective_repository.py",
+      "role": "source",
+      "sha256": "7fff845dd3577c2ec22dacb2c5efdeab16055ba4f40260715f521eed49ea9bd9",
+      "size_bytes": 7552
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\pending_issue_repository.py",
+      "role": "source",
+      "sha256": "569463450f990caf05513f39d2cdace0f07048ab8cab6dac449e82e87f52e494",
+      "size_bytes": 4616
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\replay_annotation_repository.py",
+      "role": "source",
+      "sha256": "0e75c788ee5bdff30a33cac3db7e4373784a555d9cc8f8a9be07e3526474ce33",
+      "size_bytes": 4618
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\runtime_tuning_repository.py",
+      "role": "source",
+      "sha256": "7d76d07ed42d274e7a6163dc7f25ba3997af9dda092075705d45384b88bb0e5c",
+      "size_bytes": 3972
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\run_repository.py",
+      "role": "source",
+      "sha256": "b64fe44365a0069ea524abf0ae5d8506f1300de35e0bfff1bef33ebbbd2b8716",
+      "size_bytes": 2576
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\scenario_run_repository.py",
+      "role": "source",
+      "sha256": "daeedfa49a2c6e56804903c3bca21ac5adedd312b559d2983084d632a3946ed5",
+      "size_bytes": 4201
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\screenshot_store.py",
+      "role": "source",
+      "sha256": "c4eb773412ed36a42c71a9b715b554f2e0896c456ed75b6cd46b3295d3595ff5",
+      "size_bytes": 1304
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\session_artifact_repository.py",
+      "role": "source",
+      "sha256": "72bcb1f5f1fdcc1e162b57026203dfd739cb5065fe50bb4c3fdf49ea166ba288",
+      "size_bytes": 3295
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\session_state_store.py",
+      "role": "source",
+      "sha256": "1a4d0c76f92e371fbf27376d4db9bc46c75828674cd5a9cc4c9ac5aa373b4226",
+      "size_bytes": 1329
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\site_manual_repository.py",
+      "role": "source",
+      "sha256": "9fa308daa650f0f994c8689c026f3913b457499357892c51671a642dba8e5489",
+      "size_bytes": 4382
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\snapshot_version_manager.py",
+      "role": "source",
+      "sha256": "25b9c0c77a1004cb45ce202522b391aeb26d01eff0ad417c3af90bb96707defc",
+      "size_bytes": 2834
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\storage.py",
+      "role": "source",
+      "sha256": "e8b2af023a742a2bb29ea8fa88ec49cc0912b45f839d91af738013f4a827cc82",
+      "size_bytes": 3524
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\strategy_pack_repository.py",
+      "role": "source",
+      "sha256": "90c61be3d053e0cf8f1a483cd20932d08240ca01628c3fdd85644f2f8eef391f",
+      "size_bytes": 3664
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\tool_record_repository.py",
+      "role": "source",
+      "sha256": "46f0366c0d045951a9857e564c668b4fe61ea7bf523eae5c522c3c92427c3984",
+      "size_bytes": 22389
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\user_clue_repository.py",
+      "role": "source",
+      "sha256": "2b39994f110ec186065412647f799c35ed846d5604e0d51691076305cf5dd488",
+      "size_bytes": 3059
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\persistence\\__init__.py",
+      "role": "source",
+      "sha256": "fea8a667985e8c57a38df869e2f0daae02757f1ecdac61d3f9a56978afb88943",
+      "size_bytes": 71
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\ui\\factory.py",
+      "role": "source",
+      "sha256": "f72f7e3735e5bc1551a6a7d7b3d45670fd7403c4cdbe5dae31933c9fee69a32f",
+      "size_bytes": 2354
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\ui\\mss_screenshot_provider.py",
+      "role": "source",
+      "sha256": "940dd914ad003946eac889762502c48cc75167fa57f7e211763a321be16afb56",
+      "size_bytes": 6491
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\ui\\qt_screenshot_provider.py",
+      "role": "source",
+      "sha256": "1c430700819ccc49ff7c0c2add306c70afdaea6273c8406c99f902e8c7928cae",
+      "size_bytes": 6415
+    },
+    {
+      "path": "src\\iabv_v15\\infra\\ui\\__init__.py",
+      "role": "source",
+      "sha256": "4750824ffec51c5d6662829f522a1f4092c9411c27f4fdb0ce40906eac6eca95",
+      "size_bytes": 890
+    },
+    {
+      "path": "src\\iabv_v15\\scripts\\summarize_updates.py",
+      "role": "source",
+      "sha256": "663ed09c56d0bd6e24de558720dd961b363999a2fed5dd05f8a460fae7817962",
+      "size_bytes": 6887
+    },
+    {
+      "path": "src\\iabv_v15\\scripts\\__init__.py",
+      "role": "source",
+      "sha256": "473bb35ac93405dacbb39e40a4941eba0d8f826932154875d0c4270c684d3209",
+      "size_bytes": 285
+    },
+    {
+      "path": "src\\iabv_v15\\services\\account_approval_ledger.py",
+      "role": "source",
+      "sha256": "5c7b6eb6277a99e33803d5b2b01dce5db19ab503e3eeef9dce4fb2365cc8b1a7",
+      "size_bytes": 5297
+    },
+    {
+      "path": "src\\iabv_v15\\services\\account_resource_scanner.py",
+      "role": "source",
+      "sha256": "1d2340169c9711171988825a2c5b03de317015c4aee6be5aa2214801400a11ad",
+      "size_bytes": 92516
+    },
+    {
+      "path": "src\\iabv_v15\\services\\auto_correction_engine.py",
+      "role": "source",
+      "sha256": "8ed90e1e7820379006c2f8cca1cf2be55ff647d344a979d7e93b650347ab5316",
+      "size_bytes": 102363
+    },
+    {
+      "path": "src\\iabv_v15\\services\\cloud_key_autonomous_provisioner.py",
+      "role": "source",
+      "sha256": "ea3a370ade5c364244eba1ebdf36d314b7d0cbf5f18af9178ce38105ae9e89ca",
+      "size_bytes": 30001
+    },
+    {
+      "path": "src\\iabv_v15\\services\\common_sense_engine.py",
+      "role": "source",
+      "sha256": "c361d8a40b6c96cc9d2f6aa48834e5be3a73184adcc944614eafa260716e8f92",
+      "size_bytes": 92916
+    },
+    {
+      "path": "src\\iabv_v15\\services\\deep_environment_scanner.py",
+      "role": "source",
+      "sha256": "fe2f4f322d5910ffe8b9e85746c024a1e7c7744433d4eac8fc02099467e087c6",
+      "size_bytes": 32668
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution_backlog.py",
+      "role": "source",
+      "sha256": "8def3fc441f30884be766e9f9fb86bfacefe5cc092d5fc633180c14aa89481e3",
+      "size_bytes": 20345
+    },
+    {
+      "path": "src\\iabv_v15\\services\\full_system_metacognition.py",
+      "role": "source",
+      "sha256": "d6562ad4d6d040f16c4e8fea56388ab328ec227290c46eedde88f602381b0df2",
+      "size_bytes": 35174
+    },
+    {
+      "path": "src\\iabv_v15\\services\\gpu_metacognition.py",
+      "role": "source",
+      "sha256": "005a4de2010e243d7a2d3cecb5ad485f3a10a63935c755bd92d5d767ffed2cc1",
+      "size_bytes": 18439
+    },
+    {
+      "path": "src\\iabv_v15\\services\\intelligent_resource_manager.py",
+      "role": "source",
+      "sha256": "29ff289b6b3c9bec8a323a5214ad63156402afc2f05586b009b2a909f404bf7e",
+      "size_bytes": 32862
+    },
+    {
+      "path": "src\\iabv_v15\\services\\limits_awareness.py",
+      "role": "source",
+      "sha256": "3a798ff4f20567b67ab17f136de1cdcbfcab373d2c0ee14d79e96e21d347e3df",
+      "size_bytes": 16159
+    },
+    {
+      "path": "src\\iabv_v15\\services\\regression_cycle_detector.py",
+      "role": "source",
+      "sha256": "948c83d001d713721c9aa6b85919f26462ebcfbd666dfed477cc5197b97e59f5",
+      "size_bytes": 13761
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_code_analysis.py",
+      "role": "source",
+      "sha256": "dcba5fafa61d3fce7a565fc195536976b359ad0bff8f9ab779ef2daf32631a08",
+      "size_bytes": 56074
+    },
+    {
+      "path": "src\\iabv_v15\\services\\system_identity_registry.py",
+      "role": "source",
+      "sha256": "2414300117d9d9d7f08f9680e42a6d4cbf1e1501a60e93ff01fd123dd6313912",
+      "size_bytes": 19701
+    },
+    {
+      "path": "src\\iabv_v15\\services\\ui_bridge_service.py",
+      "role": "source",
+      "sha256": "ad31eddda32fe64d3f229baa9cc90de67ceab4edef5cd345f675927ff57fec26",
+      "size_bytes": 26106
+    },
+    {
+      "path": "src\\iabv_v15\\services\\__init__.py",
+      "role": "source",
+      "sha256": "6617cf445e47e1242671d6535cf45cb718ae2dff07f581da3542b43a506b934a",
+      "size_bytes": 43
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\adaptive_model_selector.py",
+      "role": "source",
+      "sha256": "34ceeb7000eff781fc06492fe9e503595c79acfe0fea6c4bec7a0915e68aa311",
+      "size_bytes": 28631
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\adaptive_planner_service.py",
+      "role": "source",
+      "sha256": "4456e4c42d71c168aa393c93817460e20122196983a26a462ca254283f31577e",
+      "size_bytes": 21988
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\adaptive_task_orchestrator.py",
+      "role": "source",
+      "sha256": "376611518c85a2f572b21dcf5d76a99a532565982020b5f14ea2550cc84929eb",
+      "size_bytes": 211594
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\adaptive_weight_layer.py",
+      "role": "source",
+      "sha256": "ad038b81c74af4a55952cd151ed102110e542e23a1b8b845a9ba790e37d33a59",
+      "size_bytes": 14298
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\approval_gate_service.py",
+      "role": "source",
+      "sha256": "607e2919559e1c22254c2202d151a160f0c12e210e2d2f00e9b89417fde5bece",
+      "size_bytes": 1666
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\assistant_preference_resolver.py",
+      "role": "source",
+      "sha256": "fc7f0ea032ee09e8e9155767c8f44244a1bedd4998f0ebc33686a8d1f537395a",
+      "size_bytes": 6309
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\autonomy_governance_policy.py",
+      "role": "source",
+      "sha256": "eea95d5977bef070a6ef6e904aa53b06e285460a9db76027c5148a0c44a041bb",
+      "size_bytes": 48460
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\capability_readiness_service.py",
+      "role": "source",
+      "sha256": "dfa77e1fd08c4383df37c3908e56c5e356d81f554f3735e51979b39f7a0b252e",
+      "size_bytes": 19164
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\cloud_reasoning_planner.py",
+      "role": "source",
+      "sha256": "07433df49251f233b979f8a3fda4a70466d71427fcd23e8262aed8cb55a51f34",
+      "size_bytes": 22196
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\consensus_fusion_service.py",
+      "role": "source",
+      "sha256": "95b3149194cde4ac0e2dedf3825c42b84a34fd640f15dbe201850cc001dbbadc",
+      "size_bytes": 9886
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\execution_playbook_service.py",
+      "role": "source",
+      "sha256": "dd1ef419c9fccb4a28aa62d179797621782d519678a32e1a0d2be2377e9d359d",
+      "size_bytes": 15002
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\goal_engine.py",
+      "role": "source",
+      "sha256": "f58e630ae64408eedcb1d0a9322ec24c65f3b0b1784a11603cdd2def50a4622f",
+      "size_bytes": 25051
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\intent_understanding_service.py",
+      "role": "source",
+      "sha256": "8decd5e25fc9a67ae4d624d2794ddaa9471b0b1c863a3fc120be795bcd3741d1",
+      "size_bytes": 88203
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\strategy_pack_registry.py",
+      "role": "source",
+      "sha256": "316db4c4107779297e1783fcdbe17d20301b352bb962e515a3e300a310e4182a",
+      "size_bytes": 32817
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\task_context_assembler.py",
+      "role": "source",
+      "sha256": "1a0ee6d9ee847b721930c704bd5f4d246a4cf8077695ec5cc412526c0607a96c",
+      "size_bytes": 98156
+    },
+    {
+      "path": "src\\iabv_v15\\services\\adaptive\\task_outcome_recorder.py",
+      "role": "source",
+      "sha256": "17815cce1089869178ac5fe60998d5b135569ecab23cfc69f3f2a13f1ea92810",
+      "size_bytes": 39158
+    },
+    {
+      "path": "src\\iabv_v15\\services\\audit\\audit_teach_verification_service.py",
+      "role": "source",
+      "sha256": "8a4d43916274cebc1e845a0f59c0b2197d9446e135676ce8c1c1c12502b411a4",
+      "size_bytes": 21130
+    },
+    {
+      "path": "src\\iabv_v15\\services\\audit\\__init__.py",
+      "role": "source",
+      "sha256": "ac235afd73cbe7e3a692e9cf271b9d2542773186aa1497c9f7cb0d5980c7ac5d",
+      "size_bytes": 152
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\browser_action_service.py",
+      "role": "source",
+      "sha256": "6b86a30b71a1d2bbaf7456150bd656d52909a4f2380c5690ea645db6efa4777a",
+      "size_bytes": 753
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\browser_learning_assembler.py",
+      "role": "source",
+      "sha256": "be70942d53148d8af67bfdf0ac2dbfcbbcb4caee25cf3bb117f157b50dd385a9",
+      "size_bytes": 23847
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\browser_session_controller.py",
+      "role": "source",
+      "sha256": "999a073f0ae335660111a8a19a7d917703e113db24c590ca063690aa34ae205e",
+      "size_bytes": 13805
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\browser_teach_session_service.py",
+      "role": "source",
+      "sha256": "ec7575dcbc216ac5660b007c8bb8adbba10e27dd47e0b6ca7c96dc3bef4c6163",
+      "size_bytes": 56600
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\demo_capture_service.py",
+      "role": "source",
+      "sha256": "42dd62be728264a37137597f09b0ae20b4dc8a2392e7d68689958bf44157726f",
+      "size_bytes": 2361
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\perception_ground_truth_comparator.py",
+      "role": "source",
+      "sha256": "3e105e62f27e60f716558e4d86f230075bf71a64ebbe7e4d368cdd0e9539a29f",
+      "size_bytes": 16548
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\redaction_engine.py",
+      "role": "source",
+      "sha256": "3b2ccc62d8fc248d1bbb657e82de07c9cf38926326f94a6c1444de1a4db51242",
+      "size_bytes": 11992
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\replay_annotation_service.py",
+      "role": "source",
+      "sha256": "ce45f6fa8e0549d052cc932318f748e4b1639f6e6616aeeef184716e69e91667",
+      "size_bytes": 4807
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\replay_confidence_service.py",
+      "role": "source",
+      "sha256": "e082cb6cfb0ddca2fd047c40ebbdedc27c9fc6af32008d2c4b3c136068a42e84",
+      "size_bytes": 10761
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\replay_learning_feedback_service.py",
+      "role": "source",
+      "sha256": "8f1e44e16e942c5c588a6ebf762de56c38d206b6af0e0b4eaddc2a10a90779da",
+      "size_bytes": 4343
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\replay_visual_assembler.py",
+      "role": "source",
+      "sha256": "aa4611207aa0e9ac30ee7b8e54cdd4d052bc028019a6bb4fb8261e297e1d5237",
+      "size_bytes": 24279
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\secret_vault.py",
+      "role": "source",
+      "sha256": "1019cf7c36ae40b75d27dadfc621900f43801df9c99149c32a039e049206ee2b",
+      "size_bytes": 1420
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\sensitive_field_detector.py",
+      "role": "source",
+      "sha256": "f2789fcb0ee7a43e50f79cda2db4dba130503cf74693efe11aece0d26bb360ec",
+      "size_bytes": 4739
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\site_policy_registry.py",
+      "role": "source",
+      "sha256": "c7c7517aef3b443aa562f0f3ba338b5ef27cda94982df958889bfd69d1ea51ed",
+      "size_bytes": 3259
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\site_session_manager.py",
+      "role": "source",
+      "sha256": "35480e7ff90977d95973acacaae382f6194d5b46929bb501ec03a0e182bb2ea8",
+      "size_bytes": 3038
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\training_profile_manager.py",
+      "role": "source",
+      "sha256": "3f6bab85ee79fe4af743d7347e76884264775a52f6505748e58b58d88b86eacd",
+      "size_bytes": 11376
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\ui_screenshot_service.py",
+      "role": "source",
+      "sha256": "a3b915e158384e7811ad30caf8031a8c79db1c5cf1dfdeb342565ce148844024",
+      "size_bytes": 12227
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\universal_perception_service.py",
+      "role": "source",
+      "sha256": "68293566abe406c72c412ed105ea6d51478bc049d5ae8cfb09106b9cd7539af5",
+      "size_bytes": 47313
+    },
+    {
+      "path": "src\\iabv_v15\\services\\capture\\__init__.py",
+      "role": "source",
+      "sha256": "0a43965baf8f480c6c038ea4c2aca436b3199e10fe7a8af8dbad04792ccbfbcf",
+      "size_bytes": 65
+    },
+    {
+      "path": "src\\iabv_v15\\services\\chat\\capability_ingestion.py",
+      "role": "source",
+      "sha256": "3c4866b01a90bcab1b774b52e55b769acac540cf921fc5145e66e4cfe06e7c12",
+      "size_bytes": 11680
+    },
+    {
+      "path": "src\\iabv_v15\\services\\chat\\__init__.py",
+      "role": "source",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "src\\iabv_v15\\services\\development\\development_assist_service.py",
+      "role": "source",
+      "sha256": "ccf43c5c2b4a01d44397d88650889352fd3a607eeb9538f9bf25f4cb2608bf4b",
+      "size_bytes": 2841
+    },
+    {
+      "path": "src\\iabv_v15\\services\\environment\\environment_bootstrap_service.py",
+      "role": "source",
+      "sha256": "30e64d48e13605e83d9f0d1fb2b3170da0784632648450c57c4f6006fb282c52",
+      "size_bytes": 9031
+    },
+    {
+      "path": "src\\iabv_v15\\services\\environment\\__init__.py",
+      "role": "source",
+      "sha256": "df1b301e2a1e49306738cf91679187bc3cbc3392f244776ed246d3cf469c25eb",
+      "size_bytes": 73
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\agent_handoff_trail.py",
+      "role": "source",
+      "sha256": "930cff6dab3b536796eeab342322aa31a25e1f20d6700f9bb3499f57455e6360",
+      "size_bytes": 12268
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\api_key_discovery_service.py",
+      "role": "source",
+      "sha256": "40af7bd455b639e866a26bd278f369bd92e80936c1b59be5d9bc38c61de123a8",
+      "size_bytes": 14195
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\autonomous_evolution_service.py",
+      "role": "source",
+      "sha256": "54a96786bce83145474d7834e18967d0b970d3675546571db1a549074f8e5774",
+      "size_bytes": 98982
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\autonomy_activity_projector.py",
+      "role": "source",
+      "sha256": "8edae0742cf3e784c77d4f50a461c18b0479629bf7cda97c3ef33260bfa4a75d",
+      "size_bytes": 32906
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\autonomy_cycle_service.py",
+      "role": "source",
+      "sha256": "05bb760b17425b08a1d2ec6534331de884e7123982bc4b4c1361f36f5e95990a",
+      "size_bytes": 12587
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\boot_profile_store.py",
+      "role": "source",
+      "sha256": "f76b96a64d514dffec8448e38f1d028f411c2fffdbe8aafd7a87a6f000214edb",
+      "size_bytes": 13621
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\capability_audit_harness.py",
+      "role": "source",
+      "sha256": "bb1cc9710f4d8dfa3eece4aa4eb6fa0dac5276865dcae7cf00d0ddd84ca95b9b",
+      "size_bytes": 11719
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\code_audit_trail.py",
+      "role": "source",
+      "sha256": "40730dd1d95702dc706107fabe07ff4c96c98d3eaa36ad14a37a7fe6e26086f4",
+      "size_bytes": 32326
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\consensus_interpretation_service.py",
+      "role": "source",
+      "sha256": "73292913853c8ce2a1e71ee3a380f4aff810054cc940b5c3f4e00dc3b395abb5",
+      "size_bytes": 15192
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\control_master_digest_builder.py",
+      "role": "source",
+      "sha256": "2a2558ef9418918e61132af1d0a1950a13c6cbcdad928faad9b853c963309cc7",
+      "size_bytes": 11818
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\control_master_service.py",
+      "role": "source",
+      "sha256": "e77868ae6e03233031a6ad1b45da5b99cde887e0a7e715a5db7ed800bd3c8135",
+      "size_bytes": 36540
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\decision_audit_trail.py",
+      "role": "source",
+      "sha256": "0af3c04b0c442c417b111c4ee7e4e2a07090bfcba518e1f5a3bc0184a55eafb4",
+      "size_bytes": 20835
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\decision_simplifier_engine.py",
+      "role": "source",
+      "sha256": "95e569cab5111605a43bf5010faaea2deb7e79945fcada2f95f14a02a54f36b1",
+      "size_bytes": 22114
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\discernment_frame_service.py",
+      "role": "source",
+      "sha256": "2fd0620d658926c0a2886c870387616f481f0d28fe798209d2c76003239ae064",
+      "size_bytes": 22193
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\embodiment_violation_detector.py",
+      "role": "source",
+      "sha256": "71195189a3dc20265d8a72099a68830f55d4c7dbd971ce8f9339301095900782",
+      "size_bytes": 10639
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\environment_self_awareness_service.py",
+      "role": "source",
+      "sha256": "9ede8bad70c4e9f76ffa958db788c9dff60ed1762b0196de1e5aea48f906d5ee",
+      "size_bytes": 58210
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\evolution_review_service.py",
+      "role": "source",
+      "sha256": "774b5dd1ae89b410c580d41636d631d965ed195092a0cd3dadd8a2317dfb180d",
+      "size_bytes": 20414
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\execution_dossier_service.py",
+      "role": "source",
+      "sha256": "f64ea02b779a4a9ed26833d095e2beb647e5adfe327af99c9fa4f27fd52bedce",
+      "size_bytes": 33815
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\freeze_incident_reporter.py",
+      "role": "source",
+      "sha256": "94d14444a9a31855b6c96e18a921425d81e6e55cf9aca500572454fd63f69af6",
+      "size_bytes": 56090
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\git_sync_service.py",
+      "role": "source",
+      "sha256": "2b1051362ee4621832fcbaba731ce897a107decf480925289d7dd97e375a17cb",
+      "size_bytes": 9906
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\hidden_incident_detector.py",
+      "role": "source",
+      "sha256": "34b55abe077588297b68a34580626855e8cf196caa0d942388e6fc8e26dbcff8",
+      "size_bytes": 7579
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\incident_packet_service.py",
+      "role": "source",
+      "sha256": "6fff00d22a0faf3767c52516587905383b5ff1113bb68242107276dd41f70fdd",
+      "size_bytes": 32303
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\intent_scoped_briefing_service.py",
+      "role": "source",
+      "sha256": "d6cea16f62382506ae2d384444178e64b8afd5577a4b8f451ad6c45bc0f0ee2d",
+      "size_bytes": 14491
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\live_audit_supervisor.py",
+      "role": "source",
+      "sha256": "6075b8d1f58e68bc30887a6e8b116a64d48ce35f493f9df7113d6ec0401e94c4",
+      "size_bytes": 41626
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\mcp_bridge_service.py",
+      "role": "source",
+      "sha256": "d8b737b53004f4816ade55983ea96465ed3f58ccd1a11f719724f42421cf8b9d",
+      "size_bytes": 24963
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\metacognition_evolution_mixin.py",
+      "role": "source",
+      "sha256": "f51d86aa11210131f482f52b6cf7d28f8a4e5d142e799493f892b3e4d4bc4970",
+      "size_bytes": 7283
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\operational_self_examination_service.py",
+      "role": "source",
+      "sha256": "2ac5fb93dbcff2997d503cfad6c3552af0fc9cb7a7d01b56e64b71250435fd52",
+      "size_bytes": 486834
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\organism_state_snapshot.py",
+      "role": "source",
+      "sha256": "18b9d8d577dc933bb2930298893b58ab0e1d46909f6b8f175c1248c7971e96ce",
+      "size_bytes": 22679
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\perception_cross_validator.py",
+      "role": "source",
+      "sha256": "73daf2d1110b4281f7d652d40535388aeef67a89a532fa32558445eb548d6139",
+      "size_bytes": 19238
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\platform_learning_orchestrator.py",
+      "role": "source",
+      "sha256": "6da1c59cddc92e526965bfb7d4b67f773665e7990ad662faab01b61f03bf56b1",
+      "size_bytes": 24588
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\platform_pending_queue.py",
+      "role": "source",
+      "sha256": "207aec863d4166e1709d0d4f9fb5d367593a5181aa6e7ba5d859f16aa016eb51",
+      "size_bytes": 21097
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\portable_context_service.py",
+      "role": "source",
+      "sha256": "2d27df3544528d70ad1cf7e1692f4e029713f86f265571f1cf1eb21288720221",
+      "size_bytes": 203922
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\resource_metacognition_service.py",
+      "role": "source",
+      "sha256": "6d83a1a6f70950c380dd071e3202be1833b3853c47980bca66f21a853d094ced",
+      "size_bytes": 32545
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\runtime_audit_tracer.py",
+      "role": "source",
+      "sha256": "d14fc43637eccf757ed0da6cc79b1fc710af8b79060ecc36f217ebffb4d2aaf8",
+      "size_bytes": 35171
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\runtime_signal_collector.py",
+      "role": "source",
+      "sha256": "b949fc8fc30709142dea906c1e6d65f4fbcdefd0343fe62dd7a95cb776de87ae",
+      "size_bytes": 3179
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\self_audit_service.py",
+      "role": "source",
+      "sha256": "423499e374601d56823cbbd5bdaa9fbbc1d58e36c9569eb43daf54655d65d179",
+      "size_bytes": 27129
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\self_check_orchestrator.py",
+      "role": "source",
+      "sha256": "6df6f8d7d650229ce404f69b6c08cc6117f090f6aa02041143135d968914801c",
+      "size_bytes": 7765
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\session_health_service.py",
+      "role": "source",
+      "sha256": "9f2b83e357970796423c16a664befe7181ca52a486271e21f6d43cb5154b28a9",
+      "size_bytes": 2998
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\session_start_briefing_service.py",
+      "role": "source",
+      "sha256": "5d7d463721d84d9b30d00abc04db37846d4fe0262fa365692325cb0f9c77a3af",
+      "size_bytes": 14083
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\token_rotation_ledger.py",
+      "role": "source",
+      "sha256": "b41e892fab7c5b0fb3d3b4c5834c56b914c7c751ea0112e38e76e65ba2ef3239",
+      "size_bytes": 14545
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\tool_discovery_service.py",
+      "role": "source",
+      "sha256": "428f3997a2a318ac3e9be06e4ce44517856bd49a92a6b62dee1737e18eee7c98",
+      "size_bytes": 27077
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\tool_evolution_monitor.py",
+      "role": "source",
+      "sha256": "7806dd19a12e14724bf10eb637d4f4a71ff7917fc538446fdf65cc5c0aa4fbff",
+      "size_bytes": 45594
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\user_clue_service.py",
+      "role": "source",
+      "sha256": "140fe7a92c190edb391baa5d94db2eea56be21ce732db9527ea753dadc173c58",
+      "size_bytes": 1279
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\world_model_service.py",
+      "role": "source",
+      "sha256": "3bce8434dada7f31bc8a86ead3af6865478389aeda9eaf7fdaba84cc5c14f929",
+      "size_bytes": 77087
+    },
+    {
+      "path": "src\\iabv_v15\\services\\evolution\\__init__.py",
+      "role": "source",
+      "sha256": "f01a374e9c81e3db89b3a42940c4d6a5447684986a1296e42bf13f196eed6295",
+      "size_bytes": 5
+    },
+    {
+      "path": "src\\iabv_v15\\services\\inference\\inference_service.py",
+      "role": "source",
+      "sha256": "7e6c0c9044f5231acbb770dbca1972e19b2e643704dfc19abbf9ed57d44c8752",
+      "size_bytes": 5186
+    },
+    {
+      "path": "src\\iabv_v15\\services\\inference\\__init__.py",
+      "role": "source",
+      "sha256": "d384dad20bbab64b6f8bdab8f2928e1bd9e417b361d20a07a5538bfd58adf96a",
+      "size_bytes": 40
+    },
+    {
+      "path": "src\\iabv_v15\\services\\knowledge\\knowledge_service.py",
+      "role": "source",
+      "sha256": "0fe372161c0a9bff425820bae82f42a9c30aa90703f7d4d4b1199969bc1a1acd",
+      "size_bytes": 1483
+    },
+    {
+      "path": "src\\iabv_v15\\services\\knowledge\\unified_memory_layer.py",
+      "role": "source",
+      "sha256": "fa8a70d03e6acab8b577e69298210154fa03650207804e288bcdec83aa0acc33",
+      "size_bytes": 4909
+    },
+    {
+      "path": "src\\iabv_v15\\services\\knowledge\\__init__.py",
+      "role": "source",
+      "sha256": "b4a792a8c0b07e6351f9cd4ba9b69efd87273575fe2276e3e1093823477295cd",
+      "size_bytes": 67
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\algorithm_benchmark_registry.py",
+      "role": "source",
+      "sha256": "152e690ecbe782fa77e009b0d47843e7892c7d7300c315b759e75cc99afaceab",
+      "size_bytes": 1671
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\decision_scoring_engine.py",
+      "role": "source",
+      "sha256": "e429aba1bcd7d79f4ca789c9a48bbf70df3f2125ec360ae580caad3876b6eb1e",
+      "size_bytes": 1701
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\experiment_lab.py",
+      "role": "source",
+      "sha256": "65f72d36f45f030c2f7b3296e3200c343ab9cda3ef0a6beb5ca7fd608bce779d",
+      "size_bytes": 23463
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\gpu_model_benchmark_service.py",
+      "role": "source",
+      "sha256": "0195c5d6579693cc27643a5468ec12556cbac628e34e7985ddad210faf3e62f4",
+      "size_bytes": 46442
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\scientific_proxy_engine.py",
+      "role": "source",
+      "sha256": "a433c7423a82a34d403ba566c09518a219dc66b70067be422bf78c079df70112",
+      "size_bytes": 7453
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\strategy_selector.py",
+      "role": "source",
+      "sha256": "fc935a39b63caeaf3e6da9f0173c572aa6885a89561303af27e97c50cb4d6f86",
+      "size_bytes": 19129
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\suites.py",
+      "role": "source",
+      "sha256": "90126c4d0b53eb8ebf625bba1a1307ce19f727c33b793954cbbbf69678d9b1e4",
+      "size_bytes": 8375
+    },
+    {
+      "path": "src\\iabv_v15\\services\\lab\\__init__.py",
+      "role": "source",
+      "sha256": "f70ee596570f8057d568a11cea6a84e0bf852adff7cc5884181dc0e749f324ec",
+      "size_bytes": 421
+    },
+    {
+      "path": "src\\iabv_v15\\services\\learning\\reproducibility_validation_service.py",
+      "role": "source",
+      "sha256": "0270fb214165d5350acca25f1e0f99227ff22c7d96af43b5987861b086cab49c",
+      "size_bytes": 9961
+    },
+    {
+      "path": "src\\iabv_v15\\services\\learning\\__init__.py",
+      "role": "source",
+      "sha256": "aa6c9b2e51013d0521895546fdbe85824aa6085b5246d398e5fbf05d684a1acc",
+      "size_bytes": 226
+    },
+    {
+      "path": "src\\iabv_v15\\services\\llm\\system_prompt_builder.py",
+      "role": "source",
+      "sha256": "649f11d9a5990500e776e404ccf4f7ae874a6547274adc52a6dedaab9815c937",
+      "size_bytes": 22068
+    },
+    {
+      "path": "src\\iabv_v15\\services\\llm\\tool_calling_bridge.py",
+      "role": "source",
+      "sha256": "31ebaaec8e3d57293abab7ab4ef7696965a905eccd03f46195419f705bea2485",
+      "size_bytes": 8605
+    },
+    {
+      "path": "src\\iabv_v15\\services\\llm\\__init__.py",
+      "role": "source",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\authentication_layer.py",
+      "role": "source",
+      "sha256": "40d2858c91a66e723486408ad29b42b16060f47fef60a8eabed9b27080ad6935",
+      "size_bytes": 10835
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\child_bootstrap.py",
+      "role": "source",
+      "sha256": "dd91a201efeba97f4748fe4a04094dcb4984bb3651786100c7930a6bce8228ce",
+      "size_bytes": 2599
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\child_spawn.py",
+      "role": "source",
+      "sha256": "b935bd36c5d56999226227cf18e5501486dc0931c1d82335b90185044e7043d5",
+      "size_bytes": 10121
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\credential_transport.py",
+      "role": "source",
+      "sha256": "ee61fb6387835ed3ba46f4356ef0e76e9005f8c6ee3b1959d81751677ac2a545",
+      "size_bytes": 4305
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\ed25519_keys.py",
+      "role": "source",
+      "sha256": "5970b8fc7dde5c8992ccd1c7a63334107455a845209fe0f5c50733db92caf3b2",
+      "size_bytes": 5077
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\phase3_authority.py",
+      "role": "source",
+      "sha256": "df3aef700f7cc7eb06a3ec4a06f9b9bb2d32a9bd7a53b7f2bed4b13c315ffd81",
+      "size_bytes": 17915
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\phase3_protocol.py",
+      "role": "source",
+      "sha256": "654f5dad25a2bc205ff9dbe63a5312bdd56d4fa406fad577177b94273602baa4",
+      "size_bytes": 10411
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\process_security.py",
+      "role": "source",
+      "sha256": "d603a541570b86d7f79687eb24fc6256f6b084b99c629938cc0b7d75f685a1b6",
+      "size_bytes": 5702
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\test_phase3_negative_security.py",
+      "role": "source",
+      "sha256": "c8b4e63b0de7abf27b1868f40696324f8d41d1511ab6f152cacc3235aa6a8d61",
+      "size_bytes": 20871
+    },
+    {
+      "path": "src\\iabv_v15\\services\\phase3\\__init__.py",
+      "role": "source",
+      "sha256": "08219f58c6aca174a0a7ea7adabfb0b3b14b4aa2cac568fc6a84f7a67574ccc6",
+      "size_bytes": 607
+    },
+    {
+      "path": "src\\iabv_v15\\services\\platform\\win_clipboard_bridge.py",
+      "role": "source",
+      "sha256": "ff1182d4352f8b3be3d689d592b1eb7a2110f69ad5137c27e461f6fe29dbb6d2",
+      "size_bytes": 4945
+    },
+    {
+      "path": "src\\iabv_v15\\services\\platform\\win_systray_bridge.py",
+      "role": "source",
+      "sha256": "5ccb17d74a7808359b73eca57995fbe6bd62cc01ee718b9261b3aa8f89b02c7b",
+      "size_bytes": 6805
+    },
+    {
+      "path": "src\\iabv_v15\\services\\platform\\win_toast_bridge.py",
+      "role": "source",
+      "sha256": "f36073a666fb922c4b6fb13fabe1b6e7c0e55c69c01b93335c51ffb606f2f7f1",
+      "size_bytes": 4900
+    },
+    {
+      "path": "src\\iabv_v15\\services\\platform\\__init__.py",
+      "role": "source",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "src\\iabv_v15\\services\\providers\\base.py",
+      "role": "source",
+      "sha256": "edbd57b20404a724d72f86d5eb31b5b32204e8af5245e4787fa7ce4bc168b930",
+      "size_bytes": 1303
+    },
+    {
+      "path": "src\\iabv_v15\\services\\providers\\ollama_expert_provider.py",
+      "role": "source",
+      "sha256": "e8042b11419319e64afefcbc51f6cc1d783ed62d0de8158371d998b0a3dee190",
+      "size_bytes": 14646
+    },
+    {
+      "path": "src\\iabv_v15\\services\\providers\\openai_compat_local_provider.py",
+      "role": "source",
+      "sha256": "3f81d6c261ee67f537d58224d91b835c02dca2e30a5a4b55718e917c9931a45e",
+      "size_bytes": 9165
+    },
+    {
+      "path": "src\\iabv_v15\\services\\providers\\openai_provider.py",
+      "role": "source",
+      "sha256": "9632bdf669daf8f937547dcf2ff20fdce7dda046364a61b16dcc1592cddb116c",
+      "size_bytes": 6293
+    },
+    {
+      "path": "src\\iabv_v15\\services\\providers\\provider_health_router.py",
+      "role": "source",
+      "sha256": "1b4b5664989d0ca540145e592281c95e4ad1855a1db2d73bf6e4c407326388b5",
+      "size_bytes": 6911
+    },
+    {
+      "path": "src\\iabv_v15\\services\\providers\\provider_router.py",
+      "role": "source",
+      "sha256": "35e6b3806d8f4ec34a89e81552a47057306f02c84be73da8c644a3ffd8e820c5",
+      "size_bytes": 6956
+    },
+    {
+      "path": "src\\iabv_v15\\services\\providers\\__init__.py",
+      "role": "source",
+      "sha256": "e7a37ae53f02034ec6632c8adb494173fb21e23f540fabc66cc442959110096e",
+      "size_bytes": 60
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\analytics_strategy_service.py",
+      "role": "source",
+      "sha256": "64853e7ece8e359dea63c9d5cb39680c2b37775011ccb86905f0cd23de9a5273",
+      "size_bytes": 3701
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\assistant_capability_registry.py",
+      "role": "source",
+      "sha256": "68c27f794ae972eacc4a7671b95c8e166e1a610073ca0b7cbed74d1e16114203",
+      "size_bytes": 9700
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\cognitive_frame_translator.py",
+      "role": "source",
+      "sha256": "cb11d4656b90f20c9040eec463cde090cb5b009b4c93f354d9198dacf98c21a1",
+      "size_bytes": 18122
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\customer_support_service.py",
+      "role": "source",
+      "sha256": "66672a6e9f1859af35b82afc710775123104558877df1b61978a8871161b9638",
+      "size_bytes": 1805
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\embedding_index_service.py",
+      "role": "source",
+      "sha256": "e8c282a2cd6881cbd08c068fe81db63312dbef2c458a75d4647c738227c0ccdd",
+      "size_bytes": 6497
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\engineering_review_service.py",
+      "role": "source",
+      "sha256": "c8f3377aaa8fdafd7f2ad48ebe1b057a849063c2a1a517b9a2de1f1ac0a1f524",
+      "size_bytes": 6255
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\local_role_router.py",
+      "role": "source",
+      "sha256": "09289f5711009f598c3db530599a9da66dc8d48f0659106c3c7027c3a5facb8c",
+      "size_bytes": 51883
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\sql_query_advisor_service.py",
+      "role": "source",
+      "sha256": "90d3a6ec06f6e9d832abe26f55e32d50a2d7db7b783fc268682b129a85752022",
+      "size_bytes": 3528
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\synaptic_router.py",
+      "role": "source",
+      "sha256": "1d7a7eb705576c197452d170581819d6f432597377755c97ca9d67cfa8ba7b5f",
+      "size_bytes": 19989
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\teaching_gap_analyzer.py",
+      "role": "source",
+      "sha256": "43bcc3d1a6bf2a3888be112ae3c2e7ed5c511f6cb9215a4294fb220d3f38302d",
+      "size_bytes": 3402
+    },
+    {
+      "path": "src\\iabv_v15\\services\\roles\\__init__.py",
+      "role": "source",
+      "sha256": "37d70fd8ad5abbe0e92cf93bfb90940d76fad0c01f706811a70efcac6802b84a",
+      "size_bytes": 813
+    },
+    {
+      "path": "src\\iabv_v15\\services\\security\\approval_memory.py",
+      "role": "source",
+      "sha256": "1eb0714ec54181d718f3bd939bf9f71b1aadcd5829fe11d9a935b0cc6117dddb",
+      "size_bytes": 10724
+    },
+    {
+      "path": "src\\iabv_v15\\services\\security\\credential_broker.py",
+      "role": "source",
+      "sha256": "efa3f6d940f56fb7251bc03f90e743feb458d4aa5d65de8680126743b46d52f2",
+      "size_bytes": 5277
+    },
+    {
+      "path": "src\\iabv_v15\\services\\security\\human_approval_broker.py",
+      "role": "source",
+      "sha256": "b8abf4f98473646b0319095c0fb74360041cad8760b5cdfaefe7ccd7e88c833a",
+      "size_bytes": 15651
+    },
+    {
+      "path": "src\\iabv_v15\\services\\security\\proactive_dashboard_service.py",
+      "role": "source",
+      "sha256": "05daf267e77f6e5cd0bd9cc67dbf9c34c8672a738ecd45d5e90a9ed9fa4b6662",
+      "size_bytes": 7785
+    },
+    {
+      "path": "src\\iabv_v15\\services\\security\\__init__.py",
+      "role": "source",
+      "sha256": "9ebabaf2fd509cd0adb60e02a45482636a1f34cc50c5f835e734468e7a9c3844",
+      "size_bytes": 70
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\autonomous_validation_cycle.py",
+      "role": "source",
+      "sha256": "dfc9dd31a2bd3bd2d4201b647744ac4d799e3389731086b3c4b7432a30ea77fb",
+      "size_bytes": 95585
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\execution_probe_service.py",
+      "role": "source",
+      "sha256": "a263159a31e0d20838158ddb5272cf3d04a1ed215dfda0ac90c0ffe0c25dcd4d",
+      "size_bytes": 2281
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\expectation_matcher.py",
+      "role": "source",
+      "sha256": "4a7fae5ddeb6182506b0e33607167c86b30dfd3b1f1721dc50771777999662da",
+      "size_bytes": 1551
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\pending_issue_service.py",
+      "role": "source",
+      "sha256": "926063ee37c649cae315cf035adb7b78f14e59e2585009250317b1e930142737",
+      "size_bytes": 5109
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\promotion_pr_publisher.py",
+      "role": "source",
+      "sha256": "48525ff9aa9af2f9bd730ec1c38cce4004a726411bf90c29fc66e339dacf72d6",
+      "size_bytes": 16219
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\result_comparator.py",
+      "role": "source",
+      "sha256": "9cbb78fc5fcbb0ee364154ce3402b172eca9a2b1f4b2501574a097761e88df2c",
+      "size_bytes": 9193
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\runtime_tuner.py",
+      "role": "source",
+      "sha256": "8a9be303bddb122f7eed2df8a75fb4a19c681235003f9e6e7c8d6dc3b2857057",
+      "size_bytes": 5419
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\sandbox_experiment_service.py",
+      "role": "source",
+      "sha256": "acca7e541aaec7ec7293ff5a56b90d36f3703e5bc55ac92c78c8a58859ecd2fb",
+      "size_bytes": 15046
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\scenario_auto_test_service.py",
+      "role": "source",
+      "sha256": "766dbd63b0ae2a687560b380c13e1a97ea9478e913c949f2ba2786e61471e558",
+      "size_bytes": 6538
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\scenario_registry.py",
+      "role": "source",
+      "sha256": "2267584e81bde16683f774e5e3923fb9ff360536d5b7f10f9c14ce6978855864",
+      "size_bytes": 3886
+    },
+    {
+      "path": "src\\iabv_v15\\services\\self_teach\\self_teach_orchestrator.py",
+      "role": "source",
+      "sha256": "da392febb0f53d3fd762241b5d9d4265fd4a229f97073214e8bb45dd00d80c41",
+      "size_bytes": 33993
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tests\\test_system_identity_registry.py",
+      "role": "source",
+      "sha256": "9e94fef1751309eacb4f08e10ee773eaebb415a3537efa50f2ed7de798b6fa99",
+      "size_bytes": 5347
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\github_remote_service.py",
+      "role": "source",
+      "sha256": "bf8846612c6ca215f62385857dfcab65b14f8b8ed61f850a37390966de8a9640",
+      "size_bytes": 15256
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\interaction_learning_service.py",
+      "role": "source",
+      "sha256": "a7204e024a57ea1c8ad3135a66a11af8f3e732494c43fae09d316c387a8ebf11",
+      "size_bytes": 44004
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\interaction_mode_selector.py",
+      "role": "source",
+      "sha256": "c896eabd88d5301b9fd4017a0852fbe3848b5eeede68812ccf5a2e2c518c6caf",
+      "size_bytes": 26640
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\site_exploration_service.py",
+      "role": "source",
+      "sha256": "c4d6f18adfc837c00b6778bda9a70eb2ac98b8da05f143f838b6b5bb56914dcd",
+      "size_bytes": 10842
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_adapters.py",
+      "role": "source",
+      "sha256": "3aeb4518817c7288414d8a08c47b60278499dad947ccdd8dc93208b25c983d16",
+      "size_bytes": 135113
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_approval_policy.py",
+      "role": "source",
+      "sha256": "e1074ceb28b54541d84c34282f657ba794d07ee04cb176b7de5bfb70a613877e",
+      "size_bytes": 908
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_memory.py",
+      "role": "source",
+      "sha256": "81ec0ddb6cca87028beb65374a7c11ee293c04777d3c099967328c0b8f5e2063",
+      "size_bytes": 5523
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_operational_executor.py",
+      "role": "source",
+      "sha256": "7784d895e49a4676a46307634d1a62f1d578e03b8860ca0b220c70be2d94b5c6",
+      "size_bytes": 4380
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_registry.py",
+      "role": "source",
+      "sha256": "aa2cb6e2fdad2c963efe5933dd9c410d031e0bc172b6aaca95b2d85c443c2424",
+      "size_bytes": 36785
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_rollback_manager.py",
+      "role": "source",
+      "sha256": "6d0ce9968acab36007ff7a19b183bb9ddd5ce7d9749233e71109d01c2f801e15",
+      "size_bytes": 2499
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_sandbox.py",
+      "role": "source",
+      "sha256": "49737c75e63ccf1e925dc417032ac9aa38999a9d83092400817aacc4176476cd",
+      "size_bytes": 1639
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_teach_service.py",
+      "role": "source",
+      "sha256": "36e5dae9e3cefcf209e5a932fc168b29ac60b4e97a8e6bd514dcd6e8c45ffaf2",
+      "size_bytes": 103797
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_validator.py",
+      "role": "source",
+      "sha256": "6dda52cca5947e4738af8c5db4002b6d5cc5765f2bb0d218ff5109dd11bfd832",
+      "size_bytes": 2423
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\tool_version_monitor.py",
+      "role": "source",
+      "sha256": "0e9356fa2157866e0c498ffe7c43384bfa822bc4e91c4e2a2498e645b1352e15",
+      "size_bytes": 8997
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\ui_execution_runner.py",
+      "role": "source",
+      "sha256": "47461a727bc34d6d9d637ec7565550697834f0b6695fb3b60779c03fc00f1fd3",
+      "size_bytes": 75773
+    },
+    {
+      "path": "src\\iabv_v15\\services\\tools\\__init__.py",
+      "role": "source",
+      "sha256": "00d24499ef42b268aefc39d6ad5f482fb596386d74eb3c97d4702dedae54f448",
+      "size_bytes": 469
+    },
+    {
+      "path": "src\\iabv_v15\\services\\training\\payload_archive_service.py",
+      "role": "source",
+      "sha256": "318912058fe22780e65dbb28a3e01575944d5f620a015611083193531d163a80",
+      "size_bytes": 1309
+    },
+    {
+      "path": "src\\iabv_v15\\services\\training\\pbt_control_service.py",
+      "role": "source",
+      "sha256": "66f474cd73df032ae1f2d454cf7dff925e39da9b3a0c88706ba7e52ddbe354a0",
+      "size_bytes": 5743
+    },
+    {
+      "path": "src\\iabv_v15\\services\\training\\training_orchestrator.py",
+      "role": "source",
+      "sha256": "1711ab80d252644bcbd0e7b35359f405980d95fa6d16ee92c80cb7a32b5bf51b",
+      "size_bytes": 4034
+    },
+    {
+      "path": "src\\iabv_v15\\services\\training\\__init__.py",
+      "role": "source",
+      "sha256": "f6654ae629a7f3061f95eb26b629e47fa25827645992a6b165555e36f7fe1c9c",
+      "size_bytes": 56
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\authority_client.py",
+      "role": "source",
+      "sha256": "aa78ea2286c93c9c175e8d8ba9fd4e836e3c317cdaac694b25523fe54927a631",
+      "size_bytes": 17684
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\authority_process.py",
+      "role": "source",
+      "sha256": "cd15582af1489e99b641cefa77ae636b5575fdedbb4a8139b8de62b6bba3a7d1",
+      "size_bytes": 5880
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\authority_protocol.py",
+      "role": "source",
+      "sha256": "bb87e4052dcdba9e739abd22643e37dde8939f97f8128679518bffed3469edb4",
+      "size_bytes": 14844
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\authority_server.py",
+      "role": "source",
+      "sha256": "047c8d16dc84cf192366a66606cb440d08301fe164511e8c73dfa0fe4f7658e1",
+      "size_bytes": 20524
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\authority_service.py",
+      "role": "source",
+      "sha256": "41d8e4db4692ae81077bdc486a236cbf7cbf2aed45912e5937372484177994a9",
+      "size_bytes": 56609
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\root_trust_anchor.py",
+      "role": "source",
+      "sha256": "dab8853d3b6abedcacb25bb80491387e949827954981aa24b389e51ce41540b8",
+      "size_bytes": 8330
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\test_phase3_transport_integration.py",
+      "role": "source",
+      "sha256": "5f9bfaec92d8978631ae8a2f249dba931468aa8dd8baef7c635119e30bb3ce8f",
+      "size_bytes": 48012
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\trusted_execution_identity.py",
+      "role": "source",
+      "sha256": "e2363cf25908b763718c2e49c5a22783149345adde0122fe5158c0bc844c75da",
+      "size_bytes": 11550
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\trusted_lease.py",
+      "role": "source",
+      "sha256": "ff192e7f950d9d6319c54d04499621e467c5c2d31b4cc262abf09ff26c3a870d",
+      "size_bytes": 15784
+    },
+    {
+      "path": "src\\iabv_v15\\services\\trust\\__init__.py",
+      "role": "source",
+      "sha256": "551bb715d6c2370561caa1586308e12a55c529cfcea404e67a8372d2934e9dea",
+      "size_bytes": 466
+    },
+    {
+      "path": "src\\iabv_v15\\services\\ux\\clarification_request_service.py",
+      "role": "source",
+      "sha256": "81f5220eab656e9c6e0938432598bc7a4a0496295adbbbd7c067591716d9d9e0",
+      "size_bytes": 3464
+    },
+    {
+      "path": "src\\iabv_v15\\services\\ux\\__init__.py",
+      "role": "source",
+      "sha256": "bdcb407c9504d7df491754d74fcdf4f43bea7d15cc9ee67816607a6590d8c5c0",
+      "size_bytes": 66
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qt.py",
+      "role": "source",
+      "sha256": "131506bd7c780e717292445148714589f7fc8c50a9ee6aa6fef09506ec514f22",
+      "size_bytes": 3639
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\splash_controller.py",
+      "role": "source",
+      "sha256": "7edb8fcb18f45aa08308faf19e5aa666c3366fd00ee16d62b88becbc8b9cbe73",
+      "size_bytes": 7081
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\__init__.py",
+      "role": "source",
+      "sha256": "285f21cb9c38a674b50a130cc043b0972cb86f10ebd732274d276f24520de80b",
+      "size_bytes": 52
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\controllers\\main_window_bridge.py",
+      "role": "source",
+      "sha256": "7942bb9a6d53f5d4270e237c7363ef874ec9d52a5c60cedbcbaab8abe331474c",
+      "size_bytes": 5408
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\controllers\\navigation_controller.py",
+      "role": "source",
+      "sha256": "795dd835078b0bd47a46acebe57933deb0f84f044e73b1e00e64a3de43e0a61f",
+      "size_bytes": 1925
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\controllers\\theme_controller.py",
+      "role": "source",
+      "sha256": "af438ccca55080ef48c58133fbaf8299ae684c0c7a2ea953f5fcb4697d29bf0c",
+      "size_bytes": 418
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\controllers\\__init__.py",
+      "role": "source",
+      "sha256": "b241340c965aa7ad8735eb5d47250fd17c38bbb6f9ebe387e35b952d43c39893",
+      "size_bytes": 35
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\Main.qml",
+      "role": "source",
+      "sha256": "81249ffb05affdb6b8364918104e62ce66d47a3ead5cfda5301d65be7082740a",
+      "size_bytes": 19918
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\SplashScreen.qml",
+      "role": "source",
+      "sha256": "c665c9a662d1c781d7e99d27bf69369595377f1464b6ce9d0780c0d30720b8ea",
+      "size_bytes": 14873
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\AIAccountStatusPanel.qml",
+      "role": "source",
+      "sha256": "067b73658d53780270ff01aff509f6cd706eda93dc5c68feb7c6f309c81f153c",
+      "size_bytes": 9169
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\AppButton.qml",
+      "role": "source",
+      "sha256": "5030345ad98e442ba7d05e07342663bb32ef8a7ee95c494737fa97c074bc7581",
+      "size_bytes": 1497
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\AppTextArea.qml",
+      "role": "source",
+      "sha256": "c6761669bbf20309e174344f4425e263f2c0fd0928249d7c64bcbe2beab3cb7f",
+      "size_bytes": 799
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\AppTextField.qml",
+      "role": "source",
+      "sha256": "c9cc722ca17e7c6fd18239e9ab349f65375ff81b8fa64833f7c77e08431f2b50",
+      "size_bytes": 748
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\BackgroundActivityChip.qml",
+      "role": "source",
+      "sha256": "722dd3f18e590ccdb66c457f2dd77587a7ebd26f438858edf40267481e8e69c8",
+      "size_bytes": 7383
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\ChatMessageDelegate.qml",
+      "role": "source",
+      "sha256": "a2b8bfc778d4aff677eda7f6f509d730b9d057d3561221aa7f9442c4e2439f93",
+      "size_bytes": 22828
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\ChatToolbar.qml",
+      "role": "source",
+      "sha256": "aa26da198fe4a60b7ec87de14e9a9930a0aa38336a01a8a60937adc7dbc0a28d",
+      "size_bytes": 14860
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\ClarificationDialog.qml",
+      "role": "source",
+      "sha256": "3d563ddb7e6dee30709a682df43def8832c0d9bb85455f0ac172d6d0e4f8d001",
+      "size_bytes": 6337
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\ContextualSuggestionsPanel.qml",
+      "role": "source",
+      "sha256": "5cb15145d625066847a1dcb7a033c9ed9f74e9ac5b73ba816979462404f597b6",
+      "size_bytes": 6363
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\CredentialPromptDialog.qml",
+      "role": "source",
+      "sha256": "98d54626e43eb49165392c1d9936a415647dbf59f3c8e5c51b9777a7530c05b7",
+      "size_bytes": 6633
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\GlassPanel.qml",
+      "role": "source",
+      "sha256": "92ee5cc03002a5919e868c2f444cecb3cef394dc14f07b4574e7a08385691047",
+      "size_bytes": 231
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\InlineCredentialPrompt.qml",
+      "role": "source",
+      "sha256": "556d12abbc0b60ceee80bcf27776b3ffcd78d5c57a94dd8f3f4245155939f37b",
+      "size_bytes": 6210
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\MissingDependencyDialog.qml",
+      "role": "source",
+      "sha256": "1b8973118d8bbe08345ec9d780386aa48080f3017f63b79d346aaeb680a15fc9",
+      "size_bytes": 6376
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\StatusPill.qml",
+      "role": "source",
+      "sha256": "07a3244348f4758c9ad9c742ff64a13589853aeccdd1aae88a60fc3f9ebb8d16",
+      "size_bytes": 1207
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\ToolHealthPanel.qml",
+      "role": "source",
+      "sha256": "5e52ad32ee9aaf8e0ddb1f65f7b49f7a8d779d802353bddb96d45f663d755e12",
+      "size_bytes": 10991
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\components\\TruthStateBadge.qml",
+      "role": "source",
+      "sha256": "1fd94bbe499973ef3e26a61805a399a1585ec8e4fce7b49d4c28927b04137424",
+      "size_bytes": 1411
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\CaptureStudioPage.qml",
+      "role": "source",
+      "sha256": "27617e8004a4106e6431852832e4201beee1b879d30a1ed688af2e656e3bcf18",
+      "size_bytes": 121747
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\CentroVivoPage.qml",
+      "role": "source",
+      "sha256": "9ba89cf1e6b994587f52d9be5ec8190d7f5b6c2ac503ec49bacb041b512fd06a",
+      "size_bytes": 38931
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\ControlCenterPage.qml",
+      "role": "source",
+      "sha256": "687ab6330dfd652de804790559d7437c7baf9a0777a9414fb544e04a49978598",
+      "size_bytes": 67594
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\DashboardPage.qml",
+      "role": "source",
+      "sha256": "4f8e5dd3e6244f62eabc1ddde79f572a63e4ca726cee6faa049b87f0cede7373",
+      "size_bytes": 8579
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\EvolutionCenterPage.qml",
+      "role": "source",
+      "sha256": "9258cdf54c3a0ee4c45c34795077c006010cb93acc6b4a5542ffeb547bcfab12",
+      "size_bytes": 67274
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\KnowledgeBasePage.qml",
+      "role": "source",
+      "sha256": "b28a95923971dcbdb40eee496f8ff2195ca37a3db1a27ab3dbcce28060e07c0a",
+      "size_bytes": 4150
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\ProviderSettingsPage.qml",
+      "role": "source",
+      "sha256": "c365048f223122d51606250336da8aab1ad7063cb14a214d8b487049272bf665",
+      "size_bytes": 6092
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\qml\\pages\\RunHistoryPage.qml",
+      "role": "source",
+      "sha256": "604a3f47e5d1279e049b3827c50954c6cd024e5007370b22f3fd49af50fcdbdc",
+      "size_bytes": 9576
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\capture_studio_viewmodel.py",
+      "role": "source",
+      "sha256": "507c427b80980e0ad6a90c498be6578adb4bc0362c56ea667fd2d1825a182eaa",
+      "size_bytes": 146317
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\centro_vivo_viewmodel.py",
+      "role": "source",
+      "sha256": "7a7eda785713d5d4627be405408eb271b197c58ac8c7f42181df7190ea1e1fa3",
+      "size_bytes": 18820
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\control_center_viewmodel.py",
+      "role": "source",
+      "sha256": "8ac128032f7c7342d1a6412cbdb845c11ebb4cdf15ff47b3cd21514dbb09dc4c",
+      "size_bytes": 776787
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\dashboard_viewmodel.py",
+      "role": "source",
+      "sha256": "fab986817981b19cc17708e55aed0469cf842b60f8f95c7522c238fbae74b2f2",
+      "size_bytes": 8243
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\evolution_center_viewmodel.py",
+      "role": "source",
+      "sha256": "962dc577bb1089bdf8303ba69d8bf2d891724ea361218c4e3a9d1ca81b16b961",
+      "size_bytes": 50731
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\knowledge_base_viewmodel.py",
+      "role": "source",
+      "sha256": "88029f4474cfa7b6adee756ada87c1d57041fa395980a3ae04fb46f6d91e7d56",
+      "size_bytes": 1219
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\provider_settings_viewmodel.py",
+      "role": "source",
+      "sha256": "915d1bd9489bcd34039339c581cd548b95cfd116a818f407c09933921bdb7449",
+      "size_bytes": 5244
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\run_history_viewmodel.py",
+      "role": "source",
+      "sha256": "f8827c8dadfc7638d818915377159de1ad9f646b0cb90e111f189a742a7ffc6f",
+      "size_bytes": 6814
+    },
+    {
+      "path": "src\\iabv_v15\\ui\\viewmodels\\__init__.py",
+      "role": "source",
+      "sha256": "cf8d3244557749cb75c2d3151f13e33cec0c29a10da0958883b363b862ed3e4a",
+      "size_bytes": 52
+    },
+    {
+      "path": "src\\iabv_v15.egg-info\\dependency_links.txt",
+      "role": "source",
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "size_bytes": 2
+    },
+    {
+      "path": "src\\iabv_v15.egg-info\\PKG-INFO",
+      "role": "source",
+      "sha256": "bb74897eb82a7af052892f54f74e11aeff983d9fb4de38506a0f4f5550feca62",
+      "size_bytes": 1605
+    },
+    {
+      "path": "src\\iabv_v15.egg-info\\requires.txt",
+      "role": "source",
+      "sha256": "57197a04c252912eebe840055d6721ead0c2472eb0357768ccf27c69dd8141e3",
+      "size_bytes": 96
+    },
+    {
+      "path": "src\\iabv_v15.egg-info\\SOURCES.txt",
+      "role": "source",
+      "sha256": "2a4149c630e9fe3558646fb8fd73c1a69b8e63f5e97f3020e93220f4dcf98bd3",
+      "size_bytes": 2469
+    },
+    {
+      "path": "src\\iabv_v15.egg-info\\top_level.txt",
+      "role": "source",
+      "sha256": "f74a7ae7ab95138496f1a4d6ef4c8a48f928e017d7d73fe1fb46b3f82e170f37",
+      "size_bytes": 10
+    },
+    {
+      "path": "tests\\conftest.py",
+      "role": "test",
+      "sha256": "343bd733a0660cd50c85d58e431853288d6909d9d2719d4c6dd9bb271fbb7e00",
+      "size_bytes": 851
+    },
+    {
+      "path": "tests\\test_account_approval_flow.py",
+      "role": "test",
+      "sha256": "ebbe8f7fa1711a931bbf0645c1f31ef24a2023d7e88974850f699598c4e69b67",
+      "size_bytes": 36868
+    },
+    {
+      "path": "tests\\test_account_inventory.py",
+      "role": "test",
+      "sha256": "6879a6ec1e16fd497094d7458f4e417e7859ac13d3e56644f05c105b98bd9215",
+      "size_bytes": 34330
+    },
+    {
+      "path": "tests\\test_account_resource_portable_context.py",
+      "role": "test",
+      "sha256": "e55f7ab665a83c8e5f3ad38bbf1c47855c5782c9b8e96b2be462fd999f09bdb0",
+      "size_bytes": 23372
+    },
+    {
+      "path": "tests\\test_adaptive_model_selector.py",
+      "role": "test",
+      "sha256": "29cd3d6e6a5f7e4d6620f81ccc42390a4a2fd2e9cb4bcfd17d7595d981e05054",
+      "size_bytes": 14434
+    },
+    {
+      "path": "tests\\test_adaptive_orchestrator_local_chat_llm.py",
+      "role": "test",
+      "sha256": "cf2594d59f6eb423eae37fbcfd466f9a8f263e242b5d08e5dc62b068879ed19c",
+      "size_bytes": 18120
+    },
+    {
+      "path": "tests\\test_adaptive_planner_service.py",
+      "role": "test",
+      "sha256": "ad23c8430750dda7e71264a100289d95c18b4347d1a08041dea5badd19255a7d",
+      "size_bytes": 3491
+    },
+    {
+      "path": "tests\\test_adaptive_task_orchestrator.py",
+      "role": "test",
+      "sha256": "e95ab4a99049432f2144e5046b72460a5cc84812bb1c81ac37f468426c52d49d",
+      "size_bytes": 75430
+    },
+    {
+      "path": "tests\\test_adaptive_threshold_nc.py",
+      "role": "test",
+      "sha256": "42c47e7d1cf5d1d2421943c9e884f940d005b16782aa2685d8198382a43b47f4",
+      "size_bytes": 10302
+    },
+    {
+      "path": "tests\\test_adaptive_weight_layer.py",
+      "role": "test",
+      "sha256": "505f96f34ab7c7ebcae76a4a1c0ca36ffe589dfd55a21ace4ee9610b1e6b6b3c",
+      "size_bytes": 7745
+    },
+    {
+      "path": "tests\\test_agent_handoff_trail.py",
+      "role": "test",
+      "sha256": "b162dc81b474f84820f099890d81e7becaefbc10371ddb4822c804e2ba43533d",
+      "size_bytes": 43949
+    },
+    {
+      "path": "tests\\test_api_key_discovery_service.py",
+      "role": "test",
+      "sha256": "2bdd87f950725f9bd48dfb563926f8cc43532a9b74153465f2cfe239c36e7697",
+      "size_bytes": 6332
+    },
+    {
+      "path": "tests\\test_approval_memory.py",
+      "role": "test",
+      "sha256": "6ca027915590be1a490933a0fc8b0a38033fd8302031a2d1ed69a36530f951cf",
+      "size_bytes": 9841
+    },
+    {
+      "path": "tests\\test_assistant_capability_profile.py",
+      "role": "test",
+      "sha256": "e18a32df5e0e056e963859912c2f9af023e64239305a45db39e76701058171ee",
+      "size_bytes": 5187
+    },
+    {
+      "path": "tests\\test_assistant_unavailable_gate.py",
+      "role": "test",
+      "sha256": "3232a0e2f8c233fb21335fca39aa34e78ebfc753d77c805a307ae3cbddd4bb8d",
+      "size_bytes": 7467
+    },
+    {
+      "path": "tests\\test_audit_fixes.py",
+      "role": "test",
+      "sha256": "ca2824496f47f3cef1ff2d3b39913a5fe563b661e5cfc69eaf5bde421b1dfee6",
+      "size_bytes": 10253
+    },
+    {
+      "path": "tests\\test_audit_teach_verification_service.py",
+      "role": "test",
+      "sha256": "c12f8617ed7be54d3c583592ddb0d350c6fec5e637834d54f76a84b7b7619588",
+      "size_bytes": 5356
+    },
+    {
+      "path": "tests\\test_autonomous_evolution_service.py",
+      "role": "test",
+      "sha256": "e70bb871b114c9e5dc2f894b67da798a594b7f38037d3eb6cc1f62ab1f49dcfe",
+      "size_bytes": 56586
+    },
+    {
+      "path": "tests\\test_autonomous_validation_cycle.py",
+      "role": "test",
+      "sha256": "72208f70c6265bf3782726dcdd10a41ca6a7968fad6fcf77549396a778862021",
+      "size_bytes": 37921
+    },
+    {
+      "path": "tests\\test_autonomy_cycle_service.py",
+      "role": "test",
+      "sha256": "da9e17ec43a42054f9a61e4684d527d16da253d12856a7d15b0b5a5ee86cfc2c",
+      "size_bytes": 17410
+    },
+    {
+      "path": "tests\\test_autonomy_governance_allow_github_merge.py",
+      "role": "test",
+      "sha256": "875560b76d4428f84318b2e53f91a241fdfb0ab9dc8995083e53356454df39b6",
+      "size_bytes": 10401
+    },
+    {
+      "path": "tests\\test_autonomy_governance_allow_github_pr_open.py",
+      "role": "test",
+      "sha256": "8ef3f04499cb6774d371b9605a626e226cd03e9b6a14078fd1f5e1a14fe73d6c",
+      "size_bytes": 3564
+    },
+    {
+      "path": "tests\\test_auto_load_secrets.py",
+      "role": "test",
+      "sha256": "71cc0c63c4442f47bdeba39df3d6278677f84d1eaf7da95e5520fa1e870622b0",
+      "size_bytes": 6775
+    },
+    {
+      "path": "tests\\test_auto_merge_devin_pr.py",
+      "role": "test",
+      "sha256": "6e55925c29db7c0d8dbc026b25c0c8ee705571efb319f9d5237501198be0eaad",
+      "size_bytes": 5858
+    },
+    {
+      "path": "tests\\test_auto_research_cycle.py",
+      "role": "test",
+      "sha256": "0f58f53713d82ac5b62512bb1848ce9936626b25826fe36782f4d2529a901145",
+      "size_bytes": 11914
+    },
+    {
+      "path": "tests\\test_backlog_complete.py",
+      "role": "test",
+      "sha256": "a70084a12c38880f7be3a3430171d12cce77ad5848811e48c42e395d8952e2ab",
+      "size_bytes": 42533
+    },
+    {
+      "path": "tests\\test_block_risk_per_worker.py",
+      "role": "test",
+      "sha256": "e2590fa5107012a71f271ec4d7e1a43fddc9865ebfa69937e8b4470879ec7118",
+      "size_bytes": 9725
+    },
+    {
+      "path": "tests\\test_bootstrap_defer_init.py",
+      "role": "test",
+      "sha256": "57de0b52cefd1ec83b0b5338a75a0f6ccc0ed4a2fb67a6e92f9de2bedf33f620",
+      "size_bytes": 10148
+    },
+    {
+      "path": "tests\\test_bootstrap_defer_tool_probe.py",
+      "role": "test",
+      "sha256": "a93d91337c5d6e622ae369779054aec6ca36448b088e20cb646b488af83f90d0",
+      "size_bytes": 4889
+    },
+    {
+      "path": "tests\\test_bootstrap_devin_api_key_resolution.py",
+      "role": "test",
+      "sha256": "6ad09322d44ecb6665ab0f01b3ab850be4e377555b56c39349292c25a41a9ae0",
+      "size_bytes": 1807
+    },
+    {
+      "path": "tests\\test_bootstrap_devin_helpers.py",
+      "role": "test",
+      "sha256": "d917c0a1e7d2d5a8c5b3f1da87d4484dd00d45dedef39944ef5619db7cbd80d8",
+      "size_bytes": 5301
+    },
+    {
+      "path": "tests\\test_bootstrap_github_token_resolution.py",
+      "role": "test",
+      "sha256": "4d8f9a65751df4486fd169943f273664cd192a1dc34cec85b13b59d5f5168f97",
+      "size_bytes": 2001
+    },
+    {
+      "path": "tests\\test_bootstrap_lazy_loading.py",
+      "role": "test",
+      "sha256": "320ac83fe12e9886097b7c22895c62fcf0d0fc00f9ba9d3eb022048332da596b",
+      "size_bytes": 8504
+    },
+    {
+      "path": "tests\\test_bootstrap_shell_readiness.py",
+      "role": "test",
+      "sha256": "4c2c138d91e7a8839bb8e3a0a1049c6ed91bb6883d686d72af9ac3b6e86e0f7c",
+      "size_bytes": 12044
+    },
+    {
+      "path": "tests\\test_boot_profile_portable_context.py",
+      "role": "test",
+      "sha256": "cbaf710cddbc2b055acc843a26b2d719e84e330e719e90b90689c9c19d136551",
+      "size_bytes": 8294
+    },
+    {
+      "path": "tests\\test_boot_profile_store.py",
+      "role": "test",
+      "sha256": "a75ad663afa4a73306b8e5d71a6dc7d3b7c69e47edc6acd4ba0502df754b6e1b",
+      "size_bytes": 22452
+    },
+    {
+      "path": "tests\\test_browser_learning_assembler.py",
+      "role": "test",
+      "sha256": "6d455f982d5cc1231e09f57e89ac6991583479fe043e435caa14612e10a476e0",
+      "size_bytes": 3323
+    },
+    {
+      "path": "tests\\test_browser_profile_manager.py",
+      "role": "test",
+      "sha256": "64d7cfbd50373ae21f64bf28ff78d838845a474e806ad7de0d642c0cb1626509",
+      "size_bytes": 6177
+    },
+    {
+      "path": "tests\\test_browser_session_controller.py",
+      "role": "test",
+      "sha256": "6352a338beeca91962c558583976748c654d515d01a8a5270a256cb5ef4230e5",
+      "size_bytes": 5009
+    },
+    {
+      "path": "tests\\test_browser_teach_session_service.py",
+      "role": "test",
+      "sha256": "dff449be9680d4f4c5b642307af84f77e2b4879d36394c67d0bc3404db6f2ec8",
+      "size_bytes": 3345
+    },
+    {
+      "path": "tests\\test_canonical_work_queue.py",
+      "role": "test",
+      "sha256": "ce6c459f719a03e3617dc038b8c01bb81116519cf1c2ee099499041bc0b8d2b6",
+      "size_bytes": 27060
+    },
+    {
+      "path": "tests\\test_capability_audit_harness.py",
+      "role": "test",
+      "sha256": "df5f62f4cde7939b089ea7a87b1cc33fd4cb9a18a2bbdc10a1c1545afcfefa35",
+      "size_bytes": 21026
+    },
+    {
+      "path": "tests\\test_capture_studio_history_actions.py",
+      "role": "test",
+      "sha256": "7d692fda857b1a5b71feabd2cc5fb8f894cfb6d05aeedd07e4e7d12d2cdb8067",
+      "size_bytes": 10974
+    },
+    {
+      "path": "tests\\test_capture_studio_viewmodel.py",
+      "role": "test",
+      "sha256": "e546b7cbb235cb332d37a40a7bf38d17b960878fe4f259763a11cc3ebd0cb557",
+      "size_bytes": 42773
+    },
+    {
+      "path": "tests\\test_centro_vivo_viewmodel.py",
+      "role": "test",
+      "sha256": "8880e7d9e8321d2ea28bc658a9051f07113fff553ef589d4b8fc8d97c70befa9",
+      "size_bytes": 11433
+    },
+    {
+      "path": "tests\\test_chat_capability_ingestion.py",
+      "role": "test",
+      "sha256": "009064fa6e46e376c201560c5a054ceae37ac47c6710596c1b011bec2a4a2973",
+      "size_bytes": 5076
+    },
+    {
+      "path": "tests\\test_chat_enumerates_tools_in_response.py",
+      "role": "test",
+      "sha256": "9a5696443d2d7ff83fc909c4e1ff6e2924670abed9aabe9a4e886857e5a10dc9",
+      "size_bytes": 12454
+    },
+    {
+      "path": "tests\\test_chat_nervous_system.py",
+      "role": "test",
+      "sha256": "1b62cc8b16bdb98752194c3ca8c4f6556848dc8b17915b084ed4666c0c691997",
+      "size_bytes": 13671
+    },
+    {
+      "path": "tests\\test_chat_persistence.py",
+      "role": "test",
+      "sha256": "34ce650295365b577141a8f0c2aef191977493e90dee236b4be90daf27f6492c",
+      "size_bytes": 16596
+    },
+    {
+      "path": "tests\\test_chat_sees_tools.py",
+      "role": "test",
+      "sha256": "d292fc01ecb22285a291e711195019743c0169e90f7887dc2da9f6c54b3180c3",
+      "size_bytes": 11722
+    },
+    {
+      "path": "tests\\test_clarification_request_service.py",
+      "role": "test",
+      "sha256": "695a21adef37ce0438d23d6298540c4a9544d46457cbd9efafe2a5e470447509",
+      "size_bytes": 2395
+    },
+    {
+      "path": "tests\\test_cloud_quick_reply.py",
+      "role": "test",
+      "sha256": "f095f26758ee45f89360d219223aa1be90b1f696969af809dd579cbd451edd08",
+      "size_bytes": 4549
+    },
+    {
+      "path": "tests\\test_cloud_reasoning_planner.py",
+      "role": "test",
+      "sha256": "598b208cc9336b51dd3cbae4790d90d362efe669fa327b3a771609db011f4e14",
+      "size_bytes": 7608
+    },
+    {
+      "path": "tests\\test_code_audit_trail.py",
+      "role": "test",
+      "sha256": "ef21c06d3b19a0e00ba427fd5aa8214be29ce2f5baadc554210dce5bce19a18d",
+      "size_bytes": 14053
+    },
+    {
+      "path": "tests\\test_cognitive_frame_translate_tool.py",
+      "role": "test",
+      "sha256": "ef9d6e36368cb951433b1d2ee6968267f824414ffa5bf6cf3ddbca7e12c999ea",
+      "size_bytes": 5606
+    },
+    {
+      "path": "tests\\test_cognitive_frame_translator.py",
+      "role": "test",
+      "sha256": "be45b854b31853071a8046defadb95765539c30c1bef4a1a0c819012cd953d69",
+      "size_bytes": 7857
+    },
+    {
+      "path": "tests\\test_cognitive_gaps_d4_d5_d6.py",
+      "role": "test",
+      "sha256": "71b5f4e21cea5daa0c9bd4821d57d06313642d6153b171b01602741731134efa",
+      "size_bytes": 14830
+    },
+    {
+      "path": "tests\\test_consensus_fusion_service.py",
+      "role": "test",
+      "sha256": "f42c3f095d9d8795ea52b4713c6fd453dc5f235818fd839d07dd29bb0b3b9814",
+      "size_bytes": 5921
+    },
+    {
+      "path": "tests\\test_consensus_interpretation_service.py",
+      "role": "test",
+      "sha256": "fc9d3cef5795a2c2013f5432ad1c68e60248d166bf6d9e050a126a8dbf907dde",
+      "size_bytes": 13397
+    },
+    {
+      "path": "tests\\test_control_center_viewmodel.py",
+      "role": "test",
+      "sha256": "f86bbd5a2588d2bdaaaf269c9fed38fd30c34909248bdffab15565aa05f9c812",
+      "size_bytes": 198725
+    },
+    {
+      "path": "tests\\test_control_center_vm_lazy_init.py",
+      "role": "test",
+      "sha256": "137e5a3fc88f47e5b7a88d669a050905f707545d134aa39681d9ec89afe432cf",
+      "size_bytes": 5810
+    },
+    {
+      "path": "tests\\test_control_master_cli.py",
+      "role": "test",
+      "sha256": "fbe0cb60f6c67e6138b38295b3e0c15a26843f107492fda91ded7b6641a1c104",
+      "size_bytes": 7294
+    },
+    {
+      "path": "tests\\test_control_master_digest_builder.py",
+      "role": "test",
+      "sha256": "0a1e78a406b23b6a644f898766d34de732fd8fa0f104d3352dd3931aae63fbff",
+      "size_bytes": 12154
+    },
+    {
+      "path": "tests\\test_control_master_integration.py",
+      "role": "test",
+      "sha256": "39c54b20a21390eadf15de66b9dc5fdb68f90f381a275e538abc176ac2b41a8b",
+      "size_bytes": 8351
+    },
+    {
+      "path": "tests\\test_control_master_models.py",
+      "role": "test",
+      "sha256": "0834c29f691b6b728aee0246c89faa9182131863482b58ebda548b93e869956c",
+      "size_bytes": 2294
+    },
+    {
+      "path": "tests\\test_control_master_outcome_loop.py",
+      "role": "test",
+      "sha256": "2b782b974925551bf53d11776f0bd24b0b01126e60a3e62052346d886cac5632",
+      "size_bytes": 9369
+    },
+    {
+      "path": "tests\\test_control_master_repository.py",
+      "role": "test",
+      "sha256": "6419691f027311469111dad67d8565a915acbb0ef1b1b9fad7f469d849812b41",
+      "size_bytes": 4276
+    },
+    {
+      "path": "tests\\test_control_master_service.py",
+      "role": "test",
+      "sha256": "489dff8397c716a5cfb40466cf90b8731a60275cbcda38d179131f64ced6ec81",
+      "size_bytes": 19161
+    },
+    {
+      "path": "tests\\test_credential_broker.py",
+      "role": "test",
+      "sha256": "e5127370b35c827e14da659be2ab3350079927652fe6c6769fa1e74c2c0fe833",
+      "size_bytes": 3529
+    },
+    {
+      "path": "tests\\test_dashboard_refresh_freeze.py",
+      "role": "test",
+      "sha256": "7b890574b61559b7a01a4c7e990d2acf4780bd6a96523707951e2083b08b22b3",
+      "size_bytes": 15110
+    },
+    {
+      "path": "tests\\test_decision_audit_trail.py",
+      "role": "test",
+      "sha256": "a56148ebdad262ae342e4e030e94828d8de34017149d5d773505790982d01227",
+      "size_bytes": 8950
+    },
+    {
+      "path": "tests\\test_decision_simplifier_engine.py",
+      "role": "test",
+      "sha256": "67c6389174c0b5852c86b48be572b8c81a517c0c31a2ee64d4516cd010b74773",
+      "size_bytes": 7540
+    },
+    {
+      "path": "tests\\test_deferred_setup_active.py",
+      "role": "test",
+      "sha256": "81f586f41576145865e90ac9a4f615d7434d388f8684999e06acb1e5379131d1",
+      "size_bytes": 4379
+    },
+    {
+      "path": "tests\\test_desajustes_fixes.py",
+      "role": "test",
+      "sha256": "a2903be2e7fb435a1ecd19d15d11beef019dffdb5fbb3c16669a5744c9411d70",
+      "size_bytes": 13701
+    },
+    {
+      "path": "tests\\test_development_assist_service.py",
+      "role": "test",
+      "sha256": "43a377aa0a51e67481c283bd37317d1422fe9004dfbaa24d80b86edb5bbc3d35",
+      "size_bytes": 2070
+    },
+    {
+      "path": "tests\\test_devin_api_adapter.py",
+      "role": "test",
+      "sha256": "1d1fa595b7c52f2a521ac5bc8e7c1cd76769126035b3670fde38dddfc9f51a42",
+      "size_bytes": 9939
+    },
+    {
+      "path": "tests\\test_discernment_frame_p069.py",
+      "role": "test",
+      "sha256": "abc72ff31aaf714427296758216f914d6a14e079d9f10178cd574e976f6accdf",
+      "size_bytes": 11537
+    },
+    {
+      "path": "tests\\test_discernment_frame_p070.py",
+      "role": "test",
+      "sha256": "7e78700edb9a7d7a3999634231192a65a69387fb73513115fc28d569b6a08170",
+      "size_bytes": 14813
+    },
+    {
+      "path": "tests\\test_embedding_health_cache.py",
+      "role": "test",
+      "sha256": "234f85cf356ecf1eda49f0c330bef8c9ec2f1c7eddab5e289e3ba2f587d3fc84",
+      "size_bytes": 14012
+    },
+    {
+      "path": "tests\\test_embodiment_manifest_tool.py",
+      "role": "test",
+      "sha256": "4ed4cf08756544ba9a911b43505715de2b19b30b7561b66bceb29839e8658bbe",
+      "size_bytes": 2750
+    },
+    {
+      "path": "tests\\test_embodiment_violation_detector.py",
+      "role": "test",
+      "sha256": "64d8ff57bb2596bfcd7593de35f3c78865cd8ba4fb10d0694ee0e30d9921e8f2",
+      "size_bytes": 8152
+    },
+    {
+      "path": "tests\\test_environment_bootstrap_service.py",
+      "role": "test",
+      "sha256": "313b736b6444b04a8a2a5bdd80c3a4c4eed76c5d94f04e85906e62eea7c945ed",
+      "size_bytes": 4248
+    },
+    {
+      "path": "tests\\test_environment_self_awareness_service.py",
+      "role": "test",
+      "sha256": "c5c773d610e8b0c1fcb5325ad07747a45438e94e3a8fa55c4bab0c7e0bc7f949",
+      "size_bytes": 14293
+    },
+    {
+      "path": "tests\\test_etapa2_conversation_analysis.py",
+      "role": "test",
+      "sha256": "286ea3b5fa7bbbb20f016196e5635f1a3d43e4c29a4e62a57750d9af2f8116de",
+      "size_bytes": 11885
+    },
+    {
+      "path": "tests\\test_evidence_basis_metadata.py",
+      "role": "test",
+      "sha256": "ccc4991911ebf14356bbf9eeef89e443d1cbbe62011170fa4963918e3f8053f4",
+      "size_bytes": 7523
+    },
+    {
+      "path": "tests\\test_evidence_tag_ui.py",
+      "role": "test",
+      "sha256": "67e6f4b6ef28db03bbd64ec4f07b2cee25d8587d3302237ec8c338028b80450c",
+      "size_bytes": 24999
+    },
+    {
+      "path": "tests\\test_evolution_center_viewmodel.py",
+      "role": "test",
+      "sha256": "9a4e6ed1241442758f5e09302a592f3c653292c9a36ad4ecfbbca6f2973aa4ae",
+      "size_bytes": 38688
+    },
+    {
+      "path": "tests\\test_evolution_evidence_basis.py",
+      "role": "test",
+      "sha256": "d343c2392e7152dda9adeb158f292b08887a9b2fb12305f5d2a4901d706929f7",
+      "size_bytes": 4997
+    },
+    {
+      "path": "tests\\test_execution_playbook_service.py",
+      "role": "test",
+      "sha256": "87b04a0f6820de0c73c7f19de270ca0d7791c7f8bc54c452dcb7d44d09579165",
+      "size_bytes": 3452
+    },
+    {
+      "path": "tests\\test_experiment_lab.py",
+      "role": "test",
+      "sha256": "d37a48e73035d80af1c08e709b81a1b43b7fed1278e426136ff9d95209e5b3b5",
+      "size_bytes": 16453
+    },
+    {
+      "path": "tests\\test_experiment_lab_repository.py",
+      "role": "test",
+      "sha256": "aff89d2a11a899482efef2ea1f81c2ccaeae805f87350980f8e155be21df81a2",
+      "size_bytes": 2950
+    },
+    {
+      "path": "tests\\test_external_worker_telemetry.py",
+      "role": "test",
+      "sha256": "1d347f383cea72fde38ef74b2a7b1980e090630b6edc59503987eea1cb2a2b14",
+      "size_bytes": 9255
+    },
+    {
+      "path": "tests\\test_fix19_integration.py",
+      "role": "test",
+      "sha256": "1ec56b8ae505610a1b7f6cbdcc729db5fb56db745cfa6f8010afb2314ca7d3b0",
+      "size_bytes": 4957
+    },
+    {
+      "path": "tests\\test_fix20_startup.py",
+      "role": "test",
+      "sha256": "6e7e00c540cce82f71784e7656761e9dcb68d8660566041a74b2a3809c731a53",
+      "size_bytes": 5473
+    },
+    {
+      "path": "tests\\test_fix_post305_bugs.py",
+      "role": "test",
+      "sha256": "1df129f84f28d495a547ed3e0df603fcfda12849c0cda3d94a88374f8d72f7ed",
+      "size_bytes": 11778
+    },
+    {
+      "path": "tests\\test_freeze_auto_capture.py",
+      "role": "test",
+      "sha256": "d1e3ea21dd85790cc5956b4fb1e3502380b2bab35b465038dbceb117754ae8cd",
+      "size_bytes": 21646
+    },
+    {
+      "path": "tests\\test_freeze_incident_reporter.py",
+      "role": "test",
+      "sha256": "c992d1db7a2da2249d233286cc0310980c560b6fb2d0e476211daaf97177a2ed",
+      "size_bytes": 10693
+    },
+    {
+      "path": "tests\\test_general_chat_llm_routing.py",
+      "role": "test",
+      "sha256": "49207d064b8dd88af4ef19d57ec64a787212793c894cf21d119988a783251698",
+      "size_bytes": 3088
+    },
+    {
+      "path": "tests\\test_github_api_adapter.py",
+      "role": "test",
+      "sha256": "0d34bf229b769a9a2fce49d2b5832f3b97aadf5eb2f0362be3c5bc4e3578c499",
+      "size_bytes": 13675
+    },
+    {
+      "path": "tests\\test_github_remote_service.py",
+      "role": "test",
+      "sha256": "0e67bbe1f030c22953b82e11a252586b75742d5c28089a302d4d2cda7b22d6de",
+      "size_bytes": 10008
+    },
+    {
+      "path": "tests\\test_git_sync_service.py",
+      "role": "test",
+      "sha256": "158cd363830ce99bde292fc8b451361e7f5ced623bb6773601093333ff1e336f",
+      "size_bytes": 12509
+    },
+    {
+      "path": "tests\\test_gpu_model_benchmark_service.py",
+      "role": "test",
+      "sha256": "32801601688460a6a4fc1a097619ec9b80c106c8ce2142ec65cf4ce8bca7aa18",
+      "size_bytes": 17059
+    },
+    {
+      "path": "tests\\test_grounded_reasoning.py",
+      "role": "test",
+      "sha256": "036e9d4f7d3a775ceb1c3b230d98ab81b2cad731cf0fcf6ced94c1b493a39935",
+      "size_bytes": 25921
+    },
+    {
+      "path": "tests\\test_hidden_incident_detector.py",
+      "role": "test",
+      "sha256": "cdd96f38a7ae02fd94f0c3dae06e7eb979b01fe0bd1f21d4bb5ccedca9cf9ae3",
+      "size_bytes": 2161
+    },
+    {
+      "path": "tests\\test_human_approval_broker.py",
+      "role": "test",
+      "sha256": "b3eba479e0fc53d62131f57331b5d226b766b68ef286231437dac19ab6905c6b",
+      "size_bytes": 14698
+    },
+    {
+      "path": "tests\\test_iabv_bootstrap_script.py",
+      "role": "test",
+      "sha256": "02ec85c2c188be9c56318a61cb78ff02c02d9177d3d9204125ecc100605190fa",
+      "size_bytes": 4496
+    },
+    {
+      "path": "tests\\test_ia_coordination_patterns.py",
+      "role": "test",
+      "sha256": "8cbc00f929e30a171567f3f50c106dda37007b21391da61549bbc30309f6e455",
+      "size_bytes": 10897
+    },
+    {
+      "path": "tests\\test_incident_packet_service.py",
+      "role": "test",
+      "sha256": "161d8680d7ad42de0b276d0855eb49a8b2018296d920e3bded6769dda6b42b4a",
+      "size_bytes": 15170
+    },
+    {
+      "path": "tests\\test_inference_service.py",
+      "role": "test",
+      "sha256": "f9c41442d375538fb4f1d589dad905d17e2ce5c8345c05c0f6431af813db7887",
+      "size_bytes": 4619
+    },
+    {
+      "path": "tests\\test_intent_scoped_briefing_service.py",
+      "role": "test",
+      "sha256": "4d63d79224e3c700fbb1dc6d0f72afe577410ec77779fc4a7703a055642913e7",
+      "size_bytes": 13440
+    },
+    {
+      "path": "tests\\test_intent_understanding_service.py",
+      "role": "test",
+      "sha256": "1dee7e276e93dfe268da4dd7d1a9d314ca02bc62c56faff249d228b50cbce0b0",
+      "size_bytes": 13401
+    },
+    {
+      "path": "tests\\test_interaction_learning_service.py",
+      "role": "test",
+      "sha256": "ba06dadc7aa8e84b232500101a8b0ae1050d7da8496c75121172f019ff6ee833",
+      "size_bytes": 11480
+    },
+    {
+      "path": "tests\\test_interaction_mode_selector.py",
+      "role": "test",
+      "sha256": "b4038734088f9c75230d3fb3efae250be99744f8c3038ff7d1cc7f0852fba63b",
+      "size_bytes": 13846
+    },
+    {
+      "path": "tests\\test_limit_aware_tool_coordination.py",
+      "role": "test",
+      "sha256": "1ea292c13f19f6fc309bd5b0105809174b9c65c8b5c41fd21abd3db40e8eaafc",
+      "size_bytes": 23960
+    },
+    {
+      "path": "tests\\test_live_audit_supervisor.py",
+      "role": "test",
+      "sha256": "16626317e04b1c10787430a2f7964aab2e1ca5f7f7ed6d5fecfeaa302022d9ba",
+      "size_bytes": 16851
+    },
+    {
+      "path": "tests\\test_local_cli_adapter.py",
+      "role": "test",
+      "sha256": "2444219de0e99edfd6c0aa1c5725a0ed9df12985f268e396345b701988584b4d",
+      "size_bytes": 10859
+    },
+    {
+      "path": "tests\\test_local_role_router.py",
+      "role": "test",
+      "sha256": "743f43b76a1c4fa2f7299965dfc7d04023050b7a502cb1902c771ac64da5ba65",
+      "size_bytes": 20949
+    },
+    {
+      "path": "tests\\test_local_services.py",
+      "role": "test",
+      "sha256": "5f76fd6ab038f0273a0517ce0638cb2c6597a1e8375bb4510e3418425935d26b",
+      "size_bytes": 4084
+    },
+    {
+      "path": "tests\\test_login_gobernado.py",
+      "role": "test",
+      "sha256": "b5ffcc364fe15d2a16bc44ce9891443fda0a0ba88210fa466659a5dbbff88099",
+      "size_bytes": 12018
+    },
+    {
+      "path": "tests\\test_mcp_audit_capability.py",
+      "role": "test",
+      "sha256": "2ff6855960130184fb66525405ea10b3cf77f78cda1ca96c4b1de4a44cdf909d",
+      "size_bytes": 10616
+    },
+    {
+      "path": "tests\\test_mcp_audit_tools.py",
+      "role": "test",
+      "sha256": "cb4575748dcf3789e6987f252bc485bb26b5ce26de5876e56465991e066f8d97",
+      "size_bytes": 22363
+    },
+    {
+      "path": "tests\\test_mcp_audit_tools_observation.py",
+      "role": "test",
+      "sha256": "863d0e969f75d857abc525d3a87542f30431492b548faca89df2a987fa739bd9",
+      "size_bytes": 15217
+    },
+    {
+      "path": "tests\\test_mcp_bridge_service.py",
+      "role": "test",
+      "sha256": "72c0fc740f908de0c0569168879c14033abc225a7c5ea30d95bcb02527a51a82",
+      "size_bytes": 19519
+    },
+    {
+      "path": "tests\\test_mcp_bridge_toggle_nonblocking.py",
+      "role": "test",
+      "sha256": "de05f83a1c362a23e3afba9462982ff74fac045018ac15eea4260f12a4820d81",
+      "size_bytes": 3700
+    },
+    {
+      "path": "tests\\test_mcp_hot_reload.py",
+      "role": "test",
+      "sha256": "73fa4090adbed1b1d8a237a8b25da383de24c252e14e965433044e2636118416",
+      "size_bytes": 3646
+    },
+    {
+      "path": "tests\\test_mcp_port_utils_script.py",
+      "role": "test",
+      "sha256": "cb5db2d3a2d866dd4a28ff03b126fe6fac8b9105a365033e8f11c1be4327bc94",
+      "size_bytes": 2754
+    },
+    {
+      "path": "tests\\test_mcp_server.py",
+      "role": "test",
+      "sha256": "ba732a78a49e7a619976a7e4182d78d4724cf2ab76b5f8deb31bd913e6cab1e1",
+      "size_bytes": 62434
+    },
+    {
+      "path": "tests\\test_mcp_supervision_bridge_freeze.py",
+      "role": "test",
+      "sha256": "7a574b6c9312c54f8e212e155c0f6a2c2b32c4ceb9c3e6003790e86bb4cfa062",
+      "size_bytes": 25350
+    },
+    {
+      "path": "tests\\test_metacognition_evolution_mixin.py",
+      "role": "test",
+      "sha256": "d294ec662bf27c28d7fac4dfa14aa677799a652448cf4e9dc6b8f1d00ba196c4",
+      "size_bytes": 4264
+    },
+    {
+      "path": "tests\\test_metacognition_grounding_gap.py",
+      "role": "test",
+      "sha256": "641a98f37cb901d9a7d4513ed58c194686d7a7e7c40dde7255f72404bdbea7c8",
+      "size_bytes": 14764
+    },
+    {
+      "path": "tests\\test_metacognition_integration.py",
+      "role": "test",
+      "sha256": "0730eccaec7d5831dee1c39928d9ebb63b46440df64ffb0084de6e82e044d3c1",
+      "size_bytes": 18699
+    },
+    {
+      "path": "tests\\test_objective_repository.py",
+      "role": "test",
+      "sha256": "88dab305f36195fa6445c1dc1f7670cd55b261f4c0d552fa37825d09bccc0e3c",
+      "size_bytes": 3545
+    },
+    {
+      "path": "tests\\test_openai_compat_local_provider.py",
+      "role": "test",
+      "sha256": "982ef7f4c8cf2b995e4581f95d4552bb3350ba99909da70f18d7daf918ba7663",
+      "size_bytes": 4190
+    },
+    {
+      "path": "tests\\test_operational_self_examination_service.py",
+      "role": "test",
+      "sha256": "2b7c1e1b25ab5c7bc659cca508c1cd83fada2893588b2ceb54ddaf1256154712",
+      "size_bytes": 51831
+    },
+    {
+      "path": "tests\\test_orchestrator_block_signals.py",
+      "role": "test",
+      "sha256": "1e232800d0489baef9ebcd5895107d53a3070b3d026a9db2478a19f4e6eb8fd5",
+      "size_bytes": 25920
+    },
+    {
+      "path": "tests\\test_orchestrator_worker_gate_metadata.py",
+      "role": "test",
+      "sha256": "44e9d802ca60fbd16414676412742d62985de9a0242e77fe4222e4f0cc1dbb88",
+      "size_bytes": 20908
+    },
+    {
+      "path": "tests\\test_organism_state_snapshot.py",
+      "role": "test",
+      "sha256": "ff05bcc67481f53aba9a8e33b5b5c06745b377a9169dbe19d7d6713d4018a03e",
+      "size_bytes": 7786
+    },
+    {
+      "path": "tests\\test_oses_boot_profile_findings.py",
+      "role": "test",
+      "sha256": "36238a7aa60c24d766a0b9a60ff3992aaf3ee4197af800e55961940f776b17e3",
+      "size_bytes": 9048
+    },
+    {
+      "path": "tests\\test_oses_research_backlog.py",
+      "role": "test",
+      "sha256": "0ca1cfb263914afbe8d10030afffd01b8a330df84db661259aaa88e4484462f4",
+      "size_bytes": 8764
+    },
+    {
+      "path": "tests\\test_p012_runtime_stale_freeze_chatgpt.py",
+      "role": "test",
+      "sha256": "437a5f8b4bdcb9ba06b20a51ef12e6c0f1fbecb40b74d8028112bc68daf17d22",
+      "size_bytes": 27309
+    },
+    {
+      "path": "tests\\test_p013_window_lifecycle_guard.py",
+      "role": "test",
+      "sha256": "2ae55e7b45973ca44aef04579b06672c347965076adbc3ea2505b82efd06027b",
+      "size_bytes": 6054
+    },
+    {
+      "path": "tests\\test_p016_external_followup_freeze_guard.py",
+      "role": "test",
+      "sha256": "e96367a20cdb3170244c0e2820d1fe6c508a5747be4455c1977d7c5f91a491a4",
+      "size_bytes": 5428
+    },
+    {
+      "path": "tests\\test_pageloader_startup_optimization.py",
+      "role": "test",
+      "sha256": "84d4480a1010f00f015d58549eb8e2939dae36f6580940ce1e1abe2f5703ca82",
+      "size_bytes": 6872
+    },
+    {
+      "path": "tests\\test_parallel_ia_comparison.py",
+      "role": "test",
+      "sha256": "f4daa7bdcbc447ced6c5c715b87ec680ecccfe37cb7d3471ed5d0387e949d8c4",
+      "size_bytes": 14948
+    },
+    {
+      "path": "tests\\test_pbt_control_service.py",
+      "role": "test",
+      "sha256": "780db1a050d2005cc6ade15aaf7c6d50d3df312b2229c90bcea105699756cd9b",
+      "size_bytes": 850
+    },
+    {
+      "path": "tests\\test_pending_issue_service.py",
+      "role": "test",
+      "sha256": "d84a0548e988716f1f9b1caab93aea730ba5971e483d9f30cd5f21fc576a8194",
+      "size_bytes": 12564
+    },
+    {
+      "path": "tests\\test_perception_cross_validator_ui.py",
+      "role": "test",
+      "sha256": "81be82678860d6010027f492740df334dc6119258686ad5e31174b312b3f8270",
+      "size_bytes": 5892
+    },
+    {
+      "path": "tests\\test_perception_ground_truth_comparator.py",
+      "role": "test",
+      "sha256": "571afbc0984af75bd1362b2a87b246fd565d7fe517caec43dad923e4111e9204",
+      "size_bytes": 13805
+    },
+    {
+      "path": "tests\\test_performance_profile.py",
+      "role": "test",
+      "sha256": "a3b81acdf72859893b4acb1540a83360b0af97966557f4f65c4ed749df3c11d4",
+      "size_bytes": 10259
+    },
+    {
+      "path": "tests\\test_persistence.py",
+      "role": "test",
+      "sha256": "8477f020b2abaaaa87bed558a129ab4f30f63987c558251abccebc5b11982fed",
+      "size_bytes": 6204
+    },
+    {
+      "path": "tests\\test_phased_startup.py",
+      "role": "test",
+      "sha256": "2fb280c255fc3b2c9c5b8560b462a3e3e4f459dbe7c7d96eaed6a54de485052d",
+      "size_bytes": 38168
+    },
+    {
+      "path": "tests\\test_platform_learning_orchestrator.py",
+      "role": "test",
+      "sha256": "96bf318bdc3a91d0f67a1feddcc94e16c463a0485e840183d5ce1618d6b116a3",
+      "size_bytes": 5961
+    },
+    {
+      "path": "tests\\test_platform_pending_queue.py",
+      "role": "test",
+      "sha256": "5d6736c207f9f97373776e906e636ba02e4173da8cfb01d8b89b33919d3241ec",
+      "size_bytes": 12042
+    },
+    {
+      "path": "tests\\test_portable_context_service.py",
+      "role": "test",
+      "sha256": "9f41cd822dab6abc9a8db0c5d1491d56c7b88c1a55ca116c7d118e1764a0f2a0",
+      "size_bytes": 21273
+    },
+    {
+      "path": "tests\\test_portable_context_task_packet_summary.py",
+      "role": "test",
+      "sha256": "014e45152e02dc4296fba5ea2117446e46f7ed44203dadb600c34a284077e229",
+      "size_bytes": 13804
+    },
+    {
+      "path": "tests\\test_portable_evidence_basis.py",
+      "role": "test",
+      "sha256": "0b4a78cf2ddef08f2cedbc8a7e237043a2b6a0a4fb00d193148d34ecb9426dc4",
+      "size_bytes": 9075
+    },
+    {
+      "path": "tests\\test_post_startup_perf.py",
+      "role": "test",
+      "sha256": "59a984cc1067821af0b6e63b569bc08e7c98dc64e8896eebbacf5ccae4d2496d",
+      "size_bytes": 10992
+    },
+    {
+      "path": "tests\\test_pr360_fixes.py",
+      "role": "test",
+      "sha256": "b022dad7d2cd92f7a53884cf77ed984677c4aa10a70f99bde549f55f6113de25",
+      "size_bytes": 27763
+    },
+    {
+      "path": "tests\\test_prebuild_resource_governance.py",
+      "role": "test",
+      "sha256": "82ce74b20712a9a917f7664ae7675ea0fbda1df8b281e15adc9659d1b2cd7e70",
+      "size_bytes": 42056
+    },
+    {
+      "path": "tests\\test_pre_dispatch_evidence_guard.py",
+      "role": "test",
+      "sha256": "2472fa2230a0df5935292025c6820cc26a715b087a9d4e08b9419e0415cbb09d",
+      "size_bytes": 6719
+    },
+    {
+      "path": "tests\\test_proactive_dashboard_service.py",
+      "role": "test",
+      "sha256": "03f3acc9927bf23a5dc7f9f724e19d42fa6ca44636460a2c60310e0a8575a686",
+      "size_bytes": 11361
+    },
+    {
+      "path": "tests\\test_probe_assistant_login.py",
+      "role": "test",
+      "sha256": "7a796f7cab498e232c83397d32e011b6c921ffa98da11e2e06d1f6bbdf137865",
+      "size_bytes": 21795
+    },
+    {
+      "path": "tests\\test_promotion_pr_publisher.py",
+      "role": "test",
+      "sha256": "64d2af8c3f556e44120497f696c45e482a3f5a95dd0d3b5ee4677f09311ad573",
+      "size_bytes": 6714
+    },
+    {
+      "path": "tests\\test_provider_health_router.py",
+      "role": "test",
+      "sha256": "0e961188b391eb7bda07dec96a18a32b7ba610f418726b30bb36aa972abdc607",
+      "size_bytes": 4374
+    },
+    {
+      "path": "tests\\test_provider_router.py",
+      "role": "test",
+      "sha256": "95cbbc070edce614a44018e27921d15f660d20b1856e11a5985edcd25b774e65",
+      "size_bytes": 6304
+    },
+    {
+      "path": "tests\\test_quota_rotation.py",
+      "role": "test",
+      "sha256": "ddcc7ab8d18cdbb2b1d19f360ad863e6facbdb3e6ecdac55600527515168c013",
+      "size_bytes": 8508
+    },
+    {
+      "path": "tests\\test_quota_tracker_wiring.py",
+      "role": "test",
+      "sha256": "a67a282b17f8765a4a33035e39ad89145bdf3f45e9c75987a492a9524a2b3da3",
+      "size_bytes": 10240
+    },
+    {
+      "path": "tests\\test_register_audit_round.py",
+      "role": "test",
+      "sha256": "dfe0ae7f4a9ef5ee6c2f2d1f9f66294dcf073b0b40b838355b6eed8caa4b852b",
+      "size_bytes": 16492
+    },
+    {
+      "path": "tests\\test_replace_with_retry.py",
+      "role": "test",
+      "sha256": "b7caefe088e5b5b92e0a2f437a7ac804601fb8758e524e6ae311be85ae052b17",
+      "size_bytes": 2982
+    },
+    {
+      "path": "tests\\test_replay_visual_assembler.py",
+      "role": "test",
+      "sha256": "bcd913c9029d69cfb00707e3dc6df9ab284a044310673b44fad3530fd8d467f0",
+      "size_bytes": 7596
+    },
+    {
+      "path": "tests\\test_reproducibility_canonical.py",
+      "role": "test",
+      "sha256": "80344bf68537573dcc1682905f52fc58a4d8ca954336f64c998279606305dc10",
+      "size_bytes": 9216
+    },
+    {
+      "path": "tests\\test_resource_metacognition.py",
+      "role": "test",
+      "sha256": "c245efb7344bd57d4e27dcfde6ea43f2c6c5291e5e4f9726ad9adda829ea53f1",
+      "size_bytes": 13538
+    },
+    {
+      "path": "tests\\test_result_comparator.py",
+      "role": "test",
+      "sha256": "6d5df360f12df26c91eff278dbd07b7de994775bf8630f643d50f914b573173e",
+      "size_bytes": 6670
+    },
+    {
+      "path": "tests\\test_resume_aware_orchestration.py",
+      "role": "test",
+      "sha256": "e6e2eb650b6d07dee4cc39323f608eea8ba02a23a42fab8b5d949736c8228ab2",
+      "size_bytes": 8614
+    },
+    {
+      "path": "tests\\test_rotate_tokens_script.py",
+      "role": "test",
+      "sha256": "954860213a24b202a64341edaf9f594874c405cef6e3bbe7d2682396e0d1868e",
+      "size_bytes": 1902
+    },
+    {
+      "path": "tests\\test_runtime_audit_tracer.py",
+      "role": "test",
+      "sha256": "aa82685a93aa60b1e7f5962a724175b1ee08734a64dcf574f65ba4b72d248db1",
+      "size_bytes": 8008
+    },
+    {
+      "path": "tests\\test_runtime_p01_observability.py",
+      "role": "test",
+      "sha256": "76a3867cf233bfd2efb086896fa1be7a951e5771dd5218dc9a9411405ee600e8",
+      "size_bytes": 40304
+    },
+    {
+      "path": "tests\\test_runtime_p022_consultation_state.py",
+      "role": "test",
+      "sha256": "a09c6099948d83f1410bf1b471b9792aa24bc63c41e8f80db2fba4fdc70a1ae8",
+      "size_bytes": 30343
+    },
+    {
+      "path": "tests\\test_runtime_p023_external_intent_security_stall.py",
+      "role": "test",
+      "sha256": "1b5fca7a061d5c15997791aec1d533043760b84a3ea3dbb9578f5831cc8e3e85",
+      "size_bytes": 20460
+    },
+    {
+      "path": "tests\\test_runtime_p024_build_state_sovereignty.py",
+      "role": "test",
+      "sha256": "40f656647caeef55003355923a496a84d0e61864332039b0e65285cffb441f1e",
+      "size_bytes": 17181
+    },
+    {
+      "path": "tests\\test_runtime_p027_external_failure_followup_governance.py",
+      "role": "test",
+      "sha256": "ad83642faede987aa8655f8265f7c301be154d73a833ea769ad56733e68bef4e",
+      "size_bytes": 13879
+    },
+    {
+      "path": "tests\\test_runtime_p029_test_governance_observability.py",
+      "role": "test",
+      "sha256": "ff06e63ce100c6c022544ef9845886e0cca227de820366d8abc065025ec221cb",
+      "size_bytes": 14943
+    },
+    {
+      "path": "tests\\test_runtime_p030_metacognitive_direct_audit.py",
+      "role": "test",
+      "sha256": "d4fa350b85f0ec360ebb87667d62945549860a914f1eeb276ca05c554b0be77c",
+      "size_bytes": 18908
+    },
+    {
+      "path": "tests\\test_runtime_p032_p037_stack_integration.py",
+      "role": "test",
+      "sha256": "7d7a8d35bdb225ef53cf5d1824873e9ce583c012c2be5ca7d2f3440f2363a3a9",
+      "size_bytes": 18282
+    },
+    {
+      "path": "tests\\test_runtime_p032_user_chrome_bridge.py",
+      "role": "test",
+      "sha256": "bc76e83191b40c66081d7f85efa9e66b518161b82e424c65eeeb3261eac680c4",
+      "size_bytes": 14970
+    },
+    {
+      "path": "tests\\test_runtime_p037_active_incident_frame.py",
+      "role": "test",
+      "sha256": "a2200a885e694b175d56de35af253abcd57d1af9acd9cd0fff7f64e39e95c061",
+      "size_bytes": 28998
+    },
+    {
+      "path": "tests\\test_runtime_p038_web_skill_quiescence_devin_repair.py",
+      "role": "test",
+      "sha256": "b27f1c211b0b26f07330de3ba8e776f633d42ca9a6d7f8ed76dff041a4074761",
+      "size_bytes": 45966
+    },
+    {
+      "path": "tests\\test_runtime_p039_capability_readiness.py",
+      "role": "test",
+      "sha256": "cb6c4a028b773bc951e52e77189b138f2ca1886fdd052a50f710911b3289dd2a",
+      "size_bytes": 45104
+    },
+    {
+      "path": "tests\\test_runtime_p040_external_intent_sovereignty.py",
+      "role": "test",
+      "sha256": "2d96b80e24d554c2a7b80f02c9c33e8ee6781b0d2f7b22cfd03685c384a06d51",
+      "size_bytes": 36834
+    },
+    {
+      "path": "tests\\test_runtime_p072_human_assist_bridge.py",
+      "role": "test",
+      "sha256": "c246bb663bfc69eee7942215dc35408bcbf74ec62dec617491bd1c4856e9c0c1",
+      "size_bytes": 16015
+    },
+    {
+      "path": "tests\\test_runtime_p073_semantic_action_binding.py",
+      "role": "test",
+      "sha256": "80200cd070432ee08bb033f2bc62f8e4fab629d9707997a02063197fb71ed0fe",
+      "size_bytes": 28459
+    },
+    {
+      "path": "tests\\test_runtime_p090_goal_context_ui_budget.py",
+      "role": "test",
+      "sha256": "de1fb5a957f6584b3ed04e67edb55278a79e3a66ed14338bc318bac84aac3468",
+      "size_bytes": 3574
+    },
+    {
+      "path": "tests\\test_runtime_p091_portable_context_ui_budget.py",
+      "role": "test",
+      "sha256": "9cb2b49c886481713bbbe3313d7795ad65545946080638d3d504e9b6a51d233a",
+      "size_bytes": 4202
+    },
+    {
+      "path": "tests\\test_runtime_p092_startup_chat_bridge_priority.py",
+      "role": "test",
+      "sha256": "ff68ed403f1fc1c04eb9a3a702d44ff42afea016499d587c387b69110405d7a8",
+      "size_bytes": 5594
+    },
+    {
+      "path": "tests\\test_runtime_p0_antifreeze.py",
+      "role": "test",
+      "sha256": "59cde3c5cde9e16a3bfffd9687c614e59757fdb5907231cececdb2cadd3c548f",
+      "size_bytes": 14884
+    },
+    {
+      "path": "tests\\test_run_history_task_packet.py",
+      "role": "test",
+      "sha256": "89e33f565787b6d6d686e5f6ed0c78cddf62be5514fe978cbb130acd15b8196c",
+      "size_bytes": 9857
+    },
+    {
+      "path": "tests\\test_run_mcp_bridge_script.py",
+      "role": "test",
+      "sha256": "5848c4715df13de65142cef72e067269f1de0c3fdafd0f948ee26971447d3c4c",
+      "size_bytes": 1272
+    },
+    {
+      "path": "tests\\test_run_self_audit_script.py",
+      "role": "test",
+      "sha256": "aea926e2123b578868012c7fa0b4c9ab5c61bfb4cf3685799267a2af29880b6a",
+      "size_bytes": 6307
+    },
+    {
+      "path": "tests\\test_scientific_proxy_engine.py",
+      "role": "test",
+      "sha256": "7c2f1c82f63136693f7aac75358476d4bd13b1f5c3ff93dbeeda5674d20426e2",
+      "size_bytes": 33941
+    },
+    {
+      "path": "tests\\test_security_capture.py",
+      "role": "test",
+      "sha256": "80200c31cce6f6440a34552a588e81aeafac19d31009fef425b0bc4b23ee7262",
+      "size_bytes": 6022
+    },
+    {
+      "path": "tests\\test_self_audit_service.py",
+      "role": "test",
+      "sha256": "2489e54ddf715eae730972f8a5c34a539fb6d707a41cc19461401a1d133b8e58",
+      "size_bytes": 13669
+    },
+    {
+      "path": "tests\\test_self_auto_merge.py",
+      "role": "test",
+      "sha256": "56f41d61db885ebf014e2d5418287c0c6718a599cb3fd733a131eecf1ba6e9e5",
+      "size_bytes": 8615
+    },
+    {
+      "path": "tests\\test_self_teach_orchestrator.py",
+      "role": "test",
+      "sha256": "6f3a17f9dcba15778592dc8ce3bf299fb2a022190c09faff47be6a9d7e888118",
+      "size_bytes": 9185
+    },
+    {
+      "path": "tests\\test_session_start_briefing_service.py",
+      "role": "test",
+      "sha256": "a4feec91acbf65796ea4d95f517ab1319f8f89eca7bb4dd7ecc5bab041798203",
+      "size_bytes": 13276
+    },
+    {
+      "path": "tests\\test_shadow_mode_parallel.py",
+      "role": "test",
+      "sha256": "26d0747023d3415ca55545c5a8a1765241a0213686b31ce58b1c49fd75dbe934",
+      "size_bytes": 7023
+    },
+    {
+      "path": "tests\\test_shared_reality_learning.py",
+      "role": "test",
+      "sha256": "7876efb2470c9fbf14bbbe2c3ed2e58b4a9c90b2fe90eb101ac6d31b5f4c1ee1",
+      "size_bytes": 31703
+    },
+    {
+      "path": "tests\\test_site_exploration_service.py",
+      "role": "test",
+      "sha256": "c7e36bcf065b1c2701f4754c0fe019098e7843c18da84417079de2e6838eb8c2",
+      "size_bytes": 8809
+    },
+    {
+      "path": "tests\\test_site_explorer_tool_adapter.py",
+      "role": "test",
+      "sha256": "5d1a2757f7f5b006d0ad864a68cf6cb327fce1a7cb3cf66da79fca4a9415fcd6",
+      "size_bytes": 5420
+    },
+    {
+      "path": "tests\\test_smoke_audit_script.py",
+      "role": "test",
+      "sha256": "eee366406bc93bfe0ad7a0146299dc2dad49f3966322dde2edf680ba037e5de1",
+      "size_bytes": 4286
+    },
+    {
+      "path": "tests\\test_sovereign_selector_and_rotation.py",
+      "role": "test",
+      "sha256": "2db7f43e1de5399c431313dd7058db434fd15cba2661eb2320fbb728228bd807",
+      "size_bytes": 22580
+    },
+    {
+      "path": "tests\\test_specific_apikey_routing.py",
+      "role": "test",
+      "sha256": "8111bf5d7a69f59213cb459537d50a6f5a359224856f25212668110ca1eab2e0",
+      "size_bytes": 4297
+    },
+    {
+      "path": "tests\\test_sql_query_advisor_service.py",
+      "role": "test",
+      "sha256": "13a104af2bd7e5a83ac829c7e4bbedd068316e98f54169c2ed88ff1645a82108",
+      "size_bytes": 1807
+    },
+    {
+      "path": "tests\\test_startup_evolution.py",
+      "role": "test",
+      "sha256": "a21ac3243cb72b39d5a65d24f7925a4ea2135ff9afb7d9c6c6fa58e4787724e7",
+      "size_bytes": 10290
+    },
+    {
+      "path": "tests\\test_startup_health_cable.py",
+      "role": "test",
+      "sha256": "234dc66effca444b404d42fd7cdc23ff08a06a1b4cbd35396f1111e5c144606c",
+      "size_bytes": 31754
+    },
+    {
+      "path": "tests\\test_startup_ram_and_deferred_scans.py",
+      "role": "test",
+      "sha256": "f08d9bc8ca534d6020a4add093b9d4ab0d2859fbd3f2c0875c5309efe6d05992",
+      "size_bytes": 15634
+    },
+    {
+      "path": "tests\\test_startup_sqlite_fixes.py",
+      "role": "test",
+      "sha256": "30d72a786791a11ae69b4cdf46ebfee32486bbe63e7e433f7e21c427a1aa0e80",
+      "size_bytes": 22276
+    },
+    {
+      "path": "tests\\test_startup_timeline.py",
+      "role": "test",
+      "sha256": "0880c23ad2c5e760503f4aacf1fa17043ffa6e1c4b7a85ac9a4913c090c350cb",
+      "size_bytes": 4252
+    },
+    {
+      "path": "tests\\test_start_iabv_script.py",
+      "role": "test",
+      "sha256": "ca1ed50250287ee0605f5363c493435c4c52d4171e96e62c53a075e077aa3f46",
+      "size_bytes": 11725
+    },
+    {
+      "path": "tests\\test_strategy_pack_registry.py",
+      "role": "test",
+      "sha256": "4f33fcd0d25d7e8329f76f6cc442d8a5808d168982215bc0c8f517d8a33fcb3c",
+      "size_bytes": 4882
+    },
+    {
+      "path": "tests\\test_strategy_selector.py",
+      "role": "test",
+      "sha256": "f74829de326d5f4839979d46d478b2838b127c7e8194ec6de500be81747790ef",
+      "size_bytes": 4920
+    },
+    {
+      "path": "tests\\test_summarize_updates.py",
+      "role": "test",
+      "sha256": "1893cca1f5ca2547f6a75a3bd0fc8c485c1c04747ec59decece2d4d197c7c5dd",
+      "size_bytes": 5730
+    },
+    {
+      "path": "tests\\test_suppress_http_noise.py",
+      "role": "test",
+      "sha256": "3e86d0b5f5d030ca2dd0648c8513044dde9e95d06a13ed8270699107c2303d51",
+      "size_bytes": 5601
+    },
+    {
+      "path": "tests\\test_synaptic_router.py",
+      "role": "test",
+      "sha256": "a7b3ec05327f3b728178a850556c32d67879d380e7042abaebe13c59af200007",
+      "size_bytes": 18259
+    },
+    {
+      "path": "tests\\test_system_prompt_builder.py",
+      "role": "test",
+      "sha256": "a28e17325d67d67e0804155ff15c97225a107a77217b4dddd901f651362d11e0",
+      "size_bytes": 13523
+    },
+    {
+      "path": "tests\\test_task_a_wiring.py",
+      "role": "test",
+      "sha256": "52091e28a1f3e6c49494faffce4ae693e7aad784733249553668f7d5ca718763",
+      "size_bytes": 8556
+    },
+    {
+      "path": "tests\\test_task_context_assembler.py",
+      "role": "test",
+      "sha256": "e38444ef788ffd6e8b83b9fe1a40ec95081d7c369661a5fe4b0dde2b86da1a75",
+      "size_bytes": 41161
+    },
+    {
+      "path": "tests\\test_task_outcome_recorder.py",
+      "role": "test",
+      "sha256": "62056bcec029fe23bbc3d1df37f2e8231d49f993cd8142a1a8e10bd28b63a098",
+      "size_bytes": 11071
+    },
+    {
+      "path": "tests\\test_task_packet.py",
+      "role": "test",
+      "sha256": "f3ab911343f673555e58548eaa9d7e4b84a4b33363c8d19215d6e64e91d2404e",
+      "size_bytes": 34654
+    },
+    {
+      "path": "tests\\test_task_packet_pending_issues.py",
+      "role": "test",
+      "sha256": "8d66a12018c4a77d962eefe89327f3ec15426b4937fd7a50fd8aa858d66582bc",
+      "size_bytes": 10199
+    },
+    {
+      "path": "tests\\test_token_rotation_ledger.py",
+      "role": "test",
+      "sha256": "adce290b82c11535ee350fa60625122010ce292e2ab736e760642cf649673ef0",
+      "size_bytes": 6263
+    },
+    {
+      "path": "tests\\test_tool_adapters.py",
+      "role": "test",
+      "sha256": "e923e92440a48c0b2002df9a36cea3215ce5db89e6142c116b9be2e590c520aa",
+      "size_bytes": 32492
+    },
+    {
+      "path": "tests\\test_tool_calling_bridge.py",
+      "role": "test",
+      "sha256": "45addae399cbc680c948ce239347aa0d57daac253e340970b699d3a0f6a091ee",
+      "size_bytes": 7165
+    },
+    {
+      "path": "tests\\test_tool_discovery_service.py",
+      "role": "test",
+      "sha256": "d2f616729b49548c88175a4819cdc37235675f966d5b111bbaa3ff6bdbe02a3c",
+      "size_bytes": 9379
+    },
+    {
+      "path": "tests\\test_tool_evolution_monitor.py",
+      "role": "test",
+      "sha256": "9c28d45412f72982352ab958e19c6633098e0536b95e6b3b1d3b6969ea76b363",
+      "size_bytes": 15920
+    },
+    {
+      "path": "tests\\test_tool_local_first_integration.py",
+      "role": "test",
+      "sha256": "72da8d41b87312b4132106773dc6d6be395490037c21904c3ff382baf8e5233d",
+      "size_bytes": 4907
+    },
+    {
+      "path": "tests\\test_tool_playwright_adapter.py",
+      "role": "test",
+      "sha256": "6068164d1072f268ce7036ac4f4d6aa3397d214d8cea16ae078d738ba6886673",
+      "size_bytes": 2934
+    },
+    {
+      "path": "tests\\test_tool_record_repository.py",
+      "role": "test",
+      "sha256": "ede7e056b59f7b19633020f6d67228114f724dcec42e5e87b5b7d1bd99899a95",
+      "size_bytes": 8051
+    },
+    {
+      "path": "tests\\test_tool_registry.py",
+      "role": "test",
+      "sha256": "439f588122b9f2d74cb75b42a9381ad2706896974749b2200a2827ba327e8808",
+      "size_bytes": 18232
+    },
+    {
+      "path": "tests\\test_tool_teach_service.py",
+      "role": "test",
+      "sha256": "18aa8bb638642787e67c554bd517cc8e067aa13edaf7a773e1ad368f8024bf91",
+      "size_bytes": 61510
+    },
+    {
+      "path": "tests\\test_training_corpus_generation.py",
+      "role": "test",
+      "sha256": "5142455a6f43d3d1682a57ffd132f99ceca43f92bfff15f59a207cc3c8d4cff0",
+      "size_bytes": 6990
+    },
+    {
+      "path": "tests\\test_training_payload.py",
+      "role": "test",
+      "sha256": "19a32159e8a60f3cdb8afb0c89cda1d41b34db1cc0cd1ef7a91a9dd728fb33f2",
+      "size_bytes": 2959
+    },
+    {
+      "path": "tests\\test_truth_state_ui.py",
+      "role": "test",
+      "sha256": "56bf5e00f73c196b12b00b99fd8b9bd4d93ebfb649b23dcbc744352bdabaacab",
+      "size_bytes": 3860
+    },
+    {
+      "path": "tests\\test_ui_bridge_service.py",
+      "role": "test",
+      "sha256": "52337ce2dfe59f4fdde7d39214849a8307d4b5e4df4928f0af047dbe4446ebed",
+      "size_bytes": 16186
+    },
+    {
+      "path": "tests\\test_ui_bridge_truth_p071.py",
+      "role": "test",
+      "sha256": "aa6c56e4bd99b6bf5e97e96d587cd7161f4db8a9c23f4af10d3a9b3c2ff54e77",
+      "size_bytes": 16063
+    },
+    {
+      "path": "tests\\test_ui_execution_runner.py",
+      "role": "test",
+      "sha256": "b636b6748812ab97f0cef4a959b19cddbf2a78cbd91950c02eae693a36d9bb92",
+      "size_bytes": 29340
+    },
+    {
+      "path": "tests\\test_ui_heartbeat_and_lifecycle.py",
+      "role": "test",
+      "sha256": "4afc622d6ae584bff49a6f373b25fa14332fba08ab3762ec81d53d0f7c88c9d5",
+      "size_bytes": 67252
+    },
+    {
+      "path": "tests\\test_ui_screenshot_providers.py",
+      "role": "test",
+      "sha256": "2fa9697129f6ef2fd4f051fb10f5c38be21e72e3a41d60f53dc80e8a41f0308b",
+      "size_bytes": 8130
+    },
+    {
+      "path": "tests\\test_ui_screenshot_service.py",
+      "role": "test",
+      "sha256": "76a078dd91329b23422138942c585927f8e50d989bf25c9cd6bfbca4c1145e5a",
+      "size_bytes": 6391
+    },
+    {
+      "path": "tests\\test_ui_smoke.py",
+      "role": "test",
+      "sha256": "30898ad65ca3f1b627a1d1732ef98fe39c98df1f656fcd978cce6919d9551c3f",
+      "size_bytes": 9621
+    },
+    {
+      "path": "tests\\test_unified_memory_layer.py",
+      "role": "test",
+      "sha256": "199eb8c8658fa2a079e4fd5e29272e1bc757e6a4e76208fd35ed8b634a4e6bd9",
+      "size_bytes": 3698
+    },
+    {
+      "path": "tests\\test_unified_selector.py",
+      "role": "test",
+      "sha256": "d2e80f235e106cb75283f634cd045e64a1fa64f29851234b74ef8e1d4f7c84ed",
+      "size_bytes": 9315
+    },
+    {
+      "path": "tests\\test_universal_autonomy_index.py",
+      "role": "test",
+      "sha256": "981d943097af3dfedbc495353c9e5fa975705f08e6524b643b3253c4bf37d514",
+      "size_bytes": 15227
+    },
+    {
+      "path": "tests\\test_universal_perception_service.py",
+      "role": "test",
+      "sha256": "08d540f3066a9c88e84b1691e3ed850951c22718584885fe70e76b6cde1839c8",
+      "size_bytes": 9628
+    },
+    {
+      "path": "tests\\test_v5_phase1_contract_only.py",
+      "role": "test",
+      "sha256": "df25da1aa19b73bb2803fd342bbbdaf152751bcebd1ecb6cae0f68fd18e350e5",
+      "size_bytes": 23350
+    },
+    {
+      "path": "tests\\test_v5_phase1_trust_boundary_skeleton.py",
+      "role": "test",
+      "sha256": "9a418fb25f23cff0f8dee8a96d079f6d3c1a3bb1ea64a8b1518388c4bb1d290a",
+      "size_bytes": 18711
+    },
+    {
+      "path": "tests\\test_v5_phase2_authority.py",
+      "role": "test",
+      "sha256": "12d207d2775622705c946eb75b288e4986fcec027a306177714599e22357d99e",
+      "size_bytes": 18151
+    },
+    {
+      "path": "tests\\test_v5_phase2_authorization_remediation.py",
+      "role": "test",
+      "sha256": "a78da9fec64342d355008fe3496283607f06cf907625537b478358238fa5f4d9",
+      "size_bytes": 40081
+    },
+    {
+      "path": "tests\\test_v5_phase2_authorization_round3.py",
+      "role": "test",
+      "sha256": "ec685b63bce721b73726421ce67d7b5e602b39ddd901974a1ffc669c8e8cb636",
+      "size_bytes": 24492
+    },
+    {
+      "path": "tests\\test_v5_phase2_authorization_round4_l4.py",
+      "role": "test",
+      "sha256": "6ce69e387a0e121e606bbbfab581ab3b1d764617416c5bb2fc3a8021dc190a59",
+      "size_bytes": 23092
+    },
+    {
+      "path": "tests\\test_v5_phase2_real_interprocess.py",
+      "role": "test",
+      "sha256": "6ec53f2efb6cfac67211a21fd82a5366c5ee082d4cb18f2646af198c9f4b20a8",
+      "size_bytes": 13680
+    },
+    {
+      "path": "tests\\test_visual_evidence_offscreen.py",
+      "role": "test",
+      "sha256": "77c12ffe7a91ebf75cda387ae5232f91ad09768a916a77605a507e008ef79b1c",
+      "size_bytes": 47898
+    },
+    {
+      "path": "tests\\test_visual_remediation_p06.py",
+      "role": "test",
+      "sha256": "a3ec8c2ff5ad7160bff44d8249594b1d2200d90158fcef58f1833e8c256ebf03",
+      "size_bytes": 49802
+    },
+    {
+      "path": "tests\\test_watchdog_async_capture.py",
+      "role": "test",
+      "sha256": "f586d21babaaeb83d4ecb3db215dce91236e163d38f8e0c2c56d3f2705b1baa2",
+      "size_bytes": 14340
+    },
+    {
+      "path": "tests\\test_windows_platform_capabilities.py",
+      "role": "test",
+      "sha256": "84be49bf3c185c01352d89fb54304cf63ba5018f946a74e9a38a77cdda687667",
+      "size_bytes": 5336
+    },
+    {
+      "path": "tests\\test_windsurf_gaps_g1_g2_g3.py",
+      "role": "test",
+      "sha256": "4bc95dc650733c28cf2f1069fbdf8e44450c2cbba0731429eaf0c276c005dfc0",
+      "size_bytes": 7482
+    },
+    {
+      "path": "tests\\test_win_clipboard_bridge.py",
+      "role": "test",
+      "sha256": "97941d91877ede478faece40039e11dc855c85502297d1a69879808a5f18f2d9",
+      "size_bytes": 3429
+    },
+    {
+      "path": "tests\\test_win_systray_bridge.py",
+      "role": "test",
+      "sha256": "bfcbd514dd419fb1c8ebc7683e5326bdada88cb169e2c0adf4564cddfea49f61",
+      "size_bytes": 3289
+    },
+    {
+      "path": "tests\\test_win_toast_bridge.py",
+      "role": "test",
+      "sha256": "d23990fd66ea279824e848d2a20c42241f3419df2cb8a986a94d65cf961c9766",
+      "size_bytes": 4976
+    },
+    {
+      "path": "tests\\test_wm_cadence.py",
+      "role": "test",
+      "sha256": "164b808f1bdd942fc5e93243c7ad724a639df409369376dd1cb4c036915f7866",
+      "size_bytes": 6205
+    },
+    {
+      "path": "tests\\test_worker_health_gate_ranking.py",
+      "role": "test",
+      "sha256": "1c9cb93e7ed138d45d4b3af0cbc52ef73eb749ec2b6296901264d5049b89c8ab",
+      "size_bytes": 10840
+    },
+    {
+      "path": "tests\\test_worker_pool_snapshot.py",
+      "role": "test",
+      "sha256": "0e1b2c7eaabd5695fcf17614914d114ef945c7db32d0ecfe838bd430d3fecf15",
+      "size_bytes": 7034
+    },
+    {
+      "path": "tests\\test_worker_ranking.py",
+      "role": "test",
+      "sha256": "ad1ba097ffcc3e2cb1d5ffbeff98e646971e0362986f05cdebdcacb6c752cf56",
+      "size_bytes": 5729
+    },
+    {
+      "path": "tests\\test_worker_ranking_block_risk.py",
+      "role": "test",
+      "sha256": "2eee6c06e59715c7fc0e181d618068a6efcb867540d02be88fd070a194c27d03",
+      "size_bytes": 8542
+    },
+    {
+      "path": "tests\\test_world_model_service.py",
+      "role": "test",
+      "sha256": "8b58bd4234690680c9430ae9f51056444fbedeaf17ede8a07268c5195b6afc2e",
+      "size_bytes": 21460
+    }
+  ],
+  "bundle_sha256": "0664f50756c20baaa8ffb3661dbf4f46ac3fba1ba69cf6e2fe9942f626af36ff",
+  "bundle_size_bytes": 2568037,
+  "total_files": 613
+}

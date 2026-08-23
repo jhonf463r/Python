@@ -137,13 +137,9 @@ class AuthorityService:
         self._run_record_db = self._storage_root / RUN_RECORD_DB
         self._init_run_record_db()
         
-        # Phase 3: Initialize join authorization store
+        # Phase 3: Initialize join authorization store (now includes challenges table)
         self._join_auth_db = self._storage_root / JOIN_AUTH_DB
         self._init_join_authorization_db()
-        
-        # Phase 3: Initialize challenge state store
-        self._challenge_auth_db = self._storage_root / CHALLENGE_AUTH_DB
-        self._init_challenge_authorization_db()
         
         # Phase 2: Track connected clients
         self._clients: dict[int, ObservedProcessIdentity] = {}
@@ -293,6 +289,7 @@ class AuthorityService:
         
         Phase 3: Persistent join state with atomic uniqueness constraints.
         Enforces exactly-once join creation for subject_id + execution_id + generation.
+        F10 FIX: Consolidated challenges table into this DB for atomic transaction semantics.
         """
         conn = sqlite3.connect(str(self._join_auth_db))
         cursor = conn.cursor()
@@ -322,44 +319,42 @@ class AuthorityService:
             ON join_authorizations(generation)
         """)
         
-        conn.commit()
-        conn.close()
-    
-    def _init_challenge_authorization_db(self) -> None:
-        """Initialize challenge state store (SQLite).
-        
-        Phase 3: Persistent challenge state with atomic consumption.
-        Enforces exactly-once challenge consumption for join_id + challenge.
-        """
-        conn = sqlite3.connect(str(self._challenge_auth_db))
-        cursor = conn.cursor()
-        
+        # F10 FIX: Consolidated challenges table into join authorization DB
+        # This enables atomic transactions across join and challenge state
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS challenges (
                 challenge_id TEXT PRIMARY KEY,
                 join_id TEXT NOT NULL,
                 challenge TEXT NOT NULL,
                 generation INTEGER NOT NULL,
+                execution_id TEXT NOT NULL,
                 issued_at REAL NOT NULL,
                 expires_at REAL NOT NULL,
                 consumed INTEGER NOT NULL DEFAULT 0,
                 consumed_at REAL,
-                UNIQUE(join_id, challenge)
+                UNIQUE(join_id, challenge),
+                FOREIGN KEY (join_id) REFERENCES join_authorizations(join_id)
             )
         """)
         
         cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_join_id 
+            CREATE INDEX IF NOT EXISTS idx_challenges_join_id 
             ON challenges(join_id)
         """)
         
         cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_generation 
+            CREATE INDEX IF NOT EXISTS idx_challenges_generation 
             ON challenges(generation)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_challenges_execution_id 
+            ON challenges(execution_id)
         """)
         
         conn.commit()
         conn.close()
+    
     
     def _sign_data(self, data: str) -> str:
         """Sign data with HMAC-SHA256 using real secret key.
@@ -1226,8 +1221,8 @@ class AuthorityService:
             
             cursor.execute("""
                 INSERT INTO challenges 
-                (challenge_id, join_id, challenge, generation, issued_at, expires_at, consumed)
-                VALUES (?, ?, ?, ?, ?, ?, 0)
+                (challenge_id, join_id, challenge, generation, execution_id, issued_at, expires_at, consumed)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
                 ON CONFLICT(join_id, challenge)
                 DO NOTHING
             """, (
@@ -1235,6 +1230,7 @@ class AuthorityService:
                 join_id,
                 challenge,
                 self._generation,
+                execution_id,
                 challenge_issued_at,
                 challenge_expires_at
             ))
@@ -1488,12 +1484,6 @@ class AuthorityService:
             """, (current_time, challenge_id))
             
             if cursor.rowcount == 0:
-                # Rollback join authorization if challenge consumption failed
-                cursor.execute("""
-                    UPDATE join_authorizations
-                    SET consumed = 0, consumed_at = NULL
-                    WHERE join_id = ?
-                """, (join_id,))
                 conn.rollback()
                 conn.close()
                 return AuthorityResponse(
