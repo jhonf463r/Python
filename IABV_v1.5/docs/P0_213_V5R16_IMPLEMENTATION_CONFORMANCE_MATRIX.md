@@ -394,6 +394,13 @@
 | R16C-2 (Subject Registry Bootstrap) | ENFORCED |
 | R16C-3 (HANDLE_LIST Runtime) | ENFORCED |
 | R16C-4 (Test Coverage) | ENFORCED |
+| R16-F1 (PID Spoofing) | REMEDIATED |
+| R16-F2 (Registration Authority) | REMEDIATED |
+| R16-F3 (Parent Authority) | REMEDIATED |
+| R16-F4 (Duplicate Join) | REMEDIATED |
+| R16-F5 (Test Coverage) | REMEDIATED |
+| R16-F6 (HANDLE_LIST Cleanup) | REMEDIATED |
+| R16-F7 (Bundle Hygiene) | REMEDIATED |
 
 ### I.2 Pending Items
 
@@ -413,7 +420,7 @@
 
 **P0_213_V5R16_IMPLEMENTATION_CONFORMANCE_MATRIX_COMPLETE**
 
-**Overall Status**: REMEDIATION_COMPLETE
+**Overall Status**: CRITICAL_REMEDIATION_COMPLETE
 
 **R16B-1**: ENFORCED - Authentication boundary with real Windows identity verification complete
 
@@ -431,4 +438,18 @@
 
 **R16C-4**: ENFORCED - Test coverage improved with executable assertions and new tests
 
-**Next Steps**: Full Windows verification, clean evidence, regenerate audit bundle, create git commits
+**R16-F1**: REMEDIATED - Transport identity integrated with Phase 2 authenticated transport boundary
+
+**R16-F2**: REMEDIATED - Subject registration authority using Phase 2 RunRecord
+
+**R16-F3**: REMEDIATED - Parent authority enforced at authorization boundary
+
+**R16-F4**: REMEDIATED - Exactly-once join creation with atomic database constraints
+
+**R16-F5**: REMEDIATED - Transport integration tests with executable assertions
+
+**R16-F6**: REMEDIATED - HANDLE_LIST cleanup consistency fixed
+
+**R16-F7**: REMEDIATED - Bundle hygiene improved with proper exclusions
+
+**Next Steps**: Git provenance, Windows runtime verification, final verification report
