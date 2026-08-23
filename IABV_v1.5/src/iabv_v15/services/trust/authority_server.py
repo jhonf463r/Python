@@ -463,7 +463,9 @@ class AuthorityServer:
                         continue
                 
                 # Handle client synchronously (single-request mode)
+                print(f"[AuthorityServer] About to handle client...", flush=True)
                 self._handle_client(pipe_handle)
+                print(f"[AuthorityServer] Client handling complete, recreating pipe...", flush=True)
                 
                 # Continue for next client (remove single-client break)
             
