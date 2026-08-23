@@ -443,25 +443,26 @@ class AuthorityServer:
                 print(f"[AuthorityServer] Pipe created successfully, now waiting for client connection...", flush=True)
                 print(f"[AuthorityServer] Pipe handle: {pipe_handle}", flush=True)
                 
-                # Use blocking ConnectNamedPipe - simpler and more reliable
+                # With PIPE_WAIT mode, the pipe should be immediately available for connections
+                # No need to call ConnectNamedPipe - it will block until client connects anyway
+                # The pipe is now in listening state and ready for client connections
+                print(f"[AuthorityServer] Pipe is now listening for client connections", flush=True)
+                
+                # Wait for client to connect (this will block until a client connects)
                 try:
-                    print(f"[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...", flush=True)
+                    print(f"[AuthorityServer] Waiting for client to connect...", flush=True)
                     win32pipe.ConnectNamedPipe(pipe_handle)
                     print(f"[AuthorityServer] Client connected successfully!", flush=True)
                 except Exception as e:
-                    # If pipe is already connected, that's OK
-                    if "pipe is being connected" in str(e).lower() or "connected" in str(e).lower():
-                        print(f"[AuthorityServer] Pipe already connected or connecting", flush=True)
-                    else:
-                        print(f"[AuthorityServer] ConnectNamedPipe error: {e}", flush=True)
-                        import traceback
-                        traceback.print_exc()
-                        # Close the pipe and continue
-                        try:
-                            win32file.CloseHandle(pipe_handle)
-                        except:
-                            pass
-                        continue
+                    print(f"[AuthorityServer] ConnectNamedPipe error: {e}", flush=True)
+                    import traceback
+                    traceback.print_exc()
+                    # Close the pipe and continue
+                    try:
+                        win32file.CloseHandle(pipe_handle)
+                    except:
+                        pass
+                    continue
                 
                 # Handle client synchronously (single-request mode)
                 print(f"[AuthorityServer] About to handle client...", flush=True)
