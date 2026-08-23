@@ -154,7 +154,8 @@ class AuthorityServer:
         security_attributes = self._create_security_attributes()
         
         # Create named pipe with exact parameters
-        pipe_access = win32pipe.PIPE_ACCESS_DUPLEX
+        # Use FILE_FLAG_OVERLAPPED to enable overlapped I/O
+        pipe_access = win32pipe.PIPE_ACCESS_DUPLEX | win32file.FILE_FLAG_OVERLAPPED
         # Revert to PIPE_WAIT for proper blocking behavior
         pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT
         max_instances = win32pipe.PIPE_UNLIMITED_INSTANCES
@@ -164,7 +165,7 @@ class AuthorityServer:
         
         print(f"[AuthorityServer] CreateNamedPipe parameters:")
         print(f"[AuthorityServer]   Pipe name: {self._pipe_name}")
-        print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x{pipe_access:X})")
+        print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED (0x{pipe_access:X})")
         print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x{pipe_type:X})")
         print(f"[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES")
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
@@ -443,63 +444,11 @@ class AuthorityServer:
                 print(f"[AuthorityServer] Pipe created successfully, now waiting for client connection...", flush=True)
                 print(f"[AuthorityServer] Pipe handle: {pipe_handle}", flush=True)
                 
-                # Use overlapped I/O to make ConnectNamedPipe non-blocking
-                # This allows the pipe to be immediately available for client connections
+                # Use blocking ConnectNamedPipe - simpler and more reliable
                 try:
-                    print(f"[AuthorityServer] Calling ConnectNamedPipe with overlapped I/O...", flush=True)
-                    # Create an event for overlapped I/O
-                    import win32event
-                    overlapped = pywintypes.OVERLAPPED()
-                    overlapped.hEvent = win32event.CreateEvent(None, True, False, None)
-                    
-                    # Call ConnectNamedPipe with overlapped I/O
-                    win32pipe.ConnectNamedPipe(pipe_handle, overlapped)
-                    
-                    # Wait for connection with a timeout
-                    # Use a longer timeout to allow client to connect
-                    result = win32event.WaitForSingleObject(overlapped.hEvent, 5000)  # 5 second timeout
-                    
-                    if result == win32event.WAIT_OBJECT_0:
-                        print(f"[AuthorityServer] Client connected successfully!", flush=True)
-                    elif result == win32event.WAIT_TIMEOUT:
-                        # No client connected yet, but pipe is now listening
-                        # Keep the pipe alive and continue waiting instead of recreating
-                        print(f"[AuthorityServer] Pipe is listening (waiting for client...)", flush=True)
-                        # Continue to wait for client in a loop
-                        # Use a polling approach with shorter timeouts
-                        while True:
-                            result = win32event.WaitForSingleObject(overlapped.hEvent, 1000)  # 1 second timeout
-                            if result == win32event.WAIT_OBJECT_0:
-                                print(f"[AuthorityServer] Client connected successfully!", flush=True)
-                                break
-                            elif result == win32event.WAIT_TIMEOUT:
-                                # Check for shutdown
-                                with self._shutdown_lock:
-                                    if self._shutdown:
-                                        print(f"[AuthorityServer] Shutdown requested, closing pipe", flush=True)
-                                        try:
-                                            win32file.CloseHandle(pipe_handle)
-                                        except:
-                                            pass
-                                        return
-                                # Continue waiting
-                                print(f"[AuthorityServer] Still waiting for client...", flush=True)
-                                continue
-                            else:
-                                print(f"[AuthorityServer] ConnectNamedPipe wait result: {result}", flush=True)
-                                try:
-                                    win32file.CloseHandle(pipe_handle)
-                                except:
-                                    pass
-                                continue
-                    else:
-                        print(f"[AuthorityServer] ConnectNamedPipe wait result: {result}", flush=True)
-                        try:
-                            win32file.CloseHandle(pipe_handle)
-                        except:
-                            pass
-                        continue
-                        
+                    print(f"[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...", flush=True)
+                    win32pipe.ConnectNamedPipe(pipe_handle)
+                    print(f"[AuthorityServer] Client connected successfully!", flush=True)
                 except Exception as e:
                     # If pipe is already connected, that's OK
                     if "pipe is being connected" in str(e).lower() or "connected" in str(e).lower():
