@@ -388,6 +388,8 @@ class AuthorityServer:
             "VERIFY_EXECUTION": self._authority.handle_verify_execution,
             "GET_STATUS": self._authority.handle_get_status,
             "PHASE3_REQUEST_JOIN": self._authority.handle_phase3_request_join,
+            "PHASE3_REQUEST_CHALLENGE": self._authority.handle_phase3_request_challenge,
+            "PHASE3_REDEEM_JOIN": self._authority.handle_phase3_redeem_join,
         }
         
         request_type = request.get("type", request.get("request_type", ""))

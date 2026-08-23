@@ -130,6 +130,15 @@ class Phase3AuthorityExtension:
     ) -> dict[str, Any]:
         """Handle REQUEST_JOIN request.
         
+        DEPRECATED: This legacy path is being replaced by the unified transport
+        path in AuthorityService.handle_phase3_request_join(). Use the new
+        authenticated transport boundary instead.
+        
+        Phase 3 Unified Path:
+        - AuthorityService.handle_phase3_request_join()
+        - Uses OS-observed client_pid from transport layer
+        - Uses canonical authority_join_authorizations.db
+        
         Args:
             request_data: Request data
             client_pid: Client process ID
@@ -138,6 +147,14 @@ class Phase3AuthorityExtension:
         Returns:
             Response data
         """
+        import warnings
+        warnings.warn(
+            "Phase3AuthorityExtension.handle_request_join is DEPRECATED. "
+            "Use AuthorityService.handle_phase3_request_join with authenticated transport.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         try:
             # Parse request
             request = RequestJoinRequest.from_dict(request_data)
@@ -219,6 +236,15 @@ class Phase3AuthorityExtension:
     ) -> dict[str, Any]:
         """Handle REQUEST_CHALLENGE request.
         
+        DEPRECATED: This legacy path is being replaced by the unified transport
+        path in AuthorityService.handle_phase3_request_challenge(). Use the new
+        authenticated transport boundary instead.
+        
+        Phase 3 Unified Path:
+        - AuthorityService.handle_phase3_request_challenge()
+        - Uses OS-observed client_pid from transport layer
+        - Uses canonical authority_challenge_state.db
+        
         Args:
             request_data: Request data
             client_pid: Client process ID
@@ -227,6 +253,14 @@ class Phase3AuthorityExtension:
         Returns:
             Response data
         """
+        import warnings
+        warnings.warn(
+            "Phase3AuthorityExtension.handle_request_challenge is DEPRECATED. "
+            "Use AuthorityService.handle_phase3_request_challenge with authenticated transport.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         try:
             # Parse request
             request = RequestChallengeRequest.from_dict(request_data)
@@ -322,6 +356,15 @@ class Phase3AuthorityExtension:
     ) -> dict[str, Any]:
         """Handle REDEEM_JOIN request.
         
+        DEPRECATED: This legacy path is being replaced by the unified transport
+        path in AuthorityService.handle_phase3_redeem_join(). Use the new
+        authenticated transport boundary instead.
+        
+        Phase 3 Unified Path:
+        - AuthorityService.handle_phase3_redeem_join()
+        - Uses OS-observed client_pid from transport layer
+        - Uses canonical authority_join_authorizations.db and authority_challenge_state.db
+        
         Args:
             request_data: Request data
             client_pid: Client process ID
@@ -330,6 +373,14 @@ class Phase3AuthorityExtension:
         Returns:
             Response data
         """
+        import warnings
+        warnings.warn(
+            "Phase3AuthorityExtension.handle_redeem_join is DEPRECATED. "
+            "Use AuthorityService.handle_phase3_redeem_join with authenticated transport.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         try:
             # Parse request
             request = RedeemJoinRequest.from_dict(request_data)

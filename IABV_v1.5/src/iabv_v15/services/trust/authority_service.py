@@ -69,6 +69,7 @@ GENERATION_FILE = "authority_generation.txt"
 LEASE_STATE_DB = "authority_lease_state.db"
 RUN_RECORD_DB = "authority_run_records.db"
 JOIN_AUTH_DB = "authority_join_authorizations.db"
+CHALLENGE_AUTH_DB = "authority_challenge_state.db"
 
 # ── Protocol Messages ───────────────────────────────────────────────────────────
 
@@ -139,6 +140,10 @@ class AuthorityService:
         # Phase 3: Initialize join authorization store
         self._join_auth_db = self._storage_root / JOIN_AUTH_DB
         self._init_join_authorization_db()
+        
+        # Phase 3: Initialize challenge state store
+        self._challenge_auth_db = self._storage_root / CHALLENGE_AUTH_DB
+        self._init_challenge_authorization_db()
         
         # Phase 2: Track connected clients
         self._clients: dict[int, ObservedProcessIdentity] = {}
@@ -274,6 +279,7 @@ class AuthorityService:
                 action TEXT NOT NULL,
                 target TEXT NOT NULL,
                 consumer_pid INTEGER NOT NULL,
+                parent_authority INTEGER NOT NULL,
                 generation INTEGER NOT NULL,
                 created_at REAL NOT NULL
             )
@@ -298,8 +304,10 @@ class AuthorityService:
                 execution_id TEXT NOT NULL,
                 generation INTEGER NOT NULL,
                 client_pid INTEGER NOT NULL,
+                public_key TEXT NOT NULL,
                 created_at REAL NOT NULL,
                 consumed INTEGER NOT NULL DEFAULT 0,
+                consumed_at REAL,
                 UNIQUE(subject_id, execution_id, generation)
             )
         """)
@@ -312,6 +320,42 @@ class AuthorityService:
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_generation 
             ON join_authorizations(generation)
+        """)
+        
+        conn.commit()
+        conn.close()
+    
+    def _init_challenge_authorization_db(self) -> None:
+        """Initialize challenge state store (SQLite).
+        
+        Phase 3: Persistent challenge state with atomic consumption.
+        Enforces exactly-once challenge consumption for join_id + challenge.
+        """
+        conn = sqlite3.connect(str(self._challenge_auth_db))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS challenges (
+                challenge_id TEXT PRIMARY KEY,
+                join_id TEXT NOT NULL,
+                challenge TEXT NOT NULL,
+                generation INTEGER NOT NULL,
+                issued_at REAL NOT NULL,
+                expires_at REAL NOT NULL,
+                consumed INTEGER NOT NULL DEFAULT 0,
+                consumed_at REAL,
+                UNIQUE(join_id, challenge)
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_join_id 
+            ON challenges(join_id)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_generation 
+            ON challenges(generation)
         """)
         
         conn.commit()
@@ -424,7 +468,7 @@ class AuthorityService:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT run_id, execution_id, consumer_pid, generation, authorized_scope, action, target
+            SELECT run_id, execution_id, consumer_pid, parent_authority, generation, authorized_scope, action, target
             FROM run_records
             WHERE run_id = ?
         """, (subject_id,))
@@ -435,7 +479,7 @@ class AuthorityService:
         if not row:
             return None
         
-        run_id, execution_id, consumer_pid, generation, authorized_scope, action, target = row
+        run_id, execution_id, consumer_pid, parent_authority, generation, authorized_scope, action, target = row
         
         # Verify peer identity matches run record
         if peer.process_id != consumer_pid:
@@ -449,6 +493,7 @@ class AuthorityService:
             "run_id": run_id,
             "execution_id": execution_id,
             "consumer_pid": consumer_pid,
+            "parent_authority": parent_authority,
             "generation": generation,
             "authorized_scope": authorized_scope,
             "action": action,
@@ -515,11 +560,18 @@ class AuthorityService:
             conn = sqlite3.connect(str(self._run_record_db))
             cursor = conn.cursor()
             
+            # Derive parent authority from OS process tree
+            try:
+                parent_process = psutil.Process(client_pid)
+                parent_authority = parent_process.ppid()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                parent_authority = 0  # Fallback if parent cannot be determined
+            
             cursor.execute("""
                 INSERT INTO run_records 
                 (run_id, execution_id, episode_id, session_id, invocation_id, 
-                 requested_scope, authorized_scope, action, target, consumer_pid, generation, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 requested_scope, authorized_scope, action, target, consumer_pid, parent_authority, generation, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 run_record.run_id,
                 run_record.execution_id,
@@ -531,6 +583,7 @@ class AuthorityService:
                 run_record.action,
                 run_record.target,
                 run_record.consumer_pid,
+                parent_authority,
                 run_record.generation,
                 run_record.created_at
             ))
@@ -994,14 +1047,15 @@ class AuthorityService:
                     error="Execution ID mismatch"
                 )
             
-            # R16-F3: Verify parent authority at authorization boundary
-            # The parent authority is derived from the OS-observed peer
-            # We verify that the peer's parent matches the expected parent authority
-            expected_parent_authority = peer.parent_authority
-            
-            # For now, we accept any parent authority as valid
-            # In a future enhancement, this could be restricted to specific parent processes
-            # The key is that parent authority is derived from OS, not caller-supplied
+            # F2 FIX: Enforce parent authority at authorization boundary
+            # Compare OS-derived peer.parent_authority to authorized parent_authority from RunRecord
+            authorized_parent_authority = subject.get('parent_authority')
+            if peer.parent_authority != authorized_parent_authority:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error=f"Parent authority mismatch: peer={peer.parent_authority}, authorized={authorized_parent_authority}"
+                )
             
             # Create join authorization with atomic uniqueness
             join_id = secrets.token_urlsafe(16)
@@ -1013,8 +1067,8 @@ class AuthorityService:
             # Atomic INSERT with ON CONFLICT for exactly-once semantics
             cursor.execute("""
                 INSERT INTO join_authorizations 
-                (join_id, subject_id, execution_id, generation, client_pid, created_at, consumed)
-                VALUES (?, ?, ?, ?, ?, ?, 0)
+                (join_id, subject_id, execution_id, generation, client_pid, public_key, created_at, consumed)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
                 ON CONFLICT(subject_id, execution_id, generation)
                 DO NOTHING
             """, (
@@ -1023,6 +1077,7 @@ class AuthorityService:
                 execution_id,
                 self._generation,
                 client_pid,
+                public_key,
                 created_at
             ))
             
@@ -1060,6 +1115,413 @@ class AuthorityService:
                 data={"join_token": join_token}
             )
         except Exception as e:
+            return AuthorityResponse(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    def handle_phase3_request_challenge(
+        self,
+        request: AuthorityRequest,
+        client_pid: int
+    ) -> AuthorityResponse:
+        """Handle Phase 3 REQUEST_CHALLENGE with OS-verified peer identity.
+        
+        Phase 3: Integrate REQUEST_CHALLENGE with authenticated transport boundary.
+        Uses OS-observed client_pid from transport layer, not caller-supplied.
+        """
+        try:
+            # Create AuthenticatedPeer from OS-observed client_pid
+            peer = self._create_authenticated_peer(client_pid)
+            
+            # Extract request data
+            join_id = request.data.get('join_id')
+            subject_id = request.data.get('subject_id')
+            execution_id = request.data.get('execution_id')
+            
+            if not join_id or not subject_id or not execution_id:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Missing join_id, subject_id, or execution_id"
+                )
+            
+            # Verify join authorization exists and is not consumed
+            conn = sqlite3.connect(str(self._join_auth_db))
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT subject_id, execution_id, generation, client_pid, public_key, consumed
+                FROM join_authorizations
+                WHERE join_id = ?
+            """, (join_id,))
+            
+            row = cursor.fetchone()
+            
+            if not row:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Join authorization not found"
+                )
+            
+            record_subject_id, record_execution_id, record_generation, record_pid, public_key, consumed = row
+            
+            # Verify subject_id matches
+            if record_subject_id != subject_id:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Subject ID mismatch"
+                )
+            
+            # Verify execution_id matches
+            if record_execution_id != execution_id:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Execution ID mismatch"
+                )
+            
+            # Verify not consumed
+            if consumed:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Join authorization already consumed"
+                )
+            
+            # Verify generation matches canonical
+            if record_generation != self._generation:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Generation mismatch"
+                )
+            
+            # Verify peer identity matches join authorization
+            if peer.process_id != record_pid:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Peer identity mismatch"
+                )
+            
+            # Generate challenge
+            nonce = secrets.token_hex(16)
+            timestamp = str(int(time.time()))
+            challenge = f"{nonce}:{timestamp}"
+            challenge_issued_at = time.time()
+            challenge_expires_at = challenge_issued_at + 300  # 5 minutes
+            
+            # Store challenge
+            challenge_id = secrets.token_urlsafe(16)
+            
+            cursor.execute("""
+                INSERT INTO challenges 
+                (challenge_id, join_id, challenge, generation, issued_at, expires_at, consumed)
+                VALUES (?, ?, ?, ?, ?, ?, 0)
+                ON CONFLICT(join_id, challenge)
+                DO NOTHING
+            """, (
+                challenge_id,
+                join_id,
+                challenge,
+                self._generation,
+                challenge_issued_at,
+                challenge_expires_at
+            ))
+            
+            if cursor.rowcount == 0:
+                # Challenge already exists (should not happen with unique nonce)
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Challenge already exists"
+                )
+            
+            conn.commit()
+            conn.close()
+            
+            # Return response with pinned public key
+            return AuthorityResponse(
+                success=True,
+                data={
+                    "challenge": challenge,
+                    "pinned_public_key": public_key,
+                    "generation": self._generation,
+                    "challenge_issued_at": challenge_issued_at,
+                    "challenge_expires_at": challenge_expires_at
+                }
+            )
+        except Exception as e:
+            return AuthorityResponse(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    def handle_phase3_redeem_join(
+        self,
+        request: AuthorityRequest,
+        client_pid: int
+    ) -> AuthorityResponse:
+        """Handle Phase 3 REDEEM_JOIN with OS-verified peer identity.
+        
+        Phase 3: Integrate REDEEM_JOIN with authenticated transport boundary.
+        Uses OS-observed client_pid from transport layer, not caller-supplied.
+        Implements exactly-once redemption with atomic transitions.
+        """
+        try:
+            # Import Ed25519 verification
+            from iabv_v15.services.phase3.ed25519_keys import (
+                public_key_from_hex,
+                public_key_from_base64,
+                verify_signature
+            )
+            
+            # Create AuthenticatedPeer from OS-observed client_pid
+            peer = self._create_authenticated_peer(client_pid)
+            
+            # Extract request data
+            join_id = request.data.get('join_id')
+            subject_id = request.data.get('subject_id')
+            execution_id = request.data.get('execution_id')
+            challenge = request.data.get('challenge')
+            signature = request.data.get('signature')
+            
+            if not join_id or not subject_id or not execution_id or not challenge or not signature:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Missing required fields"
+                )
+            
+            # Verify join authorization exists and is not consumed
+            conn = sqlite3.connect(str(self._join_auth_db))
+            cursor = conn.cursor()
+            
+            # F9 FIX: Explicit transaction discipline - BEGIN IMMEDIATE
+            cursor.execute("BEGIN IMMEDIATE")
+            
+            cursor.execute("""
+                SELECT subject_id, execution_id, generation, client_pid, public_key, consumed
+                FROM join_authorizations
+                WHERE join_id = ?
+            """, (join_id,))
+            
+            row = cursor.fetchone()
+            
+            if not row:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Join authorization not found"
+                )
+            
+            record_subject_id, record_execution_id, record_generation, record_pid, public_key_str, consumed = row
+            
+            # Verify subject_id matches
+            if record_subject_id != subject_id:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Subject ID mismatch"
+                )
+            
+            # Verify execution_id matches
+            if record_execution_id != execution_id:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Execution ID mismatch"
+                )
+            
+            # Verify not consumed
+            if consumed:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Join authorization already consumed"
+                )
+            
+            # Verify generation matches canonical
+            if record_generation != self._generation:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Generation mismatch"
+                )
+            
+            # Verify peer identity matches join authorization
+            if peer.process_id != record_pid:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Peer identity mismatch"
+                )
+            
+            # Verify challenge exists and is not consumed
+            cursor.execute("""
+                SELECT challenge_id, challenge, issued_at, expires_at, consumed
+                FROM challenges
+                WHERE join_id = ?
+                ORDER BY issued_at DESC
+                LIMIT 1
+            """, (join_id,))
+            
+            challenge_row = cursor.fetchone()
+            
+            if not challenge_row:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Challenge not found"
+                )
+            
+            challenge_id, stored_challenge, issued_at, expires_at, challenge_consumed = challenge_row
+            
+            # Verify challenge not consumed
+            if challenge_consumed:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Challenge already consumed"
+                )
+            
+            # Verify challenge freshness
+            current_time = time.time()
+            if current_time > expires_at:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Challenge expired"
+                )
+            
+            # Verify challenge matches stored nonce (F1 FIX: cryptographically bind to issued nonce)
+            if challenge != stored_challenge:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Challenge mismatch"
+                )
+            
+            # Convert public key to bytes
+            try:
+                public_key = public_key_from_hex(public_key_str)
+            except ValueError:
+                try:
+                    public_key = public_key_from_base64(public_key_str)
+                except ValueError:
+                    conn.rollback()
+                    conn.close()
+                    return AuthorityResponse(
+                        success=False,
+                        data={},
+                        error="Invalid public key format"
+                    )
+            
+            # Verify signature over the exact stored challenge bytes
+            signature_bytes = bytes.fromhex(signature)
+            challenge_bytes = stored_challenge.encode('utf-8')
+            
+            if not verify_signature(public_key, challenge_bytes, signature_bytes):
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Invalid signature"
+                )
+            
+            # Atomic redeem: update both join authorization and challenge
+            cursor.execute("""
+                UPDATE join_authorizations
+                SET consumed = 1, consumed_at = ?
+                WHERE join_id = ? 
+                  AND consumed = 0 
+                  AND generation = ?
+            """, (current_time, join_id, self._generation))
+            
+            if cursor.rowcount == 0:
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Join authorization already consumed or expired"
+                )
+            
+            cursor.execute("""
+                UPDATE challenges
+                SET consumed = 1, consumed_at = ?
+                WHERE challenge_id = ? 
+                  AND consumed = 0
+            """, (current_time, challenge_id))
+            
+            if cursor.rowcount == 0:
+                # Rollback join authorization if challenge consumption failed
+                cursor.execute("""
+                    UPDATE join_authorizations
+                    SET consumed = 0, consumed_at = NULL
+                    WHERE join_id = ?
+                """, (join_id,))
+                conn.rollback()
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error="Challenge already consumed"
+                )
+            
+            # F9 FIX: Explicit COMMIT after successful atomic updates
+            conn.commit()
+            conn.close()
+            
+            # Generate membership ID
+            membership_id = secrets.token_urlsafe(16)
+            
+            return AuthorityResponse(
+                success=True,
+                data={
+                    "redeemed": True,
+                    "redeemed_at": current_time,
+                    "membership_id": membership_id
+                }
+            )
+        except Exception as e:
+            # F9 FIX: ROLLBACK on exception
+            if 'conn' in locals():
+                conn.rollback()
+                conn.close()
             return AuthorityResponse(
                 success=False,
                 data={},

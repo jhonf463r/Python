@@ -83,7 +83,8 @@ class TestNegativeSecurity:
             subject_id="authorized-subject",
             windows_sid="S-1-5-21-TEST",
             allowed_public_keys=["authorized-key-hex"],
-            parent_authority="test-parent"
+            parent_authority="test-parent",
+            registering_authority="test-authority"
         )
         
         # Attempt REQUEST_JOIN with forged subject_id
@@ -109,7 +110,8 @@ class TestNegativeSecurity:
             subject_id="authorized-subject",
             windows_sid="S-1-5-21-TEST",
             allowed_public_keys=["authorized-key-hex"],
-            parent_authority="test-parent"
+            parent_authority="test-parent",
+            registering_authority="test-authority"
         )
         
         # Attempt REQUEST_JOIN with forged public_key
@@ -139,7 +141,8 @@ class TestNegativeSecurity:
             subject_id="authorized-subject",
             windows_sid="S-1-5-21-AUTHORIZED",
             allowed_public_keys=["authorized-key-hex"],
-            parent_authority="test-parent"
+            parent_authority="test-parent",
+            registering_authority="test-authority"
         )
         
         # Attempt REQUEST_JOIN (caller verification is placeholder)
