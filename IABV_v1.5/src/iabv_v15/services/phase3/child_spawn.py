@@ -21,8 +21,13 @@ import win32process
 import win32security
 import win32con
 import win32api
-import win32procthread
 from typing import Tuple, Optional
+
+# Windows API constants for PROC_THREAD_ATTRIBUTE_HANDLE_LIST
+PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x20002  # 131074
+
+# Load kernel32 for attribute list functions
+kernel32 = ctypes.windll.kernel32
 
 from iabv_v15.services.phase3.process_security import create_restrictive_child_security_descriptor
 from iabv_v15.services.phase3.credential_transport import AnonymousPipeCredentialTransport
@@ -129,8 +134,21 @@ def spawn_child_with_credential(
         si.StartupInfo.cb = ctypes.sizeof(si)
         
         # Step 5: Initialize attribute list for 1 attribute
-        attribute_list_size = win32procthread.InitializeProcThreadAttributeList(1)
-        attribute_list = ctypes.create_string_buffer(attribute_list_size)
+        # Using ctypes to call InitializeProcThreadAttributeList
+        kernel32.InitializeProcThreadAttributeList.restype = ctypes.c_size_t
+        kernel32.InitializeProcThreadAttributeList.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_ulong, ctypes.POINTER(ctypes.c_size_t)]
+        
+        # First call to get required size
+        size = ctypes.c_size_t()
+        kernel32.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
+        
+        # Allocate buffer
+        attribute_list = ctypes.create_string_buffer(size.value)
+        
+        # Second call to initialize
+        if not kernel32.InitializeProcThreadAttributeList(attribute_list, 1, 0, ctypes.byref(size)):
+            raise ChildSpawnError("Failed to initialize attribute list")
+        
         si.lpAttributeList = attribute_list
         
         # Step 6: Set handle list attribute (only stdin read handle)
@@ -139,13 +157,28 @@ def spawn_child_with_credential(
         for i, handle in enumerate(handle_list):
             handle_array[i] = handle
         
-        win32procthread.UpdateProcThreadAttribute(
+        # Using ctypes to call UpdateProcThreadAttribute
+        kernel32.UpdateProcThreadAttribute.restype = ctypes.c_bool
+        kernel32.UpdateProcThreadAttribute.argtypes = [
+            ctypes.c_void_p,  # attribute list
+            ctypes.c_ulong,   # flags
+            ctypes.c_ulong,   # attribute (PROC_THREAD_ATTRIBUTE_HANDLE_LIST)
+            ctypes.c_void_p,  # value (handle array)
+            ctypes.c_size_t,  # size
+            ctypes.c_void_p,  # previous value (optional)
+            ctypes.POINTER(ctypes.c_size_t)  # return size (optional)
+        ]
+        
+        if not kernel32.UpdateProcThreadAttribute(
             attribute_list,
             0,
-            win32procthread.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+            PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
             handle_array,
-            ctypes.sizeof(ctypes.c_void_p) * len(handle_list)
-        )
+            ctypes.sizeof(ctypes.c_void_p) * len(handle_list),
+            None,
+            None
+        ):
+            raise ChildSpawnError("Failed to update attribute list")
         
         # Step 7: Set stdin bound to pipe
         si.StartupInfo.dwFlags = win32process.STARTF_USESTDHANDLES
@@ -180,7 +213,9 @@ def spawn_child_with_credential(
         child_tid = result[3]
         
         # Step 10: Delete attribute list
-        win32procthread.DeleteProcThreadAttributeList(attribute_list)
+        kernel32.DeleteProcThreadAttributeList.restype = None
+        kernel32.DeleteProcThreadAttributeList.argtypes = [ctypes.c_void_p]
+        kernel32.DeleteProcThreadAttributeList(attribute_list)
         attribute_list = None
         
         # Step 11: Close parent's read-side duplicate immediately after spawn
