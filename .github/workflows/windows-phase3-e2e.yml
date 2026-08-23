@@ -153,6 +153,25 @@ jobs:
             exit 1
           }
           
+          # Verify named pipe exists
+          Write-Host "Verifying named pipe exists..."
+          $pipeExists = Test-Path "\\.\pipe\IABV_Authority"
+          if ($pipeExists) {
+            Write-Host "Named pipe exists: \\.\pipe\IABV_Authority"
+          } else {
+            Write-Host "ERROR: Named pipe does not exist: \\.\pipe\IABV_Authority"
+            Write-Host "This indicates the authority server failed to create the pipe"
+            Write-Host "Checking authority_stdout.log:"
+            if (Test-Path "authority_stdout.log") {
+              Get-Content "authority_stdout.log"
+            }
+            Write-Host "Checking authority_stderr.log:"
+            if (Test-Path "authority_stderr.log") {
+              Get-Content "authority_stderr.log"
+            }
+            exit 1
+          }
+          
           Write-Host "Authority process started successfully"
           
           # Save PID for cleanup
