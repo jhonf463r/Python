@@ -150,8 +150,8 @@ class AuthorityServer:
         Phase 2: Explicit DACL, reject remote clients.
         PART II: Instrumented to log exact CreateNamedPipe parameters.
         """
-        # Re-enable security attributes
-        security_attributes = self._create_security_attributes()
+        # Temporarily disable security attributes to test if they're blocking connections
+        security_attributes = None
         
         # Create named pipe with exact parameters
         # Use standard PIPE_ACCESS_DUPLEX without FILE_FLAG_OVERLAPPED
@@ -170,7 +170,7 @@ class AuthorityServer:
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
         print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
         print(f"[AuthorityServer]   Default timeout: {default_timeout}")
-        print(f"[AuthorityServer]   Security attributes: present")
+        print(f"[AuthorityServer]   Security attributes: DISABLED (testing if DACL blocks connections)")
         
         pipe_handle = win32pipe.CreateNamedPipe(
             self._pipe_name,
@@ -443,13 +443,21 @@ class AuthorityServer:
                 print(f"[AuthorityServer] Pipe created successfully, now waiting for client connection...", flush=True)
                 print(f"[AuthorityServer] Pipe handle: {pipe_handle}", flush=True)
                 
-                # With PIPE_WAIT mode, the pipe should be immediately available for connections
-                # No need to call ConnectNamedPipe - it will block until client connects anyway
-                # The pipe is now in listening state and ready for client connections
-                print(f"[AuthorityServer] Pipe is now listening for client connections (skipping ConnectNamedPipe)", flush=True)
-                
-                # Skip ConnectNamedPipe - pipe should be immediately available
-                # This is an experiment to see if ConnectNamedPipe is blocking the pipe
+                # Wait for client to connect (this will block until a client connects)
+                try:
+                    print(f"[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...", flush=True)
+                    win32pipe.ConnectNamedPipe(pipe_handle)
+                    print(f"[AuthorityServer] Client connected successfully!", flush=True)
+                except Exception as e:
+                    print(f"[AuthorityServer] ConnectNamedPipe error: {e}", flush=True)
+                    import traceback
+                    traceback.print_exc()
+                    # Close the pipe and continue
+                    try:
+                        win32file.CloseHandle(pipe_handle)
+                    except:
+                        pass
+                    continue
                 
                 # Handle client synchronously (single-request mode)
                 print(f"[AuthorityServer] About to handle client...", flush=True)
