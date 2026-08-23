@@ -101,7 +101,7 @@ jobs:
           # Start authority process in background
           $env:PYTHONPATH = "src"
           Write-Host "Starting authority process with default pipe name"
-          $authorityProcess = Start-Process -FilePath "python" -ArgumentList "src/iabv_v15/services/trust/authority_process.py", "--storage-root", "temp_authority_storage" -PassThru -NoNewWindow -RedirectStandardOutput "authority_stdout.log" -RedirectStandardError "authority_stderr.log"
+          $authorityProcess = Start-Process -FilePath "python" -ArgumentList @("-u", "src/iabv_v15/services/trust/authority_process.py", "--storage-root", "temp_authority_storage") -PassThru -NoNewWindow -RedirectStandardOutput "authority_stdout.log" -RedirectStandardError "authority_stderr.log"
           
           Write-Host "Authority Process ID: $($authorityProcess.Id)"
           
@@ -152,6 +152,20 @@ jobs:
               Get-Content "authority_stderr.log"
             }
             exit 1
+          }
+          
+          # List all named pipes for debugging
+          Write-Host "Listing all named pipes for debugging..."
+          try {
+            $pipes = [System.IO.Directory]::GetFiles("\\.\pipe\")
+            Write-Host "Found $($pipes.Count) named pipes"
+            foreach ($pipe in $pipes) {
+              if ($pipe -like "*IABV*") {
+                Write-Host "  Found IABV pipe: $pipe"
+              }
+            }
+          } catch {
+            Write-Host "Could not list pipes: $_"
           }
           
           # Verify named pipe exists
