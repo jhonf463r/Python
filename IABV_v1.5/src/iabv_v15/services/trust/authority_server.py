@@ -154,8 +154,8 @@ class AuthorityServer:
         security_attributes = self._create_security_attributes()
         
         # Create named pipe with exact parameters
-        # Use FILE_FLAG_OVERLAPPED to enable overlapped I/O for immediate availability
-        pipe_access = win32pipe.PIPE_ACCESS_DUPLEX | win32file.FILE_FLAG_OVERLAPPED
+        # Use standard PIPE_ACCESS_DUPLEX without FILE_FLAG_OVERLAPPED
+        pipe_access = win32pipe.PIPE_ACCESS_DUPLEX
         pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT
         max_instances = win32pipe.PIPE_UNLIMITED_INSTANCES
         out_buffer_size = BUFFER_SIZE
@@ -164,7 +164,7 @@ class AuthorityServer:
         
         print(f"[AuthorityServer] CreateNamedPipe parameters:")
         print(f"[AuthorityServer]   Pipe name: {self._pipe_name}")
-        print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED (0x{pipe_access:X})")
+        print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x{pipe_access:X})")
         print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x{pipe_type:X})")
         print(f"[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES")
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
@@ -468,8 +468,7 @@ class AuthorityServer:
                 self._handle_client(pipe_handle)
                 print(f"[AuthorityServer] Client handling complete", flush=True)
                 
-                # Instead of closing and recreating the pipe, just disconnect and reconnect
-                # This keeps the pipe handle alive and available for next connection
+                # Disconnect the pipe to allow next connection
                 try:
                     win32pipe.DisconnectNamedPipe(pipe_handle)
                     print(f"[AuthorityServer] Pipe disconnected, ready for next connection", flush=True)
@@ -482,7 +481,19 @@ class AuthorityServer:
                         pass
                     continue
                 
-                # Continue for next client (remove single-client break)
+                # Reconnect the pipe for next client
+                try:
+                    print(f"[AuthorityServer] Calling ConnectNamedPipe again for next client...", flush=True)
+                    win32pipe.ConnectNamedPipe(pipe_handle)
+                    print(f"[AuthorityServer] Pipe ready for next connection", flush=True)
+                except Exception as e:
+                    print(f"[AuthorityServer] ConnectNamedPipe error on reconnect: {e}", flush=True)
+                    # If reconnect fails, close and recreate
+                    try:
+                        win32file.CloseHandle(pipe_handle)
+                    except:
+                        pass
+                    continue
             
             except Exception as e:
                 print(f"Server loop error: {e}", flush=True)
