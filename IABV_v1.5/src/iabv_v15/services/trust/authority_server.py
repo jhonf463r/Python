@@ -468,32 +468,15 @@ class AuthorityServer:
                 self._handle_client(pipe_handle)
                 print(f"[AuthorityServer] Client handling complete", flush=True)
                 
-                # Disconnect the pipe to allow next connection
+                # Close the pipe handle after handling client
+                # This is the standard Windows named pipe pattern
                 try:
-                    win32pipe.DisconnectNamedPipe(pipe_handle)
-                    print(f"[AuthorityServer] Pipe disconnected, ready for next connection", flush=True)
+                    win32file.CloseHandle(pipe_handle)
+                    print(f"[AuthorityServer] Pipe closed, will create new pipe for next client", flush=True)
                 except Exception as e:
-                    print(f"[AuthorityServer] DisconnectNamedPipe error: {e}", flush=True)
-                    # If disconnect fails, close and recreate
-                    try:
-                        win32file.CloseHandle(pipe_handle)
-                    except:
-                        pass
-                    continue
+                    print(f"[AuthorityServer] Error closing pipe: {e}", flush=True)
                 
-                # Reconnect the pipe for next client
-                try:
-                    print(f"[AuthorityServer] Calling ConnectNamedPipe again for next client...", flush=True)
-                    win32pipe.ConnectNamedPipe(pipe_handle)
-                    print(f"[AuthorityServer] Pipe ready for next connection", flush=True)
-                except Exception as e:
-                    print(f"[AuthorityServer] ConnectNamedPipe error on reconnect: {e}", flush=True)
-                    # If reconnect fails, close and recreate
-                    try:
-                        win32file.CloseHandle(pipe_handle)
-                    except:
-                        pass
-                    continue
+                # Continue for next client (will create new pipe)
             
             except Exception as e:
                 print(f"Server loop error: {e}", flush=True)
