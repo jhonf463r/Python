@@ -430,6 +430,7 @@ class AuthorityServer:
                 # Create named pipe
                 pipe_handle = self._create_named_pipe()
                 print(f"[AuthorityServer] Pipe created, waiting for connection...", flush=True)
+                print(f"[AuthorityServer] Pipe handle: {pipe_handle}", flush=True)
                 
                 # Wait for client connection (non-blocking mode)
                 # Use ConnectNamedPipe with overlapped I/O to avoid blocking indefinitely
@@ -441,7 +442,15 @@ class AuthorityServer:
                     if "pipe is being connected" in str(e).lower() or "connected" in str(e).lower():
                         print(f"[AuthorityServer] Pipe already connected or connecting", flush=True)
                     else:
-                        raise
+                        print(f"[AuthorityServer] ConnectNamedPipe error: {e}", flush=True)
+                        import traceback
+                        traceback.print_exc()
+                        # Close the pipe and continue
+                        try:
+                            win32file.CloseHandle(pipe_handle)
+                        except:
+                            pass
+                        continue
                 
                 # Handle client synchronously (single-request mode)
                 self._handle_client(pipe_handle)
@@ -463,7 +472,8 @@ class AuthorityServer:
         """
         print(f"[AuthorityServer] Starting server thread...", flush=True)
         self._server_thread = threading.Thread(target=self._server_loop)
-        self._server_thread.daemon = True
+        # Make thread non-daemon to ensure it doesn't get killed prematurely
+        self._server_thread.daemon = False
         self._server_thread.start()
         print(f"[AuthorityServer] Server thread started", flush=True)
     
