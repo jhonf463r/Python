@@ -420,57 +420,6 @@ class TestPhase3TransportIntegration:
         assert not response.success, "Redeem request should be rejected for wrong execution_id"
         assert "execution" in response.error.lower() or "mismatch" in response.error.lower()
     
-    def test_redeem_twice_rejected(self, authority_service, sample_run_record):
-        """Verify that double redemption is rejected (exactly-once semantics)."""
-        # First create a join authorization
-        join_request = AuthorityRequest(
-            request_type="PHASE3_REQUEST_JOIN",
-            data={
-                "subject_id": sample_run_record["run_id"],
-                "execution_id": sample_run_record["execution_id"],
-                "public_key": "test_key"
-            },
-            request_id="test_req_14"
-        )
-        
-        join_response = authority_service.handle_phase3_request_join(join_request, client_pid=12345)
-        assert join_response.success, "Join request should succeed"
-        join_id = join_response.data["join_token"]["data"]["join_id"]
-        
-        # Request challenge
-        challenge_request = AuthorityRequest(
-            request_type="PHASE3_REQUEST_CHALLENGE",
-            data={
-                "join_id": join_id,
-                "subject_id": sample_run_record["run_id"],
-                "execution_id": sample_run_record["execution_id"]
-            },
-            request_id="test_req_15"
-        )
-        
-        challenge_response = authority_service.handle_phase3_request_challenge(challenge_request, client_pid=12345)
-        assert challenge_response.success, "Challenge request should succeed"
-        challenge = challenge_response.data["challenge"]
-        
-        # First redeem (will fail signature verification, but that's OK for this test)
-        redeem_request = AuthorityRequest(
-            request_type="PHASE3_REDEEM_JOIN",
-            data={
-                "join_id": join_id,
-                "subject_id": sample_run_record["run_id"],
-                "execution_id": sample_run_record["execution_id"],
-                "challenge": challenge,
-                "signature": "dummy_signature"
-            },
-            request_id="test_req_16"
-        )
-        
-        # Note: This will fail signature verification, but the test verifies the mechanism exists
-        # A full end-to-end test would require valid Ed25519 keys
-        response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
-        # The key is that the handler exists and performs the verification
-        assert response is not None, "Redeem handler should return a response"
-    
     def test_double_join_rejected(self, authority_service, sample_run_record):
         """R16-F4: Verify that double join requests are rejected (exactly-once semantics).
         
@@ -1096,34 +1045,127 @@ class TestPhase3TransportIntegration:
             f"Second redeem should fail due to consumed state, got: {second_response.error}"
     
     def test_concurrent_redeem_rejected(self, authority_service, real_ed25519_redeem_setup):
-        """F11: Verify that concurrent redemption attempts are rejected.
+        """F11: Verify that concurrent redemption attempts result in ONE SUCCESS / ONE FAILURE.
         
-        NOTE: This test is marked UNVERIFIED because true concurrent execution
-        requires separate processes or threads, which is not available in the
-        current test environment. Sequential execution does not test concurrency.
+        This test uses real threading to demonstrate exactly-once semantics
+        under concurrent access to the same SQLite database.
         
-        INTERPROCESS_TEST_UNAVAILABLE: True concurrent redemption requires
-        real parallel processes to test atomic UPDATE constraints.
+        Two independent threads attempt to redeem the same join_id/challenge/signature
+        simultaneously. The expected result is:
+        - Exactly one thread succeeds (consumed state transition)
+        - Exactly one thread fails (already consumed)
+        
+        This demonstrates that the atomic UPDATE constraints and consumed state
+        correctly enforce exactly-once semantics even under concurrent access.
         """
-        pytest.skip("INTERPROCESS_TEST_UNAVAILABLE: True concurrent redemption requires separate processes")
+        setup_data = real_ed25519_redeem_setup
+        
+        # Create a barrier to synchronize both threads
+        barrier = threading.Barrier(2)
+        results = []
+        results_lock = threading.Lock()
+        
+        def redeem_thread(process_id):
+            """Thread function that attempts to redeem."""
+            # Wait for barrier to synchronize start
+            barrier.wait()
+            
+            # Attempt redeem
+            redeem_request = AuthorityRequest(
+                request_type="PHASE3_REDEEM_JOIN",
+                data={
+                    "join_id": setup_data["join_id"],
+                    "subject_id": setup_data["subject_id"],
+                    "execution_id": setup_data["execution_id"],
+                    "challenge": setup_data["challenge"],
+                    "signature": setup_data["signature"]
+                },
+                request_id=f"test_req_redeem_concurrent_{process_id}"
+            )
+            
+            response = authority_service.handle_phase3_redeem_join(redeem_request, client_pid=12345)
+            
+            # Put result in list (thread-safe)
+            with results_lock:
+                results.append((process_id, response.success, response.error if not response.success else None))
+        
+        # Launch two threads
+        thread1 = threading.Thread(target=redeem_thread, args=(1,))
+        thread2 = threading.Thread(target=redeem_thread, args=(2,))
+        
+        # Start both threads
+        thread1.start()
+        thread2.start()
+        
+        # Wait for both to complete
+        thread1.join()
+        thread2.join()
+        
+        # Verify we got exactly 2 results
+        assert len(results) == 2, f"Expected 2 results, got {len(results)}"
+        
+        # Verify exactly one success and one failure
+        successes = sum(1 for _, success, _ in results if success)
+        failures = sum(1 for _, success, _ in results if not success)
+        
+        assert successes == 1, f"Expected exactly 1 success, got {successes}"
+        assert failures == 1, f"Expected exactly 1 failure, got {failures}"
+        
+        # Verify the failure was due to consumed state, not signature validation
+        for process_id, success, error in results:
+            if not success:
+                assert error is not None, "Error message should not be None"
+                assert "consumed" in error.lower() or "already" in error.lower(), \
+                    f"Process {process_id} should fail due to consumed state, got: {error}"
+        
+        # Verify final state: both tables should show consumed=1
+        conn = sqlite3.connect(str(authority_service._join_auth_db))
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT consumed
+            FROM join_authorizations
+            WHERE join_id = ?
+        """, (setup_data["join_id"],))
+        
+        join_row = cursor.fetchone()
+        
+        cursor.execute("""
+            SELECT consumed
+            FROM challenges
+            WHERE join_id = ?
+        """, (setup_data["join_id"],))
+        
+        challenge_row = cursor.fetchone()
+        conn.close()
+        
+        assert join_row is not None, "Join authorization should exist"
+        assert join_row[0] == 1, "Join authorization should be consumed"
+        
+        assert challenge_row is not None, "Challenge should exist"
+        assert challenge_row[0] == 1, "Challenge should be consumed"
     
     def test_transaction_rolls_back_on_partial_failure(self, authority_service, real_ed25519_redeem_setup):
         """F11: Verify that transaction rolls back on partial failure between UPDATEs.
         
-        NOTE: This test is marked UNVERIFIED because injecting a failure between
-        the two UPDATE statements requires instrumentation that is not available
-        in the current test environment. sqlite3.Cursor.execute cannot be patched
-        directly due to immutable type constraints.
-        
-        ROLLBACK_INSTRUMENTATION_UNAVAILABLE: True rollback testing between
-        UPDATEs requires cursor-level instrumentation or code modification.
-        
-        The atomic transaction model is verified by:
+        NOTE: This test remains UNVERIFIED due to SQLite's immutable type constraints
+        that prevent direct patching of cursor.execute methods. The atomic transaction
+        model is verified indirectly by:
         - test_redeem_valid_signature_succeeds (successful COMMIT)
+        - test_concurrent_redeem_rejected (ONE SUCCESS / ONE FAILURE under concurrency)
         - test_redeem_twice_rejected (consumed state rejection)
         - test_replayed_challenge_rejected (consumed state rejection)
+        
+        ROLLBACK_INSTRUMENTATION_UNAVAILABLE: Direct rollback verification between
+        UPDATEs requires cursor-level instrumentation that cannot be applied due to
+        SQLite's immutable type constraints in the current test environment.
+        
+        The BEGIN IMMEDIATE / COMMIT / ROLLBACK structure in authority_service.py
+        (lines 1449-1515) provides the theoretical guarantee of atomicity, and
+        the concurrent test demonstrates that the consumed state correctly enforces
+        exactly-once semantics under concurrent access.
         """
-        pytest.skip("ROLLBACK_INSTRUMENTATION_UNAVAILABLE: Cannot inject failure between UPDATEs without code instrumentation")
+        pytest.skip("ROLLBACK_INSTRUMENTATION_UNAVAILABLE: Cannot patch SQLite cursor.execute due to immutable type constraints")
 
     def test_join_token_signature(self, authority_service, sample_run_record):
         """Verify that join tokens are signed by authority."""
