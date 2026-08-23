@@ -92,6 +92,9 @@ jobs:
           Write-Host "STARTING AUTHORITY PROCESS"
           Write-Host "========================================"
           
+          # Change to IABV_v1.5 directory
+          cd IABV_v1.5
+          
           # Create temp storage directory
           New-Item -ItemType Directory -Force -Path "temp_authority_storage"
           
@@ -120,6 +123,14 @@ jobs:
           
           if ($waitCount -ge $maxWait) {
             Write-Host "ERROR: Authority not ready after $maxWait seconds"
+            Write-Host "Checking authority_stdout.log:"
+            if (Test-Path "authority_stdout.log") {
+              Get-Content "authority_stdout.log"
+            }
+            Write-Host "Checking authority_stderr.log:"
+            if (Test-Path "authority_stderr.log") {
+              Get-Content "authority_stderr.log"
+            }
             exit 1
           }
           
@@ -134,6 +145,9 @@ jobs:
           Write-Host "========================================"
           Write-Host "RUNNING WINDOWS E2E TESTS"
           Write-Host "========================================"
+          
+          # Change to IABV_v1.5 directory
+          cd IABV_v1.5
           
           $env:PYTHONPATH = "src"
           
@@ -154,6 +168,9 @@ jobs:
           Write-Host "VERIFYING DATABASE STATE"
           Write-Host "========================================"
           
+          # Change to IABV_v1.5 directory
+          cd IABV_v1.5
+          
           python tests/windows_e2e/check_db_state.py
           
           Write-Host "Database state verification complete"
@@ -164,6 +181,9 @@ jobs:
           Write-Host "========================================"
           Write-Host "STOPPING AUTHORITY PROCESS"
           Write-Host "========================================"
+          
+          # Change to IABV_v1.5 directory
+          cd IABV_v1.5
           
           if (Test-Path "temp_authority_storage\authority_pid.txt") {
             $authorityPid = Get-Content "temp_authority_storage\authority_pid.txt"
@@ -186,9 +206,9 @@ jobs:
         with:
           name: windows-phase3-test-results
           path: |
-            windows-phase3-results.xml
-            authority_stdout.log
-            authority_stderr.log
+            IABV_v1.5/windows-phase3-results.xml
+            IABV_v1.5/authority_stdout.log
+            IABV_v1.5/authority_stderr.log
           retention-days: 30
       
       - name: Upload JUnit Results
@@ -196,14 +216,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-phase3-junit
-          path: windows-phase3-results.xml
+          path: IABV_v1.5/windows-phase3-results.xml
           retention-days: 30
-      
-      - name: Publish Test Results
-        if: always()
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        with:
-          files: windows-phase3-results.xml
       
       - name: Final Summary
         shell: pwsh
@@ -216,8 +230,8 @@ jobs:
           git rev-parse HEAD
           Write-Host ""
           Write-Host "Test Results:"
-          if (Test-Path "windows-phase3-results.xml") {
-            [xml]$results = Get-Content "windows-phase3-results.xml"
+          if (Test-Path "IABV_v1.5/windows-phase3-results.xml") {
+            [xml]$results = Get-Content "IABV_v1.5/windows-phase3-results.xml"
             Write-Host "Tests: $($results.testsuites.tests)"
             Write-Host "Failures: $($results.testsuites.failures)"
             Write-Host "Errors: $($results.testsuites.errors)"
