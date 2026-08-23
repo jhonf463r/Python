@@ -154,50 +154,6 @@ jobs:
             exit 1
           }
           
-          # List all named pipes for debugging
-          Write-Host "Listing all named pipes for debugging..."
-          try {
-            $pipes = [System.IO.Directory]::GetFiles("\\.\pipe\")
-            Write-Host "Found $($pipes.Count) named pipes"
-            foreach ($pipe in $pipes) {
-              if ($pipe -like "*IABV*") {
-                Write-Host "  Found IABV pipe: $pipe"
-              }
-            }
-          } catch {
-            Write-Host "Could not list pipes: $_"
-          }
-          
-          # Verify named pipe exists (using pipe listing instead of Test-Path to avoid connecting)
-          Write-Host "Verifying named pipe exists..."
-          $iabvPipeExists = $false
-          try {
-            $pipes = [System.IO.Directory]::GetFiles("\\.\pipe\")
-            $iabvPipeExists = $pipes -contains "\\.\pipe\IABV_Authority"
-            if ($iabvPipeExists) {
-              Write-Host "Named pipe exists: \\.\pipe\IABV_Authority"
-            } else {
-              Write-Host "ERROR: Named pipe does not exist: \\.\pipe\IABV_Authority"
-              Write-Host "This indicates the authority server failed to create the pipe"
-              Write-Host "Checking authority_stdout.log:"
-              if (Test-Path "authority_stdout.log") {
-                Get-Content "authority_stdout.log"
-              }
-              Write-Host "Checking authority_stderr.log:"
-              if (Test-Path "authority_stderr.log") {
-                Get-Content "authority_stderr.log"
-              }
-              exit 1
-            }
-          } catch {
-            Write-Host "ERROR: Could not verify pipe existence: $_"
-            exit 1
-          }
-          
-          # Additional wait to ensure pipe is fully ready
-          Write-Host "Waiting 2 seconds for pipe to be fully ready..."
-          Start-Sleep -Seconds 2
-          
           Write-Host "Authority process started successfully"
           
           # Save PID for cleanup
