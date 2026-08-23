@@ -424,6 +424,10 @@ class AuthorityServer:
         """
         print(f"[AuthorityServer] Server loop starting", flush=True)
         print(f"[AuthorityServer] Using pipe name: {self._pipe_name}", flush=True)
+        
+        # Keep track of how many pipes we've created for debugging
+        pipe_count = 0
+        
         while True:
             with self._shutdown_lock:
                 if self._shutdown:
@@ -431,16 +435,18 @@ class AuthorityServer:
             
             try:
                 # Create named pipe
+                pipe_count += 1
+                print(f"[AuthorityServer] Creating pipe #{pipe_count}...", flush=True)
                 pipe_handle = self._create_named_pipe()
-                print(f"[AuthorityServer] Pipe created, waiting for connection...", flush=True)
+                print(f"[AuthorityServer] Pipe created successfully, now waiting for client connection...", flush=True)
                 print(f"[AuthorityServer] Pipe handle: {pipe_handle}", flush=True)
                 
-                # Wait for client connection (non-blocking mode)
-                # Use ConnectNamedPipe with overlapped I/O to avoid blocking indefinitely
+                # Use non-blocking mode with overlapped I/O
+                # This allows us to check for connections without blocking indefinitely
                 try:
-                    print(f"[AuthorityServer] Calling ConnectNamedPipe...", flush=True)
+                    print(f"[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...", flush=True)
                     win32pipe.ConnectNamedPipe(pipe_handle)
-                    print(f"[AuthorityServer] Client connected via ConnectNamedPipe", flush=True)
+                    print(f"[AuthorityServer] Client connected successfully!", flush=True)
                 except Exception as e:
                     # If pipe is already connected, that's OK
                     if "pipe is being connected" in str(e).lower() or "connected" in str(e).lower():
