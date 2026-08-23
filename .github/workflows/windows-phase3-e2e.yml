@@ -108,6 +108,10 @@ jobs:
           # Wait a bit for process to start
           Start-Sleep -Seconds 5
           
+          # List named pipes to verify pipe is created
+          Write-Host "Listing named pipes:"
+          [System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*IABV*" }
+          
           # Check if process is still running
           if (Get-Process -Id $authorityProcess.Id -ErrorAction SilentlyContinue) {
             Write-Host "Authority process is running"
