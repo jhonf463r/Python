@@ -1,0 +1,131 @@
+name: Windows Named Pipe Control Experiment
+
+on:
+  push:
+    branches:
+      - p0213/phase3-r16-remediation
+    paths:
+      - 'IABV_v1.5/tests/windows_e2e/control_pipe_*.py'
+      - '.github/workflows/windows-control-pipe.yml'
+  workflow_dispatch:
+
+jobs:
+  control-pipe-test:
+    name: Control Pipe Test
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: p0213/phase3-r16-remediation
+      
+      - name: Print Git Information
+        run: |
+          Write-Host "========================================"
+          Write-Host "GIT INFORMATION"
+          Write-Host "========================================"
+          git rev-parse HEAD
+          git branch --show-current
+          git log -1 --oneline
+      
+      - name: Windows System Information
+        run: |
+          Write-Host "========================================"
+          Write-Host "WINDOWS SYSTEM INFORMATION"
+          Write-Host "========================================"
+          systeminfo | Select-String "OS Name","OS Version","System Type"
+          $env:PROCESSOR_ARCHITECTURE
+          $env:OS
+          Write-Host "Runner: $env:RUNNER_ENVIRONMENT"
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Install dependencies
+        run: |
+          cd IABV_v1.5
+          python -m pip install --upgrade pip
+          pip install pywin32
+      
+      - name: Clean up any residual state
+        run: |
+          Remove-Item -Path "control_pipe_ready.txt" -ErrorAction SilentlyContinue
+          Remove-Item -Path "control_pipe_server.log" -ErrorAction SilentlyContinue
+          Remove-Item -Path "control_pipe_client.log" -ErrorAction SilentlyContinue
+      
+      - name: Start Control Pipe Server
+        run: |
+          cd IABV_v1.5
+          python -u tests/windows_e2e/control_pipe_server.py > control_pipe_server.log 2>&1 &
+          $serverProcess = Get-Process -Id $LASTEXITCODE -ErrorAction SilentlyContinue
+          Write-Host "Server process started"
+          Start-Sleep -Seconds 3
+      
+      - name: Run Control Pipe Client
+        run: |
+          cd IABV_v1.5
+          python -u tests/windows_e2e/control_pipe_client.py > control_pipe_client.log 2>&1
+          $clientExitCode = $LASTEXITCODE
+          Write-Host "Client exit code: $clientExitCode"
+          if ($clientExitCode -ne 0) {
+            Write-Host "ERROR: Control pipe client failed"
+            exit 1
+          }
+      
+      - name: Display Server Log
+        if: always()
+        run: |
+          Write-Host "========================================"
+          Write-Host "SERVER LOG"
+          Write-Host "========================================"
+          if (Test-Path "IABV_v1.5/control_pipe_server.log") {
+            Get-Content "IABV_v1.5/control_pipe_server.log"
+          } else {
+            Write-Host "Server log not found"
+          }
+      
+      - name: Display Client Log
+        if: always()
+        run: |
+          Write-Host "========================================"
+          Write-Host "CLIENT LOG"
+          Write-Host "========================================"
+          if (Test-Path "IABV_v1.5/control_pipe_client.log") {
+            Get-Content "IABV_v1.5/control_pipe_client.log"
+          } else {
+            Write-Host "Client log not found"
+          }
+      
+      - name: List Named Pipes
+        if: always()
+        run: |
+          Write-Host "========================================"
+          Write-Host "NAMED PIPES"
+          Write-Host "========================================"
+          [System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*Control*" }
+      
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-pipe-logs
+          path: |
+            IABV_v1.5/control_pipe_server.log
+            IABV_v1.5/control_pipe_client.log
+            IABV_v1.5/control_pipe_ready.txt
+          retention-days: 30
+      
+      - name: Final Summary
+        if: always()
+        run: |
+          Write-Host "========================================"
+          Write-Host "CONTROL PIPE TEST SUMMARY"
+          Write-Host "========================================"
+          Write-Host "Commit SHA:"
+          git rev-parse HEAD
+          Write-Host ""
+          Write-Host "Workflow Run ID: $env:GITHUB_RUN_ID"
+          Write-Host "Workflow Run Number: $env:GITHUB_RUN_NUMBER"
