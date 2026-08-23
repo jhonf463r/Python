@@ -112,6 +112,10 @@ jobs:
           Write-Host "Listing named pipes:"
           [System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*IABV*" }
           
+          # Additional delay to ensure pipe is fully ready for connections
+          Write-Host "Waiting for pipe to be fully ready..."
+          Start-Sleep -Seconds 3
+          
           # Check if process is still running
           if (Get-Process -Id $authorityProcess.Id -ErrorAction SilentlyContinue) {
             Write-Host "Authority process is running"
