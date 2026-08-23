@@ -120,7 +120,8 @@ def main() -> int:
         # Wait for server to actually create the pipe
         # The server runs in a separate thread, so we need to give it time
         # to create the pipe before signaling readiness
-        time.sleep(1)
+        # Increased delay to ensure pipe is fully ready
+        time.sleep(2)
         
         print(f"[Authority] Listening on Named Pipe: {args.pipe_name}", flush=True)
         
@@ -128,6 +129,10 @@ def main() -> int:
         ready_file = storage_root / "authority_ready.txt"
         ready_file.write_text(str(os.getpid()))
         print(f"[Authority] Ready signal created: {ready_file}", flush=True)
+        
+        # Additional wait to ensure pipe is accepting connections
+        time.sleep(1)
+        print(f"[Authority] Fully ready and accepting connections", flush=True)
     except Exception as e:
         print(f"[Authority] ERROR: Failed to start authority server: {e}", flush=True)
         return 1
