@@ -59,8 +59,7 @@ jobs:
       - name: Start Control Pipe Server
         run: |
           cd IABV_v1.5
-          python -u tests/windows_e2e/control_pipe_server.py > control_pipe_server.log 2>&1 &
-          $serverProcess = Get-Process -Id $LASTEXITCODE -ErrorAction SilentlyContinue
+          Start-Process -FilePath "python" -ArgumentList "-u","tests/windows_e2e/control_pipe_server.py" -RedirectStandardOutput "control_pipe_server.log" -RedirectStandardError "control_pipe_server.log" -WindowStyle Hidden
           Write-Host "Server process started"
           Start-Sleep -Seconds 3
       
