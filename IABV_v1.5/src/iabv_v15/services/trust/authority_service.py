@@ -57,6 +57,11 @@ from iabv_v15.services.trust.authority_protocol import (
     AuthorizationPolicyInput,
     apply_authorization_policy,
 )
+from iabv_v15.services.phase3.ed25519_keys import (
+    verify_signature as ed25519_verify_signature,
+    public_key_from_hex,
+    public_key_from_base64,
+)
 
 
 # ── Constants ───────────────────────────────────────────────────────────────
@@ -1445,11 +1450,11 @@ class AuthorityService:
                         error="Invalid public key format"
                     )
             
-            # Verify signature over the exact stored challenge bytes
+            # Verify signature over the exact stored challenge bytes using Ed25519
             signature_bytes = bytes.fromhex(signature)
             challenge_bytes = stored_challenge.encode('utf-8')
             
-            if not verify_signature(public_key, challenge_bytes, signature_bytes):
+            if not ed25519_verify_signature(public_key, challenge_bytes, signature_bytes):
                 conn.rollback()
                 conn.close()
                 return AuthorityResponse(
