@@ -461,9 +461,11 @@ class AuthorityServer:
         
         Phase 2: Start server thread.
         """
+        print(f"[AuthorityServer] Starting server thread...", flush=True)
         self._server_thread = threading.Thread(target=self._server_loop)
         self._server_thread.daemon = True
         self._server_thread.start()
+        print(f"[AuthorityServer] Server thread started", flush=True)
     
     def stop(self) -> None:
         """Stop authority server.
