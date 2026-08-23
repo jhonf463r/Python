@@ -104,6 +104,25 @@ jobs:
           
           Write-Host "Authority Process ID: $($authorityProcess.Id)"
           
+          # Wait a bit for process to start
+          Start-Sleep -Seconds 5
+          
+          # Check if process is still running
+          if (Get-Process -Id $authorityProcess.Id -ErrorAction SilentlyContinue) {
+            Write-Host "Authority process is running"
+          } else {
+            Write-Host "ERROR: Authority process died immediately"
+            Write-Host "Checking authority_stdout.log:"
+            if (Test-Path "authority_stdout.log") {
+              Get-Content "authority_stdout.log"
+            }
+            Write-Host "Checking authority_stderr.log:"
+            if (Test-Path "authority_stderr.log") {
+              Get-Content "authority_stderr.log"
+            }
+            exit 1
+          }
+          
           # Wait for authority ready signal
           $readyFile = "temp_authority_storage\authority_ready.txt"
           $maxWait = 30
