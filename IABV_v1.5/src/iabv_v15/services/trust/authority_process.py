@@ -106,7 +106,7 @@ def main() -> int:
     
     # Phase 2: Initialize authority server
     try:
-        server = AuthorityServer(authority)
+        server = AuthorityServer(authority, pipe_name=args.pipe_name)
         print(f"[Authority] Authority server initialized", flush=True)
     except Exception as e:
         print(f"[Authority] ERROR: Failed to initialize authority server: {e}", flush=True)

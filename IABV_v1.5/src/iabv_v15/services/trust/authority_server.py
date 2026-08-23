@@ -73,13 +73,15 @@ class AuthorityServer:
     RunRecord-based authorization is NOT implemented yet.
     """
     
-    def __init__(self, authority: AuthorityService):
+    def __init__(self, authority: AuthorityService, pipe_name: str = PIPE_NAME):
         """Initialize authority server.
         
         Args:
             authority: Authority service instance
+            pipe_name: Named pipe name (default: PIPE_NAME)
         """
         self._authority = authority
+        self._pipe_name = pipe_name
         self._shutdown = False
         self._shutdown_lock = threading.Lock()
         self._server_thread: Optional[threading.Thread] = None
@@ -159,7 +161,7 @@ class AuthorityServer:
         default_timeout = 0
         
         print(f"[AuthorityServer] CreateNamedPipe parameters:")
-        print(f"[AuthorityServer]   Pipe name: {PIPE_NAME}")
+        print(f"[AuthorityServer]   Pipe name: {self._pipe_name}")
         print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x{pipe_access:X})")
         print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x{pipe_type:X})")
         print(f"[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES")
@@ -169,7 +171,7 @@ class AuthorityServer:
         print(f"[AuthorityServer]   Security attributes: present")
         
         pipe_handle = win32pipe.CreateNamedPipe(
-            PIPE_NAME,
+            self._pipe_name,
             pipe_access,
             pipe_type,
             max_instances,
