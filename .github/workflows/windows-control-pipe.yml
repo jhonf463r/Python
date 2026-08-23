@@ -54,12 +54,13 @@ jobs:
         run: |
           Remove-Item -Path "control_pipe_ready.txt" -ErrorAction SilentlyContinue
           Remove-Item -Path "control_pipe_server.log" -ErrorAction SilentlyContinue
+          Remove-Item -Path "control_pipe_server_err.log" -ErrorAction SilentlyContinue
           Remove-Item -Path "control_pipe_client.log" -ErrorAction SilentlyContinue
       
       - name: Start Control Pipe Server
         run: |
           cd IABV_v1.5
-          Start-Process -FilePath "python" -ArgumentList "-u","tests/windows_e2e/control_pipe_server.py" -RedirectStandardOutput "control_pipe_server.log" -RedirectStandardError "control_pipe_server.log" -WindowStyle Hidden
+          Start-Process -FilePath "python" -ArgumentList "-u","tests/windows_e2e/control_pipe_server.py" -RedirectStandardOutput "control_pipe_server.log" -RedirectStandardError "control_pipe_server_err.log" -WindowStyle Hidden
           Write-Host "Server process started"
           Start-Sleep -Seconds 3
       
@@ -113,6 +114,7 @@ jobs:
           name: control-pipe-logs
           path: |
             IABV_v1.5/control_pipe_server.log
+            IABV_v1.5/control_pipe_server_err.log
             IABV_v1.5/control_pipe_client.log
             IABV_v1.5/control_pipe_ready.txt
           retention-days: 30
