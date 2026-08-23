@@ -150,7 +150,10 @@ class AuthorityServer:
         Phase 2: Explicit DACL, reject remote clients.
         PART II: Instrumented to log exact CreateNamedPipe parameters.
         """
-        security_attributes = self._create_security_attributes()
+        # Temporarily disable security attributes to test if DACL is the issue
+        security_attributes = None
+        
+        print(f"[AuthorityServer] WARNING: Creating pipe without security attributes for debugging", flush=True)
         
         # Create named pipe with exact parameters
         pipe_access = win32pipe.PIPE_ACCESS_DUPLEX
@@ -169,7 +172,7 @@ class AuthorityServer:
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
         print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
         print(f"[AuthorityServer]   Default timeout: {default_timeout}")
-        print(f"[AuthorityServer]   Security attributes: present")
+        print(f"[AuthorityServer]   Security attributes: None (disabled for debugging)")
         
         pipe_handle = win32pipe.CreateNamedPipe(
             self._pipe_name,
