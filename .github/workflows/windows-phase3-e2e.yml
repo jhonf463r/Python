@@ -100,9 +100,8 @@ jobs:
           
           # Start authority process in background
           $env:PYTHONPATH = "src"
-          $pipeName = "\\.\pipe\IABV_Authority"
-          Write-Host "Starting authority with pipe name: $pipeName"
-          $authorityProcess = Start-Process -FilePath "python" -ArgumentList "src/iabv_v15/services/trust/authority_process.py", "--storage-root", "temp_authority_storage", "--pipe-name", $pipeName -PassThru -NoNewWindow -RedirectStandardOutput "authority_stdout.log" -RedirectStandardError "authority_stderr.log"
+          Write-Host "Starting authority process with default pipe name"
+          $authorityProcess = Start-Process -FilePath "python" -ArgumentList "src/iabv_v15/services/trust/authority_process.py", "--storage-root", "temp_authority_storage" -PassThru -NoNewWindow -RedirectStandardOutput "authority_stdout.log" -RedirectStandardError "authority_stderr.log"
           
           Write-Host "Authority Process ID: $($authorityProcess.Id)"
           
