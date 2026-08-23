@@ -173,12 +173,27 @@ class TestNegativeSecurity:
             execution_id="test-execution-1"
         )
         
+        # Verify token was created
+        assert response["success"] is True
         join_token = response["join_token"]
         
         # Attempt to use token for execution B (different execution_id)
-        # This would require the token to be bound to execution_id
-        # Current implementation does not enforce this binding
-        # This test documents the expected behavior
+        # Request challenge with wrong execution_id
+        challenge_request = RequestChallengeRequest(
+            join_token=join_token,
+            subject_id="test-subject",
+            execution_id="test-execution-2"  # Different execution
+        ).to_dict()
+        
+        challenge_response = phase3_authority.handle_request_challenge(
+            challenge_request,
+            client_pid=1234,
+            execution_id="test-execution-2"  # Different execution
+        )
+        
+        # Should be rejected because execution_id mismatch
+        assert challenge_response["success"] is False
+        assert "execution_id" in challenge_response["error"].lower() or "mismatch" in challenge_response["error"].lower()
     
     def test_replayed_token_rejected(self, phase3_authority):
         """Test that already-redeemed token is rejected."""
@@ -194,6 +209,8 @@ class TestNegativeSecurity:
             execution_id="test-execution-1"
         )
         
+        # Verify token was created
+        assert response["success"] is True
         join_token = response["join_token"]
         
         # Request challenge
@@ -209,9 +226,36 @@ class TestNegativeSecurity:
             execution_id="test-execution-1"
         )
         
-        # Redeem token (would require valid signature)
-        # This test documents the expected behavior
-        # Actual redemption requires Ed25519 signature
+        # Verify challenge was issued
+        assert challenge_response["success"] is True
+        challenge = challenge_response["challenge"]
+        
+        # Redeem token (would require valid signature in production)
+        # For testing, we verify the join_token is marked as redeemed
+        # Attempt to redeem again should fail
+        redeem_request = RedeemJoinRequest(
+            join_token=join_token,
+            signature="test-signature",
+            execution_id="test-execution-1"
+        ).to_dict()
+        
+        # First redeem (may fail signature check but should mark token)
+        phase3_authority.handle_redeem_join(
+            redeem_request,
+            client_pid=1234,
+            execution_id="test-execution-1"
+        )
+        
+        # Second redeem should fail (token already redeemed)
+        redeem_response = phase3_authority.handle_redeem_join(
+            redeem_request,
+            client_pid=1234,
+            execution_id="test-execution-1"
+        )
+        
+        # Should be rejected because token already redeemed
+        assert redeem_response["success"] is False
+        assert "redeemed" in redeem_response["error"].lower() or "already" in redeem_response["error"].lower()
     
     def test_stale_generation_rejected(self, phase3_authority, run_records_db):
         """Test that token from old generation is rejected."""
@@ -227,6 +271,8 @@ class TestNegativeSecurity:
             execution_id="test-execution-1"
         )
         
+        # Verify token was created
+        assert response["success"] is True
         join_token = response["join_token"]
         
         # Advance to generation 2
@@ -251,38 +297,11 @@ class TestNegativeSecurity:
             execution_id="test-execution-1"
         )
         
-        # Verify generation mismatch is detected
+        # Should be rejected because generation mismatch
         assert challenge_response["success"] is False
-        assert "Generation mismatch" in challenge_response["error"]
-    
-    def test_revoked_authorization_rejected(self, phase3_authority, run_records_db):
-        """Test that revoked authorization is rejected."""
-        # Create token
-        request_data = RequestJoinRequest(
-            subject_id="test-subject",
-            public_key="test-key"
-        ).to_dict()
+        assert "generation" in challenge_response["error"].lower() or "mismatch" in challenge_response["error"].lower()
         
-        response = phase3_authority.handle_request_join(
-            request_data,
-            client_pid=1234,
-            execution_id="test-execution-1"
-        )
-        
-        join_token = response["join_token"]
-        
-        # Revoke authorization (advance generation)
-        cursor = run_records_db.cursor()
-        cursor.execute("""
-            UPDATE run_records
-            SET generation = 2,
-                child_authorization_state = 'REQUIRES_NEW_AUTHORIZATION',
-                pinned_public_key = NULL
-            WHERE execution_id = ?
-        """, ("test-execution-1",))
-        run_records_db.commit()
-        
-        # Attempt to use token from revoked generation
+        # Attempt to use token from generation 1
         challenge_request = RequestChallengeRequest(
             join_token=join_token,
             subject_id="test-subject",
@@ -298,6 +317,209 @@ class TestNegativeSecurity:
         # Verify generation mismatch is detected
         assert challenge_response["success"] is False
         assert "Generation mismatch" in challenge_response["error"]
+    
+    def test_revoked_authorization_rejected(self, phase3_authority, authentication_layer):
+        """Test that revoked authorization is rejected (real revocation, not generation mismatch)."""
+        # Register a subject first
+        import win32security
+        import win32api
+        
+        # Get current user SID for testing
+        user = os.environ.get('USERNAME', os.environ.get('USER', 'unknown'))
+        sid, _, _ = win32security.LookupAccountName(None, user)
+        sid_string = str(sid)
+        
+        authentication_layer.register_subject(
+            subject_id="test-subject",
+            windows_sid=sid_string,
+            allowed_public_keys=["test-key"],
+            parent_authority=str(os.getpid()),
+            registering_authority="test-authority"
+        )
+        
+        # Create token
+        request_data = RequestJoinRequest(
+            subject_id="test-subject",
+            public_key="test-key"
+        ).to_dict()
+        
+        response = phase3_authority.handle_request_join(
+            request_data,
+            client_pid=os.getpid(),  # Use actual PID for Windows identity verification
+            execution_id="test-execution-1"
+        )
+        
+        # Verify token was created
+        assert response["success"] is True
+        join_token = response["join_token"]
+        
+        # Revoke the subject (real revocation, not generation mismatch)
+        revoked = authentication_layer.revoke_subject(
+            subject_id="test-subject",
+            revoking_authority="test-authority",
+            reason="Test revocation"
+        )
+        assert revoked is True
+        
+        # Attempt to use token from revoked subject
+        challenge_request = RequestChallengeRequest(
+            join_token=join_token,
+            subject_id="test-subject",
+            execution_id="test-execution-1"
+        ).to_dict()
+        
+        challenge_response = phase3_authority.handle_request_challenge(
+            challenge_request,
+            client_pid=os.getpid(),
+            execution_id="test-execution-1"
+        )
+        
+        # Should be rejected because subject is revoked
+        assert challenge_response["success"] is False
+        assert "revoked" in challenge_response["error"].lower() or "active" in challenge_response["error"].lower()
+    
+    def test_wrong_execution_id_rejected(self, phase3_authority):
+        """Test that token with wrong execution_id is rejected."""
+        # Create token for execution_id-1
+        request_data = RequestJoinRequest(
+            subject_id="test-subject",
+            public_key="test-key"
+        ).to_dict()
+        
+        response = phase3_authority.handle_request_join(
+            request_data,
+            client_pid=1234,
+            execution_id="execution-id-1"
+        )
+        
+        # Verify token was created
+        assert response["success"] is True
+        join_token = response["join_token"]
+        
+        # Attempt to use token with wrong execution_id
+        challenge_request = RequestChallengeRequest(
+            join_token=join_token,
+            subject_id="test-subject",
+            execution_id="execution-id-2"  # Wrong execution_id
+        ).to_dict()
+        
+        challenge_response = phase3_authority.handle_request_challenge(
+            challenge_request,
+            client_pid=1234,
+            execution_id="execution-id-2"  # Wrong execution_id
+        )
+        
+        # Should be rejected because execution_id mismatch
+        assert challenge_response["success"] is False
+        assert "execution_id" in challenge_response["error"].lower() or "mismatch" in challenge_response["error"].lower()
+    
+    def test_cross_execution_id_rejected(self, phase3_authority):
+        """Test that token cannot be used across different execution contexts."""
+        # Create token for execution A
+        request_data = RequestJoinRequest(
+            subject_id="test-subject",
+            public_key="test-key"
+        ).to_dict()
+        
+        response = phase3_authority.handle_request_join(
+            request_data,
+            client_pid=1234,
+            execution_id="execution-A"
+        )
+        
+        # Verify token was created
+        assert response["success"] is True
+        join_token = response["join_token"]
+        
+        # Attempt to use token in execution B context
+        challenge_request = RequestChallengeRequest(
+            join_token=join_token,
+            subject_id="test-subject",
+            execution_id="execution-B"  # Different execution context
+        ).to_dict()
+        
+        challenge_response = phase3_authority.handle_request_challenge(
+            challenge_request,
+            client_pid=1234,
+            execution_id="execution-B"  # Different execution context
+        )
+        
+        # Should be rejected because execution_id mismatch
+        assert challenge_response["success"] is False
+        assert "execution_id" in challenge_response["error"].lower() or "mismatch" in challenge_response["error"].lower()
+    
+    def test_double_join_rejected(self, phase3_authority):
+        """Test that the same subject cannot join twice (exactly-once semantics)."""
+        # First join request
+        request_data = RequestJoinRequest(
+            subject_id="test-subject",
+            public_key="test-key"
+        ).to_dict()
+        
+        response1 = phase3_authority.handle_request_join(
+            request_data,
+            client_pid=1234,
+            execution_id="test-execution-1"
+        )
+        
+        # Verify first join succeeded
+        assert response1["success"] is True
+        join_token1 = response1["join_token"]
+        
+        # Second join request with same subject_id and execution_id
+        response2 = phase3_authority.handle_request_join(
+            request_data,
+            client_pid=1234,
+            execution_id="test-execution-1"
+        )
+        
+        # Should be rejected because subject already joined
+        assert response2["success"] is False
+        assert "already" in response2["error"].lower() or "exists" in response2["error"].lower() or "duplicate" in response2["error"].lower()
+    
+    def test_concurrent_join_rejected(self, phase3_authority):
+        """Test that concurrent join requests are rejected (race condition protection)."""
+        import threading
+        import time
+        
+        results = []
+        errors = []
+        
+        def attempt_join():
+            try:
+                request_data = RequestJoinRequest(
+                    subject_id="test-concurrent-subject",
+                    public_key="test-key"
+                ).to_dict()
+                
+                response = phase3_authority.handle_request_join(
+                    request_data,
+                    client_pid=1234,
+                    execution_id="test-concurrent-execution"
+                )
+                
+                results.append(response)
+            except Exception as e:
+                errors.append(e)
+        
+        # Launch multiple concurrent join requests
+        threads = []
+        for _ in range(5):
+            thread = threading.Thread(target=attempt_join)
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        # Only one should succeed
+        success_count = sum(1 for r in results if r.get("success") is True)
+        assert success_count == 1, f"Expected exactly 1 success, got {success_count}"
+        
+        # Others should fail
+        failure_count = sum(1 for r in results if r.get("success") is False)
+        assert failure_count == 4, f"Expected 4 failures, got {failure_count}"
 
 
 class TestHandleInheritanceNegative:
