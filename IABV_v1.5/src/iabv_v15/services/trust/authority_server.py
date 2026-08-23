@@ -446,23 +446,10 @@ class AuthorityServer:
                 # With PIPE_WAIT mode, the pipe should be immediately available for connections
                 # No need to call ConnectNamedPipe - it will block until client connects anyway
                 # The pipe is now in listening state and ready for client connections
-                print(f"[AuthorityServer] Pipe is now listening for client connections", flush=True)
+                print(f"[AuthorityServer] Pipe is now listening for client connections (skipping ConnectNamedPipe)", flush=True)
                 
-                # Wait for client to connect (this will block until a client connects)
-                try:
-                    print(f"[AuthorityServer] Waiting for client to connect...", flush=True)
-                    win32pipe.ConnectNamedPipe(pipe_handle)
-                    print(f"[AuthorityServer] Client connected successfully!", flush=True)
-                except Exception as e:
-                    print(f"[AuthorityServer] ConnectNamedPipe error: {e}", flush=True)
-                    import traceback
-                    traceback.print_exc()
-                    # Close the pipe and continue
-                    try:
-                        win32file.CloseHandle(pipe_handle)
-                    except:
-                        pass
-                    continue
+                # Skip ConnectNamedPipe - pipe should be immediately available
+                # This is an experiment to see if ConnectNamedPipe is blocking the pipe
                 
                 # Handle client synchronously (single-request mode)
                 print(f"[AuthorityServer] About to handle client...", flush=True)
