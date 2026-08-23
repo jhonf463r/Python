@@ -154,7 +154,8 @@ class AuthorityServer:
         
         # Create named pipe with exact parameters
         pipe_access = win32pipe.PIPE_ACCESS_DUPLEX
-        pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT
+        # Use PIPE_NOWAIT to make pipe immediately available for connections
+        pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_NOWAIT
         max_instances = win32pipe.PIPE_UNLIMITED_INSTANCES
         out_buffer_size = BUFFER_SIZE
         in_buffer_size = BUFFER_SIZE
@@ -163,7 +164,7 @@ class AuthorityServer:
         print(f"[AuthorityServer] CreateNamedPipe parameters:")
         print(f"[AuthorityServer]   Pipe name: {self._pipe_name}")
         print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x{pipe_access:X})")
-        print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x{pipe_type:X})")
+        print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT (0x{pipe_type:X})")
         print(f"[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES")
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
         print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
