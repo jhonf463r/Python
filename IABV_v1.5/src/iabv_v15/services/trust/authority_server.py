@@ -150,13 +150,14 @@ class AuthorityServer:
         Phase 2: Explicit DACL, reject remote clients.
         PART II: Instrumented to log exact CreateNamedPipe parameters.
         """
-        # Temporarily disable security attributes to test if they're blocking connections
-        security_attributes = None
+        # Re-enable security attributes
+        security_attributes = self._create_security_attributes()
         
         # Create named pipe with exact parameters
         # Use standard PIPE_ACCESS_DUPLEX without FILE_FLAG_OVERLAPPED
         pipe_access = win32pipe.PIPE_ACCESS_DUPLEX
-        pipe_type = win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT
+        # Try PIPE_TYPE_BYTE instead of PIPE_TYPE_MESSAGE
+        pipe_type = win32pipe.PIPE_TYPE_BYTE | win32pipe.PIPE_READMODE_BYTE | win32pipe.PIPE_WAIT
         max_instances = win32pipe.PIPE_UNLIMITED_INSTANCES
         out_buffer_size = BUFFER_SIZE
         in_buffer_size = BUFFER_SIZE
@@ -165,12 +166,12 @@ class AuthorityServer:
         print(f"[AuthorityServer] CreateNamedPipe parameters:")
         print(f"[AuthorityServer]   Pipe name: {self._pipe_name}")
         print(f"[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x{pipe_access:X})")
-        print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x{pipe_type:X})")
+        print(f"[AuthorityServer]   Pipe type: PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT (0x{pipe_type:X})")
         print(f"[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES")
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
         print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
         print(f"[AuthorityServer]   Default timeout: {default_timeout}")
-        print(f"[AuthorityServer]   Security attributes: DISABLED (testing if DACL blocks connections)")
+        print(f"[AuthorityServer]   Security attributes: present")
         
         pipe_handle = win32pipe.CreateNamedPipe(
             self._pipe_name,
