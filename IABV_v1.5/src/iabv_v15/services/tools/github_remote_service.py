@@ -32,6 +32,8 @@ from typing import Any, Callable, Mapping, Optional
 
 from iabv_v15.domain.models import ToolCard, ToolTask, ToolType
 from iabv_v15.services.tools.tool_adapters import GitHubApiToolAdapter
+from iabv_v15.services.trust.capability_action_bridge import CapabilityActionBridge, ActionRequest
+from iabv_v15.services.trust.authority_client import AuthorityClient
 
 
 @dataclass(frozen=True)
@@ -108,6 +110,8 @@ class GitHubRemoteService:
         git_runner: _GitRunner | None = None,
         clock: Callable[[], float] | None = None,
         approval_timeout_s: float = 300.0,
+        # F14: Authority integration
+        capability_action_bridge: CapabilityActionBridge | None = None,
     ) -> None:
         self.repo_root = Path(repo_root)
         self.adapter = adapter
@@ -121,6 +125,8 @@ class GitHubRemoteService:
         self._git_runner: _GitRunner = git_runner or _default_git_runner
         self._clock = clock or time.time
         self.approval_timeout_s = float(approval_timeout_s)
+        # F14: Authority integration
+        self.capability_action_bridge = capability_action_bridge
 
     # ---- public API --------------------------------------------------
 
@@ -135,6 +141,8 @@ class GitHubRemoteService:
         draft: bool = False,
         remote: str = 'origin',
         approval_context: Mapping[str, str] | None = None,
+        # H-1: Separate lease for PR creation
+        pr_lease_id: str | None = None,
     ) -> PublishResult:
         """Empuja ``branch`` y abre un PR en GitHub.
 
@@ -235,7 +243,97 @@ class GitHubRemoteService:
                 )
             approval_granted = True
 
-        # 2) git push
+        # F17 FIX: P0.213 authorization BEFORE git push
+        # Build task with capability fields for authorization
+        # Note: This task is used for authorization; actual PR creation task is built later
+        card = ToolCard(
+            tool_id=self._CARD_ID,
+            title='GitHub API',
+            tool_type=ToolType.MCP_CLIENT,
+            adapter_key=self._CARD_ID,
+            metadata={'provider': 'github'},
+        )
+        
+        # Extract repo name from git remote for target specification
+        # This is used for capability target identification
+        repo_target = f'github_remote:{remote}'
+        
+        # F17: Authorize git push BEFORE executing git push
+        # ACTION: PUSH
+        # TARGET: github_remote:{remote}
+        if self.capability_action_bridge is None:
+            # Authority unavailable - reject execution (fail-closed)
+            return self._finalize(
+                evidence,
+                PublishResult(
+                    success=False, branch=head, base=base_name,
+                    pushed=False,
+                    required_approval=required_approval,
+                    approval_granted=approval_granted,
+                    error="Authority system is not available. Protected git push requires authority process to be running.",
+                ),
+            )
+        
+        # For git push authorization, we need capability fields
+        # These should be provided by the caller via the publish_branch_as_pr context
+        # For now, we'll use a placeholder - in production, these must be passed in
+        # TODO: Add lease_id, action, target parameters to publish_branch_as_pr signature
+        # For F17 fix, we check if capability fields are available in metadata or context
+        lease_id = None
+        action = 'PUSH'  # Canonical action for git push
+        target = repo_target  # Canonical target for git push
+        
+        # Try to get capability fields from approval_context if available
+        if approval_context:
+            lease_id = approval_context.get('lease_id')
+            # Override target if provided in context
+            if 'target' in approval_context:
+                target = approval_context['target']
+        
+        # Require capability for git push (default-deny)
+        if lease_id is None:
+            # Missing capability - reject git push (fail-closed)
+            return self._finalize(
+                evidence,
+                PublishResult(
+                    success=False, branch=head, base=base_name,
+                    pushed=False,
+                    required_approval=required_approval,
+                    approval_granted=approval_granted,
+                    error="Protected git push requires capability (lease_id). No capability provided in approval_context.",
+                ),
+            )
+        
+        # Authorize git push action with capability
+        push_auth_result = self.capability_action_bridge.authorize_action(
+            ActionRequest(
+                lease_id=lease_id,
+                execution_id=f'git_push_{head}_{int(self._clock())}',
+                action=action,
+                target=target,
+            )
+        )
+        if not push_auth_result.authorized:
+            # Authorization failed - reject git push (fail-closed)
+            return self._finalize(
+                evidence,
+                PublishResult(
+                    success=False, branch=head, base=base_name,
+                    pushed=False,
+                    required_approval=required_approval,
+                    approval_granted=approval_granted,
+                    error=f"Git push authorization failed: {push_auth_result.error or 'Unknown error'}",
+                ),
+            )
+        
+        evidence['push_authorization'] = {
+            'authorized': push_auth_result.authorized,
+            'action': action,
+            'target': target,
+            'lease_id': lease_id,
+        }
+        
+        # 2) git push (NOW AUTHORIZED)
         push_result = self._git_runner(
             ['git', 'push', '--set-upstream', remote, head],
             self.repo_root,
@@ -260,14 +358,23 @@ class GitHubRemoteService:
             )
 
         # 3) create_pr via adapter (usa la misma via que el ToolRegistry)
-        card = ToolCard(
-            tool_id=self._CARD_ID,
-            title='GitHub API',
-            tool_type=ToolType.MCP_CLIENT,
-            adapter_key=self._CARD_ID,
-            metadata={'provider': 'github'},
-        )
-        task = ToolTask(
+        # Build task for PR creation authorization
+        # H-1: Use separate lease for PR creation
+        actual_pr_lease_id = pr_lease_id or (approval_context.get('pr_lease_id') if approval_context else None)
+        if actual_pr_lease_id is None:
+            # Missing PR capability - reject PR creation (fail-closed)
+            return self._finalize(
+                evidence,
+                PublishResult(
+                    success=False, branch=head, base=base_name,
+                    pushed=True,  # git push already succeeded
+                    required_approval=required_approval,
+                    approval_granted=approval_granted,
+                    error="PR creation requires separate capability (pr_lease_id). No capability provided.",
+                ),
+            )
+        
+        pr_task = ToolTask(
             tool_id=self._CARD_ID,
             title=f'create_pr:{head}->{base_name}',
             objective=title_text,
@@ -282,8 +389,44 @@ class GitHubRemoteService:
                     'draft': bool(draft),
                 },
             },
+            lease_id=actual_pr_lease_id,  # H-1: Use separate lease for PR creation
+            action='CREATE_PR',  # Canonical action for PR creation
+            target=target,  # Reuse same target
+            execution_id=f'create_pr_{head}_{int(self._clock())}',
         )
-        api_response = self.adapter.run(card, task, sandbox=False)
+        
+        # F17: Authorize PR creation BEFORE executing PR creation
+        # ACTION: CREATE_PR
+        # TARGET: github_remote:{remote}
+        pr_auth_result = self.capability_action_bridge.authorize_action(
+            ActionRequest(
+                lease_id=pr_task.lease_id,
+                execution_id=pr_task.execution_id,
+                action=pr_task.action,
+                target=pr_task.target,
+            )
+        )
+        if not pr_auth_result.authorized:
+            # Authorization failed - reject PR creation (fail-closed)
+            return self._finalize(
+                evidence,
+                PublishResult(
+                    success=False, branch=head, base=base_name,
+                    pushed=True,  # git push already succeeded
+                    required_approval=required_approval,
+                    approval_granted=approval_granted,
+                    error=f"PR creation authorization failed: {pr_auth_result.error or 'Unknown error'}",
+                ),
+            )
+        
+        evidence['pr_authorization'] = {
+            'authorized': pr_auth_result.authorized,
+            'action': pr_task.action,
+            'target': pr_task.target,
+            'lease_id': pr_task.lease_id,
+        }
+        
+        api_response = self.adapter.run(card, pr_task, sandbox=False)
         evidence['api'] = {
             'success': bool(api_response.get('success')),
             'http_status': api_response.get('metadata', {}).get('github_http_status'),

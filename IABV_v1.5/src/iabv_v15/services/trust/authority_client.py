@@ -31,6 +31,8 @@ from iabv_v15.services.trust.authority_protocol import (
     IssueLeaseResponse,
     ConsumeLeaseRequest,
     ConsumeLeaseResponse,
+    VerifyExecutionContextRequest,
+    VerifyExecutionContextResponse,
 )
 
 
@@ -387,13 +389,17 @@ class AuthorityClient:
     def consume_lease(
         self,
         lease_id: str,
-        execution_id: str
+        execution_id: str,
+        requested_action: str,
+        requested_target: str
     ) -> dict[str, Any]:
         """Consume lease using canonical protocol.
         
         Args:
             lease_id: Authority-owned lease identifier
             execution_id: Authority-owned execution identifier (from registration)
+            requested_action: Requested action for validation
+            requested_target: Requested target for validation
         
         Returns:
             Consumption result dictionary
@@ -402,7 +408,9 @@ class AuthorityClient:
             request_type="CONSUME_LEASE",
             data=ConsumeLeaseRequest(
                 lease_id=lease_id,
-                execution_id=execution_id
+                execution_id=execution_id,
+                requested_action=requested_action,
+                requested_target=requested_target
             ).to_dict(),
             request_id=lease_id
         )
@@ -410,6 +418,51 @@ class AuthorityClient:
         
         if not response.success:
             raise RuntimeError(f"Failed to consume lease: {response.error}")
+        
+        return response.data
+    
+    def verify_execution_context(
+        self,
+        execution_id: str,
+        run_id: str,
+        session_id: Optional[str] = None,
+        episode_id: Optional[str] = None
+    ) -> dict[str, Any]:
+        """Verify existing execution context for MCP self-update.
+        
+        This method validates that an execution context (execution_id, run_id)
+        exists in the authority's RunRecord database and belongs to the
+        authenticated client. This is used for MCP self-update to preserve
+        causal attribution.
+        
+        Args:
+            execution_id: Execution identifier to verify
+            run_id: Run identifier to verify
+            session_id: Optional session identifier to verify
+            episode_id: Optional episode identifier to verify
+        
+        Returns:
+            Verification result dictionary with:
+            - valid: bool
+            - consumer_pid: int (if valid)
+            - generation: int (if valid)
+            - authorized_scope: str (if valid)
+            - error: str (if invalid)
+        """
+        request = AuthorityRequest(
+            request_type="VERIFY_EXECUTION_CONTEXT",
+            data=VerifyExecutionContextRequest(
+                execution_id=execution_id,
+                run_id=run_id,
+                session_id=session_id,
+                episode_id=episode_id
+            ).to_dict(),
+            request_id=execution_id
+        )
+        response = self._send_request(request)
+        
+        if not response.success:
+            raise RuntimeError(f"Failed to verify execution context: {response.error}")
         
         return response.data
     

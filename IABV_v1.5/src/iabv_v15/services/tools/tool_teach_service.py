@@ -43,6 +43,9 @@ from iabv_v15.services.tools.tool_registry import ToolRegistry
 from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
 from iabv_v15.services.tools.tool_sandbox import ToolSandbox
 from iabv_v15.services.tools.tool_validator import ToolValidator
+from iabv_v15.services.trust.capability_action_bridge import CapabilityActionBridge, ActionRequest
+from iabv_v15.services.trust.post_action_observer import PostActionObserver
+from iabv_v15.services.trust.capability_lifecycle import acquire_capability_for_execution
 
 
 class ToolTeachService:
@@ -64,6 +67,9 @@ class ToolTeachService:
         experiment_lab: ExperimentLab | None = None,
         live_audit_supervisor: LiveAuditSupervisor | None = None,
         synaptic_router: Any | None = None,
+        # F14: Authority integration
+        capability_action_bridge: CapabilityActionBridge | None = None,
+        post_action_observer: PostActionObserver | None = None,
     ) -> None:
         self.registry = registry
         self.memory = memory
@@ -78,6 +84,9 @@ class ToolTeachService:
         self.experiment_lab = experiment_lab
         self.live_audit_supervisor = live_audit_supervisor
         self.synaptic_router = synaptic_router
+        # F14: Authority integration
+        self.capability_action_bridge = capability_action_bridge
+        self.post_action_observer = post_action_observer
 
     def _assistant_configuration_snapshot(
         self,
@@ -727,6 +736,42 @@ class ToolTeachService:
         )
         preview = self.preview_request(request)
         task = self.build_task_from_request(request)
+        
+        # F15: Acquire capability for real external consultation execution
+        # Dry-run or sandbox-only consultations are exempt from capability requirement
+        is_dry_run = launch_dry_run or task.metadata.get('dry_run_launch', False)
+        is_sandbox_only = task.requested_by_role == TaskRole.TOOL_SANDBOX or task.metadata.get('execution_scope') == 'read_only'
+        
+        if not is_dry_run and not is_sandbox_only and self.capability_action_bridge is not None:
+            # Acquire capability for real execution
+            try:
+                capability = acquire_capability_for_execution(
+                    action="READ",  # External consultation is read-only by default
+                    target="codebase",  # Consultation operates on codebase
+                    requested_scope="tool:execute",
+                    invocation_id=f"external_consultation_{task.task_id}",
+                    episode_id=task.episode_id,
+                    session_id=task.session_id,
+                )
+                # Add capability fields to task
+                task = task.model_copy(update={
+                    'lease_id': capability['lease_id'],
+                    'action': capability['action'],
+                    'target': capability['target'],
+                    'run_id': capability['run_id'],
+                    'execution_id': capability['execution_id'],
+                })
+            except Exception as e:
+                # Capability acquisition failed - task will be rejected by execute_task
+                # Log the failure for audit
+                self.memory.audit_event(
+                    tool_id=task.tool_id or 'unknown_tool',
+                    task_id=task.task_id,
+                    action_type='capability_acquisition',
+                    state='failed',
+                    payload={'error': str(e), 'reason': 'capability_acquisition_failed'},
+                )
+        
         result = self.execute_task(task, approved=approved)
         stored_task = self.memory.repository.get_task(task.task_id) or task
         return stored_task, result, preview
@@ -821,6 +866,173 @@ class ToolTeachService:
                 waiting = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=waiting)
                 self.memory.repository.save_result(waiting)
             return waiting
+        
+        # CRITICAL-1 FIX: TOOL_SANDBOX must use sandbox=True (TRUE SANDBOX semantics)
+        # TOOL_SANDBOX role is for sandboxed simulation only, not real execution
+        # All real execution (sandbox=False) requires authority authorization regardless of role
+        is_sandbox_mode = task.requested_by_role == TaskRole.TOOL_SANDBOX or task.metadata.get('execution_scope') == 'read_only'
+        
+        if is_sandbox_mode:
+            # Sandbox mode: use sandbox=True for isolated simulation
+            payload = adapter.run(card, task, sandbox=True)
+            payload_metadata = dict(payload.get('metadata') or {})
+            state_hint = str(payload_metadata.get('state_hint') or '').strip()
+            execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
+            execution_detail = str(payload.get('error_message') or 'Fallo en la herramienta.') if not payload.get('success') else str(
+                payload_metadata.get('detail') or ('Ejecucion simulada; el adaptador no pudo interactuar con el entorno real.' if execution_state_name == 'simulated' else 'Herramienta ejecutada por el adaptador local.')
+            )
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=bool(payload.get('success')),
+                execution_state=ExecutionState(
+                    state=execution_state_name,
+                    detail=execution_detail,
+                    executor_name=card.adapter_key,
+                    sandboxed=True,
+                    destructive_blocked=bool(payload_metadata.get('blocked')),
+                    approval_decision=task.approval_decision,
+                    metadata=payload_metadata,
+                ),
+                output_text=str(payload.get('output_text') or ''),
+                extracted_data=dict(payload.get('extracted_data') or {}),
+                artifacts=list(payload.get('artifacts') or []),
+                error_message=str(payload.get('error_message') or ''),
+                execution_ms=int(payload.get('execution_ms') or 0),
+                metadata={
+                    'sandbox': True,
+                    'assistant_kind': str(task.metadata.get('assistant_kind') or self._assistant_family_for_tool_id(card.tool_id)),
+                    'assistant_configuration': dict(task.metadata.get('assistant_configuration') or {}),
+                    'config_signature': str(task.metadata.get('config_signature') or ''),
+                },
+                execution_id=task.execution_id,
+                lease_id=task.lease_id,
+                action=task.action,
+                target=task.target,
+            )
+            if bool(payload_metadata.get('capture_unverified')) or str(payload_metadata.get('thread_verification') or '').strip().lower() == 'wrong_thread':
+                result = result.model_copy(
+                    update={
+                        'validation_status': ToolValidationStatus.BLOCKED,
+                        'execution_state': result.execution_state.model_copy(
+                            update={
+                                'destructive_blocked': True,
+                                'detail': 'Thread verification failed or capture unverified.',
+                            }
+                        ),
+                    }
+                )
+            if self.live_audit_supervisor is not None:
+                result = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=result)
+                self.memory.repository.save_result(result)
+            return result
+        
+        # Real execution (sandbox=False): requires authority authorization
+        if self.capability_action_bridge is None:
+            # Authority unavailable - reject execution (fail-closed)
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='authority_unavailable',
+                    detail='Authority system is not available. Protected execution requires authority process to be running.',
+                    executor_name='CapabilityActionBridge',
+                    sandboxed=False,
+                    destructive_blocked=True,
+                ),
+                error_message='authority_unavailable',
+            )
+            self.memory.audit_event(
+                tool_id=card.tool_id,
+                task_id=task.task_id,
+                action_type='authorization',
+                state='rejected',
+                payload={
+                    'reason': 'authority_unavailable',
+                    'capability_action_bridge': 'None',
+                },
+            )
+            self.memory.repository.save_result(result)
+            return result
+        
+        # Require capability for real execution (default-deny)
+        if task.lease_id is None or task.action is None or task.target is None:
+            # Missing capability fields - reject execution (fail-closed)
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='authorization_required',
+                    detail='Protected execution requires capability (lease_id, action, target). Task missing authority fields.',
+                    executor_name='CapabilityActionBridge',
+                    sandboxed=False,
+                    destructive_blocked=True,
+                ),
+                error_message='authorization_required',
+            )
+            self.memory.audit_event(
+                tool_id=card.tool_id,
+                task_id=task.task_id,
+                action_type='authorization',
+                state='rejected',
+                payload={
+                    'reason': 'missing_capability_fields',
+                    'lease_id': task.lease_id,
+                    'action': task.action,
+                    'target': task.target,
+                },
+            )
+            self.memory.repository.save_result(result)
+            return result
+        
+        # Authorize action with capability
+        auth_result = self.capability_action_bridge.authorize_action(
+            ActionRequest(
+                lease_id=task.lease_id,
+                execution_id=task.execution_id,
+                action=task.action,
+                target=task.target,
+            )
+        )
+        if not auth_result.authorized:
+            # Authorization failed - reject execution
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='authorization_failed',
+                    detail=f'Capability authorization failed: {auth_result.error or "Unknown error"}',
+                    executor_name='CapabilityActionBridge',
+                    sandboxed=False,
+                    destructive_blocked=True,
+                ),
+                error_message='authorization_failed',
+            )
+            self.memory.audit_event(
+                tool_id=card.tool_id,
+                task_id=task.task_id,
+                action_type='authorization',
+                state='rejected',
+                payload={
+                    'lease_id': task.lease_id,
+                    'requested_action': task.action,
+                    'requested_target': task.target,
+                    'error': auth_result.error,
+                },
+            )
+            self.memory.repository.save_result(result)
+            return result
+        
         payload = adapter.run(card, task, sandbox=False)
         payload_metadata = dict(payload.get('metadata') or {})
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
@@ -853,6 +1065,11 @@ class ToolTeachService:
                 'assistant_configuration': dict(task.metadata.get('assistant_configuration') or {}),
                 'config_signature': str(task.metadata.get('config_signature') or ''),
             },
+            # F14: Copy authority fields for observation causality
+            execution_id=task.execution_id,
+            lease_id=task.lease_id,
+            action=task.action,
+            target=task.target,
         )
         if bool(payload_metadata.get('capture_unverified')) or str(payload_metadata.get('thread_verification') or '').strip().lower() == 'wrong_thread':
             result = result.model_copy(
@@ -898,6 +1115,11 @@ class ToolTeachService:
         if self.live_audit_supervisor is not None:
             result = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=result)
             self.memory.repository.save_result(result)
+        
+        # F14: Wire PostActionObserver for real observation
+        if self.post_action_observer is not None:
+            self.post_action_observer.observe(result=result, task=task, card=card)
+        
         return result
 
     def _build_actions(self, request: InferenceRequest, tool_id: str, reusable_pattern: InteractionPattern | None = None) -> list[ToolAction]:

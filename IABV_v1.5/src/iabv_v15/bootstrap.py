@@ -327,6 +327,10 @@ from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
 from iabv_v15.services.tools.tool_sandbox import ToolSandbox
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 from iabv_v15.services.tools.tool_validator import ToolValidator
+# F14: Authority integration imports
+from iabv_v15.services.trust.authority_client import AuthorityClient
+from iabv_v15.services.trust.capability_action_bridge import CapabilityActionBridge
+from iabv_v15.services.trust.post_action_observer import PostActionObserver
 from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
 from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
@@ -691,7 +695,8 @@ class AppBootstrap:
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
         self.tool_memory = ToolMemory(self.tool_record_repository, self.interaction_learning_service)
         self.tool_approval_policy = ToolApprovalPolicy()
-        self.tool_rollback_manager = ToolRollbackManager()
+        # F14: ToolRollbackManager will be created after authority components are wired (line 806)
+        self.tool_rollback_manager = None
         self.algorithm_benchmark_registry = AlgorithmBenchmarkRegistry()
         self.decision_scoring_engine = DecisionScoringEngine()
         self.adaptive_weight_layer = AdaptiveWeightLayer(
@@ -781,6 +786,28 @@ class AppBootstrap:
             replay_confidence_service=self.replay_confidence_service,
             sensitive_field_detector=self.sensitive_field_detector,
         )
+        
+        # F14: Authority integration - wire authority components
+        # Graceful degradation: if authority process is not available, components remain None
+        self.authority_client = None
+        self.capability_action_bridge = None
+        self.post_action_observer = None
+        
+        try:
+            # Attempt to connect to authority process
+            self.authority_client = AuthorityClient()
+            self.capability_action_bridge = CapabilityActionBridge(self.authority_client)
+            self.post_action_observer = PostActionObserver(self.tool_memory)
+            logger.info("F14: Authority components wired successfully")
+        except Exception as e:
+            logger.warning(f"F14: Authority components not available: {e}")
+            # Components remain None, authorization will be skipped (graceful degradation)
+        
+        # Update ToolRollbackManager with CapabilityActionBridge
+        self.tool_rollback_manager = ToolRollbackManager(
+            capability_action_bridge=self.capability_action_bridge
+        )
+        
         self.tool_teach_service = ToolTeachService(
             registry=self.tool_registry,
             memory=self.tool_memory,
@@ -795,6 +822,9 @@ class AppBootstrap:
             experiment_lab=self.experiment_lab,
             live_audit_supervisor=self.live_audit_supervisor,
             synaptic_router=self.synaptic_router,
+            # F14: Pass authority components
+            capability_action_bridge=self.capability_action_bridge,
+            post_action_observer=self.post_action_observer,
         )
         self.embedding_service = EmbeddingIndexService(
             base_url=self.config.ollama_base_url,
@@ -1133,6 +1163,8 @@ class AppBootstrap:
             governance_policy=self.autonomy_governance_policy,
             approval_broker=self.human_approval_broker,
             evidence_dir=Path(self.config.evolution_dir) / 'pr_history',
+            # F14: Pass CapabilityActionBridge for authorization
+            capability_action_bridge=self.capability_action_bridge,
         )
         # F2.3 (thin): cuando ``AutonomousValidationCycleService`` promueve un
         # candidato, ``PromotionPrPublisher`` escribe un markdown de traza en

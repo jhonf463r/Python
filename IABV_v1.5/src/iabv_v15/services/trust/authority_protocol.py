@@ -212,28 +212,34 @@ class ConsumeLeaseRequest:
     CALLER REQUEST FIELDS (caller-provided):
     - lease_id: Authority-owned lease identifier
     - execution_id: Authority-owned execution identifier (from registration)
+    - requested_action: Requested action for validation
+    - requested_target: Requested target for validation
     
     AUTHORITY DERIVED FIELDS (authority retrieves from canonical state):
     - run_id: From lease state
     - consumer_pid: Authority-observed client PID
     - generation: Authority generation
     - authorized_scope: From RunRecord
-    - action: From RunRecord
-    - target: From RunRecord
+    - authorized_action: From RunRecord (for validation)
+    - authorized_target: From RunRecord (for validation)
     - expiry: From lease state
     - signature: From lease state
     
-    NOTE: The authority derives/retrieves all authoritative fields from
-    canonical state. The client does NOT resend authoritative fields.
+    NOTE: The authority validates requested_action/target against authorized_action/target
+    from the RunRecord before consuming the lease.
     """
     lease_id: str
     execution_id: str
+    requested_action: str
+    requested_target: str
     
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for IPC."""
         return {
             "lease_id": self.lease_id,
-            "execution_id": self.execution_id
+            "execution_id": self.execution_id,
+            "requested_action": self.requested_action,
+            "requested_target": self.requested_target
         }
     
     @classmethod
@@ -241,7 +247,9 @@ class ConsumeLeaseRequest:
         """Create from dictionary for IPC."""
         return cls(
             lease_id=data["lease_id"],
-            execution_id=data["execution_id"]
+            execution_id=data["execution_id"],
+            requested_action=data["requested_action"],
+            requested_target=data["requested_target"]
         )
 
 
@@ -269,6 +277,91 @@ class ConsumeLeaseResponse:
         return cls(
             consumed=data["consumed"],
             consumed_at=data.get("consumed_at")
+        )
+
+
+@dataclass
+class VerifyExecutionContextRequest:
+    """Canonical VERIFY_EXECUTION_CONTEXT request.
+    
+    CALLER REQUEST FIELDS (caller-provided):
+    - execution_id: Execution identifier to verify
+    - run_id: Run identifier to verify
+    - session_id: Session identifier to verify (optional)
+    - episode_id: Episode identifier to verify (optional)
+    
+    AUTHORITY DERIVED FIELDS (authority retrieves from canonical state):
+    - valid: Whether the execution context is valid
+    - consumer_pid: Authority-observed client PID from RunRecord
+    - generation: Authority generation from RunRecord
+    - authorized_scope: Authorized scope from RunRecord
+    
+    The authority validates that:
+    - The execution exists in the RunRecord database
+    - The execution belongs to the authenticated client (consumer_pid matches peer)
+    - The generation matches the current authority generation
+    """
+    execution_id: str
+    run_id: str
+    session_id: Optional[str] = None
+    episode_id: Optional[str] = None
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for IPC."""
+        return {
+            "execution_id": self.execution_id,
+            "run_id": self.run_id,
+            "session_id": self.session_id,
+            "episode_id": self.episode_id
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "VerifyExecutionContextRequest":
+        """Create from dictionary for IPC."""
+        return cls(
+            execution_id=data["execution_id"],
+            run_id=data["run_id"],
+            session_id=data.get("session_id"),
+            episode_id=data.get("episode_id")
+        )
+
+
+@dataclass
+class VerifyExecutionContextResponse:
+    """Canonical VERIFY_EXECUTION_CONTEXT response.
+    
+    AUTHORITY DERIVED FIELDS:
+    - valid: Whether the execution context is valid
+    - consumer_pid: Authority-observed client PID from RunRecord
+    - generation: Authority generation from RunRecord
+    - authorized_scope: Authorized scope from RunRecord
+    - error: Error message if invalid (optional)
+    """
+    valid: bool
+    consumer_pid: Optional[int] = None
+    generation: Optional[int] = None
+    authorized_scope: Optional[str] = None
+    error: Optional[str] = None
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for IPC."""
+        return {
+            "valid": self.valid,
+            "consumer_pid": self.consumer_pid,
+            "generation": self.generation,
+            "authorized_scope": self.authorized_scope,
+            "error": self.error
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "VerifyExecutionContextResponse":
+        """Create from dictionary for IPC."""
+        return cls(
+            valid=data["valid"],
+            consumer_pid=data.get("consumer_pid"),
+            generation=data.get("generation"),
+            authorized_scope=data.get("authorized_scope"),
+            error=data.get("error")
         )
 
 
@@ -392,7 +485,16 @@ def apply_authorization_policy(input: AuthorizationPolicyInput) -> Authorization
             )
     
     # CASE E: Scope broader than task permits
-    if input.task_context and input.requested_scope not in ["codebase:read", "codebase:write"]:
+    # Allow self_update scope for tool_execution task context (VFINAL5 MCP self-update)
+    if input.task_context == "tool_execution":
+        if input.requested_scope == "self_update":
+            return AuthorizationPolicyDecision(
+                allowed=True,
+                authorized_scope="self_update",
+                reason="Self-update scope allowed for tool_execution task context (VFINAL5)"
+            )
+    
+    if input.task_context and input.requested_scope not in ["codebase:read", "codebase:write", "self_update"]:
         return AuthorizationPolicyDecision(
             allowed=False,
             reason=f"Scope '{input.requested_scope}' not permitted for task context '{input.task_context}'"

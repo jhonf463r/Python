@@ -9,50 +9,9 @@ Requires-Dist: pydantic>=2.7
 Requires-Dist: httpx>=0.27
 Requires-Dist: Pillow>=10.0
 Requires-Dist: playwright>=1.40
+Requires-Dist: keyring>=25.0
+Requires-Dist: psutil>=5.9
+Requires-Dist: pyperclip>=1.8
+Requires-Dist: pywin32>=306; sys_platform == "win32"
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
-
-# IABV_v1.5
-
-Aplicacion de escritorio para PC de IABV v1.5. Esta base implementa:
-
-- shell visual `PySide6 + QML`
-- backend Python modular
-- almacenamiento mixto `app.sqlite + artifacts`
-- captura basada en Playwright
-- routing hibrido local-first entre proveedores LLM
-
-## Estructura
-
-```text
-src/iabv_v15/
-  app/                bootstrap y entrada principal
-  domain/             contratos y modelos publicos
-  infra/              config, logging, persistencia
-  services/           captura, providers, inference, knowledge, training
-  ui/                 controllers, viewmodels y QML
-tests/                humo, contratos y persistencia
-docs/                 notas de arquitectura
-```
-
-## Flujo conceptual
-
-`capturar -> revisar -> confirmar -> memorizar -> ejecutar`
-
-## Arranque esperado
-
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
-pip install -e .[dev]
-python -m iabv_v15.main
-pytest
-```
-
-## Providers
-
-- Local principal: LM Studio via OpenAI-compatible API
-- Local alterno: Ollama via OpenAI-compatible API
-- Cloud: OpenAI Responses API
-
-Si el proveedor cloud falla, el router cae a local y marca el resultado como degradado.

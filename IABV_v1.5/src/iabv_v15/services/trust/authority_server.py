@@ -390,6 +390,7 @@ class AuthorityServer:
             "ISSUE_LEASE": self._authority.handle_issue_lease,
             "CONSUME_LEASE": self._authority.handle_consume_lease,
             "VERIFY_EXECUTION": self._authority.handle_verify_execution,
+            "VERIFY_EXECUTION_CONTEXT": self._authority.handle_verify_execution_context,
             "GET_STATUS": self._authority.handle_get_status,
             "PHASE3_REQUEST_JOIN": self._authority.handle_phase3_request_join,
             "PHASE3_REQUEST_CHALLENGE": self._authority.handle_phase3_request_challenge,

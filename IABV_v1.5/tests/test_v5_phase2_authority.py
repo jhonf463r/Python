@@ -232,7 +232,9 @@ class TestMultiprocess:
                 request_type="REGISTER_EXECUTION",
                 data={
                     "invocation_id": "test_inv",
-                    "authorized_scope": "test_scope"
+                    "action": "READ",
+                    "target": "codebase",
+                    "requested_scope": "codebase:read"
                 },
                 request_id="test_id"
             )
@@ -255,12 +257,17 @@ class TestMultiprocess:
             response = service.handle_issue_lease(request, os.getpid())
             assert response.success is True
             
-            lease_id = response.data["lease"]["lease_id"]
+            lease_id = response.data["lease_id"]
             
             # Consume lease (first attempt)
             request = AuthorityRequest(
                 request_type="CONSUME_LEASE",
-                data={"lease_id": lease_id},
+                data={
+                    "lease_id": lease_id,
+                    "execution_id": execution_id,
+                    "requested_action": "READ",
+                    "requested_target": "codebase"
+                },
                 request_id="test_id"
             )
             response = service.handle_consume_lease(request, os.getpid())
@@ -281,7 +288,9 @@ class TestMultiprocess:
                 request_type="REGISTER_EXECUTION",
                 data={
                     "invocation_id": "test_inv",
-                    "authorized_scope": "test_scope"
+                    "action": "READ",
+                    "target": "codebase",
+                    "requested_scope": "codebase:read"
                 },
                 request_id="test_id"
             )
@@ -318,7 +327,9 @@ class TestMultiprocess:
                 request_type="REGISTER_EXECUTION",
                 data={
                     "invocation_id": "test_inv",
-                    "authorized_scope": "test_scope"
+                    "action": "READ",
+                    "target": "codebase",
+                    "requested_scope": "codebase:read"
                 },
                 request_id="test_id"
             )
@@ -328,29 +339,31 @@ class TestMultiprocess:
             run_id = response.data["run_id"]
             execution_id = response.data["execution_id"]
             
-            # Issue lease with 0 TTL (immediately expired)
+            # Issue lease with negative TTL (already expired)
             request = AuthorityRequest(
                 request_type="ISSUE_LEASE",
                 data={
                     "run_id": run_id,
                     "execution_id": execution_id,
-                    "producer_scope": "test_scope",
-                    "ttl_seconds": 0
+                    "producer_scope": "codebase:read",
+                    "requested_ttl_seconds": -1
                 },
                 request_id="test_id"
             )
             response = service.handle_issue_lease(request, os.getpid())
             assert response.success is True
             
-            lease_id = response.data["lease"]["lease_id"]
+            lease_id = response.data["lease_id"]
             
-            # Wait for expiration
-            time.sleep(0.1)
-            
-            # Try to consume expired lease
+            # Try to consume expired lease (negative TTL makes it immediately expired)
             request = AuthorityRequest(
                 request_type="CONSUME_LEASE",
-                data={"lease_id": lease_id},
+                data={
+                    "lease_id": lease_id,
+                    "execution_id": execution_id,
+                    "requested_action": "READ",
+                    "requested_target": "codebase"
+                },
                 request_id="test_id"
             )
             response = service.handle_consume_lease(request, os.getpid())
@@ -373,7 +386,9 @@ class TestAdversarial:
                 request_type="REGISTER_EXECUTION",
                 data={
                     "invocation_id": "test_inv",
-                    "authorized_scope": "test_scope",
+                    "action": "READ",
+                    "target": "codebase",
+                    "requested_scope": "codebase:read",
                     "pid": 99999  # Caller-supplied PID (should be ignored)
                 },
                 request_id="test_id"

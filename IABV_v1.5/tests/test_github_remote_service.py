@@ -26,6 +26,7 @@ from iabv_v15.services.tools.github_remote_service import (
     GitHubRemoteService,
     PublishResult,
 )
+from iabv_v15.services.trust.capability_action_bridge import CapabilityActionBridge
 
 
 # ---------------------------------------------------------------------------
@@ -95,6 +96,11 @@ def _make_service(
     adapter = MagicMock()
     adapter.run.return_value = adapter_response or _adapter_success_response()
     runner = _make_git_runner(returncode=git_returncode, stderr=git_stderr)
+    
+    # Mock CapabilityActionBridge for F15 authority integration
+    mock_capability_bridge = MagicMock(spec=CapabilityActionBridge)
+    mock_capability_bridge.authorize_action.return_value = MagicMock(success=True)
+    
     service = GitHubRemoteService(
         repo_root=tmp_path,
         adapter=adapter,
@@ -103,6 +109,7 @@ def _make_service(
         evidence_dir=tmp_path / 'pr_history',
         git_runner=runner,
         clock=lambda: 1_700_000_000.0,
+        capability_action_bridge=mock_capability_bridge,
     )
     return service, adapter, runner
 

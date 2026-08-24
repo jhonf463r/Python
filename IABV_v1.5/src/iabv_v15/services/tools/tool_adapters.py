@@ -1433,14 +1433,25 @@ class PlaywrightToolAdapter:
         extracted: dict[str, Any] = {}
         output_chunks: list[str] = []
         page_created = False
+        
+        # C-1 FIX: sandbox=True returns simulated result without real browser actions
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': 'Sandbox Playwright: simulated browser execution (no real side effects)',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'simulated': True},
+            }
+        
         try:
             if self.controller.page is None:
                 self.controller.start()
                 page_created = True
             page = self.controller.page or self.controller.new_page()
             actions = BrowserActionService(page)
-            if sandbox and not task.actions:
-                output_chunks.append('Sandbox Playwright listo.')
             for action in task.actions:
                 if action.action_type == ToolActionType.OPEN_URL:
                     actions.goto(action.target or str(action.parameters.get('url') or ''))
@@ -1482,12 +1493,6 @@ class PlaywrightToolAdapter:
                 'execution_ms': int((time.perf_counter() - start) * 1000),
                 'metadata': {'sandbox': sandbox},
             }
-        finally:
-            if sandbox:
-                try:
-                    self.controller.close()
-                except Exception:
-                    pass
 
 
 class AiderToolAdapter:
@@ -1516,19 +1521,29 @@ class AiderToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        
+        # C-1 FIX: sandbox=True returns simulated result without real subprocess
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': 'Sandbox Aider: simulated code editing (no real side effects)',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'simulated': True},
+            }
+        
         base_cmd = self._aider_command()
         try:
-            if sandbox:
-                completed = subprocess.run([*base_cmd, '--version'], capture_output=True, text=True, check=False)
-            else:
-                prompt = next((action.value for action in task.actions if action.value), task.objective)
-                completed = subprocess.run(
-                    [*base_cmd, '--no-auto-commits', '--message', prompt],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    cwd=str(Path(card.metadata.get('workspace_root') or Path.cwd())),
-                )
+            prompt = next((action.value for action in task.actions if action.value), task.objective)
+            completed = subprocess.run(
+                [*base_cmd, '--no-auto-commits', '--message', prompt],
+                capture_output=True,
+                text=True,
+                check=False,
+                cwd=str(Path(card.metadata.get('workspace_root') or Path.cwd())),
+            )
             success = completed.returncode == 0
             return {
                 'success': success,
@@ -1594,6 +1609,19 @@ class MCPToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        
+        # C-1 FIX: sandbox=True returns simulated result without real HTTP call
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': 'Sandbox MCP: simulated tool execution (no real side effects)',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'simulated': True},
+            }
+        
         server_url = str(card.metadata.get('server_url') or '')
         if not server_url:
             return {'success': False, 'output_text': '', 'extracted_data': {}, 'artifacts': [], 'error_message': 'MCP server_url no configurado.', 'execution_ms': 0, 'metadata': {'sandbox': sandbox}}
@@ -1609,27 +1637,8 @@ class MCPToolAdapter:
             }
         try:
             with httpx.Client(timeout=self.timeout_seconds) as client:
-                if sandbox:
-                    response = client.post(
-                        server_url.rstrip('/') + '/mcp',
-                        json={
-                            'jsonrpc': '2.0',
-                            'id': 'sandbox-probe',
-                            'method': 'initialize',
-                            'params': {
-                                'protocolVersion': '2025-03-26',
-                                'capabilities': {},
-                                'clientInfo': {'name': 'iabv-sandbox', 'version': '1.0'},
-                            },
-                        },
-                        headers={
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json, text/event-stream',
-                        },
-                    )
-                else:
-                    payload = {'goal': task.objective, 'actions': [action.model_dump(mode='json') for action in task.actions]}
-                    response = client.post(server_url.rstrip('/') + '/tool', json=payload)
+                payload = {'goal': task.objective, 'actions': [action.model_dump(mode='json') for action in task.actions]}
+                response = client.post(server_url.rstrip('/') + '/tool', json=payload)
             success = response.is_success
             body = response.text
             return {
@@ -1665,6 +1674,19 @@ class OllamaToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        
+        # C-1 FIX: sandbox=True returns simulated result without real LLM call
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': 'Sandbox Ollama: simulated LLM response (no real side effects)',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'simulated': True},
+            }
+        
         prompt_text = next(
             (
                 str(action.value).strip()
@@ -1754,6 +1776,19 @@ class ShellToolAdapter:
                 'execution_ms': 0,
                 'metadata': {'sandbox': sandbox, 'blocked': True},
             }
+        
+        # CRITICAL: sandbox=True must NOT execute real subprocesses
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': f'[SANDBOX] Simulated execution of: {command}',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'command': command, 'simulated': True},
+            }
+        
         try:
             completed = subprocess.run(command, capture_output=True, text=True, shell=True, check=False)
             success = completed.returncode == 0
@@ -1764,7 +1799,7 @@ class ShellToolAdapter:
                 'artifacts': [],
                 'error_message': '' if success else (completed.stderr or completed.stdout).strip(),
                 'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
+                'metadata': {'sandbox': False, 'command': command, 'simulated': False},
             }
         except Exception as exc:
             return {
@@ -1774,7 +1809,7 @@ class ShellToolAdapter:
                 'artifacts': [],
                 'error_message': str(exc),
                 'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
+                'metadata': {'sandbox': False, 'command': command, 'simulated': False},
             }
 
 
@@ -1873,6 +1908,19 @@ class DevinApiToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        
+        # C-1 FIX: sandbox=True returns simulated result without real API call
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': 'Sandbox DevinApi: simulated remote session (no real side effects)',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'simulated': True},
+            }
+        
         if httpx is None:
             return {
                 'success': False,
@@ -2438,6 +2486,19 @@ class SiteExplorerToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        
+        # C-1 FIX: sandbox=True returns simulated result without real exploration
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': 'Sandbox SiteExplorer: simulated web exploration (no real side effects)',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'simulated': True},
+            }
+        
         start_url = ''
         max_pages: int | None = None
         priority_keywords: list[str] = []
@@ -2625,6 +2686,19 @@ class LocalCliToolAdapter:
                 blocked=True,
             )
         cmd_list = [executable, *tokens]
+        
+        # CRITICAL: sandbox=True must NOT execute real subprocesses
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': f'[SANDBOX] Simulated execution of: {executable} {" ".join(tokens)}',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {'sandbox': True, 'executable': executable, 'args': args_text, 'simulated': True},
+            }
+        
         try:
             completed = subprocess.run(
                 cmd_list,

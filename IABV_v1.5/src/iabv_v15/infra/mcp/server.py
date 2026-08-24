@@ -128,6 +128,8 @@ class IABVMCPServer:
             raise ValueError("container no puede ser None")
         self.container = container
         self.name = name
+        # C2-1 FIX: Store capability_action_bridge from container for self-update tools
+        self.capability_action_bridge = getattr(container, "capability_action_bridge", None)
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
 
@@ -3174,6 +3176,7 @@ class IABVMCPServer:
             raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
         
         # Register self-update (write) tools for autonomous self-modification
+        # C2-1 FIX: Security-critical registration - log exact failure and do not silently continue
         try:
             from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
             _n_write_tools = register_self_update_tools(
@@ -3181,10 +3184,15 @@ class IABVMCPServer:
                 workspace_root_fn=self._workspace_root,
                 governance_fn=self._governance_block_for_route,
                 to_jsonable_fn=_to_jsonable,
+                capability_action_bridge=self.capability_action_bridge,  # C-2: Pass canonical authority
             )
             logger.info("self_update_tools: %d write tools registered", _n_write_tools)
         except Exception as _sut_exc:
-            logger.warning("self_update_tools: failed to register: %s", _sut_exc)
+            # C2-1 FIX: Log exact failure with full traceback for security-critical registration
+            logger.error("self_update_tools: CRITICAL registration failure: %s", _sut_exc, exc_info=True)
+            # C2-1 FIX: Re-raise to make registration failure observable
+            # Self-update is security-critical; silent failure is unacceptable
+            raise RuntimeError(f"Self-update tool registration failed: {_sut_exc}") from _sut_exc
 
         # Suppress noisy per-session transport logs from the MCP SDK
         # and uvicorn access lines.

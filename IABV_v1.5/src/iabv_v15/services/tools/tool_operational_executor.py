@@ -3,6 +3,7 @@
 from iabv_v15.domain.models import AdaptiveSession, ApprovalDecision, RunStatus, TaskRole
 from iabv_v15.services.adaptive.execution_playbook_service import OperationalExecutorResult
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
+from iabv_v15.services.trust.capability_lifecycle import acquire_capability_for_execution
 
 
 class ToolOperationalExecutor:
@@ -38,6 +39,47 @@ class ToolOperationalExecutor:
         if not self.supports(session):
             return OperationalExecutorResult(executed=False, status=RunStatus.PARTIAL, summary=self.describe(session), next_actions=['Simular', 'Preparar Codex'], metadata={'mode': 'adapter_missing'})
         task = self.tool_teach_service.build_task_for_session(session)
+        
+        # F14: Acquire capability before execution
+        # FAIL-CLOSED: Reject execution if capability acquisition fails
+        try:
+            capability = acquire_capability_for_execution(
+                action=session.action or "EXECUTE",
+                target=session.target or "tool",
+                requested_scope="tool:execute",
+                invocation_id=f"tool_execution_{task.task_id}",
+                episode_id=None,
+                session_id=session.session_id
+            )
+            # Extend task with authority context
+            task = task.model_copy(update={
+                'run_id': capability['run_id'],
+                'execution_id': capability['execution_id'],
+                'lease_id': capability['lease_id'],
+                'action': capability['action'],
+                'target': capability['target'],
+            })
+        except Exception as e:
+            # Capability acquisition failed - reject execution (fail-closed)
+            return OperationalExecutorResult(
+                success=False,
+                tool_result=ToolResult(
+                    task_id=task.task_id,
+                    tool_id=task.tool_id,
+                    tool_type="unknown",
+                    success=False,
+                    validation_status=ToolValidationStatus.BLOCKED,
+                    execution_state=ExecutionState(
+                        state='capability_acquisition_failed',
+                        detail=f'Capability acquisition failed: {str(e)}. Protected execution requires authority process to be running.',
+                        executor_name='CapabilityLifecycle',
+                        sandboxed=False,
+                        destructive_blocked=True,
+                    ),
+                    error_message='capability_acquisition_failed',
+                )
+            )
+        
         approved = not any(item.decision == ApprovalDecision.PENDING for item in session.approval_checkpoints)
         result = self.tool_teach_service.execute_task(task, approved=approved)
         metadata = {

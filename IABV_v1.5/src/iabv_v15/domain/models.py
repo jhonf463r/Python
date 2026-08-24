@@ -1314,6 +1314,11 @@ class ToolTask(BaseModel):
     pack_id: str = ""
     expected_outcome: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # F14: Authority integration fields
+    execution_id: str | None = None
+    lease_id: str | None = None
+    action: str | None = None
+    target: str | None = None
 
 
 class ToolResult(BaseModel):
@@ -1332,6 +1337,11 @@ class ToolResult(BaseModel):
     execution_ms: int = 0
     created_at_utc: datetime = Field(default_factory=utc_now)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # F14: Observation causality fields
+    execution_id: str | None = None
+    lease_id: str | None = None
+    action: str | None = None
+    target: str | None = None
 
 
 class UniversalInteractionStep(BaseModel):
@@ -2424,6 +2434,11 @@ class AdaptiveSession(BaseModel):
     runtime_adjustments: list[RuntimeAdjustment] = Field(default_factory=list)
     pending_issue_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # F14: Authority integration fields
+    execution_id: str | None = None
+    lease_id: str | None = None
+    action: str | None = None
+    target: str | None = None
 
 
 class InferenceRequest(BaseModel):

@@ -54,6 +54,8 @@ from iabv_v15.services.trust.authority_protocol import (
     IssueLeaseResponse,
     ConsumeLeaseRequest,
     ConsumeLeaseResponse,
+    VerifyExecutionContextRequest,
+    VerifyExecutionContextResponse,
     AuthorizationPolicyInput,
     apply_authorization_policy,
 )
@@ -753,6 +755,8 @@ class AuthorityService:
             
             lease_id = consume_request.lease_id
             execution_id = consume_request.execution_id
+            requested_action = consume_request.requested_action
+            requested_target = consume_request.requested_target
             
             # Phase 2 Round 3: Verify lease exists and get canonical data
             conn = sqlite3.connect(str(self._lease_state_db))
@@ -843,7 +847,7 @@ class AuthorityService:
                     error="Run record not found"
                 )
             
-            record_pid, record_generation, record_authorized_scope, action, target = run_record_row
+            record_pid, record_generation, record_authorized_scope, authorized_action, authorized_target = run_record_row
             
             # Phase 2 Round 3: Verify client PID matches run record
             if client_pid != record_pid:
@@ -870,6 +874,24 @@ class AuthorityService:
                     success=False,
                     data={},
                     error="Authorized scope mismatch"
+                )
+            
+            # Phase 4: Verify action binding
+            if requested_action != authorized_action:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error=f"Action mismatch: requested '{requested_action}' but authorized '{authorized_action}'"
+                )
+            
+            # Phase 4: Verify target binding
+            if requested_target != authorized_target:
+                conn.close()
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error=f"Target mismatch: requested '{requested_target}' but authorized '{authorized_target}'"
                 )
             
             # Phase 2 Round 3: Atomic consume (UPDATE with WHERE clause)
@@ -899,6 +921,90 @@ class AuthorityService:
                 data=ConsumeLeaseResponse(
                     consumed=True,
                     consumed_at=time.time()
+                ).to_dict()
+            )
+        except Exception as e:
+            return AuthorityResponse(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    def handle_verify_execution_context(
+        self,
+        request: AuthorityRequest,
+        client_pid: int
+    ) -> AuthorityResponse:
+        """Handle VERIFY_EXECUTION_CONTEXT request for MCP self-update.
+        
+        This method validates that an execution context (execution_id, run_id)
+        exists in the RunRecord database and belongs to the authenticated client.
+        This is used for MCP self-update to preserve causal attribution.
+        """
+        try:
+            # Parse canonical request
+            verify_request = VerifyExecutionContextRequest.from_dict(request.data)
+            
+            execution_id = verify_request.execution_id
+            run_id = verify_request.run_id
+            session_id = verify_request.session_id
+            episode_id = verify_request.episode_id
+            
+            # Verify run record exists
+            conn = sqlite3.connect(str(self._run_record_db))
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT run_id, execution_id, consumer_pid, generation, authorized_scope
+                FROM run_records
+                WHERE run_id = ? AND execution_id = ?
+            """, (run_id, execution_id))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if not row:
+                return AuthorityResponse(
+                    success=True,
+                    data=VerifyExecutionContextResponse(
+                        valid=False,
+                        error="Execution context not found in RunRecord database"
+                    ).to_dict()
+                )
+            
+            record_run_id, record_execution_id, consumer_pid, generation, authorized_scope = row
+            
+            # Verify client PID matches run record
+            if client_pid != consumer_pid:
+                return AuthorityResponse(
+                    success=True,
+                    data=VerifyExecutionContextResponse(
+                        valid=False,
+                        error="Client PID mismatch: execution context belongs to different process"
+                    ).to_dict()
+                )
+            
+            # Verify generation matches
+            if generation != self._generation:
+                return AuthorityResponse(
+                    success=True,
+                    data=VerifyExecutionContextResponse(
+                        valid=False,
+                        error="Generation mismatch: execution context from different authority generation"
+                    ).to_dict()
+                )
+            
+            # Optionally verify session_id and episode_id if provided
+            # For now, we accept the context if run_id and execution_id match
+            
+            # Return canonical response
+            return AuthorityResponse(
+                success=True,
+                data=VerifyExecutionContextResponse(
+                    valid=True,
+                    consumer_pid=consumer_pid,
+                    generation=generation,
+                    authorized_scope=authorized_scope
                 ).to_dict()
             )
         except Exception as e:
