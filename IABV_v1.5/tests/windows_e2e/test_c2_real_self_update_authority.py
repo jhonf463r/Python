@@ -521,15 +521,47 @@ class TestC2RealSelfUpdateAuthority:
         assert capability['run_id'] == run_id
         assert capability['execution_id'] == execution_id
         
-        # Step 3: Verify the capability was issued successfully
-        # The production path is: acquire_capability_for_existing_execution -> issue_lease
-        # This test verifies that session_id and episode_id are passed correctly
-        print(f"[C2 Production Path Test] Capability acquisition succeeded", flush=True)
-        print(f"[C2 Production Path Test] lease_id={capability['lease_id']}", flush=True)
+        # Step 3: Perform REAL protected effect via write_repo_file_impl
+        # This is the ACTUAL production path used by write_repo_file MCP tool
+        # The capability from acquire_capability_for_existing_execution is used directly
+        new_content = "# Production path modification\n"
+        write_client = AuthorityClient()
+        write_client.connect()
+        try:
+            result = write_repo_file_impl(
+                workspace_root=isolated_repo,
+                relative_path="test_module.py",
+                content=new_content,
+                capability_action_bridge=CapabilityActionBridge(authority_client=write_client),
+                lease_id=capability['lease_id'],
+                execution_id=capability['execution_id']
+            )
+        finally:
+            write_client.disconnect()
         
-        # Verify the lease was issued (not None)
-        assert capability['lease_id'] is not None
-        assert capability['lease_id'] != ""
+        # Verify the write succeeded
+        assert result['status'] == 'ok'
+        print(f"[C2 Production Path Test] Protected effect executed", flush=True)
+        
+        # Step 4: Verify REAL repository mutation
+        final_head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=str(isolated_repo), capture_output=True, text=True).stdout.strip()
+        final_status = subprocess.run(['git', 'status', '--porcelain'], cwd=str(isolated_repo), capture_output=True, text=True).stdout.strip()
+        final_content = test_file.read_text(encoding="utf-8")
+        final_hash = hashlib.sha256(final_content.encode('utf-8')).hexdigest()
+        
+        print(f"[C2 Production Path Test] Final HEAD: {final_head}", flush=True)
+        print(f"[C2 Production Path Test] Final status: {final_status}", flush=True)
+        print(f"[C2 Production Path Test] Final file hash: {final_hash}", flush=True)
+        
+        # Verify mutation occurred
+        assert final_content == new_content
+        assert final_hash != initial_hash
+        assert final_status != ""  # Working tree modified
+        
+        # Verify git diff shows the change
+        git_diff = subprocess.run(['git', 'diff', '--', 'test_module.py'], cwd=str(isolated_repo), capture_output=True, text=True).stdout
+        print(f"[C2 Production Path Test] Git diff:\n{git_diff}", flush=True)
+        assert "Production path modification" in git_diff
         
         print(f"[C2 Production Path Test] PASS: Real production path verified", flush=True)
 
