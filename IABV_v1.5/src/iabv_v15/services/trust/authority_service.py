@@ -955,7 +955,7 @@ class AuthorityService:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT run_id, execution_id, consumer_pid, generation, authorized_scope
+                SELECT run_id, execution_id, consumer_pid, generation, authorized_scope, session_id, episode_id
                 FROM run_records
                 WHERE run_id = ? AND execution_id = ?
             """, (run_id, execution_id))
@@ -972,7 +972,7 @@ class AuthorityService:
                     ).to_dict()
                 )
             
-            record_run_id, record_execution_id, consumer_pid, generation, authorized_scope = row
+            record_run_id, record_execution_id, consumer_pid, generation, authorized_scope, record_session_id, record_episode_id = row
             
             # Verify client PID matches run record
             if client_pid != consumer_pid:
@@ -994,8 +994,27 @@ class AuthorityService:
                     ).to_dict()
                 )
             
-            # Optionally verify session_id and episode_id if provided
-            # For now, we accept the context if run_id and execution_id match
+            # Verify session_id matches canonical record (CROSS_SESSION = REJECT)
+            if session_id is not None and record_session_id is not None:
+                if session_id != record_session_id:
+                    return AuthorityResponse(
+                        success=True,
+                        data=VerifyExecutionContextResponse(
+                            valid=False,
+                            error=f"Session ID mismatch: provided '{session_id}' does not match canonical '{record_session_id}'"
+                        ).to_dict()
+                    )
+            
+            # Verify episode_id matches canonical record (CROSS_EPISODE = REJECT)
+            if episode_id is not None and record_episode_id is not None:
+                if episode_id != record_episode_id:
+                    return AuthorityResponse(
+                        success=True,
+                        data=VerifyExecutionContextResponse(
+                            valid=False,
+                            error=f"Episode ID mismatch: provided '{episode_id}' does not match canonical '{record_episode_id}'"
+                        ).to_dict()
+                    )
             
             # Return canonical response
             return AuthorityResponse(

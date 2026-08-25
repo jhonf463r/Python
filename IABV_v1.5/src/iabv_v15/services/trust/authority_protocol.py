@@ -485,13 +485,77 @@ def apply_authorization_policy(input: AuthorizationPolicyInput) -> Authorization
             )
     
     # CASE E: Scope broader than task permits
-    # Allow self_update scope for tool_execution task context (VFINAL5 MCP self-update)
+    # Allow self_update scope for tool_execution task context (VFINAL5-R2: constrained by action/target)
     if input.task_context == "tool_execution":
         if input.requested_scope == "self_update":
+            # VFINAL5-R2: Explicit action/target constraints for self_update
+            # Define allowed self_update actions and their target scopes
+            allowed_self_update_actions = {
+                "WRITE_REPOSITORY_FILE": "file:workspace",
+                "APPLY_PATCH": "file:workspace",
+                "COMMIT": "repository:authorized",
+                "PUSH": "remote:authorized"
+            }
+            
+            # Check if action is allowed
+            if input.action not in allowed_self_update_actions:
+                return AuthorizationPolicyDecision(
+                    allowed=False,
+                    reason=f"Action '{input.action}' not allowed for self_update scope. Allowed actions: {list(allowed_self_update_actions.keys())}"
+                )
+            
+            # Check if target matches expected scope for the action
+            expected_target_scope = allowed_self_update_actions[input.action]
+            
+            # For file:workspace, target must start with "file:" and be within workspace
+            if expected_target_scope == "file:workspace":
+                if not input.target.startswith("file:"):
+                    return AuthorizationPolicyDecision(
+                        allowed=False,
+                        reason=f"Target '{input.target}' must be file: path for WRITE_REPOSITORY_FILE action"
+                    )
+                # Additional check: target must not be security-critical
+                security_critical_paths = [
+                    "services/trust/",
+                    "security/",
+                    "authority",
+                    "bootstrap.py",
+                    ".git/config",
+                    ".git/hooks"
+                ]
+                for critical_path in security_critical_paths:
+                    if critical_path in input.target:
+                        return AuthorizationPolicyDecision(
+                            allowed=False,
+                            reason=f"Target '{input.target}' contains security-critical path '{critical_path}' - not allowed for self_update"
+                        )
+            
+            # For repository:authorized, target must be repository path
+            elif expected_target_scope == "repository:authorized":
+                if not input.target.startswith("repository:"):
+                    return AuthorizationPolicyDecision(
+                        allowed=False,
+                        reason=f"Target '{input.target}' must be repository: path for COMMIT action"
+                    )
+            
+            # For remote:authorized, target must be remote path
+            elif expected_target_scope == "remote:authorized":
+                if not input.target.startswith("remote:"):
+                    return AuthorizationPolicyDecision(
+                        allowed=False,
+                        reason=f"Target '{input.target}' must be remote: path for PUSH action"
+                    )
+            
+            # Action and target are allowed
             return AuthorizationPolicyDecision(
                 allowed=True,
                 authorized_scope="self_update",
-                reason="Self-update scope allowed for tool_execution task context (VFINAL5)"
+                constraints={
+                    "allowed_action": input.action,
+                    "allowed_target": input.target,
+                    "target_scope": expected_target_scope
+                },
+                reason=f"Self-update action '{input.action}' on target '{input.target}' authorized (scope: {expected_target_scope})"
             )
     
     if input.task_context and input.requested_scope not in ["codebase:read", "codebase:write", "self_update"]:
