@@ -25,6 +25,8 @@ from pathlib import Path
 
 # ── Canonical Target Normalization ───────────────────────────────────────────────
 
+import platform
+
 def canonicalize_target(target: str) -> str:
     """
     Canonicalize a target string for platform-independent policy evaluation.
@@ -34,11 +36,13 @@ def canonicalize_target(target: str) -> str:
     - Removes redundant separators
     - Normalizes . and .. components where possible
     - Handles absolute vs relative forms
+    - VFINAL5-R2.2: Handles case-insensitive Windows semantics
     
     This ensures that:
     - file:src/iabv_v15/services/trust/foo.py
     - file:src\\iabv_v15\\services\\trust\\foo.py
     - file:src/iabv_v15\\services\\trust/foo.py
+    - file:src/IABV_V15/SERVICES/TRUST/foo.py (Windows)
     
     all resolve to the same canonical representation for policy evaluation.
     
@@ -46,7 +50,7 @@ def canonicalize_target(target: str) -> str:
         target: Raw target string (e.g., "file:src/foo.py")
         
     Returns:
-        Canonicalized target string with normalized separators
+        Canonicalized target string with normalized separators and case (Windows)
     """
     # Extract the prefix (e.g., "file:", "repository:", "remote:")
     if ":" in target:
@@ -63,6 +67,12 @@ def canonicalize_target(target: str) -> str:
     # Remove redundant separators (e.g., // -> /)
     while "//" in normalized_path:
         normalized_path = normalized_path.replace("//", "/")
+    
+    # VFINAL5-R2.2: Normalize case for Windows case-insensitive filesystem semantics
+    # On Windows, "services/trust/" and "SERVICES/TRUST/" refer to the same path
+    # We normalize to lowercase for consistent policy evaluation
+    if platform.system() == "Windows":
+        normalized_path = normalized_path.lower()
     
     # Normalize path components to prevent traversal bypasses
     # Split into components and process
