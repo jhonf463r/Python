@@ -20,6 +20,81 @@ from __future__ import annotations
 import dataclasses
 from dataclasses import dataclass, field
 from typing import Any, Optional
+from pathlib import Path
+
+
+# ── Canonical Target Normalization ───────────────────────────────────────────────
+
+def canonicalize_target(target: str) -> str:
+    """
+    Canonicalize a target string for platform-independent policy evaluation.
+    
+    Normalizes:
+    - Path separators (/ and \\) to forward slash
+    - Removes redundant separators
+    - Normalizes . and .. components where possible
+    - Handles absolute vs relative forms
+    
+    This ensures that:
+    - file:src/iabv_v15/services/trust/foo.py
+    - file:src\\iabv_v15\\services\\trust\\foo.py
+    - file:src/iabv_v15\\services\\trust/foo.py
+    
+    all resolve to the same canonical representation for policy evaluation.
+    
+    Args:
+        target: Raw target string (e.g., "file:src/foo.py")
+        
+    Returns:
+        Canonicalized target string with normalized separators
+    """
+    # Extract the prefix (e.g., "file:", "repository:", "remote:")
+    if ":" in target:
+        prefix, path = target.split(":", 1)
+    else:
+        # No prefix, treat entire string as path
+        prefix = ""
+        path = target
+    
+    # Normalize path separators to forward slash
+    # This handles both Windows backslashes and Unix forward slashes
+    normalized_path = path.replace("\\", "/")
+    
+    # Remove redundant separators (e.g., // -> /)
+    while "//" in normalized_path:
+        normalized_path = normalized_path.replace("//", "/")
+    
+    # Normalize path components to prevent traversal bypasses
+    # Split into components and process
+    if normalized_path:
+        components = normalized_path.split("/")
+        normalized_components = []
+        
+        for component in components:
+            if component == ".":
+                # Current directory - skip
+                continue
+            elif component == "..":
+                # Parent directory - remove last component if possible
+                # This prevents traversal attacks
+                if normalized_components:
+                    normalized_components.pop()
+                # If no components to pop, keep the .. (it's at root)
+                else:
+                    normalized_components.append("..")
+            else:
+                # Normal component - keep
+                normalized_components.append(component)
+        
+        normalized_path = "/".join(normalized_components)
+    
+    # Reconstruct target with prefix
+    if prefix:
+        canonical_target = f"{prefix}:{normalized_path}"
+    else:
+        canonical_target = normalized_path
+    
+    return canonical_target
 
 
 # ── Canonical Request Contracts ────────────────────────────────────────────────
@@ -488,6 +563,9 @@ def apply_authorization_policy(input: AuthorizationPolicyInput) -> Authorization
     # Allow self_update scope for tool_execution task context (VFINAL5-R2: constrained by action/target)
     if input.task_context == "tool_execution":
         if input.requested_scope == "self_update":
+            # VFINAL5-R2.1: Canonicalize target for platform-independent policy evaluation
+            canonical_target = canonicalize_target(input.target)
+            
             # VFINAL5-R2: Explicit action/target constraints for self_update
             # Define allowed self_update actions and their target scopes
             allowed_self_update_actions = {
@@ -509,12 +587,13 @@ def apply_authorization_policy(input: AuthorizationPolicyInput) -> Authorization
             
             # For file:workspace, target must start with "file:" and be within workspace
             if expected_target_scope == "file:workspace":
-                if not input.target.startswith("file:"):
+                if not canonical_target.startswith("file:"):
                     return AuthorizationPolicyDecision(
                         allowed=False,
-                        reason=f"Target '{input.target}' must be file: path for WRITE_REPOSITORY_FILE action"
+                        reason=f"Target '{canonical_target}' must be file: path for WRITE_REPOSITORY_FILE action"
                     )
                 # Additional check: target must not be security-critical
+                # VFINAL5-R2.1: Use canonical target for security-critical path checks
                 security_critical_paths = [
                     "services/trust/",
                     "security/",
@@ -524,26 +603,26 @@ def apply_authorization_policy(input: AuthorizationPolicyInput) -> Authorization
                     ".git/hooks"
                 ]
                 for critical_path in security_critical_paths:
-                    if critical_path in input.target:
+                    if critical_path in canonical_target:
                         return AuthorizationPolicyDecision(
                             allowed=False,
-                            reason=f"Target '{input.target}' contains security-critical path '{critical_path}' - not allowed for self_update"
+                            reason=f"Target '{canonical_target}' contains security-critical path '{critical_path}' - not allowed for self_update"
                         )
             
             # For repository:authorized, target must be repository path
             elif expected_target_scope == "repository:authorized":
-                if not input.target.startswith("repository:"):
+                if not canonical_target.startswith("repository:"):
                     return AuthorizationPolicyDecision(
                         allowed=False,
-                        reason=f"Target '{input.target}' must be repository: path for COMMIT action"
+                        reason=f"Target '{canonical_target}' must be repository: path for COMMIT action"
                     )
             
             # For remote:authorized, target must be remote path
             elif expected_target_scope == "remote:authorized":
-                if not input.target.startswith("remote:"):
+                if not canonical_target.startswith("remote:"):
                     return AuthorizationPolicyDecision(
                         allowed=False,
-                        reason=f"Target '{input.target}' must be remote: path for PUSH action"
+                        reason=f"Target '{canonical_target}' must be remote: path for PUSH action"
                     )
             
             # Action and target are allowed
@@ -552,10 +631,10 @@ def apply_authorization_policy(input: AuthorizationPolicyInput) -> Authorization
                 authorized_scope="self_update",
                 constraints={
                     "allowed_action": input.action,
-                    "allowed_target": input.target,
+                    "allowed_target": canonical_target,  # Store canonical target
                     "target_scope": expected_target_scope
                 },
-                reason=f"Self-update action '{input.action}' on target '{input.target}' authorized (scope: {expected_target_scope})"
+                reason=f"Self-update action '{input.action}' on target '{canonical_target}' authorized (scope: {expected_target_scope})"
             )
     
     if input.task_context and input.requested_scope not in ["codebase:read", "codebase:write", "self_update"]:

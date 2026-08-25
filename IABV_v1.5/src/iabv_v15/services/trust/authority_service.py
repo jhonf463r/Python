@@ -48,6 +48,7 @@ from iabv_v15.services.trust.trusted_execution_identity import (
 )
 from iabv_v15.services.trust.trusted_lease import TrustedLease
 from iabv_v15.services.trust.authority_protocol import (
+    canonicalize_target,
     RegisterExecutionRequest,
     RegisterExecutionResponse,
     IssueLeaseRequest,
@@ -885,13 +886,17 @@ class AuthorityService:
                     error=f"Action mismatch: requested '{requested_action}' but authorized '{authorized_action}'"
                 )
             
-            # Phase 4: Verify target binding
-            if requested_target != authorized_target:
+            # VFINAL5-R2.1: Canonicalize targets before comparison for platform-independent validation
+            canonical_requested_target = canonicalize_target(requested_target)
+            canonical_authorized_target = canonicalize_target(authorized_target)
+            
+            # Phase 4: Verify target binding (using canonical forms)
+            if canonical_requested_target != canonical_authorized_target:
                 conn.close()
                 return AuthorityResponse(
                     success=False,
                     data={},
-                    error=f"Target mismatch: requested '{requested_target}' but authorized '{authorized_target}'"
+                    error=f"Target mismatch: requested '{canonical_requested_target}' but authorized '{canonical_authorized_target}'"
                 )
             
             # Phase 2 Round 3: Atomic consume (UPDATE with WHERE clause)
@@ -994,8 +999,26 @@ class AuthorityService:
                     ).to_dict()
                 )
             
-            # Verify session_id matches canonical record (CROSS_SESSION = REJECT)
-            if session_id is not None and record_session_id is not None:
+            # VFINAL5-R2.1: Require session_id for protected self-update operations
+            # For self_update scope, session_id is REQUIRED
+            if authorized_scope == "self_update":
+                if session_id is None:
+                    return AuthorityResponse(
+                        success=True,
+                        data=VerifyExecutionContextResponse(
+                            valid=False,
+                            error="Session ID is required for self_update scope"
+                        ).to_dict()
+                    )
+                if record_session_id is None:
+                    return AuthorityResponse(
+                        success=True,
+                        data=VerifyExecutionContextResponse(
+                            valid=False,
+                            error="Canonical execution record missing session_id"
+                        ).to_dict()
+                    )
+                # Verify session_id matches canonical record (CROSS_SESSION = REJECT)
                 if session_id != record_session_id:
                     return AuthorityResponse(
                         success=True,
@@ -1005,8 +1028,26 @@ class AuthorityService:
                         ).to_dict()
                     )
             
-            # Verify episode_id matches canonical record (CROSS_EPISODE = REJECT)
-            if episode_id is not None and record_episode_id is not None:
+            # VFINAL5-R2.1: Require episode_id for protected self-update operations
+            # For self_update scope, episode_id is REQUIRED
+            if authorized_scope == "self_update":
+                if episode_id is None:
+                    return AuthorityResponse(
+                        success=True,
+                        data=VerifyExecutionContextResponse(
+                            valid=False,
+                            error="Episode ID is required for self_update scope"
+                        ).to_dict()
+                    )
+                if record_episode_id is None:
+                    return AuthorityResponse(
+                        success=True,
+                        data=VerifyExecutionContextResponse(
+                            valid=False,
+                            error="Canonical execution record missing episode_id"
+                        ).to_dict()
+                    )
+                # Verify episode_id matches canonical record (CROSS_EPISODE = REJECT)
                 if episode_id != record_episode_id:
                     return AuthorityResponse(
                         success=True,

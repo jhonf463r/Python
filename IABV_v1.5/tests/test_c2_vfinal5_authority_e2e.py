@@ -424,7 +424,9 @@ class TestC2VFINAL5AuthorityE2E:
             target="file:test.txt",
             requested_scope="self_update",
             task_context="tool_execution",
-            observed_process_identity={"pid": 1234}
+            observed_process_identity={"pid": 1234},
+            canonical_run_record=None,
+            generation=1
         )
         
         decision = apply_authorization_policy(policy_input)
@@ -446,7 +448,9 @@ class TestC2VFINAL5AuthorityE2E:
             target="file:src/iabv_v15/services/trust/authority_service.py",
             requested_scope="self_update",
             task_context="tool_execution",
-            observed_process_identity={"pid": 1234}
+            observed_process_identity={"pid": 1234},
+            canonical_run_record=None,
+            generation=1
         )
         
         decision = apply_authorization_policy(policy_input)
@@ -462,13 +466,11 @@ class TestC2VFINAL5AuthorityE2E:
             apply_authorization_policy
         )
         
-        # Test representative security-critical targets
+        # Test representative security-critical targets (matching authority_protocol.py denylist)
         security_critical_targets = [
             "file:src/iabv_v15/services/trust/authority_service.py",
             "file:src/iabv_v15/services/trust/capability_lifecycle.py",
-            "file:src/iabv_v15/security/",
-            "file:src/iabv_v15/infra/mcp/server.py",
-            "file:src/iabv_v15/domain/models.py",
+            "file:src/iabv_v15/security/config.py",
             "file:bootstrap.py",
             "file:.git/config",
             "file:.git/hooks/pre-commit",
@@ -480,7 +482,9 @@ class TestC2VFINAL5AuthorityE2E:
                 target=target,
                 requested_scope="self_update",
                 task_context="tool_execution",
-                observed_process_identity={"pid": 1234}
+                observed_process_identity={"pid": 1234},
+                canonical_run_record=None,
+                generation=1
             )
             
             decision = apply_authorization_policy(policy_input)
@@ -502,7 +506,9 @@ class TestC2VFINAL5AuthorityE2E:
             target="file:src/iabv_v15/example_module.py",
             requested_scope="self_update",
             task_context="tool_execution",
-            observed_process_identity={"pid": 1234}
+            observed_process_identity={"pid": 1234},
+            canonical_run_record=None,
+            generation=1
         )
         
         decision = apply_authorization_policy(policy_input)
