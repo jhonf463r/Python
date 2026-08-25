@@ -30,7 +30,7 @@ def test_lifecycle(authority_service):
     print(f"[TEST] Authority PID: {authority_pid}")
     
     # Perform full flow
-    print(f"\n[TEST] Performing full flow: connect → join → challenge → redeem → disconnect")
+    print(f"\n[TEST] Performing full flow: connect -> join -> challenge -> redeem -> disconnect")
     
     client = AuthorityClient()
     

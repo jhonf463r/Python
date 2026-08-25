@@ -101,4 +101,4 @@ def authority_service():
     # Cleanup temp directory
     import shutil
     if tmpdir_path.exists():
-        shutil.rmtree(tmpdir_path, ignore_errors=True)
+        shutil.rmtree(tmpdir_path)

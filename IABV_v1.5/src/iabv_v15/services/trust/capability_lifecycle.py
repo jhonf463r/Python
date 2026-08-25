@@ -170,6 +170,8 @@ def acquire_capability_for_existing_execution(
         lease = client.issue_lease(
             run_id=run_id,
             execution_id=execution_id,
+            session_id=session_id,
+            episode_id=episode_id,
             requested_ttl_seconds=3600
         )
         
