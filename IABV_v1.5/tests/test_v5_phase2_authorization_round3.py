@@ -229,9 +229,8 @@ class TestAuthorityServiceCanonicalProtocol:
         """Create AuthorityService instance."""
         service = AuthorityService(storage_root=temp_storage)
         yield service
-        # Cleanup
-        if hasattr(service, '_shutdown'):
-            service._shutdown()
+        # Cleanup - _shutdown is a boolean flag, not a method
+        # No explicit cleanup needed for in-memory AuthorityService
     
     def test_register_execution_with_canonical_protocol(self, authority):
         """Test REGISTER_EXECUTION with canonical protocol."""
@@ -368,8 +367,8 @@ class TestAdversarialBinding:
         """Create AuthorityService instance."""
         service = AuthorityService(storage_root=temp_storage)
         yield service
-        if hasattr(service, '_shutdown'):
-            service._shutdown()
+        # Cleanup - _shutdown is a boolean flag, not a method
+        # No explicit cleanup needed for in-memory AuthorityService
     
     def test_wrong_run_id_denied(self, authority):
         """Test 10: wrong run_id → DENY."""
@@ -576,7 +575,9 @@ class TestAdversarialBinding:
         # Try to consume lease
         consume_request = ConsumeLeaseRequest(
             lease_id=lease_id,
-            execution_id=execution_id
+            execution_id=execution_id,
+            requested_action="READ",
+            requested_target="codebase"
         ).to_dict()
         
         consume_request_auth = AuthorityRequest(
@@ -633,7 +634,9 @@ class TestAdversarialBinding:
         # Try to consume expired lease
         consume_request = ConsumeLeaseRequest(
             lease_id=lease_id,
-            execution_id=execution_id
+            execution_id=execution_id,
+            requested_action="READ",
+            requested_target="codebase"
         ).to_dict()
         
         consume_request_auth = AuthorityRequest(
@@ -645,6 +648,92 @@ class TestAdversarialBinding:
         consume_response = authority.handle_consume_lease(consume_request_auth, client_pid=1234)
         assert consume_response.success is False
         assert "Lease expired" in consume_response.error
+    
+    def test_wrong_session_id_denied(self, authority):
+        """Test: wrong session_id → DENY."""
+        # Register with session_id="sess1"
+        register_request = RegisterExecutionRequest(
+            invocation_id="test_invocation",
+            action="READ",
+            target="codebase",
+            requested_scope="codebase:read",
+            task_context="self_analysis",
+            session_id="sess1",
+            episode_id="ep1"
+        ).to_dict()
+        
+        from iabv_v15.services.trust.authority_service import AuthorityRequest
+        reg_request = AuthorityRequest(
+            request_type="REGISTER_EXECUTION",
+            data=register_request,
+            request_id="test_invocation"
+        )
+        
+        reg_response = authority.handle_register_execution(reg_request, client_pid=1234)
+        run_id = reg_response.data["run_id"]
+        execution_id = reg_response.data["execution_id"]
+        
+        # Try to issue lease with wrong session_id="sess2"
+        issue_request = IssueLeaseRequest(
+            run_id=run_id,
+            execution_id=execution_id,
+            session_id="sess2",  # Wrong session
+            episode_id="ep1",     # Correct episode
+            requested_ttl_seconds=3600
+        ).to_dict()
+        
+        issue_request_auth = AuthorityRequest(
+            request_type="ISSUE_LEASE",
+            data=issue_request,
+            request_id=run_id
+        )
+        
+        issue_response = authority.handle_issue_lease(issue_request_auth, client_pid=1234)
+        assert issue_response.success is False
+        assert "Session ID mismatch" in issue_response.error or "session" in issue_response.error.lower()
+    
+    def test_wrong_episode_id_denied(self, authority):
+        """Test: wrong episode_id → DENY."""
+        # Register with episode_id="ep1"
+        register_request = RegisterExecutionRequest(
+            invocation_id="test_invocation",
+            action="READ",
+            target="codebase",
+            requested_scope="codebase:read",
+            task_context="self_analysis",
+            session_id="sess1",
+            episode_id="ep1"
+        ).to_dict()
+        
+        from iabv_v15.services.trust.authority_service import AuthorityRequest
+        reg_request = AuthorityRequest(
+            request_type="REGISTER_EXECUTION",
+            data=register_request,
+            request_id="test_invocation"
+        )
+        
+        reg_response = authority.handle_register_execution(reg_request, client_pid=1234)
+        run_id = reg_response.data["run_id"]
+        execution_id = reg_response.data["execution_id"]
+        
+        # Try to issue lease with wrong episode_id="ep2"
+        issue_request = IssueLeaseRequest(
+            run_id=run_id,
+            execution_id=execution_id,
+            session_id="sess1",     # Correct session
+            episode_id="ep2",     # Wrong episode
+            requested_ttl_seconds=3600
+        ).to_dict()
+        
+        issue_request_auth = AuthorityRequest(
+            request_type="ISSUE_LEASE",
+            data=issue_request,
+            request_id=run_id
+        )
+        
+        issue_response = authority.handle_issue_lease(issue_request_auth, client_pid=1234)
+        assert issue_response.success is False
+        assert "Episode ID mismatch" in issue_response.error or "episode" in issue_response.error.lower()
 
 
 # ── L4 Real IPC Tests ──────────────────────────────────────────────────────────

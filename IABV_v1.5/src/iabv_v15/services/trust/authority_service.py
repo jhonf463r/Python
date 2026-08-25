@@ -677,36 +677,38 @@ class AuthorityService:
                     error=f"Execution ID mismatch: provided '{execution_id}' does not match canonical '{db_execution_id}'"
                 )
             
-            # VFINAL5-R3.1: For protected self_update, require and validate session_id and episode_id
-            if authorized_scope == "self_update":
-                # Session ID is required for self_update
-                if db_session_id is None:
-                    return AuthorityResponse(
-                        success=False,
-                        data={},
-                        error="Run record missing session_id for self_update scope"
-                    )
-                # Episode ID is required for self_update
-                if db_episode_id is None:
-                    return AuthorityResponse(
-                        success=False,
-                        data={},
-                        error="Run record missing episode_id for self_update scope"
-                    )
-                # VFINAL5-R3.1: Cross-session validation - caller session must match run record
+            # VFINAL5-R3.3: Universal session_id and episode_id validation for all scopes
+            # If canonical record has a session_id, caller must match exactly
+            if db_session_id is not None:
                 if caller_session_id != db_session_id:
                     return AuthorityResponse(
                         success=False,
                         data={},
                         error=f"Session ID mismatch: caller '{caller_session_id}' does not match canonical '{db_session_id}'"
                     )
-                # VFINAL5-R3.1: Cross-episode validation - caller episode must match run record
+            # If canonical record has None, caller must also provide None (fail-closed)
+            elif caller_session_id is not None:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error=f"Session ID mismatch: canonical record has no session_id but caller provided '{caller_session_id}'"
+                )
+            
+            # If canonical record has an episode_id, caller must match exactly
+            if db_episode_id is not None:
                 if caller_episode_id != db_episode_id:
                     return AuthorityResponse(
                         success=False,
                         data={},
                         error=f"Episode ID mismatch: caller '{caller_episode_id}' does not match canonical '{db_episode_id}'"
                     )
+            # If canonical record has None, caller must also provide None (fail-closed)
+            elif caller_episode_id is not None:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error=f"Episode ID mismatch: canonical record has no episode_id but caller provided '{caller_episode_id}'"
+                )
             
             # Phase 2 Round 3: Generate authority-owned lease
             lease_id = secrets.token_urlsafe(16)
