@@ -634,7 +634,7 @@ class AuthorityService:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT execution_id, authorized_scope, consumer_pid, generation, action, target
+                SELECT execution_id, episode_id, session_id, authorized_scope, consumer_pid, generation, action, target
                 FROM run_records
                 WHERE run_id = ?
             """, (run_id,))
@@ -649,7 +649,7 @@ class AuthorityService:
                     error="Run record not found"
                 )
             
-            db_execution_id, authorized_scope, record_pid, record_generation, action, target = row
+            db_execution_id, db_episode_id, db_session_id, authorized_scope, record_pid, record_generation, action, target = row
             
             # Phase 2 Round 3: Verify client PID matches run record
             if client_pid != record_pid:
@@ -666,6 +666,31 @@ class AuthorityService:
                     data={},
                     error="Generation mismatch"
                 )
+            
+            # VFINAL5-R3: Verify execution_id matches run record
+            if execution_id != db_execution_id:
+                return AuthorityResponse(
+                    success=False,
+                    data={},
+                    error=f"Execution ID mismatch: provided '{execution_id}' does not match canonical '{db_execution_id}'"
+                )
+            
+            # VFINAL5-R3: For protected self_update, require and validate session_id and episode_id
+            if authorized_scope == "self_update":
+                # Session ID is required for self_update
+                if db_session_id is None:
+                    return AuthorityResponse(
+                        success=False,
+                        data={},
+                        error="Run record missing session_id for self_update scope"
+                    )
+                # Episode ID is required for self_update
+                if db_episode_id is None:
+                    return AuthorityResponse(
+                        success=False,
+                        data={},
+                        error="Run record missing episode_id for self_update scope"
+                    )
             
             # Phase 2 Round 3: Generate authority-owned lease
             lease_id = secrets.token_urlsafe(16)
@@ -832,7 +857,7 @@ class AuthorityService:
             cursor_run = conn_run.cursor()
             
             cursor_run.execute("""
-                SELECT consumer_pid, generation, authorized_scope, action, target
+                SELECT consumer_pid, generation, authorized_scope, action, target, session_id, episode_id
                 FROM run_records
                 WHERE run_id = ?
             """, (run_id,))
@@ -848,7 +873,7 @@ class AuthorityService:
                     error="Run record not found"
                 )
             
-            record_pid, record_generation, record_authorized_scope, authorized_action, authorized_target = run_record_row
+            record_pid, record_generation, record_authorized_scope, authorized_action, authorized_target, record_session_id, record_episode_id = run_record_row
             
             # Phase 2 Round 3: Verify client PID matches run record
             if client_pid != record_pid:
@@ -876,6 +901,25 @@ class AuthorityService:
                     data={},
                     error="Authorized scope mismatch"
                 )
+            
+            # VFINAL5-R3: For protected self_update, validate session_id and episode_id
+            if authorized_scope == "self_update":
+                # Session ID is required for self_update
+                if record_session_id is None:
+                    conn.close()
+                    return AuthorityResponse(
+                        success=False,
+                        data={},
+                        error="Run record missing session_id for self_update scope"
+                    )
+                # Episode ID is required for self_update
+                if record_episode_id is None:
+                    conn.close()
+                    return AuthorityResponse(
+                        success=False,
+                        data={},
+                        error="Run record missing episode_id for self_update scope"
+                    )
             
             # Phase 4: Verify action binding
             if requested_action != authorized_action:

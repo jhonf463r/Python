@@ -25,8 +25,6 @@ from pathlib import Path
 
 # ── Canonical Target Normalization ───────────────────────────────────────────────
 
-import platform
-
 def canonicalize_target(target: str) -> str:
     """
     Canonicalize a target string for platform-independent policy evaluation.
@@ -36,21 +34,22 @@ def canonicalize_target(target: str) -> str:
     - Removes redundant separators
     - Normalizes . and .. components where possible
     - Handles absolute vs relative forms
-    - VFINAL5-R2.2: Handles case-insensitive Windows semantics
+    - VFINAL5-R3: Platform-independent case-insensitive normalization for security
     
     This ensures that:
     - file:src/iabv_v15/services/trust/foo.py
     - file:src\\iabv_v15\\services\\trust\\foo.py
     - file:src/iabv_v15\\services\\trust/foo.py
-    - file:src/IABV_V15/SERVICES/TRUST/foo.py (Windows)
+    - file:src/IABV_V15/SERVICES/TRUST/foo.py
     
-    all resolve to the same canonical representation for policy evaluation.
+    all resolve to the same canonical representation for policy evaluation,
+    regardless of platform (Windows, Linux, CI, container).
     
     Args:
         target: Raw target string (e.g., "file:src/foo.py")
         
     Returns:
-        Canonicalized target string with normalized separators and case (Windows)
+        Canonicalized target string with normalized separators and case
     """
     # Extract the prefix (e.g., "file:", "repository:", "remote:")
     if ":" in target:
@@ -68,11 +67,11 @@ def canonicalize_target(target: str) -> str:
     while "//" in normalized_path:
         normalized_path = normalized_path.replace("//", "/")
     
-    # VFINAL5-R2.2: Normalize case for Windows case-insensitive filesystem semantics
-    # On Windows, "services/trust/" and "SERVICES/TRUST/" refer to the same path
-    # We normalize to lowercase for consistent policy evaluation
-    if platform.system() == "Windows":
-        normalized_path = normalized_path.lower()
+    # VFINAL5-R3: Platform-independent case-insensitive normalization
+    # Security policy must be consistent across all platforms (Windows, Linux, CI, container)
+    # Case-sensitive or case-insensitive filesystem semantics must be handled explicitly
+    # For security-sensitive path classification, we normalize to lowercase
+    normalized_path = normalized_path.lower()
     
     # Normalize path components to prevent traversal bypasses
     # Split into components and process
