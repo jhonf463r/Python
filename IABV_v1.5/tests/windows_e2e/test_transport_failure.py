@@ -11,7 +11,7 @@ from iabv_v15.services.trust.authority_client import AuthorityClient
 from iabv_v15.services.trust.authority_service import AuthorityRequest
 
 
-def test_transport_failure():
+def test_transport_failure(authority_service):
     """Test that transport failures are handled gracefully."""
     
     print("=" * 80)

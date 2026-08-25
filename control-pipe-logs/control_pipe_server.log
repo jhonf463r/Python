@@ -1,0 +1,16 @@
+================================================================================
+CONTROL PIPE SERVER - Minimal Named Pipe Test
+================================================================================
+
+[SERVER] Process Information:
+[SERVER]   PID: 8400
+[SERVER]   Username: runneradmin
+[SERVER]   User SID: PySID:S-1-5-21-1765882305-833847025-4098194446-500
+[SERVER]   Session ID: 2
+
+[SERVER] Creating Named Pipe: \\.\pipe\ControlPipeTest
+[SERVER] Pipe created successfully
+[SERVER] Pipe handle: <PyHANDLE:544>
+[SERVER] Ready signal created: control_pipe_ready.txt
+[SERVER] Waiting for client connection...
+[SERVER] Calling ConnectNamedPipe (blocking)...

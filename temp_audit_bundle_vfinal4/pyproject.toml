@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iabv-v15"
+version = "0.1.0"
+description = "IABV v1.5 desktop control app with hybrid local-first AI routing."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "PySide6>=6.8",
+  "pydantic>=2.7",
+  "httpx>=0.27",
+  "Pillow>=10.0",
+  "playwright>=1.40",
+  "keyring>=25.0",
+  "psutil>=5.9",
+  "pyperclip>=1.8",
+  "pywin32>=306; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"

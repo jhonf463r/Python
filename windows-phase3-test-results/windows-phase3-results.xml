@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="15.263" timestamp="2026-08-23T20:04:46.539738+00:00" hostname="runnervm6iq3x"><testcase classname="tests.windows_e2e.test_concurrency" name="test_concurrency" time="15.001"><failure message="RuntimeError: Failed to connect to authority pipe after 30 attempts">def test_concurrency():
+        """Test that two concurrent threads result in ONE SUCCESS and ONE FAILURE."""
+    
+        print("=" * 80)
+        print("WINDOWS CONCURRENCY TEST - Two Threads")
+        print("=" * 80)
+    
+        # Connect to authority to set up the test
+        print(f"\n[TEST] Connecting to authority for setup...")
+        client = AuthorityClient()
+&gt;       client.connect()
+
+tests\windows_e2e\test_concurrency.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;iabv_v15.services.trust.authority_client.AuthorityClient object at 0x000001848A820C20&gt;
+
+    def connect(self) -&gt; None:
+        """Connect to authority process via Named Pipe.
+    
+        Phase 2: Real IPC connection with retry logic.
+        PART II: Instrumented to log exact access parameters.
+        PART IV: Log client token SID for SID match verification.
+        """
+        if self._pipe_handle is not None:
+            raise RuntimeError("Already connected")
+    
+        # PART IV: Get client token SID
+        import win32security
+        import win32api
+        token = win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32security.TOKEN_QUERY)
+        user_sid = win32security.GetTokenInformation(token, win32security.TokenUser)[0]
+    
+        # PART III: Capture client process identity from actual Windows token
+        print(f"[AuthorityClient] Client process identity:", flush=True)
+        print(f"[AuthorityClient]   PID: {os.getpid()}", flush=True)
+        print(f"[AuthorityClient]   Username: {os.environ.get('USERNAME', 'unknown')}", flush=True)
+        print(f"[AuthorityClient]   Token User SID: {user_sid}", flush=True)
+    
+        # Get session ID
+        try:
+            session_id = win32security.GetTokenInformation(token, win32security.TokenSessionId)
+            print(f"[AuthorityClient]   Session ID: {session_id}", flush=True)
+        except:
+            print(f"[AuthorityClient]   Session ID: (unavailable)", flush=True)
+    
+        # Get integrity level
+        try:
+            integrity = win32security.GetTokenInformation(token, win32security.TokenIntegrityLevel)
+            print(f"[AuthorityClient]   Integrity Level: {integrity}", flush=True)
+        except:
+            print(f"[AuthorityClient]   Integrity Level: (unavailable)", flush=True)
+    
+        # Check for thread token
+        try:
+            thread_token = win32security.OpenThreadToken(win32api.GetCurrentThread(), win32security.TOKEN_QUERY, True)
+            thread_sid = win32security.GetTokenInformation(thread_token, win32security.TokenUser)[0]
+            print(f"[AuthorityClient]   Thread Token SID: {thread_sid}", flush=True)
+            print(f"[AuthorityClient]   Thread token differs from process token: {thread_sid != user_sid}", flush=True)
+        except:
+            print(f"[AuthorityClient]   Thread Token: (none)", flush=True)
+    
+        print(f"[AuthorityClient] Connecting to {self._pipe_name}...", flush=True)
+        print(f"[AuthorityClient] Pipe name length: {len(self._pipe_name)}", flush=True)
+        print(f"[AuthorityClient] Pipe name repr: {repr(self._pipe_name)}", flush=True)
+        print(f"[AuthorityClient] Desired access: GENERIC_READ | GENERIC_WRITE", flush=True)
+        print(f"[AuthorityClient] Share mode: 0 (no sharing)", flush=True)
+        print(f"[AuthorityClient] Creation disposition: OPEN_EXISTING", flush=True)
+        print(f"[AuthorityClient] Flags/attributes: 0", flush=True)
+    
+        for attempt in range(MAX_CONNECTION_ATTEMPTS):
+            try:
+                desired_access = win32file.GENERIC_READ | win32file.GENERIC_WRITE
+                share_mode = 0
+                creation_disposition = win32file.OPEN_EXISTING
+                flags_and_attributes = 0
+    
+                print(f"[AuthorityClient] Attempt {attempt + 1}: CreateFile", flush=True)
+                print(f"[AuthorityClient]   desired_access=0x{desired_access:X}", flush=True)
+                print(f"[AuthorityClient]   share_mode=0x{share_mode:X}", flush=True)
+                print(f"[AuthorityClient]   creation_disposition=0x{creation_disposition:X}", flush=True)
+                print(f"[AuthorityClient]   flags_and_attributes=0x{flags_and_attributes:X}", flush=True)
+    
+                self._pipe_handle = win32file.CreateFile(
+                    self._pipe_name,
+                    desired_access,
+                    share_mode,
+                    None,
+                    creation_disposition,
+                    flags_and_attributes,
+                    None
+                )
+                print(f"[AuthorityClient] Connected on attempt {attempt + 1}", flush=True)
+                print(f"[AuthorityClient] Pipe handle: {self._pipe_handle}", flush=True)
+                return
+            except pywintypes.error as e:
+                print(f"[AuthorityClient] Win32 error on attempt {attempt + 1}:", flush=True)
+                print(f"[AuthorityClient]   Error code: {e.winerror}", flush=True)
+                print(f"[AuthorityClient]   Error message: {e.strerror}", flush=True)
+                print(f"[AuthorityClient]   Function: {e.funcname}", flush=True)
+    
+                if e.winerror == 2:  # ERROR_FILE_NOT_FOUND
+                    print(f"[AuthorityClient] Pipe not found (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
+                elif e.winerror == 5:  # ERROR_ACCESS_DENIED
+                    print(f"[AuthorityClient] ACCESS DENIED (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
+                elif e.winerror == 231:  # ERROR_PIPE_BUSY
+                    print(f"[AuthorityClient] Pipe busy (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
+                else:
+                    print(f"[AuthorityClient] Connection error: {e} (attempt {attempt + 1}/{MAX_CONNECTION_ATTEMPTS})", flush=True)
+    
+                if attempt &lt; MAX_CONNECTION_ATTEMPTS - 1:
+                    time.sleep(CONNECTION_RETRY_DELAY)
+    
+&gt;       raise RuntimeError(f"Failed to connect to authority pipe after {MAX_CONNECTION_ATTEMPTS} attempts")
+E       RuntimeError: Failed to connect to authority pipe after 30 attempts
+
+src\iabv_v15\services\trust\authority_client.py:173: RuntimeError</failure></testcase></testsuite></testsuites>

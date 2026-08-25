@@ -67,12 +67,16 @@ def attempt_redeem_thread(join_id, run_id, execution_id, challenge, private_key,
         results[thread_id] = (False, str(e))
 
 
-def test_concurrency():
+def test_concurrency(authority_service):
     """Test that two concurrent threads result in ONE SUCCESS and ONE FAILURE."""
+    
+    # Unpack authority_service tuple
+    service, authority_pid = authority_service
     
     print("=" * 80)
     print("WINDOWS CONCURRENCY TEST - Two Threads")
     print("=" * 80)
+    print(f"[TEST] Authority PID: {authority_pid}")
     
     # Connect to authority to set up the test
     print(f"\n[TEST] Connecting to authority for setup...")
@@ -188,7 +192,8 @@ def test_concurrency():
     # Verify database state
     print(f"\n[TEST] Verifying database state...")
     import sqlite3
-    db_path = Path(__file__).parent.parent.parent / "temp_authority_storage" / "authority_join_authorizations.db"
+    # Use the same storage directory as the authority service
+    db_path = Path(service._storage_root) / "authority_join_authorizations.db"
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
     

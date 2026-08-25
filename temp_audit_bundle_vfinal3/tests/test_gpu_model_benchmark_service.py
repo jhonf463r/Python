@@ -1,0 +1,376 @@
+"""Tests for GpuModelBenchmarkService — GPU model auto-benchmark."""
+from __future__ import annotations
+
+import json
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from iabv_v15.domain.models import (
+    EvaluationRoute,
+    ExperimentCandidate,
+    ExperimentDomain,
+    ExperimentMetric,
+    ExperimentRecommendation,
+    ExperimentRun,
+)
+from iabv_v15.services.lab.gpu_model_benchmark_service import (
+    GpuModelBenchmarkService,
+    _BENCHMARK_PROMPTS,
+)
+from iabv_v15.services.lab.suites import InferenceBenchmarkSuite
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _fake_lab() -> MagicMock:
+    lab = MagicMock()
+    recommendation = ExperimentRecommendation(
+        domain=ExperimentDomain.INFERENCE_BENCHMARK,
+        subject_key='gpu_model_selection',
+        recommended_route=EvaluationRoute.LOCAL,
+        recommended_assistant_kind='gemma3',
+        rationale='gemma3:4b tiene el mejor balance tok/s + calidad.',
+    )
+    lab.run_experiment.return_value = (
+        [MagicMock(spec=ExperimentRun)],
+        recommendation,
+    )
+    return lab
+
+
+def _fake_ollama_response(text: str = 'La neuroplasticidad es la capacidad del cerebro.', eval_count: int = 42, eval_duration: int = 1_000_000_000) -> bytes:
+    return json.dumps({
+        'response': text,
+        'eval_count': eval_count,
+        'eval_duration': eval_duration,
+    }).encode('utf-8')
+
+
+# ---------------------------------------------------------------------------
+# Tests: discover_models
+# ---------------------------------------------------------------------------
+
+class TestDiscoverModels:
+    def test_discover_models_parses_ollama_list(self):
+        fake_output = (
+            'NAME                    ID              SIZE      MODIFIED\n'
+            'gemma3:4b               abc123          3.3 GB    2 hours ago\n'
+            'qwen3:8b                def456          5.1 GB    3 hours ago\n'
+        )
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout=fake_output)
+            svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+            models = svc.discover_models()
+        assert len(models) == 2
+        assert models[0]['name'] == 'gemma3:4b'
+        assert models[1]['name'] == 'qwen3:8b'
+
+    def test_discover_models_returns_empty_when_ollama_missing(self):
+        with patch('shutil.which', return_value=None):
+            svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+            assert svc.discover_models() == []
+
+    def test_discover_models_returns_empty_on_failure(self):
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(returncode=1, stdout='')
+            svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+            assert svc.discover_models() == []
+
+
+# ---------------------------------------------------------------------------
+# Tests: benchmark_model
+# ---------------------------------------------------------------------------
+
+class TestBenchmarkModel:
+    def test_benchmark_model_measures_tps_and_quality(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        with patch.object(svc, '_ollama_generate') as mock_gen:
+            mock_gen.return_value = (
+                'La neuroplasticidad es la capacidad del cerebro para cambiar y adaptarse.',
+                42,
+                1_000_000_000,
+            )
+            result = svc.benchmark_model('gemma3:4b')
+        assert result['model_name'] == 'gemma3:4b'
+        assert result['avg_tokens_per_second'] == 42.0
+        assert result['avg_quality_score'] > 0.0
+        assert result['prompt_count'] == len(_BENCHMARK_PROMPTS)
+        assert len(result['details']) == len(_BENCHMARK_PROMPTS)
+
+    def test_benchmark_model_handles_zero_duration(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        with patch.object(svc, '_ollama_generate') as mock_gen:
+            mock_gen.return_value = ('respuesta', 0, 0)
+            result = svc.benchmark_model('test:latest')
+        assert result['avg_tokens_per_second'] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Tests: run_full_benchmark
+# ---------------------------------------------------------------------------
+
+class TestRunFullBenchmark:
+    def test_run_full_benchmark_ranks_models(self):
+        lab = _fake_lab()
+        svc = GpuModelBenchmarkService(experiment_lab=lab)
+        call_count = {'n': 0}
+        def mock_generate(model, prompt):
+            call_count['n'] += 1
+            if 'gemma' in model:
+                return ('neuroplasticidad capacidad cerebro cambiar adaptarse', 50, 1_000_000_000)
+            return ('respuesta generica', 20, 1_000_000_000)
+
+        with patch.object(svc, '_ollama_generate', side_effect=mock_generate), \
+             patch.object(svc, 'discover_models', return_value=[
+                 {'name': 'gemma3:4b', 'size': '3.3 GB'},
+                 {'name': 'qwen3:8b', 'size': '5.1 GB'},
+             ]):
+            result = svc.run_full_benchmark()
+
+        assert result['status'] == 'completed'
+        assert result['best_model'] == 'gemma3:4b'
+        assert len(result['ranked']) == 2
+        assert result['ranked'][0]['model'] == 'gemma3:4b'
+        assert result['recommendation'] is not None
+        lab.run_experiment.assert_called_once()
+
+    def test_run_full_benchmark_no_models(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        with patch.object(svc, 'discover_models', return_value=[]):
+            result = svc.run_full_benchmark()
+        assert result['status'] == 'no_models'
+
+    def test_run_full_benchmark_with_explicit_models(self):
+        lab = _fake_lab()
+        svc = GpuModelBenchmarkService(experiment_lab=lab)
+        with patch.object(svc, '_ollama_generate', return_value=('respuesta', 30, 1_000_000_000)):
+            result = svc.run_full_benchmark(models=['phi4:latest'])
+        assert result['status'] == 'completed'
+        assert result['best_model'] == 'phi4:latest'
+
+
+# ---------------------------------------------------------------------------
+# Tests: InferenceBenchmarkSuite
+# ---------------------------------------------------------------------------
+
+class TestInferenceBenchmarkSuite:
+    def test_suite_scores_with_tps_and_quality(self):
+        suite = InferenceBenchmarkSuite()
+        candidate = ExperimentCandidate(
+            label='test-model',
+            route=EvaluationRoute.LOCAL,
+            output_text='la neuroplasticidad es la capacidad del cerebro',
+            metadata={'tokens_per_second': 50.0},
+        )
+        result = suite.evaluate(
+            domain=ExperimentDomain.INFERENCE_BENCHMARK,
+            objective='benchmark test',
+            expected={'text': 'neuroplasticidad capacidad cerebro'},
+            candidate=candidate,
+        )
+        assert result['suite_name'] == 'inference_benchmark_suite'
+        assert result['precision'] > 0.0
+        assert result['success'] is True
+        assert result['metadata']['tokens_per_second'] == 50.0
+
+    def test_suite_fails_with_zero_tps(self):
+        suite = InferenceBenchmarkSuite()
+        candidate = ExperimentCandidate(
+            label='broken-model',
+            route=EvaluationRoute.LOCAL,
+            output_text='',
+            metadata={'tokens_per_second': 0.0},
+        )
+        result = suite.evaluate(
+            domain=ExperimentDomain.INFERENCE_BENCHMARK,
+            objective='benchmark test',
+            expected={'text': 'algo'},
+            candidate=candidate,
+        )
+        assert result['success'] is False
+
+    def test_suite_high_tps_boosts_precision(self):
+        suite = InferenceBenchmarkSuite()
+        slow = ExperimentCandidate(
+            label='slow',
+            route=EvaluationRoute.LOCAL,
+            output_text='respuesta generica',
+            metadata={'tokens_per_second': 10.0},
+        )
+        fast = ExperimentCandidate(
+            label='fast',
+            route=EvaluationRoute.LOCAL,
+            output_text='respuesta generica',
+            metadata={'tokens_per_second': 80.0},
+        )
+        result_slow = suite.evaluate(
+            domain=ExperimentDomain.INFERENCE_BENCHMARK,
+            objective='test',
+            expected={'text': 'respuesta generica'},
+            candidate=slow,
+        )
+        result_fast = suite.evaluate(
+            domain=ExperimentDomain.INFERENCE_BENCHMARK,
+            objective='test',
+            expected={'text': 'respuesta generica'},
+            candidate=fast,
+        )
+        assert result_fast['precision'] > result_slow['precision']
+
+
+# ---------------------------------------------------------------------------
+# ollama ps column-position parsing
+# ---------------------------------------------------------------------------
+
+class TestQueryOllamaPs:
+    """Verify that query_ollama_ps correctly parses multi-word columns."""
+
+    def test_parses_multiword_size_and_processor(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        ollama_output = (
+            "NAME           ID              SIZE      PROCESSOR    UNTIL              \n"
+            "gemma3:4b      abc123def456    4.1 GB    100% GPU     4 minutes from now \n"
+        )
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0,
+                stdout=ollama_output,
+            )
+            result = svc.query_ollama_ps()
+        assert len(result) == 1
+        assert result[0]['name'] == 'gemma3:4b'
+        assert result[0]['id'] == 'abc123def456'
+        assert result[0]['size'] == '4.1 GB'
+        assert '100%' in result[0]['processor']
+        assert 'GPU' in result[0]['processor']
+
+    def test_parses_cpu_processor(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        ollama_output = (
+            "NAME           ID              SIZE      PROCESSOR    UNTIL              \n"
+            "qwen3:8b       def456ghi789    5.2 GB    CPU          3 minutes from now \n"
+        )
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0,
+                stdout=ollama_output,
+            )
+            result = svc.query_ollama_ps()
+        assert len(result) == 1
+        assert result[0]['processor'].upper() == 'CPU'
+
+    def test_empty_output(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        with patch('shutil.which', return_value='/usr/bin/ollama'), \
+             patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout='')
+            assert svc.query_ollama_ps() == []
+
+
+# ---------------------------------------------------------------------------
+# CUDA_VISIBLE_DEVICES misconfiguration detection
+# ---------------------------------------------------------------------------
+
+class TestCudaVisibleDevicesDetection:
+    """Verify cross-reference detects invalid CUDA_VISIBLE_DEVICES."""
+
+    def test_detects_invalid_gpu_index(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        truth_before = {
+            'nvidia_smi_gpus': [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 0,
+                                 'memory_used_mb': 0, 'memory_total_mb': 6141, 'temperature_c': 30}],
+            'nvidia_smi_processes': [],
+            'ollama_ps': [],
+            'cuda_visible_devices': '1',
+        }
+        result = svc._cross_reference_sources(
+            ollama_report={'tokens_per_second': 50, 'model': 'gemma3:4b'},
+            gpu_samples=[],
+            truth_before=truth_before,
+            truth_after=truth_before,
+        )
+        cuda_findings = [f for f in result['findings']
+                         if f.get('source_a') == 'CUDA_VISIBLE_DEVICES']
+        assert len(cuda_findings) == 1
+        assert cuda_findings[0]['severity'] == 'HIGH'
+        assert '[1]' in cuda_findings[0]['detail']
+
+    def test_no_finding_when_cuda_vis_correct(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        truth = {
+            'nvidia_smi_gpus': [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 50,
+                                 'memory_used_mb': 3000, 'memory_total_mb': 6141, 'temperature_c': 40}],
+            'nvidia_smi_processes': [],
+            'ollama_ps': [],
+            'cuda_visible_devices': '0',
+        }
+        result = svc._cross_reference_sources(
+            ollama_report={'tokens_per_second': 50, 'model': 'gemma3:4b'},
+            gpu_samples=[[{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 50, 'memory_used_mb': 3000, 'memory_total_mb': 6141, 'temperature_c': 40}]],
+            truth_before=truth,
+            truth_after=truth,
+        )
+        cuda_findings = [f for f in result['findings']
+                         if f.get('source_a') == 'CUDA_VISIBLE_DEVICES']
+        assert len(cuda_findings) == 0
+
+
+# ---------------------------------------------------------------------------
+# auto_diagnose_and_fix_gpu
+# ---------------------------------------------------------------------------
+
+class TestAutoDiagnoseAndFixGpu:
+    """Verify auto-diagnosis detects and fixes GPU misconfiguration."""
+
+    def test_detects_and_fixes_cuda_vis_misconfiguration(self):
+        import os
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        fake_gpus = [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 0,
+                      'memory_used_mb': 0, 'memory_total_mb': 6141, 'temperature_c': 30}]
+        with patch.object(svc, 'query_all_gpus', return_value=fake_gpus), \
+             patch.object(svc, 'query_gpu_processes', return_value=[]), \
+             patch.object(svc, 'query_ollama_ps', return_value=[]), \
+             patch.object(svc, 'query_windows_gpu_counters', return_value=[]), \
+             patch.dict(os.environ, {'CUDA_VISIBLE_DEVICES': '1'}):
+            report = svc.auto_diagnose_and_fix_gpu()
+        assert any(f['severity'] == 'HIGH' for f in report['findings'])
+        assert len(report['actions_taken']) >= 1
+        assert 'CUDA_VISIBLE_DEVICES' in report['actions_taken'][0]
+
+    def test_detects_model_on_cpu_with_gpu_available(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        fake_gpus = [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 0,
+                      'memory_used_mb': 0, 'memory_total_mb': 6141, 'temperature_c': 30}]
+        fake_ollama = [{'name': 'gemma3:4b', 'id': 'abc', 'size': '4.1 GB', 'processor': '100% CPU'}]
+        with patch.object(svc, 'query_all_gpus', return_value=fake_gpus), \
+             patch.object(svc, 'query_gpu_processes', return_value=[]), \
+             patch.object(svc, 'query_ollama_ps', return_value=fake_ollama), \
+             patch.object(svc, 'query_windows_gpu_counters', return_value=[]), \
+             patch.dict('os.environ', {}, clear=False):
+            report = svc.auto_diagnose_and_fix_gpu()
+        cpu_findings = [f for f in report['findings'] if f['type'] == 'suboptimal']
+        assert len(cpu_findings) >= 1
+        assert 'CPU' in cpu_findings[0]['detail']
+
+    def test_clean_config_reports_no_issues(self):
+        svc = GpuModelBenchmarkService(experiment_lab=_fake_lab())
+        fake_gpus = [{'index': 0, 'name': 'RTX 4050', 'utilization_pct': 30,
+                      'memory_used_mb': 3000, 'memory_total_mb': 6141, 'temperature_c': 40}]
+        fake_ollama = [{'name': 'gemma3:4b', 'id': 'abc', 'size': '4.1 GB', 'processor': '100% GPU'}]
+        fake_procs = [{'pid': '1234', 'process_name': 'ollama_llama_server', 'vram_used_mb': '3000'}]
+        with patch.object(svc, 'query_all_gpus', return_value=fake_gpus), \
+             patch.object(svc, 'query_gpu_processes', return_value=fake_procs), \
+             patch.object(svc, 'query_ollama_ps', return_value=fake_ollama), \
+             patch.object(svc, 'query_windows_gpu_counters', return_value=[]), \
+             patch.dict('os.environ', {}, clear=False):
+            report = svc.auto_diagnose_and_fix_gpu()
+        assert report['verdict'] == 'GPU configurada correctamente'
+        assert len(report['findings']) == 0

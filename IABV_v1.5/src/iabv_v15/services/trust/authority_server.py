@@ -263,10 +263,12 @@ class AuthorityServer:
         try:
             # PART VII: Get OS-observed client PID
             client_pid = win32pipe.GetNamedPipeClientProcessId(pipe_handle)
+            authority_pid = os.getpid()
+            pids_equal = (client_pid == authority_pid)
             print(f"[AuthorityServer] Client connected", flush=True)
             print(f"[AuthorityServer]   Client PID (OS-observed): {client_pid}", flush=True)
-            print(f"[AuthorityServer]   Authority PID: {os.getpid()}", flush=True)
-            print(f"[AuthorityServer]   PID equality check: {client_pid != os.getpid()}", flush=True)
+            print(f"[AuthorityServer]   Authority PID: {authority_pid}", flush=True)
+            print(f"[AuthorityServer]   PID equality check: {pids_equal}", flush=True)
             
             # PART VIII: JSON identity claims are ignored
             # The protocol may include "pid" or "sid" in request data, but these are NOT used

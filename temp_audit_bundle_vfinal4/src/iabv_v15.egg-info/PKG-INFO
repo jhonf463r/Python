@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: iabv-v15
+Version: 0.1.0
+Summary: IABV v1.5 desktop control app with hybrid local-first AI routing.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: PySide6>=6.8
+Requires-Dist: pydantic>=2.7
+Requires-Dist: httpx>=0.27
+Requires-Dist: Pillow>=10.0
+Requires-Dist: playwright>=1.40
+Requires-Dist: keyring>=25.0
+Requires-Dist: psutil>=5.9
+Requires-Dist: pyperclip>=1.8
+Requires-Dist: pywin32>=306; sys_platform == "win32"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"

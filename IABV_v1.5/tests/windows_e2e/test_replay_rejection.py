@@ -12,7 +12,7 @@ from iabv_v15.services.trust.authority_service import AuthorityRequest
 from iabv_v15.services.phase3.ed25519_keys import generate_ed25519_keypair, sign_message
 
 
-def test_replay_rejection():
+def test_replay_rejection(authority_service):
     """Test that repeating credential material is rejected."""
     
     print("=" * 80)

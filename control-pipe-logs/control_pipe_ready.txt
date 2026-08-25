@@ -1,0 +1,3 @@
+READY
+PID=8400
+PIPE=\\.\pipe\ControlPipeTest

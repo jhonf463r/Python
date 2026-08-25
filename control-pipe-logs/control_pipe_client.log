@@ -1,0 +1,233 @@
+================================================================================
+CONTROL PIPE CLIENT - Minimal Named Pipe Test
+================================================================================
+
+[CLIENT] Process Information:
+[CLIENT]   PID: 4464
+[CLIENT]   Username: runneradmin
+[CLIENT]   User SID: PySID:S-1-5-21-1765882305-833847025-4098194446-500
+[CLIENT]   Session ID: 2
+
+[CLIENT] Attempting to connect to: \\.\pipe\ControlPipeTest
+[CLIENT] Pipe name length: 24
+[CLIENT] Pipe name repr: '\\\\.\\pipe\\ControlPipeTest'
+
+[CLIENT] Waiting for server ready signal...
+[CLIENT] Ready signal found
+[CLIENT] Ready signal content:
+READY
+PID=8400
+PIPE=\\.\pipe\ControlPipeTest
+
+
+[CLIENT] Attempt 1/30: CreateFile
+[CLIENT] Win32 error on attempt 1:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 2/30: CreateFile
+[CLIENT] Win32 error on attempt 2:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 3/30: CreateFile
+[CLIENT] Win32 error on attempt 3:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 4/30: CreateFile
+[CLIENT] Win32 error on attempt 4:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 5/30: CreateFile
+[CLIENT] Win32 error on attempt 5:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 6/30: CreateFile
+[CLIENT] Win32 error on attempt 6:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 7/30: CreateFile
+[CLIENT] Win32 error on attempt 7:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 8/30: CreateFile
+[CLIENT] Win32 error on attempt 8:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 9/30: CreateFile
+[CLIENT] Win32 error on attempt 9:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 10/30: CreateFile
+[CLIENT] Win32 error on attempt 10:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 11/30: CreateFile
+[CLIENT] Win32 error on attempt 11:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 12/30: CreateFile
+[CLIENT] Win32 error on attempt 12:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 13/30: CreateFile
+[CLIENT] Win32 error on attempt 13:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 14/30: CreateFile
+[CLIENT] Win32 error on attempt 14:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 15/30: CreateFile
+[CLIENT] Win32 error on attempt 15:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 16/30: CreateFile
+[CLIENT] Win32 error on attempt 16:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 17/30: CreateFile
+[CLIENT] Win32 error on attempt 17:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 18/30: CreateFile
+[CLIENT] Win32 error on attempt 18:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 19/30: CreateFile
+[CLIENT] Win32 error on attempt 19:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 20/30: CreateFile
+[CLIENT] Win32 error on attempt 20:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 21/30: CreateFile
+[CLIENT] Win32 error on attempt 21:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 22/30: CreateFile
+[CLIENT] Win32 error on attempt 22:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 23/30: CreateFile
+[CLIENT] Win32 error on attempt 23:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 24/30: CreateFile
+[CLIENT] Win32 error on attempt 24:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 25/30: CreateFile
+[CLIENT] Win32 error on attempt 25:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 26/30: CreateFile
+[CLIENT] Win32 error on attempt 26:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 27/30: CreateFile
+[CLIENT] Win32 error on attempt 27:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 28/30: CreateFile
+[CLIENT] Win32 error on attempt 28:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 29/30: CreateFile
+[CLIENT] Win32 error on attempt 29:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] Attempt 30/30: CreateFile
+[CLIENT] Win32 error on attempt 30:
+[CLIENT]   Error code: 2
+[CLIENT]   Error message: The system cannot find the file specified.
+[CLIENT]   Function: CreateFile
+[CLIENT]   Pipe not found
+
+[CLIENT] ERROR: Failed to connect after 30 attempts

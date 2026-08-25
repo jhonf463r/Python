@@ -1,0 +1,48 @@
+[Authority] Starting authority process
+[Authority] Storage root: temp_authority_storage
+[Authority] Pipe name: \\.\pipe\IABV_Authority
+[Authority] PID: 1488
+[Authority] Authority process identity:
+[Authority]   PID: 1488
+[Authority]   Username: runneradmin
+[Authority]   Token User SID: PySID:S-1-5-21-1765882305-833847025-4098194446-500
+[Authority]   Session ID: 2
+[Authority]   Integrity Level: (<PySID object at 0x0000022DEBC706D0>, 96)
+[Authority]   Thread Token: (none)
+[Authority] Authority service initialized
+[Authority] Generation: 0
+[Authority] Authority server initialized
+[AuthorityServer] Starting server thread...
+[AuthorityServer] Server thread started[AuthorityServer] Server loop starting
+
+[Authority] Authority server started[AuthorityServer] Using pipe name: \\.\pipe\IABV_Authority
+
+[AuthorityServer] Creating pipe #1...
+[AuthorityServer] ACTUAL process token SID: PySID:S-1-5-21-1765882305-833847025-4098194446-500
+[AuthorityServer] Creating DACL for username: runneradmin
+[AuthorityServer] LookupAccountName('runneradmin') SID: PySID:S-1-5-21-1765882305-833847025-4098194446-500
+[AuthorityServer] SID sources match: PySID:S-1-5-21-1765882305-833847025-4098194446-500
+[AuthorityServer] DACL ACE added:
+[AuthorityServer]   Type: ACCESS_ALLOWED
+[AuthorityServer]   Permissions: GENERIC_READ | GENERIC_WRITE
+[AuthorityServer]   SID: PySID:S-1-5-21-1765882305-833847025-4098194446-500
+[AuthorityServer]   SID Source: ACTUAL PROCESS TOKEN (not LookupAccountName)
+[AuthorityServer] Security descriptor created
+[AuthorityServer]   DACL present: True
+[AuthorityServer] CreateNamedPipe parameters:
+[AuthorityServer]   Pipe name: \\.\pipe\IABV_Authority
+[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x3)
+[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x6)
+[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES
+[AuthorityServer]   Out buffer size: 4096
+[AuthorityServer]   In buffer size: 4096
+[AuthorityServer]   Default timeout: 0
+[AuthorityServer]   Security attributes: present
+[AuthorityServer] Named pipe created: handle=<PyHANDLE:664>
+[AuthorityServer] Pipe created successfully, now waiting for client connection...
+[AuthorityServer] Pipe handle: <PyHANDLE:664>
+[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...
+[Authority] Listening on Named Pipe: \\.\pipe\IABV_Authority
+[Authority] Ready signal created: temp_authority_storage\authority_ready.txt
+[Authority] Fully ready and accepting connections
+[Authority] Authority process running...
