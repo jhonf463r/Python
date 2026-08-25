@@ -1,13 +1,13 @@
 # C2 Capability Provenance
 
-**Version:** VFINAL5-R2.1
+**Version:** VFINAL5-R2.2
 **Date:** 2026-08-25
 
 ---
 
 ## Overview
 
-This document describes the capability provenance tracking in the C2 authority service, focusing on how capabilities are issued, validated, and consumed with proper causal attribution.
+This document describes the capability provenance tracking in the C2 authority service, focusing on how capabilities are issued, validated, and consumed with proper causal attribution, including VFINAL5-R2.2 Windows case-insensitive path normalization.
 
 ---
 

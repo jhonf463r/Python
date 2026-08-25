@@ -1,13 +1,13 @@
 # C2 Execution Context Audit
 
-**Version:** VFINAL5-R2.1
+**Version:** VFINAL5-R2.2
 **Date:** 2026-08-25
 
 ---
 
 ## Overview
 
-This document audits the execution context validation in the C2 authority service, focusing on the VFINAL5-R2.1 enhancements for required context fields.
+This document audits the execution context validation in the C2 authority service, focusing on the VFINAL5-R2.1 and VFINAL5-R2.2 enhancements for required context fields and Windows case-insensitive path normalization.
 
 ---
 

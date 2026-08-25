@@ -1,13 +1,13 @@
 # Audit Self-Update Call Graph
 
-**Version:** VFINAL5-R2.1
+**Version:** VFINAL5-R2.2
 **Date:** 2026-08-25
 
 ---
 
 ## Overview
 
-This document describes the self-update call graph for the C2 authority service, focusing on the VFINAL5-R2.1 enhancements for canonical target normalization and required context fields.
+This document describes the self-update call graph for the C2 authority service, focusing on the VFINAL5-R2.1 and VFINAL5-R2.2 enhancements for canonical target normalization, required context fields, and Windows case-insensitive path normalization.
 
 ---
 
