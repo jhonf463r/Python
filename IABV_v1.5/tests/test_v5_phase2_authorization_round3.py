@@ -100,16 +100,22 @@ class TestProtocolSchema:
         """Test ConsumeLeaseRequest serialization."""
         request = ConsumeLeaseRequest(
             lease_id="test_lease",
-            execution_id="test_exec"
+            execution_id="test_exec",
+            requested_action="READ",
+            requested_target="codebase"
         )
         
         data = request.to_dict()
         assert data["lease_id"] == "test_lease"
         assert data["execution_id"] == "test_exec"
+        assert data["requested_action"] == "READ"
+        assert data["requested_target"] == "codebase"
         
         reconstructed = ConsumeLeaseRequest.from_dict(data)
         assert reconstructed.lease_id == request.lease_id
         assert reconstructed.execution_id == request.execution_id
+        assert reconstructed.requested_action == request.requested_action
+        assert reconstructed.requested_target == request.requested_target
 
 
 class TestAuthorizationPolicy:
@@ -164,19 +170,20 @@ class TestAuthorizationPolicy:
     
     def test_policy_denies_wrong_task_context(self):
         """Test 7: wrong task context → DENY."""
+        # Test that WRITE operation is denied for self_analysis task context
         policy_input = AuthorizationPolicyInput(
             observed_process_identity={"pid": 1234},
             canonical_run_record=None,
-            action="READ",
+            action="WRITE",
             target="codebase",
-            requested_scope="codebase:read",
-            task_context="unrelated_objective",
+            requested_scope="codebase:write",
+            task_context="self_analysis",
             generation=1
         )
         
         decision = apply_authorization_policy(policy_input)
         assert decision.allowed is False
-        assert "not permitted for task context" in decision.reason
+        assert "not permitted for self_analysis task" in decision.reason
     
     def test_policy_denies_broad_scope(self):
         """Test 8: broad scope → DENY."""
@@ -336,7 +343,9 @@ class TestAuthorityServiceCanonicalProtocol:
         # Consume lease
         consume_request = ConsumeLeaseRequest(
             lease_id=lease_id,
-            execution_id=execution_id
+            execution_id=execution_id,
+            requested_action="READ",
+            requested_target="codebase"
         ).to_dict()
         
         consume_request_auth = AuthorityRequest(
