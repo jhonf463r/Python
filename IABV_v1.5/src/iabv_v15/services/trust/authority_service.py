@@ -627,6 +627,8 @@ class AuthorityService:
             
             run_id = issue_request.run_id
             execution_id = issue_request.execution_id
+            caller_session_id = issue_request.session_id
+            caller_episode_id = issue_request.episode_id
             requested_ttl_seconds = issue_request.requested_ttl_seconds or 3600
             
             # Phase 2 Round 3: Verify run record exists (authority-owned)
@@ -675,7 +677,7 @@ class AuthorityService:
                     error=f"Execution ID mismatch: provided '{execution_id}' does not match canonical '{db_execution_id}'"
                 )
             
-            # VFINAL5-R3: For protected self_update, require and validate session_id and episode_id
+            # VFINAL5-R3.1: For protected self_update, require and validate session_id and episode_id
             if authorized_scope == "self_update":
                 # Session ID is required for self_update
                 if db_session_id is None:
@@ -690,6 +692,20 @@ class AuthorityService:
                         success=False,
                         data={},
                         error="Run record missing episode_id for self_update scope"
+                    )
+                # VFINAL5-R3.1: Cross-session validation - caller session must match run record
+                if caller_session_id != db_session_id:
+                    return AuthorityResponse(
+                        success=False,
+                        data={},
+                        error=f"Session ID mismatch: caller '{caller_session_id}' does not match canonical '{db_session_id}'"
+                    )
+                # VFINAL5-R3.1: Cross-episode validation - caller episode must match run record
+                if caller_episode_id != db_episode_id:
+                    return AuthorityResponse(
+                        success=False,
+                        data={},
+                        error=f"Episode ID mismatch: caller '{caller_episode_id}' does not match canonical '{db_episode_id}'"
                     )
             
             # Phase 2 Round 3: Generate authority-owned lease

@@ -358,6 +358,8 @@ class AuthorityClient:
         self,
         run_id: str,
         execution_id: str,
+        session_id: Optional[str] = None,
+        episode_id: Optional[str] = None,
         requested_ttl_seconds: Optional[int] = None
     ) -> dict[str, Any]:
         """Issue lease using canonical protocol.
@@ -365,6 +367,8 @@ class AuthorityClient:
         Args:
             run_id: Authority-owned run identifier (from registration)
             execution_id: Authority-owned execution identifier (from registration)
+            session_id: Caller's session identifier (for cross-context validation)
+            episode_id: Caller's episode identifier (for cross-context validation)
             requested_ttl_seconds: Requested lease TTL in seconds (optional)
         
         Returns:
@@ -375,6 +379,8 @@ class AuthorityClient:
             data=IssueLeaseRequest(
                 run_id=run_id,
                 execution_id=execution_id,
+                session_id=session_id,
+                episode_id=episode_id,
                 requested_ttl_seconds=requested_ttl_seconds
             ).to_dict(),
             request_id=run_id

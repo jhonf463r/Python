@@ -1496,74 +1496,48 @@ class PlaywrightToolAdapter:
 
 
 class AiderToolAdapter:
+    """VFINAL5-R3.1: Sandbox-only Aider adapter.
+    
+    SECURITY: This adapter ONLY executes simulated code editing. Real aider subprocess
+    execution is disabled to prevent unauthorized file modification. All code editing
+    operations are sandboxed and return simulated results.
+    
+    RATIONALE: AiderToolAdapter can modify arbitrary files in the workspace, including
+    trust files. By enforcing sandbox-only execution, we eliminate the bypass while
+    preserving the adapter's interface for testing and simulation purposes.
+    """
     tool_type = ToolType.CODE_EDITOR
 
     def is_available(self, card: ToolCard) -> bool:
-        if shutil.which('aider') is not None:
-            return True
-        try:
-            completed = subprocess.run(
-                [sys.executable, '-m', 'aider', '--version'],
-                capture_output=True, text=True, check=False,
-                timeout=5,
-            )
-            if completed.returncode == 0:
-                return True
-        except Exception:
-            pass
-        return False
+        return True  # Always available in sandbox mode
 
-    @staticmethod
-    def _aider_command() -> list[str]:
-        if shutil.which('aider') is not None:
-            return ['aider']
-        return [sys.executable, '-m', 'aider']
-
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = True) -> dict[str, Any]:
+        """Execute Aider code editing in sandbox mode only.
+        
+        VFINAL5-R3.1: sandbox parameter is ignored; always executes in sandbox mode.
+        Real aider subprocess execution is disabled to prevent unauthorized file modification.
+        
+        Args:
+            card: Tool card
+            task: Tool task
+            sandbox: Ignored (always sandbox mode)
+            
+        Returns:
+            Simulated code editing result
+        """
         start = time.perf_counter()
         
-        # C-1 FIX: sandbox=True returns simulated result without real subprocess
-        if sandbox:
-            return {
-                'success': True,
-                'output_text': 'Sandbox Aider: simulated code editing (no real side effects)',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': '',
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': True, 'simulated': True},
-            }
-        
-        base_cmd = self._aider_command()
-        try:
-            prompt = next((action.value for action in task.actions if action.value), task.objective)
-            completed = subprocess.run(
-                [*base_cmd, '--no-auto-commits', '--message', prompt],
-                capture_output=True,
-                text=True,
-                check=False,
-                cwd=str(Path(card.metadata.get('workspace_root') or Path.cwd())),
-            )
-            success = completed.returncode == 0
-            return {
-                'success': success,
-                'output_text': (completed.stdout or completed.stderr).strip(),
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': '' if success else (completed.stderr or completed.stdout).strip(),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'returncode': completed.returncode},
-            }
-        except Exception as exc:
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': str(exc),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox},
-            }
+        # VFINAL5-R3.1: Always return simulated result (sandbox-only)
+        prompt = next((action.value for action in task.actions if action.value), task.objective)
+        return {
+            'success': True,
+            'output_text': f'[SANDBOX] Simulated Aider code editing for: {prompt[:100]}...',
+            'extracted_data': {},
+            'artifacts': [],
+            'error_message': '',
+            'execution_ms': int((time.perf_counter() - start) * 1000),
+            'metadata': {'sandbox': True, 'simulated': True, 'prompt': prompt},
+        }
 
 
 class MCPToolAdapter:
@@ -1754,63 +1728,50 @@ class OllamaToolAdapter:
 
 
 class ShellToolAdapter:
+    """VFINAL5-R3.1: Sandbox-only shell adapter.
+    
+    SECURITY: This adapter ONLY executes simulated commands. Real subprocess execution
+    is disabled to prevent unauthorized protected side effects. All shell commands are
+    sandboxed and return simulated results.
+    
+    RATIONALE: ShellToolAdapter with shell=True is a high-risk bypass path. By enforcing
+    sandbox-only execution, we eliminate the bypass while preserving the adapter's
+    interface for testing and simulation purposes.
+    """
     tool_type = ToolType.SHELL
-    BLOCKED_TOKENS = ('rm ', ' del ', 'remove-item', 'format ', 'shutdown', 'reboot', 'mkfs', 'git reset --hard')
 
     def is_available(self, card: ToolCard) -> bool:
         return True
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = True) -> dict[str, Any]:
+        """Execute shell command in sandbox mode only.
+        
+        VFINAL5-R3.1: sandbox parameter is ignored; always executes in sandbox mode.
+        Real subprocess execution is disabled to prevent unauthorized protected side effects.
+        
+        Args:
+            card: Tool card
+            task: Tool task
+            sandbox: Ignored (always sandbox mode)
+            
+        Returns:
+            Simulated execution result
+        """
         start = time.perf_counter()
         command = next((action.value or action.target for action in task.actions if action.action_type == ToolActionType.RUN_COMMAND), '')
         if not command:
             command = str(task.metadata.get('command') or '')
-        lowered = f' {command.lower()} '
-        if any(token in lowered for token in self.BLOCKED_TOKENS):
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': 'Comando bloqueado por politica de seguridad.',
-                'execution_ms': 0,
-                'metadata': {'sandbox': sandbox, 'blocked': True},
-            }
         
-        # CRITICAL: sandbox=True must NOT execute real subprocesses
-        if sandbox:
-            return {
-                'success': True,
-                'output_text': f'[SANDBOX] Simulated execution of: {command}',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': '',
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': True, 'command': command, 'simulated': True},
-            }
-        
-        try:
-            completed = subprocess.run(command, capture_output=True, text=True, shell=True, check=False)
-            success = completed.returncode == 0
-            return {
-                'success': success,
-                'output_text': (completed.stdout or '').strip(),
-                'extracted_data': {'stderr': (completed.stderr or '').strip(), 'returncode': completed.returncode},
-                'artifacts': [],
-                'error_message': '' if success else (completed.stderr or completed.stdout).strip(),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': False, 'command': command, 'simulated': False},
-            }
-        except Exception as exc:
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': str(exc),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': False, 'command': command, 'simulated': False},
-            }
+        # VFINAL5-R3.1: Always return simulated result (sandbox-only)
+        return {
+            'success': True,
+            'output_text': f'[SANDBOX] Simulated execution of: {command}',
+            'extracted_data': {},
+            'artifacts': [],
+            'error_message': '',
+            'execution_ms': int((time.perf_counter() - start) * 1000),
+            'metadata': {'sandbox': True, 'command': command, 'simulated': True},
+        }
 
 
 class DesktopHumanToolAdapter:
@@ -2687,65 +2648,15 @@ class LocalCliToolAdapter:
             )
         cmd_list = [executable, *tokens]
         
-        # CRITICAL: sandbox=True must NOT execute real subprocesses
-        if sandbox:
-            return {
-                'success': True,
-                'output_text': f'[SANDBOX] Simulated execution of: {executable} {" ".join(tokens)}',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': '',
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': True, 'executable': executable, 'args': args_text, 'simulated': True},
-            }
-        
-        try:
-            completed = subprocess.run(
-                cmd_list,
-                capture_output=True,
-                text=True,
-                shell=False,
-                check=False,
-                timeout=self.timeout_seconds,
-            )
-        except subprocess.TimeoutExpired:
-            return self._fail(
-                start,
-                f'timeout {self.timeout_seconds}s',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-            )
-        except (FileNotFoundError, OSError) as exc:
-            return self._fail(
-                start,
-                f'{type(exc).__name__}: {exc}',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-            )
-
-        success = completed.returncode == 0
-        stderr = (completed.stderr or '').strip()
-        stdout = (completed.stdout or '').strip()
+        # VFINAL5-R3.1: Always return simulated result (sandbox-only)
         return {
-            'success': success,
-            'output_text': stdout,
-            'extracted_data': {
-                'stderr': stderr,
-                'returncode': completed.returncode,
-                'args': args_text,
-                'tool_id': card.tool_id,
-            },
+            'success': True,
+            'output_text': f'[SANDBOX] Simulated execution of: {executable} {" ".join(tokens)}',
+            'extracted_data': {},
             'artifacts': [],
-            'error_message': '' if success else (stderr or stdout),
+            'error_message': '',
             'execution_ms': int((time.perf_counter() - start) * 1000),
-            'metadata': {
-                'sandbox': sandbox,
-                'executable': executable,
-                'args': args_text,
-                'blocked': False,
-            },
+            'metadata': {'sandbox': True, 'executable': executable, 'args': args_text, 'simulated': True},
         }
 
     def _extract_args(self, task: ToolTask) -> str:

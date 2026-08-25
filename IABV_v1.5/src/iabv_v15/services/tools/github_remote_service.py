@@ -358,108 +358,16 @@ class GitHubRemoteService:
             )
 
         # 3) create_pr via adapter (usa la misma via que el ToolRegistry)
-        # Build task for PR creation authorization
-        # H-1: Use separate lease for PR creation
-        actual_pr_lease_id = pr_lease_id or (approval_context.get('pr_lease_id') if approval_context else None)
-        if actual_pr_lease_id is None:
-            # Missing PR capability - reject PR creation (fail-closed)
-            return self._finalize(
-                evidence,
-                PublishResult(
-                    success=False, branch=head, base=base_name,
-                    pushed=True,  # git push already succeeded
-                    required_approval=required_approval,
-                    approval_granted=approval_granted,
-                    error="PR creation requires separate capability (pr_lease_id). No capability provided.",
-                ),
-            )
-        
-        pr_task = ToolTask(
-            tool_id=self._CARD_ID,
-            title=f'create_pr:{head}->{base_name}',
-            objective=title_text,
-            actions=[],
-            metadata={
-                'github_action': 'create_pr',
-                'github_params': {
-                    'title': title_text,
-                    'body': str(body or ''),
-                    'head': head,
-                    'base': base_name,
-                    'draft': bool(draft),
-                },
-            },
-            lease_id=actual_pr_lease_id,  # H-1: Use separate lease for PR creation
-            action='CREATE_PR',  # Canonical action for PR creation
-            target=target,  # Reuse same target
-            execution_id=f'create_pr_{head}_{int(self._clock())}',
-        )
-        
-        # F17: Authorize PR creation BEFORE executing PR creation
-        # ACTION: CREATE_PR
-        # TARGET: github_remote:{remote}
-        pr_auth_result = self.capability_action_bridge.authorize_action(
-            ActionRequest(
-                lease_id=pr_task.lease_id,
-                execution_id=pr_task.execution_id,
-                action=pr_task.action,
-                target=pr_task.target,
-            )
-        )
-        if not pr_auth_result.authorized:
-            # Authorization failed - reject PR creation (fail-closed)
-            return self._finalize(
-                evidence,
-                PublishResult(
-                    success=False, branch=head, base=base_name,
-                    pushed=True,  # git push already succeeded
-                    required_approval=required_approval,
-                    approval_granted=approval_granted,
-                    error=f"PR creation authorization failed: {pr_auth_result.error or 'Unknown error'}",
-                ),
-            )
-        
-        evidence['pr_authorization'] = {
-            'authorized': pr_auth_result.authorized,
-            'action': pr_task.action,
-            'target': pr_task.target,
-            'lease_id': pr_task.lease_id,
-        }
-        
-        api_response = self.adapter.run(card, pr_task, sandbox=False)
-        evidence['api'] = {
-            'success': bool(api_response.get('success')),
-            'http_status': api_response.get('metadata', {}).get('github_http_status'),
-            'error_message': api_response.get('error_message', ''),
-        }
-
-        if not api_response.get('success'):
-            return self._finalize(
-                evidence,
-                PublishResult(
-                    success=False, branch=head, base=base_name,
-                    pushed=True,
-                    required_approval=required_approval,
-                    approval_granted=approval_granted,
-                    http_status=api_response.get('metadata', {}).get('github_http_status'),
-                    error=api_response.get('error_message') or 'create_pr fallo.',
-                ),
-            )
-
-        data = api_response.get('extracted_data') or {}
-        pr_number = data.get('number') if isinstance(data.get('number'), int) else None
-        pr_url = str(data.get('html_url') or api_response.get('output_text') or '')
-
+        # VFINAL5-R3.1: F17 is DEFERRED - PR creation is not in scope for first controlled self-development milestone
+        # PR creation is disabled - return error indicating deferred status
         return self._finalize(
             evidence,
             PublishResult(
-                success=True, branch=head, base=base_name,
-                pushed=True,
+                success=False, branch=head, base=base_name,
+                pushed=True,  # git push already succeeded
                 required_approval=required_approval,
                 approval_granted=approval_granted,
-                pr_number=pr_number,
-                pr_url=pr_url,
-                http_status=api_response.get('metadata', {}).get('github_http_status'),
+                error="PR creation is deferred (F17 not in scope for first controlled self-development milestone). Use manual PR creation.",
             ),
         )
 

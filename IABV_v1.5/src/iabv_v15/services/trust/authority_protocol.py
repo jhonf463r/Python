@@ -208,6 +208,8 @@ class IssueLeaseRequest:
     CALLER REQUEST FIELDS (caller-provided):
     - run_id: Authority-owned run identifier (from registration)
     - execution_id: Authority-owned execution identifier (from registration)
+    - session_id: Caller's session identifier (for cross-context validation)
+    - episode_id: Caller's episode identifier (for cross-context validation)
     - requested_ttl_seconds: Requested lease TTL in seconds (optional)
     
     AUTHORITY DERIVED FIELDS (authority-provided in response):
@@ -218,10 +220,13 @@ class IssueLeaseRequest:
     - signature: Authority HMAC signature
     
     NOTE: The authority looks up canonical RunRecord rather than trusting
-    the client to restate authoritative fields.
+    the client to restate authoritative fields. Session and episode IDs
+    are validated against the canonical run record to prevent cross-context attacks.
     """
     run_id: str
     execution_id: str
+    session_id: Optional[str] = None
+    episode_id: Optional[str] = None
     requested_ttl_seconds: Optional[int] = None
     
     def to_dict(self) -> dict[str, Any]:
@@ -229,6 +234,8 @@ class IssueLeaseRequest:
         return {
             "run_id": self.run_id,
             "execution_id": self.execution_id,
+            "session_id": self.session_id,
+            "episode_id": self.episode_id,
             "requested_ttl_seconds": self.requested_ttl_seconds
         }
     
@@ -238,6 +245,8 @@ class IssueLeaseRequest:
         return cls(
             run_id=data["run_id"],
             execution_id=data["execution_id"],
+            session_id=data.get("session_id"),
+            episode_id=data.get("episode_id"),
             requested_ttl_seconds=data.get("requested_ttl_seconds")
         )
 

@@ -104,16 +104,18 @@ PROTECTED_SIDE_EFFECTS = {
         lease_required=True
     ),
     
-    # PR creation
-    "create_pr": ProtectedSideEffect(
-        effect_class=ProtectedSideEffectClass.PR_CREATION,
-        action="CREATE_PR",
-        target="repository:*",
-        scope="self_update",
-        authority_required=True,
-        capability_required=True,
-        lease_required=True
-    ),
+    # PR creation - VFINAL5-R3.1: DEFERRED
+    # CREATE_PR is not in scope for the first controlled self-development milestone
+    # This entry is commented out to reflect the deferred status
+    # "create_pr": ProtectedSideEffect(
+    #     effect_class=ProtectedSideEffectClass.PR_CREATION,
+    #     action="CREATE_PR",
+    #     target="repository:*",
+    #     scope="self_update",
+    #     authority_required=True,
+    #     capability_required=True,
+    #     lease_required=True
+    # ),
 }
 
 
