@@ -2533,47 +2533,26 @@ class SiteExplorerToolAdapter:
 
 
 class LocalCliToolAdapter:
-    """Adapter read-only para CLIs locales (gh, cloudflared, git, winget).
+    """VFINAL5-R3.2: Sandbox-only Local CLI adapter.
 
-    Complementa a ``ShellToolAdapter`` sin reemplazarlo: ese corre comandos
-    libres con ``shell=True``; este conoce herramientas concretas, busca su
-    ejecutable en PATH o rutas Windows tipicas, restringe los verbos permitidos
-    y ejecuta con ``shell=False`` para no exponer inyeccion. Es la base que
-    consume ``ToolRegistry`` para ``gh_cli``, ``cloudflared_cli``, ``git_cli``
-    y ``winget_cli``.
+    SECURITY: This adapter ONLY executes simulated CLI commands. Real subprocess
+    execution is disabled to prevent unauthorized protected side effects. All CLI
+    operations are sandboxed and return simulated results.
 
-    Contratos respetados:
-    - No decide rutas: ``AutonomyGovernancePolicy`` sigue siendo el gate.
-      ``requires_human_approval=True`` en la ``ToolCard`` mantiene cualquier
-      operacion fuera del whitelist detras de ``ToolApprovalPolicy``.
-    - No inventa observaciones: si el binario no existe, ``is_available``
-      devuelve ``False`` y ``run`` corta antes del subprocess.
-    - Read-only por diseno: ``card.metadata['allowed_verbs']`` declara los
-      primeros tokens permitidos; ``BLOCKED_TOKENS`` bloquea tokens
-      destructivos aunque aparezcan listados por error en ``allowed_verbs``.
+    RATIONALE: LocalCliToolAdapter can execute gh/git/cloudflared/winget which can
+    modify the repository and protected files. By enforcing sandbox-only execution,
+    we eliminate the bypass while preserving the adapter's interface for testing and
+    simulation purposes.
+
+    PREVIOUS BEHAVIOR (R3.1): Executed real subprocesses with shell=False, allowlist,
+    and denylist. This was outside the canonical authority choke point and could
+    produce protected side effects without authorization.
+
+    R3.2 CHANGE: Converted to sandbox-only to enforce the security invariant that
+    any protected side effect must go through the canonical authority boundary.
     """
 
     tool_type = ToolType.SHELL
-
-    # Failsafe sobre la allowlist declarada por cada tool: aunque un operador
-    # agregue un verbo destructivo por error al ``allowed_verbs`` de una
-    # ``ToolCard``, los patrones abajo lo bloquean antes del subprocess.
-    # Alineado con ``ShellToolAdapter.BLOCKED_TOKENS`` para no dejar un bypass
-    # en el adapter nuevo. Los patrones se chequean con padding de espacios.
-    BLOCKED_TOKENS: tuple[str, ...] = (
-        ' rm ',
-        ' rm -rf',
-        ' del ',
-        ' remove-item ',
-        ' format ',
-        ' shutdown ',
-        ' reboot ',
-        ' mkfs ',
-        ' reset --hard',
-        ' push --force',
-        ' push -f ',
-        ' clean -fd',
-    )
 
     def __init__(self, timeout_seconds: float = 20.0) -> None:
         self.timeout_seconds = timeout_seconds
@@ -2582,76 +2561,27 @@ class LocalCliToolAdapter:
         return bool(self._resolve_executable(card))
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        """Execute local CLI command in sandbox mode only.
+
+        VFINAL5-R3.2: sandbox parameter is ignored; always executes in sandbox mode.
+        Real subprocess execution is disabled to prevent unauthorized protected side effects.
+
+        Args:
+            card: Tool card
+            task: Tool task
+            sandbox: Ignored (always sandbox mode)
+
+        Returns:
+            Simulated CLI execution result
+        """
         start = time.perf_counter()
         executable = self._resolve_executable(card)
-        if not executable:
-            return self._fail(
-                start,
-                'executable_not_found',
-                sandbox=sandbox,
-                executable='',
-                args='',
-            )
+        args_text = self._extract_args(task) or str(card.metadata.get('version_command') or '--version').strip()
 
-        args_text = self._extract_args(task)
-        if not args_text:
-            # Version probe por default. Nunca inventa: si la ToolCard declara
-            # otro ``version_command`` respeta esa intencion, sin caer a
-            # verbos destructivos.
-            args_text = str(card.metadata.get('version_command') or '--version').strip()
-
-        allowed = [
-            str(v).strip().lower()
-            for v in (card.metadata.get('allowed_verbs') or [])
-            if str(v or '').strip()
-        ]
-        first_token = args_text.strip().split()[0].lower() if args_text.strip() else ''
-        if allowed and first_token not in allowed:
-            return self._fail(
-                start,
-                f"verb '{first_token}' no esta en allowed_verbs {allowed}",
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-                blocked=True,
-            )
-
-        padded = f' {args_text.lower()} '
-        if any(token in padded for token in self.BLOCKED_TOKENS):
-            return self._fail(
-                start,
-                'argumento bloqueado por politica read-only de LocalCliToolAdapter',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-                blocked=True,
-            )
-
-        # shlex.split(posix=True) preserva comillas dobles correctamente en
-        # ambos sistemas: ``log --format="%H %s"`` -> ``['log', '--format=%H %s']``.
-        # Usar posix=False romperia esto en Windows (el token quedaria partido
-        # en tres) — verificado empiricamente. Los args que recibe este adapter
-        # son declarados por ToolCards nuestras (no rutas libres del usuario),
-        # asi que el riesgo de backslashes conflictivos con el escape POSIX es
-        # nulo; si apareciera, hay que escapar con `\\\\` o single-quotes como
-        # en cualquier CLI tipo git.
-        try:
-            tokens = shlex.split(args_text)
-        except ValueError as exc:
-            return self._fail(
-                start,
-                f'args malformados: {exc}',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-                blocked=True,
-            )
-        cmd_list = [executable, *tokens]
-        
-        # VFINAL5-R3.1: Always return simulated result (sandbox-only)
+        # VFINAL5-R3.2: Always return simulated result (sandbox-only)
         return {
             'success': True,
-            'output_text': f'[SANDBOX] Simulated execution of: {executable} {" ".join(tokens)}',
+            'output_text': f'[SANDBOX] Simulated execution of: {executable} {args_text}',
             'extracted_data': {},
             'artifacts': [],
             'error_message': '',
