@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import os
 import time
@@ -8,6 +9,8 @@ from collections import Counter, defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from iabv_v15.domain.models import (
     AdaptiveSessionStatus,
@@ -23,6 +26,10 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+# R8-G4: Need formulation for capability gaps
+from iabv_v15.services.evolution.need_formulation_service import NeedFormulationService
+from iabv_v15.services.evolution.structured_need_repository import StructuredNeedRepository
 
 # Startup health thresholds (in milliseconds).  Crossing any of these emits a
 # ``startup_degradation`` finding from :meth:`_startup_health_findings`.  They
@@ -100,6 +107,39 @@ class OperationalSelfExaminationService:
         self._gh_api_cached_at: float = 0.0
         self._GH_API_TTL: float = 60.0
         self._freeze_incident_reporter: Any | None = None
+        # R8-G4: Need formulation for capability gaps
+        self.need_formulation_service: NeedFormulationService | None = None
+        self.structured_need_repository: StructuredNeedRepository | None = None
+        self._init_need_formulation_services()
+
+    def _init_need_formulation_services(self) -> None:
+        """Initialize need formulation services if evolution_dir is available."""
+        try:
+            evolution_dir = Path(self.workspace_root) / 'data' / 'evolution'
+            self.need_formulation_service = NeedFormulationService()
+            self.structured_need_repository = StructuredNeedRepository(evolution_dir)
+        except Exception as exc:
+            logger.warning('oses: failed to initialize need formulation services: %s', exc)
+
+    def _formulate_structured_needs(self, findings: list[SelfExaminationFinding]) -> int:
+        """Formulate structured needs from capability-shaped findings.
+
+        Returns the number of needs created and persisted.
+        """
+        if self.need_formulation_service is None or self.structured_need_repository is None:
+            return 0
+
+        needs_created = 0
+        for finding in findings:
+            need = self.need_formulation_service.formulate_need_from_finding(finding)
+            if need is not None:
+                self.structured_need_repository.upsert(need)
+                needs_created += 1
+
+        if needs_created > 0:
+            logger.info('oses: formulated %d structured needs from %d findings', needs_created, len(findings))
+
+        return needs_created
 
     def current_review(
         self,
@@ -873,6 +913,9 @@ class OperationalSelfExaminationService:
         # P0.71: UI bridge truth contract findings.
         findings.extend(self._ui_bridge_truth_findings())
         findings = self._dedupe_findings(findings)
+
+        # R8-G4: Formulate structured needs from capability-shaped findings
+        needs_formulated = self._formulate_structured_needs(findings)
 
         recurring_issues = self._recurring_issues(findings=findings, project_health=project_health)
         recommended_adjustments = self._recommended_adjustments(findings=findings, backlog=backlog)

@@ -2965,6 +2965,42 @@ class PlatformResumeHint(BaseModel):
 
 
 # ──────────────────────────────────────────────────────────────
+# Structured Need — R8-G4
+# ──────────────────────────────────────────────────────────────
+
+
+class NeedStatus(str, Enum):
+    PENDING = "pending"
+    ACKNOWLEDGED = "acknowledged"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    DEFERRED = "deferred"
+
+
+class StructuredNeed(BaseModel):
+    """Structured representation of a capability or knowledge need.
+
+    Created from SelfExaminationFinding when a capability gap is detected.
+    Represents what is missing, why it is needed, and what knowledge/capability
+    would address it. The need is traceable, persistable, and human-visible.
+    """
+
+    need_id: str = Field(default_factory=lambda: str(uuid4()))
+    source_finding_id: str = ""
+    category: str = ""
+    capability_gap: str = ""
+    current_state: str = ""
+    desired_state: str = ""
+    knowledge_required: str = ""
+    reason: str = ""
+    evidence: list[str] = Field(default_factory=list)
+    priority: str = "medium"
+    created_at: datetime = Field(default_factory=utc_now)
+    status: NeedStatus = NeedStatus.PENDING
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ──────────────────────────────────────────────────────────────
 # Test Evidence — P0.29
 # ──────────────────────────────────────────────────────────────
 
