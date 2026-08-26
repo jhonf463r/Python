@@ -3615,16 +3615,19 @@ class IABVMCPServer:
                         # G3: content_contains - partial match
                         elif key == 'content_contains':
                             file_content = observed_result.get('file_content', '')
+                            observed_value = file_content  # Fix logging bug: use actual observed content
                             match = expected_value in file_content if file_content else False
                             match_type = 'partial' if match else 'mismatch'
                         # G3: content_not_contains - must NOT contain
                         elif key == 'content_not_contains':
                             file_content = observed_result.get('file_content', '')
+                            observed_value = file_content  # Fix logging bug: use actual observed content
                             match = expected_value not in file_content if file_content else True
                             match_type = 'negative'
                         # G3: content_exact_match - exact string match
                         elif key == 'content_exact_match':
                             file_content = observed_result.get('file_content', '')
+                            observed_value = file_content  # Fix logging bug: use actual observed content
                             match = file_content == expected_value
                             match_type = 'exact'
                         else:
