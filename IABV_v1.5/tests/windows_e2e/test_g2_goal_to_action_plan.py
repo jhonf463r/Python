@@ -79,6 +79,14 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
                     return self.cloud_reasoning_planner.generate_plan(user_goal, context=context_summary)
             
             self.adaptive_task_orchestrator = MockOrchestrator(self.cloud_reasoning_planner)
+        
+        def get(self, service_name, default=None):
+            if service_name == 'capability_action_bridge':
+                return type('obj', (object,), {
+                    'get_capability': lambda x: None,
+                    'authorize_action': lambda *args, **kwargs: type('obj', (object,), {'authorized': True})(),
+                })()
+            return None
     
     container = MockContainer()
     server = IABVMCPServer(container)
@@ -423,7 +431,10 @@ def test_g3_independent_result_verification(authority_service, workspace_root):
             self.capability_registry_service = None
             self.capability_authorization_service = None
             self.capability_action_bridge = None
-            self.capability_action_bridge = type('obj', (object,), {'get_capability': lambda x: None})()
+            self.capability_action_bridge = type('obj', (object,), {
+                'get_capability': lambda x: None,
+                'authorize_action': lambda *args, **kwargs: type('obj', (object,), {'authorized': True})(),
+            })()
             self.autonomy_cycle_service = None
             self.freeze_incident_reporter = None
             self.adaptive_resource_orchestrator = None
@@ -588,7 +599,10 @@ def test_g3_verification_negative(authority_service, workspace_root):
             self.capability_registry_service = None
             self.capability_authorization_service = None
             self.capability_action_bridge = None
-            self.capability_action_bridge = type('obj', (object,), {'get_capability': lambda x: None})()
+            self.capability_action_bridge = type('obj', (object,), {
+                'get_capability': lambda x: None,
+                'authorize_action': lambda *args, **kwargs: type('obj', (object,), {'authorized': True})(),
+            })()
             self.autonomy_cycle_service = None
             self.freeze_incident_reporter = None
             self.adaptive_resource_orchestrator = None
