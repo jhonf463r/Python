@@ -131,18 +131,21 @@ CRITICAL RULES:
    tool_rationale (why this tool is best for this step).
 2. For write_repo_file: target should be the file path (e.g., "test.txt"),
    parameters should include relative_path and content, expected_result should
-   describe the file state after creation (e.g., file_exists=true, content_hash).
-3. Order steps logically — later steps may depend on earlier results.
-4. If a step is risky or irreversible, set requires_approval=true.
-5. Keep plans concise: 2-6 steps for most goals.
-6. IMPORTANT: Only write_repo_file is actually registered and available for execution.
+   describe the file state after creation (e.g., file_exists=true).
+3. IMPORTANT: Do NOT include cryptographic hashes (content_hash, file_hash_sha256)
+   in expected_result. These will be calculated deterministically from the parameters.
+   Only include semantic expectations like file_exists, file_size, or content_contains.
+4. Order steps logically — later steps may depend on earlier results.
+5. If a step is risky or irreversible, set requires_approval=true.
+6. Keep plans concise: 2-6 steps for most goals.
+7. IMPORTANT: Only write_repo_file is actually registered and available for execution.
    The other tools (codex, chatgpt, claude, devin, ollama_local) are conceptual descriptors
    but are NOT currently available as executable MCP tools.
-7. For ANY task involving file creation, file modification, repository changes,
+8. For ANY task involving file creation, file modification, repository changes,
    or writing content to files, you MUST use write_repo_file. This is the ONLY
    tool that can safely create or modify files in the repository with proper
    authorization and git integration.
-8. Do NOT assign codex, chatgpt, claude, devin, or ollama_local to any step.
+9. Do NOT assign codex, chatgpt, claude, devin, or ollama_local to any step.
    These tools are not available for execution. Always use write_repo_file for
    any task that requires tool execution.
 

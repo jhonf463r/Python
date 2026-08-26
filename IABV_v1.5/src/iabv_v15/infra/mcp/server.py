@@ -3531,26 +3531,57 @@ class IABVMCPServer:
             trace['verification'] = verification
 
         # Step 6.5: G2 - Compare expected result vs observed result
+        # G2 FIX: Calculate expected hash deterministically from plan parameters
+        # instead of relying on LLM to guess cryptographic values
         result_verification = {'status': 'unknown', 'matches': [], 'mismatches': []}
         try:
             if plan_expected_result:
+                # Calculate deterministic expected hash from plan parameters
+                # This separates LLM reasoning (what should happen) from deterministic derivation (exact hash)
+                calculated_expected_result = {}
+                
+                # Copy non-hash fields from plan expected_result (semantic expectations)
+                # Ignore LLM-generated hash fields (content_hash, file_hash_sha256)
+                for key, value in plan_expected_result.items():
+                    if key not in ('content_hash', 'file_hash_sha256'):
+                        calculated_expected_result[key] = value
+                
+                # If plan specifies content in parameters, calculate the expected hash
+                if 'content' in plan_parameters:
+                    content = plan_parameters.get('content', '')
+                    import hashlib
+                    expected_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
+                    calculated_expected_result['file_hash_sha256'] = expected_hash
+                    trace['calculated_expected_hash'] = expected_hash
+                    trace['hash_derivation'] = 'deterministic_from_plan_parameters'
+                
                 observed_result = {
                     'file_exists': verification.get('file_exists', False),
                     'file_hash_sha256': verification.get('file_hash_sha256', ''),
                     'git_status': verification.get('git_status', ''),
                 }
                 
-                # Compare expected vs observed
-                for key, expected_value in plan_expected_result.items():
+                # Add file content for semantic verification
+                if verification.get('file_exists'):
+                    target_file = Path(ws) / relative_path
+                    if target_file.exists():
+                        observed_result['file_content'] = target_file.read_text(encoding='utf-8')
+                
+                # Compare expected vs observed (using calculated expected hash)
+                for key, expected_value in calculated_expected_result.items():
                     observed_value = observed_result.get(key)
                     
                     # Handle different comparison types
                     if isinstance(expected_value, bool):
                         match = observed_value == expected_value
                     elif isinstance(expected_value, str):
-                        # For hash comparison, check if observed contains expected or matches exactly
+                        # For hash comparison, require exact match (no substring matching)
                         if key == 'content_hash' or key == 'file_hash_sha256':
-                            match = observed_value == expected_value or (expected_value in observed_value if observed_value else False)
+                            match = observed_value == expected_value
+                        # For content_contains, check if expected string is in observed content
+                        elif key == 'content_contains':
+                            file_content = observed_result.get('file_content', '')
+                            match = expected_value in file_content if file_content else False
                         else:
                             match = observed_value == expected_value
                     else:
@@ -3570,8 +3601,9 @@ class IABVMCPServer:
                         })
                 
                 result_verification['status'] = 'verified' if not result_verification['mismatches'] else 'verification_failed'
-                result_verification['expected_result'] = plan_expected_result
+                result_verification['expected_result'] = calculated_expected_result
                 result_verification['observed_result'] = observed_result
+                result_verification['original_plan_expected_result'] = plan_expected_result
             else:
                 result_verification['status'] = 'skipped'  # No expected_result in plan
                 result_verification['reason'] = 'Plan does not contain expected_result'

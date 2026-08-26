@@ -103,9 +103,24 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
     print(f"BEFORE_GIT_STATUS: {before_git_status}")
     print(f"=== END BEFORE STATE ===\n")
     
+    # Clean up any existing test file from previous runs
+    # This ensures git status changes when file is created
+    existing_files = list(workspace_root.glob("*.txt"))
+    for f in existing_files:
+        if any(name in f.name for name in ['diagnostic', 'G2_EXECUTION', 'g2_execution', 'marker']):
+            try:
+                f.unlink()
+            except Exception:
+                pass
+    
+    # Refresh git status after cleanup
+    before_git_status = subprocess.run(['git', 'status', '--porcelain'], cwd=str(workspace_root), capture_output=True, text=True).stdout
+    
     # CALL G1 ENTRY POINT WITH ONLY GOAL (NO tool_parameters)
     # G2: Human provides ONLY a GOAL, not relative_path or content
-    user_goal = "Create a test file named g2_action_plan_test.txt with content 'G2 action plan test'"
+    # Use an abstract goal that does NOT specify exact target/content
+    # The planner must decide target, parameters, and expected_result
+    user_goal = "Create a small diagnostic marker file in the workspace root to record this G2 execution timestamp"
     
     # G2: Do NOT provide tool_parameters - they must come from the action plan
     result = server.g1_goal_to_protected_tool(
@@ -170,7 +185,7 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
     print(f"FILE_HASH_SHA256: {verification.get('file_hash_sha256')}")
     print(f"=== END AFTER STATE ===\n")
     
-    # G2: Verify result verification
+    # G2: Verify result verification - STRICT SEMANTICS
     result_verification = trace.get('result_verification')
     assert result_verification is not None, "Result verification must be present"
     print(f"\n=== G2 RESULT VERIFICATION ===")
@@ -178,6 +193,22 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
     print(f"MATCHES: {result_verification.get('matches')}")
     print(f"MISMATCHES: {result_verification.get('mismatches')}")
     print(f"=== END RESULT VERIFICATION ===\n")
+    
+    # G2 POSITIVE TEST MUST ASSERT VERIFIED - NOT verification_failed
+    # This is the strict semantic requirement from the audit
+    assert result_verification.get('status') == 'verified', \
+        f"G2 positive test requires verification status 'verified', got '{result_verification.get('status')}'"
+    assert len(result_verification.get('mismatches', [])) == 0, \
+        f"G2 positive test requires no mismatches, got {result_verification.get('mismatches')}"
+    
+    # Verify hash derivation method
+    hash_derivation = trace.get('hash_derivation')
+    assert hash_derivation == 'deterministic_from_plan_parameters', \
+        f"Expected hash derivation 'deterministic_from_plan_parameters', got '{hash_derivation}'"
+    
+    calculated_expected_hash = trace.get('calculated_expected_hash')
+    assert calculated_expected_hash is not None, "Calculated expected hash must be present"
+    print(f"CALCULATED_EXPECTED_HASH: {calculated_expected_hash}")
     
     # Verify git status changed (file created)
     assert before_git_status != after_git_status, "Git status should change after file creation"
@@ -188,7 +219,8 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
         test_file.unlink()
     
     print(f"\n=== G2 POSITIVE VERIFICATION ===")
-    print(f"HUMAN_ONLY_PROVIDES_GOAL: TRUE")
+    print(f"HUMAN_INPUT_FIELDS: ['user_goal']")
+    print(f"PLAN_DERIVED_FIELDS: ['assigned_tool', 'target', 'parameters', 'expected_result', 'rationale']")
     print(f"PLAN_CONTAINS_TARGET: TRUE")
     print(f"PLAN_CONTAINS_PARAMETERS: TRUE")
     print(f"PLAN_CONTAINS_EXPECTED_RESULT: TRUE")
@@ -199,6 +231,8 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
     print(f"REAL_TOOL_DISPATCH: TRUE")
     print(f"REAL_PROTECTED_EFFECT: TRUE")
     print(f"RESULT_VERIFICATION: {result_verification.get('status')}")
+    print(f"EXPECTED_RESULT_CORRECT: TRUE")
+    print(f"EXPECTED_RESULT_DERIVATION_METHOD: deterministic_from_plan_parameters")
     print(f"=== END G2 POSITIVE VERIFICATION ===\n")
 
 
