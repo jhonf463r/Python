@@ -14,6 +14,12 @@ from iabv_v15.services.trust.authority_service import AuthorityService
 from iabv_v15.services.trust.authority_server import AuthorityServer
 
 
+@pytest.fixture(scope="function")
+def workspace_root():
+    """Provide the workspace root path for E2E tests."""
+    return Path(__file__).parent.parent.parent
+
+
 def _run_authority_server(storage_root: str):
     """Run authority server in a separate process."""
     service = AuthorityService(storage_root=storage_root)

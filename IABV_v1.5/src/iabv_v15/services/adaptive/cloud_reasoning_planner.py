@@ -94,6 +94,12 @@ TOOL_DESCRIPTORS: list[dict[str, str]] = [
         'strengths': 'fast, private, no quota limits, good for classification and short tasks',
         'limitations': 'smaller model, weaker reasoning on complex problems',
     },
+    {
+        'id': 'write_repo_file',
+        'name': 'write_repo_file (MCP tool)',
+        'strengths': 'protected repository file mutation with C2 authorization, git integration',
+        'limitations': 'requires authority service, only for self_update scope, governed execution',
+    },
 ]
 
 _TOOL_BLOCK = '\n'.join(
