@@ -65,6 +65,36 @@ class CloudPlan(BaseModel):
 
 TOOL_DESCRIPTORS: list[dict[str, str]] = [
     {
+        'id': 'codex',
+        'name': 'Codex (OpenAI)',
+        'strengths': 'code generation, code review, refactoring, debugging, test writing',
+        'limitations': 'no browser, no real-time data, context window limits',
+    },
+    {
+        'id': 'chatgpt',
+        'name': 'ChatGPT',
+        'strengths': 'general reasoning, explanation, research synthesis, brainstorming, browsing',
+        'limitations': 'cannot execute code directly, may hallucinate specifics',
+    },
+    {
+        'id': 'claude',
+        'name': 'Claude (Anthropic)',
+        'strengths': 'long context analysis, careful reasoning, document review, safety-aware',
+        'limitations': 'no browser, no code execution, slower for simple tasks',
+    },
+    {
+        'id': 'devin',
+        'name': 'Devin (Cognition)',
+        'strengths': 'full autonomous coding, PR creation, testing, deployment, browser use',
+        'limitations': 'slower startup, heavier for trivial tasks',
+    },
+    {
+        'id': 'ollama_local',
+        'name': 'Ollama (local)',
+        'strengths': 'fast, private, no quota limits, good for classification and short tasks',
+        'limitations': 'smaller model, weaker reasoning on complex problems',
+    },
+    {
         'id': 'write_repo_file',
         'name': 'write_repo_file (MCP tool)',
         'strengths': 'protected repository file mutation with C2 authorization, git integration',
@@ -90,14 +120,22 @@ steps and assign each step to the best available tool.
 Available tools:
 {_TOOL_BLOCK}
 
-Rules:
+CRITICAL RULES:
 1. Each step must have: title, description, assigned_tool (tool id),
    tool_rationale (why this tool is best for this step).
 2. Order steps logically — later steps may depend on earlier results.
 3. If a step is risky or irreversible, set requires_approval=true.
 4. Keep plans concise: 2-6 steps for most goals.
-5. Prefer local tools for simple sub-tasks; use cloud/external for
-   complex reasoning, code generation, or browsing.
+5. IMPORTANT: Only write_repo_file is actually registered and available for execution.
+   The other tools (codex, chatgpt, claude, devin, ollama_local) are conceptual descriptors
+   but are NOT currently available as executable MCP tools.
+6. For ANY task involving file creation, file modification, repository changes,
+   or writing content to files, you MUST use write_repo_file. This is the ONLY
+   tool that can safely create or modify files in the repository with proper
+   authorization and git integration.
+7. Do NOT assign codex, chatgpt, claude, devin, or ollama_local to any step.
+   These tools are not available for execution. Always use write_repo_file for
+   any task that requires tool execution.
 
 Respond ONLY with a JSON object (no markdown fences) with this schema:
 {{

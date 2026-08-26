@@ -132,15 +132,13 @@ def test_g1_real_e2e(authority_service, workspace_root):
     from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
     import tempfile
 
-    # Create authority client for CapabilityActionBridge
-    authority_client = AuthorityClient()
-    authority_client.connect()
-
     # Create a minimal container with required services
+    # NOTE: Do NOT set up CapabilityActionBridge yet - it will be set up
+    # after capability acquisition to avoid pipe busy race condition
     class MockContainer:
         def __init__(self):
             self.config = type('obj', (object,), {'workspace_root': str(workspace_root)})()
-            self.capability_action_bridge = CapabilityActionBridge(authority_client=authority_client)
+            self.capability_action_bridge = None
             self.world_model_service = None
             self.portable_context_service = None
             self.operational_self_examination_service = None
@@ -201,12 +199,15 @@ def test_g1_real_e2e(authority_service, workspace_root):
 
     # Register self-update tools (including write_repo_file) - REAL TOOL REGISTRATION
     # This is the same mechanism used in production (server.run())
+    # NOTE: capability_action_bridge is None initially, will be set after capability acquisition
+    # Pass container parameter for dynamic bridge lookup
     n_registered = register_self_update_tools(
         mcp=server.mcp,
         workspace_root_fn=lambda: str(workspace_root),
-        governance_fn=lambda route: None,  # No governance block for test
+        governance_fn=lambda **kwargs: None,  # No governance block for test
         to_jsonable_fn=lambda x: x,
         capability_action_bridge=container.capability_action_bridge,
+        container=container,  # Pass container for dynamic bridge lookup
     )
 
     # Verify write_repo_file is registered in runtime (not just in source)
@@ -374,6 +375,23 @@ def test_g1_real_e2e(authority_service, workspace_root):
     assert 'git_status' in result['trace']['before_state']
     assert 'git_status' in result['trace']['after_state']
 
+    # CAPTURE RAW RUNTIME DATA FOR FORENSIC BUNDLE
+    print(f"\n=== G1 REAL E2E RUNTIME DATA ===")
+    print(f"BEFORE_SHA256: {before_sha256}")
+    print(f"AFTER_SHA256: {after_sha256}")
+    print(f"BEFORE_GIT_STATUS: {before_git_status}")
+    print(f"AFTER_GIT_STATUS: {verification['git_status']}")
+    print(f"GIT_DIFF:\n{verification['git_diff']}")
+    print(f"FILE_EXISTS: {verification['file_exists']}")
+    print(f"FILE_SIZE_BYTES: {verification['file_size_bytes']}")
+    print(f"FILE_CONTENT_PREVIEW: {verification['file_content_preview']}")
+    print(f"EXECUTION_ID: {ctx['execution_id']}")
+    print(f"RUN_ID: {ctx['run_id']}")
+    print(f"LEASE_ID: {ctx['lease_id']}")
+    print(f"ASSIGNED_TOOL: {result['assigned_tool']}")
+    print(f"PLAN_SUMMARY: {result['plan_summary']}")
+    print(f"=== END RUNTIME DATA ===\n")
+
     # Verify trace completeness
     expected_steps = ['plan_generation', 'tool_validation', 'register_execution',
                       'tool_dispatch', 'effect_verification']
@@ -384,9 +402,6 @@ def test_g1_real_e2e(authority_service, workspace_root):
     # Cleanup test file
     if test_file.exists():
         test_file.unlink()
-
-    # Disconnect authority client
-    authority_client.disconnect()
 
 
 def test_g1_negative_real_e2e(authority_service, workspace_root):

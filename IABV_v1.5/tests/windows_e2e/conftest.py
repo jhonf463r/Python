@@ -57,38 +57,12 @@ def authority_service():
     authority_pid = authority_process.pid
     print(f"[conftest] Authority process started with PID: {authority_pid}", flush=True)
     
-    # Wait for server to start and pipe to be available
-    max_wait = 10.0
-    wait_interval = 0.5
-    pipe_available = False
-    
-    for attempt in range(int(max_wait / wait_interval)):
-        time.sleep(wait_interval)
-        try:
-            import win32file
-            import win32pipe
-            pipe_handle = win32file.CreateFile(
-                r"\\.\pipe\IABV_Authority",
-                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0,
-                None,
-                win32file.OPEN_EXISTING,
-                0,
-                None
-            )
-            win32file.CloseHandle(pipe_handle)
-            pipe_available = True
-            print(f"[conftest] Pipe available after {attempt * wait_interval:.1f}s", flush=True)
-            break
-        except Exception as e:
-            if attempt == 0:
-                print(f"[conftest] Pipe not yet available, waiting... ({e})", flush=True)
-            continue
-    
-    if not pipe_available:
-        authority_process.terminate()
-        authority_process.join(timeout=5.0)
-        pytest.fail(f"Authority service pipe not available after {max_wait}s")
+    # Wait for server to start without pipe availability check
+    # The pipe availability check causes the AuthorityServer to close the connection
+    # when we close the test handle, leading to race conditions
+    # Just wait for the process to initialize (AuthorityServer creates pipe on startup)
+    time.sleep(2.0)
+    print(f"[conftest] Authority process ready after 2.0s", flush=True)
     
     yield (service, authority_pid)
     

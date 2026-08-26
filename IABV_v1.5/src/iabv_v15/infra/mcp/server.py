@@ -3377,6 +3377,30 @@ class IABVMCPServer:
             trace['steps'].append({'step': 'register_execution', 'status': 'error', 'error': str(exc)})
             return {'status': 'error', 'error': f'Register execution failed: {exc}', 'trace': trace, 'real_provider_call': 'REAL_PROVIDER_ERROR'}
 
+        # Step 4.5: Set up CapabilityActionBridge for lease consumption
+        # Following the C2 test pattern: after acquire_capability_for_execution closes its connection,
+        # we create a NEW AuthorityClient for CapabilityActionBridge to consume the lease
+        try:
+            from iabv_v15.services.trust.authority_client import AuthorityClient
+            authority_client_for_bridge = AuthorityClient()
+            authority_client_for_bridge.connect()
+            
+            # Update the container's CapabilityActionBridge with the fresh client
+            if self.container.capability_action_bridge is None:
+                from iabv_v15.services.trust.capability_action_bridge import CapabilityActionBridge
+                self.container.capability_action_bridge = CapabilityActionBridge(authority_client=authority_client_for_bridge)
+            else:
+                # Update the existing bridge with the new client
+                self.container.capability_action_bridge._authority_client = authority_client_for_bridge
+            
+            trace['steps'].append({
+                'step': 'capability_bridge_setup',
+                'status': 'ok',
+            })
+        except Exception as exc:
+            trace['steps'].append({'step': 'capability_bridge_setup', 'status': 'error', 'error': str(exc)})
+            return {'status': 'error', 'error': f'Capability bridge setup failed: {exc}', 'trace': trace, 'real_provider_call': 'REAL_PROVIDER_ERROR'}
+
         # Step 5: Dispatch via real MCP tool registry (canonical dispatch)
         try:
             # Get the tool from the MCP registry using the same method as validation
@@ -3403,7 +3427,8 @@ class IABVMCPServer:
             if assigned_tool == 'write_repo_file':
                 content = tool_parameters.get('content', f'G1 execution test at {_dt.now(_tz.utc).isoformat()}\nGoal: {user_goal}\nPlan ID: {plan.plan_id}\n')
                 
-                # Call the MCP tool with execution context
+                # Call the MCP tool with execution context and lease_id
+                # G1 Flow: Pass lease_id directly from acquire_capability_for_execution
                 tool_result = tool_fn(
                     relative_path=relative_path,
                     content=content,
@@ -3412,6 +3437,7 @@ class IABVMCPServer:
                     run_id=run_id,
                     session_id=session_id,
                     episode_id=episode_id,
+                    lease_id=lease_id,  # Pass lease_id from G1 capability acquisition
                 )
             else:
                 # For other tools, pass tool_parameters directly

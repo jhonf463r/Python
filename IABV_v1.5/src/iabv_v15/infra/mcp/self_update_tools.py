@@ -321,7 +321,7 @@ def git_commit_and_push_impl(
 # MCP Registration
 # ============================================================================
 
-def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: Any, to_jsonable_fn: Any, capability_action_bridge: Any = None) -> int:
+def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: Any, to_jsonable_fn: Any, capability_action_bridge: Any = None, container: Any = None) -> int:
     """Register write-capable tools on the MCP server.
 
     Args:
@@ -330,6 +330,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         governance_fn: Callable for governance gate checks.
         to_jsonable_fn: Callable to convert results to JSON-safe dicts.
         capability_action_bridge: Canonical P0.213 authority bridge (C-2 integration).
+        container: Container object for dynamic bridge lookup (optional).
 
     Returns:
         Number of tools registered.
@@ -344,6 +345,12 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             return None  # directory traversal attempt
         return resolved
 
+    def _get_capability_action_bridge() -> Any:
+        """Get the capability action bridge, looking it up dynamically if container is provided."""
+        if container is not None:
+            return getattr(container, 'capability_action_bridge', None)
+        return capability_action_bridge
+
     # -----------------------------------------------------------------
     # write_repo_file
     # -----------------------------------------------------------------
@@ -357,6 +364,8 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         run_id: str | None = None,
         session_id: str | None = None,
         episode_id: str | None = None,
+        # C2 VFINAL5: Optional direct lease_id for G1 flow (bypasses acquire_capability_for_existing_execution)
+        lease_id: str | None = None,
     ) -> dict[str, Any]:
         """Escribe (crea o sobreescribe) un archivo en el workspace.
 
@@ -380,30 +389,42 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             return {"status": "error", "detail": "Authorization denied: missing execution context (execution_id, run_id required)"}
         
         # C2 VFINAL5: Acquire capability for EXISTING execution
-        lease_id = None
-        capability_execution_id = None
+        capability_execution_id = execution_id  # Default to the provided execution_id
         
-        if capability_action_bridge:
-            try:
-                from iabv_v15.services.trust.capability_lifecycle import acquire_capability_for_existing_execution
-                capability = acquire_capability_for_existing_execution(
-                    execution_id=execution_id,
-                    run_id=run_id,
-                    action='WRITE_REPOSITORY_FILE',
-                    target=f'file:{relative_path}',
-                    requested_scope='self_update',
-                    invocation_id='write_repo_file',
-                    episode_id=episode_id,
-                    session_id=session_id,
-                )
-                lease_id = capability.get('lease_id')
-                capability_execution_id = capability.get('execution_id')
-            except Exception as e:
-                # Authority unavailable - FAIL CLOSED
-                return {"status": "error", "detail": f"Authorization denied: capability acquisition failed: {e}"}
+        # Use dynamic bridge lookup to get the current bridge from container
+        bridge = _get_capability_action_bridge()
+        
+        # G1 Flow: If lease_id is provided, use it directly (from acquire_capability_for_execution)
+        # C2 Flow: If lease_id is not provided, acquire a new lease via acquire_capability_for_existing_execution
+        if lease_id is None:
+            # C2 Flow: Need to acquire a new lease for this invocation
+            if bridge:
+                try:
+                    from iabv_v15.services.trust.capability_lifecycle import acquire_capability_for_existing_execution
+                    capability = acquire_capability_for_existing_execution(
+                        execution_id=execution_id,
+                        run_id=run_id,
+                        action='WRITE_REPOSITORY_FILE',
+                        target=f'file:{relative_path}',
+                        requested_scope='self_update',
+                        invocation_id='write_repo_file',
+                        episode_id=episode_id,
+                        session_id=session_id,
+                    )
+                    lease_id = capability.get('lease_id')
+                    capability_execution_id = capability.get('execution_id')
+                except Exception as e:
+                    # Authority unavailable - FAIL CLOSED
+                    return {"status": "error", "detail": f"Authorization denied: capability acquisition failed: {e}"}
+            else:
+                # If capability_action_bridge is not set, we cannot consume the lease
+                # This may happen in test scenarios where the bridge is set up separately
+                # Return error indicating bridge is required
+                return {"status": "error", "detail": "Authorization denied: capability_action_bridge not set — lease consumption required"}
         else:
-            # Authority unavailable - FAIL CLOSED
-            return {"status": "error", "detail": "Authorization denied: authority unavailable — self-update denied"}
+            # G1 Flow: lease_id is provided, verify bridge is available for consumption
+            if bridge is None:
+                return {"status": "error", "detail": "Authorization denied: capability_action_bridge not set — lease consumption required"}
         
         # C-2-CRIT-3: Thin wrapper calling tested implementation
         return write_repo_file_impl(
@@ -412,7 +433,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             content=content,
             create_dirs=create_dirs,
             governance_fn=governance_fn,
-            capability_action_bridge=capability_action_bridge,
+            capability_action_bridge=bridge,
             lease_id=lease_id,
             execution_id=capability_execution_id,
         )
