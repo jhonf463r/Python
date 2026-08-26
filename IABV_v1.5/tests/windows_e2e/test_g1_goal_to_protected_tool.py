@@ -218,40 +218,23 @@ def test_g1_real_e2e(authority_service, workspace_root):
     
     # Call the G1 tool with ONLY the goal - REAL G1 INVOCATION
     # The G1 tool is defined as a local function in IABVMCPServer._register_tools
-    # and decorated with @mcp.tool(). FastMCP stores tools internally.
-    # We access it by calling the method directly on the server instance.
-    # The tool is registered via the decorator and accessible through the MCP server.
+    # We execute it by calling the method directly on the server instance.
+    # This is the REAL G1 implementation, not a mock.
     try:
-        # Access the G1 tool through the server's internal MCP instance
-        # FastMCP stores tools in a way that requires specific access patterns
-        # We'll try multiple access methods
-        g1_tool = None
-        
-        # Method 1: Try to get from FastMCP's internal storage
-        if hasattr(server.mcp, '_tools'):
-            g1_tool = server.mcp._tools.get('g1_goal_to_protected_tool')
-            if g1_tool and hasattr(g1_tool, 'fn'):
-                g1_tool = g1_tool.fn
-        
-        # Method 2: Try direct attribute access on server
-        if g1_tool is None and hasattr(server, 'g1_goal_to_protected_tool'):
-            g1_tool = server.g1_goal_to_protected_tool
-        
-        # Method 3: Try accessing through the MCP tool decorator registry
-        if g1_tool is None:
-            # The tool is registered with FastMCP, but we can't easily access it
-            # We'll skip the full runtime execution and verify the components separately
-            pytest.skip("G1 tool not directly accessible in FastMCP registry - runtime execution requires MCP server running in stdio mode")
-        
-        result = g1_tool(
+        # The G1 tool is a method on the server instance
+        # We call it directly to execute the real G1 operational path
+        result = server.g1_goal_to_protected_tool(
             user_goal=user_goal,
             tool_parameters={
                 'relative_path': 'g1_real_e2e_test.txt',
                 'content': 'G1 real E2E test content\n',
             },
         )
-    except (AttributeError, KeyError) as e:
-        pytest.skip(f"G1 tool not accessible in MCP registry: {e}. Full runtime execution requires MCP server running in stdio mode.")
+    except AttributeError as e:
+        # If the method is not directly accessible, we need to access it differently
+        # The G1 tool is defined in the _register_tools method as a local function
+        # We'll skip with clear message if we cannot access it
+        pytest.skip(f"G1 tool not accessible on server instance: {e}. This indicates the G1 tool is not properly registered as a method.")
 
     # Verify result structure
     assert result['status'] in ['ok', 'error'], f"Invalid status: {result.get('status')}"
@@ -259,9 +242,9 @@ def test_g1_real_e2e(authority_service, workspace_root):
     # Check real provider status
     real_provider_call = result.get('real_provider_call')
     if real_provider_call == 'REAL_PROVIDER_UNAVAILABLE':
-        pytest.skip("CloudReasoningPlannerService not available - REAL_PROVIDER_UNAVAILABLE")
+        pytest.fail("CloudReasoningPlannerService not available - REAL_PROVIDER_UNAVAILABLE. Real E2E execution requires provider.")
     elif real_provider_call == 'REAL_PROVIDER_ERROR':
-        pytest.skip("CloudReasoningPlannerService error - REAL_PROVIDER_ERROR")
+        pytest.fail("CloudReasoningPlannerService error - REAL_PROVIDER_ERROR. Real E2E execution failed.")
     
     assert real_provider_call == 'REAL_PROVIDER_SUCCESS', f"Expected REAL_PROVIDER_SUCCESS, got {real_provider_call}"
 
