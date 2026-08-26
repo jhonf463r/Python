@@ -3282,6 +3282,28 @@ class IABVMCPServer:
         assigned_tool = first_step.assigned_tool
         trace['assigned_tool'] = assigned_tool
         trace['tool_rationale'] = first_step.tool_rationale
+        
+        # G2: Extract action plan fields
+        plan_target = first_step.target
+        plan_parameters = first_step.parameters
+        plan_expected_result = first_step.expected_result
+        plan_rationale = first_step.rationale
+        
+        trace['plan_target'] = plan_target
+        trace['plan_parameters'] = plan_parameters
+        trace['plan_expected_result'] = plan_expected_result
+        trace['plan_rationale'] = plan_rationale
+        
+        # G2: Use plan parameters instead of human-provided tool_parameters
+        # If plan_parameters are non-empty AND human didn't provide tool_parameters, use plan (G2 case)
+        # If human provided tool_parameters, use human's (G1 backward compatibility)
+        # Only use plan_parameters if they are non-empty and tool_parameters was not provided
+        if plan_parameters and not tool_parameters:
+            tool_parameters = plan_parameters
+        elif not tool_parameters:
+            tool_parameters = {}
+        # If plan_parameters is empty/None, keep human-provided tool_parameters (G1 case)
+        # Only set to empty dict if neither plan nor human provided parameters
 
         # Step 3: Validate assigned_tool against MCP tool registry (canonical dispatch)
         # Check if the assigned_tool is registered as an MCP tool
@@ -3332,8 +3354,13 @@ class IABVMCPServer:
             if not tool_parameters:
                 tool_parameters = {}
 
-            # Extract target for capability acquisition
-            relative_path = tool_parameters.get('relative_path', 'g1_goal_execution_test.txt')
+            # G2: Extract target from plan for capability acquisition
+            # If plan_target is provided, use it; otherwise fall back to tool_parameters
+            if plan_target:
+                relative_path = plan_target if not plan_target.startswith('file:') else plan_target[5:]
+            else:
+                relative_path = tool_parameters.get('relative_path', 'g1_goal_execution_test.txt')
+            
             action = 'WRITE_REPOSITORY_FILE'
             target = f'file:{relative_path}'
 
@@ -3502,6 +3529,64 @@ class IABVMCPServer:
             trace['steps'].append({'step': 'effect_verification', 'status': 'error', 'error': str(exc)})
             verification = {'error': str(exc)}
             trace['verification'] = verification
+
+        # Step 6.5: G2 - Compare expected result vs observed result
+        result_verification = {'status': 'unknown', 'matches': [], 'mismatches': []}
+        try:
+            if plan_expected_result:
+                observed_result = {
+                    'file_exists': verification.get('file_exists', False),
+                    'file_hash_sha256': verification.get('file_hash_sha256', ''),
+                    'git_status': verification.get('git_status', ''),
+                }
+                
+                # Compare expected vs observed
+                for key, expected_value in plan_expected_result.items():
+                    observed_value = observed_result.get(key)
+                    
+                    # Handle different comparison types
+                    if isinstance(expected_value, bool):
+                        match = observed_value == expected_value
+                    elif isinstance(expected_value, str):
+                        # For hash comparison, check if observed contains expected or matches exactly
+                        if key == 'content_hash' or key == 'file_hash_sha256':
+                            match = observed_value == expected_value or (expected_value in observed_value if observed_value else False)
+                        else:
+                            match = observed_value == expected_value
+                    else:
+                        match = str(observed_value) == str(expected_value)
+                    
+                    if match:
+                        result_verification['matches'].append({
+                            'key': key,
+                            'expected': expected_value,
+                            'observed': observed_value,
+                        })
+                    else:
+                        result_verification['mismatches'].append({
+                            'key': key,
+                            'expected': expected_value,
+                            'observed': observed_value,
+                        })
+                
+                result_verification['status'] = 'verified' if not result_verification['mismatches'] else 'verification_failed'
+                result_verification['expected_result'] = plan_expected_result
+                result_verification['observed_result'] = observed_result
+            else:
+                result_verification['status'] = 'skipped'  # No expected_result in plan
+                result_verification['reason'] = 'Plan does not contain expected_result'
+            
+            trace['result_verification'] = result_verification
+            trace['steps'].append({
+                'step': 'result_verification',
+                'status': result_verification['status'],
+                'result_verification': result_verification,
+            })
+        except Exception as exc:
+            result_verification['status'] = 'error'
+            result_verification['error'] = str(exc)
+            trace['result_verification'] = result_verification
+            trace['steps'].append({'step': 'result_verification', 'status': 'error', 'error': str(exc)})
 
         # AFTER state capture
         after_state: dict[str, Any] = {

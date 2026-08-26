@@ -459,11 +459,16 @@ def test_g1_negative_real_e2e(authority_service, workspace_root):
                     class MockStep:
                         tool: str = 'unsupported_tool_xyz'  # NOT registered
                         assigned_tool: str = 'unsupported_tool_xyz'  # NOT registered
+                        target: str = ''
                         tool_rationale: str = 'Negative test - unsupported tool'
                         parameters: dict = None
+                        expected_result: dict = None
+                        rationale: str = ''
                         
                         def __init__(self):
                             self.parameters = {}
+                            self.expected_result = {}
+                            self.target = ''
                     
                     @dataclass
                     class MockPlan:

@@ -40,6 +40,10 @@ class PlanStep(BaseModel):
     title: str = ''
     description: str = ''
     assigned_tool: str = ''
+    target: str = ''
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    expected_result: dict[str, Any] = Field(default_factory=dict)
+    rationale: str = ''
     tool_rationale: str = ''
     requires_approval: bool = False
     estimated_seconds: int = 0
@@ -122,18 +126,23 @@ Available tools:
 
 CRITICAL RULES:
 1. Each step must have: title, description, assigned_tool (tool id),
+   target (what the tool acts on), parameters (tool-specific parameters),
+   expected_result (what success looks like), rationale (why this step),
    tool_rationale (why this tool is best for this step).
-2. Order steps logically — later steps may depend on earlier results.
-3. If a step is risky or irreversible, set requires_approval=true.
-4. Keep plans concise: 2-6 steps for most goals.
-5. IMPORTANT: Only write_repo_file is actually registered and available for execution.
+2. For write_repo_file: target should be the file path (e.g., "test.txt"),
+   parameters should include relative_path and content, expected_result should
+   describe the file state after creation (e.g., file_exists=true, content_hash).
+3. Order steps logically — later steps may depend on earlier results.
+4. If a step is risky or irreversible, set requires_approval=true.
+5. Keep plans concise: 2-6 steps for most goals.
+6. IMPORTANT: Only write_repo_file is actually registered and available for execution.
    The other tools (codex, chatgpt, claude, devin, ollama_local) are conceptual descriptors
    but are NOT currently available as executable MCP tools.
-6. For ANY task involving file creation, file modification, repository changes,
+7. For ANY task involving file creation, file modification, repository changes,
    or writing content to files, you MUST use write_repo_file. This is the ONLY
    tool that can safely create or modify files in the repository with proper
    authorization and git integration.
-7. Do NOT assign codex, chatgpt, claude, devin, or ollama_local to any step.
+8. Do NOT assign codex, chatgpt, claude, devin, or ollama_local to any step.
    These tools are not available for execution. Always use write_repo_file for
    any task that requires tool execution.
 
@@ -147,6 +156,10 @@ Respond ONLY with a JSON object (no markdown fences) with this schema:
       "title": "step title",
       "description": "what to do",
       "assigned_tool": "tool_id",
+      "target": "what the tool acts on",
+      "parameters": {{"relative_path": "...", "content": "..."}},
+      "expected_result": {{"file_exists": true, "content_hash": "..."}},
+      "rationale": "why this step",
       "tool_rationale": "why this tool",
       "requires_approval": false,
       "estimated_seconds": 30
@@ -467,6 +480,10 @@ class CloudReasoningPlannerService:
                 title=str(s.get('title') or f'Paso {i + 1}'),
                 description=str(s.get('description') or ''),
                 assigned_tool=tool,
+                target=str(s.get('target') or ''),
+                parameters=dict(s.get('parameters') or {}),
+                expected_result=dict(s.get('expected_result') or {}),
+                rationale=str(s.get('rationale') or ''),
                 tool_rationale=str(s.get('tool_rationale') or ''),
                 requires_approval=bool(s.get('requires_approval')),
                 estimated_seconds=int(s.get('estimated_seconds') or 30),
