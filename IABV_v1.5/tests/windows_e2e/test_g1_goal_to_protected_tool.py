@@ -407,8 +407,10 @@ def test_g1_real_e2e(authority_service, workspace_root):
 def test_g1_negative_real_e2e(authority_service, workspace_root):
     """REAL_E2E_TEST: Negative test - G1 rejects unsupported tools from plan.
 
-    This test verifies that when the plan assigns an unsupported tool,
-    the G1 bridge rejects it with a clear error message via canonical dispatch.
+    This test uses a controlled planner to inject an unsupported tool,
+    then calls the REAL G1 entry point to verify it rejects the tool
+    with canonical dispatch and NO capability acquisition, NO authorization,
+    NO protected effect.
     """
     # Extract authority service and PID from fixture
     service, authority_pid = authority_service
@@ -418,16 +420,14 @@ def test_g1_negative_real_e2e(authority_service, workspace_root):
     from iabv_v15.services.trust.authority_client import AuthorityClient
     from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
     from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
-
-    # Create authority client for CapabilityActionBridge
-    authority_client = AuthorityClient()
-    authority_client.connect()
+    from dataclasses import dataclass
+    from typing import Any
 
     # Create a minimal container with required services
     class MockContainer:
         def __init__(self):
             self.config = type('obj', (object,), {'workspace_root': str(workspace_root)})()
-            self.capability_action_bridge = CapabilityActionBridge(authority_client=authority_client)
+            self.capability_action_bridge = None  # Will be set after capability acquisition
             self.world_model_service = None
             self.portable_context_service = None
             self.operational_self_examination_service = None
@@ -451,9 +451,40 @@ def test_g1_negative_real_e2e(authority_service, workspace_root):
             self.perception_cross_validator = None
             self.github_remote_service = None
 
-            self.cloud_reasoning_planner = CloudReasoningPlannerService()
+            # NEGATIVE TEST ONLY: Controlled planner that returns unsupported tool
+            class NegativeMockPlanner:
+                def generate_plan(self, user_goal, context=''):
+                    """Return a plan with an unsupported tool for negative testing."""
+                    @dataclass
+                    class MockStep:
+                        tool: str = 'unsupported_tool_xyz'  # NOT registered
+                        assigned_tool: str = 'unsupported_tool_xyz'  # NOT registered
+                        tool_rationale: str = 'Negative test - unsupported tool'
+                        parameters: dict = None
+                        
+                        def __init__(self):
+                            self.parameters = {}
+                    
+                    @dataclass
+                    class MockPlan:
+                        plan_id: str = 'negative-test-plan-001'
+                        summary: str = 'Negative test plan with unsupported tool'
+                        cloud_source: str = 'negative-test-controlled'
+                        confidence: float = 1.0
+                        steps_count: int = 1
+                        assigned_tool: str = 'unsupported_tool_xyz'  # NOT registered
+                        tool_parameters: dict = None
+                        steps: list = None
+                        
+                        def __init__(self):
+                            self.tool_parameters = {}
+                            self.steps = [MockStep()]  # Non-empty to pass plan validation
+                    
+                    return MockPlan()
+            
+            self.cloud_reasoning_planner = NegativeMockPlanner()
 
-            # Create minimal mock orchestrator with cloud planner
+            # Create minimal mock orchestrator with controlled planner
             class MockOrchestrator:
                 def __init__(self, cloud_planner):
                     self.cloud_reasoning_planner = cloud_planner
@@ -470,22 +501,85 @@ def test_g1_negative_real_e2e(authority_service, workspace_root):
     n_registered = register_self_update_tools(
         mcp=server.mcp,
         workspace_root_fn=lambda: str(workspace_root),
-        governance_fn=lambda route: None,
+        governance_fn=lambda **kwargs: None,
         to_jsonable_fn=lambda x: x,
         capability_action_bridge=container.capability_action_bridge,
+        container=container,
     )
 
-    # This negative test verifies the validation logic by checking that
-    # an unsupported tool would be rejected. Since we can't easily force
-    # the cloud planner to return a specific unsupported tool, we verify
-    # the validation logic exists and would reject unregistered tools.
-    # The real negative scenario would require a controlled planner configuration.
-
-    # For now, we verify the validation logic is in place by checking
-    # that the G1 tool validates against registered_tools in runtime.
-    # FastMCP stores tools internally, so we verify registration succeeded
+    # Verify tools are registered
     assert n_registered > 0, "At least one tool should be registered from register_self_update_tools"
 
-    # Disconnect authority client
-    authority_client.disconnect()
+    # CAPTURE BEFORE STATE
+    test_file = workspace_root / "g1_negative_test_should_not_create.txt"
+    before_file_exists = test_file.exists()
+    before_git_status = subprocess.run(['git', 'status', '--porcelain'], cwd=str(workspace_root), capture_output=True, text=True).stdout
+
+    print(f"\n=== NEGATIVE G1 BEFORE STATE ===")
+    print(f"TEST_FILE_EXISTS: {before_file_exists}")
+    print(f"BEFORE_GIT_STATUS: {before_git_status}")
+    print(f"=== END BEFORE STATE ===\n")
+
+    # CALL REAL G1 ENTRY POINT WITH CONTROLLED PLANNER
+    user_goal = "This should fail because planner returns unsupported_tool_xyz"
+    tool_parameters = {'relative_path': 'g1_negative_test_should_not_create.txt', 'content': 'This file should NOT be created'}
+
+    try:
+        result = server.g1_goal_to_protected_tool(
+            user_goal=user_goal,
+            tool_parameters=tool_parameters,
+        )
+        
+        print(f"\n=== NEGATIVE G1 RESULT ===")
+        print(f"STATUS: {result.get('status')}")
+        print(f"ERROR: {result.get('error')}")
+        print(f"ASSIGNED_TOOL: {result.get('assigned_tool')}")
+        
+        # Verify rejection occurred
+        assert result['status'] == 'error', f"Expected error status, got {result['status']}"
+        assert 'unsupported' in result.get('error', '').lower() or 'not found' in result.get('error', '').lower(), \
+            f"Expected unsupported tool error, got: {result.get('error')}"
+        
+        # Verify NO capability acquisition
+        trace_steps = result.get('trace', {}).get('steps', [])
+        register_step = next((s for s in trace_steps if s['step'] == 'register_execution'), None)
+        assert register_step is None or register_step.get('status') == 'error', \
+            "REGISTER_EXECUTION should not be called for unsupported tool"
+        
+        # Verify NO authorization
+        capability_bridge_step = next((s for s in trace_steps if s['step'] == 'capability_bridge_setup'), None)
+        assert capability_bridge_step is None, "Capability bridge setup should not be called for unsupported tool"
+        
+        # Verify NO tool dispatch
+        dispatch_step = next((s for s in trace_steps if s['step'] == 'tool_dispatch'), None)
+        assert dispatch_step is None or dispatch_step.get('status') == 'error', \
+            "Tool dispatch should not succeed for unsupported tool"
+        
+        print(f"NEGATIVE_G1_REAL_REJECTION: TRUE")
+        print(f"NEGATIVE_CAPABILITY_NOT_CALLED: TRUE")
+        print(f"=== END NEGATIVE G1 RESULT ===\n")
+        
+    except Exception as e:
+        print(f"\n=== NEGATIVE G1 EXCEPTION ===")
+        print(f"EXCEPTION: {e}")
+        print(f"=== END NEGATIVE G1 EXCEPTION ===\n")
+        raise
+
+    # CAPTURE AFTER STATE
+    after_file_exists = test_file.exists()
+    after_git_status = subprocess.run(['git', 'status', '--porcelain'], cwd=str(workspace_root), capture_output=True, text=True).stdout
+
+    print(f"\n=== NEGATIVE G1 AFTER STATE ===")
+    print(f"TEST_FILE_EXISTS: {after_file_exists}")
+    print(f"AFTER_GIT_STATUS: {after_git_status}")
+    print(f"=== END AFTER STATE ===\n")
+
+    # Verify NO effect
+    assert not after_file_exists, "File should NOT be created for negative test"
+    assert before_git_status == after_git_status, "Git status should not change for negative test"
+
+    print(f"\n=== NEGATIVE G1 VERIFICATION ===")
+    print(f"NEGATIVE_EFFECT_BLOCKED: TRUE")
+    print(f"NO_MUTATION: TRUE")
+    print(f"=== END NEGATIVE G1 VERIFICATION ===\n")
 
