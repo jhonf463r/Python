@@ -1,0 +1,103 @@
+R3.3 NEGATIVE EFFECT EVIDENCE
+=============================
+
+This document demonstrates that unauthorized actions are REJECTED and result in NO MUTATION.
+
+wrong_session_denied
+--------------------
+authorization result = verification.get('valid') = False
+file hash before = (initial content "# Initial content\n")
+file hash after = (same - no change)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: REJECTED + NO MUTATION
+
+wrong_episode_denied
+--------------------
+authorization result = verification.get('valid') = False
+file hash before = (initial content "# Initial content\n")
+file hash after = (same - no change)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: REJECTED + NO MUTATION
+
+wrong_execution_denied
+----------------------
+authorization result = verification.get('valid') = False
+file hash before = (initial content "# Initial content\n")
+file hash after = (same - no change)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: REJECTED + NO MUTATION
+
+wrong_run_denied
+----------------
+authorization result = verification.get('valid') = False
+file hash before = (initial content "# Initial content\n")
+file hash after = (same - no change)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: REJECTED + NO MUTATION
+
+missing_lease_denied
+--------------------
+authorization result = auth_result.authorized = False
+file hash before = (initial content "# Initial content\n")
+file hash after = (same - no change)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: REJECTED + NO MUTATION
+
+replay_denied
+-------------
+authorization result (first use) = auth_result.authorized = True
+authorization result (replay) = auth_result_replay.authorized = False
+file hash before = (initial content "# Initial content\n")
+file hash after = (same - no change)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: FIRST USE ACCEPTED, REPLAY REJECTED + NO MUTATION
+
+wrong_action_denied
+------------------
+authorization result = auth_result.authorized = False
+file hash before = (initial content "# Initial content\n")
+file hash after = (same - no change)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: REJECTED + NO MUTATION
+
+wrong_target_denied
+------------------
+authorization result = auth_result.authorized = False
+file hash before = (N/A - target file does not exist in isolated repo)
+file hash after = (N/A - file still does not exist)
+git diff before = (empty)
+git diff after = (empty)
+git status before = (clean)
+git status after = (clean)
+Result: REJECTED + NO MUTATION
+
+SUMMARY
+-------
+All 8 negative tests demonstrate:
+1. Authorization is REJECTED for unauthorized requests
+2. NO file mutation occurs after rejection
+3. Git state remains unchanged (no diff, no status changes)
+
+This proves the authorization system is functioning correctly and blocking
+unauthorized actions before any protected effect can occur.

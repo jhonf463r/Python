@@ -1,0 +1,4 @@
+# Execution context raw evidence
+# Execution context generation via acquire_capability_for_execution
+# Real REGISTER_EXECUTION → Authority persists RunRecord → ISSUE_LEASE
+# Runtime evidence will be captured during independent audit

@@ -1,0 +1,7 @@
+# Commands executed for R4 G1 corrections
+git reset --hard e03811c81ee30be2464deaab81c776f1de6db10e
+git add src/iabv_v15/services/adaptive/cloud_reasoning_planner.py src/iabv_v15/infra/mcp/server.py tests/windows_e2e/test_g1_goal_to_protected_tool.py
+git commit -m "R4: correct governed goal-to-tool dispatch and execution context"
+git push --force-with-lease
+git rev-parse HEAD
+git ls-remote origin p0213/vfinal5-r3-choke-point

@@ -1,0 +1,46 @@
+R3.3 C2 FINAL FORENSIC - TEST INVENTORY
+=========================================
+
+ACTUAL WINDOWS E2E TEST FILES (verified via Get-ChildItem):
+------------------------------------------------------------
+check_db_state.py
+conftest.py
+control_pipe_client.py
+control_pipe_server.py
+test_c2_real_self_update_authority.py
+test_concurrency.py
+test_exactly_once.py
+test_f15_autonomous_evolution_authority.py
+test_lifecycle.py
+test_replay_rejection.py
+test_transport_failure.py
+windows_e2e_test.py
+
+TESTS EXECUTED IN RUN 1 (Production Path):
+------------------------------------------
+tests/windows_e2e/test_c2_real_self_update_authority.py::TestC2RealSelfUpdateAuthority::test_real_production_path_existing_execution
+
+TESTS EXECUTED IN RUN 2 (All C2):
+---------------------------------
+tests/windows_e2e/test_c2_real_self_update_authority.py::TestC2RealSelfUpdateAuthority
+- test_real_production_path_existing_execution
+- test_real_self_update_authorized
+- test_self_update_wrong_session_denied
+- test_self_update_wrong_episode_denied
+- test_self_update_wrong_execution_denied
+- test_self_update_wrong_run_denied
+- test_self_update_missing_lease_denied
+- test_self_update_replay_denied
+- test_self_update_wrong_action_denied
+- test_self_update_wrong_target_denied
+
+TESTS EXECUTED IN RUN 3 (Windows E2E Regression):
+--------------------------------------------------
+tests/windows_e2e/test_replay_rejection.py::test_replay_rejection
+tests/windows_e2e/test_exactly_once.py::test_exactly_once
+tests/windows_e2e/test_transport_failure.py::test_transport_failure
+tests/windows_e2e/test_concurrency.py::test_concurrency
+tests/windows_e2e/test_lifecycle.py::test_lifecycle
+
+All test files exist in the checkout.
+No non-existent tests were reported as PASS.

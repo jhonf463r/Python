@@ -1,0 +1,79 @@
+R3.3 C2 FORENSIC REBUILD MANIFEST
+================================
+
+This bundle contains forensic evidence for R3.3 C2 blocker corrections.
+Base commit: 5870015c0ee7cae8c13b3ae94059112343141885
+Branch: p0213/vfinal5-r3-choke-point
+
+CONTENTS
+--------
+
+00_METADATA.txt
+  - Repository state and execution metadata
+  - Lists modifications made to fix blockers
+
+01_SOURCE/
+  - authority_client.py
+  - authority_protocol.py
+  - authority_server.py
+  - authority_service.py
+  - capability_action_bridge.py
+  - capability_lifecycle.py (MODIFIED - session_id/episode_id fix)
+  - conftest.py (MODIFIED - ignore_errors removed)
+  - self_update_tools.py
+  - test_c2_real_self_update_authority.py
+  - test_concurrency.py
+  - test_lifecycle.py (MODIFIED - Unicode fix)
+
+02_REAL_DIFF.patch
+  - Git diff of blocker fixes
+
+03_CHANGED_FILES.txt
+  - List of modified files
+
+04_RAW_COMMANDS.txt
+  - Commands executed to generate evidence
+
+05_RAW_C2_RUNTIME.txt
+  - RAW runtime output from C2 test (unedited)
+
+06_RAW_WINDOWS_E2E_RUNTIME.txt
+  - RAW runtime output from Windows E2E regression tests (unedited)
+
+07_REPOSITORY_BEFORE.txt
+  - Repository state before (not captured in test)
+
+08_REPOSITORY_AFTER.txt
+  - Repository state after (not captured in test)
+
+09_PROCESS_IDENTITY_RAW.txt
+  - Process identity evidence extracted from runtime
+
+10_NEGATIVE_TEST_RAW.txt
+  - Negative test evidence extracted from runtime
+
+11_TEARDOWN_RAW.txt
+  - Teardown evidence extracted from runtime
+
+12_TEST_INVENTORY.txt
+  - Actual test files in checkout
+
+13_SECURITY_SEMANTICS.md
+  - Analysis of security semantic changes
+
+14_LIMITATIONS.md
+  - Self-identified limitations
+
+15_SHA256_MANIFEST.txt
+  - SHA-256 hashes of all bundle files
+
+MANIFEST.txt
+  - This file
+
+TOTAL FILES: 17
+TOTAL SOURCE FILES: 11
+TOTAL DOCUMENTATION FILES: 6
+
+RAW EVIDENCE FILES (unedited):
+- 05_RAW_C2_RUNTIME.txt
+- 06_RAW_WINDOWS_E2E_RUNTIME.txt

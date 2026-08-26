@@ -1,0 +1,58 @@
+R3.3 PROCESS IDENTITY EVIDENCE
+==============================
+
+OBSERVED VALUES DURING EXECUTION
+---------------------------------
+CLIENT_PID = 13456 (observed in test output)
+AUTHORITY_PID = 6600 (observed in test output)
+SERVER_OS_PID = 6600 (same as AUTHORITY_PID)
+GetNamedPipeClientProcessId = 13456 (from authority_server.py line 265)
+PARENT_PID = Not directly logged in test output
+
+PROCESS_SEPARATION
+------------------
+PROCESS_SEPARATION = TRUE
+
+Evidence from test output:
+[C2 Test] Client PID: 13456, Authority PID: 6600
+[C2 Test] Process separation: True
+[AuthorityServer] Client connected
+[AuthorityServer]   Client PID (OS-observed): 13456
+[AuthorityServer]   Authority PID: 6600
+[AuthorityServer]   PID equality check: False
+
+Another example from test output:
+[C2 Test] Client PID: 15968, Authority PID: 6608
+[C2 Test] Process separation: True
+[AuthorityServer]   Client PID (OS-observed): 15968
+[AuthorityServer]   Authority PID: 6608
+[AuthorityServer]   PID equality check: False
+
+AUTHORITY INITIATION MECHANISM
+------------------------------
+Authority is initiated via multiprocessing.Process
+
+Code evidence (conftest.py lines 44-49):
+```python
+authority_process = multiprocessing.Process(
+    target=_run_authority_server,
+    args=(str(tmpdir_path),),
+    daemon=False
+)
+authority_process.start()
+```
+
+Function _run_authority_server (conftest.py lines 17-21):
+```python
+def _run_authority_server(storage_root: str):
+    """Run authority server in a separate process."""
+    service = AuthorityService(storage_root=storage_root)
+    server = AuthorityServer(service)
+    server.start()
+```
+
+PID ACQUISITION
+---------------
+Client PID: os.getpid() from test process (test_c2_real_self_update_authority.py line 65)
+Authority PID: authority_process.pid from multiprocessing.Process (conftest.py line 51)
+OS-observed Client PID: win32pipe.GetNamedPipeClientProcessId(pipe_handle) (authority_server.py line 265)

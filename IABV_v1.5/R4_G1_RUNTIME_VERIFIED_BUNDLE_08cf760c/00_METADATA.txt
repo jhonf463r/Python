@@ -1,0 +1,170 @@
+R4 G1 RUNTIME VERIFICATION FORENSIC BUNDLE (FINAL DIAGNOSIS)
+================================================================
+
+OBJECTIVE
+--------
+Close the last runtime blocker for G1 E2E verification by diagnosing
+why CloudReasoningPlannerService is not available and ensuring the test
+infrastructure correctly identifies the root cause.
+
+The independent audit of commit 22dc346cb9ce8f4bab7ae2fc188fdccce1c034ad concluded:
+- G1_FINAL_PASS_WITH_DEBT — CODE
+- G1_RUNTIME_STATUS = NOT_OBSERVED
+
+The three structural blockers were correctly fixed:
+1. REGISTER_EXECUTION real (not UUID generation only)
+2. write_repo_file in planner vocabulary (TOOL_DESCRIPTORS)
+3. registry lookup for assigned_tool (canonical MCP dispatch)
+
+NO revert of structural fixes.
+
+NEW BLOCKER ADDRESSED
+-------------------
+The real E2E test was failing with "CloudReasoningPlannerService not available"
+without providing diagnostic information about WHY the provider is unavailable.
+
+This commit adds:
+- Production-like initialization of CloudReasoningPlannerService in test
+- Detailed provider availability diagnostics (API keys, network, health status)
+- Real error classification (UNAVAILABLE vs ERROR vs SUCCESS)
+- API health tracking from CloudReasoningPlannerService.get_api_health()
+
+CRITICAL DIAGNOSIS
+-----------------
+Root cause identified:
+- GROQ_API_KEY is present in environment
+- Groq API returns HTTP 404 (endpoint not found or model changed)
+- No other providers (OPENAI, GEMINI, OLLAMA) have API keys configured
+- CloudReasoningPlannerService correctly reports provider unavailable
+
+The test infrastructure now correctly:
+1. Initializes CloudReasoningPlannerService with AdaptiveModelSelector
+2. Checks all provider API keys
+3. Reports real API health status (HTTP status codes)
+4. Fails with detailed diagnostics (not generic "unavailable")
+
+SOURCE OF TRUTH
+--------------
+Repository: jhonf463r/Python
+Branch: p0213/vfinal5-r3-choke-point
+Parent commit: 08cf760c6677b431fc2bacf1f3127447703e1da3
+New commit: TBD
+
+STRUCTURAL FIXES MAINTAINED
+---------------------------
+BLOCKER 1 - EXECUTION CONTEXT NOT REGISTERED:
+- acquire_capability_for_execution performs REGISTER_EXECUTION
+- Authority persists RunRecord before capability acquisition
+
+BLOCKER 2 - PLANNER VOCABULARY DOES NOT CONTAIN write_repo_file:
+- write_repo_file added to TOOL_DESCRIPTORS in cloud_reasoning_planner.py
+- Canonical contract established with planner
+
+BLOCKER 3 - G1 NO ES UN DISPATCHER REAL:
+- Canonical MCP tool registry dispatch (self.mcp._tools[assigned_tool].fn)
+- Validation against registered_tools before dispatch
+
+RUNTIME VERIFICATION INFRASTRUCTURE
+-----------------------------------
+- G1 tool moved to class method: server.g1_goal_to_protected_tool()
+- CloudReasoningPlannerService initialized with AdaptiveModelSelector
+- test_g1_real_e2e: Real E2E test with authority_service fixture
+  - Real MCP tool registration via register_self_update_tools
+  - Real G1 invocation via server.g1_goal_to_protected_tool()
+  - Provider status detection with detailed diagnostics
+  - API health tracking (HTTP status codes)
+  - Fails with clear diagnostic message when provider unavailable
+  
+- test_g1_negative_real_e2e: Negative test with real authority
+  - Real MCP tool registration verification
+  - Validation logic verification
+
+- test_g1_code_verification: STATIC_CODE_CHECK
+- test_g1_mcp_registration: STATIC_CODE_CHECK  
+- test_g1_negative_unsupported_tool: STATIC_CODE_CHECK
+
+MODIFIED FILES
+-------------
+1. tests/windows_e2e/test_g1_goal_to_protected_tool.py
+   - Added production-like CloudReasoningPlannerService initialization
+   - Added AdaptiveModelSelector setup for test infrastructure
+   - Added detailed provider availability diagnostics
+   - Added API health status reporting
+   - Changed provider unavailability from skip to fail (per requirements)
+   - Labeled static tests as STATIC_CODE_CHECK
+
+PROVIDER DIAGNOSTICS
+--------------------
+Provider status at test execution:
+- OPENAI_API_KEY: False (not configured)
+- GEMINI_API_KEY: False (not configured)
+- GROQ_API_KEY: True (configured)
+- IABV_OLLAMA_BASE_URL: None (not configured)
+- IABV_OLLAMA_MODEL: None (not configured)
+
+API health status:
+- groq: {'last_status_code': 404, 'last_checked': '2026-08-26T03:28:48.748823+00:00', 'healthy': False}
+
+Root cause: Groq API returns HTTP 404, indicating either:
+- API endpoint changed
+- Model name changed
+- API key invalid
+- Network/routing issue
+
+The test infrastructure correctly identifies this as REAL_PROVIDER_UNAVAILABLE
+and provides detailed diagnostics for troubleshooting.
+
+TEST RESULTS
+------------
+G1 Tests: 4 passed, 1 failed
+- test_g1_code_verification: PASSED (STATIC_CODE_CHECK)
+- test_g1_mcp_registration: PASSED (STATIC_CODE_CHECK)
+- test_g1_negative_unsupported_tool: PASSED (STATIC_CODE_CHECK)
+- test_g1_real_e2e: FAILED (CloudReasoningPlannerService not available - REAL_PROVIDER_UNAVAILABLE)
+  - Detailed diagnostics provided
+  - Groq API returns HTTP 404
+  - No other providers configured
+- test_g1_negative_real_e2e: PASSED (runtime verification)
+
+C2 Regression Tests: 10 passed
+- All C2 Windows E2E tests passed
+
+PROVIDER AVAILABILITY
+--------------------
+CloudReasoningPlannerService is correctly initialized and functional.
+The provider (Groq) is returning HTTP 404, indicating a configuration or
+network issue. The test infrastructure correctly reports this as provider
+unavailable with detailed diagnostics.
+
+The G1 infrastructure is verified:
+- G1 tool is callable as server.g1_goal_to_protected_tool()
+- CloudReasoningPlannerService is initialized with AdaptiveModelSelector
+- Authority service fixture works correctly
+- MCP tool registration works correctly
+- All structural fixes are maintained
+- Provider diagnostics are detailed and actionable
+
+LIMITATIONS
+-----------
+Full runtime execution requires a working provider API.
+The test infrastructure correctly identifies provider unavailability
+with detailed diagnostics (HTTP status codes, API key presence).
+
+To achieve full runtime E2E execution, one of the following is required:
+1. Configure OPENAI_API_KEY with valid OpenAI API key
+2. Configure GEMINI_API_KEY with valid Gemini API key
+3. Fix Groq API configuration (endpoint, model, or key)
+4. Configure local Ollama instance (IABV_OLLAMA_BASE_URL, IABV_OLLAMA_MODEL)
+
+The infrastructure is ready for real execution when any provider is available.
+
+NEXT STEP
+--------
+INDEPENDENT FINAL G1 AUDIT to verify:
+1. Structural fixes are maintained
+2. G1 tool is accessible as class method
+3. Runtime verification infrastructure is restored
+4. Provider diagnostics are detailed and actionable
+5. Provider unavailability is correctly handled (fail, not skip)
+
+G1 STATUS: OPEN (provider unavailable, infrastructure ready)

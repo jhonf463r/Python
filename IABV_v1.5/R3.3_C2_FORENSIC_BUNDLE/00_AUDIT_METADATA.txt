@@ -1,0 +1,26 @@
+R3.3 FORENSIC AUDIT METADATA
+============================
+
+AUDITED_COMMIT_STATE
+--------------------
+REPOSITORY = IABV_v1.5 (local path: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5)
+BRANCH = p0213/vfinal5-r3-choke-point
+HEAD_SHA = 5870015c0ee7cae8c13b3ae94059112343141885
+PARENT_SHA = 1ba8d7c8ae0d4777a0c28cf87c714b685d73418f
+COMMIT_MESSAGE = R3.3: execute real self-update with isolated authority process
+COMMIT_DATE = 2026-08-25 16:21:12 -0500
+
+LOCAL_WORKTREE_STATE
+--------------------
+WORKTREE_CLEAN = YES
+STAGED_CHANGES = NONE
+UNSTAGED_CHANGES = NONE
+UNTRACKED_FILES = NONE (excluding R3.3_C2_FORENSIC_BUNDLE directory)
+
+AUDIT SCOPE
+-----------
+This bundle represents the exact state of commit 5870015c0 which Devin affirms as:
+C2_REAL_RUNTIME = VERIFIED
+
+All evidence in this bundle is derived from this commit state without any
+post-commit modifications to the audited code.

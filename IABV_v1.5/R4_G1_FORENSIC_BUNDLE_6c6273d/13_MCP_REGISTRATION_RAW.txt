@@ -1,0 +1,4 @@
+# MCP registration raw evidence
+# g1_goal_to_protected_tool registered as MCP tool in server.py
+# Verified by: assert 'g1_goal_to_protected_tool' in server.mcp._tools
+# Runtime evidence will be captured during independent audit

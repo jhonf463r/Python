@@ -1,0 +1,34 @@
+R3 REPOSITORY IDENTITY REPORT
+=============================
+
+LOCAL_REPOSITORY = IABV_v1.5
+LOCAL_ROOT = C:/Python/IABV_v1.5_runtime_p021v/IABV_v1.5
+ORIGIN_URL = https://github.com/jhonf463r/Python.git
+PUSH_URL = https://github.com/jhonf463r/Python.git
+BRANCH = p0213/vfinal5-r3-choke-point
+HEAD_SHA = e03811c81ee30be2464deaab81c776f1de6db10e
+C2_BASE_SHA = 5870015c0ee7cae8c13b3ae94059112343141885
+C2_SHA_1 = 87224e89e40412bad900eec6579a84a406869de4
+C2_SHA_2 = e03811c81ee30be2464deaab81c776f1de6db10e
+C2_BRANCH = p0213/vfinal5-r3-choke-point
+REMOTE_REPOSITORY = https://github.com/jhonf463r/Python.git
+REMOTE_BRANCH = NONE (p0213/vfinal5-r3-choke-point does not exist remotely)
+REMOTE_C2_SHA = NONE (C2 commits not found in remote)
+REMOTE_MATCH = FALSE
+C2_PUSHED = NO
+WORKTREE_CLEAN = FALSE (untracked files: forensic bundles, runtime logs)
+
+SUMMARY:
+--------
+- Local repository origin IS jhonf463r/Python (matches audited remote)
+- All three C2 commits exist locally
+- C2 branch p0213/vfinal5-r3-choke-point exists locally
+- C2 branch does NOT exist remotely
+- C2 commits do NOT exist remotely
+- C2 is LOCAL ONLY (never pushed to origin)
+- Working tree has untracked files (forensic bundles, runtime logs)
+
+CONCLUSION:
+-----------
+The C2 work exists ONLY locally and has never been pushed to the remote repository.
+The branch p0213/vfinal5-r3-choke-point needs to be pushed to origin for Claude to audit it remotely.

@@ -1,0 +1,81 @@
+R3.3 C2 TEST RESULTS
+====================
+
+POSITIVE TEST
+-------------
+TEST = test_real_self_update_authorized
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+
+EVIDENCE:
+- Capability acquired: run_id, execution_id, lease_id returned
+- write_repo_file_impl result: {'status': 'ok', 'path': 'test_module.py', 'bytes_written': 60}
+- Git diff shows modification: "# Authorized self-update modification" added
+- Git status shows: M test_module.py
+- File content verified: "# Authorized self-update modification" in final_content
+
+NEGATIVE TESTS
+-------------
+
+TEST = test_self_update_wrong_session_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- verification.get('valid') = False for wrong session_id
+- File content: "# Authorized self-update modification" NOT in content
+
+TEST = test_self_update_wrong_episode_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- verification.get('valid') = False for wrong episode_id
+- File content: "# Authorized self-update modification" NOT in content
+
+TEST = test_self_update_wrong_execution_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- verification.get('valid') = False for wrong execution_id
+- File content: "# Authorized self-update modification" NOT in content
+
+TEST = test_self_update_wrong_run_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- verification.get('valid') = False for wrong run_id
+- File content: "# Authorized self-update modification" NOT in content
+
+TEST = test_self_update_missing_lease_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- auth_result.authorized = False for lease_id=None
+- File content: "# Unauthorized modification" NOT in content
+
+TEST = test_self_update_replay_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- First use: auth_result.authorized = True
+- Replay use: auth_result_replay.authorized = False
+- File content: "# Replay modification" NOT in content
+
+TEST = test_self_update_wrong_action_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- auth_result.authorized = False for action='UNAUTHORIZED_ACTION'
+- File content: "# Unauthorized modification" NOT in content
+
+TEST = test_self_update_wrong_target_denied
+RESULT = PASSED
+EXIT/STATUS = Exit code 0, pytest PASSED
+EVIDENCE:
+- auth_result.authorized = False for target='file:src/iabv_v15/services/trust/authority_service.py'
+- File: authority_service.py does not exist in isolated repo
+
+SUMMARY
+-------
+Total C2 Tests: 9
+Passed: 9
+Failed: 0

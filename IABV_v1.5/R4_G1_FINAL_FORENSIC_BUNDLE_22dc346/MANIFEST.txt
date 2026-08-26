@@ -1,0 +1,22 @@
+R4_G1_FINAL_FORENSIC_BUNDLE_22dc346
+===================================
+
+This bundle contains the corrected implementation of G1 operational path
+addressing the three blockers identified by independent audit.
+
+Contents:
+- 00_METADATA.txt: Overview and corrections summary
+- cloud_reasoning_planner.py: Modified planner with write_repo_file in TOOL_DESCRIPTORS
+- server.py: Modified MCP server with G1 bridge implementation
+- test_g1_goal_to_protected_tool.py: E2E tests for G1 verification
+- capability_lifecycle.py: Capability lifecycle functions
+- authority_client.py: Authority client for IPC
+- cloud_reasoning_planner.py.diff: Detailed diff for planner
+- server.py.diff: Detailed diff for server
+- git_log.txt: Git log
+- commit_details.txt: Commit details
+- R4_G1_RAW_RUNTIME.txt: Raw runtime evidence
+
+Commit: 22dc346cb9ce8f4bab7ae2fc188fdccce1c034ad
+Parent: e03811c81ee30be2464deaab81c776f1de6db10e
+Branch: p0213/vfinal5-r3-choke-point

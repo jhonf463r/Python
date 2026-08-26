@@ -1,0 +1,32 @@
+R3.3 C2 FORENSIC REBUILD - PROCESS IDENTITY RAW
+===============================================
+
+Extracted from 05_RAW_C2_RUNTIME.txt:
+
+Test 1 (test_real_self_update_authorized):
+[AuthorityServer]   Client PID (OS-observed): 13456
+[AuthorityServer]   Authority PID: 6600
+[AuthorityServer]   PID equality check: False
+[C2 Test] Client PID: 13456, Authority PID: 6600
+[C2 Test] Process separation: True
+
+Test 2 (test_self_update_wrong_session_denied):
+[AuthorityServer]   Client PID (OS-observed): 15968
+[AuthorityServer]   Authority PID: 6608
+[AuthorityServer]   PID equality check: False
+[C2 Test] Client PID: 15968, Authority PID: 6608
+[C2 Test] Process separation: True
+
+Test 3 (test_self_update_wrong_target_denied):
+[AuthorityServer]   Client PID (OS-observed): 8912
+[AuthorityServer]   Authority PID: 1672
+[AuthorityServer]   PID equality check: False
+[C2 Test] Client PID: 8912, Authority PID: 1672
+[C2 Test] Process separation: True
+
+CLIENT_PID = 13456 (example from test 1)
+AUTHORITY_PID = 6600 (example from test 1)
+OS_OBSERVED_CLIENT_PID = 13456 (from GetNamedPipeClientProcessId)
+PIDS_EQUAL = False (different processes)
+PROCESS_SEPARATION = TRUE
+NAMED_PIPE_REAL = TRUE (\\.\pipe\IABV_Authority)

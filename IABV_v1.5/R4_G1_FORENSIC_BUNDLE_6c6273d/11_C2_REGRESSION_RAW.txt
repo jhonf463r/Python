@@ -1,0 +1,4 @@
+# C2 regression raw evidence
+# C2 components not modified - only used via acquire_capability_for_execution
+# Existing C2 regression tests should pass without modification
+# Runtime evidence will be captured during independent audit

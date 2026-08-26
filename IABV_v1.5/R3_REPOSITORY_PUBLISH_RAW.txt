@@ -1,0 +1,156 @@
+R3 REPOSITORY PUBLISH RAW EVIDENCE
+=================================
+
+COMMAND: git rev-parse HEAD
+OUTPUT:
+e03811c81ee30be2464deaab81c776f1de6db10e
+
+COMMAND: git branch --show-current
+OUTPUT:
+p0213/vfinal5-r3-choke-point
+
+COMMAND: git status --porcelain=v1
+OUTPUT:
+?? IABV_v1.5/09_PROCESS_IDENTITY_FRESH.txt
+?? IABV_v1.5/R3.3_C2_FINAL_FORENSIC_BUNDLE_87224e8/
+?? IABV_v1.5/R3.3_C2_FINAL_FORENSIC_BUNDLE_e03811c/
+?? IABV_v1.5/R3.3_C2_FORENSIC_BUNDLE/
+?? IABV_v1.5/R3.3_C2_FORENSIC_REBUILD_5870015c/
+?? IABV_v1.5/R3_REPOSITORY_IDENTITY.txt
+?? IABV_v1.5/R3_REPOSITORY_IDENTITY_RAW.txt
+?? IABV_v1.5/final_c2_full_runtime.txt
+?? IABV_v1.5/final_c2_raw_runtime.txt
+?? IABV_v1.5/final_windows_e2e_full_runtime.txt
+?? IABV_v1.5/final_windows_e2e_raw_runtime.txt
+?? IABV_v1.5/production_path_full_runtime.txt
+?? IABV_v1.5/production_path_raw_runtime.txt
+?? IABV_v1.5/r3_3_c2_raw_runtime.txt
+?? IABV_v1.5/r3_3_windows_e2e_raw_runtime.txt
+
+COMMAND: git remote -v
+OUTPUT:
+origin  https://github.com/jhonf463r/Python.git (fetch)
+origin  https://github.com/jhonf463r/Python.git (push)
+
+COMMAND: git cat-file -t e03811c81ee30be2464deaab81c776f1de6db10e
+OUTPUT:
+commit
+
+COMMAND: git show --no-patch --decorate --oneline e03811c81ee30be2464deaab81c776f1de6db10e
+OUTPUT:
+e03811c81 (HEAD -> p0213/vfinal5-r3-choke-point) R3.3: verify existing execution protected effect
+
+COMMAND: git fetch origin --prune
+OUTPUT:
+[no output - fetch completed successfully]
+
+COMMAND: git ls-remote origin refs/heads/p0213/vfinal5-r3-choke-point (BEFORE PUSH)
+OUTPUT:
+[empty - branch did not exist remotely before push]
+
+COMMAND: git push -u origin p0213/vfinal5-r3-choke-point
+OUTPUT:
+Enumerating objects: 1352, done.
+Counting objects: 100% (1352/1352), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (1290/1290), done.
+Writing objects: 100% (1314/1314), 22.45 MiB | 1.17 MiB/s, done.
+Total 1314 (delta 261), reused 139 (delta 11), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (261/261), completed with 26 local objects.
+remote: 
+remote: Create a pull request for 'p0213/vfinal5-r3-choke-point' on GitHub by visiting:
+remote:      https://github.com/jhonf463r/Python/pull/new/p0213/vfinal5-r3-choke-point
+remote: 
+remote: GitHub found 61 vulnerabilities on jhonf463r/Python's default branch (2 critical, 28 high, 28 moderate, 3 low). To find out more, visit:
+remote:      https://github.com/jhonf463r/Python/security/dependabot
+remote: 
+To https://github.com/jhonf463r/Python.git
+ * [new branch]          p0213/vfinal5-r3-choke-point -> p0213/vfinal5-r3-choke-point
+branch 'p0213/vfinal5-r3-choke-point' set up to track 'origin/p0213/vfinal5-r3-choke-point'.
+
+COMMAND: git ls-remote origin refs/heads/p0213/vfinal5-r3-choke-point (AFTER PUSH)
+OUTPUT:
+e03811c81ee30be2464deaab81c776f1de6db10e        refs/heads/p0213/vfinal5-r3-choke-point
+
+COMMAND: git fetch origin p0213/vfinal5-r3-choke-point
+OUTPUT:
+From https://github.com/jhonf463r/Python
+ * branch                p0213/vfinal5-r3-choke-point -> FETCH_HEAD
+
+COMMAND: git rev-parse origin/p0213/vfinal5-r3-choke-point
+OUTPUT:
+e03811c81ee30be2464deaab81c776f1de6db10e
+
+COMMAND: git show --no-patch --format=fuller origin/p0213/vfinal5-r3-choke-point
+OUTPUT:
+commit e03811c81ee30be2464deaab81c776f1de6db10e (HEAD -> p0213/vfinal5-r3-choke-point, origin/p0213/vfinal5-r3-choke-point)
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Tue Aug 25 17:51:36 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Tue Aug 25 17:51:36 2026 -0500
+
+    R3.3: verify existing execution protected effect
+
+COMMAND: git ls-tree -r origin/p0213/vfinal5-r3-choke-point --name-only | Select-String "trust|windows_e2e|capability_lifecycle|authority_server|authority_client|authority_service|capability_action_bridge|self_update_tools|test_c2_real_self_update_authority"
+OUTPUT:
+PHASE11_WINDOWS_E2E.md
+VFINAL5_R3_2_FINAL_WINDOWS_E2E_JUNIT.xml
+VFINAL5_R3_2_WINDOWS_E2E_BUNDLE_SHA256.txt
+VFINAL5_R3_3_WINDOWS_E2E_FINAL_JUNIT.xml
+VFINAL5_R3_3_WINDOWS_E2E_RAW_EVIDENCE.md
+WINDOWS_E2E_RAW_EVIDENCE.md
+docs/P0_213_V5R16_WINDOWS_E2E_EVIDENCE_REPORT.md
+src/iabv_v15/infra/mcp/self_update_tools.py
+src/iabv_v15/services/trust/__init__.py
+src/iabv_v15/services/trust/authority_client.py
+src/iabv_v15/services/trust/authority_process.py
+src/iabv_v15/services/trust/authority_protocol.py
+src/iabv_v15/services/trust/authority_server.py
+src/iabv_v15/services/trust/authority_service.py
+src/iabv_v15/services/trust/capability_action_bridge.py
+src/iabv_v15/services/trust/capability_lifecycle.py
+src/iabv_v15/services/trust/protected_side_effects.py
+src/iabv_v15/services/trust/root_trust_anchor.py
+src/iabv_v15/services/trust/test_phase3_transport_integration.py
+src/iabv_v15/services/trust/trusted_execution_identity.py
+src/iabv_v15/services/trust/trusted_lease.py
+tests/test_v5_phase1_trust_boundary_skeleton.py
+tests/windows_e2e/check_db_state.py
+tests/windows_e2e/conftest.py
+tests/windows_e2e/control_pipe_client.py
+tests/windows_e2e/control_pipe_server.py
+tests/windows_e2e/test_c2_real_self_update_authority.py
+tests/windows_e2e/test_concurrency.py
+tests/windows_e2e/test_exactly_once.py
+tests/windows_e2e/test_f15_autonomous_evolution_authority.py
+tests/windows_e2e/test_lifecycle.py
+tests/windows_e2e/test_replay_rejection.py
+tests/windows_e2e/test_transport_failure.py
+tests/windows_e2e/windows_e2e_test.py
+windows_e2e_junit.xml
+
+COMMAND: git rev-parse HEAD (FINAL VERIFICATION)
+OUTPUT:
+e03811c81ee30be2464deaab81c776f1de6db10e
+
+COMMAND: git rev-parse origin/p0213/vfinal5-r3-choke-point (FINAL VERIFICATION)
+OUTPUT:
+e03811c81ee30be2464deaab81c776f1de6db10e
+
+COMMAND: git status --porcelain=v1 (FINAL VERIFICATION)
+OUTPUT:
+?? IABV_v1.5/09_PROCESS_IDENTITY_FRESH.txt
+?? IABV_v1.5/R3.3_C2_FINAL_FORENSIC_BUNDLE_87224e8/
+?? IABV_v1.5/R3.3_C2_FINAL_FORENSIC_BUNDLE_e03811c/
+?? IABV_v1.5/R3.3_C2_FORENSIC_BUNDLE/
+?? IABV_v1.5/R3.3_C2_FORENSIC_REBUILD_5870015c/
+?? IABV_v1.5/R3_REPOSITORY_IDENTITY.txt
+?? IABV_v1.5/R3_REPOSITORY_IDENTITY_RAW.txt
+?? IABV_v1.5/final_c2_full_runtime.txt
+?? IABV_v1.5/final_c2_raw_runtime.txt
+?? IABV_v1.5/final_windows_e2e_full_runtime.txt
+?? IABV_v1.5/final_windows_e2e_raw_runtime.txt
+?? IABV_v1.5/production_path_full_runtime.txt
+?? IABV_v1.5/production_path_raw_runtime.txt
+?? IABV_v1.5/r3_3_c2_raw_runtime.txt
+?? IABV_v1.5/r3_3_windows_e2e_raw_runtime.txt

@@ -1,0 +1,29 @@
+R3.3 C2 FINAL FORENSIC - PROCESS IDENTITY RAW
+============================================
+
+SOURCE_FILE = production_path_full_runtime.txt
+EXTRACTION_METHOD = Select-String -Pattern "Client PID|Authority PID"
+EXTRACTION_DATE = 2026-08-25
+
+FRESH PID VALUES FROM FINAL RUNTIME:
+------------------------------------
+
+Test 1 (test_real_production_path_existing_execution):
+[AuthorityServer]   Client PID (OS-observed): 8532
+[AuthorityServer]   Authority PID: 11052
+[C2 Test] Client PID: 8532, Authority PID: 11052
+SOURCE_LINE_OR_PATTERN = lines 32-35
+
+SUMMARY:
+--------
+CLIENT_PID = 8532
+AUTHORITY_PID = 11052
+OS_OBSERVED_CLIENT_PID = 8532 (from GetNamedPipeClientProcessId)
+PIDS_EQUAL = False (different processes)
+PROCESS_SEPARATION = TRUE
+NAMED_PIPE_REAL = TRUE (\\.\pipe\IABV_Authority)
+
+VERIFICATION:
+- All PIDs extracted from fresh runtime files
+- No recycled values from previous bundles
+- Values match across AuthorityServer and C2 Test logs

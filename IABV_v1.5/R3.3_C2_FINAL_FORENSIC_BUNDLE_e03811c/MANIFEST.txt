@@ -1,0 +1,106 @@
+R3.3 C2 FINAL FORENSIC BUNDLE MANIFEST
+=====================================
+
+This bundle contains forensic evidence for R3.3 C2 final blocker corrections.
+Base commit: 5870015c0ee7cae8c13b3ae94059112343141885
+Previous commit: 87224e89e40412bad900eec6579a84a406869de4
+New commit: e03811c81ee30be2464deaab81c776f1de6db10e
+Branch: p0213/vfinal5-r3-choke-point
+
+CONTENTS
+--------
+
+00_METADATA.txt
+  - Repository state and execution metadata
+  - Lists modifications made to extend production path test
+  - Contains BASE_SHA, NEW_SHA, PARENT_SHA
+
+01_SOURCE/
+  - authority_client.py
+  - authority_protocol.py
+  - authority_server.py
+  - authority_service.py
+  - capability_action_bridge.py
+  - capability_lifecycle.py
+  - conftest.py
+  - self_update_tools.py
+  - test_c2_real_self_update_authority.py (MODIFIED - extended production path test)
+  - test_concurrency.py
+  - test_exactly_once.py
+  - test_lifecycle.py
+  - test_replay_rejection.py
+  - test_transport_failure.py
+
+02_DIFF.patch
+  - Git diff from previous commit to new commit
+
+03_CHANGED_FILES.txt
+  - List of modified files
+
+04_RAW_COMMANDS.txt
+  - Commands executed to generate evidence
+
+05_RAW_C2_RUNTIME.txt
+  - RAW runtime output from production path test (unedited)
+
+06_RAW_WINDOWS_E2E_RUNTIME.txt
+  - RAW runtime output from all C2 tests (unedited)
+
+07_REPOSITORY_BEFORE.txt
+  - Repository state before (captured from runtime)
+
+08_REPOSITORY_AFTER.txt
+  - Repository state after (captured from runtime)
+
+09_PROCESS_IDENTITY_RAW.txt
+  - Process identity evidence extracted from fresh runtime
+  - FRESH PIDs from final execution (not recycled)
+
+10_NEGATIVE_TEST_RAW.txt
+  - Negative test evidence extracted from runtime
+
+11_TEARDOWN_RAW.txt
+  - Teardown evidence extracted from runtime
+
+12_TEST_INVENTORY.txt
+  - Actual test files in checkout
+
+13_SECURITY_SEMANTICS.md
+  - Analysis of security semantic changes
+
+14_LIMITATIONS.md
+  - Self-identified limitations
+
+15_SHA256_MANIFEST.txt
+  - SHA-256 hashes of all bundle files
+
+MANIFEST.txt
+  - This file
+
+TOTAL FILES: 17
+TOTAL SOURCE FILES: 14
+TOTAL DOCUMENTATION FILES: 15
+
+RAW EVIDENCE FILES (unedited):
+- 05_RAW_C2_RUNTIME.txt
+- 06_RAW_WINDOWS_E2E_RUNTIME.txt
+
+KEY CHANGES:
+- Extended test_real_production_path_existing_execution to perform real protected effect
+- Demonstrates full flow: existing execution → acquire_capability_for_existing_execution → real protected effect → real file mutation
+- Captures repository state before and after
+- Verifies git diff shows the change
+
+TEST RESULTS:
+- Production path test: 1 passed
+- C2 tests: 10 passed
+- Windows E2E tests: 5 passed
+- Total: 16 passed, 0 failed
+
+EVIDENCE OF REAL FILE MUTATION:
+- Initial content: "# Initial content"
+- Final content: "# Production path modification"
+- Initial SHA256: 32fe4aefc0ba57bf41be1a1bb68d6af792404ba327c2267b68c771dcd44bb4db
+- Final SHA256: a4827cb0c3f05d75803d1edff5456f2f7afcf8100561b0d4979b7b5bea477763
+- Git diff shows the change
+- Git status shows "M test_module.py"

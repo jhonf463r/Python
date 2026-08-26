@@ -1,0 +1,28 @@
+R3.3 C2 FORENSIC REBUILD - RAW COMMANDS
+=====================================
+
+RUN 1 - C2 TEST
+---------------
+DATE = 2026-08-25
+TIME = 17:10 (UTC-05:00)
+HOST = Windows
+PYTHON_VERSION = 3.13.2
+PYTEST_VERSION = 9.0.3
+GIT_SHA = 5870015c0ee7cae8c13b3ae94059112343141885
+BRANCH = p0213/vfinal5-r3-choke-point
+WORKING_DIRECTORY = C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+COMMAND = $env:PYTHONUNBUFFERED="1"; python -m pytest tests/windows_e2e/test_c2_real_self_update_authority.py::TestC2RealSelfUpdateAuthority -v -s --tb=short 2>&1 | Tee-Object -FilePath r3_3_c2_raw_runtime.txt
+EXIT_CODE = 1 (but 9 tests passed, exit code from PowerShell tee)
+
+RUN 2 - WINDOWS E2E REGRESSION
+------------------------------
+DATE = 2026-08-25
+TIME = 17:11 (UTC-05:00)
+HOST = Windows
+PYTHON_VERSION = 3.13.2
+PYTEST_VERSION = 9.0.3
+GIT_SHA = 5870015c0ee7cae8c13b3ae94059112343141885
+BRANCH = p0213/vfinal5-r3-choke-point
+WORKING_DIRECTORY = C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+COMMAND = $env:PYTHONUNBUFFERED="1"; python -m pytest tests/windows_e2e/test_replay_rejection.py::test_replay_rejection tests/windows_e2e/test_exactly_once.py::test_exactly_once tests/windows_e2e/test_transport_failure.py::test_transport_failure tests/windows_e2e/test_concurrency.py::test_concurrency tests/windows_e2e/test_lifecycle.py::test_lifecycle -v -s --tb=short 2>&1 | Tee-Object -FilePath r3_3_windows_e2e_raw_runtime.txt
+EXIT_CODE = 1 (but 5 tests passed, exit code from PowerShell tee)

@@ -1,0 +1,65 @@
+R3.3 PRODUCTION vs TEST CLASSIFICATION
+======================================
+
+Modified Files in R3.3 (relevant to C2 audit):
+
+PRODUCTION
+----------
+src/iabv_v15/services/trust/authority_server.py
+  - Classification: PRODUCTION
+  - Reason: Core authority server implementation, handles Named Pipe IPC and authorization decisions
+  - R3.3 Change: Fixed PID logging to show actual boolean equality check (lines 264-271)
+
+src/iabv_v15/services/trust/capability_lifecycle.py
+  - Classification: PRODUCTION
+  - Reason: Production capability acquisition functions used by MCP tools
+  - R3.3 Change: Added session_id and episode_id parameters to issue_lease() call (lines 79-85)
+
+src/iabv_v15/services/trust/capability_action_bridge.py
+  - Classification: PRODUCTION
+  - Reason: Enforcement point for capability authorization before protected effects
+  - R3.3 Change: NO CHANGE (already implemented correctly)
+
+src/iabv_v15/services/trust/authority_client.py
+  - Classification: PRODUCTION
+  - Reason: Client for Named Pipe IPC to authority server
+  - R3.3 Change: NO CHANGE (already implemented correctly)
+
+src/iabv_v15/services/trust/authority_service.py
+  - Classification: PRODUCTION
+  - Reason: Authority service implementation
+  - R3.3 Change: NO CHANGE (already implemented correctly)
+
+src/iabv_v15/services/trust/authority_protocol.py
+  - Classification: PRODUCTION
+  - Reason: Protocol definitions for authority communication
+  - R3.3 Change: NO CHANGE (already implemented correctly)
+
+src/iabv_v15/infra/mcp/self_update_tools.py
+  - Classification: PRODUCTION
+  - Reason: MCP tools for self-update, contains write_repo_file_impl used in C2 test
+  - R3.3 Change: NO CHANGE (already implemented correctly with CapabilityActionBridge)
+
+TEST
+----
+tests/windows_e2e/test_c2_real_self_update_authority.py
+  - Classification: TEST
+  - Reason: C2 runtime test for real self-update with authority
+  - R3.3 Change: Refactored to use acquire_capability_for_execution() and write_repo_file_impl() real functions
+
+tests/windows_e2e/test_lifecycle.py
+  - Classification: TEST
+  - Reason: Windows E2E test for authority lifecycle
+  - R3.3 Change: Updated to unpack (service, authority_pid) tuple from authority_service fixture
+
+tests/windows_e2e/test_concurrency.py
+  - Classification: TEST
+  - Reason: Windows E2E test for concurrent lease redemption
+  - R3.3 Change: Updated to unpack (service, authority_pid) tuple from authority_service fixture
+
+TEST_HARNESS
+------------
+tests/windows_e2e/conftest.py
+  - Classification: TEST_HARNESS
+  - Reason: Pytest fixture configuration for Windows E2E tests
+  - R3.3 Change: Changed AuthorityServer from threading.Thread to multiprocessing.Process for real process separation

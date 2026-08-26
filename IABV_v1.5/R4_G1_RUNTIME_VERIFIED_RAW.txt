@@ -1,0 +1,80 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-9.0.3, pluggy-1.5.0 -- C:\Users\faber\miniconda3\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.11.0
+collecting ... collected 5 items
+
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_code_verification PASSED [ 20%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_mcp_registration PASSED [ 40%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_negative_unsupported_tool PASSED [ 60%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_real_e2e FAILED [ 80%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_negative_real_e2e PASSED [100%]
+
+================================== FAILURES ===================================
+______________________________ test_g1_real_e2e _______________________________
+tests\windows_e2e\test_g1_goal_to_protected_tool.py:245: in test_g1_real_e2e
+    pytest.fail("CloudReasoningPlannerService not available - REAL_PROVIDER_UNAVAILABLE. Real E2E execution requires provider.")
+E   Failed: CloudReasoningPlannerService not available - REAL_PROVIDER_UNAVAILABLE. Real E2E execution requires provider.
+---------------------------- Captured stdout setup ----------------------------
+[conftest] Authority process started with PID: 22068
+[AuthorityServer] Starting server thread...
+
+[AuthorityServer] Server loop starting
+
+[AuthorityServer] Server thread started
+
+[AuthorityServer] Using pipe name: \\.\pipe\IABV_Authority
+
+[AuthorityServer] Creating pipe #1...
+
+[AuthorityServer] CreateNamedPipe parameters:
+
+[AuthorityServer]   Pipe name: \\.\pipe\IABV_Authority
+
+[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x3)
+
+[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x6)
+
+[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES
+
+[AuthorityServer]   Out buffer size: 4096
+
+[AuthorityServer]   In buffer size: 4096
+
+[AuthorityServer]   Default timeout: 0
+
+[AuthorityServer]   Security attributes: NONE (maximum compatibility)
+
+[AuthorityServer] Named pipe created: handle=<PyHANDLE:608>
+
+[AuthorityServer] Pipe created successfully, now waiting for client connection...
+
+[AuthorityServer] Pipe handle: <PyHANDLE:608>
+
+[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...
+
+[AuthorityServer] Client connected successfully!
+
+[AuthorityServer] About to handle client...
+
+[AuthorityServer] Client connected
+
+[AuthorityServer]   Client PID (OS-observed): 13056
+
+[AuthorityServer]   Authority PID: 22068
+
+[AuthorityServer]   PID equality check: False
+
+[conftest] Pipe available after 0.0s
+---------------------------- Captured stdout call -----------------------------
+[AuthorityClient] Client process identity:\n[AuthorityClient]   PID: 13056\n[AuthorityClient]   Username: faber\n[AuthorityClient]   Token User SID: PySID:S-1-5-21-2707673465-1675723077-628902743-1001\n[AuthorityClient]   Session ID: 1\n[AuthorityClient]   Integrity Level: (<PySID object at 0x000001D5285DAE30>, 96)\n[AuthorityClient]   Thread Token: (none)\n[AuthorityClient] Connecting to \\\\.\\pipe\\IABV_Authority...\n[AuthorityClient] Pipe name length: 23\n[AuthorityClient] Pipe name repr: '\\\\\\\\.\\\\pipe\\\\IABV_Authority'\n[AuthorityClient] Desired access: GENERIC_READ | GENERIC_WRITE\n[AuthorityClient] Share mode: 0 (no sharing)\n[AuthorityClient] Creation disposition: OPEN_EXISTING\n[AuthorityClient] Flags/attributes: 0\n[AuthorityClient] Attempt 1: CreateFile\n[AuthorityClient]   desired_access=0x-40000000\n[AuthorityClient]   share_mode=0x0\n[AuthorityClient]   creation_disposition=0x3\n[AuthorityClient]   flags_and_attributes=0x0\n[AuthorityClient] Win32 error on attempt 1:\n[AuthorityClient]   Error code: 231\n[AuthorityClient]   Error message: Todas las instancias de canalizaci\xf3n est\xe1n en uso.\n[AuthorityClient]   Function: CreateFile\n[AuthorityClient] Pipe busy (attempt 1/30)\n[AuthorityServer] Error processing request: Failed to read message: (109, 'ReadFile', 'Ha terminado la canalizaci\ufffdn.')\r\n[AuthorityServer] Connection closing\r\n[AuthorityServer]   Total requests processed: 0\r\n[AuthorityServer]   OS identity verification:\r\n[AuthorityServer]   Observed client PID: 13056\r\n[AuthorityServer]   Authority PID: 22068\r\n[AuthorityServer]   PIDs are different: True\r\n[AuthorityServer] Pipe closed\r\n[AuthorityServer] Client handling complete\r\n[AuthorityServer] Pipe closed, will create new pipe for next client\r\n[AuthorityServer] Creating pipe #2...\r\n[AuthorityServer] CreateNamedPipe parameters:\r\n[AuthorityServer]   Pipe name: \\\\.\\pipe\\IABV_Authority\r\n[AuthorityServer]   Pipe access: PIPE_ACCESS_DUPLEX (0x3)\r\n[AuthorityServer]   Pipe type: PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT (0x6)\r\n[AuthorityServer]   Max instances: PIPE_UNLIMITED_INSTANCES\r\n[AuthorityServer]   Out buffer size: 4096\r\n[AuthorityServer]   In buffer size: 4096\r\n[AuthorityServer]   Default timeout: 0\r\n[AuthorityServer]   Security attributes: NONE (maximum compatibility)\r\n[AuthorityServer] Named pipe created: handle=<PyHANDLE:608>\r\n[AuthorityServer] Pipe created successfully, now waiting for client connection...\r\n[AuthorityServer] Pipe handle: <PyHANDLE:608>\r\n[AuthorityServer] Calling ConnectNamedPipe (blocking until client connects)...\r\n[AuthorityClient] Attempt 2: CreateFile\n[AuthorityClient]   desired_access=0x-40000000\n[AuthorityClient]   share_mode=0x0\n[AuthorityClient]   creation_disposition=0x3\n[AuthorityClient]   flags_and_attributes=0x0\n[AuthorityClient] Connected on attempt 2\n[AuthorityClient] Pipe handle: <PyHANDLE:576>\n[AuthorityServer] Client connected successfully!\r\n[AuthorityServer] About to handle client...\r\n[AuthorityServer] Client connected\r\n[AuthorityServer]   Client PID (OS-observed): 13056\r\n[AuthorityServer]   Authority PID: 22068\r\n[AuthorityServer]   PID equality check: False\r
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):\r\n  File "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\src\\iabv_v15\\services\\trust\\authority_server.py", line 200, in _read_message\r\n    result = win32file.ReadFile(pipe_handle, MESSAGE_HEADER_SIZE - len(header))\r\npywintypes.error: (109, 'ReadFile', 'Ha terminado la canalizaci\ufffdn.')\r\n\r\nDuring handling of the above exception, another exception occurred:\r\n\r\nTraceback (most recent call last):\r\n  File "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\src\\iabv_v15\\services\\trust\\authority_server.py", line 306, in _handle_client\r\n    request_data = self._read_message(pipe_handle)\r\n  File "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\src\\iabv_v15\\services\\trust\\authority_server.py", line 235, in _read_message\r\n    raise RuntimeError(f"Failed to read message: {e}")\r\nRuntimeError: Failed to read message: (109, 'ReadFile', 'Ha terminado la canalizaci\ufffdn.')\r
+-------------------------- Captured stdout teardown ---------------------------
+[conftest] Stopping authority server process...
+[conftest] Authority server stopped
+=========================== short test summary info ===========================
+FAILED tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_real_e2e
+========================= 1 failed, 4 passed in 7.00s =========================

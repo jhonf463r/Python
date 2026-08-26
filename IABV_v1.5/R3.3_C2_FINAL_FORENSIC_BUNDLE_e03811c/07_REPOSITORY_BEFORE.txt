@@ -1,0 +1,14 @@
+R3.3 C2 FINAL FORENSIC - REPOSITORY BEFORE
+===========================================
+
+Extracted from production_path_full_runtime.txt:
+
+[C2 Production Path Test] Initial HEAD: d9fdc3e75a074e1c9864c38dff49e9d0af585cf1
+[C2 Production Path Test] Initial status: 
+[C2 Production Path Test] Initial file hash: 32fe4aefc0ba57bf41be1a1bb68d6af792404ba327c2267b68c771dcd44bb4db
+
+TARGET_FILE = test_module.py
+INITIAL_CONTENT = # Initial content
+INITIAL_SHA256 = 32fe4aefc0ba57bf41be1a1bb68d6af792404ba327c2267b68c771dcd44bb4db
+GIT_HEAD = d9fdc3e75a074e1c9864c38dff49e9d0af585cf1
+GIT_STATUS = (empty - clean working tree)

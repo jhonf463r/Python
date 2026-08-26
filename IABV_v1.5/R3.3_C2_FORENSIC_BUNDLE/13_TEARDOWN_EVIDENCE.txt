@@ -1,0 +1,80 @@
+R3.3 TEARDOWN EVIDENCE
+=====================
+
+AUTHORITY PROCESS START
+-----------------------
+Authority process started via multiprocessing.Process (conftest.py line 49)
+PID: 6600 (example from test output)
+Logged: "[conftest] Authority process started with PID: 6600"
+
+TERMINATION REQUESTED
+---------------------
+Code location: conftest.py lines 90-92
+```python
+print("[conftest] Stopping authority server process...", flush=True)
+authority_process.terminate()
+authority_process.join(timeout=5.0)
+```
+
+PROCESS EXIT BEHAVIOR
+---------------------
+The process is expected to exit naturally after terminate() signal.
+If it does not exit within 5 seconds, a fallback to kill() is used.
+
+Code location: conftest.py lines 94-97
+```python
+if authority_process.is_alive():
+    print("[conftest] Authority process still alive, killing...", flush=True)
+    authority_process.kill()
+    authority_process.join(timeout=2.0)
+```
+
+TIMEOUT
+-------
+Initial timeout: 5.0 seconds (line 92)
+Fallback timeout: 2.0 seconds (line 97)
+
+KILL FALLBACK
+-------------
+Kill fallback is used if process.is_alive() returns True after initial terminate() + join.
+
+From test output, the process typically exits cleanly:
+"[conftest] Authority server stopped"
+
+No evidence of kill fallback being triggered in the observed test runs.
+
+PROCESS EXIT CODE
+------------------
+Exit code is not explicitly logged in the test output.
+The teardown code does not check or log the exit code.
+
+TEMP DIRECTORY CLEANUP
+-----------------------
+Code location: conftest.py lines 101-104
+```python
+import shutil
+if tmpdir_path.exists():
+    shutil.rmtree(tmpdir_path, ignore_errors=True)
+```
+
+Note: ignore_errors=True is still present in the cleanup code.
+This means cleanup failures would be silently ignored.
+
+CLEANUP EXCEPTIONS
+------------------
+No cleanup exceptions were observed in the test output.
+
+FINAL PROCESS EXISTENCE CHECK
+------------------------------
+The teardown code does not perform a final process existence check after cleanup.
+It relies on the join() timeout behavior.
+
+LIMITATION
+----------
+The teardown does not verify:
+- The actual exit code of the authority process
+- Whether the Named Pipe was properly closed
+- Whether any handles were leaked
+- Whether the temp directory was successfully cleaned (ignore_errors=True hides failures)
+
+This is a limitation of the current test harness.

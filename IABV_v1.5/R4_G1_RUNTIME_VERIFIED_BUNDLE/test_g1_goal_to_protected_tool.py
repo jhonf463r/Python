@@ -164,24 +164,7 @@ def test_g1_real_e2e(authority_service, workspace_root):
             self.perception_cross_validator = None
             self.github_remote_service = None
 
-            # Create cloud reasoning planner with production-like initialization
-            # Production sets CloudReasoningPlannerService._model_selector class variable
-            # For E2E test, we verify the planner can be initialized and diagnose provider availability
-            from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
-            
-            # Check if model selector is set (production sets this class variable)
-            if CloudReasoningPlannerService._model_selector is None:
-                # Try to create a minimal selector for test (not a mock, just infrastructure)
-                # If this fails, we report the real error
-                try:
-                    from iabv_v15.services.evolution.adaptive_model_selector import AdaptiveModelSelector
-                    import tempfile
-                    temp_data_dir = tempfile.mkdtemp()
-                    CloudReasoningPlannerService._model_selector = AdaptiveModelSelector(data_dir=temp_data_dir)
-                except Exception as e:
-                    # Log the real initialization error
-                    pass  # Will be caught and reported below
-            
+            # Create cloud reasoning planner
             self.cloud_reasoning_planner = CloudReasoningPlannerService()
 
             # Create minimal mock orchestrator with cloud planner
@@ -256,50 +239,12 @@ def test_g1_real_e2e(authority_service, workspace_root):
     # Verify result structure
     assert result['status'] in ['ok', 'error'], f"Invalid status: {result.get('status')}"
     
-    # Debug: print full result to see what's happening
-    print(f"\nG1_RESULT_STATUS = {result.get('status')}")
-    print(f"G1_RESULT_KEYS = {list(result.keys())}")
-    if 'error' in result:
-        print(f"G1_ERROR = {result.get('error')}")
-    if 'trace' in result:
-        trace = result['trace']
-        print(f"TRACE_STEPS_COUNT = {len(trace.get('steps', []))}")
-        for step in trace.get('steps', []):
-            print(f"  STEP: {step.get('step')} = {step.get('status')}")
-            if step.get('status') == 'error':
-                print(f"    ERROR = {step.get('error')}")
-    
-    # Check real provider status with detailed diagnostics
+    # Check real provider status
     real_provider_call = result.get('real_provider_call')
-    print(f"REAL_PROVIDER_CALL = {real_provider_call}")
-    
-    # Diagnose provider availability
-    import os
-    provider_status = {
-        'OPENAI_API_KEY': bool(os.environ.get('OPENAI_API_KEY')),
-        'GEMINI_API_KEY': bool(os.environ.get('GEMINI_API_KEY')),
-        'GROQ_API_KEY': bool(os.environ.get('GROQ_API_KEY')),
-        'IABV_OLLAMA_BASE_URL': os.environ.get('IABV_OLLAMA_BASE_URL'),
-        'IABV_OLLAMA_MODEL': os.environ.get('IABV_OLLAMA_MODEL'),
-    }
-    
-    # Get API health status from planner
-    api_health = CloudReasoningPlannerService.get_api_health()
-    
     if real_provider_call == 'REAL_PROVIDER_UNAVAILABLE':
-        pytest.fail(
-            f"CloudReasoningPlannerService not available - REAL_PROVIDER_UNAVAILABLE.\n"
-            f"Provider status: {provider_status}\n"
-            f"API health: {api_health}\n"
-            f"Real E2E execution requires provider."
-        )
+        pytest.fail("CloudReasoningPlannerService not available - REAL_PROVIDER_UNAVAILABLE. Real E2E execution requires provider.")
     elif real_provider_call == 'REAL_PROVIDER_ERROR':
-        pytest.fail(
-            f"CloudReasoningPlannerService error - REAL_PROVIDER_ERROR.\n"
-            f"Provider status: {provider_status}\n"
-            f"API health: {api_health}\n"
-            f"Real E2E execution failed."
-        )
+        pytest.fail("CloudReasoningPlannerService error - REAL_PROVIDER_ERROR. Real E2E execution failed.")
     
     assert real_provider_call == 'REAL_PROVIDER_SUCCESS', f"Expected REAL_PROVIDER_SUCCESS, got {real_provider_call}"
 

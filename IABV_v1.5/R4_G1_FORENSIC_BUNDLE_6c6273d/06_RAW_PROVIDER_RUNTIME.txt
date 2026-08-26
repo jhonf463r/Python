@@ -1,0 +1,3 @@
+# Raw provider runtime evidence
+# CloudReasoningPlannerService not executed in this session
+# Provider runtime evidence will be captured during independent audit

@@ -1,0 +1,19 @@
+R3.3 RELEVANT CHANGED FILES
+==========================
+
+NOTE: The full commit 5870015c0 includes many additional files (temp_audit_bundle_vfinal4, 
+windows-phase3-test-results, etc.) which are NOT relevant to the C2 audit scope.
+
+The following files are the ONLY changes relevant to R3.3 C2 real self-update verification:
+
+M       tests/windows_e2e/conftest.py
+M       tests/windows_e2e/test_c2_real_self_update_authority.py
+M       tests/windows_e2e/test_lifecycle.py
+M       tests/windows_e2e/test_concurrency.py
+M       src/iabv_v15/services/trust/authority_server.py
+M       src/iabv_v15/services/trust/capability_lifecycle.py
+
+Legend:
+M = Modified
+A = Added
+D = Deleted

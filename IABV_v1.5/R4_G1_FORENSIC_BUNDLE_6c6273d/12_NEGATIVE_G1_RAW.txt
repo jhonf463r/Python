@@ -1,0 +1,3 @@
+# Negative G1 test raw evidence
+# test_g1_negative_unsupported_tool verifies canonical dispatch validation
+# Runtime evidence will be captured during independent audit

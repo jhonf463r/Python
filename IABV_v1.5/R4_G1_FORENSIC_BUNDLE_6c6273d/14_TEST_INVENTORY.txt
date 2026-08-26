@@ -1,0 +1,4 @@
+# Test inventory for R4 G1 corrections
+1. tests/windows_e2e/test_g1_goal_to_protected_tool.py
+   - test_g1_goal_to_protected_tool (positive test)
+   - test_g1_negative_unsupported_tool (negative test)

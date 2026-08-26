@@ -1,0 +1,24 @@
+R3.3 C2 FORENSIC REBUILD - NEGATIVE TEST RAW
+===========================================
+
+Extracted from 05_RAW_C2_RUNTIME.txt:
+
+All 8 negative tests passed:
+
+1. test_self_update_wrong_session_denied - PASSED
+2. test_self_update_wrong_episode_denied - PASSED
+3. test_self_update_wrong_execution_denied - PASSED
+4. test_self_update_wrong_run_denied - PASSED
+5. test_self_update_missing_lease_denied - PASSED
+6. test_self_update_replay_denied - PASSED
+7. test_self_update_wrong_action_denied - PASSED
+8. test_self_update_wrong_target_denied - PASSED
+
+The test output shows that each negative test verifies:
+- Authorization returns False or verification.get('valid') = False
+- File content does NOT contain the unauthorized modification
+
+UNAUTHORIZED_EFFECT_BLOCKED = TRUE
+
+Note: The test does not capture detailed git state before/after for negative tests.
+This is a limitation of the current test implementation.

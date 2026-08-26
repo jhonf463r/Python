@@ -1,0 +1,82 @@
+R3.3_C2_FORENSIC_BUNDLE MANIFEST
+================================
+
+This bundle contains forensic evidence for R3.3 C2 real self-update verification.
+Audited commit: 5870015c0ee7cae8c13b3ae94059112343141885
+Branch: p0213/vfinal5-r3-choke-point
+
+CONTENTS
+--------
+
+00_AUDIT_METADATA.txt
+  - Repository state and commit information
+  - Working tree status
+  - Audit scope definition
+
+01_source/
+  - authority_client.py
+  - authority_protocol.py
+  - authority_server.py
+  - authority_service.py
+  - capability_action_bridge.py
+  - capability_lifecycle.py
+  - conftest.py
+  - self_update_tools.py
+  - test_c2_real_self_update_authority.py
+  - test_concurrency.py
+  - test_lifecycle.py
+
+02_R3.3_DIFF.patch
+  - Git diff of R3.3 changes for relevant files
+
+03_CHANGED_FILES.txt
+  - List of modified files in R3.3
+
+04_PRODUCTION_TEST_CLASSIFICATION.txt
+  - Classification of modified files as PRODUCTION/TEST/TEST_HARNESS
+
+05_CALL_GRAPH.md
+  - Call graph reconstruction for capability acquisition, authorization, and protected effect
+
+06_RUNTIME_EVIDENCE.txt
+  - Complete runtime evidence from C2 test execution
+
+07_C2_TEST_RESULTS.txt
+  - Results of positive and negative C2 tests
+
+08_REPOSITORY_MUTATION_EVIDENCE.txt
+  - Evidence of real repository mutation via git
+
+09_PROTECTED_EFFECT_EVIDENCE.txt
+  - Evidence of authorization → effect flow
+
+10_PROCESS_IDENTITY_EVIDENCE.txt
+  - PID evidence demonstrating process separation
+
+11_PID_LOGGING.md
+  - Documentation of PID calculation and logging
+
+12_NEGATIVE_EFFECT_EVIDENCE.txt
+  - Evidence that unauthorized actions are blocked
+
+13_TEARDOWN_EVIDENCE.txt
+  - Evidence of process cleanup and teardown
+
+14_WINDOWS_E2E_REGRESSION.txt
+  - Evidence that R3.3 did not break existing Windows E2E tests
+
+15_SECURITY_SEMANTICS.md
+  - Analysis of security semantic changes in R3.3
+
+16_SELF_AUDIT_LIMITATIONS.md
+  - Self-identified limitations and potential false positives
+
+17_SHA_INTEGRITY.txt
+  - SHA-256 hashes of all bundle files
+
+MANIFEST.txt
+  - This file
+
+TOTAL FILES: 19
+TOTAL SOURCE FILES: 11
+TOTAL DOCUMENTATION FILES: 8

@@ -1,0 +1,9 @@
+R3.3 C2 FORENSIC REBUILD - REPOSITORY BEFORE
+===========================================
+
+NOT_CAPTURED_IN_TEST
+
+The C2 test does not capture repository state before the action.
+The test creates a temporary git repository but does not log the initial state.
+
+This is a limitation of the current test implementation.

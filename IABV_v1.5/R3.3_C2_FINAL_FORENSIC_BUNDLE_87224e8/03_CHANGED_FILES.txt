@@ -1,0 +1,26 @@
+R3.3 C2 FINAL FORENSIC - CHANGED FILES
+======================================
+
+Modified files (from base commit 5870015c0 to new commit 87224e89e):
+
+M       src/iabv_v15/services/trust/capability_lifecycle.py
+        - Added session_id and episode_id to issue_lease call in acquire_capability_for_existing_execution
+        - Lines 173-174 added
+
+M       tests/windows_e2e/conftest.py
+        - Removed ignore_errors=True from shutil.rmtree in teardown
+        - Line 104 changed
+
+M       tests/windows_e2e/test_lifecycle.py
+        - Fixed Unicode encoding error (replaced Unicode arrows with ASCII)
+        - Line 33 changed
+
+M       tests/windows_e2e/test_c2_real_self_update_authority.py
+        - Added test_real_production_path_existing_execution to test acquire_capability_for_existing_execution path
+        - Lines 457-534 added
+
+Total modified files: 4
+Total lines added: 83
+Total lines removed: 2
+
+All changes are bug fixes and test coverage improvements as requested.

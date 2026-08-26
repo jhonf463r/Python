@@ -1,0 +1,43 @@
+R3.3 REPOSITORY MUTATION EVIDENCE
+================================
+
+BEFORE STATE
+------------
+git rev-parse HEAD: <initial_commit_hash>
+git status --porcelain: (empty - clean working tree)
+git diff: (empty - no changes)
+target file (test_module.py): "# Initial content\n"
+
+ACTION
+------
+production function invoked = write_repo_file_impl() (self_update_tools.py:44-110)
+authorization invoked = CapabilityActionBridge.authorize_action() (capability_action_bridge.py:94-142)
+authorization result = ActionAuthorization(authorized=True, consumed_at=<timestamp>)
+protected function invoked = target.write_text(content, encoding="utf-8") (self_update_tools.py:102)
+
+AFTER STATE
+-----------
+git rev-parse HEAD: <same initial_commit_hash> - NO COMMIT CREATED
+git status --porcelain: M test_module.py
+git diff:
+diff --git a/test_module.py b/test_module.py
+index <hash>..<hash> 100644
+--- a/test_module.py
++++ b/test_module.py
+@@ -1 +1,2 @@
+-# Initial content
++# Initial content
++# Authorized self-update modification
+target file (test_module.py): "# Initial content\n# Authorized self-update modification\n"
+
+NO_COMMIT_CREATED
+-----------------
+The test does NOT create a git commit. It only verifies working-tree modification.
+The mutation is verified via:
+- git diff showing the change
+- git status --porcelain showing modified file
+- File content verification
+
+This is intentional: the test demonstrates real repository mutation at the working-tree level,
+which is sufficient to prove the protected effect occurred. A commit would be an additional
+step not required for C2 verification.

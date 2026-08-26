@@ -256,22 +256,8 @@ def test_g1_real_e2e(authority_service, workspace_root):
     # Verify result structure
     assert result['status'] in ['ok', 'error'], f"Invalid status: {result.get('status')}"
     
-    # Debug: print full result to see what's happening
-    print(f"\nG1_RESULT_STATUS = {result.get('status')}")
-    print(f"G1_RESULT_KEYS = {list(result.keys())}")
-    if 'error' in result:
-        print(f"G1_ERROR = {result.get('error')}")
-    if 'trace' in result:
-        trace = result['trace']
-        print(f"TRACE_STEPS_COUNT = {len(trace.get('steps', []))}")
-        for step in trace.get('steps', []):
-            print(f"  STEP: {step.get('step')} = {step.get('status')}")
-            if step.get('status') == 'error':
-                print(f"    ERROR = {step.get('error')}")
-    
     # Check real provider status with detailed diagnostics
     real_provider_call = result.get('real_provider_call')
-    print(f"REAL_PROVIDER_CALL = {real_provider_call}")
     
     # Diagnose provider availability
     import os

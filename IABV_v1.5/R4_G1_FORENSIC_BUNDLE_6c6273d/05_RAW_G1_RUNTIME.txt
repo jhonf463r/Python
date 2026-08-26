@@ -1,0 +1,3 @@
+# Raw G1 runtime evidence
+# Tests not executed in this session - bundle contains implementation corrections only
+# Runtime evidence will be captured during independent audit

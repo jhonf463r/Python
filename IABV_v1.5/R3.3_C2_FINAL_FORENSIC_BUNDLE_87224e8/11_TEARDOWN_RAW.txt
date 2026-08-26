@@ -1,0 +1,14 @@
+R3.3 C2 FINAL FORENSIC - TEARDOWN RAW
+=======================================
+
+Extracted from 05_RAW_C2_RUNTIME.txt and 06_RAW_WINDOWS_E2E_RUNTIME.txt:
+
+Teardown logs show:
+[conftest] Stopping authority server process...
+[conftest] Authority server stopped
+
+No errors were observed in the teardown logs.
+The ignore_errors=True flag was removed from shutil.rmtree as requested.
+
+TEARDOWN_CLEAN = TRUE (no errors observed in logs)
+IGNORE_ERRORS_REMOVED = TRUE (conftest.py line 104 changed)

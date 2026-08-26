@@ -1,0 +1,46 @@
+R3.3 C2 FINAL FORENSIC - PROCESS IDENTITY FRESH
+==============================================
+
+SOURCE_FILE = final_c2_raw_runtime.txt
+EXTRACTION_METHOD = Select-String -Pattern "Client PID|Authority PID"
+EXTRACTION_DATE = 2026-08-25
+
+FRESH PID VALUES FROM FINAL RUNTIME:
+------------------------------------
+
+Test 1 (test_real_self_update_authorized):
+[AuthorityServer]   Client PID (OS-observed): 13572
+[AuthorityServer]   Authority PID: 5780
+[C2 Test] Client PID: 13572, Authority PID: 5780
+SOURCE_LINE_OR_PATTERN = lines 32-35
+
+Test 2 (test_self_update_wrong_session_denied):
+[AuthorityServer]   Client PID (OS-observed): 13572
+[AuthorityServer]   Authority PID: 4504
+[C2 Test] Client PID: 13572, Authority PID: 4504
+SOURCE_LINE_OR_PATTERN = lines 256-259
+
+Test 3 (test_self_update_wrong_target_denied):
+[AuthorityServer]   Client PID (OS-observed): 13572
+[AuthorityServer]   Authority PID: 14132
+[C2 Test] Client PID: 13572, Authority PID: 14132
+SOURCE_LINE_OR_PATTERN = lines 375-378
+
+Test 4 (test_real_production_path_existing_execution):
+[AuthorityServer]   Client PID (OS-observed): 3084
+[AuthorityServer]   Authority PID: 12716
+SOURCE_LINE_OR_PATTERN = production_path_raw_runtime.txt
+
+SUMMARY:
+--------
+CLIENT_PID = 13572 (example from test 1)
+AUTHORITY_PID = 5780 (example from test 1)
+OS_OBSERVED_CLIENT_PID = 13572 (from GetNamedPipeClientProcessId)
+PIDS_EQUAL = False (different processes)
+PROCESS_SEPARATION = TRUE
+NAMED_PIPE_REAL = TRUE (\\.\pipe\IABV_Authority)
+
+VERIFICATION:
+- All PIDs extracted from fresh runtime files
+- No recycled values from previous bundles
+- Values match across AuthorityServer and C2 Test logs

@@ -1,0 +1,3 @@
+# Repository state after R4 G1 corrections
+# New commit: 6c6273d9f37825434b96881277267196601e3fb6
+# G1 implementation with corrected blockers

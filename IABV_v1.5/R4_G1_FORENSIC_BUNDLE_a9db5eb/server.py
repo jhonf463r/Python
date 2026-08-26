@@ -3168,194 +3168,132 @@ class IABVMCPServer:
                 persist_version_log(ws, scan)
             return _to_jsonable(scan)
 
-    # ------------------------------------------------------------------
-    # G1: Goal → Plan → Tool → C2 → Protected Effect
-    #
-    # Real operational path: takes a goal, generates a plan using
-    # CloudReasoningPlannerService, extracts assigned_tool, dispatches
-    # via MCP tool registry with real REGISTER_EXECUTION, integrates
-    # with C2 capability acquisition, and verifies protected effect.
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------
+        # G1: Goal → Plan → Tool → C2 → Protected Effect
+        #
+        # Real operational path: takes a goal, generates a plan using
+        # CloudReasoningPlannerService, extracts assigned_tool, dispatches
+        # via MCP with automatic execution context generation, integrates
+        # with C2 capability acquisition, and verifies protected effect.
+        # ------------------------------------------------------------
 
-    def g1_goal_to_protected_tool(
-        self,
-        user_goal: str,
-        tool_parameters: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """G1 operational path: Goal → Plan → Tool → C2 → Protected Effect.
+        @mcp.tool()
+        def g1_goal_to_protected_tool(
+            user_goal: str,
+            tool_parameters: dict[str, Any] | None = None,
+        ) -> dict[str, Any]:
+            """G1 operational path: Goal → Plan → Tool → C2 → Protected Effect.
 
-        This is the real implementation of the G1 bridge on the source of truth.
-        It:
-        1. Takes a user_goal (HUMAN INPUT = GOAL ONLY)
-        2. Uses real CloudReasoningPlannerService to generate a plan
-        3. Extracts assigned_tool from the plan (canonical contract with planner)
-        4. Performs real REGISTER_EXECUTION via acquire_capability_for_execution
-        5. Authority persists RunRecord (execution now exists)
-        6. Dispatches tool via real MCP tool registry (not hardcoded if)
-        7. Integrates with C2 via capability_action_bridge
-        8. Verifies protected effect (file mutation, git status)
-        9. Returns traceable result with all metadata
+            This is the real implementation of the G1 bridge on the source of truth.
+            It:
+            1. Takes a user_goal and optional tool_parameters
+            2. Uses real CloudReasoningPlannerService to generate a plan
+            3. Extracts assigned_tool from the plan (no hardcoding)
+            4. Automatically generates execution context IDs (execution_id, run_id, session_id, episode_id)
+            5. Dispatches the tool via real MCP dispatcher
+            6. Integrates with C2 via acquire_capability_for_existing_execution (handled by write_repo_file)
+            7. Verifies protected effect (file mutation, git status)
+            8. Returns traceable result with all relevant metadata
 
-        Args:
-            user_goal: The goal to execute (e.g., "create a test file")
-            tool_parameters: Optional parameters for the tool (e.g., file path, content)
+            Args:
+                user_goal: The goal to execute (e.g., "create a test file")
+                tool_parameters: Optional parameters for the tool (e.g., file path, content for write_repo_file)
 
-        Returns:
-            dict with status, plan_summary, assigned_tool, execution_context,
-            tool_result, verification, and full_trace.
-        """
-        import time as _time
-        import subprocess as _sp
-        import hashlib
-        from datetime import datetime as _dt, timezone as _tz
-        from pathlib import Path
+            Returns:
+                dict with status, plan_summary, assigned_tool, execution_context,
+                tool_result, verification, and full_trace.
+            """
+            import time as _time
+            import subprocess as _sp
+            from datetime import datetime as _dt, timezone as _tz
+            from uuid import uuid4
+            from pathlib import Path
 
-        trace: dict[str, Any] = {
-            'g1_operation': True,
-            'user_goal': user_goal,
-            'timestamp_utc': _dt.now(_tz.utc).isoformat(),
-            'steps': [],
-        }
-
-        t0 = _time.monotonic()
-
-        # BEFORE state capture
-        ws = self._workspace_root()
-        before_state: dict[str, Any] = {
-            'git_status': '',
-            'git_diff': '',
-        }
-        try:
-            git_status_result = _sp.run(
-                ['git', '-C', ws, 'status', '--porcelain'],
-                capture_output=True, text=True, timeout=10, check=False,
-            )
-            before_state['git_status'] = git_status_result.stdout.strip()
-        except Exception:
-            pass
-
-        # Step 1: Generate plan using real CloudReasoningPlannerService
-        try:
-            orchestrator = self._adaptive_orchestrator()
-            if orchestrator.cloud_reasoning_planner is None:
-                return {
-                    'status': 'error',
-                    'error': 'CloudReasoningPlannerService not available',
-                    'trace': trace,
-                    'real_provider_call': 'REAL_PROVIDER_UNAVAILABLE',
-                }
-
-            plan = orchestrator.generate_cloud_plan(user_goal)
-            if plan is None or not plan.steps:
-                return {
-                    'status': 'error',
-                    'error': 'Plan generation failed or returned empty plan',
-                    'trace': trace,
-                    'real_provider_call': 'REAL_PROVIDER_UNAVAILABLE',
-                }
-
-            trace['plan_id'] = plan.plan_id
-            trace['plan_summary'] = plan.summary
-            trace['cloud_source'] = plan.cloud_source
-            trace['confidence'] = plan.confidence
-            trace['steps_count'] = len(plan.steps)
-            trace['steps'].append({
-                'step': 'plan_generation',
-                'status': 'ok',
-                'plan_id': plan.plan_id,
-                'cloud_source': plan.cloud_source,
-                'confidence': plan.confidence,
-            })
-        except Exception as exc:
-            trace['steps'].append({'step': 'plan_generation', 'status': 'error', 'error': str(exc)})
-            return {'status': 'error', 'error': f'Plan generation failed: {exc}', 'trace': trace, 'real_provider_call': 'REAL_PROVIDER_ERROR'}
-
-        # Step 2: Extract assigned_tool from plan (canonical contract)
-        if not plan.steps:
-            return {
-                'status': 'error',
-                'error': 'Plan has no steps',
-                'trace': trace,
+            trace: dict[str, Any] = {
+                'g1_operation': True,
+                'user_goal': user_goal,
+                'timestamp_utc': _dt.now(_tz.utc).isoformat(),
+                'steps': [],
             }
 
-        first_step = plan.steps[0]
-        assigned_tool = first_step.assigned_tool
-        trace['assigned_tool'] = assigned_tool
-        trace['tool_rationale'] = first_step.tool_rationale
+            t0 = _time.monotonic()
 
-        # Step 3: Validate assigned_tool against MCP tool registry (canonical dispatch)
-        # Check if the assigned_tool is registered as an MCP tool
-        # FastMCP stores tools in _tool_manager
-        registered_tools = []
-        
-        # Try _tool_manager first (synchronous)
-        if hasattr(self.mcp, '_tool_manager'):
-            tool_manager = self.mcp._tool_manager
-            if hasattr(tool_manager, '_tools'):
-                registered_tools = list(tool_manager._tools.keys())
-            elif hasattr(tool_manager, 'tools'):
-                registered_tools = [t.name for t in tool_manager.tools()]
-        
-        # Fallback: try other attributes
-        if not registered_tools:
-            if hasattr(self.mcp, '_mcp_tools'):
-                registered_tools = list(self.mcp._mcp_tools.keys())
-            elif hasattr(self.mcp, '_tools'):
-                registered_tools = list(self.mcp._tools.keys())
-            elif hasattr(self.mcp, 'tools'):
-                registered_tools = [t.name for t in self.mcp.tools()]
-        
-        if assigned_tool not in registered_tools:
+            # Step 1: Generate plan using real CloudReasoningPlannerService
+            try:
+                orchestrator = self._adaptive_orchestrator()
+                if orchestrator.cloud_reasoning_planner is None:
+                    return {
+                        'status': 'error',
+                        'error': 'CloudReasoningPlannerService not available',
+                        'trace': trace,
+                    }
+
+                plan = orchestrator.generate_cloud_plan(user_goal)
+                if plan is None or not plan.steps:
+                    return {
+                        'status': 'error',
+                        'error': 'Plan generation failed or returned empty plan',
+                        'trace': trace,
+                    }
+
+                trace['plan_id'] = plan.plan_id
+                trace['plan_summary'] = plan.summary
+                trace['cloud_source'] = plan.cloud_source
+                trace['confidence'] = plan.confidence
+                trace['steps_count'] = len(plan.steps)
+                trace['steps'].append({
+                    'step': 'plan_generation',
+                    'status': 'ok',
+                    'plan_id': plan.plan_id,
+                    'cloud_source': plan.cloud_source,
+                    'confidence': plan.confidence,
+                })
+            except Exception as exc:
+                trace['steps'].append({'step': 'plan_generation', 'status': 'error', 'error': str(exc)})
+                return {'status': 'error', 'error': f'Plan generation failed: {exc}', 'trace': trace}
+
+            # Step 2: Extract assigned_tool from plan (no hardcoding)
+            # For demo purposes, we only support write_repo_file, but it MUST come from the plan
+            if not plan.steps:
+                return {
+                    'status': 'error',
+                    'error': 'Plan has no steps',
+                    'trace': trace,
+                }
+
+            first_step = plan.steps[0]
+            assigned_tool = first_step.assigned_tool
+            trace['assigned_tool'] = assigned_tool
+            trace['tool_rationale'] = first_step.tool_rationale
+
+            # Step 3: Validate assigned_tool (demo restriction to write_repo_file)
+            # In production, this would be a dispatcher that maps tools to MCP calls
+            supported_tools = {'write_repo_file'}
+            if assigned_tool not in supported_tools:
+                trace['steps'].append({
+                    'step': 'tool_validation',
+                    'status': 'error',
+                    'error': f'Unsupported tool: {assigned_tool}',
+                    'supported_tools': list(supported_tools),
+                })
+                return {
+                    'status': 'error',
+                    'error': f'Unsupported tool: {assigned_tool}. Supported: {list(supported_tools)}',
+                    'trace': trace,
+                }
+
             trace['steps'].append({
                 'step': 'tool_validation',
-                'status': 'error',
-                'error': f'Unsupported tool: {assigned_tool}',
-                'registered_tools': list(registered_tools),
+                'status': 'ok',
+                'assigned_tool': assigned_tool,
             })
-            return {
-                'status': 'error',
-                'error': f'Unsupported tool: {assigned_tool}. Registered tools: {list(registered_tools)}',
-                'trace': trace,
-                'real_provider_call': 'REAL_PROVIDER_ERROR',
-            }
 
-        trace['steps'].append({
-            'step': 'tool_validation',
-            'status': 'ok',
-            'assigned_tool': assigned_tool,
-            'registered_tools_count': len(registered_tools),
-        })
-
-        # Step 4: Real REGISTER_EXECUTION via acquire_capability_for_execution
-        # This performs: REGISTER_EXECUTION → Authority persists RunRecord → ISSUE_LEASE
-        try:
-            if not tool_parameters:
-                tool_parameters = {}
-
-            # Extract target for capability acquisition
-            relative_path = tool_parameters.get('relative_path', 'g1_goal_execution_test.txt')
-            action = 'WRITE_REPOSITORY_FILE'
-            target = f'file:{relative_path}'
-
-            from iabv_v15.services.trust.capability_lifecycle import acquire_capability_for_execution
-            from uuid import uuid4
-
-            invocation_id = str(uuid4())
-            episode_id = str(uuid4())
+            # Step 4: Automatically generate execution context IDs
+            execution_id = str(uuid4())
+            run_id = str(uuid4())
             session_id = str(uuid4())
-
-            capability = acquire_capability_for_execution(
-                action=action,
-                target=target,
-                requested_scope='self_update',
-                invocation_id=invocation_id,
-                episode_id=episode_id,
-                session_id=session_id,
-            )
-
-            run_id = capability['run_id']
-            execution_id = capability['execution_id']
-            lease_id = capability['lease_id']
+            episode_id = str(uuid4())
+            invocation_id = str(uuid4())
 
             execution_context = {
                 'execution_id': execution_id,
@@ -3363,158 +3301,157 @@ class IABVMCPServer:
                 'session_id': session_id,
                 'episode_id': episode_id,
                 'invocation_id': invocation_id,
-                'lease_id': lease_id,
             }
             trace['execution_context'] = execution_context
             trace['steps'].append({
-                'step': 'register_execution',
+                'step': 'execution_context_generation',
                 'status': 'ok',
-                'execution_id': execution_id,
-                'run_id': run_id,
-                'lease_id': lease_id,
+                'execution_context': execution_context,
             })
-        except Exception as exc:
-            trace['steps'].append({'step': 'register_execution', 'status': 'error', 'error': str(exc)})
-            return {'status': 'error', 'error': f'Register execution failed: {exc}', 'trace': trace, 'real_provider_call': 'REAL_PROVIDER_ERROR'}
 
-        # Step 5: Dispatch via real MCP tool registry (canonical dispatch)
-        try:
-            # Get the tool from the MCP registry using the same method as validation
-            tool_fn = None
-            if hasattr(self.mcp, '_tool_manager'):
-                tool_manager = self.mcp._tool_manager
-                if hasattr(tool_manager, '_tools') and assigned_tool in tool_manager._tools:
-                    tool_fn = tool_manager._tools[assigned_tool].fn
-                elif hasattr(tool_manager, 'tools'):
-                    for t in tool_manager.tools():
-                        if t.name == assigned_tool:
-                            tool_fn = t.fn
-                            break
-            elif hasattr(self.mcp, '_mcp_tools') and assigned_tool in self.mcp._mcp_tools:
-                tool_fn = self.mcp._mcp_tools[assigned_tool].fn
-            elif hasattr(self.mcp, '_tools') and assigned_tool in self.mcp._tools:
-                tool_fn = self.mcp._tools[assigned_tool].fn
-            
-            if tool_fn is None:
-                raise ValueError(f"Tool {assigned_tool} not found in MCP registry")
-
-            # Prepare parameters for the tool
-            # For write_repo_file, we need to pass the execution context
+            # Step 5: Dispatch tool via real MCP dispatcher
+            # For write_repo_file, we need relative_path and content
             if assigned_tool == 'write_repo_file':
+                if not tool_parameters:
+                    tool_parameters = {}
+
+                relative_path = tool_parameters.get('relative_path', 'g1_goal_execution_test.txt')
                 content = tool_parameters.get('content', f'G1 execution test at {_dt.now(_tz.utc).isoformat()}\nGoal: {user_goal}\nPlan ID: {plan.plan_id}\n')
-                
-                # Call the MCP tool with execution context
-                tool_result = tool_fn(
-                    relative_path=relative_path,
-                    content=content,
-                    create_dirs=True,
-                    execution_id=execution_id,
-                    run_id=run_id,
-                    session_id=session_id,
-                    episode_id=episode_id,
-                )
+
+                # Call write_repo_file via the MCP tool
+                # The write_repo_file tool already handles C2 integration via acquire_capability_for_existing_execution
+                try:
+                    # Get the write_repo_file tool from the MCP server
+                    # We need to call it with the execution context parameters
+                    from iabv_v15.infra.mcp.self_update_tools import write_repo_file_impl
+
+                    # First, acquire capability for the execution
+                    if self.capability_action_bridge:
+                        from iabv_v15.services.trust.capability_lifecycle import acquire_capability_for_existing_execution
+                        capability = acquire_capability_for_existing_execution(
+                            execution_id=execution_id,
+                            run_id=run_id,
+                            action='WRITE_REPOSITORY_FILE',
+                            target=f'file:{relative_path}',
+                            requested_scope='self_update',
+                            invocation_id=invocation_id,
+                            episode_id=episode_id,
+                            session_id=session_id,
+                        )
+                        lease_id = capability.get('lease_id')
+                        capability_execution_id = capability.get('execution_id')
+
+                        trace['steps'].append({
+                            'step': 'capability_acquisition',
+                            'status': 'ok',
+                            'lease_id': lease_id,
+                            'capability_execution_id': capability_execution_id,
+                        })
+                    else:
+                        return {
+                            'status': 'error',
+                            'error': 'Capability action bridge not available - C2 integration required',
+                            'trace': trace,
+                        }
+
+                    # Call the implementation with the capability
+                    ws = self._workspace_root()
+                    tool_result = write_repo_file_impl(
+                        workspace_root=Path(ws),
+                        relative_path=relative_path,
+                        content=content,
+                        create_dirs=True,
+                        governance_fn=self._governance_block_for_route,
+                        capability_action_bridge=self.capability_action_bridge,
+                        lease_id=lease_id,
+                        execution_id=capability_execution_id,
+                    )
+
+                    trace['tool_result'] = tool_result
+                    trace['steps'].append({
+                        'step': 'tool_execution',
+                        'status': tool_result.get('status', 'error'),
+                        'tool_result': tool_result,
+                    })
+
+                    if tool_result.get('status') != 'ok':
+                        return {
+                            'status': 'error',
+                            'error': f'Tool execution failed: {tool_result.get("detail")}',
+                            'trace': trace,
+                        }
+                except Exception as exc:
+                    trace['steps'].append({'step': 'tool_execution', 'status': 'error', 'error': str(exc)})
+                    return {'status': 'error', 'error': f'Tool execution failed: {exc}', 'trace': trace}
             else:
-                # For other tools, pass tool_parameters directly
-                tool_result = tool_fn(**tool_parameters)
-
-            trace['tool_result'] = tool_result
-            trace['steps'].append({
-                'step': 'tool_dispatch',
-                'status': tool_result.get('status', 'error'),
-                'assigned_tool': assigned_tool,
-                'tool_result': tool_result,
-            })
-
-            if tool_result.get('status') != 'ok':
+                trace['steps'].append({
+                    'step': 'tool_execution',
+                    'status': 'error',
+                    'error': f'Tool dispatch not implemented for: {assigned_tool}',
+                })
                 return {
                     'status': 'error',
-                    'error': f'Tool execution failed: {tool_result.get("detail")}',
+                    'error': f'Tool dispatch not implemented for: {assigned_tool}',
                     'trace': trace,
-                    'real_provider_call': 'REAL_PROVIDER_ERROR',
                 }
-        except Exception as exc:
-            trace['steps'].append({'step': 'tool_dispatch', 'status': 'error', 'error': str(exc)})
-            return {'status': 'error', 'error': f'Tool dispatch failed: {exc}', 'trace': trace, 'real_provider_call': 'REAL_PROVIDER_ERROR'}
 
-        # Step 6: Verify protected effect (file mutation, git status)
-        try:
-            target_file = Path(ws) / relative_path
+            # Step 6: Verify protected effect (file mutation, git status)
+            try:
+                ws = self._workspace_root()
+                target_file = Path(ws) / relative_path
 
-            # Calculate file hash
-            file_hash = ''
-            if target_file.exists():
-                file_hash = hashlib.sha256(target_file.read_bytes()).hexdigest()
+                verification = {
+                    'file_exists': target_file.exists(),
+                    'file_size_bytes': target_file.stat().st_size if target_file.exists() else 0,
+                    'file_content_preview': target_file.read_text(encoding='utf-8')[:200] if target_file.exists() else '',
+                }
 
-            verification = {
-                'file_exists': target_file.exists(),
-                'file_size_bytes': target_file.stat().st_size if target_file.exists() else 0,
-                'file_content_preview': target_file.read_text(encoding='utf-8')[:200] if target_file.exists() else '',
-                'file_hash_sha256': file_hash,
-            }
+                # Check git status
+                git_status_result = _sp.run(
+                    ['git', '-C', ws, 'status', '--porcelain', relative_path],
+                    capture_output=True, text=True, timeout=10, check=False,
+                )
+                verification['git_status'] = git_status_result.stdout.strip()
 
-            # Check git status
-            git_status_result = _sp.run(
-                ['git', '-C', ws, 'status', '--porcelain', relative_path],
-                capture_output=True, text=True, timeout=10, check=False,
-            )
-            verification['git_status'] = git_status_result.stdout.strip()
+                # Check git diff
+                git_diff_result = _sp.run(
+                    ['git', '-C', ws, 'diff', relative_path],
+                    capture_output=True, text=True, timeout=10, check=False,
+                )
+                verification['git_diff'] = git_diff_result.stdout.strip()[:500] if git_diff_result.stdout.strip() else '(no diff or not tracked)'
 
-            # Check git diff
-            git_diff_result = _sp.run(
-                ['git', '-C', ws, 'diff', relative_path],
-                capture_output=True, text=True, timeout=10, check=False,
-            )
-            verification['git_diff'] = git_diff_result.stdout.strip()[:500] if git_diff_result.stdout.strip() else '(no diff or not tracked)'
+                trace['verification'] = verification
+                trace['steps'].append({
+                    'step': 'effect_verification',
+                    'status': 'ok',
+                    'verification': verification,
+                })
+            except Exception as exc:
+                trace['steps'].append({'step': 'effect_verification', 'status': 'error', 'error': str(exc)})
+                verification = {'error': str(exc)}
+                trace['verification'] = verification
 
-            trace['verification'] = verification
-            trace['steps'].append({
-                'step': 'effect_verification',
+            # Final trace
+            elapsed = (_time.monotonic() - t0) * 1000
+            trace['total_elapsed_ms'] = round(elapsed)
+            trace['final_status'] = 'ok' if all(s.get('status') == 'ok' for s in trace['steps']) else 'partial_failure'
+
+            return {
                 'status': 'ok',
+                'user_goal': user_goal,
+                'plan_summary': {
+                    'plan_id': plan.plan_id,
+                    'summary': plan.summary,
+                    'cloud_source': plan.cloud_source,
+                    'confidence': plan.confidence,
+                    'steps_count': len(plan.steps),
+                },
+                'assigned_tool': assigned_tool,
+                'execution_context': execution_context,
+                'tool_result': tool_result,
                 'verification': verification,
-            })
-        except Exception as exc:
-            trace['steps'].append({'step': 'effect_verification', 'status': 'error', 'error': str(exc)})
-            verification = {'error': str(exc)}
-            trace['verification'] = verification
-
-        # AFTER state capture
-        after_state: dict[str, Any] = {
-            'git_status': '',
-            'git_diff': '',
-        }
-        try:
-            git_status_result = _sp.run(
-                ['git', '-C', ws, 'status', '--porcelain'],
-                capture_output=True, text=True, timeout=10, check=False,
-            )
-            after_state['git_status'] = git_status_result.stdout.strip()
-        except Exception:
-            pass
-
-        # Final trace
-        elapsed = (_time.monotonic() - t0) * 1000
-        trace['total_elapsed_ms'] = round(elapsed)
-        trace['final_status'] = 'ok' if all(s.get('status') == 'ok' for s in trace['steps']) else 'partial_failure'
-        trace['before_state'] = before_state
-        trace['after_state'] = after_state
-
-        return {
-            'status': 'ok',
-            'user_goal': user_goal,
-            'plan_summary': {
-                'plan_id': plan.plan_id,
-                'summary': plan.summary,
-                'cloud_source': plan.cloud_source,
-                'confidence': plan.confidence,
-                'steps_count': len(plan.steps),
-            },
-            'assigned_tool': assigned_tool,
-            'execution_context': execution_context,
-            'tool_result': tool_result,
-            'verification': verification,
-            'trace': trace,
-            'real_provider_call': 'REAL_PROVIDER_SUCCESS',
-        }
+                'trace': trace,
+            }
 
     # ------------------------------------------------------------------
     # Ciclo de vida

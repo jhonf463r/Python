@@ -1,0 +1,274 @@
+R3 REPOSITORY IDENTITY RAW EVIDENCE
+===================================
+
+COMMAND: git remote -v
+OUTPUT:
+origin  https://github.com/jhonf463r/Python.git (fetch)
+origin  https://github.com/jhonf463r/Python.git (push)
+
+COMMAND: git config --get remote.origin.url
+OUTPUT:
+https://github.com/jhonf463r/Python.git
+
+COMMAND: git rev-parse --show-toplevel
+OUTPUT:
+C:/Python/IABV_v1.5_runtime_p021v/IABV_v1.5
+
+COMMAND: git branch --show-current
+OUTPUT:
+p0213/vfinal5-r3-choke-point
+
+COMMAND: git status --porcelain=v1
+OUTPUT:
+?? IABV_v1.5/09_PROCESS_IDENTITY_FRESH.txt
+?? IABV_v1.5/R3.3_C2_FINAL_FORENSIC_BUNDLE_87224e8/
+?? IABV_v1.5/R3.3_C2_FINAL_FORENSIC_BUNDLE_e03811c/
+?? IABV_v1.5/R3.3_C2_FORENSIC_BUNDLE/
+?? IABV_v1.5/R3.3_C2_FORENSIC_REBUILD_5870015c/
+?? IABV_v1.5/final_c2_full_runtime.txt
+?? IABV_v1.5/final_c2_raw_runtime.txt
+?? IABV_v1.5/final_windows_e2e_full_runtime.txt
+?? IABV_v1.5/final_windows_e2e_raw_runtime.txt
+?? IABV_v1.5/production_path_full_runtime.txt
+?? IABV_v1.5/production_path_raw_runtime.txt
+?? IABV_v1.5/r3_3_c2_raw_runtime.txt
+?? IABV_v1.5/r3_3_windows_e2e_raw_runtime.txt
+
+COMMAND: git rev-parse HEAD
+OUTPUT:
+e03811c81ee30be2464deaab81c776f1de6db10e
+
+COMMAND: git log -1 --oneline
+OUTPUT:
+e03811c81 (HEAD -> p0213/vfinal5-r3-choke-point) R3.3: verify existing execution protected effect
+
+COMMAND: git remote get-url origin
+OUTPUT:
+https://github.com/jhonf463r/Python.git
+
+COMMAND: git remote get-url --push origin
+OUTPUT:
+https://github.com/jhonf463r/Python.git
+
+COMMAND: git branch -a
+OUTPUT:
+Python
+audit-pr307
+backup/runtime-main-p021-before-p024-20260516-200842
+backup/runtime-main-p021-preserved-20260516-200942
+codex/architecture-backlog-guardrails
+codex/audit-pr417-p042
+codex/control-center-live-freeze-fix
+codex/p021-chatgpt-reuse-processing-fix
+codex/p025-startup-lifecycle-sovereignty
+codex/p029-control-master-test-sync
+codex/post-startup-memory-counts
+codex/pr390-blockers
+codex/pr420-review
+codex/pr421-live
+codex/pr421-review
+codex/rebase-pr382-p04
+codex/research-backlog-pending-materialization
+codex/runtime-birth-and-failure-continuity
+codex/startup-lazy-vm-pressure-gate
+devin-pr-390
+devin/1776866124-audit-intent-fixes
+devin/1776999504-metacognitive-error-detection
+devin/1777136375-evolve-common-sense-v2
+devin/1777687784-fix-startup-freeze
+devin/1777690043-metacognition-blind-spots
+devin/1777750256-fix-startup-phased-populate
+devin/1777856045-fix-preexisting-test-failures
+devin/1777904661-chat-persistence-cognitive-trace
+devin/1777930670-global-human-gates-and-runtime-audit-persistence
+devin/1777934496-limit-aware-free-tool-coordination
+devin/1777949840-tor-correlation-pr1
+devin/1777949950-csk-oses-linked-pr2
+devin/1777950087-tests-dossier-pr3
+devin/1778022624-fix-windsurf-gaps-g1-g2-g3
++ devin/1778250960-fix-control-center-freeze
+devin/1779029174-test-governance-observability-p029
+devin/1779075247-p032-p037-stack
+devin/20260503_221725-fix-dashboard-refresh-freeze
+devin/fix-intent-devin-windsurf
+devin/knowledge-query-executor-clean
+feature/experimental-services-ecosystem
+feature/runtime-knowledge-layer
+feature/windsurf-external-assistant
+feature/windsurf-external-assistant-clean
+fix/dummy-agent
+iabv-auto/account-ledger-efficiency-audit
+iabv-auto/p013-window-lifecycle-freeze-guard
+iabv-auto/p014-startup-freeze-false-positive
+iabv-auto/p015-runtime-no-bytecode-writes
+iabv-auto/p016-chatgpt-timeout-followup-freeze
+iabv-auto/p017-startup-false-ready-proof
+iabv-auto/p018-defer-provisional-startup-freeze
+iabv-auto/p019-dont-promote-memory-spike-to-freeze
+iabv-auto/p020-revalidate-startup-freeze-before-capture
+iabv-auto/promote-general-1777132293
+iabv-auto/promote-general-1778038997
++ iabv-auto/promote-platform-phase1-abstraction-windows-1787171505
+local/wip-intent-schema
+main
++ msi/canonical-integration
+p0213/clean-implementation
+p0213/clean-implementation-v2
+p0213/consolidate-b8r16r2
+p0213/corrected-implementation-v3
+p0213/new-implementation
+p0213/phase3-final-evidence
+p0213/phase3-r16-remediation
+p0213/phase3-round16-audit-ready
+p0213/v10-single-process-trust-chain
+p0213/v11-isolated-authority-objective-integrity
+p0213/v12-enforced-authority-objective-integrity
++ p0213/v12r3-round3
+p0213/v4-trust-boundary
+p0213/v5-clean-trust-boundary-with-v12-lessons
+p0213/v5-runtime-authority
+p0213/v6-parent-authority
+p0213/v7-os-authenticated-ipc
+p0213/v8-parent-child-authorization
+p0213/v9-integrated-trust-chain
+p0213/vfinal5-r2-security-fixes
+* p0213/vfinal5-r3-choke-point
+pr-272
+pr-273
+pr-299-audit
+pr-299-latest
+pr-300-audit
+pr-300-latest
+pr-307-audit
+pr-307-latest
+pr-310-audit
+pr-311-audit
+review-pr-286
+review-pr-287
+review-pr-288
+review-pr-289
+review-pr-290
+review-pr-291
+review/pr280
+review/pr281
+review/pr282
+review/pr283
+review/pr284
+review/pr285
+remotes/origin/HEAD -> origin/main
+remotes/origin/baseline/p1-reproducibility
+remotes/origin/codex/control-center-live-freeze-fix
+remotes/origin/codex/p021-chatgpt-reuse-processing-fix
+remotes/origin/codex/p029-control-master-test-sync
+remotes/origin/codex/p073-semantic-action-binding
+remotes/origin/codex/p082-pressure-scoped-external-consultation
+remotes/origin/codex/p083-web-perception-concepts
+remotes/origin/codex/p084-web-observation-normalization
+remotes/origin/codex/p085-final-live-proof
+remotes/origin/codex/p085-live-verification
+remotes/origin/codex/p085-startup-chat-first
+remotes/origin/codex/p086-external-consultation-live-recovery
+remotes/origin/codex/p090-snapshot-provider-ui-budget
+remotes/origin/codex/p091-portable-context-ui-budget
+remotes/origin/codex/post-startup-memory-counts
+remotes/origin/codex/runtime-birth-and-failure-continuity
+remotes/origin/codex/startup-lazy-vm-pressure-gate
+remotes/origin/devin/1777136375-evolve-common-sense-v2
+remotes/origin/devin/1777572859-defer-early-provider-health
+remotes/origin/devin/1777594546-register-audit-round
+remotes/origin/devin/1777745358-fix-post-305-bugs
+remotes/origin/devin/1777863867-fix-dashboard-refresh-freeze
+remotes/origin/devin/1778037485-deferred-setup-assistant-gate
+remotes/origin/devin/1779059685-governed-user-chrome-bridge-p032
+remotes/origin/devin/1779978272-p069-metacognitive-discernment-frame
+remotes/origin/devin/1779984662-p069-close-p070-roadmap
+remotes/origin/devin/1779999893-p071-live-ui-presence-contract
+remotes/origin/devin/knowledge-query-executor
+remotes/origin/devin/knowledge-query-executor-clean
+remotes/origin/devin/runtime-build-sovereignty-live-proof-p024
+remotes/origin/devin/runtime-external-intent-security-stall-p023
+remotes/origin/feature/windsurf-external-assistant
+remotes/origin/feature/windsurf-external-assistant-clean
+remotes/origin/iabv-auto/p071-completed-test-fix
+remotes/origin/iabv-auto/promote-platform-phase1-abstraction-windows-1787171505
+remotes/origin/main
+remotes/origin/msi/canonical-integration
+remotes/origin/p0213/clean-implementation
+remotes/origin/p0213/clean-implementation-v2
+remotes/origin/p0213/corrected-implementation-v3
+remotes/origin/p0213/new-implementation
+remotes/origin/p0213/phase3-r16-remediation
+remotes/origin/p0213/v4-trust-boundary
+remotes/review/boot278branch
+remotes/review/pr272
+remotes/review/pr273
+remotes/review/pr274
+remotes/review/pr275
+remotes/review/pr276
+remotes/review/pr277
+remotes/review/pr278
+remotes/review/pr279
+
+COMMAND: git cat-file -t 5870015c0ee7cae8c13b3ae94059112343141885
+OUTPUT:
+commit
+
+COMMAND: git cat-file -t 87224e89e40412bad900eec6579a84a406869de4
+OUTPUT:
+commit
+
+COMMAND: git cat-file -t e03811c81ee30be2464deaab81c776f1de6db10e
+OUTPUT:
+commit
+
+COMMAND: git show --no-patch --decorate --oneline 5870015c0ee7cae8c13b3ae94059112343141885
+OUTPUT:
+5870015c0 R3.3: execute real self-update with isolated authority process
+
+COMMAND: git show --no-patch --format=fuller 5870015c0ee7cae8c13b3ae94059112343141885
+OUTPUT:
+commit 5870015c0ee7cae8c13b3ae94059112343141885
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Tue Aug 25 16:21:12 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Tue Aug 25 16:21:12 2026 -0500
+
+    R3.3: execute real self-update with isolated authority process
+
+COMMAND: git show --no-patch --decorate --oneline 87224e89e40412bad900eec6579a84a406869de4
+OUTPUT:
+87224e89e R3.3: close production-path self-update capability coverage
+
+COMMAND: git show --no-patch --format=fuller 87224e89e40412bad900eec6579a84a406869de4
+OUTPUT:
+commit 87224e89e40412bad900eec6579a84a406869de4
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Tue Aug 25 17:37:14 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Tue Aug 25 17:37:14 2026 -0500
+
+    R3.3: close production-path self-update capability coverage
+
+COMMAND: git show --no-patch --decorate --oneline e03811c81ee30be2464deaab81c776f1de6db10e
+OUTPUT:
+e03811c81 (HEAD -> p0213/vfinal5-r3-choke-point) R3.3: verify existing execution protected effect
+
+COMMAND: git show --no-patch --format=fuller e03811c81ee30be2464deaab81c776f1de6db10e
+OUTPUT:
+commit e03811c81ee30be2464deaab81c776f1de6db10e (HEAD -> p0213/vfinal5-r3-choke-point)
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Tue Aug 25 17:51:36 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Tue Aug 25 17:51:36 2026 -0500
+
+    R3.3: verify existing execution protected effect
+
+COMMAND: git ls-remote origin
+OUTPUT:
+[350 lines of remote references - truncated for brevity]
+NOTE: None of the C2 SHAs (5870015c, 87224e89, e03811c8) appear in the remote references
+NOTE: The branch p0213/vfinal5-r3-choke-point does not exist remotely
+
+COMMAND: git ls-remote origin refs/heads/p0213/vfinal5-r3-choke-point
+OUTPUT:
+[empty - branch does not exist remotely]

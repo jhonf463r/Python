@@ -65,6 +65,36 @@ class CloudPlan(BaseModel):
 
 TOOL_DESCRIPTORS: list[dict[str, str]] = [
     {
+        'id': 'codex',
+        'name': 'Codex (OpenAI)',
+        'strengths': 'code generation, code review, refactoring, debugging, test writing',
+        'limitations': 'no browser, no real-time data, context window limits',
+    },
+    {
+        'id': 'chatgpt',
+        'name': 'ChatGPT',
+        'strengths': 'general reasoning, explanation, research synthesis, brainstorming, browsing',
+        'limitations': 'cannot execute code directly, may hallucinate specifics',
+    },
+    {
+        'id': 'claude',
+        'name': 'Claude (Anthropic)',
+        'strengths': 'long context analysis, careful reasoning, document review, safety-aware',
+        'limitations': 'no browser, no code execution, slower for simple tasks',
+    },
+    {
+        'id': 'devin',
+        'name': 'Devin (Cognition)',
+        'strengths': 'full autonomous coding, PR creation, testing, deployment, browser use',
+        'limitations': 'slower startup, heavier for trivial tasks',
+    },
+    {
+        'id': 'ollama_local',
+        'name': 'Ollama (local)',
+        'strengths': 'fast, private, no quota limits, good for classification and short tasks',
+        'limitations': 'smaller model, weaker reasoning on complex problems',
+    },
+    {
         'id': 'write_repo_file',
         'name': 'write_repo_file (MCP tool)',
         'strengths': 'protected repository file mutation with C2 authorization, git integration',
@@ -307,7 +337,7 @@ class CloudReasoningPlannerService:
                 with httpx.Client(timeout=30.0) as client:
                     resp = client.post(
                         'https://api.groq.com/openai/v1/chat/completions',
-                        json={'model': 'openai/gpt-oss-120b', 'messages': messages, 'temperature': 0.15},
+                        json={'model': 'llama-3.3-70b-versatile', 'messages': messages, 'temperature': 0.15},
                         headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
                     )
                     CloudReasoningPlannerService._record_api_health('groq', resp.status_code)

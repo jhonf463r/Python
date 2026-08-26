@@ -1,0 +1,4 @@
+# Tool dispatch raw evidence
+# Canonical MCP tool registry dispatch implementation
+# tool_fn = self.mcp._tools[assigned_tool].fn
+# Runtime evidence will be captured during independent audit

@@ -1,0 +1,19 @@
+R3.3 C2 FORENSIC REBUILD - CHANGED FILES
+======================================
+
+Modified files (from base commit 5870015c0):
+
+M       src/iabv_v15/services/trust/capability_lifecycle.py
+        - Added session_id and episode_id to issue_lease call in acquire_capability_for_existing_execution
+        - Lines 173-174 added
+
+M       tests/windows_e2e/conftest.py
+        - Removed ignore_errors=True from shutil.rmtree in teardown
+        - Line 104 changed
+
+M       tests/windows_e2e/test_lifecycle.py
+        - Fixed Unicode encoding error (replaced Unicode arrows with ASCII)
+        - Line 33 changed
+
+Total modified files: 3
+All changes are bug fixes as requested by the forensic audit.

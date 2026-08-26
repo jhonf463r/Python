@@ -1,0 +1,10 @@
+R3.3 C2 FORENSIC REBUILD - REPOSITORY AFTER
+==========================================
+
+NOT_CAPTURED_IN_TEST
+
+The C2 test does not capture repository state after the action.
+The test verifies the modification via git diff within the test but does not log it to a separate file.
+
+This is a limitation of the current test implementation.
+The test does verify that the file was modified (git diff shows the change).

@@ -1,0 +1,15 @@
+R4_G1_RUNTIME_VERIFIED_BUNDLE
+==============================
+
+This bundle contains the restored runtime verification for G1 operational path.
+
+Contents:
+- 00_METADATA.txt: Overview and restoration summary
+- test_g1_goal_to_protected_tool.py: Restored E2E tests with runtime verification
+- test_g1_goal_to_protected_tool.py.diff: Detailed diff for test file
+- cloud_reasoning_planner.py: Planner with write_repo_file in TOOL_DESCRIPTORS
+- server.py: MCP server with G1 bridge implementation
+- R4_G1_RUNTIME_VERIFIED_RAW.txt: Raw runtime evidence
+
+Parent: 22dc346cb9ce8f4bab7ae2fc188fdccce1c034ad
+Branch: p0213/vfinal5-r3-choke-point

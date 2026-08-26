@@ -1,0 +1,14 @@
+Modified Files for R4 G1 Corrections:
+1. src/iabv_v15/services/adaptive/cloud_reasoning_planner.py
+   - Added write_repo_file to TOOL_DESCRIPTORS (canonical contract)
+   
+2. src/iabv_v15/infra/mcp/server.py
+   - Added g1_goal_to_protected_tool MCP tool
+   - Real REGISTER_EXECUTION via acquire_capability_for_execution
+   - Canonical MCP tool registry dispatch
+   - Before/after state capture
+   - File hash verification (SHA256)
+
+3. tests/windows_e2e/test_g1_goal_to_protected_tool.py (new)
+   - Positive test: test_g1_goal_to_protected_tool
+   - Negative test: test_g1_negative_unsupported_tool

@@ -1,0 +1,37 @@
+R3.3 PROTECTED EFFECT EVIDENCE
+=============================
+
+AUTHORIZATION → REAL EFFECT FLOW
+--------------------------------
+
+authorize_action() entered = YES (capability_action_bridge.py:94)
+authorize_action() returned = YES (capability_action_bridge.py:142)
+write_repo_file_impl() entered = YES (self_update_tools.py:44)
+write operation entered = YES (self_update_tools.py:102)
+write operation completed = YES (self_update_tools.py:103)
+
+OBSERVATION STATUS
+------------------
+NOT_DIRECTLY_OBSERVED
+
+The test does not have explicit logging statements that would show:
+- "authorize_action() entered"
+- "authorize_action() returned"
+- "write operation entered"
+- "write operation completed"
+
+However, the evidence is inferred from:
+1. Test assertion: assert result['status'] == 'ok' (test line 126)
+2. Git diff showing file modification
+3. File content verification
+
+The protected effect is demonstrated by:
+- Authorization check passes (write_repo_file_impl line 76-78)
+- File write occurs only after authorization (write_repo_file_impl line 102)
+- File modification is verified by git diff
+
+LIMITATION
+----------
+The current test implementation does not include explicit logging at the function entry/exit
+points to directly observe the authorization → effect sequence in the runtime output.
+The evidence is inferred from test assertions and git verification, not from direct log traces.

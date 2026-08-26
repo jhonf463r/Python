@@ -3285,26 +3285,7 @@ class IABVMCPServer:
 
         # Step 3: Validate assigned_tool against MCP tool registry (canonical dispatch)
         # Check if the assigned_tool is registered as an MCP tool
-        # FastMCP stores tools in _tool_manager
-        registered_tools = []
-        
-        # Try _tool_manager first (synchronous)
-        if hasattr(self.mcp, '_tool_manager'):
-            tool_manager = self.mcp._tool_manager
-            if hasattr(tool_manager, '_tools'):
-                registered_tools = list(tool_manager._tools.keys())
-            elif hasattr(tool_manager, 'tools'):
-                registered_tools = [t.name for t in tool_manager.tools()]
-        
-        # Fallback: try other attributes
-        if not registered_tools:
-            if hasattr(self.mcp, '_mcp_tools'):
-                registered_tools = list(self.mcp._mcp_tools.keys())
-            elif hasattr(self.mcp, '_tools'):
-                registered_tools = list(self.mcp._tools.keys())
-            elif hasattr(self.mcp, 'tools'):
-                registered_tools = [t.name for t in self.mcp.tools()]
-        
+        registered_tools = self.mcp._tools.keys()
         if assigned_tool not in registered_tools:
             trace['steps'].append({
                 'step': 'tool_validation',
@@ -3316,7 +3297,6 @@ class IABVMCPServer:
                 'status': 'error',
                 'error': f'Unsupported tool: {assigned_tool}. Registered tools: {list(registered_tools)}',
                 'trace': trace,
-                'real_provider_call': 'REAL_PROVIDER_ERROR',
             }
 
         trace['steps'].append({
@@ -3375,28 +3355,12 @@ class IABVMCPServer:
             })
         except Exception as exc:
             trace['steps'].append({'step': 'register_execution', 'status': 'error', 'error': str(exc)})
-            return {'status': 'error', 'error': f'Register execution failed: {exc}', 'trace': trace, 'real_provider_call': 'REAL_PROVIDER_ERROR'}
+            return {'status': 'error', 'error': f'Register execution failed: {exc}', 'trace': trace}
 
         # Step 5: Dispatch via real MCP tool registry (canonical dispatch)
         try:
-            # Get the tool from the MCP registry using the same method as validation
-            tool_fn = None
-            if hasattr(self.mcp, '_tool_manager'):
-                tool_manager = self.mcp._tool_manager
-                if hasattr(tool_manager, '_tools') and assigned_tool in tool_manager._tools:
-                    tool_fn = tool_manager._tools[assigned_tool].fn
-                elif hasattr(tool_manager, 'tools'):
-                    for t in tool_manager.tools():
-                        if t.name == assigned_tool:
-                            tool_fn = t.fn
-                            break
-            elif hasattr(self.mcp, '_mcp_tools') and assigned_tool in self.mcp._mcp_tools:
-                tool_fn = self.mcp._mcp_tools[assigned_tool].fn
-            elif hasattr(self.mcp, '_tools') and assigned_tool in self.mcp._tools:
-                tool_fn = self.mcp._tools[assigned_tool].fn
-            
-            if tool_fn is None:
-                raise ValueError(f"Tool {assigned_tool} not found in MCP registry")
+            # Get the tool from the MCP registry
+            tool_fn = self.mcp._tools[assigned_tool].fn
 
             # Prepare parameters for the tool
             # For write_repo_file, we need to pass the execution context
@@ -3430,11 +3394,10 @@ class IABVMCPServer:
                     'status': 'error',
                     'error': f'Tool execution failed: {tool_result.get("detail")}',
                     'trace': trace,
-                    'real_provider_call': 'REAL_PROVIDER_ERROR',
                 }
         except Exception as exc:
             trace['steps'].append({'step': 'tool_dispatch', 'status': 'error', 'error': str(exc)})
-            return {'status': 'error', 'error': f'Tool dispatch failed: {exc}', 'trace': trace, 'real_provider_call': 'REAL_PROVIDER_ERROR'}
+            return {'status': 'error', 'error': f'Tool dispatch failed: {exc}', 'trace': trace}
 
         # Step 6: Verify protected effect (file mutation, git status)
         try:

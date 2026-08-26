@@ -1,0 +1,9 @@
+R3.3 C2 FINAL FORENSIC - REPOSITORY BEFORE
+===========================================
+
+The production path test does not capture repository state before the action.
+The test verifies capability acquisition but does not log git state.
+
+This is a limitation of the current test implementation.
+The test focuses on verifying the acquire_capability_for_existing_execution path
+with correct session_id and episode_id parameters.

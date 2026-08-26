@@ -1,0 +1,3 @@
+# Repository state before R4 G1 corrections
+# Parent commit: e03811c81ee30be2464deaab81c776f1de6db10e
+# No G1 implementation existed before this commit

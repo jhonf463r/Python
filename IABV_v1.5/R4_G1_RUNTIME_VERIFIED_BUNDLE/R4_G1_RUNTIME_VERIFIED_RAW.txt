@@ -1,0 +1,17 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-9.0.3, pluggy-1.5.0 -- C:\Users\faber\miniconda3\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.11.0
+collecting ... collected 5 items
+
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_code_verification PASSED [ 20%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_mcp_registration PASSED [ 40%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_negative_unsupported_tool PASSED [ 60%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_real_e2e SKIPPED [ 80%]
+tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_negative_real_e2e PASSED [100%]
+
+=========================== short test summary info ===========================
+SKIPPED [1] tests\windows_e2e\test_g1_goal_to_protected_tool.py:244: G1 tool not directly accessible in FastMCP registry - runtime execution requires MCP server running in stdio mode
+======================== 4 passed, 1 skipped in 4.02s =========================

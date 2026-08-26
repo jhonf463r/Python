@@ -1,0 +1,54 @@
+R3.3 WINDOWS E2E REGRESSION TEST
+================================
+
+COMMAND EXECUTED
+----------------
+Working Directory: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+Command: python -m pytest tests/windows_e2e/test_replay_rejection.py::test_replay_rejection tests/windows_e2e/test_exactly_once.py::test_exactly_once tests/windows_e2e/test_concurrency.py::test_concurrency tests/windows_e2e/test_transport_failure.py::test_transport_failure tests/windows_e2e/test_lifecycle.py::test_lifecycle -v --tb=short
+
+TEST RESULTS
+------------
+tests/windows_e2e/test_replay_rejection.py::test_replay_rejection PASSED
+tests/windows_e2e/test_exactly_once.py::test_exactly_once PASSED
+tests/windows_e2e/test_concurrency.py::test_concurrency PASSED
+tests/windows_e2e/test_transport_failure.py::test_transport_failure PASSED
+tests/windows_e2e/test_lifecycle.py::test_lifecycle PASSED
+
+5 passed in 25.34s
+
+EXIT CODE
+----------
+0 (SUCCESS)
+
+ELAPSED TIME
+-------------
+25.34 seconds
+
+REGRESSION ANALYSIS
+-------------------
+All Windows E2E tests continue to pass after R3.3 changes.
+
+The R3.3 changes were:
+1. Changed AuthorityServer from threading.Thread to multiprocessing.Process
+2. Updated conftest.py to return (service, authority_pid) tuple
+3. Updated test_lifecycle.py and test_concurrency.py to unpack the tuple
+4. Fixed PID logging in authority_server.py
+5. Fixed capability_lifecycle.py to pass session_id/episode_id
+
+These changes did not break the existing Windows E2E tests:
+- test_replay_rejection: Still correctly rejects replayed leases
+- test_exactly_once: Still correctly enforces exactly-once semantics
+- test_concurrency: Still correctly handles concurrent lease redemption
+- test_transport_failure: Still correctly handles transport failures
+- test_lifecycle: Still correctly demonstrates full lifecycle
+
+The test_concurrency output shows evidence the process separation is working:
+- Thread 1: Connected, REDEEM_JOIN response: Success: False, Error: Join authorization already consumed
+- Thread 2: Connected, REDEEM_JOIN response: Success: True, Membership ID: kMWZvkXzCbvdwl4ogdB0jg
+- Success count: 1 (exactly one thread succeeded as expected)
+
+CONCLUSION
+----------
+R3.3 changes do not introduce regressions in existing Windows E2E tests.
+The move from threading.Thread to multiprocessing.Process maintains compatibility
+with the existing test suite.

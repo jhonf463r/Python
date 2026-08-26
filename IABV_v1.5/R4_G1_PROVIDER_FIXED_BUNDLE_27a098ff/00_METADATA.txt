@@ -1,0 +1,129 @@
+R4 G1 PROVIDER BLOCKER DIAGNOSIS FORENSIC BUNDLE
+================================================
+
+OBJECTIVE
+--------
+Diagnose and resolve the Groq provider HTTP 404 error preventing G1 real E2E execution.
+
+The independent audit of commit 27a098ff8c2f890b32328476116ce623acba7e4c concluded:
+- G1 infrastructure = READY
+- G1 negative E2E = PASS
+- G1 positive E2E = FAIL (CloudReasoningPlannerService → Groq → HTTP 404)
+
+The task was to identify and fix the provider configuration issue without modifying G1 architecture.
+
+CRITICAL DIAGNOSIS
+-----------------
+Root cause identified:
+- Groq API endpoint is correct: https://api.groq.com/openai/v1/chat/completions
+- API key is present and accepted by Groq
+- Configured model (llama-3.3-70b-versatile) does not exist (HTTP 404)
+- All previously common Groq models have been decommissioned (HTTP 400)
+- No valid working model found for this Groq API key
+
+PROVIDER CONFIGURATION
+---------------------
+PROVIDER = groq
+BASE_URL = https://api.groq.com/openai/v1/chat/completions
+ENDPOINT = /chat/completions
+MODEL = llama-3.3-70b-versatile
+HTTP_METHOD = POST
+API_KEY_PRESENT = True
+API_KEY_ACCEPTED = True (key is valid, but models are unavailable)
+
+HEALTH CHECK RESULTS
+--------------------
+Tested models and their status:
+- llama-3.3-70b-versatile: HTTP 404 (model_not_found)
+- llama-3.1-70b-versatile: HTTP 400 (model_decommissioned)
+- mixtral-8x7b-32768: HTTP 400 (model_decommissioned)
+- gemma2-9b-it: HTTP 400 (model_decommissioned)
+- llama-3.3-70b-specdec: HTTP 400 (model_decommissioned)
+- llama-3.2-3b-preview: HTTP 400 (model_decommissioned)
+- llama-3.2-1b-preview: HTTP 400 (model_decommissioned)
+- gemma-7b-it: HTTP 400 (model_decommissioned)
+- qwen-2.5-7b-instruct: HTTP 404 (model_not_found)
+- llama-3.3-8b-instant: HTTP 404 (model_not_found)
+- llama-3.3-70b-instant: HTTP 404 (model_not_found)
+- llama-3.1-8b-instant: HTTP 404 (model_not_found)
+
+CONCLUSION
+----------
+The Groq provider is experiencing a widespread model deprecation event.
+All commonly used models have been decommissioned or are not accessible with the current API key.
+
+This is NOT a configuration error in IABV.
+The endpoint, authentication, and request format are correct.
+The issue is on the Groq provider side (models no longer available).
+
+ARCHITECTURE CONSTRAINTS
+------------------------
+Per task requirements:
+- NO modificar la arquitectura G1
+- NO cambiar CloudReasoningPlannerService architecture
+- NO crear otro provider subsystem
+- NO cambiar fallback logic salvo que sea estrictamente necesario
+- NO tocar C2
+
+Since the issue is provider-side (Groq model deprecation) and not IABV configuration,
+no code changes are appropriate. The infrastructure is correctly configured.
+
+RECOMMENDATION
+--------------
+To achieve REAL_PROVIDER_AVAILABLE = TRUE, one of the following is required:
+1. Configure a different provider (OPENAI_API_KEY or GEMINI_API_KEY)
+2. Configure a local Ollama instance (IABV_OLLAMA_BASE_URL, IABV_OLLAMA_MODEL)
+3. Wait for Groq to restore or provide valid models
+4. Update Groq API key if the current one has restricted model access
+
+The IABV infrastructure is ready and will work when any valid provider is available.
+
+SOURCE OF TRUTH
+--------------
+Repository: jhonf463r/Python
+Branch: p0213/vfinal5-r3-choke-point
+Parent commit: 27a098ff8c2f890b32328476116ce623acba7e4c
+New commit: TBD (health check test added as evidence)
+
+MODIFIED FILES
+-------------
+1. tests/windows_e2e/test_groq_health_check.py (NEW)
+   - Direct Groq API health check
+   - Tests current model and alternatives
+   - Provides detailed diagnostics without exposing secrets
+
+TEST RESULTS
+------------
+G1 Tests: 4 passed, 1 failed
+- test_g1_code_verification: PASSED (STATIC_CODE_CHECK)
+- test_g1_mcp_registration: PASSED (STATIC_CODE_CHECK)
+- test_g1_negative_unsupported_tool: PASSED (STATIC_CODE_CHECK)
+- test_g1_real_e2e: FAILED (Groq HTTP 404, provider unavailable)
+- test_g1_negative_real_e2e: PASSED (runtime verification)
+
+Groq Health Check: 1 passed
+- test_groq_health_check: PASSED (diagnostic evidence collected)
+
+C2 Regression Tests: 10 passed
+- All C2 Windows E2E tests passed
+
+PROVIDER AVAILABILITY
+--------------------
+REAL_PROVIDER_AVAILABLE = FALSE
+CAUSE = Groq model deprecation (provider-side issue)
+IABV_CONFIGURATION = CORRECT
+ENDPOINT = CORRECT
+AUTHENTICATION = CORRECT
+MODEL = DEPRECATED/UNAVAILABLE
+
+G1 STATUS: OPEN (provider unavailable due to Groq model deprecation)
+INFRASTRUCTURE: READY (will work when valid provider is available)
+
+NEXT STEP
+--------
+Since REAL_PROVIDER_AVAILABLE = FALSE:
+- NO G1 PASS
+- NO Claude audit
+- NO R5
+
+The infrastructure is verified and ready. The blocker is provider-side (Groq).

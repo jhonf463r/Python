@@ -1,0 +1,172 @@
+R4 G1 Goal-to-Tool Governed Execution Bridge - Forensic Summary
+================================================================
+
+PROVENANCE: NEW_R4_G1_IMPLEMENTATION
+DATE: 2025-08-25
+BRANCH: p0213/vfinal5-r3-choke-point
+COMMIT: bdf1a14a4
+
+OBJECTIVE:
+Implement G1 operational path: Goal → Plan → Tool → C2 → Protected Effect
+Single entry point that takes a goal, uses CloudReasoningPlannerService to generate
+a plan, selects the write_repo_file tool based on the plan, registers an execution,
+propagates execution context (execution_id, run_id, session_id, episode_id) to the
+selected tool, and invokes the real write_repo_file tool with C2 authorization.
+
+IMPLEMENTATION SUMMARY:
+-----------------------
+
+1. Single Operational Entry Point:
+   - File: src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py
+   - Method: execute_goal_to_protected_tool()
+   - Lines: 2290-2484
+   - Accepts: user_goal, workspace_root, mcp_server
+   - Returns: Traceable result dictionary with full execution chain evidence
+
+2. Execution Flow:
+   - Step 1: Generate cloud plan via CloudReasoningPlanner
+   - Step 2: Extract assigned_tool from plan (G1 demo supports only write_repo_file)
+   - Step 3: Acquire capability using production function (acquire_capability_for_execution)
+   - Step 4: Invoke tool with propagated IDs through C2 (write_repo_file_impl)
+   - Step 5: Verify authorization and effect
+   - Step 6: Final verification (file existence, size)
+
+3. Execution Context Propagation:
+   - Automatically generates: invocation_id, session_id, episode_id
+   - Authority returns: execution_id, run_id, lease_id
+   - All IDs propagated to tool invocation
+   - No manual ID copy/paste required from human
+
+4. C2 Integration:
+   - Uses real AuthorityClient with Named Pipe IPC
+   - Uses real acquire_capability_for_execution (no mocks)
+   - Uses real CapabilityActionBridge for lease consumption
+   - Uses real write_repo_file_impl with C2 authorization
+   - Process separation verified (client PID != authority PID)
+
+5. Security Verification:
+   - AUTHORIZATION_BEFORE_EFFECT = TRUE
+   - HUMAN_ONLY_PROVIDES_GOAL = TRUE
+   - No C2 bypass - all tool invocations require valid lease
+   - Target mismatch enforcement (file:g1_goal_execution_test.txt must match authorization)
+
+TESTING:
+--------
+
+1. Positive E2E Test:
+   - File: tests/windows_e2e/test_g1_goal_to_protected_tool.py
+   - Test: test_g1_goal_to_protected_tool
+   - Status: PASSED
+   - Verifies: Full G1 path with real file mutation
+
+2. Negative Test:
+   - File: tests/windows_e2e/test_g1_goal_to_protected_tool.py
+   - Test: test_g1_negative_plan_rejection
+   - Status: PASSED
+   - Verifies: Plan rejection for unsupported tools
+
+3. C2 Regression Tests:
+   - File: tests/windows_e2e/test_c2_real_self_update_authority.py
+   - Status: 10/10 PASSED
+   - Verifies: No regression in existing C2 functionality
+
+RUNTIME EVIDENCE:
+----------------
+
+Test Execution Output:
+- G1 positive test: PASSED in 3.16s
+- G1 negative test: PASSED in 1.62s
+- C2 regression: PASSED in 20.61s
+
+Key Metrics from G1 Execution:
+- Plan generation: 0.14ms
+- Capability acquisition: 833.26ms
+- Tool dispatch: 113.62ms
+- Total: 947.02ms
+
+Process Separation:
+- Client PID: 8256
+- Authority PID: 5520
+- PIDs are different: TRUE
+
+SECURITY VERIFICATION:
+---------------------
+
+1. No C2 Bypass:
+   - execute_goal_to_protected_tool does not modify critical C2 files
+   - Uses production capability_lifecycle functions
+   - Uses real AuthorityClient with Named Pipe IPC
+   - No direct calls to write_repo_file_impl without C2 integration
+
+2. Execution Context Propagation:
+   - All IDs automatically generated and propagated
+   - No manual ID handling in test
+   - Human provides ONLY the goal
+
+3. Authorization Enforcement:
+   - Target mismatch correctly rejected
+   - Lease consumption required for tool execution
+   - Authority service runs in separate process
+
+COMPLIANCE WITH REQUIREMENTS:
+-----------------------------
+
+✓ Single internal entry point
+✓ Uses existing CloudReasoningPlannerService
+✓ Selects assigned_tool from plan
+✓ Registers execution with authority
+✓ Propagates execution context IDs
+✓ Dispatches tool with real MCP or direct call
+✓ Returns traceable result
+✓ E2E test exercising full path
+✓ Negative test case
+✓ Preserves all C2 tests
+✓ Captures runtime evidence
+✓ Committed with specific message
+✓ Created forensic bundle
+
+FORBIDDEN ACTIONS NOT TAKEN:
+-----------------------------
+
+✗ No modification of authority_service.py
+✗ No modification of authority_server.py
+✗ No modification of authority_client.py
+✗ No modification of capability_lifecycle.py
+✗ No modification of capability_action_bridge.py
+✗ No modification of self_update_tools.py
+✗ No rollback implementation
+✗ No learning implementation
+✗ No multi-agent deliberation
+✗ No capability growth
+✗ No mocks in main path (only in test for planner demo)
+✗ No autonomy claims
+
+FILES MODIFIED:
+---------------
+
+1. src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py
+   - Added execute_goal_to_protected_tool() method
+   - Lines added: ~195 lines
+   - No modifications to existing methods
+
+2. tests/windows_e2e/test_g1_goal_to_protected_tool.py
+   - New file created
+   - Contains positive and negative G1 tests
+   - ~310 lines
+
+COMMIT DETAILS:
+---------------
+
+Branch: p0213/vfinal5-r3-choke-point
+Commit SHA: bdf1a14a4
+Commit Message: "R4: close goal-to-tool governed execution bridge"
+Files Changed: 2
+Lines Added: 509
+Lines Deleted: 0
+
+NEXT STEPS:
+-----------
+
+1. Audit review required before merge to main
+2. No merge to main until audit approved
+3. R4 not declared ready until audit complete
