@@ -3530,13 +3530,28 @@ class IABVMCPServer:
             verification = {'error': str(exc)}
             trace['verification'] = verification
 
-        # Step 6.5: G2 - Compare expected result vs observed result
-        # G2 FIX: Calculate expected hash deterministically from plan parameters
-        # instead of relying on LLM to guess cryptographic values
-        result_verification = {'status': 'unknown', 'matches': [], 'mismatches': []}
+        # Step 6.5: G3 - Independent Result Verification
+        # G3: Strengthen verifier without changing C2
+        # Separate ACTION_EXECUTED, ACTION_RESULT_OBSERVED, ACTION_RESULT_VERIFIED
+        # Independent observation from filesystem, not reusing plan parameters
+        # Structured expected_result with property, expected value/condition, verification method
+        # Semantic verification to detect unexpected content (not_contains, exact_match vs partial_match)
+        result_verification = {
+            'status': 'unknown',
+            'action_executed': False,
+            'action_result_observed': False,
+            'action_result_verified': False,
+            'matches': [],
+            'mismatches': [],
+            'unexpected_content': [],
+        }
         try:
+            # G3: ACTION_EXECUTED - tool execution succeeded
+            action_executed = tool_result.get('status') == 'ok'
+            result_verification['action_executed'] = action_executed
+            
             if plan_expected_result:
-                # Calculate deterministic expected hash from plan parameters
+                # G3: Calculate deterministic expected hash from plan parameters
                 # This separates LLM reasoning (what should happen) from deterministic derivation (exact hash)
                 calculated_expected_result = {}
                 
@@ -3555,54 +3570,120 @@ class IABVMCPServer:
                     trace['calculated_expected_hash'] = expected_hash
                     trace['hash_derivation'] = 'deterministic_from_plan_parameters'
                 
+                # G3: INDEPENDENT OBSERVATION - observe from real filesystem, not plan parameters
+                target_file = Path(ws) / relative_path
                 observed_result = {
-                    'file_exists': verification.get('file_exists', False),
-                    'file_hash_sha256': verification.get('file_hash_sha256', ''),
-                    'git_status': verification.get('git_status', ''),
+                    'file_exists': target_file.exists(),
+                    'file_path': str(target_file),
+                    'file_size_bytes': target_file.stat().st_size if target_file.exists() else 0,
                 }
                 
-                # Add file content for semantic verification
-                if verification.get('file_exists'):
-                    target_file = Path(ws) / relative_path
-                    if target_file.exists():
-                        observed_result['file_content'] = target_file.read_text(encoding='utf-8')
+                # G3: Calculate observed hash independently from actual file bytes
+                if target_file.exists():
+                    observed_result['file_hash_sha256'] = hashlib.sha256(target_file.read_bytes()).hexdigest()
+                    observed_result['file_content'] = target_file.read_text(encoding='utf-8')
+                else:
+                    observed_result['file_hash_sha256'] = ''
+                    observed_result['file_content'] = ''
                 
-                # Compare expected vs observed (using calculated expected hash)
+                # G3: ACTION_RESULT_OBSERVED - we successfully observed the result
+                action_result_observed = True
+                result_verification['action_result_observed'] = action_result_observed
+                
+                # G3: Add git status for observation
+                git_status_result = _sp.run(
+                    ['git', '-C', ws, 'status', '--porcelain', relative_path],
+                    capture_output=True, text=True, timeout=10, check=False,
+                )
+                observed_result['git_status'] = git_status_result.stdout.strip()
+                
+                # G3: Compare expected vs observed with structured verification
                 for key, expected_value in calculated_expected_result.items():
                     observed_value = observed_result.get(key)
+                    match_type = 'unknown'
+                    match = False
                     
                     # Handle different comparison types
                     if isinstance(expected_value, bool):
                         match = observed_value == expected_value
+                        match_type = 'exact'
                     elif isinstance(expected_value, str):
                         # For hash comparison, require exact match (no substring matching)
                         if key == 'content_hash' or key == 'file_hash_sha256':
                             match = observed_value == expected_value
-                        # For content_contains, check if expected string is in observed content
+                            match_type = 'exact'
+                        # G3: content_contains - partial match
                         elif key == 'content_contains':
                             file_content = observed_result.get('file_content', '')
                             match = expected_value in file_content if file_content else False
+                            match_type = 'partial' if match else 'mismatch'
+                        # G3: content_not_contains - must NOT contain
+                        elif key == 'content_not_contains':
+                            file_content = observed_result.get('file_content', '')
+                            match = expected_value not in file_content if file_content else True
+                            match_type = 'negative'
+                        # G3: content_exact_match - exact string match
+                        elif key == 'content_exact_match':
+                            file_content = observed_result.get('file_content', '')
+                            match = file_content == expected_value
+                            match_type = 'exact'
                         else:
                             match = observed_value == expected_value
+                            match_type = 'exact'
                     else:
                         match = str(observed_value) == str(expected_value)
+                        match_type = 'exact'
                     
                     if match:
                         result_verification['matches'].append({
                             'key': key,
                             'expected': expected_value,
                             'observed': observed_value,
+                            'match_type': match_type,
                         })
                     else:
                         result_verification['mismatches'].append({
                             'key': key,
                             'expected': expected_value,
                             'observed': observed_value,
+                            'match_type': match_type,
                         })
                 
-                result_verification['status'] = 'verified' if not result_verification['mismatches'] else 'verification_failed'
+                # G3: Detect unexpected content
+                # Only if content_not_contains is specified, check for forbidden content
+                # If content_contains is specified, we only check that the content is present (partial match)
+                # We do NOT flag additional content as unexpected unless explicitly forbidden
+                if 'content_not_contains' in calculated_expected_result:
+                    forbidden_content = calculated_expected_result['content_not_contains']
+                    actual_content = observed_result.get('file_content', '')
+                    if forbidden_content in actual_content:
+                        result_verification['unexpected_content'].append({
+                            'type': 'forbidden_content_found',
+                            'forbidden': forbidden_content,
+                            'actual': actual_content,
+                        })
+                
+                # G3: ACTION_RESULT_VERIFIED - all checks passed
+                action_result_verified = (
+                    not result_verification['mismatches'] and 
+                    not result_verification['unexpected_content']
+                )
+                result_verification['action_result_verified'] = action_result_verified
+                
+                # G3: Final status based on three separate concepts
+                if not action_executed:
+                    result_verification['status'] = 'action_failed'
+                elif not action_result_observed:
+                    result_verification['status'] = 'observation_failed'
+                elif not action_result_verified:
+                    result_verification['status'] = 'verification_failed'
+                else:
+                    result_verification['status'] = 'verified'
+                
                 result_verification['expected_result'] = calculated_expected_result
+                result_verification['expected_result_source'] = 'plan_parameters_deterministic'
                 result_verification['observed_result'] = observed_result
+                result_verification['observed_result_source'] = 'independent_filesystem_observation'
                 result_verification['original_plan_expected_result'] = plan_expected_result
             else:
                 result_verification['status'] = 'skipped'  # No expected_result in plan
