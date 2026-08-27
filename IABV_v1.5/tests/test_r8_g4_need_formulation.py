@@ -114,6 +114,82 @@ class TestNeedFormulationPositive(unittest.TestCase):
         self.assertEqual(need.knowledge_required, "inability", "knowledge_required must come from finding.category")
         self.assertEqual(need.evidence, ["run_789"], "evidence must come from finding.evidence_refs")
 
+    def test_capability_promised_but_unavailable_creates_need(self):
+        """Real OSES category: capability_promised_but_unavailable should create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="capability_promised_but_unavailable",
+            title="Capability promised but not wired in build",
+            summary="3 veces se prometio una capacidad que no esta disponible en el build actual. Capacidades: file_system, visual_inspection.",
+            severity=IssueSeverity.MEDIUM,
+            recommendation="Verificar que los handlers requeridos estan presentes en el build. No prometer acciones sin verificar hasattr primero.",
+            evidence_refs=["runtime_audit.jsonl"],
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNotNone(need, "capability_promised_but_unavailable should produce a need")
+        # Provenance assertions
+        self.assertEqual(need.source_finding_id, finding.finding_id, "source_finding_id must match finding.finding_id")
+        self.assertEqual(need.category, "capability_promised_but_unavailable", "category must match finding.category")
+        self.assertEqual(need.capability_gap, "Capability promised but not wired in build", "capability_gap must come from finding.title")
+        self.assertEqual(need.desired_state, "Verificar que los handlers requeridos estan presentes en el build. No prometer acciones sin verificar hasattr primero.", "desired_state must come from finding.recommendation")
+        self.assertEqual(need.knowledge_required, "capability_promised_but_unavailable", "knowledge_required must come from finding.category")
+        self.assertEqual(need.evidence, ["runtime_audit.jsonl"], "evidence must come from finding.evidence_refs")
+
+    def test_windows_capability_missing_creates_need(self):
+        """Real OSES category: windows_capability_missing should create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="windows_capability_missing",
+            title="Falta: file_system_operations",
+            summary="file_system_operations no",
+            severity=IssueSeverity.LOW,
+            recommendation="Dependencia: win32api",
+            source_refs=["file_system_operations"],
+            metadata={
+                "capability_id": "file_system_operations",
+                "status": "missing",
+            },
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNotNone(need, "windows_capability_missing should produce a need")
+        # Provenance assertions
+        self.assertEqual(need.source_finding_id, finding.finding_id, "source_finding_id must match finding.finding_id")
+        self.assertEqual(need.category, "windows_capability_missing", "category must match finding.category")
+        self.assertEqual(need.capability_gap, "Falta: file_system_operations", "capability_gap must come from finding.title")
+        self.assertEqual(need.desired_state, "Dependencia: win32api", "desired_state must come from finding.recommendation")
+        self.assertEqual(need.knowledge_required, "windows_capability_missing", "knowledge_required must come from finding.category")
+
+    def test_research_gap_creates_need(self):
+        """Real OSES category: research_gap should create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="research_gap",
+            title="GPU capability declared but not measured",
+            summary="User declared GPU capability in chat but it has not been measured against StrategySelector/ExperimentLab.",
+            severity=IssueSeverity.MEDIUM,
+            recommendation="Investigate GPU availability and integrate with capability measurement system.",
+            evidence_refs=["chat_research_backlog/session_123.jsonl"],
+            metadata={
+                "kind": "gpu",
+                "label": "GPU capability",
+            },
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNotNone(need, "research_gap should produce a need")
+        # Provenance assertions
+        self.assertEqual(need.source_finding_id, finding.finding_id, "source_finding_id must match finding.finding_id")
+        self.assertEqual(need.category, "research_gap", "category must match finding.category")
+        self.assertEqual(need.capability_gap, "GPU capability declared but not measured", "capability_gap must come from finding.title")
+        self.assertEqual(need.desired_state, "Investigate GPU availability and integrate with capability measurement system.", "desired_state must come from finding.recommendation")
+        self.assertEqual(need.knowledge_required, "research_gap", "knowledge_required must come from finding.category")
+        self.assertEqual(need.evidence, ["chat_research_backlog/session_123.jsonl"], "evidence must come from finding.evidence_refs")
+
 
 class TestNeedFormulationNegative(unittest.TestCase):
     """Negative test: operational findings → no need."""
@@ -244,6 +320,79 @@ class TestNeedFormulationNegative(unittest.TestCase):
         need = service.formulate_need_from_finding(finding)
 
         self.assertIsNone(need, "Ambiguous finding with capability keyword must NOT produce a need")
+
+    def test_functional_gap_no_need(self):
+        """Real OSES category: functional_gap should NOT create a need (underutilized resources, not missing capabilities)."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="functional_gap",
+            title="Sesiones activas en navegadores sin cuentas asociadas",
+            summary="Se detectaron sesiones activas en Opera pero no hay cuentas de Google asociadas en esos navegadores.",
+            severity=IssueSeverity.LOW,
+            recommendation="Considerar asociar cuentas a los navegadores con sesiones para mejor tracking de cuotas por cuenta.",
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "functional_gap (underutilized resources) must NOT produce a need")
+
+    def test_configuration_gap_no_need(self):
+        """Real OSES category: configuration_gap should NOT create a need (missing config/secrets, not capability gaps)."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="configuration_gap",
+            title="Secretos criticos faltantes: GITHUB_TOKEN_IABV",
+            summary="1 secreto(s) critico(s) no configurado(s): GITHUB_TOKEN_IABV. Esto bloquea funcionalidad esencial.",
+            severity=IssueSeverity.HIGH,
+            recommendation="Configurar los secretos faltantes via la UI de IABV.",
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "configuration_gap (missing config/secrets) must NOT produce a need")
+
+    def test_underutilized_resource_no_need(self):
+        """Real OSES category: underutilized_resource should NOT create a need (resource available but not used)."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="underutilized_resource",
+            title="API key de OpenAI disponible sin ejemplos de entrenamiento",
+            summary="Hay una API key de OpenAI configurada pero el clasificador dual aun no ha generado ejemplos de entrenamiento.",
+            severity=IssueSeverity.LOW,
+            recommendation="Usar el clasificador dual para generar ejemplos de entrenamiento.",
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "underutilized_resource must NOT produce a need")
+
+    def test_temporal_latency_anomaly_no_need(self):
+        """Real OSES category: temporal_latency_anomaly should NOT create a need (operational problem)."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="temporal_latency_anomaly",
+            title="Latency anomaly detected",
+            summary="Sudden spike in operation latency detected.",
+            severity=IssueSeverity.MEDIUM,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "temporal_latency_anomaly must NOT produce a need")
+
+    def test_cloud_provider_degradation_no_need(self):
+        """Real OSES category: cloud_provider_degradation should NOT create a need (operational problem)."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="cloud_provider_degradation",
+            title="Cloud provider showing degradation",
+            summary="Cloud provider success rate dropped below acceptable threshold.",
+            severity=IssueSeverity.HIGH,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "cloud_provider_degradation must NOT produce a need")
 
 
 class TestStructuredNeedPersistence(unittest.TestCase):

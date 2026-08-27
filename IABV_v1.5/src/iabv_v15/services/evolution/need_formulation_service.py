@@ -22,17 +22,27 @@ from iabv_v15.domain.models import (
 
 
 # Capability-shaped finding categories that should produce needs
+# These are the actual categories produced by OperationalSelfExaminationService
+# that represent real capability or knowledge gaps
 CAPABILITY_SHAPED_CATEGORIES = {
+    # Original G4 categories (not currently produced by OSES but kept for compatibility)
     "capability_discovery",
     "missing_capability",
     "missing_knowledge",
     "inability",
     "uncertainty",
     "limitation",
+    # Real OSES categories that represent capability gaps
+    "capability_promised_but_unavailable",  # P0.32+P0.37: capability promised but not wired in build
+    "windows_capability_missing",  # Windows-specific capabilities missing from environment
+    "research_gap",  # P0.38: user-declared capabilities needing investigation
 }
 
 # Operational finding categories that should NOT produce needs
+# These are the actual categories produced by OperationalSelfExaminationService
+# that represent operational problems, not capability gaps
 OPERATIONAL_CATEGORIES = {
+    # Original G4 operational categories
     "provider_underperformance",
     "route_failure",
     "latency_high",
@@ -42,6 +52,106 @@ OPERATIONAL_CATEGORIES = {
     "timeout",
     "throughput_issue",
     "load_issue",
+    # Real OSES operational categories
+    "functional_gap",  # Underutilized resources, not missing capabilities
+    "configuration_gap",  # Missing configuration/secrets, not capability gaps
+    "underutilized_resource",  # Resources available but not used
+    "background_error_stagnation",
+    "temporal_latency_anomaly",
+    "temporal_latency_regression",
+    "temporal_stalled_operations",
+    "deep_analysis_ema_drift",
+    "deep_analysis_correlated_failures",
+    "deep_analysis_latency_outliers",
+    "metacognitive_feedback_applied",
+    "metacognitive_loop_closure_improving",
+    "recurring_failure",
+    "repeated_stall",
+    "inertial_route",
+    "repeated_block",
+    "weak_correction",
+    "token_rotation",
+    "ui_heartbeat_stall",
+    "interaction_episode_stalls",
+    "interaction_episode_failures",
+    "interaction_episode_blocked",
+    "interaction_episode_pending",
+    "dispatch_lifecycle_anomaly",
+    "external_failure_followup_misrouted_to_local",
+    "human_assist_bridge",
+    "startup_degradation",
+    "startup_false_ready",
+    "qml_event_loop_starvation",
+    "startup_populate_ui_freeze",
+    "startup_populate_ui_incomplete",
+    "startup_memory_spike",
+    "startup_chat_bridge_missing",
+    "startup_chat_bridge_late",
+    "startup_priority_inversion",
+    "boot_profile_degradation",
+    "boot_profile_regression",
+    "cloud_reasoning_degradation",
+    "cloud_provider_degradation",
+    "cloud_rate_limiting",
+    "cloud_provider_improving",
+    "cloud_no_functional_provider",
+    "resource_degradation",
+    "repeated_resource_pressure_blocks",
+    "startup_heavy_work_starvation",
+    "stale_security_verification_repeated",
+    "web_skill_profile_missing",
+    "devin_repair_worker_available_but_unused",
+    "web_session_expired",
+    "task_packet_high_unresolved",
+    "task_packet_recurring_approval",
+    "task_packet_no_worker",
+    "task_packet_gate_unusable",
+    "task_packet_worker_budget_exhausted",
+    "task_packet_worker_handoff_unresolved",
+    "task_packet_worker_high_corrections",
+    "task_packet_worker_good_compression",
+    "task_packet_performance_jump",
+    "task_packet_metacognitive_miscalibration",
+    "task_packet_metacognitive_overconfidence",
+    "task_packet_metacognitive_underconfidence",
+    "adaptive_threshold_shift",
+    "windows_integration_gaps",
+    "autonomy_index_insufficient_data",
+    "universal_autonomy_index",
+    "autonomy_calibration_drift",
+    "oses_finding",
+    "repeated_visual_mismatch",
+    "user_browser_differs_from_iabv_session",
+    "black_capture_repeated",
+    "user_needed_to_explain_same_gap",
+    "repeated_restore_without_recapture",
+    "repeated_win32_restore_unavailable",
+    "repeated_user_selection_needed",
+    "repeated_restore_attempted",
+    "isolated_profile_blocks_user_logged_in_browser",
+    "metacognitive_maintenance_starved",
+    "incident_followup_falls_to_local_chat",
+    "external_readiness_missing",
+    "build_stale_repeated",
+    "cdp_unavailable_repeated",
+    "external_intent_misrouted_local",
+    "startup_truth_refresh_stall_repeated",
+    "startup_evolution_stall_repeated",
+    "prebuild_resource_snapshot_stall_repeated",
+    "post_result_development_packet_slow",
+    "ui_display_sqlite_stall_repeated",
+    "ui_portable_context_scan_stall_repeated",
+    "discernment_frame_missing_in_task_context",
+    "action_without_grounding",
+    "contradiction_ignored",
+    "low_confidence_acted_as_high",
+    "failed_attractor_repeated",
+    "external_source_bias",
+    "stale_external_data_overrode_live_world_model",
+    "bridge_claimed_ready_but_no_vm",
+    "local_chat_slow_after_continuity",
+    "ui_stall_without_causal_phase",
+    "duplicate_ui_bridge_owner",
 }
 
 
