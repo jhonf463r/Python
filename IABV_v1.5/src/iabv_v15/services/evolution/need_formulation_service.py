@@ -38,6 +38,10 @@ OPERATIONAL_CATEGORIES = {
     "latency_high",
     "performance_degradation",
     "resource_pressure",
+    "network_failure",
+    "timeout",
+    "throughput_issue",
+    "load_issue",
 }
 
 
@@ -87,80 +91,65 @@ class NeedFormulationService:
 
         Returns True if the finding is about missing capability/knowledge.
         Returns False if the finding is operational (latency, provider issues, etc).
+
+        FAIL-CLOSED: Ambiguous findings do NOT create needs.
         """
-        # Check category
-        if finding.category.lower() in CAPABILITY_SHAPED_CATEGORIES:
-            return True
-
-        # Check title/summary for capability-related keywords
-        text = (finding.title + " " + finding.summary).lower()
-        capability_keywords = [
-            "cannot",
-            "unable",
-            "missing",
-            "lack",
-            "need",
-            "require",
-            "capability",
-            "knowledge",
-            "uncertain",
-            "unknown",
-            "limitation",
-            "inability",
-        ]
-
-        # If any capability keyword is present, treat as capability-shaped
-        for keyword in capability_keywords:
-            if keyword in text:
-                return True
-
-        # Check if it's explicitly operational
+        # First check if explicitly operational - reject immediately
         if finding.category.lower() in OPERATIONAL_CATEGORIES:
             return False
 
-        operational_keywords = [
-            "slow",
-            "latency",
-            "timeout",
-            "degraded",
-            "performance",
-            "provider",
-        ]
-        for keyword in operational_keywords:
-            if keyword in text:
-                return False
+        # Check if explicitly capability-shaped
+        if finding.category.lower() in CAPABILITY_SHAPED_CATEGORIES:
+            return True
 
-        # Default: treat as capability-shaped if uncertain
-        return True
+        # FAIL-CLOSED: For ambiguous categories, do NOT create needs
+        # Do not use keyword detection to override semantic category
+        # "provider cannot handle load" must remain operational
+        # "we need a faster route" must remain operational
+        return False
 
     def _extract_capability_gap(self, finding: SelfExaminationFinding) -> str:
-        """Extract what capability is missing."""
+        """Extract what capability is missing.
+
+        Only uses finding.title if present. Otherwise returns empty string
+        to indicate insufficient specification.
+        """
         if finding.title:
             return finding.title
-        return finding.category or "unknown_capability_gap"
+        return ""
 
     def _extract_current_state(self, finding: SelfExaminationFinding) -> str:
-        """Extract current state (what IABV cannot do now)."""
-        # Try to extract from summary
+        """Extract current state (what IABV cannot do now).
+
+        Only extracts if summary contains explicit "cannot" pattern.
+        Otherwise returns empty string to indicate insufficient specification.
+        """
+        # Try to extract from summary only if explicit pattern exists
         if "cannot" in finding.summary.lower():
             parts = finding.summary.lower().split("cannot")
             if len(parts) > 1:
                 return f"Cannot {parts[1].strip()}"
-        return "unable_to_perform_action"
+        return ""
 
     def _extract_desired_state(self, finding: SelfExaminationFinding) -> str:
-        """Extract desired state (what IABV should be able to do)."""
-        # Try to extract from recommendation
+        """Extract desired state (what IABV should be able to do).
+
+        Only uses finding.recommendation if present and non-empty.
+        Otherwise returns empty string to indicate insufficient specification.
+        """
         if finding.recommendation:
             return finding.recommendation
-        return "able_to_perform_action"
+        return ""
 
     def _extract_knowledge_required(self, finding: SelfExaminationFinding) -> str:
-        """Extract what knowledge/capability would address the gap."""
-        # Use category as knowledge type
-        if finding.category:
-            return f"knowledge_in_{finding.category}"
-        return "general_knowledge"
+        """Extract what knowledge/capability would address the gap.
+
+        Only uses category if it is a known capability-shaped category.
+        Otherwise returns empty string to indicate insufficient specification.
+        """
+        if finding.category and finding.category.lower() in CAPABILITY_SHAPED_CATEGORIES:
+            return finding.category
+        return ""
 
     def _map_severity_to_priority(self, severity: str) -> str:
         """Map finding severity to need priority."""

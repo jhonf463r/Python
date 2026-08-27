@@ -36,15 +36,16 @@ class TestNeedFormulationPositive(unittest.TestCase):
         need = service.formulate_need_from_finding(finding)
 
         self.assertIsNotNone(need, "Capability-shaped finding should produce a need")
-        self.assertEqual(need.source_finding_id, finding.finding_id)
-        self.assertEqual(need.category, "capability_discovery")
-        self.assertEqual(need.capability_gap, "Cannot perform visual inspection")
-        self.assertIn("cannot", need.current_state.lower())
-        self.assertEqual(need.desired_state, "Implement visual inspection capability")
-        self.assertEqual(need.knowledge_required, "knowledge_in_capability_discovery")
-        self.assertEqual(need.priority, "high")
-        self.assertEqual(need.status, NeedStatus.PENDING)
-        self.assertEqual(need.evidence, ["run_123", "episode_456"])
+        # Provenance assertions
+        self.assertEqual(need.source_finding_id, finding.finding_id, "source_finding_id must match finding.finding_id")
+        self.assertEqual(need.category, "capability_discovery", "category must match finding.category")
+        self.assertEqual(need.capability_gap, "Cannot perform visual inspection", "capability_gap must come from finding.title")
+        self.assertEqual(need.desired_state, "Implement visual inspection capability", "desired_state must come from finding.recommendation")
+        self.assertEqual(need.knowledge_required, "capability_discovery", "knowledge_required must come from finding.category")
+        self.assertEqual(need.reason, "I cannot perform visual inspection of UI elements", "reason must come from finding.summary")
+        self.assertEqual(need.evidence, ["run_123", "episode_456"], "evidence must come from finding.evidence_refs")
+        self.assertEqual(need.priority, "high", "priority must map from finding.severity")
+        self.assertEqual(need.status, NeedStatus.PENDING, "status must be PENDING")
 
     def test_missing_capability_creates_need(self):
         """Missing capability category should create a need."""
@@ -60,9 +61,13 @@ class TestNeedFormulationPositive(unittest.TestCase):
         need = service.formulate_need_from_finding(finding)
 
         self.assertIsNotNone(need, "Missing capability should produce a need")
-        self.assertEqual(need.category, "missing_capability")
-        self.assertEqual(need.capability_gap, "Unable to execute shell commands")
-        self.assertEqual(need.priority, "critical")
+        # Provenance assertions
+        self.assertEqual(need.source_finding_id, finding.finding_id, "source_finding_id must match finding.finding_id")
+        self.assertEqual(need.category, "missing_capability", "category must match finding.category")
+        self.assertEqual(need.capability_gap, "Unable to execute shell commands", "capability_gap must come from finding.title")
+        self.assertEqual(need.desired_state, "Add shell command execution capability", "desired_state must come from finding.recommendation")
+        self.assertEqual(need.knowledge_required, "missing_capability", "knowledge_required must come from finding.category")
+        self.assertEqual(need.priority, "critical", "priority must map from finding.severity")
 
     def test_uncertainty_creates_need(self):
         """Uncertainty category should create a need."""
@@ -78,23 +83,36 @@ class TestNeedFormulationPositive(unittest.TestCase):
         need = service.formulate_need_from_finding(finding)
 
         self.assertIsNotNone(need, "Uncertainty should produce a need")
-        self.assertEqual(need.category, "uncertainty")
-        self.assertEqual(need.priority, "medium")
+        # Provenance assertions
+        self.assertEqual(need.source_finding_id, finding.finding_id, "source_finding_id must match finding.finding_id")
+        self.assertEqual(need.category, "uncertainty", "category must match finding.category")
+        self.assertEqual(need.capability_gap, "Unknown how to handle API rate limits", "capability_gap must come from finding.title")
+        self.assertEqual(need.desired_state, "Learn rate limit handling patterns", "desired_state must come from finding.recommendation")
+        self.assertEqual(need.knowledge_required, "uncertainty", "knowledge_required must come from finding.category")
+        self.assertEqual(need.priority, "medium", "priority must map from finding.severity")
 
-    def test_keyword_based_detection(self):
-        """Findings with capability keywords should create needs even without explicit category."""
+    def test_inability_with_capability_context_creates_need(self):
+        """Inability category with explicit capability context should create a need."""
         service = NeedFormulationService()
         finding = SelfExaminationFinding(
-            category="generic",
-            title="I cannot parse JSON responses",
-            summary="System cannot parse JSON responses from external APIs",
+            category="inability",
+            title="Unable to execute file system operations",
+            summary="I am unable to execute file system operations on Windows",
             severity=IssueSeverity.HIGH,
+            recommendation="Implement file system operation capability",
+            evidence_refs=["run_789"],
         )
 
         need = service.formulate_need_from_finding(finding)
 
-        self.assertIsNotNone(need, "Keyword 'cannot' should trigger need creation")
-        self.assertIn("cannot", need.capability_gap.lower())
+        self.assertIsNotNone(need, "Inability with capability context should produce a need")
+        # Provenance assertions
+        self.assertEqual(need.source_finding_id, finding.finding_id, "source_finding_id must match finding.finding_id")
+        self.assertEqual(need.category, "inability", "category must match finding.category")
+        self.assertEqual(need.capability_gap, "Unable to execute file system operations", "capability_gap must come from finding.title")
+        self.assertEqual(need.desired_state, "Implement file system operation capability", "desired_state must come from finding.recommendation")
+        self.assertEqual(need.knowledge_required, "inability", "knowledge_required must come from finding.category")
+        self.assertEqual(need.evidence, ["run_789"], "evidence must come from finding.evidence_refs")
 
 
 class TestNeedFormulationNegative(unittest.TestCase):
@@ -142,6 +160,90 @@ class TestNeedFormulationNegative(unittest.TestCase):
         need = service.formulate_need_from_finding(finding)
 
         self.assertIsNone(need, "Performance degradation should NOT produce a need")
+
+    def test_provider_cannot_handle_load_no_need(self):
+        """Provider with 'cannot' keyword but operational context must NOT create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="provider_underperformance",
+            title="Provider cannot handle the load",
+            summary="The cloud provider cannot handle the current load",
+            severity=IssueSeverity.HIGH,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "Operational finding with 'cannot' must NOT produce a need")
+
+    def test_we_need_faster_route_no_need(self):
+        """Finding with 'need' keyword but operational context must NOT create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="route_failure",
+            title="We need a faster route",
+            summary="We need a faster route to the API endpoint",
+            severity=IssueSeverity.MEDIUM,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "Operational finding with 'need' must NOT produce a need")
+
+    def test_route_requires_optimization_no_need(self):
+        """Route optimization finding must NOT create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="route_failure",
+            title="Route requires optimization",
+            summary="Network route requires optimization for better throughput",
+            severity=IssueSeverity.MEDIUM,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "Route optimization must NOT produce a need")
+
+    def test_timeout_no_need(self):
+        """Timeout finding must NOT create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="timeout",
+            title="Request timeout",
+            summary="API requests are timing out after 30 seconds",
+            severity=IssueSeverity.HIGH,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "Timeout must NOT produce a need")
+
+    def test_network_failure_no_need(self):
+        """Network failure finding must NOT create a need."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="network_failure",
+            title="Network connection failed",
+            summary="Network connection to external service failed",
+            severity=IssueSeverity.HIGH,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "Network failure must NOT produce a need")
+
+    def test_ambiguous_with_capability_keyword_no_need(self):
+        """Ambiguous finding with capability keyword must NOT create a need (fail-closed)."""
+        service = NeedFormulationService()
+        finding = SelfExaminationFinding(
+            category="generic",
+            title="System cannot process request",
+            summary="System cannot process request due to high load",
+            severity=IssueSeverity.MEDIUM,
+        )
+
+        need = service.formulate_need_from_finding(finding)
+
+        self.assertIsNone(need, "Ambiguous finding with capability keyword must NOT produce a need")
 
 
 class TestStructuredNeedPersistence(unittest.TestCase):
