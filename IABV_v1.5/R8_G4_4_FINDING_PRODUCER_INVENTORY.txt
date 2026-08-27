@@ -1,0 +1,92 @@
+R8-G4.4 FINDING PRODUCER INVENTORY
+===================================
+
+CAPABILITY-SHAPED PRODUCERS:
+----------------------------
+
+1. _windows_integration_findings()
+   - CATEGORY: windows_integration_gaps (summary), windows_capability_missing (individual)
+   - TITLE_SOURCE: cap.title
+   - SUMMARY_SOURCE: cap.summary or capability_id
+   - EVIDENCE_SOURCE: cap.capability_id, cap.status
+   - RECOMMENDATION_SOURCE: Static text about platform_pending queue
+   - INPUT_DATA: EnvironmentSelfModel.capability_graph (platform capabilities)
+   - TRIGGER: Missing platform capabilities (not available, not not_applicable)
+   - DATA_REQUIREMENT: EnvironmentSelfModel from world_model_service.environment_self_awareness_service
+   - PRESENT: UNKNOWN (need to test)
+   - MISSING: UNKNOWN (need to test)
+   - CAN_TRIGGER_IN_CURRENT_ENVIRONMENT: YES (if environment model has missing platform capabilities)
+
+2. _capability_promised_but_unavailable_findings()
+   - CATEGORY: capability_promised_but_unavailable
+   - TITLE_SOURCE: Static "Capability promised but not wired in build"
+   - SUMMARY_SOURCE: Count and capabilities from runtime_audit.jsonl
+   - EVIDENCE_SOURCE: runtime_audit.jsonl entries
+   - RECOMMENDATION_SOURCE: Static text about verifying handlers
+   - INPUT_DATA: data/logs/runtime_audit.jsonl
+   - TRIGGER: 'capability_promised_but_unavailable' events in runtime_audit.jsonl
+   - DATA_REQUIREMENT: runtime_audit.jsonl file
+   - PRESENT: FALSE (verified in G4.3)
+   - MISSING: TRUE
+   - CAN_TRIGGER_IN_CURRENT_ENVIRONMENT: NO (runtime_audit.jsonl does not exist)
+
+3. _chat_research_backlog_findings()
+   - CATEGORY: research_gap
+   - TITLE_SOURCE: entry.label or kind
+   - SUMMARY_SOURCE: entry.label, entry.matched_text, entry.research_hint, occurrences
+   - EVIDENCE_SOURCE: entry.detected_at_utc, session_ids
+   - RECOMMENDATION_SOURCE: entry.research_hint or static text
+   - INPUT_DATA: data/chat_research_backlog/*.jsonl
+   - TRIGGER: Open entries (status='open') in chat_research_backlog
+   - DATA_REQUIREMENT: chat_research_backlog directory with jsonl files
+   - PRESENT: FALSE (verified in G4.3)
+   - MISSING: TRUE
+   - CAN_TRIGGER_IN_CURRENT_ENVIRONMENT: NO (chat_research_backlog does not exist)
+
+OPERATIONAL PRODUCERS (NON-CAPABILITY):
+--------------------------------------
+
+4. _universal_autonomy_index_findings()
+   - CATEGORY: autonomy_index_insufficient_data (if insufficient data)
+   - TITLE_SOURCE: Static "UniversalAutonomyIndex: datos insuficientes"
+   - SUMMARY_SOURCE: Count of runs, experiments, sessions
+   - EVIDENCE_SOURCE: total_runs, total_experiments, total_sessions
+   - RECOMMENDATION_SOURCE: Static text about running more tasks
+   - INPUT_DATA: recent_runs, adaptive_sessions, experiment_runs, world
+   - TRIGGER: Insufficient data (< 3 runs, experiments, or sessions)
+   - DATA_REQUIREMENT: RunRecord, AdaptiveSession, ExperimentRun, WorldModelSnapshot
+   - PRESENT: UNKNOWN (need to test)
+   - MISSING: UNKNOWN (need to test)
+   - CAN_TRIGGER_IN_CURRENT_ENVIRONMENT: YES (if insufficient data available)
+
+5. _external_readiness_missing_findings()
+   - CATEGORY: external_readiness_missing, build_stale_repeated, cdp_unavailable_repeated
+   - TITLE_SOURCE: Static titles
+   - SUMMARY_SOURCE: Count and reasons from runtime_audit.jsonl
+   - EVIDENCE_SOURCE: runtime_audit.jsonl entries
+   - RECOMMENDATION_SOURCE: Static text
+   - INPUT_DATA: data/logs/runtime_audit.jsonl
+   - TRIGGER: Repeated readiness failures, stale builds, CDP unavailability
+   - DATA_REQUIREMENT: runtime_audit.jsonl file
+   - PRESENT: FALSE (verified in G4.3)
+   - MISSING: TRUE
+   - CAN_TRIGGER_IN_CURRENT_ENVIRONMENT: NO (runtime_audit.jsonl does not exist)
+
+SUMMARY:
+--------
+CAPABILITY-SHAPED PRODUCERS THAT CAN RUN WITHOUT runtime_audit.jsonl:
+- _windows_integration_findings() (requires EnvironmentSelfModel)
+
+CAPABILITY-SHAPED PRODUCERS THAT REQUIRE runtime_audit.jsonl:
+- _capability_promised_but_unavailable_findings()
+
+CAPABILITY-SHAPED PRODUCERS THAT REQUIRE chat_research_backlog:
+- _chat_research_backlog_findings()
+
+OPERATIONAL PRODUCERS THAT CAN RUN WITHOUT runtime_audit.jsonl:
+- _universal_autonomy_index_findings() (requires RunRecord, AdaptiveSession, ExperimentRun, WorldModelSnapshot)
+
+OPERATIONAL PRODUCERS THAT REQUIRE runtime_audit.jsonl:
+- _external_readiness_missing_findings()
+
+NEXT STEP: Test _windows_integration_findings() on current machine
