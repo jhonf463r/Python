@@ -1,0 +1,15 @@
+{
+  "need_id": "8bb58bb5-3533-4ad1-8ab5-1c0b1ee58c1a",
+  "source_finding_id": "722e5764-7dd5-46aa-a458-b3048cd4bb2c",
+  "category": "windows_capability_missing",
+  "capability_gap": "Falta: Notificaciones Windows",
+  "current_state": "",
+  "desired_state": "Dependencia: winrt, plyer, o winotify",
+  "knowledge_required": "windows_capability_missing",
+  "reason": "Windows 10+ pero sin libreria de toast (winrt/plyer/winotify)",
+  "evidence": [],
+  "priority": "low",
+  "created_at": "2026-08-27T16:06:08.523108Z",
+  "status": "pending",
+  "metadata": {}
+}

@@ -1,0 +1,1074 @@
+REPOSITORY CLEANUP INVENTORY
+================================================================================
+
+PATH: P0_213_PHASE3_PHASE4_EXTERNAL_AUDIT_BUNDLE_FINAL.zip
+TYPE: ZIP
+SIZE: 67583
+LAST_MODIFIED: 2026-08-23T17:50:31.891864
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_EXTERNAL_AUDIT_BUNDLE_FINAL_V2.zip
+TYPE: ZIP
+SIZE: 248792
+LAST_MODIFIED: 2026-08-23T17:59:31.727638
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_EXTERNAL_AUDIT_BUNDLE_FINAL_V3.zip
+TYPE: ZIP
+SIZE: 272695
+LAST_MODIFIED: 2026-08-23T18:34:22.596748
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_EXTERNAL_AUDIT_BUNDLE_FINAL_V4.zip
+TYPE: ZIP
+SIZE: 273426
+LAST_MODIFIED: 2026-08-23T18:42:04.351766
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_AUDIT_BUNDLE_FINAL_V6.zip
+TYPE: ZIP
+SIZE: 289828
+LAST_MODIFIED: 2026-08-23T19:46:38.266351
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_AUDIT_BUNDLE_FINAL_V7.zip
+TYPE: ZIP
+SIZE: 311604
+LAST_MODIFIED: 2026-08-23T20:10:38.621998
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_CRITICAL1_CRITICAL2_AUDIT_BUNDLE_V8.zip
+TYPE: ZIP
+SIZE: 38509
+LAST_MODIFIED: 2026-08-23T20:34:03.184091
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_C1_C2_H1_FINAL_AUDIT_BUNDLE_VFINAL5_R2.zip
+TYPE: ZIP
+SIZE: 9470547
+LAST_MODIFIED: 2026-08-24T19:04:25.332580
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_C1_C2_H1_FINAL_AUDIT_BUNDLE_VFINAL5_R3_1.zip
+TYPE: ZIP
+SIZE: 63745666
+LAST_MODIFIED: 2026-08-24T20:57:04.399028
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_C1_C2_H1_FINAL_AUDIT_BUNDLE_VFINAL5_R3_2.zip
+TYPE: ZIP
+SIZE: 63708697
+LAST_MODIFIED: 2026-08-24T21:26:54.460010
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_C1_C2_H1_FINAL_AUDIT_BUNDLE_VFINAL5_R3_2_CORRECTED.zip
+TYPE: ZIP
+SIZE: 63715026
+LAST_MODIFIED: 2026-08-24T22:11:27.556854
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_C1_C2_H1_FINAL_AUDIT_BUNDLE_VFINAL5_R3_2_CORRECTED_FINAL.zip
+TYPE: ZIP
+SIZE: 63715592
+LAST_MODIFIED: 2026-08-24T22:12:26.262519
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_C1_C2_H1_FINAL_AUDIT_BUNDLE_VFINAL5_R3_2_WITH_WINDOWS_E2E.zip
+TYPE: ZIP
+SIZE: 63713507
+LAST_MODIFIED: 2026-08-24T21:58:29.172028
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_CRITICAL1_CRITICAL2_AUDIT_BUNDLE_V9.zip
+TYPE: ZIP
+SIZE: 50782
+LAST_MODIFIED: 2026-08-23T21:00:52.235463
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_F15_F16_F17_FINAL_EXTERNAL_AUDIT_BUNDLE_V11.zip
+TYPE: ZIP
+SIZE: 3358152
+LAST_MODIFIED: 2026-08-23T23:00:13.269608
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_PHASE3_PHASE4_F14_REAL_E2E_AUDIT_BUNDLE_FINAL_V5.zip
+TYPE: ZIP
+SIZE: 285404
+LAST_MODIFIED: 2026-08-23T18:57:35.814609
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_V5R16_POST_REMEDIATION_AUDIT_BUNDLE.zip
+TYPE: ZIP
+SIZE: 2811270
+LAST_MODIFIED: 2026-08-22T23:08:18.724599
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_V5R16_POST_REMEDIATION_AUDIT_BUNDLE_F10.zip
+TYPE: ZIP
+SIZE: 2568037
+LAST_MODIFIED: 2026-08-23T09:46:53.617570
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_V5R16_POST_REMEDIATION_AUDIT_BUNDLE_V2.zip
+TYPE: ZIP
+SIZE: 2565791
+LAST_MODIFIED: 2026-08-23T09:46:30.414868
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_VFINAL5_R2_2_AUDIT_BUNDLE_20260825_005028.zip
+TYPE: ZIP
+SIZE: 8821677
+LAST_MODIFIED: 2026-08-24T19:50:46.284150
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: P0_213_VFINAL5_R2_AUDIT_BUNDLE_20260825_003630.zip
+TYPE: ZIP
+SIZE: 9487327
+LAST_MODIFIED: 2026-08-24T19:36:47.792022
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FINAL_FORENSIC_BUNDLE_87224e8.zip
+TYPE: ZIP
+SIZE: 74762
+LAST_MODIFIED: 2026-08-25T17:40:09.086686
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FINAL_FORENSIC_BUNDLE_e03811c.zip
+TYPE: ZIP
+SIZE: 68968
+LAST_MODIFIED: 2026-08-25T17:56:09.287929
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FORENSIC_BUNDLE_5870015c.zip
+TYPE: ZIP
+SIZE: 69607
+LAST_MODIFIED: 2026-08-25T16:34:09.625625
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FORENSIC_REBUILD_5870015c.zip
+TYPE: ZIP
+SIZE: 66617
+LAST_MODIFIED: 2026-08-25T17:14:52.454319
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_FORENSIC_EVIDENCE_FIXED_05190c64a.zip
+TYPE: ZIP
+SIZE: 67456
+LAST_MODIFIED: 2026-08-26T09:10:18.186075
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_PROVIDER_FIXED_BUNDLE_27a098ff.zip
+TYPE: ZIP
+SIZE: 9351
+LAST_MODIFIED: 2026-08-25T22:36:31.774206
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_RUNTIME_VERIFIED_BUNDLE_08cf760c.zip
+TYPE: ZIP
+SIZE: 52216
+LAST_MODIFIED: 2026-08-25T22:30:31.874400
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R6_G2_INDEPENDENT_AUDIT_BUNDLE_6d7dba30.zip
+TYPE: ZIP
+SIZE: 115400
+LAST_MODIFIED: 2026-08-26T11:41:33.981299
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_COMMIT_PROVENANCE_BUNDLE_40a3c60.zip
+TYPE: ZIP
+SIZE: 8520
+LAST_MODIFIED: 2026-08-26T16:39:36.257326
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_FINAL_FORENSIC_BUNDLE_40a3c60.zip
+TYPE: ZIP
+SIZE: 80666
+LAST_MODIFIED: 2026-08-26T15:52:49.735333
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_FORENSIC_BUNDLE_501fba7.zip
+TYPE: ZIP
+SIZE: 13876
+LAST_MODIFIED: 2026-08-26T14:55:29.546015
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_RUNTIME_VERIFIED_BUNDLE_9454fc6.zip
+TYPE: ZIP
+SIZE: 75607
+LAST_MODIFIED: 2026-08-26T15:09:55.522200
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_1_FORENSIC_BUNDLE_acab46ed.zip
+TYPE: ZIP
+SIZE: 126054
+LAST_MODIFIED: 2026-08-26T19:57:03.138139
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_2_FORENSIC_BUNDLE_c23c673.zip
+TYPE: ZIP
+SIZE: 25256
+LAST_MODIFIED: 2026-08-26T20:15:24.839292
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_3_FORENSIC_BUNDLE_6ac62f5.zip
+TYPE: ZIP
+SIZE: 10107
+LAST_MODIFIED: 2026-08-26T20:40:59.890423
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_4_FORENSIC_BUNDLE_5fa7524.zip
+TYPE: ZIP
+SIZE: 20215
+LAST_MODIFIED: 2026-08-26T21:09:36.979360
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_5_CLEAN_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4.zip
+TYPE: ZIP
+SIZE: 150285
+LAST_MODIFIED: 2026-08-27T08:40:46.273529
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_5_FINAL_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4.zip
+TYPE: ZIP
+SIZE: 171696
+LAST_MODIFIED: 2026-08-26T23:13:19.908688
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_NEED_FORMULATION_BUNDLE_eb6a0fe.zip
+TYPE: ZIP
+SIZE: 39573
+LAST_MODIFIED: 2026-08-26T18:54:31.329459
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_INFLECTION_FORENSIC_BUNDLE_40a3c60.zip
+TYPE: ZIP
+SIZE: 367025
+LAST_MODIFIED: 2026-08-26T18:04:08.564048
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R10_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-27T10:59:29.520342
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FINAL_FORENSIC_BUNDLE_87224e8
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T17:40:02.177211
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FINAL_FORENSIC_BUNDLE_e03811c
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T17:55:59.878070
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FORENSIC_BUNDLE
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-25T16:34:02.029422
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R3.3_C2_FORENSIC_REBUILD_5870015c
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T17:14:47.064478
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_FINAL_FORENSIC_BUNDLE_22dc346
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T21:40:58.018381
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_FORENSIC_BUNDLE
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T20:31:42.210360
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_FORENSIC_BUNDLE_6c6273d
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-25T21:23:37.936478
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_FORENSIC_BUNDLE_a9db5eb
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T20:52:36.234341
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_FORENSIC_EVIDENCE_FIXED_05190c64a
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T09:08:55.048612
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_PROVIDER_FIXED_BUNDLE_27a098ff
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T22:36:24.581992
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_RUNTIME_VERIFIED_BUNDLE
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T22:16:12.473453
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_G1_RUNTIME_VERIFIED_BUNDLE_08cf760c
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T22:30:21.491103
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R4_GROQ_PROVIDER_FIXED_BUNDLE_23ad19f3f
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T23:08:34.094397
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R5_G1_AUTHORITY_PIPE_FIXED_BUNDLE_fce8965eb
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-25T23:37:26.665101
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R5_G2_FORENSIC_EVIDENCE
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T09:55:52.885736
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R6_G2_FORENSIC_EVIDENCE
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T10:54:07.335595
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R6_G2_INDEPENDENT_AUDIT_BUNDLE_6d7dba30
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T11:41:13.773292
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_COMMIT_PROVENANCE_BUNDLE_40a3c60
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T16:39:30.658875
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_FINAL_FORENSIC_BUNDLE
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T15:52:26.888767
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_FORENSIC_BUNDLE
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T14:55:11.689806
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R7_G3_RUNTIME_VERIFIED_BUNDLE
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T15:09:18.215691
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_1_FORENSIC_BUNDLE_acab46ed
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T19:49:24.958708
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_2_FORENSIC_BUNDLE_c23c673
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T20:15:14.331007
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_3_FORENSIC_BUNDLE_6ac62f5
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T20:40:52.853678
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_4_FORENSIC_BUNDLE_5fa7524
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T21:09:30.839048
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_5_CLEAN_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+TYPE: FORENSIC_BUNDLE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-27T08:40:38.386880
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_5_FINAL_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T23:13:12.612799
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_5_FORENSIC_BUNDLE
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T22:59:09.402891
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_G4_NEED_FORMULATION_BUNDLE_eb6a0fe
+TYPE: FORENSIC_BUNDLE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T18:54:23.261241
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: R8_INFLECTION_FORENSIC_BUNDLE_40a3c60
+TYPE: FORENSIC_BUNDLE
+SIZE: 12288
+LAST_MODIFIED: 2026-08-26T18:04:37.513386
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: tests\__pycache__
+TYPE: PYCACHE
+SIZE: 196608
+LAST_MODIFIED: 2026-08-27T10:48:42.595495
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: tests\windows_e2e\__pycache__
+TYPE: PYCACHE
+SIZE: 12288
+LAST_MODIFIED: 2026-08-26T15:04:06.165135
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:31.863611
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\cli\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:37.158691
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\domain\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T18:40:29.869786
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\infra\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:33.132143
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\scripts\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:43.521796
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:39.749732
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\ui\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:33.127603
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\ui\controllers\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:33.123485
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\ui\viewmodels\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:33.736179
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\adaptive\__pycache__
+TYPE: PYCACHE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T10:35:55.459354
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\audit\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:32.326811
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\capture\__pycache__
+TYPE: PYCACHE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-24T15:25:40.404261
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\chat\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:35.085236
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\development\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:31.398430
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\environment\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:32.242341
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\evolution\__pycache__
+TYPE: PYCACHE
+SIZE: 24576
+LAST_MODIFIED: 2026-08-27T10:39:46.180382
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\inference\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:32.502111
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\knowledge\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:32.506127
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\lab\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:42.693712
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\learning\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:41.446307
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\llm\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:31.181207
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\phase3\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-23T21:49:35.189277
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\platform\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:45.743820
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\providers\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:41.135623
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\roles\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:43.595684
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\security\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:32.389373
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\self_teach\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:41.086614
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\tools\__pycache__
+TYPE: PYCACHE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-26T18:46:11.996878
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\training\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:32.582121
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\trust\__pycache__
+TYPE: PYCACHE
+SIZE: 8192
+LAST_MODIFIED: 2026-08-25T17:10:32.715953
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\services\ux\__pycache__
+TYPE: PYCACHE
+SIZE: 0
+LAST_MODIFIED: 2026-08-24T15:25:32.251724
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\infra\mcp\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-26T15:37:56.017911
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\infra\persistence\__pycache__
+TYPE: PYCACHE
+SIZE: 12288
+LAST_MODIFIED: 2026-08-24T15:25:32.546895
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\infra\ui\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T15:25:44.872435
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: src\iabv_v15\infra\mcp\audit_tools\__pycache__
+TYPE: PYCACHE
+SIZE: 4096
+LAST_MODIFIED: 2026-08-24T10:22:31.269078
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_00b0d277b06b47c8b11eac7efe31c563\state.json.20260819175736.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-19T17:57:36.497008
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_2fb3ef2b3f6b4b5aacb15b8f73606d6f\state.json.20260420022449.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.254727
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_467ba175665844759af7347797a7bf4d\state.json.20260419194838.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.257014
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_46e6d8789d914a4089497245cfba2aa7\state.json.20260421010859.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.258102
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_58568618384340f3a15e94f28b81fda9\state.json.20260419194421.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.261664
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_6db4b1d224ce46d09d6125e0cbe10e33\state.json.20260420015143.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.262647
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_6f097bad29784ee2b708f086e60ae173\state.json.20260420015436.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.263959
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_71d133a45f9f459b8a438ad0c61d5be5\state.json.20260418000120.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.270025
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_c2fbca6f5d2d4a35942ab614b0216e45\state.json.20260418000607.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.295687
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
+PATH: data\test_runs\state_efa92dd603374cc28af6360b6a47a943\state.json.20260420020256.bak
+TYPE: BAK
+SIZE: 23
+LAST_MODIFIED: 2026-08-16T14:59:12.299780
+GIT_TRACKED: False
+DELETE_SAFE: PENDING_CLASSIFICATION
+REASON: TO_BE_DETERMINED
+--------------------------------------------------------------------------------
+
