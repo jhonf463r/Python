@@ -202,3 +202,74 @@ def test_orchestrator_digest_preserves_persisted_vision() -> None:
         assert digest.current_vision == "Vision gobernable viva"
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_r10_production_integration_structured_need_in_work_queue() -> None:
+    """R10.3: Verify production bootstrap wires StructuredNeedRepository to ControlMasterService.
+
+    This test proves the REAL production construction path, not manual dependency injection.
+    It verifies:
+    1. ControlMasterService receives StructuredNeedRepository from bootstrap
+    2. A real pending StructuredNeed can be created through the repository
+    3. current_work_queue() includes the StructuredNeed-derived item
+    4. Provenance (need_id, source_finding_id) is preserved
+    5. Deterministic priority projection works
+    """
+    from iabv_v15.domain.models import StructuredNeed, NeedStatus
+
+    root = _workspace("r10_production_integration")
+    try:
+        boot = AppBootstrap(str(root))
+        
+        # Verify production wiring: ControlMasterService has StructuredNeedRepository
+        assert boot.control_master_service.structured_need_repository is not None
+        assert boot.control_master_service.structured_need_repository is boot.operational_self_examination_service.structured_need_repository
+        
+        repo = boot.control_master_service.structured_need_repository
+        
+        # Create a real pending StructuredNeed through the repository
+        test_need = StructuredNeed(
+            source_finding_id="test_finding_123",
+            category="capability_gap",
+            capability_gap="Missing test capability",
+            current_state="Not implemented",
+            desired_state="Fully implemented",
+            knowledge_required="Test knowledge",
+            reason="R10.3 production integration test",
+            evidence=["Evidence item 1"],
+            priority="high",
+            status=NeedStatus.PENDING,
+        )
+        
+        persisted_need = repo.upsert(test_need)
+        assert persisted_need.need_id == test_need.need_id
+        assert persisted_need.status == NeedStatus.PENDING
+        
+        # Call the REAL current_work_queue() from production ControlMasterService
+        queue = boot.control_master_service.current_work_queue(limit=20)
+        
+        # Verify the queue contains the StructuredNeed-derived item
+        need_item_id = f'need:{persisted_need.need_id}'
+        matching_items = [item for item in queue if item.get('item_id') == need_item_id]
+        assert len(matching_items) == 1, f"Expected 1 item with id {need_item_id}, got {len(matching_items)}"
+        
+        item = matching_items[0]
+        
+        # Verify provenance
+        assert item['source'] == 'structured_need_repository'
+        assert persisted_need.source_finding_id in item.get('evidence_refs', [])
+        
+        # Verify deterministic priority projection
+        assert 'priority_score' in item
+        assert item['priority_score'] > 0
+        assert 'score_breakdown' in item
+        
+        # Verify the item contains expected fields
+        assert item['title'] == test_need.capability_gap
+        assert item['status'] == NeedStatus.PENDING.value
+        
+        # Clean up: delete the test need
+        repo.update_status(persisted_need.need_id, NeedStatus.RESOLVED)
+        
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

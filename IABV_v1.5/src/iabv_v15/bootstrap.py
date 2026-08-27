@@ -1356,6 +1356,7 @@ class AppBootstrap:
             experiment_lab_repository=self.experiment_lab_repository,
             account_resource_scanner=build_inventory_snapshot,
             platform_pending_queue=self.platform_pending_queue,
+            structured_need_repository=self.operational_self_examination_service.structured_need_repository,
             workspace_root=self.config.workspace_root,
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
