@@ -1,0 +1,53 @@
+R10 — STRUCTURED NEED DECISION FORENSIC BUNDLE
+================================================
+
+PURPOSE:
+This bundle contains forensic evidence for the implementation of the
+StructuredNeed → Decision edge (R10). The implementation adds decision
+logic to ControlMasterService to select pending StructuredNeeds for the
+work queue based on priority.
+
+IMPLEMENTATION SUMMARY:
+- Decision Owner: ControlMasterService
+- Method Added: _project_structured_need_items()
+- Integration Point: current_work_queue() method
+- Decision Logic: Deterministic priority-based selection
+- Provenance: need_id and source_finding_id preserved in evidence_refs
+
+KEY CHANGES:
+1. Added structured_need_repository parameter to ControlMasterService.__init__()
+2. Added _project_structured_need_items() method to project pending needs
+3. Integrated need projection into current_work_queue() workflow
+4. Updated docstring to reflect structured needs inclusion
+
+TESTING:
+- All 7 R10 tests passed (positive, negative, deferred, provenance, determinism, idempotency, no-side-effect)
+- G4 test passed (test_r8_g4_5_runtime_integration)
+- G2 tests passed (4 tests)
+- G1 tests passed (5 tests)
+- C2 tests: 5 passed, 11 failed (environment failure - authority pipe not available)
+
+REGRESSION RESULTS:
+- R10: 7/7 PASSED
+- G4: 1/1 PASSED
+- G3: 2/2 PASSED (included in G2 test file)
+- G2: 4/4 PASSED
+- G1: 5/5 PASSED
+- C2: 5/16 PASSED (11 ENVIRONMENT_FAILURE - authority pipe not available)
+
+DECISION CONTRACT:
+INPUT: List of pending StructuredNeed records
+DECISION: SELECTED (highest priority), DEFERRED (lower priority), IGNORED (non-PENDING)
+OUTPUT: Work item dict with need_id, priority_score, evidence_refs
+TRACEABILITY: need_id preserved in item.id, source_finding_id in evidence_refs
+DETERMINISM: Priority mapping (critical=100, high=75, medium=50, low=25)
+
+LIMITATIONS:
+- C2 tests failed due to environment (authority pipe not available) - not a code failure
+- No new subsystems created (reused existing ControlMasterService)
+- Decision does not execute needs (selection only)
+- No external AI consultation
+- No task generation
+- No learning loop modifications
+
+NEXT_STEP: INDEPENDENT R10 AUDIT

@@ -1,0 +1,18 @@
+# Test Inventory
+
+## Tests Executed
+1. test_g1_real_e2e - G1 positive E2E test with real Authority integration
+2. test_g1_negative_real_e2e - G1 negative E2E test with real rejection
+3. test_c2_real_self_update_authority (10 tests) - C2 regression tests
+
+## Test Results
+- G1 Positive: PASSED
+- G1 Negative: PASSED (with real rejection evidence)
+- C2 Regression: 10/10 PASSED
+
+## Total Tests
+- Collected: 12
+- Passed: 12
+- Failed: 0
+- Skipped: 0
+- Errors: 0

@@ -1,0 +1,61 @@
+R7 G3 RUNTIME VERIFIED BUNDLE MANIFEST
+======================================
+
+BUNDLE_ID: R7_G3_RUNTIME_VERIFIED_BUNDLE
+BUNDLE_VERSION: 7.1
+CREATED: 2026-08-26T20:06:00Z
+BASE_COMMIT: 501fba77b4fb23ff425a093b29063ab2cd4544ba
+NEW_COMMIT: <PENDING>
+
+CONTENTS:
+---------
+00_METADATA.txt - Bundle metadata and objective
+01_GIT_IDENTITY_RAW.txt - Git log identity
+02_SOURCE/ - Source code directory
+  - test_g2_goal_to_action_plan.py - Modified test file
+  - server.py - Server implementation
+03_DIFF.patch - Git diff of changes
+04_TEST_INVENTORY.txt - Test inventory and results
+05_RAW_G3_POSITIVE_RUNTIME.txt - G3 positive test raw output
+06_RAW_G3_NEGATIVE_RUNTIME.txt - G3 negative test raw output
+07_RAW_VERIFICATION_RUNTIME.txt - Verification runtime reference
+08_RAW_AUTHORITY_RUNTIME.txt - Authority runtime reference
+09_RAW_G2_REGRESSION.txt - G2 regression test raw output
+10_RAW_G1_REGRESSION.txt - G1 regression test raw output
+11_RAW_C2_REGRESSION.txt - C2 regression tests raw output
+12_REPOSITORY_BEFORE_RAW.txt - Repository state before
+13_REPOSITORY_AFTER_RAW.txt - Repository state after
+14_DERIVED_SUMMARY.txt - Derived summary
+15_LIMITATIONS.md - Known limitations
+16_SHA256_MANIFEST.txt - SHA256 hashes of all files
+MANIFEST.txt - This file
+
+TEST RESULTS:
+-------------
+G3 POSITIVE TEST: PASSED
+G3 NEGATIVE TEST: PASSED
+G2 REGRESSION TEST: PASSED
+G1 REGRESSION TEST: PASSED
+C2 REGRESSION TEST: PASSED (10/10 tests)
+
+TOTAL SUMMARY:
+- COLLECTED: 14
+- PASSED: 14
+- FAILED: 0
+- SKIPPED: 0
+- ERRORS: 0
+
+ROOT CAUSE:
+-----------
+EXCEPTION_CLASS: AttributeError
+ERROR_MESSAGE: 'obj' object has no attribute 'authorize_action'
+FAILING_FILE: tests/windows_e2e/test_g2_goal_to_action_plan.py
+FAILING_COMPONENT: MockContainer.capability_action_bridge
+
+FIX APPLIED:
+------------
+Added 'authorize_action' lambda to all MockContainer instances with:
+- Accepts *args, **kwargs
+- Returns object with 'authorized' attribute set to True
+
+C2 STATUS: NOT MODIFIED (as required)

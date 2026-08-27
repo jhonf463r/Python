@@ -1,0 +1,53 @@
+R8-G4.5 FINAL FORENSIC BUNDLE MANIFEST
+=====================================
+
+TIMESTAMP = 2026-08-26 23:07:00 UTC-05:00
+
+REPOSITORY = https://github.com/jhonf463r/Python.git
+BRANCH = p0213/vfinal5-r3-choke-point
+COMMIT = 87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+
+BUNDLE_NAME = R8_G4_5_FINAL_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+
+CONTENTS:
+=========
+
+00_METADATA.txt - Bundle metadata and purpose
+01_GIT_IDENTITY_RAW.txt - Git state information
+02_SOURCE/ - Source code files
+  environment_self_awareness_service.py - EnvironmentSelfAwarenessService implementation
+  need_formulation_service.py - NeedFormulationService implementation
+  operational_self_examination_service.py - OperationalSelfExaminationService implementation
+  structured_need_repository.py - StructuredNeedRepository implementation
+  test_r8_g4_5_runtime_integration.py - Runtime integration test
+  world_model_service.py - WorldModelService implementation
+04_LIGHT_SCAN_BLOCKER_RAW.txt - Original LIGHT_SCAN blocker diagnosis
+05_G4_5_RUNTIME_RAW.txt - Raw runtime test output
+06_ENVIRONMENT_MODEL_RAW.txt - EnvironmentSelfModel state
+07_FINDINGS_RAW.txt - All findings returned by build_review()
+08_CAPABILITY_FINDING_RAW.txt - Capability finding analysis (NOT FOUND)
+09_STRUCTURED_NEED_RAW.txt - StructuredNeed analysis
+10_PERSISTENCE_RAW.txt - Persistence evidence
+11_OPERATIONAL_FINDINGS_RAW.txt - Operational findings analysis
+12_RUNTIME_TRACE_RAW.txt - Call graph trace
+13_TEST_RESULTS_RAW.txt - Test execution results
+15_DEPENDENCY_STATE_RAW.txt - Dependency state
+16_LIMITATIONS.md - Known limitations and discrepancies
+17_SHA256_MANIFEST.txt - SHA256 hashes of all files
+
+TOTAL_FILES = 17
+
+CRITICAL DISCREPANCY:
+====================
+
+The individual windows_capability_missing finding is NOT present in the returned findings list.
+However, a StructuredNeed is created with source_finding_id: 5b8ca067-67bd-497c-b137-79605bb981ef
+This source_finding_id does NOT match any of the 8 visible findings.
+
+This discrepancy prevents independent verification of the need's provenance.
+
+AUTHENTICITY:
+=============
+
+All RAW files are direct captures from actual execution.
+No values were manually reconstructed or fabricated.

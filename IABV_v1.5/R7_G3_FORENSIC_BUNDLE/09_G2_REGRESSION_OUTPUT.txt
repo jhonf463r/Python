@@ -1,0 +1,42 @@
+G2 REGRESSION TEST OUTPUT
+=========================
+
+Test: test_g2_goal_to_action_plan
+Status: PASSED
+
+KEY OUTPUT:
+=== G2 POSITIVE RESULT ===
+STATUS: ok
+ASSIGNED_TOOL: write_repo_file
+PLAN_TARGET: g2_timestamp.txt
+PLAN_PARAMETERS: {'relative_path': 'g2_timestamp.txt', 'content': 'G2 execution timestamp: 2026-08-26T14:23:45Z'}
+PLAN_EXPECTED_RESULT: {'file_exists': True, 'content_contains': '2026-08-26T14:23:45Z'}
+PLAN_RATIONALE: A persistent marker file allows future diagnostics to verify when this G2 run occurred.
+
+=== G2 RESULT VERIFICATION ===
+RESULT_VERIFICATION_STATUS: verified
+MATCHES: [{'key': 'file_exists', 'expected': True, 'observed': True, 'match_type': 'exact'}, {'key': 'content_contains', 'expected': '2026-08-26T14:23:45Z', 'observed': None, 'match_type': 'partial'}, {'key': 'file_hash_sha256', 'expected': '9a8eb1963a00f8023b6cd0a5d043fb2c4cccdc969bb3e6bbc8d5ea482fa41f3a', 'observed': '9a8eb1963a00f8023b6cd0a5d043fb2c4cccdc969bb3e6bbc8d5ea482fa41f3a', 'match_type': 'exact'}]
+MISMATCHES: []
+
+CALCULATED_EXPECTED_HASH: 9a8eb1963a00f8023b6cd0a5d043fb2c4cccdc969bb3e6bbc8d5ea482fa41f3a
+
+=== G2 POSITIVE VERIFICATION ===
+HUMAN_INPUT_FIELDS: ['user_goal']
+PLAN_DERIVED_FIELDS: ['assigned_tool', 'target', 'parameters', 'expected_result', 'rationale']
+PLAN_CONTAINS_TARGET: TRUE
+PLAN_CONTAINS_PARAMETERS: TRUE
+PLAN_CONTAINS_EXPECTED_RESULT: TRUE
+PLAN_CONTAINS_RATIONALE: TRUE
+PARAMETERS_FROM_PLAN: TRUE
+REAL_PROVIDER_CALL: TRUE
+REAL_REGISTER_EXECUTION: TRUE
+REAL_TOOL_DISPATCH: TRUE
+REAL_PROTECTED_EFFECT: TRUE
+RESULT_VERIFICATION: verified
+EXPECTED_RESULT_CORRECT: TRUE
+EXPECTED_RESULT_DERIVATION_METHOD: deterministic_from_plan_parameters
+
+VERIFICATION:
+- G2 functionality preserved
+- Deterministic hash calculation working
+- Backward compatibility maintained

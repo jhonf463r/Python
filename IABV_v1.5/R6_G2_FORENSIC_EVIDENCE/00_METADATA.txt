@@ -1,0 +1,133 @@
+# G2 Forensic Evidence - R6 Fix
+# Commit: (to be created)
+# Base Commit: 301d84bd4a61cb6c5740bc7324121244071346ec
+
+## Issue Summary
+The independent audit of commit 301d84bd4 found that the G2 positive test was passing with verification_failed, which violates strict verification semantics. The audit also identified that the expected_result hash was being guessed by the LLM instead of calculated deterministically from plan parameters.
+
+## Root Cause Analysis
+1. The planner was instructed to include cryptographic hashes in expected_result, causing the LLM to guess hash values
+2. The verification logic accepted substring matching for hashes, allowing incorrect hashes to pass
+3. The G2 positive test did not enforce strict verification semantics (it accepted verification_failed as "expected behavior")
+4. The G2 positive test used a literal goal that specified target/content, reducing planning autonomy
+
+## Fixes Applied
+
+### 1. Deterministic Hash Derivation (src/iabv_v15/infra/mcp/server.py)
+- Calculate expected hash deterministically from plan parameters (content field)
+- Ignore LLM-generated hash fields (content_hash, file_hash_sha256) in expected_result
+- Copy only semantic expectations (file_exists, content_contains) from plan expected_result
+- Add file content to observed_result for semantic verification
+- Add content_contains comparison logic (substring matching)
+- Require exact match for hash comparison (no substring matching)
+- Track hash_derivation method in trace ('deterministic_from_plan_parameters')
+
+### 2. Planner Prompt Update (src/iabv_v15/services/adaptive/cloud_reasoning_planner.py)
+- Instruct planner NOT to include cryptographic hashes in expected_result
+- Instruct planner to use semantic expectations (file_exists, file_size, content_contains)
+- Separate LLM reasoning (what should happen) from deterministic derivation (exact hash)
+
+### 3. G2 Positive Test Update (tests/windows_e2e/test_g2_goal_to_action_plan.py)
+- Use abstract goal: "Create a small diagnostic marker file in the workspace root to record this G2 execution timestamp"
+- Goal does NOT specify exact target/content - planner decides
+- Add strict verification assertion: result_verification.status == 'verified'
+- Add strict verification assertion: mismatches == []
+- Add hash_derivation assertion: 'deterministic_from_plan_parameters'
+- Add HUMAN_INPUT_FIELDS and PLAN_DERIVED_FIELDS tracking
+- Clean up existing test files before test to ensure git status changes
+
+### 4. G2 Negative Test Verification
+- Verify negative test still passes with verification_failed detection
+- Verify negative test detects mismatches correctly
+- Verify action executes successfully but verification fails
+
+## Verification Results
+
+### G2 Positive E2E Test
+- Status: PASSING (with verification status 'verified' - strict semantics)
+- Human provides abstract goal: "Create a small diagnostic marker file in the workspace root to record this G2 execution timestamp"
+- Real provider generates complete action plan:
+  - PLAN_TARGET: G2_EXECUTION_TIMESTAMP.txt (decided by planner)
+  - PLAN_PARAMETERS: {'relative_path': 'G2_EXECUTION_TIMESTAMP.txt', 'content': 'G2 execution timestamp: {{timestamp}}'} (decided by planner)
+  - PLAN_EXPECTED_RESULT: {'file_exists': True, 'content_contains': 'G2 execution timestamp'} (semantic, no hash)
+  - PLAN_RATIONALE: "A marker file provides a simple, persistent record of when this G2 run occurred, useful for diagnostics and auditing."
+- G1 consumes plan parameters (not human-provided)
+- Real REGISTER_EXECUTION produces execution context
+- Real tool dispatch via MCP registry
+- Real protected effect (file mutation)
+- Result verification: verified (strict semantics)
+- Hash derivation: deterministic_from_plan_parameters
+- Demonstrates: GOAL → REAL REASONING → ACTION PLAN → PARAMETERS → C2 → ACTION → VERIFIED
+
+### G2 Verification-Negative E2E Test
+- Status: PASSING (demonstrates verification failure detection)
+- Controlled planner returns wrong expected_result (file_exists=False, wrong hash)
+- Action executes successfully (status = ok)
+- Result verification detects mismatch (verification_failed)
+- Demonstrates: ACTION COMPLETED ≠ ACTION VERIFIED AS CORRECT
+- No rollback (C2 not modified)
+
+### G1 Regression Test
+- Status: PASSING
+- Backward compatibility maintained
+- Human-provided tool_parameters still work when plan is empty
+- All G1 functionality preserved
+
+### C2 Regression Tests
+- Status: 10/10 PASSING
+- No C2 modifications
+- Authority, Ed25519, leases, process identity, Named Pipe unchanged
+
+## Runtime Data (from test_g2_goal_to_action_plan)
+PLAN_TARGET: G2_EXECUTION_TIMESTAMP.txt
+PLAN_PARAMETERS: {'relative_path': 'G2_EXECUTION_TIMESTAMP.txt', 'content': 'G2 execution timestamp: {{timestamp}}'}
+PLAN_EXPECTED_RESULT: {'file_exists': True, 'content_contains': 'G2 execution timestamp'}
+PLAN_RATIONALE: A marker file provides a simple, persistent record of when this G2 run occurred, useful for diagnostics and auditing.
+EXECUTION_ID: wPgqHYvestgt9459Nyovvw
+RUN_ID: 55PDeQXchfDUwPbsNjB8OA
+LEASE_ID: kCvQHNNxGf7mP1feyu6J4A
+ASSIGNED_TOOL: write_repo_file
+REAL_PROVIDER_CALL: TRUE
+REAL_REGISTER_EXECUTION: TRUE
+REAL_TOOL_DISPATCH: TRUE
+REAL_PROTECTED_EFFECT: TRUE
+RESULT_VERIFICATION: verified
+CALCULATED_EXPECTED_HASH: babcbce9d86b1d2c027a33975ab9d0b466e32b75173f14790e4ed2db32f45389
+HASH_DERIVATION: deterministic_from_plan_parameters
+
+## Human Input vs Plan Derived Fields
+HUMAN_INPUT_FIELDS: ['user_goal']
+PLAN_DERIVED_FIELDS: ['assigned_tool', 'target', 'parameters', 'expected_result', 'rationale']
+
+## Strict Verification Semantics
+- G2 Positive: result_verification.status == 'verified' (PASS)
+- G2 Positive: mismatches == [] (PASS)
+- G2 Positive: hash_derivation == 'deterministic_from_plan_parameters' (PASS)
+- G2 Negative: result_verification.status == 'verification_failed' (PASS)
+- G2 Negative: len(mismatches) > 0 (PASS)
+- No acceptance of "PASSED with verification_failed" for positive tests
+
+## Files Modified
+1. src/iabv_v15/infra/mcp/server.py - Deterministic hash derivation and semantic verification
+2. src/iabv_v15/services/adaptive/cloud_reasoning_planner.py - Planner prompt update (no LLM hash guessing)
+3. tests/windows_e2e/test_g2_goal_to_action_plan.py - Abstract goal and strict verification assertions
+
+## Preserved Components
+- Authority implementation (no changes)
+- Ed25519 implementation (no changes)
+- Lease implementation (no changes)
+- Process identity verification (no changes)
+- Named Pipe implementation (no changes)
+- CapabilityActionBridge implementation (no changes)
+- C2 implementation (no changes)
+
+## Not Implemented (Per Requirements)
+- Learning loop (not implemented)
+- Metacognition loop (not implemented)
+- Self-development loop (not implemented)
+- Multi-agent deliberation (not implemented)
+- Rollback (not implemented)
+- Capability Growth (not implemented)
+
+## Conclusion
+The G2 bridge now enforces strict verification semantics. The planner generates complete action plans with target, parameters, and semantic expected_result (no cryptographic hashes). G1 calculates expected hash deterministically from plan parameters. G1 consumes plan parameters instead of human-provided parameters. Expected result vs observed result comparison distinguishes ACTION COMPLETED from ACTION VERIFIED AS CORRECT. Backward compatibility with G1 is maintained. C2 remains unchanged. All tests pass with strict semantics.

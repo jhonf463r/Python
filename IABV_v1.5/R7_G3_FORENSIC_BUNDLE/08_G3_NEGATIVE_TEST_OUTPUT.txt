@@ -1,0 +1,32 @@
+G3 NEGATIVE TEST OUTPUT
+=======================
+
+Test: test_g3_verification_negative
+Status: PASSED
+
+OUTPUT:
+=== G3 NEGATIVE TEST START ===
+Creating file with content that will NOT match expected
+=== SIMULATING TOOL EXECUTION ===
+
+=== TOOL RESULT ===
+TOOL_STATUS: ok
+
+=== G3 NEGATIVE VERIFICATION ===
+ACTION_EXECUTED: True
+ACTION_RESULT_OBSERVED: TRUE
+ACTION_RESULT_VERIFIED: False
+MISMATCHES: [{'key': 'content_exact_match', 'expected': 'EXPECTED_CONTENT', 'observed': None}]
+
+=== G3 NEGATIVE VERIFICATION ===
+ACTION_EXECUTED: TRUE
+ACTION_RESULT_VERIFIED: FALSE
+TEST_STATUS: PASS (failure detected)
+NO_ROLLBACK: TRUE (C2 not modified)
+=== END G3 NEGATIVE VERIFICATION ===
+
+VERIFICATION:
+- ACTION_EXECUTED = TRUE (tool succeeded)
+- ACTION_RESULT_OBSERVED = TRUE (we observed the result)
+- ACTION_RESULT_VERIFIED = FALSE (expected != observed)
+- Test status = PASS (because the failure was detected)

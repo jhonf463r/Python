@@ -1,0 +1,59 @@
+# G2 Independent Audit Bundle - Source of Truth Metadata
+
+REPOSITORY = jhonf463r/Python
+BRANCH = p0213/vfinal5-r3-choke-point
+COMMIT_SHA = 6d7dba30c6ac195ff1abdef1068dec7c3dc73430
+PARENT_SHA = 301d84bd4a61cb6c5740bc7324121244071346ec
+REMOTE_URL = https://github.com/jhonf463r/Python.git
+WORKTREE_STATUS = Clean (no uncommitted changes)
+COMMIT_MESSAGE = Fix G2 verification semantics - enforce strict verification and deterministic hash derivation
+COMMIT_AUTHOR = faber
+COMMIT_DATE = 2026-08-26
+TREE_SHA = See 01_GIT_IDENTITY_RAW.txt
+
+## Bundle Purpose
+This bundle provides complete forensic evidence for independent audit of G2 implementation without requiring access to the remote repository.
+
+## Audit Scope
+- G2 action plan completeness with strict verification semantics
+- Deterministic hash derivation from plan parameters
+- Separation of LLM reasoning from deterministic derivation
+- Strict verification semantics (positive test requires 'verified', not 'verification_failed')
+- Backward compatibility with G1
+- No C2 modifications
+
+## Key Evidence
+- Real provider generates complete action plans with target, parameters, expected_result, rationale
+- G1 consumes plan parameters instead of human-provided parameters
+- Hash is calculated deterministically from plan parameters (not guessed by LLM)
+- Verification distinguishes ACTION COMPLETED from ACTION VERIFIED AS CORRECT
+- Backward compatibility with G1 maintained
+- No C2 modifications
+
+## Test Results
+- G2 Positive: PASSED (with verification status 'verified' - strict semantics)
+- G2 Verification-Negative: PASSED (demonstrates verification failure detection)
+- **G1 Regression: PASSED (backward compatibility maintained)
+- C2 Regression: 10/10 PASSED
+
+## Files Modified
+1. src/iabv_v15/infra/mcp/server.py - Deterministic hash derivation and semantic verification
+2. src/iabv_v15/services/adaptive/cloud_reasoning_planner.py - Planner prompt update (no LLM hash guessing)
+3. tests/windows_e2e/test_g2_goal_to_action_plan.py - Abstract goal and strict verification assertions
+
+## Preserved Components
+- Authority implementation (no changes)
+- Ed25519 implementation (no changes)
+- Lease implementation (no changes)
+- Process identity verification (no changes)
+- Named Pipe implementation (no changes)
+- CapabilityActionBridge implementation (no changes)
+- C2 implementation (no changes)
+
+## Not Implemented (Per Requirements)
+- Learning loop (not implemented)
+- Metacognition loop (not implemented)
+- Self-development loop (not implemented)
+- Multi-agent deliberation (not implemented)
+- Rollback (not implemented)
+- Capability Growth (not implemented)

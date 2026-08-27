@@ -1,0 +1,156 @@
+R8-G4.5 FINDINGS RAW
+===================
+
+TIMESTAMP = 2026-08-26 23:07:00 UTC-05:00
+
+TOTAL_FINDINGS_RETURNED = 8
+FULL_FINDINGS_COUNT = 8
+CAPABILITY_FINDINGS_COUNT = 0
+OPERATIONAL_FINDINGS_COUNT = 8
+
+CRITICAL DISCREPANCY:
+====================
+
+The test output shows FULL_FINDINGS_COUNT: 8, with all 8 findings being operational.
+However, a StructuredNeed was created with SOURCE_FINDING_ID: 5b8ca067-67bd-497c-b137-79605bb981ef
+This source_finding_id does NOT match any of the 8 visible findings.
+
+According to the code in operational_self_examination_service.py lines 8100-8115,
+the _windows_integration_findings() method should generate individual
+windows_capability_missing findings for each missing capability.
+
+The code shows:
+```python
+for cap in missing_caps:
+    dep_info = cap.metadata.get('missing', '') if cap.metadata else ''
+    findings.append(SelfExaminationFinding(
+        category='windows_capability_missing',
+        title=f'Falta: {cap.title}',
+        summary=cap.summary or f'{cap.capability_id} no disponible',
+        severity=IssueSeverity.LOW,
+        confidence=0.85,
+        recommendation=f'Dependencia: {dep_info}' if dep_info else 'Verificar disponibilidad en el entorno',
+        source_refs=[cap.capability_id],
+        metadata={
+            'capability_id': cap.capability_id,
+            'status': cap.status,
+            'pending_task_status': 'PENDING',
+        },
+    ))
+```
+
+This should append a windows_capability_missing finding for platform.notifications.
+However, the test output shows no such finding in the list.
+
+POSSIBLE EXPLANATIONS:
+======================
+
+1. The individual capability finding is being generated but then filtered out before being returned
+2. The need is being created from the metadata of the windows_integration_gaps finding instead of from an individual capability finding
+3. There's a bug in the need formulation logic that creates needs from operational finding metadata
+4. The individual capability finding is being generated at position 9+ and then truncated by the review, but the need formulation still sees it
+
+The test output shows:
+- FULL_FINDINGS_COUNT: 8 (not 9)
+- All 8 findings are operational
+- No windows_capability_missing finding in the list
+- A StructuredNeed is created with a source_finding_id that doesn't match any visible finding
+
+This is a CRITICAL discrepancy that needs to be investigated.
+
+ACTUAL FINDINGS RETURNED:
+==========================
+
+FINDING_1:
+  ID: 84587707-f906-4f67-8b4e-88c9c7021017
+  CATEGORY: http_noise
+  TITLE: Ruido excesivo de logs HTTP (httpx)
+  SUMMARY: Detectadas 500 ocurrencias de "HTTP Request:" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.9
+  SHAPE: operational
+
+FINDING_2:
+  ID: 4b74512a-d33b-40d2-824c-b3b893db0e2a
+  CATEGORY: loop_closure
+  TITLE: Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)
+  SUMMARY: 
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.0
+  SHAPE: operational
+
+FINDING_3:
+  ID: 444f9c31-4ed2-40de-8896-fa275964fe82
+  CATEGORY: windows_integration_gaps
+  TITLE: 1 capacidades Windows nativas faltantes
+  SUMMARY: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.9
+  SHAPE: operational
+  METADATA: {'phase': 'windows_integration', 'missing_capability_ids': ['platform.notifications'], 'missing_count': 1, 'total_platform_caps': 8, 'coverage_ratio': 0.88}
+
+FINDING_4:
+  ID: 75c09a79-9e41-4d04-9b4f-16a760b7bf5f
+  CATEGORY: web_session_expired
+  TITLE: Gemini Web necesita re-login
+  SUMMARY: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.85
+  SHAPE: operational
+
+FINDING_5:
+  ID: 24251684-3c31-40ad-99e0-3b10476b5b91
+  CATEGORY: ui_self_awareness
+  TITLE: iabv_window_missing
+  SUMMARY: No se detecta ninguna ventana IABV entre las 9 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.5
+  SHAPE: operational
+
+FINDING_6:
+  ID: 92d5b713-9b9f-4fc6-80cb-e11422bcda81
+  CATEGORY: discernment_frame_missing_in_task_context
+  TITLE: Discernment frame ausente en contexto
+  SUMMARY: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.0
+  SHAPE: operational
+
+FINDING_7:
+  ID: 2029f093-3b80-4094-bcb3-3e6087e274c4
+  CATEGORY: self_correction
+  TITLE: Auto-correcciones aplicadas desde log: 1
+  SUMMARY: El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 1.0
+  SHAPE: operational
+
+FINDING_8:
+  ID: 221fb775-74b4-4a0c-8da7-bc2a957a1877
+  CATEGORY: autonomy_index_insufficient_data
+  TITLE: UniversalAutonomyIndex: datos insuficientes
+  SUMMARY: Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 0.95
+  SHAPE: operational
+
+MISSING CAPABILITY FINDING:
+===========================
+
+EXPECTED: windows_capability_missing finding with ID matching source_finding_id of the need
+ACTUAL: NOT FOUND in the returned findings list
+SOURCE_FINDING_ID_IN_NEED: 5b8ca067-67bd-497c-b137-79605bb981ef
+MATCHING_FINDING_ID_IN_LIST: NONE
+
+CONCLUSION:
+===========
+
+The individual windows_capability_missing finding is NOT in the returned findings list.
+However, a StructuredNeed is still being created with a source_finding_id that doesn't match any visible finding.
+
+This suggests that either:
+1. The need formulation logic is creating needs from operational finding metadata (windows_integration_gaps)
+2. There's a bug in the need formulation logic that generates needs without a corresponding finding
+3. The individual capability finding is being generated but then filtered out before being returned
+
+This is a CRITICAL discrepancy that prevents independent verification of the need's provenance.

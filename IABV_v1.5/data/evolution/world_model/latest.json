@@ -1,413 +1,297 @@
 {
-  "snapshot_id": "f5842440-147d-486a-9416-b197634a64e2",
-  "active_windows": [],
-  "focused_window": null,
-  "tool_live_status": [
+  "snapshot_id": "7eea2a73-b660-4d58-a2fb-7d7330939ce1",
+  "active_windows": [
     {
-      "tool_id": "claude_web_assisted",
-      "title": "Claude web asistido",
-      "assistant_kind": "claude",
-      "available": true,
-      "status": "listo",
-      "detail": "La herramienta esta registrada y se puede intentar abrir.",
-      "launch_mode": "web_assisted",
-      "window_open": false,
-      "focused": false,
-      "thread_status": "no_aplica",
-      "messages_status": "desconocidos",
-      "session_status": "desconocida",
-      "capture_status": "no_disponible",
-      "probe_status": "pasivo",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [],
-      "confidence": 0.26,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "Claude web asistido",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "dom_capture",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:claude"
-      }
-    },
-    {
-      "tool_id": "claude_installed",
-      "title": "Claude instalado",
-      "assistant_kind": "claude",
-      "available": false,
-      "status": "no_disponible",
-      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
-      "launch_mode": "desktop_app",
-      "window_open": false,
-      "focused": false,
-      "thread_status": "no_aplica",
-      "messages_status": "desconocidos",
-      "session_status": "no_disponible",
-      "capture_status": "no_disponible",
-      "probe_status": "pasivo",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [],
-      "confidence": 0.1,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "Claude instalado",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "clipboard_capture",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:claude"
-      }
-    },
-    {
-      "tool_id": "chatgpt_web_assisted",
-      "title": "ChatGPT web asistido",
-      "assistant_kind": "chatgpt",
-      "available": true,
-      "status": "listo",
-      "detail": "La herramienta esta registrada y se puede intentar abrir.",
-      "launch_mode": "web_assisted",
-      "window_open": false,
-      "focused": false,
-      "thread_status": "no_aplica",
-      "messages_status": "desconocidos",
-      "session_status": "desconocida",
-      "capture_status": "no_disponible",
-      "probe_status": "pasivo",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [],
-      "confidence": 0.26,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "ChatGPT web asistido",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "dom_capture",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:chatgpt"
-      }
-    },
-    {
-      "tool_id": "chatgpt_installed",
-      "title": "ChatGPT instalado",
-      "assistant_kind": "chatgpt",
-      "available": false,
-      "status": "no_disponible",
-      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
-      "launch_mode": "desktop_app",
-      "window_open": false,
-      "focused": false,
-      "thread_status": "no_aplica",
-      "messages_status": "desconocidos",
-      "session_status": "no_disponible",
-      "capture_status": "no_disponible",
-      "probe_status": "pasivo",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [],
-      "confidence": 0.1,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "ChatGPT instalado",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "clipboard_capture",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:chatgpt"
-      }
-    },
-    {
-      "tool_id": "codex_installed",
-      "title": "Codex instalado",
-      "assistant_kind": "codex",
-      "available": false,
-      "status": "no_disponible",
-      "detail": "No pude verificar el hilo activo de Codex porque no encontre su estado local.",
-      "launch_mode": "desktop_app",
-      "window_open": false,
-      "focused": false,
-      "thread_status": "no_disponible",
-      "messages_status": "no_disponible",
-      "session_status": "no_disponible",
-      "capture_status": "no_disponible",
-      "probe_status": "pasivo",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal",
-        "codex_state_sqlite"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [],
-      "confidence": 0.1,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "Codex instalado",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "clipboard_capture",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:codex"
-      }
-    },
-    {
-      "tool_id": "desktop_human_runner",
-      "title": "Desktop human runner",
-      "assistant_kind": "iabv_runtime",
-      "available": false,
-      "status": "no_disponible",
-      "detail": "La herramienta no quedo confirmada como disponible en esta laptop.",
-      "launch_mode": "desktop_real",
-      "window_open": false,
-      "focused": false,
-      "thread_status": "no_aplica",
-      "messages_status": "desconocidos",
-      "session_status": "no_disponible",
-      "capture_status": "no_disponible",
-      "probe_status": "pasivo",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [],
-      "confidence": 0.1,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "Desktop human runner",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "local_evidence",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:iabv_runtime"
-      }
-    },
-    {
-      "tool_id": "ollama_llm",
-      "title": "Ollama local",
-      "assistant_kind": "ollama",
-      "available": false,
-      "status": "no_disponible",
-      "detail": "No tengo confirmacion de respuesta local ahora mismo.",
-      "launch_mode": "local_provider",
-      "window_open": false,
-      "focused": false,
-      "thread_status": "no_aplica",
-      "messages_status": "no_disponible",
-      "session_status": "no_aplica",
-      "capture_status": "no_disponible",
-      "probe_status": "sin_confirmacion",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [
-        "assistant_unavailable"
-      ],
-      "confidence": 0.1,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "Ollama local",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "tool_result",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:ollama"
-      }
-    },
-    {
-      "tool_id": "playwright_browser",
-      "title": "Playwright browser",
+      "window_id": "3ee7705e-b89a-4454-aab6-25ec17463916",
+      "title": "AlcolirykoZ - Medellificaci\u00f3n (con Jer\u00f3nimo) Prod. El Arke\u00f3logo - YouTube y 6 p\u00e1ginas m\u00e1s - Personal: Microsoft\u200b Edge",
+      "app_name": "AlcolirykoZ",
+      "pid": 4324,
+      "focused": true,
+      "visible": true,
+      "tool_id": "",
       "assistant_kind": "",
-      "available": true,
-      "status": "listo",
-      "detail": "La herramienta esta registrada y se puede intentar abrir.",
-      "launch_mode": "",
-      "window_open": false,
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "f75c3d27-0b77-4afc-988a-ba94a1623b3f",
+      "title": "faber - Devin - Implement StructuredNeed Decision",
+      "app_name": "faber",
+      "pid": 12692,
       "focused": false,
-      "thread_status": "no_aplica",
-      "messages_status": "desconocidos",
-      "session_status": "desconocida",
-      "capture_status": "no_disponible",
-      "probe_status": "pasivo",
-      "permission_state": "no_requerido",
-      "observed_via": [
-        "tool_registry",
-        "universal_perception_signal"
-      ],
-      "last_verified_at": null,
-      "external_state_flags": [],
-      "detected_blocks": [],
-      "confidence": 0.26,
-      "metadata": {
-        "observed_pid": 0,
-        "observed_title": "Playwright browser",
-        "window_count": 0,
-        "process_count": 0,
-        "response_capture_mode": "",
-        "browser_security_verification": false,
-        "latest_error_message": "",
-        "history_state": "",
-        "permission_scope": "observe_window_content:external"
-      }
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "0b3e6754-f8fb-4c81-8d21-b921628c3ce8",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 3624,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "6c656631-0402-48ce-b448-aecfb78c2753",
+      "title": "Configuraci\u00f3n",
+      "app_name": "Configuraci\u00f3n",
+      "pid": 18540,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "a7dd536f-53c0-45a4-a433-81a0e26bf184",
+      "title": "Administrador de tareas",
+      "app_name": "Administrador de tareas",
+      "pid": 13752,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "b463258b-2fcf-433a-919e-b68a7e54e72a",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 15256,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "79ecf6a8-f453-4551-8e66-8ef461211b25",
+      "title": "Realtek Audio Console",
+      "app_name": "Realtek Audio Console",
+      "pid": 18540,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "7bdd8ca3-2e55-486d-b699-3eeadfcbd14e",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 18564,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "20cd6ec9-0d1f-4242-bce5-293f65ab2487",
+      "title": "Nahimic",
+      "app_name": "Nahimic",
+      "pid": 18540,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "ab19a729-2063-4202-b438-f9059ea39971",
+      "title": "OmApSvcBroker",
+      "app_name": "OmApSvcBroker",
+      "pid": 8972,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "5003c34a-35d7-4333-ac89-f4165554d553",
+      "title": "Experiencia de entrada de Windows",
+      "app_name": "Experiencia de entrada de Windows",
+      "pid": 14380,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "1827b977-889a-4aa9-96f7-b1e552b14b50",
+      "title": "Debugging ID discrepancy through source tracing - Claude - Opera",
+      "app_name": "Debugging ID discrepancy through source tracing",
+      "pid": 7156,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
+    },
+    {
+      "window_id": "df94c988-3232-4cf9-b248-4b50681cfc07",
+      "title": "Program Manager",
+      "app_name": "Program Manager",
+      "pid": 9628,
+      "focused": false,
+      "visible": true,
+      "tool_id": "",
+      "assistant_kind": "",
+      "state": "visible",
+      "detail": "",
+      "metadata": {}
     }
   ],
+  "focused_window": {
+    "window_id": "26aa43b8-feed-4e2e-b99c-795bfae71ac3",
+    "title": "AlcolirykoZ - Medellificaci\u00f3n (con Jer\u00f3nimo) Prod. El Arke\u00f3logo - YouTube y 6 p\u00e1ginas m\u00e1s - Personal: Microsoft\u200b Edge",
+    "app_name": "AlcolirykoZ",
+    "pid": 4324,
+    "focused": true,
+    "visible": true,
+    "tool_id": "",
+    "assistant_kind": "",
+    "state": "focused",
+    "detail": "",
+    "metadata": {}
+  },
+  "tool_live_status": [],
   "network_status": {
     "connected": true,
-    "status": "lento",
-    "quality": "lenta",
-    "latency_ms": 1035.58,
-    "detail": "La red responde, pero esta bastante lenta para rutas web delicadas.",
+    "status": "conectado",
+    "quality": "buena",
+    "latency_ms": 35.85,
+    "detail": "La red responde bien para consultas externas normales.",
     "evidence": [
-      "latency_ms:1035.58"
+      "latency_ms:35.85"
     ],
     "metadata": {}
   },
   "background_processes": [],
   "detected_blocks": [
-    "network_slow",
-    "assistant_unavailable"
+    "ram_critical"
   ],
   "block_records": [
     {
-      "block_id": "349dd995-296a-4165-94c2-efc943a463c7",
-      "block_type": "network_slow",
-      "target_scope": "consult_external",
+      "block_id": "e747e6cc-b77c-4092-a539-6aa7618dffbe",
+      "block_type": "ram_critical",
+      "target_scope": "heavy_local_model",
       "assistant_kind": "",
-      "title": "Red lenta",
-      "detail": "La red responde, pero esta bastante lenta para rutas web delicadas.",
+      "title": "Entorno bajo presion",
+      "detail": "La RAM libre cayo a una zona critica; evita lanzar tareas pesadas.",
       "status": "active",
-      "reason": "La red lenta puede degradar rutas web y producir fallas aparentes del sitio.",
+      "reason": "Conviene evitar tareas pesadas hasta que baje la presion del equipo.",
       "evidence": [
-        "latency_ms:1035.58"
+        "ram_critical"
       ],
-      "confidence": 0.76,
-      "metadata": {}
-    },
-    {
-      "block_id": "0c1059ed-6c0d-4280-9086-d9cf3b4f40c1",
-      "block_type": "assistant_unavailable",
-      "target_scope": "consult_ollama",
-      "assistant_kind": "ollama",
-      "title": "Ollama local",
-      "detail": "No tengo confirmacion de respuesta local ahora mismo.",
-      "status": "active",
-      "reason": "La herramienta no quedo confirmada como lista en este estado operativo.",
-      "evidence": [
-        "ollama_llm"
-      ],
-      "confidence": 0.72,
+      "confidence": 0.8,
       "metadata": {}
     }
   ],
   "permission_gates": [],
   "observation_sources": [
     "environment_self_model",
-    "network_probe",
-    "tool_registry",
-    "universal_perception_signal",
-    "codex_state_sqlite"
+    "network_probe"
   ],
   "inferred_state": {
     "summary": "Hay bloqueos operativos activos que conviene respetar antes de lanzar otra accion.",
-    "focused_window": "",
-    "active_window_count": 0,
+    "focused_window": "AlcolirykoZ - Medellificaci\u00f3n (con Jer\u00f3nimo) Prod. El Arke\u00f3logo - YouTube y 6 p\u00e1ginas m\u00e1s - Personal: Microsoft\u200b Edge",
+    "active_window_count": 13,
     "blocked_routes": [
       {
-        "block_type": "network_slow",
-        "target_scope": "consult_external",
+        "block_type": "ram_critical",
+        "target_scope": "heavy_local_model",
         "assistant_kind": ""
-      },
-      {
-        "block_type": "assistant_unavailable",
-        "target_scope": "consult_ollama",
-        "assistant_kind": "ollama"
       }
     ],
     "permission_gates": [],
-    "blocked_tools": [
-      {
-        "assistant_kind": "ollama",
-        "tool_id": "ollama_llm",
-        "status": "no_disponible",
-        "detected_blocks": [
-          "assistant_unavailable"
-        ]
-      }
-    ],
+    "blocked_tools": [],
     "deductions": [
-      "La red esta disponible, pero lenta; una falla web puede venir de latencia y no solo del selector."
+      "La ventana en foco ahora mismo es AlcolirykoZ - Medellificaci\u00f3n (con Jer\u00f3nimo) Prod. El Arke\u00f3logo - YouTube y 6 p\u00e1ginas m\u00e1s - Personal: Microsoft\u200b Edge.",
+      "El entorno esta bajo presion y conviene evitar tareas pesadas antes de seguir."
     ]
   },
-  "confidence": 0.44,
-  "freshness_ms": 1052,
-  "last_updated": "2026-04-20T02:20:55.454126Z",
-  "unresolved_fields": [
-    "UNRESOLVED:codex_thread_tracking",
-    "UNRESOLVED:focused_window"
-  ],
+  "confidence": 0.56,
+  "freshness_ms": 147,
+  "last_updated": "2026-08-27T15:55:27.333767Z",
+  "unresolved_fields": [],
   "metadata": {
     "scan_reason": "startup",
-    "scan_mode": "full",
-    "workspace_root": "/home/ubuntu/repos/Python/IABV_v1.5",
+    "scan_mode": "light",
+    "workspace_root": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5",
     "observation_sources": [
       "environment_self_model",
-      "network_probe",
-      "tool_registry",
-      "universal_perception_signal",
-      "codex_state_sqlite"
+      "network_probe"
     ],
     "permission_gates": [],
     "changed_since_last_scan": [
-      "block:network_slow",
-      "block:assistant_unavailable",
-      "tool:chatgpt_installed->no_disponible",
-      "tool:codex_installed->no_disponible",
-      "tool:desktop_human_runner->no_disponible",
-      "tool:ollama_llm->no_disponible"
+      "focus:AlcolirykoZ - Medellificaci\u00f3n (con Jer\u00f3nimo) Prod. El Arke\u00f3logo - YouTube y 6 p\u00e1ginas m\u00e1s - Personal: Microsoft\u200b Edge"
     ]
+  },
+  "worker_pool_snapshot": {
+    "tools": {
+      "claude": {
+        "available_accounts": 10,
+        "exhausted_accounts": 0,
+        "total_accounts": 10,
+        "usable": true,
+        "top_worker": {
+          "email": "jhonf463r@gmail.com",
+          "score": 20
+        }
+      },
+      "codex": {
+        "available_accounts": 10,
+        "exhausted_accounts": 0,
+        "total_accounts": 10,
+        "usable": true,
+        "top_worker": {
+          "email": "jhonf463r@gmail.com",
+          "score": 20
+        }
+      },
+      "chatgpt": {
+        "available_accounts": 10,
+        "exhausted_accounts": 0,
+        "total_accounts": 10,
+        "usable": true,
+        "top_worker": {
+          "email": "jhonf463r@gmail.com",
+          "score": 15
+        }
+      }
+    },
+    "total_usable_tools": 3,
+    "total_exhausted_tools": 0,
+    "summary": "3/3 tools usable"
   }
 }

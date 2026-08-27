@@ -1,0 +1,4 @@
+# Provider Runtime
+# Provider runtime is included in 05_RAW_G1_RUNTIME.txt
+# The G1 test uses Groq provider with model openai/gpt-oss-120b
+# Provider calls are logged in the full G1 runtime output

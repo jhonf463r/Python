@@ -1,0 +1,67 @@
+R8-G4.5 CAPABILITY FINDING RAW
+==============================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+CAPABILITY_FINDING_ID = NOT_FOUND
+CAPABILITY_FINDING_CATEGORY = NOT_FOUND
+CAPABILITY_FINDING_PRODUCER = _windows_integration_findings (expected but individual finding not generated)
+
+CRITICAL DISCREPANCY:
+====================
+
+The runtime output shows:
+
+FORENSIC_FULL_FINDINGS_COUNT: 8
+FORENSIC_RETURNED_FINDINGS_COUNT: 8
+FORENSIC_TRUNCATION_APPLIED: False
+
+This means there is NO truncation happening. The findings list returned by build_review() is exactly 8 findings, all operational.
+
+However, a StructuredNeed was created with:
+- NEED_ID: 6ab4b693-b8b9-4ace-ab1a-71a873d476fd
+- SOURCE_FINDING_ID: 29a96029-52b7-4463-84fe-8ac39a185d45
+
+This source_finding_id does NOT match any of the 8 visible findings.
+
+EXPECTED BEHAVIOR (from operational_self_examination_service.py lines 8100-8115):
+```python
+for cap in missing_caps:
+    dep_info = cap.metadata.get('missing', '') if cap.metadata else ''
+    findings.append(SelfExaminationFinding(
+        category='windows_capability_missing',
+        title=f'Falta: {cap.title}',
+        summary=cap.summary or f'{cap.capability_id} no disponible',
+        severity=IssueSeverity.LOW,
+        confidence=0.85,
+        recommendation=f'Dependencia: {dep_info}' if dep_info else 'Verificar disponibilidad en el entorno',
+        source_refs=[cap.capability_id],
+        metadata={
+            'capability_id': cap.capability_id,
+            'status': cap.status,
+            'pending_task_status': 'PENDING',
+        },
+    ))
+```
+
+This code should generate a windows_capability_missing finding for platform.notifications.
+
+ACTUAL BEHAVIOR:
+- FULL_FINDINGS_COUNT: 8 (not 9)
+- All 8 findings are operational
+- No windows_capability_missing finding in the list
+- A StructuredNeed is created with source_finding_id: 29a96029-52b7-4463-84fe-8ac39a185d45
+- This source_finding_id does NOT match any of the 8 visible findings
+- FORENSIC_TRUNCATION_APPLIED: False (no truncation occurred)
+
+CONCLUSION:
+===========
+
+The individual windows_capability_missing finding is NOT being generated at all.
+However, a StructuredNeed is still being created with a source_finding_id that doesn't match any finding.
+
+This is a CRITICAL discrepancy that indicates a bug in the need formulation logic - it's creating needs without a corresponding finding.
+
+The test output incorrectly concluded that "The capability finding was truncated (position 9+)" but this is FALSE because FORENSIC_TRUNCATION_APPLIED = False.
+
+The actual issue is that the individual capability finding is not being generated at all, but the need formulation logic is still creating a need with a non-existent source_finding_id.

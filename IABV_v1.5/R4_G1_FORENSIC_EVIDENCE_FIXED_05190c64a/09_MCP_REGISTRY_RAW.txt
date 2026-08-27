@@ -1,0 +1,5 @@
+# MCP Registry
+# MCP tool registration is performed by register_self_update_tools
+# Registered tools include: write_repo_file, apply_text_patch, git_commit_and_push
+# The G1 test verifies write_repo_file is registered before dispatch
+# Tool registration count is verified in the test

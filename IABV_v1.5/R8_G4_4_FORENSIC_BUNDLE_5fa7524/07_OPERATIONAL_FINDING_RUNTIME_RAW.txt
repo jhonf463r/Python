@@ -1,0 +1,19 @@
+OPERATIONAL FINDING RUNTIME RAW
+================================
+
+All 8 operational findings were correctly rejected by NeedFormulationService.
+
+OPERATIONAL_FINDING_REJECTION_DEMONSTRATED = TRUE
+
+All operational findings are captured in 04_BUILD_REVIEW_RUNTIME_RAW.txt.
+
+Categories:
+- http_noise (operational)
+- loop_closure (operational)
+- web_session_expired (operational)
+- discernment_frame_missing_in_task_context (operational)
+- self_correction (operational)
+- autonomy_index_insufficient_data (operational)
+- functional_gap (operational) - 2 instances
+
+Fail-closed behavior verified: No StructuredNeed objects created from operational findings.

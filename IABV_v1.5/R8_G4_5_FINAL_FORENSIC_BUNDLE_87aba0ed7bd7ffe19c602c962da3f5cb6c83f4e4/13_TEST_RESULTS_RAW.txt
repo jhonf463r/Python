@@ -1,0 +1,41 @@
+R8-G4.5 TEST RESULTS RAW
+=========================
+
+TIMESTAMP = 2026-08-26 23:07:00 UTC-05:00
+
+TESTS_EXECUTED = 1
+TESTS_PASSED = 1
+TESTS_FAILED = 0
+TESTS_SKIPPED = 0
+TEST_ERRORS = 0
+
+TEST_NAME: test_real_build_review_with_production_dependencies
+TEST_FILE: tests/test_r8_g4_5_runtime_integration.py
+TEST_STATUS: PASSED
+TEST_DURATION: ~5 seconds
+
+TEST_ASSERTIONS:
+=================
+
+1. EnvironmentSelfAwarenessService initialized: PASS
+2. WorldModelService initialized: PASS
+3. OperationalSelfExaminationService initialized: PASS
+4. build_review() executed without exception: PASS
+5. Findings returned: PASS (8 findings)
+6. StructuredNeed created: PASS (1 new need)
+7. Need persisted: PASS (file exists in repository)
+
+CRITICAL DISCREPANCY NOTED:
+=============================
+
+The test passed all assertions, but a CRITICAL discrepancy was discovered:
+- The StructuredNeed has source_finding_id: 5b8ca067-67bd-497c-b137-79605bb981ef
+- This source_finding_id does NOT match any of the 8 visible findings
+- The individual windows_capability_missing finding is NOT in the returned findings list
+
+This discrepancy prevents independent verification of the need's provenance.
+
+RAW_RUNTIME_CAPTURED = TRUE
+RAW_RUNTIME_EDITED = FALSE
+PLACEHOLDERS_IN_RUNTIME = FALSE
+RECYCLED_RUNTIME_VALUES = FALSE

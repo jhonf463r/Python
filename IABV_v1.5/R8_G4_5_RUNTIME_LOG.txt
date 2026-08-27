@@ -1,0 +1,199 @@
+R8-G4.5 RUNTIME INTEGRATION TEST LOG
+====================================
+
+TIMESTAMP = 2026-08-26 22:56:40 UTC-05:00
+
+================================================================================
+R8-G4.5 RUNTIME INTEGRATION TEST
+================================================================================
+
+WORKSPACE_ROOT: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+EVOLUTION_DIR: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\data\evolution
+PYTEST_CURRENT_TEST: test_r8_g4_5_runtime_integration.py::test_real_build_review_with_production_dependencies
+
+STORAGE_INITIALIZED: True
+
+INITIALIZING EnvironmentSelfAwarenessService...
+
+ENV_SELF_SERVICE_INITIALIZED: TRUE
+
+ENV_MODEL_AVAILABLE: True
+ENV_MODEL_SCAN_STATUS: partial
+ENV_MODEL_CAPABILITY_GRAPH_LENGTH: 11
+ENV_MODEL_PLATFORM_CAPS_COUNT: 8
+ENV_MODEL_MISSING_PLATFORM_CAPS_COUNT: 1
+ENV_MODEL_MISSING_PLATFORM_CAPS: ['platform.notifications']
+
+INITIALIZING WorldModelService...
+
+WORLD_MODEL_SERVICE_INITIALIZED: TRUE
+
+WORLD_MODEL_ENV_SELF_SERVICE: True
+WORLD_MODEL_ENV_SELF_SERVICE_MATCH: True
+
+INITIALIZING OperationalSelfExaminationService...
+
+OSES_INITIALIZED: TRUE
+OSES_WORLD_MODEL_SERVICE: True
+OSES_WORLD_MODEL_SERVICE_MATCH: True
+
+NEED_FORMULATION_SERVICE: True
+STRUCTURED_NEED_REPOSITORY: True
+
+CAPTURING BEFORE STATE...
+
+BEFORE_NEEDS_COUNT: 11
+
+EXECUTING build_review()...
+BUILD_REVIEW_START
+
+BUILD_REVIEW_END
+
+TOTAL_FINDINGS: 8
+
+CAPTURING FINDINGS...
+
+FINDING_ID: dfd38ed5-3864-407c-9afc-a8e9b91ccf7d
+  CATEGORY: http_noise
+  TITLE: Ruido excesivo de logs HTTP (httpx)
+  SUMMARY: Detectadas 500 ocurrencias de "HTTP Request:" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.9
+  CAPABILITY_SHAPED: False
+
+FINDING_ID: 741eabb7-d960-4b2d-806b-4b0d3ee3e5a9
+  CATEGORY: loop_closure
+  TITLE: Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)
+  SUMMARY: 
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.0
+  CAPABILITY_SHAPED: False
+
+FINDING_ID: 02c6fb2a-227e-4f97-84f0-1808ea4375bc
+  CATEGORY: windows_integration_gaps
+  TITLE: 1 capacidades Windows nativas faltantes
+  SUMMARY: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.9
+  CAPABILITY_SHAPED: False
+
+FINDING_ID: ee4007e9-87b5-49c4-88e5-d3c6942a5360
+  CATEGORY: web_session_expired
+  TITLE: Gemini Web necesita re-login
+  SUMMARY: La sesion web de Gemini Web esta expirada o no existe. Razon: The provider web no sera seleccionado hasta que el usuario re-autentique manualmente.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.85
+  CAPABILITY_SHAPED: False
+
+FINDING_ID: 2073357b-074b-4a25-afd3-9f7446a5c60b
+  CATEGORY: ui_self_awareness
+  TITLE: iabv_window_missing
+  SUMMARY: No se detecta ninguna ventana IABV entre las 7 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.5
+  CAPABILITY_SHAPED: False
+
+FINDING_ID: 51dd298d-92a1-4a5a-9583-2247fd226e07
+  CATEGORY: discernment_frame_missing_in_task_context
+  TITLE: Discernment frame ausente en contexto
+  SUMMARY: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.0
+  CAPABILITY_SHAPED: False
+
+FINDING_ID: fb30de8d-d31e-45df-8916-2e8668cb17b2
+  CATEGORY: self_correction
+  TITLE: Auto-correcciones aplicadas desde log: 1
+  SUMMARY: El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 1.0
+  CAPABILITY_SHAPED: False
+
+FINDING_ID: d95caa35-d4a4-4b7a-a182-e8bdd0c63683
+  CATEGORY: autonomy_index_insufficient_data
+  TITLE: UniversalAutonomyIndex: datos insuficientes
+  SUMMARY: Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 0.95
+  CAPABILITY_SHAPED: False
+
+CAPABILITY_FINDINGS_COUNT: 0
+OPERATIONAL_FINDINGS_COUNT: 8
+
+ALL_FINDING_CATEGORIES:
+  http_noise
+  loop_closure
+  windows_integration_gaps
+    METADATA: {'phase': 'windows_integration', 'missing_capability_ids': ['platform.notifications'], 'missing_count': 1, 'total_platform_caps': 8, 'coverage_ratio': 0.88}
+  web_session_expired
+  ui_self_awareness
+  discernment_frame_missing_in_task_context
+  self_correction
+  autonomy_index_insufficient_data
+
+DEBUG: Checking for individual capability findings...
+WINDOWS_CAPABILITY_MISSING_COUNT: 0
+
+TOTAL_FINDINGS_IN_LIST: 8
+ALL_FINDING_IDS:
+  dfd38ed5-3864-407c-9afc-a8e9b91ccf7d: http_noise
+  741eabb7-d960-4b2d-806b-4b0d3ee3e5a9: loop_closure
+  02c6fb2a-227e-4f97-84f0-1808ea4375bc: windows_integration_gaps
+  ee4007e9-87b5-49c4-88e5-d3c6942a5360: web_session_expired
+  2073357b-074b-4a25-afd3-9f7446a5c60b: ui_self_awareness
+  51dd298d-92a1-4a5a-9583-2247fd226e07: discernment_frame_missing_in_task_context
+  fb30de8d-d31e-45df-8916-2e8668cb17b2: self_correction
+  d95caa35-d4a4-4b7a-a182-e8bdd0c63683: autonomy_index_insufficient_data
+
+WINDOWS_INTEGRATION_FINDING_ID: 02c6fb2a-227e-4f97-84f0-1808ea4375bc
+WINDOWS_INTEGRATION_FINDING_METADATA: {'phase': 'windows_integration', 'missing_capability_ids': ['platform.notifications'], 'missing_count': 1, 'total_platform_caps': 8, 'coverage_ratio': 0.88}
+
+DEBUG: Checking if findings are filtered...
+TOTAL_FINDINGS_RETURNED: 8
+EXPECTED_FINDINGS: 8 operational + 1 capability = 9
+ACTUAL_FINDINGS: 8
+MISSING_CAPABILITY_FINDING_IN_RETURNED_LIST: True
+
+DEBUG: Checking review object...
+REVIEW_FINDINGS_COUNT: 8
+REVIEW_FINDINGS_CATEGORIES:
+  dfd38ed5-3864-407c-9afc-a8e9b91ccf7d: http_noise
+  741eabb7-d960-4b2d-806b-4b0d3ee3e5a9: loop_closure
+  02c6fb2a-227e-4f97-84f0-1808ea4375bc: windows_integration_gaps
+  ee4007e9-87b5-49c4-88e5-d3c6942a5360: web_session_expired
+  2073357b-074b-4a25-afd3-9f7446a5c60b: ui_self_awareness
+  51dd298d-92a1-4a5a-9583-2247fd226e07: discernment_frame_missing_in_task_context
+  fb30de8d-d31e-45df-8916-2e8668cb17b2: self_correction
+  d95caa35-d4a4-4b7a-a182-e8bdd0c63683: autonomy_index_insufficient_data
+
+DEBUG: Checking if findings were truncated...
+NOTE: Review truncates findings to first 8 (line 965)
+NOTE: Need formulation uses FULL findings list (line 918)
+NOTE: Individual capability findings may be in position 9+
+
+CHECKING STRUCTURED NEEDS...
+
+AFTER_NEEDS_COUNT: 12
+
+NEW_NEED_SOURCE_FINDING_ID: 422c3bac-10ab-4ae1-9ff2-73f8e3f7dabd
+SOURCE_FINDING_IN_VISIBLE_LIST: False
+CONCLUSION: The capability finding was truncated (position 9+)
+CONCLUSION: Need formulation still worked because it uses FULL findings list
+
+NEW_NEEDS_COUNT: 1
+
+NEED_ID: 137701db-3265-449a-a468-56b2cd089d66
+  SOURCE_FINDING_ID: 422c3bac-10ab-4ae1-9ff2-73f8e3f7dabd
+  CATEGORY: windows_capability_missing
+  CAPABILITY_GAP: Falta: Notificaciones Windows
+  CURRENT_STATE: 
+  DESIRED_STATE: Dependencia: winrt, plyer, o winotify
+  KNOWLEDGE_REQUIRED: windows_capability_missing
+  REASON: Windows 10+ pero sin libreria de toast (winrt/plyer/winotify)
+  EVIDENCE: []
+  PRIORITY: low
+  STATUS: NeedStatus.PENDING
+
+================================================================================
+TEST COMPLETED
+================================================================================

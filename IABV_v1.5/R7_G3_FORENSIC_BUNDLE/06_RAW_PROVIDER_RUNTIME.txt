@@ -1,0 +1,15 @@
+RAW PROVIDER RUNTIME
+====================
+
+The provider runtime logs are included in the main test runtime outputs:
+- R7_TEMP_G3_POSITIVE_RAW.txt (G3 positive test - skipped)
+- R7_TEMP_G3_NEGATIVE_RAW.txt (G3 negative test - passed)
+- R7_TEMP_G2_REGRESSION_RAW.txt (G2 regression test - passed)
+- R7_TEMP_G1_REGRESSION_RAW.txt (G1 regression test - passed)
+- R7_TEMP_C2_REGRESSION_RAW.txt (C2 regression tests - passed)
+
+See those files for detailed provider runtime logs including:
+- CloudReasoningPlannerService calls
+- Plan generation
+- Tool dispatch
+- Execution context

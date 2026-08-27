@@ -1,0 +1,80 @@
+NEED FORMULATION AUDIT - RAW
+============================
+
+SEARCH RESULTS:
+--------------
+Based on git grep searches:
+
+1. knowledge_need: NOT FOUND (exit code 1)
+2. information_need: NOT FOUND (exit code 1)
+3. capability_need: NOT FOUND (exit code 1)
+4. missing_knowledge: NOT FOUND (exit code 1)
+5. unknown: FOUND (749 lines, mostly test code and error handling)
+
+ANALYSIS:
+---------
+No explicit need formulation structures found in the codebase.
+
+The search for "unknown" returned many results, but these are:
+- Test assertions (assert payload.get('current_page') == 'unknown')
+- Error handling (error_data.get('error', {}).get('code', 'unknown'))
+- Default values (username = os.environ.get('USERNAME', 'unknown'))
+- Test labels (browser_label='unknown')
+
+These are NOT need formulation mechanisms.
+
+FINDING → NEED TRANSFORMATION:
+------------------------------
+Based on code analysis:
+- SelfExaminationFinding exists (category, severity, title, summary)
+- PlatformPendingTask exists (title, description, reason, next_action)
+- NO explicit transformation from FINDING → NEED observed
+- NO knowledge_need, information_need, or capability_need models found
+- NO need formulation service found
+
+PRODUCER:
+----------
+None found. There is no service that explicitly formulates needs from findings.
+
+CONSUMER:
+----------
+None found. There is no service that consumes "need" objects.
+
+INPUT:
+------
+Findings from OSES could be input, but no transformation logic found.
+
+OUTPUT:
+------
+No need objects found in the codebase.
+
+DOWNSTREAM EFFECT:
+-----------------
+None, because need formulation does not exist.
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: NO source code for need formulation found
+STRUCTURALLY_REACHABLE: NO structural path from finding to need
+RUNTIME_OBSERVED: NOT APPLICABLE
+DECISION_OBSERVED: NOT APPLICABLE
+BEHAVIOR_CHANGE_OBSERVED: NOT APPLICABLE
+
+CONCLUSION:
+-----------
+NEED FORMULATION DOES NOT EXIST.
+
+The system has:
+- SelfExaminationFinding (observations about problems)
+- PlatformPendingTask (TODO items for human review)
+
+But it does NOT have:
+- A transformation from FINDING → NEED
+- Need models (knowledge_need, information_need, capability_need)
+- A need formulation service
+- Any mechanism to explicitly formulate "what is needed"
+
+The flow appears to skip need formulation:
+FINDING → PLATFORM_PENDING_TASK (direct transformation to TODO list)
+
+This is a MISSING EDGE in the self-construction loop.

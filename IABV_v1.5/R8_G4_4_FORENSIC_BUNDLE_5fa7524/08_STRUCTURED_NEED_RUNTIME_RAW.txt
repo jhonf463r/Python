@@ -1,0 +1,10 @@
+STRUCTURED NEED RUNTIME RAW
+===========================
+
+SKIPPED: No StructuredNeed objects created.
+
+REAL_STRUCTURED_NEEDS = 0
+
+Reason: No capability findings produced, so no StructuredNeed objects were created.
+
+See 06_CAPABILITY_FINDING_RUNTIME_RAW.txt for details on why no capability findings were produced.

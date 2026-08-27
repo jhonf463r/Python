@@ -1,0 +1,57 @@
+NEGATIVE RUNTIME RAW
+===================
+
+TEST COMMAND:
+python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_r8_g4_need_formulation.py::TestNeedFormulationNegative -v
+
+NEGATIVE TEST RESULTS:
+======================
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_ambiguous_with_capability_keyword_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_cloud_provider_degradation_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_configuration_gap_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_functional_gap_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_network_failure_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_performance_degradation_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_provider_cannot_handle_load_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_provider_latency_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_route_failure_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_route_requires_optimization_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_temporal_latency_anomaly_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_timeout_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_underutilized_resource_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_we_need_faster_route_no_need PASSED
+
+NEGATIVE TEST DETAILS:
+---------------------
+
+test_functional_gap_no_need (NEW - G4.2):
+- Input: category="functional_gap", title="Sesiones activas en navegadores sin cuentas asociadas"
+- Expected: None (underutilized resources, not missing capabilities)
+- Actual: None
+- Verified: functional_gap correctly rejected as operational, not capability gap
+
+test_configuration_gap_no_need (NEW - G4.2):
+- Input: category="configuration_gap", title="Secretos criticos faltantes: GITHUB_TOKEN_IABV"
+- Expected: None (missing config/secrets, not capability gaps)
+- Actual: None
+- Verified: configuration_gap correctly rejected as configuration issue, not capability gap
+
+test_underutilized_resource_no_need (NEW - G4.2):
+- Input: category="underutilized_resource", title="API key de OpenAI disponible sin ejemplos de entrenamiento"
+- Expected: None (resource available but not used)
+- Actual: None
+- Verified: underutilized_resource correctly rejected as resource available, not missing
+
+test_temporal_latency_anomaly_no_need (NEW - G4.2):
+- Input: category="temporal_latency_anomaly", title="Latency anomaly detected"
+- Expected: None (operational problem)
+- Actual: None
+- Verified: temporal_latency_anomaly correctly rejected as operational problem
+
+test_cloud_provider_degradation_no_need (NEW - G4.2):
+- Input: category="cloud_provider_degradation", title="Cloud provider showing degradation"
+- Expected: None (operational problem)
+- Actual: None
+- Verified: cloud_provider_degradation correctly rejected as external service issue
+
+NEGATIVE TESTS: 14 PASSED (9 from G4.1 + 5 new from G4.2)

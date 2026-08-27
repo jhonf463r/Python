@@ -1,0 +1,4 @@
+# Authority Runtime
+# Authority runtime is included in 05_RAW_G1_RUNTIME.txt
+# The Authority server logs are captured in the full G1 runtime output
+# Authority pipe communication is logged with detailed IPC traces

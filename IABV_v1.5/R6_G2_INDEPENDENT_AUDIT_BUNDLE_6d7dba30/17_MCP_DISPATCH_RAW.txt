@@ -1,0 +1,35 @@
+# MCP Dispatch Evidence from G2 Positive Test
+
+## ASSIGNED TOOL
+write_repo_file
+
+## REGISTERED TOOL
+The tool is registered via register_self_update_tools() in server.py
+Tool ID: write_repo_file
+Tool Function: write_repo_file (internal Python function)
+Tool Schema: defined in self_update_tools.py
+
+## MCP INTERNAL REGISTRY DISPATCH
+The dispatch is internal to the MCP server:
+- The tool is registered in the internal MCP registry
+- The tool is invoked via direct Python function call
+- No external MCP transport is used
+
+## INVOCATION
+```python
+# From server.py g1_goal_to_protected_tool
+tool = self._mcp_registry.get_tool(plan_assigned_tool)
+if not tool:
+    raise ValueError(f"Tool {plan_assigned_tool} not found in MCP registry")
+
+# Direct Python function call
+result = tool['function'](**tool_parameters)
+```
+
+## DISTINCTION
+MCP_REGISTERED: YES (tool is in internal MCP registry)
+MCP_INTERNAL_REGISTRY_DISPATCH: YES (direct Python function call)
+MCP_TRANSPORT: NO (no external MCP transport used)
+
+## CONCLUSION
+The tool dispatch is internal to the MCP server. There is no external MCP transport. The tool is registered in the internal MCP registry and invoked via direct Python function call.

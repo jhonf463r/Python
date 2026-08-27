@@ -1,0 +1,75 @@
+DERIVED SUMMARY FOR R7 G3 FINAL FORENSIC
+=========================================
+
+OBJECTIVE ACHIEVED:
+-------------------
+Closed forensic debt for G3 independent result verification by:
+1. Fixing content_contains logging bug (observed was None, now shows actual content)
+2. Adding commit provenance to bundle
+3. Implementing proper BEFORE/AFTER repository capture with distinct timestamps
+4. Ensuring all RAW runtime files are primary captures
+
+ROOT CAUSE OF LOGGING BUG:
+---------------------------
+In server.py lines 3617-3630, the verification logic correctly used file_content for comparison,
+but the observed_value in the match/mismatch record was set to observed_result.get(key) which
+returned None for content_contains since that key doesn't exist in observed_result.
+
+FIX APPLIED:
+------------
+Modified src/iabv_v15/infra/mcp/server.py lines 3617-3630:
+- For content_contains: observed_value = file_content (actual observed content)
+- For content_not_contains: observed_value = file_content (actual observed content)
+- For content_exact_match: observed_value = file_content (actual observed content)
+
+VERIFICATION STRENGTH DEMONSTRATED:
+-----------------------------------
+G3 POSITIVE TEST:
+- Expected hash calculated from plan parameters: 9d9387d10bc09c41cbe8f8b41571d5d36c7a99d890f8aeab39033fee4b613dd2
+- Observed hash from actual file: 9d9387d10bc09c41cbe8f8b41571d5d36c7a99d890f8aeab39033fee4b613dd2
+- Hash match: exact
+- Content match: partial (content_contains)
+- content_contains.observed: 'G3_VERIFICATION_SUCCESS' (FIXED - was None)
+- File existence: exact
+- No unexpected content
+
+INDEPENDENT OBSERVATION:
+-----------------------
+EXPECTED_RESULT_SOURCE: plan_parameters_deterministic
+OBSERVED_RESULT_SOURCE: independent_filesystem_observation
+
+The observed result is obtained from:
+- Filesystem (file existence, size, content, hash)
+- Git status
+- Actual runtime state
+
+NOT reused from plan parameters.
+
+BEFORE/AFTER CAPTURE:
+---------------------
+BEFORE and AFTER repository snapshots captured at different timestamps:
+- BEFORE: captured before test execution
+- AFTER: captured after test execution
+- Both include timestamp, git HEAD, git status, target file state
+- Snapshots are distinct (different timestamps)
+
+TEST RESULTS:
+-------------
+G3 POSITIVE TEST: PASSED
+G3 NEGATIVE TEST: PASSED
+G2 REGRESSION TEST: PASSED
+G1 REGRESSION TEST: PASSED
+C2 REGRESSION TEST: PASSED (10/10 tests)
+
+TOTAL: 14/14 PASSED, 0 SKIPPED, 0 FAILED
+
+C2 STATUS: NOT MODIFIED (as required)
+
+COMMIT PROVENANCE:
+------------------
+Bundle includes full git identity:
+- COMMIT_SHA: 9454fc601a224a05e9ead57663ec279ed5a5b11c
+- PARENT_SHA: 501fba77b4fb23ff425a093b29063ab2cd4544ba
+- TREE_SHA: included
+- BRANCH: p0213/vfinal5-r3-choke-point
+- REMOTE: https://github.com/jhonf463r/Python.git

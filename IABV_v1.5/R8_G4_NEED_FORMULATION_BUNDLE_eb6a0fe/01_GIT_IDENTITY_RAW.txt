@@ -1,0 +1,75 @@
+GIT IDENTITY RAW
+=================
+
+COMMAND: git log --oneline -5
+OUTPUT:
+40a3c60d5 (HEAD -> p0213/vfinal5-r3-choke-point, origin/p0213/vfinal5-r3-choke-point) R7 G3 FINAL: Fix content_contains logging bug in server.py
+9454fc601 R7 G3 DEBUG: Fix MockContainer authorize_action for G3 positive test
+501fba77b R7 G3: Strengthen verifier without modifying C2
+6d7dba30c Fix G2 verification semantics - enforce strict verification and deterministic hash derivation
+301d84bd4 Add G2 action plan completeness - close reasoning → action bottleneck
+
+COMMAND: git status
+OUTPUT:
+On branch p0213/vfinal5-r3-choke-point
+Your branch is up to date with 'origin/p0213/vfinal5-r3-choke-point'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        R4_G1_FORENSIC_EVIDENCE_FIXED_05190c64a/
+        R4_TEMP_C2_REGRESSION_RAW.txt
+        R4_TEMP_G1_NEGATIVE_RAW.txt
+        R4_TEMP_G1_POSITIVE_CLEAN_RAW.txt
+        R4_TEMP_G1_POSITIVE_RAW.txt
+        R4_TEMP_IMPL_SELF_UPDATE_DIFF.txt
+        R4_TEMP_IMPL_SERVER_DIFF.txt
+        R4_TEMP_REPO_AFTER.txt
+        R4_TEMP_REPO_BEFORE.txt
+        R4_TEMP_REPO_BEFORE_CLEAN.txt
+        R5_G1_AUTHORITY_PIPE_FIXED_BUNDLE_fce8965eb/
+        R5_G2_FORENSIC_EVIDENCE/
+        R5_TEMP_C2_REGRESSION_RAW.txt
+        R5_TEMP_G1_REGRESSION_RAW.txt
+        R5_TEMP_G2_NEGATIVE_RAW.txt
+        R5_TEMP_G2_POSITIVE_RAW.txt
+        R5_TEMP_REPO_BEFORE.txt
+        R6_G2_FORENSIC_EVIDENCE/
+        R6_G2_INDEPENDENT_AUDIT_BUNDLE_6d7dba30/
+        R6_TEMP_C2_REGRESSION_RAW.txt
+        R6_TEMP_G1_REGRESSION_RAW.txt
+        R6_TEMP_G2_NEGATIVE_RAW.txt
+        R6_TEMP_G2_POSITIVE_RAW.txt
+        R7_DEBUG_C2_REGRESSION_RAW.txt
+        R7_DEBUG_G1_REGRESSION_RAW.txt
+        R7_DEBUG_G2_REGRESSION_RAW.txt
+        R7_DEBUG_G3_NEGATIVE_RAW.txt
+        R7_DEBUG_G3_POSITIVE_RAW.txt
+        R7_FINAL_C2_REGRESSION_RAW.txt
+        R7_FINAL_G1_REGRESSION_RAW.txt
+        R7_FINAL_G2_REGRESSION_RAW.txt
+        R7_FINAL_G3_NEGATIVE_RAW.txt
+        R7_FINAL_G3_POSITIVE_RAW.txt
+        R7_G3_COMMIT_PROVENANCE_BUNDLE_40a3c60/
+        R7_G3_FINAL_FORENSIC_BUNDLE/
+        R7_G3_FORENSIC_BUNDLE/
+        R7_G3_RUNTIME_VERIFIED_BUNDLE/
+        R7_TEMP_C2_REGRESSION_RAW.txt
+        R7_TEMP_G1_REGRESSION_RAW.txt
+        R7_TEMP_G2_REGRESSION_RAW.txt
+        R7_TEMP_G3_NEGATIVE_RAW.txt
+        R7_TEMP_G3_POSITIVE_RAW.txt
+        R8_INFLECTION_FORENSIC_BUNDLE_40a3c60/
+        R8_G4_NEED_FORMULATION_BUNDLE/
+        g1_goal_execution_test.txt
+        g1_test.txt
+        tests/g1_execution_test.txt
+
+nothing added to commit but use "git add <file>..." to track)
+
+COMMAND: git diff HEAD --stat
+OUTPUT:
+(no output - no staged or unstaged changes)
+
+BASE SHA: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+BRANCH: p0213/vfinal5-r3-choke-point
+REMOTE: https://github.com/jhonf463r/Python.git

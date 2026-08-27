@@ -1,0 +1,52 @@
+NEED OUTPUT RAW
+===============
+
+BEFORE (R8-G4 - with generic placeholders):
+-------------------------------------------
+StructuredNeed(
+    need_id=<uuid>,
+    source_finding_id=<finding_id>,
+    category="capability_discovery",
+    capability_gap="Cannot perform visual inspection",
+    current_state="Cannot perform visual inspection of UI elements",
+    desired_state="Implement visual inspection capability",
+    knowledge_required="knowledge_in_capability_discovery",  <-- GENERIC TEMPLATE
+    reason="I cannot perform visual inspection of UI elements",
+    evidence=["run_123", "episode_456"],
+    priority="high",
+    status=NeedStatus.PENDING,
+)
+
+AFTER (R8-G4.1 - without generic placeholders):
+----------------------------------------------
+StructuredNeed(
+    need_id=<uuid>,
+    source_finding_id=<finding_id>,
+    category="capability_discovery",
+    capability_gap="Cannot perform visual inspection",
+    current_state="",  <-- Empty if no explicit "cannot" pattern in summary
+    desired_state="Implement visual inspection capability",
+    knowledge_required="capability_discovery",  <-- Direct from category, no template
+    reason="I cannot perform visual inspection of UI elements",
+    evidence=["run_123", "episode_456"],
+    priority="high",
+    status=NeedStatus.PENDING,
+)
+
+SEMANTIC FIELD EXTRACTION CHANGES:
+----------------------------------
+_extract_capability_gap():
+BEFORE: return finding.title or finding.category or "unknown_capability_gap"
+AFTER: return finding.title or "" (empty if insufficient)
+
+_extract_current_state():
+BEFORE: return f"Cannot {parts[1].strip()}" if "cannot" in summary else "unable_to_perform_action"
+AFTER: return f"Cannot {parts[1].strip()}" if "cannot" in summary else "" (empty if insufficient)
+
+_extract_desired_state():
+BEFORE: return finding.recommendation or "able_to_perform_action"
+AFTER: return finding.recommendation or "" (empty if insufficient)
+
+_extract_knowledge_required():
+BEFORE: return f"knowledge_in_{finding.category}" if category else "general_knowledge"
+AFTER: return finding.category if category in CAPABILITY_SHAPED_CATEGORIES else "" (empty if insufficient)

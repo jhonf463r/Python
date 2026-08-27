@@ -1,0 +1,5 @@
+# Teardown
+# The conftest.py fixture handles Authority server teardown
+# Authority process is stopped after each test
+# Test files are cleaned up after each test
+# No additional teardown logs are captured separately

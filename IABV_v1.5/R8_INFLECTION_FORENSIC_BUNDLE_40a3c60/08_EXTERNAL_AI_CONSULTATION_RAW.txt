@@ -1,0 +1,126 @@
+EXTERNAL AI CONSULTATION AUDIT - RAW
+===================================
+
+PROVIDERS/ASSISTANTS AVAILABLE:
+------------------------------
+Based on git grep results:
+
+1. OpenAI (provider)
+   - API: https://api.openai.com/v1/chat/completions
+   - Used by: CloudReasoningPlannerService
+   - Key: OPENAI_API_KEY
+
+2. Groq (provider)
+   - API: https://api.groq.com/openai/v1/chat/completions
+   - Used by: CloudReasoningPlannerService
+   - Key: GROQ_API_KEY
+
+3. Gemini (provider)
+   - API: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+   - Used by: CloudReasoningPlannerService
+   - Key: GEMINI_API_KEY
+
+4. Ollama (local)
+   - API: http://127.0.0.1:11434/v1
+   - Used by: CloudReasoningPlannerService, ToolTeachService
+   - Tool: ollama_llm
+
+5. ChatGPT (assistant)
+   - Tool: chatgpt_installed, chatgpt_web_assisted
+   - assistant_kind: chatgpt
+   - Used by: ToolTeachService
+
+6. Claude (assistant)
+   - Tool: claude_installed, claude_web_assisted
+   - assistant_kind: claude
+   - Used by: ToolTeachService
+
+7. Devin (assistant)
+   - API: https://api.devin.ai/v1
+   - Tool: devin_api
+   - assistant_kind: devin
+   - Used by: ToolAdapters, ControlCenterViewModel
+
+WHO TRIGGERS CONSULTATION:
+--------------------------
+Based on code analysis:
+
+1. CloudReasoningPlannerService
+   - Calls provider APIs (openai, groq, gemini, ollama)
+   - Triggered by: AdaptiveTaskOrchestrator, UI requests
+   - Purpose: Cloud reasoning for tasks
+
+2. ToolTeachService
+   - Runs external consultation via tools
+   - Triggered by: UI (ControlCenterViewModel._run_external_consultation)
+   - Purpose: Consult external assistants for help
+
+3. ControlCenterViewModel
+   - Has _run_external_consultation() method
+   - Triggered by: UI actions (user commands like "consultar claude")
+   - Purpose: User-initiated consultation
+
+4. Devin repair
+   - Triggered by: ControlCenterViewModel._try_devin_repair()
+   - Purpose: Autonomous repair via Devin API
+
+INPUT:
+------
+Based on code analysis:
+- CloudReasoningPlannerService: messages (list of chat messages), model name
+- ToolTeachService: goal, goal_parameters, context
+- Devin repair: prompt (error description, context)
+
+OUTPUT:
+------
+Based on code analysis:
+- CloudReasoningPlannerService: JSON response with reasoning, code suggestions
+- ToolTeachService: consultation result (captured as episode)
+- Devin repair: session_id, session_url, session_status
+
+AUTOMATIC vs HUMAN-TRIGGERED:
+-----------------------------
+Based on code analysis:
+- CloudReasoningPlannerService: AUTOMATIC (called by orchestrator)
+- ToolTeachService: HUMAN-TRIGGERED (via UI commands)
+- Devin repair: AUTOMATIC (triggered on certain errors)
+
+NEED → CONSULTATION TRANSFORMATION:
+----------------------------------
+Based on code analysis:
+- NO transformation from NEED → CONSULTATION found
+- Consultation is triggered by:
+  1. Task execution (CloudReasoningPlannerService)
+  2. User commands (ToolTeachService)
+  3. Error conditions (Devin repair)
+- NO need formulation service exists (from previous audit)
+- Therefore, NO need → consultation transformation exists
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- CloudReasoningPlannerService: Provides reasoning for task execution
+- ToolTeachService: Captures consultation as episode for learning
+- Devin repair: Creates remote session for code repair
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for external consultation
+STRUCTURALLY_REACHABLE: Consultation can be triggered
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Consultation results can influence decisions
+BEHAVIOR_CHANGE_OBSERVED: Devin repair can trigger autonomous actions
+
+CONCLUSION:
+-----------
+EXTERNAL AI CONSULTATION EXISTS:
+- Cloud providers (OpenAI, Groq, Gemini) for reasoning
+- External assistants (ChatGPT, Claude, Devin) for consultation
+- Local LLM (Ollama) for local reasoning
+
+However:
+- NO transformation from NEED → CONSULTATION
+- Consultation is triggered by task execution or user commands, not by needs
+- The system can consult external AI, but not based on formulated needs
+
+This is a MISSING EDGE in the self-construction loop.

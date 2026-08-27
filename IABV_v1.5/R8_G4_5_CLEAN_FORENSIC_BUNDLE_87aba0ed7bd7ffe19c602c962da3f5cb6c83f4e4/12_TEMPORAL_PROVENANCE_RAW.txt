@@ -1,0 +1,22 @@
+R8-G4.5 TEMPORAL PROVENANCE RAW
+================================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+BUILD_REVIEW_START = 2026-08-27 08:31:00 UTC-05:00 (estimated from test execution)
+BUILD_REVIEW_END = 2026-08-27 08:31:00 UTC-05:00 (estimated from test execution)
+
+FINDING_CREATED_AT = UNKNOWN (not captured in runtime output)
+NEED_CREATED_AT = UNKNOWN (not captured in runtime output)
+NEED_PERSISTED_AT = UNKNOWN (not captured in runtime output)
+NEED_RETRIEVED_AT = UNKNOWN (not captured in runtime output)
+
+TEMPORAL_ORDER:
+===============
+
+FINDING_BEFORE_NEED = UNKNOWN
+NEED_BEFORE_PERSISTENCE = UNKNOWN
+PERSISTENCE_BEFORE_RETRIEVAL = UNKNOWN
+
+NOTE: The test does not capture exact timestamps for finding creation, need creation, persistence, or retrieval.
+Only the overall test execution timestamp is available.

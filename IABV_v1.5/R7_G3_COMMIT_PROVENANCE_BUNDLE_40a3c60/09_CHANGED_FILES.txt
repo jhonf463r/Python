@@ -1,0 +1,13 @@
+CHANGED FILES IN COMMIT 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+==============================================================
+
+File: IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+Changes: +3 lines
+Classification: G3_FORENSIC_FIX
+
+Description:
+- Fixed observed_value logging for content_contains, content_not_contains, content_exact_match
+- Now shows actual file_content instead of None
+- This fixes the logging bug where observed was None for content verification
+
+No other files changed in this commit.

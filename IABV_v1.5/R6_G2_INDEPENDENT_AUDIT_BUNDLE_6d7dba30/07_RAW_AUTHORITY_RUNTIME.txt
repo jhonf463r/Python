@@ -1,0 +1,23 @@
+# Raw Authority Runtime
+# Authority runtime is included in 05_RAW_G2_POSITIVE_RUNTIME.txt
+# The Authority server logs are captured in the full G2 runtime output
+
+# Authority Process:
+- Authority server start
+- Authority PID
+- Named Pipe creation (\\.\pipe\IABV_Authority)
+- REGISTER_EXECUTION request
+- RunRecord generation
+- ISSUE_LEASE request
+- LEASE_ID generation
+- CONSUME_LEASE request
+- Authorization validation
+- Execution binding
+- Action binding
+- Target binding
+- Session binding
+- Episode binding
+- Lease consumption
+- Teardown
+
+# Note: The detailed Authority IPC communication is logged in 05_RAW_G2_POSITIVE_RUNTIME.txt

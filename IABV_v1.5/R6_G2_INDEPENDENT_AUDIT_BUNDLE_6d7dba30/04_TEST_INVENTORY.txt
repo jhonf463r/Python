@@ -1,0 +1,137 @@
+# Test Inventory for G2 Independent Audit
+
+## Tests Executed
+
+### G2 Tests
+FILE: tests/windows_e2e/test_g2_goal_to_action_plan.py
+TEST: test_g2_goal_to_action_plan
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~9s
+
+FILE: tests/windows_e2e/test_g2_goal_to_action_plan.py
+TEST: test_g2_verification_negative
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~6s
+
+### G1 Regression Tests
+FILE: tests/windows_e2e/test_g1_goal_to_protected_tool.py
+TEST: test_g1_real_e2e
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~8s
+
+### C2 Regression Tests
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_real_self_update_authorized
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_wrong_session_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_wrong_episode_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_wrong_execution_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_wrong_run_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_missing_lease_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_replay_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_wrong_action_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_real_production_path_existing_execution
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+FILE: tests/windows_e2e/test_c2_real_self_update_authority.py
+TEST: TestC2RealSelfUpdateAuthority::test_self_update_wrong_target_denied
+COLLECTED: 1
+PASSED: 1
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0
+DURATION: ~3s
+
+## Summary
+TOTAL_TESTS_EXECUTED: 13
+TOTAL_PASSED: 13
+TOTAL_FAILED: 0
+TOTAL_SKIPPED: 0
+TOTAL_ERRORS: 0
+
+## Strict Verification Semantics
+- G2 Positive: result_verification.status == 'verified' (PASS)
+- G2 Positive: mismatches == [] (PASS)
+- G2 Positive: hash_derivation == 'deterministic_from_plan_parameters' (PASS)
+- G2 Negative: result_verification.status == 'verification_failed' (PASS)
+- G2 Negative: len(mismatches) > 0 (PASS)

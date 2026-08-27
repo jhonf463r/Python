@@ -1,0 +1,75 @@
+R8-G4.5 RUNTIME TRACE RAW
+==========================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+CALL GRAPH TRACE:
+=================
+
+1. test_real_build_review_with_production_dependencies()
+   → os.environ['PYTEST_CURRENT_TEST'] = 'test_r8_g4_5_runtime_integration.py::test_real_build_review_with_production_dependencies'
+   → EvolutionStorage(evolution_dir)
+   → EnvironmentSelfAwarenessService(storage=storage, workspace_root=workspace_root)
+     → __init__()
+       → scan_now(reason='bootstrap', full=False)
+         → _build_model(previous=None, reason='bootstrap', full=False)
+           → _scan_hardware(full=False)
+             → _cpu_snapshot(full=False) [SKIPPED in test mode]
+             → _memory_snapshot(full=False)
+             → _disk_snapshot(full=False)
+           → _scan_runtime(full=False)
+             → _python_snapshot(full=False)
+             → _package_snapshot(full=False)
+           → _provider_health_from_previous(previous) [returns cached]
+           → _tool_cards()
+           → _scan_ai_capacity(hardware_profile, runtime_profile, full=False)
+           → _build_capability_graph(...)
+       → _persist_model(model)
+   → WorldModelService(environment_self_awareness_service=env_self_service)
+   → OperationalSelfExaminationService(world_model_service=world_model_service)
+     → __init__()
+       → structured_need_repository = StructuredNeedRepository(storage)
+       → need_formulation_service = NeedFormulationService()
+   → oses.structured_need_repository.list_all() [BEFORE state]
+   → oses.build_review()
+     → _environment_model() [returns WorldModelService.current_model()]
+     → _run_repository.list_recent_runs()
+     → _adaptive_session_repository.list_recent_sessions()
+     → _experiment_lab_repository.list_recent_runs()
+     → _http_noise_findings()
+     → _loop_closure_findings()
+     → _windows_integration_findings()
+       → _environment_model().capability_graph
+       → Filter platform capabilities
+       → Find missing capabilities (platform.notifications)
+       → Append windows_integration_gaps finding (operational)
+       → [EXPECTED] Append windows_capability_missing finding (capability-shaped) [NOT GENERATED]
+     → _web_session_findings()
+     → _ui_self_awareness_findings()
+     → _discernment_frame_findings()
+     → _self_correction_findings()
+     → _autonomy_index_insufficient_data_findings()
+     → _dedupe_findings(findings)
+     → _formulate_structured_needs(findings)
+       → For each finding in findings:
+         → NeedFormulationService._is_capability_shaped(finding.category)
+         → If capability-shaped:
+           → NeedFormulationService.formulate_need_from_finding(finding)
+             → Create StructuredNeed with source_finding_id = finding.finding_id
+     → SelfExaminationSnapshot(findings=findings[:8]) [TRUNCATED to 8]
+   → oses.structured_need_repository.list_all() [AFTER state]
+   → Compare before/after needs to find new needs
+   → Print findings and needs
+
+CRITICAL TRACE POINT:
+=====================
+
+The trace shows that _windows_integration_findings() is called and should generate:
+1. windows_integration_gaps finding (operational) - CONFIRMED
+2. windows_capability_missing finding (capability-shaped) - NOT GENERATED
+
+The individual windows_capability_missing finding is NOT being generated.
+However, a StructuredNeed is created with source_finding_id: 29a96029-52b7-4463-84fe-8ac39a185d45
+This source_finding_id does NOT match any of the 8 visible findings.
+
+This is a CRITICAL discrepancy that indicates a bug in the need formulation logic - it's creating needs without a corresponding finding.

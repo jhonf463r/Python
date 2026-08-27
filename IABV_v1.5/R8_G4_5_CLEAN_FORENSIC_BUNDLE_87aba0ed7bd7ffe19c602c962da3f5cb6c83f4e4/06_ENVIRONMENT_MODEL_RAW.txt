@@ -1,0 +1,58 @@
+R8-G4.5 ENVIRONMENT MODEL RAW
+=============================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+ENVIRONMENT_MODEL_CREATED = TRUE
+ENVIRONMENT_MODEL_SCAN_STATUS = partial
+ENVIRONMENT_MODEL_CAPABILITY_GRAPH_LENGTH = 11
+ENVIRONMENT_MODEL_PLATFORM_CAPS_COUNT = 8
+ENVIRONMENT_MODEL_MISSING_PLATFORM_CAPS_COUNT = 1
+ENVIRONMENT_MODEL_MISSING_PLATFORM_CAPS = ['platform.notifications']
+
+PYTEST_CURRENT_TEST_USED = TRUE
+PYTEST_CURRENT_TEST_VALUE = test_r8_g4_5_runtime_integration.py::test_real_build_review_with_production_dependencies
+
+CPU_SNAPSHOT_EXECUTED = FALSE (skipped in test mode)
+CPU_SNAPSHOT_SKIPPED = TRUE
+CPU_DATA_SOURCE = DEFAULTED (test mode shortcut)
+
+ENVIRONMENT_MODEL_FIELDS RELEVANT TO windows_capability_missing:
+==============================================================
+
+OS_INFORMATION = REAL
+OS_PLATFORM = Windows-11-10.0.26200-SP0
+OS_MACHINE = AMD64
+
+PLATFORM_CAPABILITIES = REAL
+platform.notifications = MISSING_DEPENDENCY
+platform.windows = REAL
+platform.windows_user_paths = REAL
+platform.windows_shell = REAL
+platform.clipboard = REAL
+platform.window_enumeration = REAL
+platform.autostart = REAL
+platform.process_management = REAL
+
+CAPABILITY_DEPENDS_ON_SKIPPED_CPU = FALSE
+
+The windows_capability_missing finding depends on:
+- platform.notifications capability (available: false)
+- metadata.windows_10_plus (true)
+- metadata.missing (winrt, plyer, o winotify)
+
+This data is REAL and comes from:
+1. OS detection (platform.system() - REAL)
+2. Platform capability enumeration (_scan_runtime() - REAL)
+3. Windows-specific library detection (import checks - REAL)
+
+The CPU snapshot data that was skipped in test mode (physical_cores, current_clock_mhz, max_clock_mhz) is NOT used for capability gap detection.
+
+Therefore, the test mode CPU skip does NOT affect the windows_capability_missing finding generation.
+
+CONCLUSION:
+===========
+
+The EnvironmentSelfModel has REAL data for capability gap detection.
+The CPU snapshot skip does NOT affect the capability finding generation.
+The issue is that the individual windows_capability_missing finding is not being generated at all, despite the EnvironmentSelfModel having the correct data.

@@ -1,0 +1,666 @@
+{
+  "review_id": "80ced06f-797b-4643-b874-3da4ea253b53",
+  "created_at_utc": "2026-08-27T02:03:59.689260Z",
+  "updated_at_utc": "2026-08-27T02:03:59.689260Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion needs_attention: 8 hallazgos activos. Lo mas fuerte ahora es ruido excesivo de logs http (httpx). Mejoras validadas: 0 | issues recurrentes: 5.",
+  "status": "needs_attention",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-08-27T02:03:59.689260+00:00\nResumen: Autoexaminacion needs_attention: 8 hallazgos activos. Lo mas fuerte ahora es ruido excesivo de logs http (httpx). Mejoras validadas: 0 | issues recurrentes: 5.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Ruido excesivo de logs HTTP (httpx): Detectadas 500 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\" | recomendacion: Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral. | confianza 0.90\n- Loop introspectivo abierto: 5 mecanismo(s) inactivo(s):  | recomendacion: sin ajuste concreto | confianza 0.00\n- Gemini Web necesita re-login: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente. | recomendacion: Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente. | confianza 0.85\n- Discernment frame ausente en contexto: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen. | recomendacion: sin ajuste concreto | confianza 0.00\n- Auto-correcciones aplicadas desde log: 1: El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas. | recomendacion: Verificar que las correcciones fueron efectivas en el proximo ciclo. | confianza 1.00\n- UniversalAutonomyIndex: datos insuficientes: Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables. | recomendacion: Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia. | confianza 0.95\n\n## Ajustes recomendados\n- Ruido excesivo de logs HTTP (httpx): Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral. | fuente runtime_log, C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log\n- Gemini Web necesita re-login: Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente. | fuente check_web_session_health, AccountResourceScanner\n- Auto-correcciones aplicadas desde log: 1: Verificar que las correcciones fueron efectivas en el proximo ciclo. | fuente auto_correction_engine\n- UniversalAutonomyIndex: datos insuficientes: Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia. | fuente OperationalSelfExaminationService._universal_autonomy_index_findings\n- Sesiones activas en navegadores sin cuentas asociadas: Considerar asociar cuentas a los navegadores con sesiones para mejor tracking de cuotas por cuenta. | fuente n/d\n- Asistentes con sesion activa sin rastreo de cuotas: Iniciar uso de las herramientas (ChatGPT, Claude, Codex) para que el rastreo de cuotas comience automaticamente. | fuente n/d\n\n## Mejoras validadas\n- Sin mejoras validadas fuertes todavia.\n\n## Retroalimentacion de ajustes\n- Ruido excesivo de logs HTTP (httpx): no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Gemini Web necesita re-login: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Auto-correcciones aplicadas desde log: 1: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- UniversalAutonomyIndex: datos insuficientes: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n\nUNRESOLVED: UNRESOLVED:world_model, UNRESOLVED:validation_cycle, autonomy_score, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+  "findings": [
+    {
+      "finding_id": "d366427d-34c0-478c-96d2-d08a17c2317f",
+      "category": "http_noise",
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "summary": "Detectadas 500 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+      "severity": "high",
+      "confidence": 0.9,
+      "recommendation": "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral.",
+      "evidence_refs": [
+        "log_occurrences=500",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "pattern": "HTTP Request:",
+        "occurrences": 500,
+        "log_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      }
+    },
+    {
+      "finding_id": "c55dc2f2-441a-465c-b6b9-05e538fea32b",
+      "category": "loop_closure",
+      "title": "Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)",
+      "summary": "",
+      "severity": "high",
+      "confidence": 0.0,
+      "recommendation": "",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "checks": [
+          {
+            "mechanism": "G1_auto_execution",
+            "wired": false,
+            "active": false,
+            "detail": "orchestrator NOT connected to validation_cycle"
+          },
+          {
+            "mechanism": "G2_feedback_persistence",
+            "wired": true,
+            "active": false,
+            "detail": "history.jsonl not yet created (fires after first validation)"
+          },
+          {
+            "mechanism": "G3_weight_layer",
+            "wired": false,
+            "active": false,
+            "detail": "AdaptiveWeightLayer NOT connected"
+          },
+          {
+            "mechanism": "G4_metacognitive_feedback",
+            "wired": false,
+            "active": false,
+            "detail": "metacognitive feedback NOT connected"
+          },
+          {
+            "mechanism": "cognitive_findings",
+            "wired": true,
+            "active": false,
+            "detail": "none active (need >= 5 experiment runs, have 0)"
+          }
+        ],
+        "wired": 2,
+        "active": 0,
+        "total": 5,
+        "closed": false,
+        "gap_mechanisms": [
+          "G1_auto_execution",
+          "G2_feedback_persistence",
+          "G3_weight_layer",
+          "G4_metacognitive_feedback",
+          "cognitive_findings"
+        ]
+      }
+    },
+    {
+      "finding_id": "5fb85419-a3ab-4077-a58b-91ac5af024e6",
+      "category": "web_session_expired",
+      "title": "Gemini Web necesita re-login",
+      "summary": "La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "recommendation": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider"
+      }
+    },
+    {
+      "finding_id": "0c4d4c2b-6fb7-401d-8443-f4b97e8d170e",
+      "category": "discernment_frame_missing_in_task_context",
+      "title": "Discernment frame ausente en contexto",
+      "summary": "No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.",
+      "severity": "medium",
+      "confidence": 0.0,
+      "recommendation": "",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "frame_count": 0
+      }
+    },
+    {
+      "finding_id": "4de56b75-a7c6-455e-9d3d-5e5aa2636424",
+      "category": "self_correction",
+      "title": "Auto-correcciones aplicadas desde log: 1",
+      "summary": "El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.",
+      "severity": "low",
+      "confidence": 1.0,
+      "recommendation": "Verificar que las correcciones fueron efectivas en el proximo ciclo.",
+      "evidence_refs": [
+        "suppress_httpx: httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+      ],
+      "source_refs": [
+        "auto_correction_engine"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "corrections": {
+          "corrections_applied": [
+            {
+              "action": "suppress_httpx",
+              "status": "corrected",
+              "detail": "httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+            }
+          ],
+          "corrections_count": 1,
+          "skipped": [],
+          "skipped_count": 0
+        }
+      }
+    },
+    {
+      "finding_id": "0fcc4efe-af10-4de3-b0f8-c38e1d1bbd8b",
+      "category": "autonomy_index_insufficient_data",
+      "title": "UniversalAutonomyIndex: datos insuficientes",
+      "summary": "Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.",
+      "severity": "low",
+      "confidence": 0.95,
+      "recommendation": "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia.",
+      "evidence_refs": [],
+      "source_refs": [
+        "OperationalSelfExaminationService._universal_autonomy_index_findings"
+      ],
+      "linked_run_ids": [],
+      "status": "unresolved",
+      "unresolved_fields": [
+        "autonomy_score",
+        "resilience_score",
+        "calibration_error",
+        "blind_spot_ratio"
+      ],
+      "metadata": {
+        "total_runs": 0,
+        "total_experiments": 0,
+        "total_sessions": 0
+      }
+    },
+    {
+      "finding_id": "a051879a-6030-4fbf-a365-78c4cee57ab2",
+      "category": "functional_gap",
+      "title": "Sesiones activas en navegadores sin cuentas asociadas",
+      "summary": "Se detectaron sesiones activas en Opera GX pero no hay cuentas de Google asociadas en esos navegadores. El pool de asistentes usa workers anonimos para estas sesiones.",
+      "severity": "low",
+      "confidence": 0.9,
+      "recommendation": "Considerar asociar cuentas a los navegadores con sesiones para mejor tracking de cuotas por cuenta.",
+      "evidence_refs": [
+        "session_browsers=['Opera GX', 'Chrome']",
+        "account_browsers=['Edge', 'Chrome']"
+      ],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "gap_type": "orphan_browser_sessions",
+        "orphan_browsers": [
+          "Opera GX"
+        ]
+      }
+    },
+    {
+      "finding_id": "4f7aebd6-75bc-4579-b125-651cbc0b5213",
+      "category": "functional_gap",
+      "title": "Asistentes con sesion activa sin rastreo de cuotas",
+      "summary": "10 asistentes tienen sesion activa pero ninguno tiene cuotas rastreadas. El rastreo se activa automaticamente al enviar mensajes.",
+      "severity": "low",
+      "confidence": 0.85,
+      "recommendation": "Iniciar uso de las herramientas (ChatGPT, Claude, Codex) para que el rastreo de cuotas comience automaticamente.",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "gap_type": "untracked_quotas",
+        "accounts_with_sessions": 10
+      }
+    }
+  ],
+  "recurring_issues": [
+    {
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "category": "http_noise",
+      "summary": "Detectadas 500 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=500",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ]
+    },
+    {
+      "title": "Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)",
+      "category": "loop_closure",
+      "summary": "",
+      "severity": "high",
+      "confidence": 0.0,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "Gemini Web necesita re-login",
+      "category": "web_session_expired",
+      "summary": "La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ]
+    },
+    {
+      "title": "Discernment frame ausente en contexto",
+      "category": "discernment_frame_missing_in_task_context",
+      "summary": "No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.",
+      "severity": "medium",
+      "confidence": 0.0,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "Auto-correcciones aplicadas desde log: 1",
+      "category": "self_correction",
+      "summary": "El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.",
+      "severity": "low",
+      "confidence": 1.0,
+      "evidence_refs": [
+        "suppress_httpx: httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+      ],
+      "source_refs": [
+        "auto_correction_engine"
+      ]
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "recommended_change": "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral.",
+      "category": "http_noise",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=500",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "metadata": {
+        "pattern": "HTTP Request:",
+        "occurrences": 500,
+        "log_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral."
+        ]
+      },
+      "feedback_key": "http_noise:ruido excesivo de logs http (httpx)",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Gemini Web necesita re-login",
+      "recommended_change": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "category": "web_session_expired",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente."
+        ]
+      },
+      "feedback_key": "web_session_expired:gemini web necesita re-login",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Auto-correcciones aplicadas desde log: 1",
+      "recommended_change": "Verificar que las correcciones fueron efectivas en el proximo ciclo.",
+      "category": "self_correction",
+      "severity": "low",
+      "confidence": 1.0,
+      "evidence_refs": [
+        "suppress_httpx: httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+      ],
+      "source_refs": [
+        "auto_correction_engine"
+      ],
+      "metadata": {
+        "corrections": {
+          "corrections_applied": [
+            {
+              "action": "suppress_httpx",
+              "status": "corrected",
+              "detail": "httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+            }
+          ],
+          "corrections_count": 1,
+          "skipped": [],
+          "skipped_count": 0
+        },
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Verificar que las correcciones fueron efectivas en el proximo ciclo."
+        ]
+      },
+      "feedback_key": "self_correction:auto-correcciones aplicadas desde log: 1",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "UniversalAutonomyIndex: datos insuficientes",
+      "recommended_change": "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia.",
+      "category": "autonomy_index_insufficient_data",
+      "severity": "low",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "OperationalSelfExaminationService._universal_autonomy_index_findings"
+      ],
+      "metadata": {
+        "total_runs": 0,
+        "total_experiments": 0,
+        "total_sessions": 0,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia."
+        ]
+      },
+      "feedback_key": "autonomy_index_insufficient_data:universalautonomyindex: datos insuficientes",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Sesiones activas en navegadores sin cuentas asociadas",
+      "recommended_change": "Considerar asociar cuentas a los navegadores con sesiones para mejor tracking de cuotas por cuenta.",
+      "category": "functional_gap",
+      "severity": "low",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "session_browsers=['Opera GX', 'Chrome']",
+        "account_browsers=['Edge', 'Chrome']"
+      ],
+      "source_refs": [],
+      "metadata": {
+        "gap_type": "orphan_browser_sessions",
+        "orphan_browsers": [
+          "Opera GX"
+        ],
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Considerar asociar cuentas a los navegadores con sesiones para mejor tracking de cuotas por cuenta."
+        ]
+      },
+      "feedback_key": "functional_gap:sesiones activas en navegadores sin cuentas asociadas",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Asistentes con sesion activa sin rastreo de cuotas",
+      "recommended_change": "Iniciar uso de las herramientas (ChatGPT, Claude, Codex) para que el rastreo de cuotas comience automaticamente.",
+      "category": "functional_gap",
+      "severity": "low",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "gap_type": "untracked_quotas",
+        "accounts_with_sessions": 10,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Iniciar uso de las herramientas (ChatGPT, Claude, Codex) para que el rastreo de cuotas comience automaticamente."
+        ]
+      },
+      "feedback_key": "functional_gap:asistentes con sesion activa sin rastreo de cuotas",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    }
+  ],
+  "validated_improvements": [],
+  "unresolved_risks": [
+    "UNRESOLVED:world_model",
+    "UNRESOLVED:validation_cycle",
+    "autonomy_score",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "package_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [
+      {
+        "title": "Ruido excesivo de logs HTTP (httpx)",
+        "category": "http_noise",
+        "feedback_key": "http_noise:ruido excesivo de logs http (httpx)",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "log_occurrences=500",
+          "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+        ],
+        "source_refs": [
+          "runtime_log",
+          "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T02:04:12.233604+00:00"
+      },
+      {
+        "title": "Gemini Web necesita re-login",
+        "category": "web_session_expired",
+        "feedback_key": "web_session_expired:gemini web necesita re-login",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "check_web_session_health",
+          "AccountResourceScanner",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T02:04:12.233628+00:00"
+      },
+      {
+        "title": "Auto-correcciones aplicadas desde log: 1",
+        "category": "self_correction",
+        "feedback_key": "self_correction:auto-correcciones aplicadas desde log: 1",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "suppress_httpx: httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+        ],
+        "source_refs": [
+          "auto_correction_engine",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T02:04:12.233639+00:00"
+      },
+      {
+        "title": "UniversalAutonomyIndex: datos insuficientes",
+        "category": "autonomy_index_insufficient_data",
+        "feedback_key": "autonomy_index_insufficient_data:universalautonomyindex: datos insuficientes",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService._universal_autonomy_index_findings",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T02:04:12.233647+00:00"
+      },
+      {
+        "title": "Sesiones activas en navegadores sin cuentas asociadas",
+        "category": "functional_gap",
+        "feedback_key": "functional_gap:sesiones activas en navegadores sin cuentas asociadas",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "session_browsers=['Opera GX', 'Chrome']",
+          "account_browsers=['Edge', 'Chrome']"
+        ],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T02:04:12.233655+00:00"
+      },
+      {
+        "title": "Asistentes con sesion activa sin rastreo de cuotas",
+        "category": "functional_gap",
+        "feedback_key": "functional_gap:asistentes con sesion activa sin rastreo de cuotas",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T02:04:12.233661+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 6,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 6
+    },
+    "solution_proposals": [],
+    "workspace_root": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ],
+    "pending_auto_probes": []
+  }
+}

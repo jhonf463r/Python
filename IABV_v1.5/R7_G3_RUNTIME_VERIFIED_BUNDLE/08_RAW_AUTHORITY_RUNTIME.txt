@@ -1,0 +1,15 @@
+RAW AUTHORITY RUNTIME
+====================
+
+The authority runtime logs are included in the main test runtime outputs:
+- 05_RAW_G3_POSITIVE_RUNTIME.txt (G3 positive test - passed)
+- 06_RAW_G3_NEGATIVE_RUNTIME.txt (G3 negative test - passed)
+- 09_RAW_G2_REGRESSION.txt (G2 regression test - passed)
+- 10_RAW_G1_REGRESSION.txt (G1 regression test - passed)
+- 11_RAW_C2_REGRESSION.txt (C2 regression tests - passed)
+
+See those files for detailed authority runtime logs including:
+- Named pipe connection
+- Process identity verification
+- Lease issuance and consumption
+- Authorization checks

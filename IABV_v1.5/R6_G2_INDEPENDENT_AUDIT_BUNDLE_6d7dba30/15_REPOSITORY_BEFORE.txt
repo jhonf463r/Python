@@ -1,0 +1,43 @@
+# Repository State Before G2 Test
+# Captured before test execution
+
+## Git Status
+ M IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+ M IABV_v1.5/src/iabv_v15/services/adaptive/cloud_reasoning_planner.py
+ M IABV_v1.5/tests/windows_e2e/test_g2_goal_to_action_plan.py
+?? IABV_v1.5/R4_G1_FORENSIC_EVIDENCE_FIXED_05190c64a/
+?? IABV_v1.5/R4_TEMP_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_NEGATIVE_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_POSITIVE_CLEAN_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_POSITIVE_RAW.txt
+?? IABV_v1.5/R4_TEMP_IMPL_SELF_UPDATE_DIFF.txt
+?? IABV_v1.5/R4_TEMP_IMPL_SERVER_DIFF.txt
+?? IABV_v1.5/R4_TEMP_REPO_AFTER.txt
+?? IABV_v1.5/R4_TEMP_REPO_BEFORE.txt
+?? IABV_v1.5/R4_TEMP_REPO_BEFORE_CLEAN.txt
+?? IABV_v1.5/R5_G1_AUTHORITY_PIPE_FIXED_BUNDLE_fce8965eb/
+?? IABV_v1.5/R5_G2_FORENSIC_EVIDENCE/
+?? IABV_v1.5/R5_TEMP_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R5_TEMP_G1_REGRESSION_RAW.txt
+?? IABV_v1.5/R5_TEMP_G2_NEGATIVE_RAW.txt
+?? IABV_v1.5/R5_TEMP_G2_POSITIVE_RAW.txt
+?? IABV_v1.5/R5_TEMP_REPO_BEFORE.txt
+?? IABV_v1.5/diagnostic_marker.txt
+?? IABV_v1.5/g1_goal_execution_test.txt
+?? IABV_v1.5/g1_test.txt
+
+## Implementation Changes
+The repository contains uncommitted changes to:
+- server.py (G2 implementation)
+- cloud_reasoning_planner.py (G2 implementation)
+- test_g2_goal_to_action_plan.py (G2 test)
+
+These are the implementation changes for G2.
+
+## Runtime Effect
+The G2 effect file does NOT exist before the test.
+Test cleanup removed any existing diagnostic/G2 files from previous runs.
+
+## Separation
+IMPLEMENTATION CHANGES: server.py, cloud_reasoning_planner.py, test_g2_goal_to_action_plan.py
+RUNTIME EFFECT: None (G2 effect file does not exist yet)

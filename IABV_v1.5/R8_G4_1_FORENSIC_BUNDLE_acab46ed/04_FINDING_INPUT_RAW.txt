@@ -1,0 +1,117 @@
+FINDING INPUT RAW
+=================
+
+POSITIVE TEST INPUTS (capability-shaped findings):
+--------------------------------------------------
+1. Capability Discovery:
+SelfExaminationFinding(
+    category="capability_discovery",
+    title="Cannot perform visual inspection",
+    summary="I cannot perform visual inspection of UI elements",
+    severity=IssueSeverity.HIGH,
+    recommendation="Implement visual inspection capability",
+    evidence_refs=["run_123", "episode_456"],
+)
+
+2. Missing Capability:
+SelfExaminationFinding(
+    category="missing_capability",
+    title="Unable to execute shell commands",
+    summary="I am unable to execute shell commands on Windows",
+    severity=IssueSeverity.CRITICAL,
+    recommendation="Add shell command execution capability",
+)
+
+3. Uncertainty:
+SelfExaminationFinding(
+    category="uncertainty",
+    title="Unknown how to handle API rate limits",
+    summary="I am uncertain how to handle API rate limits gracefully",
+    severity=IssueSeverity.MEDIUM,
+    recommendation="Learn rate limit handling patterns",
+)
+
+4. Inability:
+SelfExaminationFinding(
+    category="inability",
+    title="Unable to execute file system operations",
+    summary="I am unable to execute file system operations on Windows",
+    severity=IssueSeverity.HIGH,
+    recommendation="Implement file system operation capability",
+    evidence_refs=["run_789"],
+)
+
+NEGATIVE TEST INPUTS (operational findings):
+--------------------------------------------
+1. Provider Latency:
+SelfExaminationFinding(
+    category="provider_underperformance",
+    title="Provider latency is high",
+    summary="Cloud provider showing 5000ms latency",
+    severity=IssueSeverity.MEDIUM,
+    recommendation="Switch to faster provider",
+)
+
+2. Route Failure:
+SelfExaminationFinding(
+    category="route_failure",
+    title="Route to Claude failed",
+    summary="Network route to Claude API failed",
+    severity=IssueSeverity.HIGH,
+)
+
+3. Performance Degradation:
+SelfExaminationFinding(
+    category="performance_degradation",
+    title="System is slow",
+    summary="UI response time degraded to 2s",
+    severity=IssueSeverity.MEDIUM,
+)
+
+4. Provider Cannot Handle Load (false positive test):
+SelfExaminationFinding(
+    category="provider_underperformance",
+    title="Provider cannot handle the load",
+    summary="The cloud provider cannot handle the current load",
+    severity=IssueSeverity.HIGH,
+)
+
+5. We Need Faster Route (false positive test):
+SelfExaminationFinding(
+    category="route_failure",
+    title="We need a faster route",
+    summary="We need a faster route to the API endpoint",
+    severity=IssueSeverity.MEDIUM,
+)
+
+6. Route Requires Optimization:
+SelfExaminationFinding(
+    category="route_failure",
+    title="Route requires optimization",
+    summary="Network route requires optimization for better throughput",
+    severity=IssueSeverity.MEDIUM,
+)
+
+7. Timeout:
+SelfExaminationFinding(
+    category="timeout",
+    title="Request timeout",
+    summary="API requests are timing out after 30 seconds",
+    severity=IssueSeverity.HIGH,
+)
+
+8. Network Failure:
+SelfExaminationFinding(
+    category="network_failure",
+    title="Network connection failed",
+    summary="Network connection to external service failed",
+    severity=IssueSeverity.HIGH,
+)
+
+9. Ambiguous with Capability Keyword (fail-closed test):
+SelfExaminationFinding(
+    category="generic",
+    title="System cannot process request",
+    summary="System cannot process request due to high load",
+    severity=IssueSeverity.MEDIUM,
+)

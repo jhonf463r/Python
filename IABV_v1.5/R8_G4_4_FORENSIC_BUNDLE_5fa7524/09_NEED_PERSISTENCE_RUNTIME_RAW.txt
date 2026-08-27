@@ -1,0 +1,11 @@
+NEED PERSISTENCE RUNTIME RAW
+============================
+
+SKIPPED: No StructuredNeed objects to persist.
+
+NEED_PERSISTED = N/A
+NEED_RETRIEVED = N/A
+
+Reason: No capability findings produced, so no StructuredNeed objects were created or persisted.
+
+See 08_STRUCTURED_NEED_RUNTIME_RAW.txt for details.

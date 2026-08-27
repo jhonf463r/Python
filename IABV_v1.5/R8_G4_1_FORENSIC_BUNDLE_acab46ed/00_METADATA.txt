@@ -1,0 +1,33 @@
+R8-G4.1 FORENSIC BUNDLE METADATA
+================================
+
+BUNDLE NAME: R8_G4_1_FORENSIC_BUNDLE_acab46ed
+GATE: R8-G4.1
+OBJECTIVE: CLOSE G4 SEMANTIC + FORENSIC DEBT
+
+SCOPE:
+- Fix capability-gap classification (fail-closed for ambiguous findings)
+- Remove generic placeholders (knowledge_in_<category>, unable_to_perform_action)
+- Only use explicit category-based classification
+- Only extract fields when finding provides real data
+- Add hard case tests for operational false positives
+- Add provenance assertions to all positive tests
+- Verify production integration path
+
+BASE COMMIT: eb6a0fe3a5bc939bc05f612bf57388bede56fbc0
+NEW COMMIT: acab46ed000477ffa678d61a017c94d999add919
+PARENT: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+BRANCH: p0213/vfinal5-r3-choke-point
+REMOTE: https://github.com/jhonf463r/Python.git
+
+CHANGES:
+- Removed heuristic keyword detection from _is_capability_shaped
+- Changed default behavior from "treat as capability-shaped" to "fail-closed"
+- Added network_failure, timeout, throughput_issue, load_issue to OPERATIONAL_CATEGORIES
+- Removed generic placeholders from _extract_capability_gap, _extract_current_state, _extract_desired_state, _extract_knowledge_required
+- Changed return values to empty string when insufficient specification
+- Replaced test_keyword_based_detection with test_inability_with_capability_context_creates_need
+- Added 7 negative edge case tests for operational false positives
+- Added provenance assertions to all positive tests
+
+EVIDENCE LEVEL: STATIC (code analysis) + RUNTIME (test execution)

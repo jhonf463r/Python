@@ -1,0 +1,58 @@
+R8-G4.5 CLEAN FORENSIC BUNDLE MANIFEST
+=====================================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+REPOSITORY = https://github.com/jhonf463r/Python.git
+BRANCH = p0213/vfinal5-r3-choke-point
+COMMIT = 87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+
+BUNDLE_NAME = R8_G4_5_CLEAN_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+
+CONTENTS:
+=========
+
+00_METADATA.txt - Bundle metadata and purpose
+01_GIT_IDENTITY_RAW.txt - Git state information
+02_SOURCE/ - Source code files
+  environment_self_awareness_service.py - EnvironmentSelfAwarenessService implementation
+  need_formulation_service.py - NeedFormulationService implementation
+  operational_self_examination_service.py - OperationalSelfExaminationService implementation
+  structured_need_repository.py - StructuredNeedRepository implementation
+  test_r8_g4_5_runtime_integration.py - Runtime integration test
+03_DIFF.patch - Git diff (test modification only)
+04_RUNTIME_COMMAND_RAW.txt - Runtime command used
+05_G4_5_RUNTIME_RAW.txt - Raw runtime test output
+06_ENVIRONMENT_MODEL_RAW.txt - EnvironmentSelfModel state
+07_FINDINGS_RAW.txt - All findings returned by build_review()
+08_CAPABILITY_FINDING_RAW.txt - Capability finding analysis (NOT_FOUND)
+09_STRUCTURED_NEED_RAW.txt - StructuredNeed analysis
+10_PERSISTENCE_RAW.txt - Persistence evidence
+11_RUNTIME_TRACE_RAW.txt - Call graph trace
+12_TEMPORAL_PROVENANCE_RAW.txt - Temporal provenance (timestamps)
+12_TEST_RESULTS_RAW.txt - Test execution results
+13_BEFORE_STATE_RAW.txt - Before state (structured needs)
+14_AFTER_STATE_RAW.txt - After state (structured needs)
+15_LIMITATIONS.md - Known limitations and discrepancies
+16_SHA256_MANIFEST.txt - SHA256 hashes of all files
+
+TOTAL_FILES = 17
+
+CRITICAL DISCREPANCY:
+====================
+
+The individual windows_capability_missing finding is NOT being generated at all.
+However, a StructuredNeed is created with source_finding_id: 29a96029-52b7-4463-84fe-8ac39a185d45
+This source_finding_id does NOT match any of the 8 visible findings.
+
+FORENSIC_FULL_FINDINGS_COUNT: 8
+FORENSIC_RETURNED_FINDINGS_COUNT: 8
+FORENSIC_TRUNCATION_APPLIED: False
+
+This discrepancy prevents independent verification of the need's provenance.
+
+AUTHENTICITY:
+=============
+
+All RAW files are direct captures from actual execution.
+No values were manually reconstructed or fabricated.

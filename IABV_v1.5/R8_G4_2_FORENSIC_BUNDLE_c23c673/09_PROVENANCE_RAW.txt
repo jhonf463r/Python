@@ -1,0 +1,31 @@
+PROVENANCE RAW
+==============
+
+STATUS: UNIT TEST VERIFIED (no real runtime data)
+
+Unit tests verify provenance for synthetic findings:
+
+1. test_capability_promised_but_unavailable_creates_need:
+   - need.source_finding_id == finding.finding_id
+   - need.category == finding.category
+   - need.capability_gap == finding.title
+   - need.desired_state == finding.recommendation
+   - need.knowledge_required == finding.category
+   - need.evidence == finding.evidence_refs
+
+2. test_windows_capability_missing_creates_need:
+   - need.source_finding_id == finding.finding_id
+   - need.category == finding.category
+   - need.capability_gap == finding.title
+   - need.desired_state == finding.recommendation
+   - need.knowledge_required == finding.category
+
+3. test_research_gap_creates_need:
+   - need.source_finding_id == finding.finding_id
+   - need.category == finding.category
+   - need.capability_gap == finding.title
+   - need.desired_state == finding.recommendation
+   - need.knowledge_required == finding.category
+   - need.evidence == finding.evidence_refs
+
+All provenance assertions pass.

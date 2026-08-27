@@ -1,0 +1,56 @@
+R8-G4.5 STRUCTURED NEED RAW
+===========================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+REAL_NEED_ID = 6ab4b693-b8b9-4ace-ab1a-71a873d476fd
+NEED_SOURCE_FINDING_ID = 29a96029-52b7-4463-84fe-8ac39a185d45
+SOURCE_ID_MATCH = FALSE
+
+CRITICAL DISCREPANCY:
+====================
+
+The StructuredNeed has source_finding_id: 29a96029-52b7-4463-84fe-8ac39a185d45
+But there is NO corresponding finding with this ID in the returned findings list.
+
+The returned findings list contains 8 findings with IDs:
+- 3926dbd3-3e36-4016-9e64-19437acf4e7b (http_noise)
+- f935bc70-2373-43ea-bbaa-6327dfacac5e (loop_closure)
+- 83b83ea5-6552-4f11-8ede-bb83c9fc0c71 (windows_integration_gaps)
+- 2aeebe14-6636-491f-93b2-2ef3fffd0863 (web_session_expired)
+- 0d55b43b-291e-4525-a5f0-5a7a000c4fad (ui_self_awareness)
+- cea086bf-ce6d-4d5f-b3fb-e6994de7c481 (discernment_frame_missing_in_task_context)
+- 55095420-2b52-4196-8238-18238dbfe742 (self_correction)
+- 25f7b86c-4290-42dc-b68f-c285bfd1e46f (autonomy_index_insufficient_data)
+
+None of these match the source_finding_id of the need.
+
+STRUCTURED NEED DETAILS:
+========================
+
+NEED_ID: 6ab4b693-b8b9-4ace-ab1a-71a873d476fd
+SOURCE_FINDING_ID: 29a96029-52b7-4463-84fe-8ac39a185d45
+CATEGORY: windows_capability_missing
+CAPABILITY_GAP: Falta: Notificaciones Windows
+CURRENT_STATE: 
+DESIRED_STATE: Dependencia: winrt, plyer, o winotify
+KNOWLEDGE_REQUIRED: windows_capability_missing
+REASON: Windows 10+ pero sin libreria de toast (winrt/plyer/winotify)
+EVIDENCE: []
+PRIORITY: low
+STATUS: NeedStatus.PENDING
+
+PROVENANCE VERIFICATION:
+=========================
+
+EXPECTED: need.source_finding_id == finding.finding_id
+ACTUAL: need.source_finding_id (29a96029-52b7-4463-84fe-8ac39a185d45) != ANY_VISIBLE_FINDING_ID
+RESULT: PROVENANCE_BROKEN
+
+CONCLUSION:
+===========
+
+The StructuredNeed exists but its source_finding_id does NOT match any finding in the returned list.
+This is a CRITICAL discrepancy that indicates a bug in the need formulation logic - it's creating needs without a corresponding finding.
+
+The need formulation logic appears to be generating a source_finding_id internally without an actual finding to reference.

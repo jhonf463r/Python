@@ -1,0 +1,45 @@
+POSITIVE TEST RAW
+=================
+
+TEST COMMAND:
+python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_r8_g4_need_formulation.py -v
+
+POSITIVE TEST RESULTS:
+=======================
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_capability_discovery_creates_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_keyword_based_detection PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_missing_capability_creates_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_uncertainty_creates_need PASSED
+
+POSITIVE TEST DETAILS:
+----------------------
+
+test_capability_discovery_creates_need:
+- Input: SelfExaminationFinding with category="capability_discovery"
+- Expected: StructuredNeed created
+- Actual: StructuredNeed created with correct fields
+- Verified: source_finding_id, category, capability_gap, current_state, desired_state, knowledge_required, priority, status, evidence
+
+test_missing_capability_creates_need:
+- Input: SelfExaminationFinding with category="missing_capability"
+- Expected: StructuredNeed created
+- Actual: StructuredNeed created with priority="critical"
+- Verified: category, capability_gap, priority
+
+test_uncertainty_creates_need:
+- Input: SelfExaminationFinding with category="uncertainty"
+- Expected: StructuredNeed created
+- Actual: StructuredNeed created with priority="medium"
+- Verified: category, priority
+
+test_keyword_based_detection:
+- Input: SelfExaminationFinding with category="generic" but title contains "cannot"
+- Expected: StructuredNeed created (keyword-based detection)
+- Actual: StructuredNeed created
+- Verified: keyword "cannot" triggered need creation
+
+COLLECTED: 13
+PASSED: 13
+FAILED: 0
+SKIPPED: 0
+ERRORS: 0

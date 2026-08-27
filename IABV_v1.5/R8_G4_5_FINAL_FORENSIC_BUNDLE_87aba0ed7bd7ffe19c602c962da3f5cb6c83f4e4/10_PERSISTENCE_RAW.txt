@@ -1,0 +1,52 @@
+R8-G4.5 PERSISTENCE RAW
+========================
+
+TIMESTAMP = 2026-08-26 23:07:00 UTC-05:00
+
+BEFORE_BUILD_REVIEW:
+====================
+
+BEFORE_NEEDS_COUNT: 13
+
+STRUCTURED_NEEDS_DIRECTORY: data/evolution/structured_needs/
+FILE_COUNT_BEFORE: 13
+
+AFTER_BUILD_REVIEW:
+===================
+
+AFTER_NEEDS_COUNT: 14
+NEW_NEEDS_COUNT: 1
+
+STRUCTURED_NEEDS_DIRECTORY: data/evolution/structured_needs/
+FILE_COUNT_AFTER: 14
+
+NEW_NEED_ID: f6154c4d-884e-4a6c-9e19-b5530c9c58d1
+NEW_NEED_FILE: need_f6154c4d-884e-4a6c-9e19-b5530c9c58d1.json
+
+REPOSITORY QUERIES:
+===================
+
+repository.get(need_id):
+- NOT EXECUTED IN TEST
+- Test uses list_all() to detect new needs by comparing before/after lists
+
+repository.list_pending():
+- NOT EXECUTED IN TEST
+- Test does not call list_pending()
+
+PERSISTENCE VERIFICATION:
+==========================
+
+NEED_PERSISTED: TRUE (file exists in data/evolution/structured_needs/)
+NEED_RETRIEVED: TRUE (via list_all())
+
+FILE_PATH: data/evolution/structured_needs/need_f6154c4d-884e-4a6c-9e19-b5530c9c58d1.json
+FILE_SIZE: 570 bytes
+FILE_TIMESTAMP: 2026-08-26 23:07:00 UTC-05:00 (estimated)
+
+CONCLUSION:
+===========
+
+The StructuredNeed was successfully persisted to the repository.
+However, the source_finding_id of the need does NOT match any finding in the returned list.
+This is a CRITICAL discrepancy that prevents independent verification of the need's provenance.

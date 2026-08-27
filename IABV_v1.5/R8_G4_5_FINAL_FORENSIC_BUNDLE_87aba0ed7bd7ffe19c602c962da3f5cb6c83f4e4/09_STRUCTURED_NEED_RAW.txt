@@ -1,0 +1,62 @@
+R8-G4.5 STRUCTURED NEED RAW
+===========================
+
+TIMESTAMP = 2026-08-26 23:07:00 UTC-05:00
+
+REAL_NEED_ID = f6154c4d-884e-4a6c-9e19-b5530c9c58d1
+NEED_SOURCE_FINDING_ID = 5b8ca067-67bd-497c-b137-79605bb981ef
+SOURCE_ID_MATCH = FALSE
+
+CRITICAL DISCREPANCY:
+====================
+
+The StructuredNeed has source_finding_id: 5b8ca067-67bd-497c-b137-79605bb981ef
+But there is NO corresponding finding with this ID in the returned findings list.
+
+The returned findings list contains 8 findings with IDs:
+- 84587707-f906-4f67-8b4e-88c9c7021017 (http_noise)
+- 4b74512a-d33b-40d2-824c-b3b893db0e2a (loop_closure)
+- 444f9c31-4ed2-40de-8896-fa275964fe82 (windows_integration_gaps)
+- 75c09a79-9e41-4d04-9b4f-16a760b7bf5f (web_session_expired)
+- 24251684-3c31-40ad-99e0-3b10476b5b91 (ui_self_awareness)
+- 92d5b713-9b9f-4fc6-80cb-e11422bcda81 (discernment_frame_missing_in_task_context)
+- 2029f093-3b80-4094-bcb3-3e6087e274c4 (self_correction)
+- 221fb775-74b4-4a0c-8da7-bc2a957a1877 (autonomy_index_insufficient_data)
+
+None of these match the source_finding_id of the need.
+
+STRUCTURED NEED DETAILS:
+========================
+
+NEED_ID: f6154c4d-884e-4a6c-9e19-b5530c9c58d1
+SOURCE_FINDING_ID: 5b8ca067-67bd-497c-b137-79605bb981ef
+CATEGORY: windows_capability_missing
+CAPABILITY_GAP: Falta: Notificaciones Windows
+CURRENT_STATE: 
+DESIRED_STATE: Dependencia: winrt, plyer, o winotify
+KNOWLEDGE_REQUIRED: windows_capability_missing
+REASON: Windows 10+ pero sin libreria de toast (winrt/plyer/winotify)
+EVIDENCE: []
+PRIORITY: low
+STATUS: NeedStatus.PENDING
+
+PROVENANCE VERIFICATION:
+=========================
+
+EXPECTED: need.source_finding_id == finding.finding_id
+ACTUAL: need.source_finding_id (5b8ca067-67bd-497c-b137-79605bb981ef) != ANY_VISIBLE_FINDING_ID
+RESULT: PROVENANCE_BROKEN
+
+CONCLUSION:
+===========
+
+The StructuredNeed exists but its source_finding_id does NOT match any finding in the returned list.
+This is a CRITICAL discrepancy that prevents independent verification of the need's provenance.
+
+Possible explanations:
+1. The need formulation logic is creating needs from operational finding metadata (windows_integration_gaps) instead of from individual capability findings
+2. The individual capability finding is being generated but then filtered out before being returned
+3. There's a bug in the need formulation logic that generates needs without a corresponding finding
+4. The source_finding_id is being generated incorrectly
+
+Either way, this is a CRITICAL issue that prevents independent verification of the need's provenance.

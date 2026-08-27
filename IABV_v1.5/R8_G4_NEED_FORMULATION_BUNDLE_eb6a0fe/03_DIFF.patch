@@ -1,0 +1,38 @@
+R8-G4 IMPLEMENTATION DIFF
+=========================
+
+BASE: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+
+CHANGES:
+1. Added StructuredNeed model to models.py (lines 2967-3000)
+   - NeedStatus enum
+   - StructuredNeed BaseModel with required fields
+
+2. Created need_formulation_service.py
+   - NeedFormulationService class
+   - Distinguishes capability gaps from operational gaps
+   - Transforms SelfExaminationFinding to StructuredNeed
+
+3. Created structured_need_repository.py
+   - StructuredNeedRepository class
+   - Persists needs as JSON files
+   - Human-readable formatting methods
+
+4. Modified operational_self_examination_service.py
+   - Added imports for NeedFormulationService and StructuredNeedRepository
+   - Added logger import
+   - Added _init_need_formulation_services() method
+   - Added _formulate_structured_needs() method
+   - Integrated need formulation into build_review()
+
+5. Created test_r8_g4_need_formulation.py
+   - 13 tests covering positive, negative, persistence, and formatting cases
+
+FILES MODIFIED:
+- src/iabv_v15/domain/models.py
+- src/iabv_v15/services/evolution/operational_self_examination_service.py
+
+FILES CREATED:
+- src/iabv_v15/services/evolution/need_formulation_service.py
+- src/iabv_v15/services/evolution/structured_need_repository.py
+- tests/test_r8_g4_need_formulation.py

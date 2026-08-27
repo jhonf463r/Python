@@ -1,0 +1,90 @@
+DEVELOPMENT TASK GENERATION AUDIT - RAW
+======================================
+
+DEVELOPMENT SERVICES:
+--------------------
+Based on git grep results:
+
+1. DevelopmentAssistService
+   - Location: src/iabv_v15/services/ (imported in bootstrap.py)
+   - Methods: build_codex_packet(), build_repo_bridge_summary(), build_local_stack_summary()
+   - Purpose: Build development packets for external consultation
+
+2. EngineeringReviewService
+   - Location: src/iabv_v15/services/roles/engineering_review_service.py
+   - Method: build_codex_packet()
+   - Purpose: Build codex packet for issue analysis
+
+WHO GENERATES DEVELOPMENT TASKS:
+--------------------------------
+Based on code analysis:
+
+1. ControlCenterViewModel
+   - Calls build_codex_packet() via development_assist_service or engineering_review_service
+   - Method: _refresh_development_packet()
+   - Triggered by: UI actions (user goal changes, manual refresh)
+   - Background: Runs in background thread pool to avoid UI blocking
+
+2. EngineeringReviewService
+   - Calls build_codex_packet() via development_assist_service
+   - Triggered by: EvolutionCenterViewModel for incident analysis
+
+INPUT:
+------
+Based on code analysis:
+- User goal or intent (from ControlCenterViewModel)
+- Episode ID (from EvolutionCenterViewModel)
+- Workspace root (from config)
+- Local stack information
+- Repository information
+
+OUTPUT:
+------
+Based on code analysis:
+- Development packet (text for Codex consultation)
+- Repository bridge summary
+- Local stack summary
+
+TASK KINDS:
+-----------
+Based on git grep results:
+- code_generation: Used in tests and server for routing decisions
+- inferred_task: Used in training payloads (e.g., "Review payload generation")
+
+SELF-DEVELOPMENT SCOPE:
+-----------------------
+Based on git grep results:
+- F17 (PR creation) is DEFERRED - not in scope for first controlled self-development milestone
+- Error message: "PR creation is deferred (F17 not in scope for first controlled self-development milestone). Use manual PR creation."
+- Protected side effects: CREATE_PR is not in scope for first controlled self-development milestone
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- Development packet is copied to clipboard for manual Codex consultation
+- Development packet is displayed in UI
+- NO automatic task generation from development packet
+- NO automatic execution of development tasks
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for development packet generation
+STRUCTURALLY_REACHABLE: Development packet generation can be triggered
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Development packet influences manual consultation
+BEHAVIOR_CHANGE_OBSERVED: Not applicable (manual step required)
+
+CONCLUSION:
+-----------
+DEVELOPMENT TASK GENERATION EXISTS:
+- DevelopmentAssistService builds development packets
+- EngineeringReviewService builds codex packets for incident analysis
+- Background refresh to avoid UI blocking
+
+However:
+- NO automatic development task generation from consultation responses
+- NO automatic execution of development tasks
+- PR creation is deferred (F17 not in scope)
+- Development packets are for manual consultation, not automatic execution
+
+This is a MISSING EDGE in the self-construction loop - the system can generate development packets but cannot automatically execute development tasks.

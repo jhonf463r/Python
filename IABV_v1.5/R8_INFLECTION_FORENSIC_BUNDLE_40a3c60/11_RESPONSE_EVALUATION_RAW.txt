@@ -1,0 +1,98 @@
+RESPONSE EVALUATION AUDIT - RAW
+==============================
+
+EVALUATION SERVICES:
+--------------------
+Based on git grep results:
+
+1. TaskOutcomeRecorder
+   - Location: src/iabv_v15/services/adaptive/task_outcome_recorder.py
+   - Method: _evaluation_route()
+   - Purpose: Compare prediction vs actual outcome
+   - Evaluates: metacognitive_evaluation (calibration_error, false_positive, false_negative)
+
+2. AutonomousEvolutionService
+   - Location: src/iabv_v15/services/evolution/autonomous_evolution_service.py
+   - Method: _consultation_evaluation_route()
+   - Purpose: Evaluate consultation outcome
+   - Returns: EvaluationRoute (UI, LANGUAGE_UNDERSTANDING, FALLBACK, etc.)
+
+3. ExperimentLab
+   - Location: src/iabv_v15/services/lab/experiment_lab.py
+   - Method: registry.evaluate()
+   - Purpose: Evaluate experiment results
+   - Evaluates: precision, robustness, success, observed_summary
+
+4. OperationalSelfExaminationService
+   - Location: src/iabv_v15/services/evolution/operational_self_examination_service.py
+   - Purpose: Evaluate metacognitive calibration
+   - Evaluates: calibration_error, false_positive, false_negative from metacognitive_evaluation
+
+WHO EVALUATES RESPONSES:
+------------------------
+Based on code analysis:
+
+1. TaskOutcomeRecorder
+   - Evaluates adaptive session outcomes
+   - Compares predicted route vs actual route
+   - Records metacognitive evaluation
+
+2. AutonomousEvolutionService
+   - Evaluates consultation outcomes
+   - Determines evaluation route based on assistant_kind and consultation metadata
+   - Routes: UI, LANGUAGE_UNDERSTANDING, FALLBACK, etc.
+
+3. ExperimentLab
+   - Evaluates experiment candidate results
+   - Uses evaluation registry to score candidates
+   - Metrics: precision, robustness, success
+
+INPUT:
+------
+Based on code analysis:
+- TaskOutcomeRecorder: session, run_record
+- AutonomousEvolutionService: assistant_kind, consultation (response metadata)
+- ExperimentLab: domain, objective, expected, candidate
+
+OUTPUT:
+------
+Based on code analysis:
+- TaskOutcomeRecorder: metacognitive_evaluation (calibration_error, false_positive, false_negative)
+- AutonomousEvolutionService: EvaluationRoute (enum value)
+- ExperimentLab: evaluation dict (precision, robustness, success, suite_name, observed_summary)
+
+EVALUATION CRITERIA:
+--------------------
+Based on code analysis:
+- Metacognitive calibration: predicted vs actual route
+- Consultation route: based on assistant_kind and response_capture_mode
+- Experiment evaluation: precision, robustness, success against expected
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- Evaluation results are stored in run_record metadata
+- Evaluation routes influence future routing decisions
+- Experiment evaluations inform model selection
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for response evaluation
+STRUCTURALLY_REACHABLE: Evaluation can be triggered
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Evaluation results can influence routing
+BEHAVIOR_CHANGE_OBSERVED: Evaluation can improve future predictions
+
+CONCLUSION:
+-----------
+RESPONSE EVALUATION EXISTS:
+- Metacognitive evaluation (calibration, false positives/negatives)
+- Consultation evaluation route determination
+- Experiment evaluation (precision, robustness, success)
+
+However:
+- Evaluation is tied to task execution and experiments
+- NO transformation from CAPTURED_RESPONSE → EVALUATED_RESPONSE as a separate step
+- Evaluation happens during execution, not as a post-capture evaluation step
+
+This edge exists but is integrated into execution, not a separate evaluation step.

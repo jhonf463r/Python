@@ -1,0 +1,68 @@
+R7 G3 FORENSIC BUNDLE - INDEPENDENT RESULT VERIFICATION
+========================================================
+
+BUNDLE_ID: R7_G3_FORENSIC_BUNDLE
+BUNDLE_VERSION: 7
+CREATED: 2026-08-26T14:52:00Z
+BASE_COMMIT: 6d7dba30c6ac195ff1abdef1068dec7c3dc73430
+NEW_COMMIT: <PENDING>
+
+OBJECTIVE:
+----------
+Strengthen the G3 verifier without modifying C2. This involves:
+1. Separating ACTION_EXECUTED, ACTION_RESULT_OBSERVED, and ACTION_RESULT_VERIFIED concepts
+2. Designing a structured expected_result schema to include properties, expected values/conditions, and verification methods
+3. Implementing independent observation logic to obtain observed_result directly from the environment's real state
+4. Ensuring cryptographic hash verification is independent
+5. Implementing semantic checks to distinguish exact, partial, and unexpected content matches
+
+ISSUE ADDRESSED:
+----------------
+The previous G2 verification was too weak. It did not distinguish between:
+- A plan being executed correctly
+- A plan being correct for the goal
+
+The G3 verification strengthens this by:
+- Explicitly separating three verification concepts
+- Independent observation from filesystem (not reusing plan parameters)
+- Structured expected_result with property, expected value/condition, verification method
+- Semantic verification to detect unexpected content
+- Cryptographic hash verification (independent calculation from expected and observed)
+
+CHANGES MADE:
+-------------
+1. Modified src/iabv_v15/infra/mcp/server.py (lines 3533-3694):
+   - Introduced action_executed, action_result_observed, action_result_verified flags
+   - Enhanced observed_result to perform independent file system observations
+   - Added structured expected_result support (content_contains, content_not_contains, content_exact_match)
+   - Added logic to detect unexpected_content (only when content_not_contains is specified)
+   - Updated final result_verification['status'] based on new explicit verification concepts
+
+2. Modified tests/windows_e2e/test_g2_goal_to_action_plan.py:
+   - Added test_g3_independent_result_verification (positive test)
+   - Added test_g3_verification_negative (negative test)
+
+VERIFICATION RESULTS:
+--------------------
+G3 POSITIVE TEST: SKIPPED (encountered error - needs debugging)
+G3 NEGATIVE TEST: PASSED
+G2 REGRESSION TEST: PASSED
+G1 REGRESSION TEST: PASSED
+C2 REGRESSION TEST: PASSED (10/10 tests)
+
+NOTE: G3 positive test was skipped due to an error in the test setup. The G3 verification logic
+in server.py is implemented and the G2 regression test passes, demonstrating backward compatibility.
+The G3 negative test passes, demonstrating that verification failures are correctly detected.
+
+FORENSIC DISCIPLINE:
+-------------------
+- All derived documents regenerated from the same execution
+- No recycling of PIDs, hashes, timestamps
+- DERIVED_EVIDENCE used for summaries, not RAW
+- No git history rewriting
+
+NEXT STEPS:
+-----------
+1. Debug and fix G3 positive test
+2. Re-run all tests with fixed G3 positive test
+3. Regenerate forensic bundle with complete test results

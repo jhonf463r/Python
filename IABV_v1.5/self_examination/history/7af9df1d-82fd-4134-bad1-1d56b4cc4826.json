@@ -1,0 +1,683 @@
+{
+  "review_id": "7af9df1d-82fd-4134-bad1-1d56b4cc4826",
+  "created_at_utc": "2026-08-27T03:56:03.165848Z",
+  "updated_at_utc": "2026-08-27T03:56:03.165848Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion needs_attention: 12 hallazgos activos. Lo mas fuerte ahora es ruido excesivo de logs http (httpx). Mejoras validadas: 0 | issues recurrentes: 5.",
+  "status": "needs_attention",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-08-27T03:56:03.165848+00:00\nResumen: Autoexaminacion needs_attention: 12 hallazgos activos. Lo mas fuerte ahora es ruido excesivo de logs http (httpx). Mejoras validadas: 0 | issues recurrentes: 5.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- Ruido excesivo de logs HTTP (httpx): Detectadas 500 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\" | recomendacion: Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral. | confianza 0.90\n- Loop introspectivo abierto: 5 mecanismo(s) inactivo(s):  | recomendacion: sin ajuste concreto | confianza 0.00\n- 1 capacidades Windows nativas faltantes: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows. | recomendacion: Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario. | confianza 0.90\n- Gemini Web necesita re-login: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente. | recomendacion: Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente. | confianza 0.85\n- iabv_window_missing: No se detecta ninguna ventana IABV entre las 7 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse. | recomendacion: Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar. | confianza 0.50\n- Discernment frame ausente en contexto: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen. | recomendacion: sin ajuste concreto | confianza 0.00\n\n## Ajustes recomendados\n- Ruido excesivo de logs HTTP (httpx): Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral. | fuente runtime_log, C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log\n- 1 capacidades Windows nativas faltantes: Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario. | fuente iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities, data/evolution/platform_pending/\n- Gemini Web necesita re-login: Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente. | fuente check_web_session_health, AccountResourceScanner\n- iabv_window_missing: Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar. | fuente WorldModelSnapshot.active_windows\n- Auto-correcciones aplicadas desde log: 1: Verificar que las correcciones fueron efectivas en el proximo ciclo. | fuente auto_correction_engine\n- UniversalAutonomyIndex: datos insuficientes: Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia. | fuente OperationalSelfExaminationService._universal_autonomy_index_findings\n\n## Mejoras validadas\n- Sin mejoras validadas fuertes todavia.\n\n## Retroalimentacion de ajustes\n- Ruido excesivo de logs HTTP (httpx): no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- 1 capacidades Windows nativas faltantes: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Gemini Web necesita re-login: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- iabv_window_missing: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n\nUNRESOLVED: UNRESOLVED:validation_cycle, autonomy_score, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+  "findings": [
+    {
+      "finding_id": "dfd38ed5-3864-407c-9afc-a8e9b91ccf7d",
+      "category": "http_noise",
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "summary": "Detectadas 500 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+      "severity": "high",
+      "confidence": 0.9,
+      "recommendation": "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral.",
+      "evidence_refs": [
+        "log_occurrences=500",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "pattern": "HTTP Request:",
+        "occurrences": 500,
+        "log_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      }
+    },
+    {
+      "finding_id": "741eabb7-d960-4b2d-806b-4b0d3ee3e5a9",
+      "category": "loop_closure",
+      "title": "Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)",
+      "summary": "",
+      "severity": "high",
+      "confidence": 0.0,
+      "recommendation": "",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "checks": [
+          {
+            "mechanism": "G1_auto_execution",
+            "wired": false,
+            "active": false,
+            "detail": "orchestrator NOT connected to validation_cycle"
+          },
+          {
+            "mechanism": "G2_feedback_persistence",
+            "wired": true,
+            "active": false,
+            "detail": "history.jsonl not yet created (fires after first validation)"
+          },
+          {
+            "mechanism": "G3_weight_layer",
+            "wired": false,
+            "active": false,
+            "detail": "AdaptiveWeightLayer NOT connected"
+          },
+          {
+            "mechanism": "G4_metacognitive_feedback",
+            "wired": false,
+            "active": false,
+            "detail": "metacognitive feedback NOT connected"
+          },
+          {
+            "mechanism": "cognitive_findings",
+            "wired": true,
+            "active": false,
+            "detail": "none active (need >= 5 experiment runs, have 0)"
+          }
+        ],
+        "wired": 2,
+        "active": 0,
+        "total": 5,
+        "closed": false,
+        "gap_mechanisms": [
+          "G1_auto_execution",
+          "G2_feedback_persistence",
+          "G3_weight_layer",
+          "G4_metacognitive_feedback",
+          "cognitive_findings"
+        ]
+      }
+    },
+    {
+      "finding_id": "02c6fb2a-227e-4f97-84f0-1808ea4375bc",
+      "category": "windows_integration_gaps",
+      "title": "1 capacidades Windows nativas faltantes",
+      "summary": "El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario.",
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "phase": "windows_integration",
+        "missing_capability_ids": [
+          "platform.notifications"
+        ],
+        "missing_count": 1,
+        "total_platform_caps": 8,
+        "coverage_ratio": 0.88
+      }
+    },
+    {
+      "finding_id": "ee4007e9-87b5-49c4-88e5-d3c6942a5360",
+      "category": "web_session_expired",
+      "title": "Gemini Web necesita re-login",
+      "summary": "La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "recommendation": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider"
+      }
+    },
+    {
+      "finding_id": "2073357b-074b-4a25-afd3-9f7446a5c60b",
+      "category": "ui_self_awareness",
+      "title": "iabv_window_missing",
+      "summary": "No se detecta ninguna ventana IABV entre las 7 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.",
+      "severity": "medium",
+      "confidence": 0.5,
+      "recommendation": "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar.",
+      "evidence_refs": [
+        "total_windows:7",
+        "early_startup:True"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "finding_id": "51dd298d-92a1-4a5a-9583-2247fd226e07",
+      "category": "discernment_frame_missing_in_task_context",
+      "title": "Discernment frame ausente en contexto",
+      "summary": "No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.",
+      "severity": "medium",
+      "confidence": 0.0,
+      "recommendation": "",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "frame_count": 0
+      }
+    },
+    {
+      "finding_id": "fb30de8d-d31e-45df-8916-2e8668cb17b2",
+      "category": "self_correction",
+      "title": "Auto-correcciones aplicadas desde log: 1",
+      "summary": "El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.",
+      "severity": "low",
+      "confidence": 1.0,
+      "recommendation": "Verificar que las correcciones fueron efectivas en el proximo ciclo.",
+      "evidence_refs": [
+        "suppress_httpx: httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+      ],
+      "source_refs": [
+        "auto_correction_engine"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "corrections": {
+          "corrections_applied": [
+            {
+              "action": "suppress_httpx",
+              "status": "corrected",
+              "detail": "httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+            }
+          ],
+          "corrections_count": 1,
+          "skipped": [],
+          "skipped_count": 0
+        }
+      }
+    },
+    {
+      "finding_id": "d95caa35-d4a4-4b7a-a182-e8bdd0c63683",
+      "category": "autonomy_index_insufficient_data",
+      "title": "UniversalAutonomyIndex: datos insuficientes",
+      "summary": "Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.",
+      "severity": "low",
+      "confidence": 0.95,
+      "recommendation": "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia.",
+      "evidence_refs": [],
+      "source_refs": [
+        "OperationalSelfExaminationService._universal_autonomy_index_findings"
+      ],
+      "linked_run_ids": [],
+      "status": "unresolved",
+      "unresolved_fields": [
+        "autonomy_score",
+        "resilience_score",
+        "calibration_error",
+        "blind_spot_ratio"
+      ],
+      "metadata": {
+        "total_runs": 0,
+        "total_experiments": 0,
+        "total_sessions": 0
+      }
+    }
+  ],
+  "recurring_issues": [
+    {
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "category": "http_noise",
+      "summary": "Detectadas 500 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=500",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ]
+    },
+    {
+      "title": "Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)",
+      "category": "loop_closure",
+      "summary": "",
+      "severity": "high",
+      "confidence": 0.0,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "1 capacidades Windows nativas faltantes",
+      "category": "windows_integration_gaps",
+      "summary": "El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ]
+    },
+    {
+      "title": "Gemini Web necesita re-login",
+      "category": "web_session_expired",
+      "summary": "La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ]
+    },
+    {
+      "title": "iabv_window_missing",
+      "category": "ui_self_awareness",
+      "summary": "No se detecta ninguna ventana IABV entre las 7 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.",
+      "severity": "medium",
+      "confidence": 0.5,
+      "evidence_refs": [
+        "total_windows:7",
+        "early_startup:True"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ]
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "recommended_change": "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral.",
+      "category": "http_noise",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=500",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "metadata": {
+        "pattern": "HTTP Request:",
+        "occurrences": 500,
+        "log_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral."
+        ]
+      },
+      "feedback_key": "http_noise:ruido excesivo de logs http (httpx)",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "1 capacidades Windows nativas faltantes",
+      "recommended_change": "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario.",
+      "category": "windows_integration_gaps",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ],
+      "metadata": {
+        "phase": "windows_integration",
+        "missing_capability_ids": [
+          "platform.notifications"
+        ],
+        "missing_count": 1,
+        "total_platform_caps": 8,
+        "coverage_ratio": 0.88,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario."
+        ]
+      },
+      "feedback_key": "windows_integration_gaps:1 capacidades windows nativas faltantes",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Gemini Web necesita re-login",
+      "recommended_change": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "category": "web_session_expired",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente."
+        ]
+      },
+      "feedback_key": "web_session_expired:gemini web necesita re-login",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "iabv_window_missing",
+      "recommended_change": "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar.",
+      "category": "ui_self_awareness",
+      "severity": "medium",
+      "confidence": 0.5,
+      "evidence_refs": [
+        "total_windows:7",
+        "early_startup:True"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ],
+      "metadata": {
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar."
+        ]
+      },
+      "feedback_key": "ui_self_awareness:iabv_window_missing",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Auto-correcciones aplicadas desde log: 1",
+      "recommended_change": "Verificar que las correcciones fueron efectivas en el proximo ciclo.",
+      "category": "self_correction",
+      "severity": "low",
+      "confidence": 1.0,
+      "evidence_refs": [
+        "suppress_httpx: httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+      ],
+      "source_refs": [
+        "auto_correction_engine"
+      ],
+      "metadata": {
+        "corrections": {
+          "corrections_applied": [
+            {
+              "action": "suppress_httpx",
+              "status": "corrected",
+              "detail": "httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+            }
+          ],
+          "corrections_count": 1,
+          "skipped": [],
+          "skipped_count": 0
+        },
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Verificar que las correcciones fueron efectivas en el proximo ciclo."
+        ]
+      },
+      "feedback_key": "self_correction:auto-correcciones aplicadas desde log: 1",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "UniversalAutonomyIndex: datos insuficientes",
+      "recommended_change": "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia.",
+      "category": "autonomy_index_insufficient_data",
+      "severity": "low",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "OperationalSelfExaminationService._universal_autonomy_index_findings"
+      ],
+      "metadata": {
+        "total_runs": 0,
+        "total_experiments": 0,
+        "total_sessions": 0,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia."
+        ]
+      },
+      "feedback_key": "autonomy_index_insufficient_data:universalautonomyindex: datos insuficientes",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    }
+  ],
+  "validated_improvements": [],
+  "unresolved_risks": [
+    "UNRESOLVED:validation_cycle",
+    "autonomy_score",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "package_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [
+      {
+        "title": "Ruido excesivo de logs HTTP (httpx)",
+        "category": "http_noise",
+        "feedback_key": "http_noise:ruido excesivo de logs http (httpx)",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "log_occurrences=500",
+          "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+        ],
+        "source_refs": [
+          "runtime_log",
+          "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T03:56:40.082353+00:00"
+      },
+      {
+        "title": "1 capacidades Windows nativas faltantes",
+        "category": "windows_integration_gaps",
+        "feedback_key": "windows_integration_gaps:1 capacidades windows nativas faltantes",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+          "data/evolution/platform_pending/",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T03:56:40.082374+00:00"
+      },
+      {
+        "title": "Gemini Web necesita re-login",
+        "category": "web_session_expired",
+        "feedback_key": "web_session_expired:gemini web necesita re-login",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "check_web_session_health",
+          "AccountResourceScanner",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T03:56:40.082383+00:00"
+      },
+      {
+        "title": "iabv_window_missing",
+        "category": "ui_self_awareness",
+        "feedback_key": "ui_self_awareness:iabv_window_missing",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "total_windows:7",
+          "early_startup:True"
+        ],
+        "source_refs": [
+          "WorldModelSnapshot.active_windows",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T03:56:40.082391+00:00"
+      },
+      {
+        "title": "Auto-correcciones aplicadas desde log: 1",
+        "category": "self_correction",
+        "feedback_key": "self_correction:auto-correcciones aplicadas desde log: 1",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "suppress_httpx: httpx→WARNING re-applied (triggered by 500 HTTP lines in log tail)"
+        ],
+        "source_refs": [
+          "auto_correction_engine",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T03:56:40.082399+00:00"
+      },
+      {
+        "title": "UniversalAutonomyIndex: datos insuficientes",
+        "category": "autonomy_index_insufficient_data",
+        "feedback_key": "autonomy_index_insufficient_data:universalautonomyindex: datos insuficientes",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService._universal_autonomy_index_findings",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-08-27T03:56:40.082405+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 6,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 6
+    },
+    "solution_proposals": [],
+    "workspace_root": "C:\\Python\\IABV_v1.5_runtime_p021v\\IABV_v1.5\\IABV_v1.5",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ],
+    "pending_auto_probes": []
+  }
+}

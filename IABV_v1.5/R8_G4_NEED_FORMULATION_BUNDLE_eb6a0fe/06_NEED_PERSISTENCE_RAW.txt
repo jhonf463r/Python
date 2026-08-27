@@ -1,0 +1,49 @@
+NEED PERSISTENCE RAW
+====================
+
+PERSISTENCE LOCATION:
+data/evolution/structured_needs/need_<need_id>.json
+
+PERSISTENCE FORMAT (JSON):
+--------------------------
+{
+  "need_id": "<uuid>",
+  "source_finding_id": "<finding_uuid>",
+  "category": "capability_discovery",
+  "capability_gap": "Cannot perform visual inspection",
+  "current_state": "Cannot perform visual inspection of UI elements",
+  "desired_state": "Implement visual inspection capability",
+  "knowledge_required": "knowledge_in_capability_discovery",
+  "reason": "I cannot perform visual inspection of UI elements",
+  "evidence": ["run_123", "episode_456"],
+  "priority": "high",
+  "created_at": "2026-08-26T23:47:00Z",
+  "status": "pending",
+  "metadata": {}
+}
+
+REPOSITORY METHODS:
+- upsert(need): Insert or update a need
+- get(need_id): Retrieve a need by ID
+- list_all(): Return all needs sorted by created_at (newest first)
+- list_pending(): Return only PENDING needs
+- update_status(need_id, status): Update need status
+- summary(): Return machine-readable summary
+
+PERSISTENCE VERIFICATION (from tests):
+--------------------------------------
+test_upsert_and_get: PASSED
+- Created need with source_finding_id="finding_123"
+- Persisted via upsert()
+- Retrieved via get()
+- Verified need_id, source_finding_id, capability_gap match
+
+test_list_all: PASSED
+- Created 2 needs
+- Listed all needs
+- Verified count = 2
+
+test_list_pending: PASSED
+- Created PENDING and RESOLVED needs
+- Listed pending needs
+- Verified count = 1 and status = PENDING

@@ -1,0 +1,123 @@
+R8-G4.5 OPERATIONAL FINDINGS RAW
+================================
+
+TIMESTAMP = 2026-08-26 23:07:00 UTC-05:00
+
+OPERATIONAL_FINDINGS_COUNT: 8
+OPERATIONAL_FINDINGS_REJECTED: 8
+OPERATIONAL_FINDINGS_CONVERTED_TO_NEEDS: 0
+
+OPERATIONAL FINDING 1:
+======================
+FINDING_ID: 84587707-f906-4f67-8b4e-88c9c7021017
+CATEGORY: http_noise
+TITLE: Ruido excesivo de logs HTTP (httpx)
+SUMMARY: Detectadas 500 ocurrencias de "HTTP Request:" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+SEVERITY: IssueSeverity.HIGH
+CONFIDENCE: 0.9
+PRODUCER: _http_noise_findings (expected)
+SHAPE: operational
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+OPERATIONAL FINDING 2:
+======================
+FINDING_ID: 4b74512a-d33b-40d2-824c-b3b893db0e2a
+CATEGORY: loop_closure
+TITLE: Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)
+SUMMARY: 
+SEVERITY: IssueSeverity.HIGH
+CONFIDENCE: 0.0
+PRODUCER: _loop_closure_findings (expected)
+SHAPE: operational
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+OPERATIONAL FINDING 3:
+======================
+FINDING_ID: 444f9c31-4ed2-40de-8896-fa275964fe82
+CATEGORY: windows_integration_gaps
+TITLE: 1 capacidades Windows nativas faltantes
+SUMMARY: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.
+SEVERITY: IssueSeverity.MEDIUM
+CONFIDENCE: 0.9
+PRODUCER: _windows_integration_findings (confirmed)
+SHAPE: operational
+METADATA: {'phase': 'windows_integration', 'missing_capability_ids': ['platform.notifications'], 'missing_count': 1, 'total_platform_caps': 8, 'coverage_ratio': 0.88}
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+NOTE: This finding contains metadata about the missing capability (platform.notifications)
+but is itself an operational finding, not a capability-shaped finding.
+
+OPERATIONAL FINDING 4:
+======================
+FINDING_ID: 75c09a79-9e41-4d04-9b4f-16a760b7bf5f
+CATEGORY: web_session_expired
+TITLE: Gemini Web necesita re-login
+SUMMARY: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.
+SEVERITY: IssueSeverity.MEDIUM
+CONFIDENCE: 0.85
+PRODUCER: _web_session_findings (expected)
+SHAPE: operational
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+OPERATIONAL FINDING 5:
+======================
+FINDING_ID: 24251684-3c31-40ad-99e0-3b10476b5b91
+CATEGORY: ui_self_awareness
+TITLE: iabv_window_missing
+SUMMARY: No se detecta ninguna ventana IABV entre las 9 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.
+SEVERITY: IssueSeverity.MEDIUM
+CONFIDENCE: 0.5
+PRODUCER: _ui_self_awareness_findings (expected)
+SHAPE: operational
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+OPERATIONAL FINDING 6:
+======================
+FINDING_ID: 92d5b713-9b9f-4fc6-80cb-e11422bcda81
+CATEGORY: discernment_frame_missing_in_task_context
+TITLE: Discernment frame ausente en contexto
+SUMMARY: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.
+SEVERITY: IssueSeverity.MEDIUM
+CONFIDENCE: 0.0
+PRODUCER: _discernment_frame_findings (expected)
+SHAPE: operational
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+OPERATIONAL FINDING 7:
+======================
+FINDING_ID: 2029f093-3b80-4094-bcb3-3e6087e274c4
+CATEGORY: self_correction
+TITLE: Auto-correcciones aplicadas desde log: 1
+SUMMARY: El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.
+SEVERITY: IssueSeverity.LOW
+CONFIDENCE: 1.0
+PRODUCER: _self_correction_findings (expected)
+SHAPE: operational
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+OPERATIONAL FINDING 8:
+======================
+FINDING_ID: 221fb775-74b4-4a0c-8da7-bc2a957a1877
+CATEGORY: autonomy_index_insufficient_data
+TITLE: UniversalAutonomyIndex: datos insuficientes
+SUMMARY: Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.
+SEVERITY: IssueSeverity.LOW
+CONFIDENCE: 0.95
+PRODUCER: _universal_autonomy_index_findings (expected)
+SHAPE: operational
+REJECTED: TRUE (by NeedFormulationService._is_capability_shaped())
+
+OPERATIONAL_REJECTION_RUNTIME:
+==============================
+
+All 8 operational findings were correctly rejected by NeedFormulationService._is_capability_shaped()
+because their categories are in OPERATIONAL_CATEGORIES, not CAPABILITY_SHAPED_CATEGORIES.
+
+This confirms fail-closed behavior: operational findings are NOT converted to StructuredNeed objects.
+
+CONCLUSION:
+===========
+
+All 8 operational findings were correctly rejected.
+However, a StructuredNeed was created with a source_finding_id that does NOT match any visible finding.
+This is a CRITICAL discrepancy that prevents independent verification of the need's provenance.

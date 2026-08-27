@@ -1,0 +1,98 @@
+R8-G4.5 GIT IDENTITY RAW
+========================
+
+TIMESTAMP = 2026-08-27 08:30:00 UTC-05:00
+
+CURRENT_HEAD = 87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+DIRECT_PARENT = 5fa75241d380a358aa2ec03efe1af85819dfcc52
+REMOTE_HEAD = 87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4
+BRANCH = p0213/vfinal5-r3-choke-point
+WORKTREE_CLEAN = FALSE
+
+GIT_LOG:
+========
+* 87aba0ed7 (HEAD -> p0213/vfinal5-r3-choke-point, origin/p0213/vfinal5-r3-choke-point) R8-G4.5: Fix EnvironmentSelfAwarenessService initialization blocker in test
+* 5fa75241d R8-G4.4: Execute real build_review() and observe OSES findings
+* 6ac62f5a3 R8-G4.3: Document runtime data unavailability
+* c23c67380 R8-G4.2: Reconcile real OSES categories with NeedFormulationService
+* acab46ed0 R8-G4.1: Fix semantic classification and need provenance
+* eb6a0fe3a R8-G4: Implement CAPABILITY_GAP → STRUCTURED_NEED transformation
+* 40a3c60d5 R7 G3 FINAL: Fix content_contains logging bug in server.py
+* 9454fc601 R7 G3 DEBUG: Fix MockContainer authorize_action for G3 positive test
+* 501fba77b R7 G3: Strengthen verifier without modifying C2
+* 6d7dba30c Fix G2 verification semantics - enforce strict verification and deterministic hash derivation
+
+GIT_STATUS:
+===========
+ M IABV_v1.5/data/evolution/environment_self_model/latest.json
+ M IABV_v1.5/data/evolution/environment_self_model/msi-f11f77ddd2e2.json
+ M IABV_v1.5/data/evolution/world_model/latest.json
+ M IABV_v1.5/tests/test_r8_g4_5_runtime_integration.py
+?? IABV_v1.5/R4_G1_FORENSIC_EVIDENCE_FIXED_05190c64a/
+?? IABV_v1.5/R4_TEMP_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_NEGATIVE_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_POSITIVE_CLEAN_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_POSITIVE_RAW.txt
+?? IABV_v1.5/R4_TEMP_IMPL_SELF_UPDATE_DIFF.txt
+?? IABV_v1.5/R4_TEMP_IMPL_SERVER_DIFF.txt
+?? IABV_v1.5/R4_TEMP_REPO_AFTER.txt
+?? IABV_v1.5/R4_TEMP_REPO_BEFORE.txt
+?? IABV_v1.5/R4_TEMP_REPO_BEFORE_CLEAN.txt
+?? IABV_v1.5/R5_G1_AUTHORITY_PIPE_FIXED_BUNDLE_fce8965eb/
+?? IABV_v1.5/R5_G2_FORENSIC_EVIDENCE/
+?? IABV_v1.5/R5_TEMP_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R5_TEMP_G1_REGRESSION_RAW.txt
+?? IABV_v1.5/R5_TEMP_G2_NEGATIVE_RAW.txt
+?? IABV_v1.5/R5_TEMP_G2_POSITIVE_RAW.txt
+?? IABV_v1.5/R5_TEMP_REPO_BEFORE.txt
+?? IABV_v1.5/R6_G2_FORENSIC_EVIDENCE/
+?? IABV_v1.5/R6_G2_INDEPENDENT_AUDIT_BUNDLE_6d7dba30/
+?? IABV_v1.5/R6_TEMP_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R6_TEMP_G1_REGRESSION_RAW.txt
+?? IABV_v1.5/R6_TEMP_G2_NEGATIVE_RAW.txt
+?? IABV_v1.5/R6_TEMP_G2_POSITIVE_RAW.txt
+?? IABV_v1.5/R7_DEBUG_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_DEBUG_G1_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_DEBUG_G2_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_DEBUG_G3_NEGATIVE_RAW.txt
+?? IABV_v1.5/R7_DEBUG_G3_POSITIVE_RAW.txt
+?? IABV_v1.5/R7_FINAL_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_FINAL_G1_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_FINAL_G2_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_FINAL_G3_NEGATIVE_RAW.txt
+?? IABV_v1.5/R7_FINAL_G3_POSITIVE_RAW.txt
+?? IABV_v1.5/R7_G3_COMMIT_PROVENANCE_BUNDLE_40a3c60/
+?? IABV_v1.5/R7_G3_FINAL_FORENSIC_BUNDLE/
+?? IABV_v1.5/R7_G3_FORENSIC_BUNDLE/
+?? IABV_v1.5/R7_G3_RUNTIME_VERIFIED_BUNDLE/
+?? IABV_v1.5/R7_TEMP_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_TEMP_G1_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_TEMP_G2_REGRESSION_RAW.txt
+?? IABV_v1.5/R7_TEMP_G3_NEGATIVE_RAW.txt
+?? IABV_v1.5/R7_TEMP_G3_POSITIVE_RAW.txt
+?? IABV_v1.5/R8_G4_1_FORENSIC_BUNDLE_acab46ed/
+?? IABV_v1.5/R8_G4_2_FORENSIC_BUNDLE_c23c673/
+?? IABV_v1.5/R8_G4_3_FORENSIC_BUNDLE_6ac62f5/
+?? IABV_v1.5/R8_G4_4_FORENSIC_BUNDLE_5fa7524/
+?? IABV_v1.5/R8_G4_5_FINAL_FORENSIC_BUNDLE_87aba0ed7bd7ffe19c602c962da3f5cb6c83f4e4/
+?? IABV_v1.5/R8_G4_5_FORENSIC_BUNDLE/
+?? IABV_v1.5/R8_G4_5_LIGHT_SCAN_ISOLATION_RAW.txt
+?? IABV_v1.5/R8_G4_5_RUNTIME_LOG.txt
+?? IABV_v1.5/R8_G4_5_RUNTIME_OUTPUT_RAW.txt
+?? IABV_v1.5/R8_G4_5_RUNTIME_RAW.txt
+?? IABV_v1.5/R8_G4_5_STATE_CAPTURE.txt
+?? IABV_v1.5/R8_G4_NEED_FORMULATION_BUNDLE_eb6a0fe/
+?? IABV_v1.5/R8_INFLECTION_FORENSIC_BUNDLE_40a3c60/
+?? IABV_v1.5/data/evolution/structured_needs/
+?? IABV_v1.5/g1_goal_execution_test.txt
+?? IABV_v1.5/g1_test.txt
+?? IABV_v1.5/self_examination/
+?? IABV_v1.5/tests/g1_execution_test.txt
+?? IABV_v1.5/tests/test_r8_g4_5_init_diagnostic.py
+?? IABV_v1.5/tests/test_r8_g4_5_light_scan_diagnostic.py
+?? IABV_v1.5/tests/test_r8_g4_5_stack_capture.py
+
+GIT_REMOTE:
+===========
+origin  https://github.com/jhonf463r/Python.git (fetch)
+origin  https://github.com/jhonf463r/Python.git (push)

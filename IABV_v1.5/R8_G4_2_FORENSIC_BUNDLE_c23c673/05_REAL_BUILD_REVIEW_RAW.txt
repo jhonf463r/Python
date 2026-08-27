@@ -1,0 +1,17 @@
+REAL BUILD REVIEW RAW
+====================
+
+STATUS: SKIPPED
+REASON: Requires full IABV environment with runtime data
+
+The real build_review execution requires:
+- Complete IABV runtime environment
+- Runtime audit data (runtime_audit.jsonl)
+- Chat research backlog (chat_research_backlog/)
+- Environment capability data
+- World model snapshot
+- Experiment lab data
+
+This environment is not available in the test context.
+
+Alternative: Unit tests with synthetic findings were used instead.

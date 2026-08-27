@@ -1,0 +1,41 @@
+POSITIVE TEST RAW
+================
+
+TEST COMMAND:
+python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_r8_g4_need_formulation.py::TestNeedFormulationPositive -v
+
+POSITIVE TEST RESULTS:
+======================
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_capability_discovery_creates_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_inability_with_capability_context_creates_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_missing_capability_creates_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationPositive::test_uncertainty_creates_need PASSED
+
+POSITIVE TEST DETAILS:
+----------------------
+
+test_capability_discovery_creates_need:
+- Input: SelfExaminationFinding with category="capability_discovery"
+- Expected: StructuredNeed created with provenance traceable to finding
+- Actual: StructuredNeed created with all fields traceable
+- Verified: source_finding_id, category, capability_gap, desired_state, knowledge_required, reason, evidence, priority, status
+
+test_missing_capability_creates_need:
+- Input: SelfExaminationFinding with category="missing_capability"
+- Expected: StructuredNeed created with provenance traceable to finding
+- Actual: StructuredNeed created with all fields traceable
+- Verified: source_finding_id, category, capability_gap, desired_state, knowledge_required, priority
+
+test_uncertainty_creates_need:
+- Input: SelfExaminationFinding with category="uncertainty"
+- Expected: StructuredNeed created with provenance traceable to finding
+- Actual: StructuredNeed created with all fields traceable
+- Verified: source_finding_id, category, capability_gap, desired_state, knowledge_required, priority
+
+test_inability_with_capability_context_creates_need:
+- Input: SelfExaminationFinding with category="inability"
+- Expected: StructuredNeed created with provenance traceable to finding
+- Actual: StructuredNeed created with all fields traceable
+- Verified: source_finding_id, category, capability_gap, desired_state, knowledge_required, evidence
+
+POSITIVE TESTS: 4 PASSED

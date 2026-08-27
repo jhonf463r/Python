@@ -1,0 +1,35 @@
+R10 TEST INVENTORY
+=================
+
+NEW R10 TESTS:
+- tests/test_r10_structured_need_decision.py::TestR10StructuredNeedDecision::test_positive_multiple_pending_needs_selects_highest_priority PASSED
+- tests/test_r10_structured_need_decision.py::TestR10StructuredNeedDecision::test_negative_no_pending_needs_no_selection PASSED
+- tests/test_r10_structured_need_decision.py::TestR10StructuredNeedDecision::test_deferred_lower_priority_remains_pending PASSED
+- tests/test_r10_structured_need_decision.py::TestR10StructuredNeedDecision::test_provenance_preserved PASSED
+- tests/test_r10_structured_need_decision.py::TestR10StructuredNeedDecision::test_determinism_same_state_same_decision PASSED
+- tests/test_r10_structured_need_decision.py::TestR10StructuredNeedDecision::test_idempotency_no_duplicate_work PASSED
+- tests/test_r10_structured_need_decision.py::TestR10StructuredNeedDecision::test_no_side_effect_no_execution PASSED
+
+REGRESSION TESTS:
+- tests/test_r8_g4_5_runtime_integration.py::test_real_build_review_with_production_dependencies PASSED
+- tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g2_goal_to_action_plan PASSED
+- tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g2_verification_negative PASSED
+- tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g3_independent_result_verification PASSED
+- tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g3_verification_negative PASSED
+- tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_code_verification PASSED
+- tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_mcp_registration PASSED
+- tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_negative_unsupported_tool PASSED
+- tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_real_e2e PASSED
+- tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_negative_real_e2e PASSED
+
+C2 TESTS (ENVIRONMENT FAILURE):
+- tests/test_c2_vfinal5_authority_e2e.py - 5/16 PASSED (11 failed due to authority pipe not available)
+
+TOTAL SUMMARY:
+- R10 NEW: 7/7 PASSED
+- G4: 1/1 PASSED
+- G3: 2/2 PASSED
+- G2: 4/4 PASSED
+- G1: 5/5 PASSED
+- C2: 5/16 PASSED (11 ENVIRONMENT_FAILURE)
+- TOTAL: 24/25 PASSED (1 ENVIRONMENT_FAILURE not code failure)

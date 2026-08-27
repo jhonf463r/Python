@@ -1,0 +1,35 @@
+REGRESSION RAW
+=============
+
+G4.2 REGRESSION:
+- TESTS: 27
+- PASSED: 27
+- FAILED: 0
+- SKIPPED: 0
+- ERRORS: 0
+- STATUS: PASSED
+- CAUSALITY: NO REGRESSION
+
+G3/G2/G1 REGRESSION:
+- TESTS: 16
+- PASSED: 10
+- FAILED: 6
+- SKIPPED: 0
+- ERRORS: 0
+- STATUS: FAILED
+- REASON: ModuleNotFoundError: No module named 'iabv_v15.services.trust.post_action_observer'
+- CAUSALITY: PRE-EXISTING (not caused by G4.4 changes)
+- EVIDENCE: Same failure in G4.3 audit
+
+C2 REGRESSION:
+- TESTS: 10
+- PASSED: N/A
+- FAILED: N/A
+- SKIPPED: 10
+- ERRORS: N/A
+- STATUS: SKIPPED
+- REASON: Authority pipe not available - pre-existing environment issue
+- CAUSALITY: PRE-EXISTING (not caused by G4.4 changes)
+- EVIDENCE: Same issue in G4.3 audit
+
+CONCLUSION: No regressions caused by G4.4 changes. All failures are pre-existing.

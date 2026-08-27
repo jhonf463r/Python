@@ -1,0 +1,3 @@
+src/iabv_v15/infra/mcp/server.py
+src/iabv_v15/services/adaptive/cloud_reasoning_planner.py
+tests/windows_e2e/test_g2_goal_to_action_plan.py

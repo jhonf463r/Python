@@ -1,0 +1,137 @@
+R8-G4.5 ENVIRONMENT MODEL RAW
+=============================
+
+TIMESTAMP = 2026-08-26 23:06:00 UTC-05:00
+
+MODEL_CREATED = TRUE
+MODEL_TIMESTAMP = 2026-08-27T04:07:07.656302Z
+ENVIRONMENT_ID = msi-f11f77ddd2e2
+SCAN_STATUS = partial
+SCAN_REASON = startup
+SCAN_MODE = light
+
+OS_INFORMATION = REAL
+OS_PLATFORM = Windows-11-10.0.26200-SP0
+OS_MACHINE = AMD64
+OS_EDITION = Windows 10 Home
+OS_VERSION = 10.0.26200
+OS_DISPLAY_VERSION = 25H2
+
+WINDOWS_CAPABILITIES = REAL
+TOTAL_PLATFORM_CAPS = 8
+MISSING_PLATFORM_CAPS = 1
+MISSING_PLATFORM_CAPS_LIST = ['platform.notifications']
+PLATFORM_CAPABILITIES_AVAILABLE = [
+  platform.windows (REAL)
+  platform.windows_user_paths (REAL)
+  platform.windows_shell (REAL)
+  platform.clipboard (REAL)
+  platform.window_enumeration (REAL)
+  platform.notifications (MISSING_DEPENDENCY - winrt/plyer/winotify not installed)
+  platform.autostart (REAL)
+  platform.process_management (REAL)
+]
+
+HARDWARE_INFORMATION = REAL
+HOSTNAME = MSI
+PROCESSOR_NAME = Intel64 Family 6 Model 186 Stepping 2, GenuineIntel (REAL - from platform.processor())
+PHYSICAL_CORES = null (SKIPPED - requires PowerShell, not available in test mode)
+LOGICAL_CORES = 16 (REAL - from os.cpu_count())
+CURRENT_CLOCK_MHZ = null (SKIPPED - requires PowerShell, not available in test mode)
+MAX_CLOCK_MHZ = null (SKIPPED - requires PowerShell, not available in test mode)
+CPU_USAGE_PERCENT = null (SKIPPED - requires psutil, not installed)
+CPU_TEMPERATURE_C = null (SKIPPED - sensor not exposed on this host)
+THROTTLING_DETECTED = false (REAL)
+
+MEMORY_INFORMATION = REAL
+MEMORY_TOTAL_BYTES = 16868970496 (15.7 GB)
+MEMORY_FREE_BYTES = 1376276480 (1.28 GB)
+MEMORY_USED_BYTES = 15492694016
+MEMORY_USAGE_RATIO = 0.9184
+
+DISK_INFORMATION = REAL
+DISK_TOTAL_BYTES = 485523189760 (452 GB)
+DISK_FREE_BYTES = 10444914688 (9.73 GB)
+DISK_USAGE_RATIO = 0.9785
+
+GPU_INFORMATION = SKIPPED
+GPU_NAME = null (SKIPPED - full=False in LIGHT_SCAN)
+GPU_DRIVER = null (SKIPPED)
+GPU_MEMORY_TOTAL_MB = null (SKIPPED)
+GPU_MEMORY_FREE_MB = null (SKIPPED)
+GPU_TEMPERATURE_C = null (SKIPPED)
+GPU_UTILIZATION_PCT = null (SKIPPED)
+GPU_STATUS = unknown (SKIPPED)
+
+BATTERY_INFORMATION = SKIPPED
+BATTERY_PERCENT = null (SKIPPED - sensor not exposed on this host)
+BATTERY_STATUS = null (SKIPPED - sensor not exposed on this host)
+
+RUNTIME_PROFILE = REAL
+PYTHON_EXECUTABLE = C:\Users\faber\miniconda3\python.exe
+PYTHON_VERSION = 3.13.2
+PYTHON_IMPLEMENTATION = CPython
+CONDA_PREFIX = C:\Users\faber\miniconda3
+WORKSPACE_ROOT = C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+WORKSPACE_WRITEABLE = true
+PACKAGE_COUNT = 3
+PACKAGES_PRESENT = [PySide6, pydantic, pytest]
+MISSING_PROJECT_DEPENDENCIES = [httpx, playwright, keyring, psutil, pyperclip, pywin32]
+
+CAPABILITY_GRAPH = REAL
+CAPABILITY_GRAPH_LENGTH = 11
+CAPABILITY_GRAPH_ENTRIES = [
+  runtime.python (available: true)
+  runtime.workspace_write (available: true)
+  ai.local_models (available: true)
+  platform.windows (available: true)
+  platform.windows_user_paths (available: true)
+  platform.windows_shell (available: true)
+  platform.clipboard (available: true)
+  platform.window_enumeration (available: true)
+  platform.notifications (available: false - missing winrt/plyer/winotify)
+  platform.autostart (available: true)
+  platform.process_management (available: true)
+]
+
+AI_CAPACITY = REAL
+PREFERRED_LOCAL_ASSISTANT_KIND = ollama
+EXECUTION_MODE = cpu_only
+GPU_AVAILABLE = false
+SAFE_MODELS = [embedding <= 1B, 4B safe]
+MAX_RECOMMENDED_MODEL = 4B q4/q5
+MEMORY_HEADROOM_GB = 1.28
+AVOID_HEAVY_MODELS = true
+
+RISK_SIGNALS = REAL
+RISK_SIGNALS_COUNT = 4
+RISK_SIGNALS = [
+  ram_critical (severity: critical, metric: 1.28 GB free)
+  disk_critical (severity: critical, metric: 9.73 GB free)
+  runtime_dependencies_missing (severity: medium, metric: 6 packages missing)
+  heavy_local_models_discouraged (severity: medium)
+]
+
+SENSORS_NOT_AVAILABLE = REAL
+SENSORS_NOT_AVAILABLE_LIST = [
+  cpu_temperature (sensor_not_exposed_on_this_host)
+  battery_status (sensor_not_exposed_on_this_host)
+  cpu_frequency (sensor_not_exposed_on_this_host)
+]
+
+CRITICAL FINDING:
+==================
+
+The windows_capability_missing finding depends on:
+- platform.notifications capability (available: false)
+- metadata.windows_10_plus (true)
+- metadata.missing (winrt, plyer, o winotify)
+
+This data is REAL and comes from:
+1. OS detection (platform.system() - REAL)
+2. Platform capability enumeration (_scan_runtime() - REAL)
+3. Windows-specific library detection (import checks - REAL)
+
+The CPU snapshot data that was skipped in test mode (physical_cores, current_clock_mhz, max_clock_mhz) is NOT used for capability gap detection.
+
+Therefore, the test mode CPU skip does NOT affect the windows_capability_missing finding generation.

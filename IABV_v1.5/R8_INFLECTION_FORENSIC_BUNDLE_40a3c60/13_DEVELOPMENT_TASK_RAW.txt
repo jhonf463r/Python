@@ -1,0 +1,185 @@
+RAW AUDIT: DEVELOPMENT TASK GENERATION
+=======================================
+
+STAGE: Development Task Generation
+OBJECTIVE: Identify who generates development tasks, what inputs they receive, what outputs they produce, who consumes those outputs, and whether outputs change later behavior.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+WHO GENERATES DEVELOPMENT TASKS
+---------------------------------
+
+1. AutonomyCycleService.bridge_findings()
+   - File: src/iabv_v15/services/evolution/autonomy_cycle_service.py
+   - Lines: 101-145
+   - Converts HIGH/CRITICAL OSES findings into PlatformPendingTask
+   - Input: list of findings from OperationalSelfExaminationService
+   - Output: PlatformPendingTask objects upserted to queue
+   - Categories that generate tasks:
+     * startup_populate_ui_freeze
+     * startup_degradation
+     * startup_memory_spike
+     * recurring_failure
+     * cloud_reasoning_degradation
+     * windows_integration_gaps
+     * temporal_regression
+
+2. AutonomyCycleService.seed_capabilities()
+   - File: src/iabv_v15/services/evolution/autonomy_cycle_service.py
+   - Lines: 209-217
+   - Delegates to PlatformPendingQueue.seed_from_capability_graph()
+   - Input: list of EnvironmentCapability objects
+   - Output: PlatformPendingTask objects for missing capabilities
+   - Creates tasks for tools that probes found unavailable
+
+3. AutonomyCycleService.seed_permission_gaps()
+   - File: src/iabv_v15/services/evolution/autonomy_cycle_service.py
+   - Lines: 223-266
+   - Converts ungranted permission gates into BLOCKED pending tasks
+   - Input: list of ObservationPermissionGate objects
+   - Output: PlatformPendingTask with status=BLOCKED
+   - Marks tasks as COMPLETED when permissions are granted
+
+4. PlatformPendingQueue.seed_from_capability_graph()
+   - File: src/iabv_v15/services/evolution/platform_pending_queue.py
+   - Lines: 200-250 (estimated from grep results)
+   - Creates pending tasks for missing environment capabilities
+   - Input: list of EnvironmentCapability objects
+   - Output: PlatformPendingTask objects
+
+---
+
+WHAT INPUTS ARE RECEIVED
+-------------------------
+
+From OperationalSelfExaminationService:
+- SelfExaminationFinding objects with:
+  * category: str
+  * severity: IssueSeverity (HIGH/CRITICAL trigger task creation)
+  * title: str
+  * summary: str
+  * recommendation: str
+  * confidence: float
+
+From WorldModelSnapshot (permission gates):
+- ObservationPermissionGate objects with:
+  * scope: str
+  * granted: bool
+  * title: str
+  * detail: str
+  * required_for: list[str]
+
+From EnvironmentCapability probes:
+- EnvironmentCapability objects with:
+  * capability_id: str
+  * capability_kind: str
+  * available: bool
+  * last_verified_utc: str
+
+---
+
+WHAT OUTPUTS ARE PRODUCED
+-------------------------
+
+PlatformPendingTask objects with:
+- id: str (task identifier)
+- title: str
+- description: str
+- reason: str (source of the task)
+- priority: str (critical/high/medium/low)
+- next_action: str (what should be done)
+- status: PendingTaskStatus (PENDING/BLOCKED/COMPLETED/UNRESOLVED/READY_FOR_NEXT_SLICE)
+- category: str (e.g., CATEGORY_OSES_FINDING, CATEGORY_PERMISSION_REQUIRED, CATEGORY_MISSING_TOOL)
+- dependency_missing: str (for BLOCKED tasks)
+- resume_hint: str (checkpoint information)
+- metadata: dict[str, Any] (source, severity, confidence, etc.)
+
+---
+
+WHO CONSUMES THE OUTPUTS
+------------------------
+
+1. PlatformPendingQueue
+   - Stores tasks in JSON files under data/evolution/platform_pending/
+   - Provides list_all(), list_actionable(), get(), upsert(), mark_status()
+
+2. AutonomyCycleService.startup_summary()
+   - File: src/iabv_v15/services/evolution/autonomy_cycle_service.py
+   - Lines: 272-319
+   - Returns actionable_tasks, blocked_tasks, resume_hints, queue_summary
+   - Called by AdaptiveTaskOrchestrator._load_resume_context()
+   - Consumed by orchestrator to surface actionable work
+
+3. UI/ControlCenter
+   - Displays pending tasks to user
+   - Allows manual task completion/management
+
+---
+
+WHETHER OUTPUTS CHANGE LATER BEHAVIOR
+-------------------------------------
+
+YES - Tasks change behavior in the following ways:
+
+1. Task status changes trigger different behaviors:
+   - PENDING → task appears in actionable list
+   - BLOCKED → task waits for dependency (user approval)
+   - COMPLETED → task is hidden from actionable list
+   - UNRESOLVED → task remains but marked as unresolved
+
+2. Resume hints change session startup:
+   - Interrupted sessions create resume hints
+   - startup_summary() returns these hints
+   - Orchestrator can surface them for continuation
+
+3. Permission gates auto-resolve:
+   - When permission is granted, task is marked COMPLETED
+   - When permission is revoked, task is recreated as BLOCKED
+
+4. Missing capability resolution:
+   - When capability becomes available, task can be marked COMPLETED
+   - When capability becomes unavailable, task is recreated
+
+---
+
+MISSING EDGES
+-------------
+
+1. NO automatic task execution
+   - Tasks are created but NOT automatically executed
+   - No mechanism found that automatically picks up and executes PlatformPendingTask
+   - Tasks require manual intervention or orchestrator awareness
+
+2. NO task-to-action transformation
+   - PlatformPendingTask does NOT automatically transform into executable actions
+   - No service found that converts pending tasks into CloudPlan or tool calls
+   - Tasks are descriptive, not executable
+
+3. NO development task generation for user goals
+   - CloudReasoningPlannerService generates plans for USER goals
+   - NO service found that generates development tasks for SELF-IMPROVEMENT
+   - System does NOT autonomously plan its own development
+
+4. NO task prioritization logic
+   - Tasks have priority field but NO automatic prioritization execution
+   - NO service found that prioritizes and executes high-priority tasks
+
+5. NO task dependency resolution
+   - Tasks can have dependencies but NO automatic dependency resolution
+   - NO service found that waits for dependencies and unblocks tasks
+
+---
+
+CONCLUSION
+----------
+
+Development task generation EXISTS but is LIMITED:
+- Tasks are generated from findings, capabilities, and permission gates
+- Tasks are stored in PlatformPendingQueue
+- Tasks are surfaced via startup_summary()
+- Tasks are NOT automatically executed or transformed into actions
+- Tasks require manual intervention or are purely descriptive
+
+The system can IDENTIFY what needs to be done but cannot AUTONOMOUSLY DO IT.

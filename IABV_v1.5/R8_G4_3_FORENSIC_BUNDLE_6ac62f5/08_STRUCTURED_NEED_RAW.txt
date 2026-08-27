@@ -1,0 +1,12 @@
+STRUCTURED NEED RAW
+==================
+
+STATUS: SKIPPED
+REASON: Runtime data not available
+
+ANALYSIS:
+- No real OSES findings to transform
+- Cannot execute NeedFormulationService.formulate_need_from_finding() with real data
+
+CONCLUSION:
+Cannot trace real structured need without runtime data sources.

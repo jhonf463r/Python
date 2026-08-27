@@ -1,0 +1,48 @@
+G3 VERIFICATION LOGIC IMPLEMENTATION
+====================================
+
+FILE: src/iabv_v15/infra/mcp/server.py
+LINES: 3533-3694
+
+KEY CHANGES:
+
+1. SEPARATE THREE CONCEPTS:
+   - action_executed: Tool execution succeeded (tool_result.status == 'ok')
+   - action_result_observed: Successfully observed result from filesystem
+   - action_result_verified: All verification checks passed
+
+2. INDEPENDENT OBSERVATION:
+   - observed_result is obtained from real filesystem state
+   - Not reused from plan parameters
+   - Includes: file_exists, file_path, file_size_bytes, file_hash_sha256, file_content, git_status
+
+3. STRUCTURED EXPECTED_RESULT:
+   - Supports: file_exists, content_contains, content_not_contains, content_exact_match, file_hash_sha256
+   - Each property has expected value/condition and verification method
+
+4. CRYPTOGRAPHIC HASH VERIFICATION:
+   - Expected hash calculated deterministically from plan parameters
+   - Observed hash calculated independently from actual file bytes
+   - Exact match required for hash comparison
+
+5. SEMANTIC VERIFICATION:
+   - content_contains: Partial match (expected content must be present)
+   - content_not_contains: Negative check (forbidden content must NOT be present)
+   - content_exact_match: Exact string match
+   - unexpected_content: Only flagged when content_not_contains is violated
+
+6. VERIFICATION STATUS:
+   - 'action_failed': action_executed = False
+   - 'observation_failed': action_result_observed = False
+   - 'verification_failed': action_result_verified = False
+   - 'verified': All three concepts = True
+   - 'skipped': No expected_result in plan
+   - 'error': Exception during verification
+
+VERIFICATION LOGIC FLOW:
+1. Calculate deterministic expected hash from plan parameters
+2. Observe real filesystem state (file exists, content, hash, git status)
+3. Compare expected vs observed for each property
+4. Detect unexpected content (if content_not_contains specified)
+5. Determine action_result_verified based on matches/mismatches/unexpected_content
+6. Set final verification status based on three separate concepts

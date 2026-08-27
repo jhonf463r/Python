@@ -1,0 +1,196 @@
+RAW AUDIT: HUMAN DEPENDENCIES
+============================
+
+STAGE: Human Dependencies
+OBJECTIVE: Identify where human intervention is required, what inputs humans provide, what outputs humans receive, and whether human dependencies block autonomous self-improvement.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+WHERE HUMAN INTERVENTION IS REQUIRED
+-------------------------------------
+
+1. HumanApprovalBroker
+   - File: src/iabv_v15/services/approval/human_approval_broker.py (inferred from grep)
+   - Manages approval requests for sensitive actions
+   - Requires human approval for destructive actions
+   - Stores approval decisions in ApprovalMemory
+
+2. ToolApprovalPolicy
+   - File: src/iabv_v15/services/tools/tool_approval_policy.py (inferred from grep)
+   - Determines which tools require approval
+   - Blocks code editing without approval
+   - Sets execution_state to waiting_approval
+
+3. ApprovalGateService
+   - File: src/iabv_v15/services/adaptive/approval_gate_service.py (inferred from grep)
+   - Gates execution based on approval requirements
+   - Checks approval checkpoints
+   - Blocks actions without approval
+
+4. ConsensusInterpretationService
+   - File: src/iabv_v15/services/evolution/consensus_interpretation_service.py
+   - Lines: (viewed previously)
+   - When consensus is not reached, decision is human_deferred
+   - Requires human to break ties or make final decision
+
+5. PlatformPendingTask execution
+   - Tasks are descriptive, not executable
+   - Require manual intervention to execute
+   - No automatic execution mechanism exists
+
+---
+
+WHAT INPUTS HUMANS PROVIDE
+--------------------------
+
+1. Approval decisions:
+   - APPROVED: action allowed to proceed
+   - REJECTED: action blocked
+   - PENDING: awaiting decision
+
+2. Consensus resolution:
+   - Human breaks ties when consensus not reached
+   - Human selects winner from multiple IAs
+   - Human provides final decision
+
+3. Task execution:
+   - Human manually executes PlatformPendingTask
+   - Human provides implementation for development tasks
+   - Human resolves blocked tasks
+
+4. Teaching sessions:
+   - Human provides captured steps for teaching
+   - Human provides expected outcomes
+   - Human provides notes and corrections
+
+---
+
+WHAT OUTPUTS HUMANS RECEIVE
+---------------------------
+
+1. Approval requests:
+   - Action description
+   - Risk assessment
+   - Governance flags
+   - Approval decision interface
+
+2. Consensus results:
+   - Multiple IA responses
+   - Confidence scores
+   - Voting results
+   - Request for human decision
+
+3. Task summaries:
+   - PlatformPendingTask list
+   - Actionable tasks
+   - Blocked tasks
+   - Next action hints
+
+4. Teaching feedback:
+   - Learning signals
+   - Pattern reuse status
+   - Visual alignment scores
+   - Manual correction counts
+
+---
+
+WHO CONSUMES HUMAN OUTPUTS
+---------------------------
+
+1. ApprovalGateService
+   - Consumes human approval decisions
+   - Allows or blocks actions based on approval
+   - Updates approval checkpoints
+
+2. ConsensusInterpretationService
+   - Consumes human tie-breaking decisions
+   - Uses human decision as final winner
+   - Records human_deferred outcome
+
+3. PlatformPendingQueue
+   - Consumes manual task completions
+   - Updates task status to COMPLETED
+   - Removes completed tasks from actionable list
+
+4. InteractionLearningService
+   - Consumes teaching session data
+   - Creates patterns from human demonstrations
+   - Generates learning signals
+
+---
+
+WHETHER HUMAN DEPENDENCIES BLOCK AUTONOMOUS SELF-IMPROVEMENT
+------------------------------------------------------------
+
+YES - Human dependencies BLOCK autonomous self-improvement:
+
+1. Approval gates:
+   - Code editing requires approval
+   - Self-update requires approval
+   - Destructive actions require approval
+   - NO mechanism to bypass approval for self-improvement
+
+2. Consensus tie-breaking:
+   - When IAs disagree, human must decide
+   - NO automatic tie-breaking mechanism
+   - NO fallback to automatic decision
+
+3. Task execution:
+   - PlatformPendingTask requires manual execution
+   - NO automatic task execution
+   - NO autonomous implementation of development tasks
+
+4. Teaching:
+   - Pattern learning requires human demonstrations
+   - NO automatic pattern discovery
+   - NO autonomous teaching
+
+---
+
+MISSING EDGES
+-------------
+
+1. NO autonomous approval bypass
+   - NO mechanism for system to approve its own actions
+   - NO self-approval for trusted operations
+   - NO graduated approval based on trust
+
+2. NO automatic consensus resolution
+   - NO automatic tie-breaking when IAs disagree
+   - NO fallback to weighted vote without human
+   - NO automatic decision based on confidence
+
+3. NO autonomous task execution
+   - NO mechanism to automatically execute PlatformPendingTask
+   - NO autonomous implementation of development tasks
+   - NO self-execution of self-improvement tasks
+
+4. NO autonomous teaching
+   - NO automatic pattern discovery from execution
+   - NO autonomous teaching from successful patterns
+   - NO self-teaching without human demonstration
+
+5. NO human-independent self-improvement loop
+   - Every self-improvement stage requires human intervention
+   - NO fully autonomous self-improvement cycle
+   - NO mechanism to reduce human dependency over time
+
+---
+
+CONCLUSION
+----------
+
+Human dependencies are EXTENSIVE and BLOCK autonomous self-improvement:
+- Approval gates block code editing and self-update
+- Consensus requires human tie-breaking
+- Task execution requires manual intervention
+- Teaching requires human demonstrations
+- NO mechanism for autonomous approval
+- NO mechanism for automatic consensus resolution
+- NO mechanism for autonomous task execution
+- NO mechanism for autonomous teaching
+- NO human-independent self-improvement loop
+
+The system CANNOT autonomously self-improve without human intervention at every critical stage.

@@ -1,0 +1,20 @@
+# Raw Commands Executed for G1 Forensic Evidence
+
+# G1 Positive E2E Test
+python -m pytest tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_real_e2e -v -s
+
+# G1 Negative E2E Test
+python -m pytest tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_negative_real_e2e -v -s
+
+# C2 Regression Tests
+python -m pytest tests/windows_e2e/test_c2_real_self_update_authority.py -v
+
+# Repository State Before Test
+git status --porcelain
+
+# Repository State After Test
+git status --porcelain
+
+# Implementation Diffs
+git diff -- src/iabv_v15/infra/mcp/server.py
+git diff -- src/iabv_v15/infra/mcp/self_update_tools.py

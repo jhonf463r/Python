@@ -1,0 +1,53 @@
+NEGATIVE TEST RAW
+=================
+
+NEGATIVE TEST RESULTS:
+======================
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_performance_degradation_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_provider_latency_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_route_failure_no_need PASSED
+
+NEGATIVE TEST DETAILS:
+----------------------
+
+test_provider_latency_no_need:
+- Input: SelfExaminationFinding with category="provider_underperformance"
+- Expected: None (operational finding should NOT produce need)
+- Actual: None
+- Verified: Operational finding correctly rejected
+
+test_route_failure_no_need:
+- Input: SelfExaminationFinding with category="route_failure"
+- Expected: None (operational finding should NOT produce need)
+- Actual: None
+- Verified: Operational finding correctly rejected
+
+test_performance_degradation_no_need:
+- Input: SelfExaminationFinding with category="performance_degradation"
+- Expected: None (operational finding should NOT produce need)
+- Actual: None
+- Verified: Operational finding correctly rejected
+
+CAPABILITY vs OPERATIONAL DISTINCTION:
+---------------------------------------
+CAPABILITY_SHAPED_CATEGORIES (produce needs):
+- capability_discovery
+- missing_capability
+- missing_knowledge
+- inability
+- uncertainty
+- limitation
+
+OPERATIONAL_CATEGORIES (do NOT produce needs):
+- provider_underperformance
+- route_failure
+- latency_high
+- performance_degradation
+- resource_pressure
+
+KEYWORD-BASED DETECTION:
+- Capability keywords: cannot, unable, missing, lack, need, require, capability, knowledge, uncertain, unknown, limitation, inability
+- Operational keywords: slow, latency, timeout, degraded, performance, provider
+
+VERIFICATION:
+All operational findings correctly rejected. No capability needs fabricated from operational issues.

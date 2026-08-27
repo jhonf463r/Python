@@ -1,0 +1,76 @@
+R8-G4.5 STATE CAPTURE
+====================
+
+TIMESTAMP = 2026-08-26 22:56:40 UTC-05:00
+
+============================================================
+STRUCTURED NEEDS DIRECTORY STATE
+============================================================
+
+DIRECTORY: data/evolution/structured_needs
+FILE_COUNT: 12
+FILES:
+  need_012e1ad5-b885-4e71-b5aa-d8b9bddf8494.json (570 bytes, 2026-08-26 10:54:17 PM)
+  need_0cd6562c-032f-42a3-a068-8cd5508cd6c8.json (570 bytes, 2026-08-26 10:52:02 PM)
+  need_137701db-3265-449a-a468-56b2cd089d66.json (570 bytes, 2026-08-26 10:56:40 PM) [NEWEST]
+  need_330b6a18-66bc-46a5-8eda-66beac23cc57.json (570 bytes, 2026-08-26 10:52:57 PM)
+  need_4bcb46af-7a53-483d-97a6-388665364f5e.json (570 bytes, 2026-08-26 10:47:21 PM)
+  need_5cc31de3-adf0-4d8f-8b5c-c6907170a102.json (570 bytes, 2026-08-26 10:48:13 PM)
+  need_655a84c5-6ddc-499a-83a3-6fac17fff195.json (570 bytes, 2026-08-26 10:51:03 PM)
+  need_7773c121-645e-4a66-bcae-b2e9c12376ee.json (570 bytes, 2026-08-26 10:50:08 PM)
+  need_940141c1-b0d4-48e2-996d-97e690223785.json (570 bytes, 2026-08-26 10:42:31 PM)
+  need_a0dc913a-5091-4326-b7e7-11e625b4ec23.json (570 bytes, 2026-08-26 10:46:29 PM)
+  need_ebbf18c9-4779-4d25-9db1-f0347446abfc.json (570 bytes, 2026-08-26 10:49:17 PM)
+  need_f1abb021-a7dd-4b89-bd84-1a10940b06b7.json (570 bytes, 2026-08-26 10:55:29 PM)
+
+NEW_NEEDS_CREATED: 1 (need_137701db-3265-449a-a468-56b2cd089d66.json)
+
+============================================================
+EVOLUTION DIRECTORY STATE
+============================================================
+
+DIRECTORY: data/evolution
+SUBDIRECTORIES:
+  - structured_needs (12 files)
+  - world_model (1 file: latest.json, 6136 bytes, 2026-08-26 22:56:03)
+  - tool_evolution (multiple history and validated_proposals files)
+  - platform_pending (Windows platform capability pending tasks)
+
+============================================================
+WORLD MODEL STATE
+============================================================
+
+FILE: data/evolution/world_model/latest.json
+SIZE: 6136 bytes
+LAST_MODIFIED: 2026-08-26 22:56:03
+
+============================================================
+DIAGNOSTIC FILES CREATED
+============================================================
+
+R8_G4_5_LIGHT_SCAN_ISOLATION_RAW.txt (diagnostic analysis)
+R8_G4_5_RUNTIME_OUTPUT_RAW.txt (runtime output)
+
+============================================================
+TEST MODIFICATION
+============================================================
+
+FILE: tests/test_r8_g4_5_runtime_integration.py
+MODIFICATION: Added PYTEST_CURRENT_TEST environment variable to signal test mode
+REASON: Prevents EnvironmentSelfAwarenessService from blocking on PowerShell subprocess calls
+
+============================================================
+SUMMARY
+============================================================
+
+BEFORE_TEST:
+  - Structured needs count: 11
+  - EnvironmentSelfAwarenessService: BLOCKED (subprocess hang)
+
+AFTER_TEST:
+  - Structured needs count: 12
+  - EnvironmentSelfAwarenessService: INITIALIZED SUCCESSFULLY
+  - New need created: need_137701db-3265-449a-a468-56b2cd089d66 (windows_capability_missing)
+  - Total findings produced: 9 (8 operational + 1 capability)
+  - Visible findings in review: 8 (truncated from 9)
+  - Capability finding position: 9 (truncated from review but processed by need formulation)

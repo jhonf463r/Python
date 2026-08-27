@@ -1,0 +1,91 @@
+# G1 Authority Pipe Fix - Forensic Bundle
+# Commit: fce8965eb5b50f37664b45cf377be16d67ae7427
+# Base Commit: 23ad19f3feefafde7854b5c41da5084f4c74e19f
+
+## Issue Summary
+The G1 E2E test was failing with "Failed to connect to authority pipe after 30 attempts" during REGISTER_EXECUTION. The root cause was a race condition where the test fixture was creating an AuthorityClient connection before tool registration, which conflicted with the acquire_capability_for_execution call that also creates its own connection.
+
+## Root Cause
+1. The G1 test fixture was initializing AuthorityClient before calling g1_goal_to_protected_tool
+2. The g1_goal_to_protected_tool method calls acquire_capability_for_execution, which creates its own AuthorityClient
+3. When the first connection was still holding the pipe, the second connection attempt failed with ERROR_PIPE_BUSY
+4. Additionally, the CapabilityActionBridge was not properly initialized with a connected AuthorityClient for lease consumption
+
+## Investigation Findings
+- Authority process lifecycle: Working correctly (started, alive, pipe created, ready)
+- C2 test pattern: Works correctly because it calls acquire_capability_for_execution first, then creates a new AuthorityClient for CapabilityActionBridge
+- G1 test pattern: Was attempting to pre-connect AuthorityClient, causing pipe busy race condition
+- Tool selection: CloudReasoningPlannerService was assigning unsupported tools (chatgpt, devin) instead of write_repo_file
+
+## Fixes Applied
+
+### 1. Authority Pipe Connection Fix (src/iabv_v15/infra/mcp/server.py)
+- Added capability_bridge_setup step in g1_goal_to_protected_tool after acquire_capability_for_execution
+- This step creates a fresh AuthorityClient for CapabilityActionBridge after the capability acquisition closes its connection
+- Follows the C2 test pattern to avoid pipe busy race condition
+
+### 2. Dynamic Bridge Lookup (src/iabv_v15/infra/mcp/self_update_tools.py)
+- Added container parameter to register_self_update_tools for dynamic bridge lookup
+- Added _get_capability_action_bridge() helper to look up bridge from container
+- Modified write_repo_file to accept optional lease_id parameter for G1 flow
+- G1 flow: Uses lease_id from acquire_capability_for_execution (bypasses acquire_capability_for_existing_execution)
+- C2 flow: Acquires new lease via acquire_capability_for_existing_execution (existing behavior)
+
+### 3. Tool Selection Fix (src/iabv_v15/services/adaptive/cloud_reasoning_planner.py)
+- Refined _PLAN_SYSTEM_PROMPT to explicitly instruct planner to use write_repo_file for file operations
+- Added clear instructions to avoid using chatgpt, devin, or other LLM tools for file mutations
+- Emphasized that only write_repo_file is executable for file operations
+
+### 4. Test Fixture Fix (tests/windows_e2e/test_g1_goal_to_protected_tool.py)
+- Removed early AuthorityClient initialization from test fixture
+- Let g1_goal_to_protected_tool handle AuthorityClient lifecycle internally
+- Fixed governance_fn signature to accept **kwargs
+- Added runtime data capture for forensic bundle
+
+### 5. Conftest Fix (tests/windows_e2e/conftest.py)
+- Removed pipe availability check that was causing race conditions
+- Simplified to just wait for process initialization
+
+## Verification Results
+
+### G1 E2E Test
+- Status: PASSING
+- All steps: plan_generation, tool_validation, register_execution, capability_bridge_setup, tool_dispatch, effect_verification
+- REGISTER_EXECUTION: Produces execution_id, run_id, lease_id correctly
+- Tool dispatch: write_repo_file assigned and executed successfully
+- File mutation: Real file created with SHA256 hash change
+- Git status: Shows new file (?? IABV_v1.5/g1_real_e2e_test.txt)
+
+### G1 Negative Test
+- Status: PASSING
+- Verifies validation logic presence
+
+### C2 Regression Tests
+- Status: 10/10 PASSING
+- All C2 authority tests still passing after G1 fixes
+
+## Runtime Data (from test_g1_real_e2e)
+BEFORE_SHA256: (empty - file did not exist)
+AFTER_SHA256: 99b678fd627c64e219692f85e21923444abf3c0b129c6e8c0d73f11a53cf737e
+BEFORE_GIT_STATUS: M IABV_v1.5/src/iabv_v15/infra/mcp/self_update_tools.py
+   M IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+AFTER_GIT_STATUS: ?? IABV_v1.5/g1_real_e2e_test.txt
+GIT_DIFF: (no diff or not tracked)
+FILE_EXISTS: True
+FILE_SIZE_BYTES: 26
+FILE_CONTENT_PREVIEW: G1 real E2E test content
+EXECUTION_ID: AC5MnWXsMFY18veutc4ZJg
+RUN_ID: gS62ABkL7lhAGbO8JUWxwg
+LEASE_ID: I3PjuFeBOkwcbhO3NdzSFw
+ASSIGNED_TOOL: write_repo_file
+PLAN_SUMMARY: {'plan_id': '91595ff9-fe79-44b5-9339-9df472ca8acb', 'summary': 'Create a test file to verify G1 execution', 'cloud_source': 'groq', 'confidence': 0.97, 'steps_count': 1}
+
+## Files Modified
+1. src/iabv_v15/infra/mcp/self_update_tools.py - Dynamic bridge lookup and lease_id parameter
+2. src/iabv_v15/infra/mcp/server.py - Capability bridge setup step
+3. src/iabv_v15/services/adaptive/cloud_reasoning_planner.py - Tool selection prompt
+4. tests/windows_e2e/conftest.py - Pipe availability check removal
+5. tests/windows_e2e/test_g1_goal_to_protected_tool.py - Test fixture fix and runtime data capture
+
+## Conclusion
+The G1 Authority pipe connection issue has been resolved by following the C2 test pattern for AuthorityClient lifecycle management. The G1 operational path now executes successfully with real REGISTER_EXECUTION, real tool dispatch, real C2 authorization, and real file mutation with git verification. All regression tests pass.

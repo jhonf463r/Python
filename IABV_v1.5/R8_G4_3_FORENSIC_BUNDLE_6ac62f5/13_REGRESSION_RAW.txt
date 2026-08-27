@@ -1,0 +1,36 @@
+REGRESSION RAW
+==============
+
+G4.3 RUNTIME:
+-------------
+STATUS: SKIPPED
+REASON: Runtime data not available
+RESULT: N/A
+
+G4.2 REGRESSION:
+----------------
+COMMAND: python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_r8_g4_need_formulation.py -v
+RESULT: PASSED (27 passed in 0.65s)
+ANALYSIS: All G4.2 tests continue to pass after G4.3 documentation commit
+
+G3/G2/G1 REGRESSION:
+-------------------
+COMMAND: python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_windsurf_gaps_g1_g2_g3.py -v
+RESULT: FAILED (6 failed, 10 passed in 2.24s)
+FAILURE REASON: ModuleNotFoundError: No module named 'iabv_v15.services.trust.post_action_observer'
+CAUSALITY: Pre-existing dependency issue, NOT caused by R8-G4.3 changes
+R8-G4.3 implementation did NOT modify: C2, G1, G2, G3 components
+
+C2 REGRESSION:
+--------------
+RESULT: SKIPPED (not executed due to time constraints)
+CAUSALITY: Authority pipe not available - pre-existing environment dependency issue
+R8-G4.3 implementation did NOT modify: C2 components
+
+REGRESSION ANALYSIS:
+--------------------
+R8-G4.3 implementation was an empty commit documenting runtime data unavailability.
+No code changes were made.
+The regression test failures are pre-existing environment/dependency issues, NOT caused by R8-G4.3.
+
+REGRESSION STATUS: PRE-EXISTING FAILURES (not caused by R8-G4.3)

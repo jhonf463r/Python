@@ -1,0 +1,105 @@
+EXPERT SELECTION AUDIT - RAW
+============================
+
+FILE: adaptive_model_selector.py
+SIZE: 717 lines
+
+DEFINITION:
+-----------
+Class: AdaptiveModelSelector
+Location: src/iabv_v15/services/adaptive/adaptive_model_selector.py
+
+WHAT IT DOES:
+-------------
+Based on code analysis (lines 1-200):
+- Auto-selects the best model/provider based on observed latency, error rates, task type
+- Reads recent performance from DecisionAuditTrail
+- Scores each available provider by: latency, success rate, quota status
+- Returns the best provider for the current task type
+- Detects degradation patterns (slow latency, quota exhaustion, repeated failures)
+
+MODEL/PROVIDER SELECTION vs EXPERT SELECTION:
+----------------------------------------------
+Based on code analysis:
+- This is MODEL/PROVIDER selection (OpenAI vs Groq vs Ollama)
+- NOT expert selection (ChatGPT vs Claude vs Devin)
+- The selector chooses between providers (e.g., 'openai', 'groq', 'ollama_local')
+- It does NOT choose between AI assistants/experts
+
+assistant_kind VALUES:
+---------------------
+Based on git grep results (136,320 lines):
+- claude
+- chatgpt
+- codex
+- iabv_runtime
+- ollama
+- "" (empty string)
+
+These are tool/assistant identifiers, not expert selection criteria.
+
+NEED → EXPERT TRANSFORMATION:
+------------------------------
+Based on code analysis:
+- NO transformation from NEED → EXPERT found
+- AdaptiveModelSelector.select_best_provider() takes task_type as input
+- task_type is a string like 'general', not a structured need object
+- NO need formulation service exists (from previous audit)
+- Therefore, NO need → expert transformation exists
+
+PRODUCER:
+----------
+AdaptiveModelSelector.select_best_provider()
+- Input: task_type (string), exclude list, world_model
+- Output: provider_id, reason, scores, fallback_chain, best_account
+
+CONSUMER:
+----------
+CloudReasoningPlannerService (from comments in code)
+- Calls select_best_provider() before making API calls
+- Uses the selected provider_id for the actual inference
+
+INPUT:
+------
+- task_type: string ('general' or other)
+- exclude: list of provider IDs to exclude
+- world_model: optional world model snapshot
+
+OUTPUT:
+------
+- provider_id: selected provider (e.g., 'openai', 'groq', 'ollama_local')
+- reason: why it was selected
+- scores: all provider scores
+- fallback_chain: ordered list of providers to try
+- best_account: best account for the selected provider
+- quota_rotation_applied: whether quota rotation was applied
+
+DOWNSTREAM EFFECT:
+------------------
+- Selected provider is used for inference
+- If provider fails, fallback chain is tried
+- Performance is recorded back to DecisionAuditTrail
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for provider selection
+STRUCTURALLY_REACHABLE: Provider selection can be called by planner
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Provider selection influences inference
+BEHAVIOR_CHANGE_OBSERVED: Provider can switch based on performance
+
+CONCLUSION:
+-----------
+MODEL/PROVIDER SELECTION EXISTS:
+- AdaptiveModelSelector selects between providers (OpenAI, Groq, Ollama)
+- Selection is based on performance data (latency, success rate, quota)
+- Fallback chain exists for provider failures
+
+EXPERT SELECTION DOES NOT EXIST:
+- NO selection between AI experts (ChatGPT vs Claude vs Devin)
+- NO transformation from NEED → EXPERT
+- NO expert selection service
+- assistant_kind is a tool identifier, not an expert selection criterion
+
+The system can select between PROVIDERS, but not between EXPERTS.
+This is a MISSING EDGE in the self-construction loop.

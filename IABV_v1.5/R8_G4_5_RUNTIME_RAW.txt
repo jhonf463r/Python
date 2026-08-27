@@ -1,0 +1,173 @@
+R8-G4.5 RUNTIME INTEGRATION TEST RAW OUTPUT
+==========================================
+
+STATE = RUNTIME_SUCCESS
+
+LIGHT_SCAN_REACHED = TRUE
+LIGHT_SCAN_COMPLETED = TRUE
+LIGHT_SCAN_DURATION = UNKNOWN (completed successfully)
+
+ENVIRONMENT_SELF_AWARENESS_SERVICE_INITIALIZED = TRUE
+ENVIRONMENT_MODEL_AVAILABLE = TRUE
+ENVIRONMENT_MODEL_SCAN_STATUS = partial
+ENVIRONMENT_MODEL_CAPABILITY_GRAPH_LENGTH = 11
+ENVIRONMENT_MODEL_PLATFORM_CAPS_COUNT = 8
+ENVIRONMENT_MODEL_MISSING_PLATFORM_CAPS_COUNT = 1
+ENVIRONMENT_MODEL_MISSING_PLATFORM_CAPS = ['platform.notifications']
+
+WORLD_MODEL_SERVICE_INITIALIZED = TRUE
+WORLD_MODEL_ENV_SELF_SERVICE = TRUE
+WORLD_MODEL_ENV_SELF_SERVICE_MATCH = TRUE
+
+OSES_INITIALIZED = TRUE
+OSES_WORLD_MODEL_SERVICE = TRUE
+OSES_WORLD_MODEL_SERVICE_MATCH = TRUE
+
+NEED_FORMULATION_SERVICE = TRUE
+STRUCTURED_NEED_REPOSITORY = TRUE
+
+BEFORE_NEEDS_COUNT = 0
+AFTER_NEEDS_COUNT = 1
+NEW_NEEDS_COUNT = 1
+
+============================================================
+FINDINGS PRODUCED (8 total)
+============================================================
+
+FINDING_1:
+  ID: fa89c16b-7ca0-4460-a647-9dfbf30ca19a
+  CATEGORY: http_noise
+  TITLE: Ruido excesivo de logs HTTP (httpx)
+  SUMMARY: Detectadas 500 ocurrencias de "HTTP Request:" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.9
+  SHAPE: operational
+
+FINDING_2:
+  ID: 0ccadb2d-4988-4687-b02f-e6608b142c7d
+  CATEGORY: loop_closure
+  TITLE: Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)
+  SUMMARY: 
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.0
+  SHAPE: operational
+
+FINDING_3:
+  ID: 2ae2f4f6-0a05-42c9-aa81-761aae08eaaa
+  CATEGORY: windows_integration_gaps
+  TITLE: 1 capacidades Windows nativas faltantes
+  SUMMARY: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.9
+  SHAPE: capability-shaped
+
+FINDING_4:
+  ID: 8f1a8f97-e3c5-4d1f-8f2d-f14456ef738f
+  CATEGORY: web_session_expired
+  TITLE: Gemini Web necesita re-login
+  SUMMARY: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.85
+  SHAPE: operational
+
+FINDING_5:
+  ID: 2dded4c2-ffd1-4349-92b6-3636dc733483
+  CATEGORY: ui_self_awareness
+  TITLE: iabv_window_missing
+  SUMMARY: No se detecta ninguna ventana IABV entre las 8 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.5
+  SHAPE: operational
+
+FINDING_6:
+  ID: cffd1a0a-5225-4567-9243-3c2d714675bd
+  CATEGORY: discernment_frame_missing_in_task_context
+  TITLE: Discernment frame ausente en contexto
+  SUMMARY: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.0
+  SHAPE: operational
+
+FINDING_7:
+  ID: bfd11f5a-42aa-465a-a58f-79efe14be6c9
+  CATEGORY: self_correction
+  TITLE: Auto-correcciones aplicadas desde log: 1
+  SUMMARY: El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 1.0
+  SHAPE: operational
+
+FINDING_8:
+  ID: a439ea5b-e053-4273-930f-f249b83a6f73
+  CATEGORY: autonomy_index_insufficient_data
+  TITLE: UniversalAutonomyIndex: datos insuficientes
+  SUMMARY: Solo hay 0 runs, 0 experimentos y 0 sesiones adaptativas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 0.95
+  SHAPE: operational
+
+============================================================
+STRUCTURED NEED CREATED (1 total)
+============================================================
+
+NEED_ID: 940141c1-b0d4-48e2-996d-97e690223785
+SOURCE_FINDING_ID: ccddabb5-3167-45c2-92b5-0719a13d3b88
+CATEGORY: windows_capability_missing
+CAPABILITY_GAP: Falta: Notificaciones Windows
+CURRENT_STATE: 
+DESIRED_STATE: Dependencia: winrt, plyer, o winotify
+KNOWLEDGE_REQUIRED: windows_capability_missing
+REASON: Windows 10+ pero sin libreria de toast (winrt/plyer/winotify)
+EVIDENCE: []
+PRIORITY: low
+STATUS: NeedStatus.PENDING
+
+============================================================
+PROVENANCE ANALYSIS
+============================================================
+
+CAPABILITY_FINDING_ID: 2ae2f4f6-0a05-42c9-aa81-761aae08eaaa
+NEED_SOURCE_FINDING_ID: ccddabb5-3167-45c2-92b5-0719a13d3b88
+
+PROVENANCE_MISMATCH: TRUE
+The source_finding_id in the StructuredNeed does not match the finding_id of the capability-shaped finding.
+
+This requires investigation:
+- NeedFormulationService may be creating a new finding ID
+- There may be a transformation step that generates a new ID
+- The finding may be cloned or transformed before need formulation
+
+============================================================
+OPERATIONAL FINDINGS REJECTED
+============================================================
+
+OPERATIONAL_FINDINGS_COUNT: 7
+OPERATIONAL_FINDINGS_REJECTED: 7
+OPERATIONAL_FINDINGS_CONVERTED_TO_NEEDS: 0
+
+FAIL_CLOSED_BEHAVIOR: CONFIRMED
+All operational findings were correctly rejected by NeedFormulationService._is_capability_shaped()
+
+============================================================
+CAPABILITY-SHAPED PRODUCER TRACE
+============================================================
+
+PRODUCER: _windows_integration_findings
+SOURCE_FILE: src/iabv_v15/services/evolution/operational_self_examination_service.py
+TRIGGER: build_review() calls _windows_integration_findings()
+INPUT: EnvironmentSelfModel from world_model_service.environment_self_awareness_service.current_model()
+OUTPUT: Finding with category='windows_integration_gaps'
+CAPABILITY_GAP: platform.notifications (missing)
+CONFIDENCE: 0.9
+
+============================================================
+NEXT STEPS
+============================================================
+
+1. Investigate source_finding_id mismatch
+2. Verify semantic provenance for need fields
+3. Prove real operational negative (no StructuredNeed for operational findings)
+4. Capture before/after state
+5. Run regression tests
+6. Create forensic bundle
+7. Commit and push

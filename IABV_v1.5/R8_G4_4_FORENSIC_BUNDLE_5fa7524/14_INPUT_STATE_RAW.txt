@@ -1,0 +1,14 @@
+INPUT STATE RAW
+===============
+
+TEST_SEEDS_INPUT_STATE = FALSE
+TEST_MANUFACTURES_FINDING = FALSE
+
+The test executed build_review() against the natural environment without seeding any input state.
+
+INPUT STATE ANALYSIS:
+- runtime_audit.jsonl: DOES NOT EXIST
+- chat_research_backlog: DOES NOT EXIST
+- EnvironmentSelfModel: NOT INSPECTED IN DETAIL (may or may not have missing platform capabilities)
+
+No artificial state was created for the test. The test observed the natural state of the environment.

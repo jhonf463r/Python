@@ -1,0 +1,15 @@
+# Repository State After G1 Test
+ M IABV_v1.5/tests/windows_e2e/test_g1_goal_to_protected_tool.py
+?? IABV_v1.5/R4_TEMP_C2_REGRESSION_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_NEGATIVE_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_POSITIVE_CLEAN_RAW.txt
+?? IABV_v1.5/R4_TEMP_G1_POSITIVE_RAW.txt
+?? IABV_v1.5/R4_TEMP_IMPL_SELF_UPDATE_DIFF.txt
+?? IABV_v1.5/R4_TEMP_IMPL_SERVER_DIFF.txt
+?? IABV_v1.5/R4_TEMP_REPO_AFTER.txt
+?? IABV_v1.5/R4_TEMP_REPO_BEFORE.txt
+?? IABV_v1.5/R4_TEMP_REPO_BEFORE_CLEAN.txt
+?? IABV_v1.5/R5_G1_AUTHORITY_PIPE_FIXED_BUNDLE_fce8965eb/
+
+# Note: The G1 effect file (g1_real_e2e_test.txt) was created during the test
+# but was cleaned up after the test to avoid mixing implementation changes with effect

@@ -1,0 +1,10 @@
+HUMAN VISIBLE RUNTIME RAW
+==========================
+
+SKIPPED: No StructuredNeed objects to display.
+
+HUMAN_VISIBLE = N/A
+
+Reason: No capability findings produced, so no StructuredNeed objects were created or displayed.
+
+See 08_STRUCTURED_NEED_RUNTIME_RAW.txt for details.

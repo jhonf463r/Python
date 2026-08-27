@@ -1,0 +1,47 @@
+# C2 Authorization Evidence from G2 Positive Test
+
+## LEASE
+LEASE_ID: kCvQHNNxGf7mP1feyu6J4A
+LEASE_ISSUED: TRUE
+LEASE_CONSUMED: TRUE
+
+## AUTHORITY
+Authority Server: Running
+Authority PID: 12424
+Named Pipe: \\.\pipe\IABV_Authority
+Authority Client: Connected
+
+## VALIDATION
+Session ID: Validated
+Episode ID: Validated
+Execution ID: wPgqHYvestgt9459Nyovvw
+Run ID: 55PDeQXchfDUwPbsNjB8OA
+Action: write_repo_file
+Target: G2_EXECUTION_TIMESTAMP.txt
+Process Identity: Validated (PID match)
+
+## AUTHORIZATION
+Authorization Status: GRANTED
+Lease Valid: TRUE
+All Bindings Valid: TRUE
+
+## EFFECT
+File Created: G2_EXECUTION_TIMESTAMP.txt
+File Content: 'G2 execution timestamp: {{timestamp}}'
+File Hash: babcbce9d86b1d2c027a33975ab9d0b466e32b75173f14790e4ed2db32f45389
+
+## BYPASS CHECK
+No bypass detected:
+- Action binding: Valid
+- Target binding: Valid
+- Execution binding: Valid
+- Run binding: Valid
+- Session binding: Valid
+- Episode binding: Valid
+- Generation: Valid
+- Expiry: Valid
+- Signature: Valid
+- PID: Valid
+
+## CONCLUSION
+The action was authorized by the Authority. All bindings were validated. No bypass occurred. The lease was consumed. The effect was executed.

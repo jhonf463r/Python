@@ -1,0 +1,68 @@
+R7 G3 FINAL FORENSIC BUNDLE - CLOSE FORENSIC DEBT
+================================================
+
+BUNDLE_ID: R7_G3_FINAL_FORENSIC_BUNDLE
+BUNDLE_VERSION: 7.2
+CREATED: 2026-08-26T20:47:00Z
+BASE_COMMIT: 9454fc601a224a05e9ead57663ec279ed5a5b11c
+NEW_COMMIT: <PENDING>
+
+OBJECTIVE:
+----------
+Close forensic debt for G3 independent result verification by:
+1. Fixing content_contains logging bug (observed was None, now shows actual content)
+2. Adding commit provenance to bundle
+3. Implementing proper BEFORE/AFTER repository capture with distinct timestamps
+4. Ensuring all RAW runtime files are primary captures
+
+ISSUES ADDRESSED:
+-----------------
+1. BEFORE/AFTER repository snapshots were byte-identical - FIXED with separate captures at different timestamps
+2. content_contains logging showed observed=None - FIXED by using actual file_content in logging
+3. Bundle lacked sufficient commit provenance - FIXED with full git identity including COMMIT_SHA, PARENT_SHA, TREE_SHA, BRANCH, REMOTE
+
+ROOT CAUSE OF LOGGING BUG:
+---------------------------
+In server.py line 3617-3630, the verification logic correctly used file_content for comparison,
+but the observed_value in the match/mismatch record was set to observed_result.get(key) which
+returned None for content_contains since that key doesn't exist in observed_result.
+
+FIX APPLIED:
+------------
+Modified src/iabv_v15/infra/mcp/server.py lines 3617-3630:
+- For content_contains: observed_value = file_content (actual observed content)
+- For content_not_contains: observed_value = file_content (actual observed content)
+- For content_exact_match: observed_value = file_content (actual observed content)
+
+This ensures the match/mismatch records show the actual content that was compared,
+not None.
+
+VERIFICATION RESULTS:
+--------------------
+G3 POSITIVE TEST: PASSED
+- ACTION_EXECUTED: TRUE
+- ACTION_RESULT_OBSERVED: TRUE
+- ACTION_RESULT_VERIFIED: TRUE
+- content_contains.observed: 'G3_VERIFICATION_SUCCESS' (FIXED - was None)
+- Hash match: exact
+
+G3 NEGATIVE TEST: PASSED
+- ACTION_EXECUTED: TRUE
+- ACTION_RESULT_VERIFIED: FALSE (expected != observed)
+- Test status: PASS (failure detected correctly)
+
+G2 REGRESSION TEST: PASSED
+G1 REGRESSION TEST: PASSED
+C2 REGRESSION TEST: PASSED (10/10 tests)
+
+TOTAL: 14/14 PASSED, 0 SKIPPED, 0 FAILED
+
+FORENSIC DISCIPLINE:
+-------------------
+- BEFORE and AFTER captured at different timestamps
+- All RAW files are primary captures (stdout/stderr or direct tool output)
+- DERIVED files are clearly labeled
+- No recycling of PIDs, hashes, timestamps
+- Commit provenance included in bundle
+
+C2 STATUS: NOT MODIFIED (as required)

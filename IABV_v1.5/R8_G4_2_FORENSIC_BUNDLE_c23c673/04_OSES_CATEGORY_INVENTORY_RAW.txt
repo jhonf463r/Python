@@ -1,0 +1,161 @@
+OSES CATEGORY INVENTORY RAW
+===========================
+
+CAPABILITY-SHAPED CATEGORIES (added in G4.2):
+--------------------------------------------
+1. capability_promised_but_unavailable
+   - Producer: _capability_promised_but_unavailable_findings()
+   - Meaning: P0.32+P0.37: capability promised but not wired in build
+   - Capability Relevance: HIGH - represents missing capability in build
+   - Source: runtime_audit.jsonl scanning
+
+2. windows_capability_missing
+   - Producer: _windows_capability_gaps_findings()
+   - Meaning: Windows-specific capabilities missing from environment
+   - Capability Relevance: HIGH - represents missing Windows capability
+   - Source: EnvironmentCapability scanning
+
+3. research_gap
+   - Producer: _chat_research_backlog_findings()
+   - Meaning: P0.38: user-declared capabilities needing investigation
+   - Capability Relevance: HIGH - represents knowledge gap requiring investigation
+   - Source: chat_research_backlog/<session>.jsonl
+
+ORIGINAL G4 CATEGORIES (kept for compatibility):
+-----------------------------------------------
+4. capability_discovery
+5. missing_capability
+6. missing_knowledge
+7. inability
+8. uncertainty
+9. limitation
+
+OPERATIONAL CATEGORIES (added in G4.2):
+---------------------------------------
+1. functional_gap
+   - Producer: _functional_gap_findings()
+   - Meaning: Underutilized resources, not missing capabilities
+   - Capability Relevance: LOW - resources available but not used
+   - Rejection Reason: Not a capability gap, usage optimization issue
+
+2. configuration_gap
+   - Producer: _configuration_gaps_findings()
+   - Meaning: Missing configuration/secrets, not capability gaps
+   - Capability Relevance: LOW - configuration issue, not capability
+   - Rejection Reason: Missing config/secrets, not capability gap
+
+3. underutilized_resource
+   - Producer: _functional_gap_findings()
+   - Meaning: Resources available but not used
+   - Capability Relevance: LOW - resource exists but not utilized
+   - Rejection Reason: Resource available, not missing
+
+4. temporal_latency_anomaly
+   - Producer: _temporal_findings()
+   - Meaning: Sudden spike in operation latency
+   - Capability Relevance: LOW - operational performance issue
+   - Rejection Reason: Operational problem, not capability gap
+
+5. cloud_provider_degradation
+   - Producer: _cloud_reasoning_findings()
+   - Meaning: Cloud provider success rate dropped
+   - Capability Relevance: LOW - external service degradation
+   - Rejection Reason: External service issue, not capability gap
+
+ADDITIONAL OPERATIONAL CATEGORIES (100+):
+---------------------------------------
+background_error_stagnation
+temporal_latency_regression
+temporal_stalled_operations
+deep_analysis_ema_drift
+deep_analysis_correlated_failures
+deep_analysis_latency_outliers
+metacognitive_feedback_applied
+metacognitive_loop_closure_improving
+recurring_failure
+repeated_stall
+inertial_route
+repeated_block
+weak_correction
+token_rotation
+ui_heartbeat_stall
+interaction_episode_stalls
+interaction_episode_failures
+interaction_episode_blocked
+interaction_episode_pending
+dispatch_lifecycle_anomaly
+external_failure_followup_misrouted_to_local
+human_assist_bridge
+startup_degradation
+startup_false_ready
+qml_event_loop_starvation
+startup_populate_ui_freeze
+startup_populate_ui_incomplete
+startup_memory_spike
+startup_chat_bridge_missing
+startup_chat_bridge_late
+startup_priority_inversion
+boot_profile_degradation
+boot_profile_regression
+cloud_reasoning_degradation
+cloud_provider_degradation
+cloud_rate_limiting
+cloud_provider_improving
+cloud_no_functional_provider
+resource_degradation
+repeated_resource_pressure_blocks
+startup_heavy_work_starvation
+stale_security_verification_repeated
+web_skill_profile_missing
+devin_repair_worker_available_but_unused
+web_session_expired
+task_packet_high_unresolved
+task_packet_recurring_approval
+task_packet_no_worker
+task_packet_gate_unusable
+task_packet_worker_budget_exhausted
+task_packet_worker_handoff_unresolved
+task_packet_worker_high_corrections
+task_packet_worker_good_compression
+task_packet_performance_jump
+task_packet_metacognitive_miscalibration
+task_packet_metacognitive_overconfidence
+task_packet_metacognitive_underconfidence
+adaptive_threshold_shift
+windows_integration_gaps
+autonomy_index_insufficient_data
+universal_autonomy_index
+autonomy_calibration_drift
+oses_finding
+repeated_visual_mismatch
+user_browser_differs_from_iabv_session
+black_capture_repeated
+user_needed_to_explain_same_gap
+repeated_restore_without_recapture
+repeated_win32_restore_unavailable
+repeated_user_selection_needed
+repeated_restore_attempted
+isolated_profile_blocks_user_logged_in_browser
+metacognitive_maintenance_starved
+incident_followup_falls_to_local_chat
+external_readiness_missing
+build_stale_repeated
+cdp_unavailable_repeated
+external_intent_misrouted_local
+startup_truth_refresh_stall_repeated
+startup_evolution_stall_repeated
+prebuild_resource_snapshot_stall_repeated
+post_result_development_packet_slow
+ui_display_sqlite_stall_repeated
+ui_portable_context_scan_stall_repeated
+discernment_frame_missing_in_task_context
+action_without_grounding
+contradiction_ignored
+low_confidence_acted_as_high
+failed_attractor_repeated
+external_source_bias
+stale_external_data_overrode_live_world_model
+bridge_claimed_ready_but_no_vm
+local_chat_slow_after_continuity
+ui_stall_without_causal_phase
+duplicate_ui_bridge_owner

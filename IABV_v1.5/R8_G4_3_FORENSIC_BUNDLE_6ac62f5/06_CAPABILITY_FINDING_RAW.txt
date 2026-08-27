@@ -1,0 +1,13 @@
+CAPABILITY FINDING RAW
+======================
+
+STATUS: SKIPPED
+REASON: Runtime data not available
+
+ANALYSIS:
+- No runtime_audit.jsonl to scan for capability_promised_but_unavailable findings
+- No chat_research_backlog to scan for research_gap findings
+- Cannot execute OperationalSelfExaminationService.build_review() without runtime data
+
+CONCLUSION:
+Cannot trace real capability finding without runtime data sources.

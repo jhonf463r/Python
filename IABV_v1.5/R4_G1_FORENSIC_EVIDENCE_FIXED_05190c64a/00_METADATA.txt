@@ -1,0 +1,109 @@
+# G1 Forensic Evidence - R4 Fix
+# Commit: (to be created)
+# Base Commit: fce8965eb5b50f37664b45cf377be16d67ae7427
+
+## Issue Summary
+The independent audit of commit fce8965eb emitted G1_FINAL_FAIL with two main findings:
+1. NEGATIVE_G1 = FAIL - The negative test passed but did not exercise a real rejection
+2. RAW_RUNTIME_CREDIBILITY = PARTIAL/UNVERIFIED - Runtime values were not present in a commited bundle
+
+## Root Cause Analysis
+The original negative test (test_g1_negative_real_e2e) only verified that tools were registered, but did not actually call the G1 entry point with an unsupported tool. It used static code inspection instead of runtime execution.
+
+## Fixes Applied
+
+### 1. Real Negative G1 Test (tests/windows_e2e/test_g1_goal_to_protected_tool.py)
+- Replaced static code inspection with actual G1 entry point call
+- Added controlled planner (NegativeMockPlanner) that returns unsupported_tool_xyz
+- The controlled planner is explicitly marked as NEGATIVE TEST ONLY
+- The test now calls server.g1_goal_to_protected_tool() with the controlled planner
+- Verifies real rejection with error status
+- Verifies NO capability acquisition (REGISTER_EXECUTION not called)
+- Verifies NO authorization (capability_bridge_setup not called)
+- Verifies NO tool dispatch
+- Verifies NO file mutation
+- Verifies NO git status change
+
+### 2. Raw Runtime Evidence Capture
+- Captured full G1 positive test runtime in 05_RAW_G1_RUNTIME.txt
+- Captured full G1 negative test runtime in 12_NEGATIVE_G1_RAW.txt
+- Captured C2 regression test runtime in 13_C2_REGRESSION_RAW.txt
+- All runtime files contain actual stdout/stderr from test execution
+- No placeholders, no derived data presented as raw
+
+### 3. Repository State Separation
+- Captured repository state before test in 10_REPOSITORY_BEFORE.txt
+- Captured repository state after test in 11_REPOSITORY_AFTER.txt
+- Implementation changes (test file modification) are separate from G1 effect
+- G1 effect file (g1_real_e2e_test.txt) is cleaned up after test to avoid mixing
+
+## Verification Results
+
+### G1 Positive E2E Test
+- Status: PASSING
+- All steps: plan_generation, tool_validation, register_execution, capability_bridge_setup, tool_dispatch, effect_verification
+- REGISTER_EXECUTION: Produces execution_id, run_id, lease_id correctly
+- Tool dispatch: write_repo_file assigned and executed successfully
+- File mutation: Real file created with SHA256 hash change
+- Git status: Shows new file created
+
+### G1 Negative E2E Test
+- Status: PASSING with REAL REJECTION EVIDENCE
+- Controlled planner returns unsupported_tool_xyz
+- G1 entry point rejects the tool with error status
+- Error message: "Unsupported tool: unsupported_tool_xyz. Registered tools: [...]"
+- REGISTER_EXECUTION: NOT called
+- capability_bridge_setup: NOT called
+- tool_dispatch: NOT called
+- File mutation: NOT created
+- Git status: NO change
+
+### C2 Regression Tests
+- Status: 10/10 PASSING
+- All C2 authority tests still passing after G1 fixes
+
+## Runtime Data (from test_g1_real_e2e)
+BEFORE_SHA256: (empty - file did not exist)
+AFTER_SHA256: 99b678fd627c64e219692f85e21923444abf3c0b129c6e8c0d73f11a53cf737e
+BEFORE_GIT_STATUS: M IABV_v1.5/tests/windows_e2e/test_g1_goal_to_protected_tool.py (implementation change)
+AFTER_GIT_STATUS: ?? IABV_v1.5/g1_real_e2e_test.txt (G1 effect)
+GIT_DIFF: (no diff or not tracked - new file)
+FILE_EXISTS: True
+FILE_SIZE_BYTES: 26
+FILE_CONTENT_PREVIEW: G1 real E2E test content
+EXECUTION_ID: 13cbqfkBVI3f81_7AZqvpg
+RUN_ID: OAU00QqINynXBpCYQoRDrA
+LEASE_ID: 7tj6cG6R3C2nlh5XnD0dDw
+ASSIGNED_TOOL: write_repo_file
+PLAN_SUMMARY: {'plan_id': '958685c7-f8f3-401a-93fc-3cb3b48d4648', 'summary': 'Create a new test file to verify G1 execution', 'cloud_source': 'groq', 'confidence': 0.97, 'steps_count': 1}
+
+## Negative Test Evidence
+ASSIGNED_TOOL: unsupported_tool_xyz (from controlled planner)
+REJECTION: "Unsupported tool: unsupported_tool_xyz. Registered tools: [...]"
+CAPABILITY_ACQUISITION: NOT CALLED
+AUTHORIZATION: NOT CALLED
+FILE_BEFORE: False (does not exist)
+FILE_AFTER: False (does not exist)
+NO_MUTATION: TRUE
+
+## Files Modified
+1. tests/windows_e2e/test_g1_goal_to_protected_tool.py - Real negative test implementation
+
+## Preserved Components
+- Authority implementation (no changes)
+- Ed25519 implementation (no changes)
+- Lease implementation (no changes)
+- Process identity verification (no changes)
+- Named Pipe implementation (no changes)
+- CapabilityActionBridge implementation (no changes)
+- C2 implementation (no changes)
+
+## Not Implemented (Per Requirements)
+- Learning loop (not implemented)
+- Rollback (not implemented)
+- Multi-agent deliberation (not implemented)
+- Autonomous self-development (not implemented)
+- Capability growth (not implemented)
+
+## Conclusion
+The G1 negative test now exercises real rejection via the G1 entry point. Raw runtime evidence is captured and included in the forensic bundle. Repository state is separated between implementation changes and G1 effects. All regression tests pass.

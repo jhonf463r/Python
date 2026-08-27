@@ -1,0 +1,27 @@
+TEST RESULTS RAW
+===============
+
+G4.4 RUNTIME INTEGRATION TEST:
+- test_r8_g4_4_runtime_integration.py: PASSED
+- REAL_BUILD_REVIEW = TRUE
+- REAL_FINDINGS_COUNT = 8
+- REAL_CAPABILITY_FINDINGS = 0
+- REAL_OPERATIONAL_FINDINGS = 8
+- REAL_STRUCTURED_NEEDS = 0
+
+G4.2 REGRESSION TEST:
+- COMMAND: python -m pytest tests/test_r8_g4_need_formulation.py -v
+- RESULT: 27 passed in 0.61s
+- STATUS: PASSED
+
+G3/G2/G1 REGRESSION TEST:
+- COMMAND: python -m pytest tests/test_windsurf_gaps_g1_g2_g3.py -v
+- RESULT: 6 failed, 10 passed
+- STATUS: FAILED
+- REASON: Pre-existing post_action_observer dependency issue (ModuleNotFoundError: No module named 'iabv_v15.services.trust.post_action_observer')
+- CAUSALITY: NOT CAUSED BY G4.4 CHANGES
+
+C2 REGRESSION TEST:
+- STATUS: SKIPPED
+- REASON: Authority pipe not available - pre-existing environment issue
+- CAUSALITY: NOT CAUSED BY G4.4 CHANGES

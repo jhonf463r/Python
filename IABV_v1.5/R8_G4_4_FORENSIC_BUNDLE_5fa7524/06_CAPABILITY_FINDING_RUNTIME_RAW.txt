@@ -1,0 +1,14 @@
+CAPABILITY FINDING RUNTIME RAW
+==============================
+
+SKIPPED: No capability findings produced.
+
+REAL_CAPABILITY_FINDINGS = 0
+
+Reason: runtime_audit.jsonl and chat_research_backlog do not exist in the current environment.
+These files are required for capability-shaped finding producers:
+- capability_promised_but_unavailable (requires runtime_audit.jsonl)
+- research_gap (requires chat_research_backlog)
+- windows_capability_missing (requires EnvironmentSelfModel with missing platform capabilities)
+
+See 15_ZERO_FINDING_DIAGNOSTIC.txt for detailed analysis.

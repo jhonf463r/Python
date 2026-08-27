@@ -1,0 +1,102 @@
+RAW AUDIT: R2.1 CASE BYPASS REGRESSION CHECK
+==========================================
+
+STAGE: R2.1 Case Bypass Regression Check
+OBJECTIVE: Verify that the VFINAL5-R2.1 case-sensitivity bypass fix is present and working.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+R2.1 VULNERABILITY DESCRIPTION
+-----------------------------
+
+The VFINAL5-R2.1 vulnerability allowed bypassing security-critical path restrictions using uppercase or mixed-case paths:
+- Lowercase denylist: "services/trust/", "security/", "bootstrap.py", ".git/config"
+- Bypass: "SERVICES/TRUST/", "SECURITY/", "BOOTSTRAP.PY", ".GIT/CONFIG"
+- Root cause: Path comparison was case-sensitive on case-insensitive filesystems (Windows)
+
+---
+
+FIX IMPLEMENTATION
+------------------
+
+File: src/iabv_v15/services/trust/authority_protocol.py
+Function: canonicalize_target() (lines 28-106)
+
+Key fix (line 74):
+```python
+# VFINAL5-R3: Platform-independent case-insensitive normalization
+# Security policy must be consistent across all platforms (Windows, Linux, CI, container)
+# Case-sensitive or case-insensitive filesystem semantics must be handled explicitly
+# For security-sensitive path classification, we normalize to lowercase
+normalized_path = normalized_path.lower()
+```
+
+The fix normalizes all paths to lowercase before policy evaluation, ensuring:
+- "file:src/IABV_V15/SERVICES/TRUST/foo.py" → "file:src/iabv_v15/services/trust/foo.py"
+- "file:src\\iabv_v15\\SERVICES\\TRUST/foo.py" → "file:src/iabv_v15/services/trust/foo.py"
+- "file:BOOTSTRAP.PY" → "file:bootstrap.py"
+- "file:.GIT/config" → "file:.git/config"
+
+---
+
+REGRESSION TESTS
+----------------
+
+File: tests/test_vfinal5_r2_2_case_bypass.py
+
+Test cases (lines 31-91):
+1. test_lowercase_trust_path_rejected - Baseline: lowercase paths rejected
+2. test_backslash_trust_path_rejected - Backslash paths rejected (R2.1 fix)
+3. test_uppercase_trust_path_bypass - UPPERCASE paths rejected (R2.2 fix)
+4. test_mixed_case_trust_path_bypass - Mixed-case paths rejected (R2.2 fix)
+5. test_partial_uppercase_trust_path_bypass - Partial uppercase rejected (R2.2 fix)
+6. test_uppercase_security_path_bypass - UPPERCASE security paths rejected (R2.2 fix)
+7. test_uppercase_bootstrap_bypass - UPPERCASE bootstrap rejected (R2.2 fix)
+8. test_uppercase_git_bypass - UPPERCASE .git rejected (R2.2 fix)
+
+All tests verify that case-normalized paths are rejected by the security-critical path check.
+
+---
+
+POLICY APPLICATION
+------------------
+
+File: src/iabv_v15/services/trust/authority_protocol.py
+Function: apply_authorization_policy() (lines 501-677)
+
+Security-critical path check (lines 615-628):
+```python
+security_critical_paths = [
+    "services/trust/",
+    "security/",
+    "authority",
+    "bootstrap.py",
+    ".git/config",
+    ".git/hooks"
+]
+for critical_path in security_critical_paths:
+    if critical_path in canonical_target:
+        return AuthorizationPolicyDecision(
+            allowed=False,
+            reason=f"Target '{canonical_target}' contains security-critical path '{critical_path}' - not allowed for self_update"
+        )
+```
+
+The check uses canonical_target (lowercase) to match against the lowercase denylist.
+
+---
+
+REGRESSION STATUS
+-----------------
+
+FIXED: The case-sensitivity bypass is fixed in the current codebase.
+
+Evidence:
+1. canonicalize_target() normalizes to lowercase (line 74)
+2. apply_authorization_policy() uses canonical_target for security checks (line 585)
+3. Regression tests exist and verify the fix (test_vfinal5_r2_2_case_bypass.py)
+4. Security-critical paths are lowercase in the denylist (lines 615-622)
+
+The fix ensures platform-independent security policy evaluation across Windows, Linux, CI, and container environments.

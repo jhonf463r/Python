@@ -1,0 +1,12 @@
+OPERATIONAL FINDING RAW
+=======================
+
+STATUS: SKIPPED
+REASON: Runtime data not available
+
+ANALYSIS:
+- No runtime_audit.jsonl to scan for operational findings
+- Cannot execute OperationalSelfExaminationService.build_review() without runtime data
+
+CONCLUSION:
+Cannot trace real operational finding without runtime data sources.

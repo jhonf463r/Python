@@ -1,0 +1,10 @@
+FINDINGS RUNTIME RAW
+===================
+
+This file references 04_BUILD_REVIEW_RUNTIME_RAW.txt for the complete findings output.
+
+TOTAL_FINDINGS: 8
+CAPABILITY_FINDINGS: 0
+OPERATIONAL_FINDINGS: 8
+
+All findings are captured in 04_BUILD_REVIEW_RUNTIME_RAW.txt.

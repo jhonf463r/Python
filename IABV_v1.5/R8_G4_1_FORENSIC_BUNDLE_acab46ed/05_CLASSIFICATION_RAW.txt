@@ -1,0 +1,52 @@
+CLASSIFICATION RAW
+==================
+
+BEFORE (R8-G4 - heuristic keyword detection):
+-------------------------------------------
+_is_capability_shaped() logic:
+1. Check if category in CAPABILITY_SHAPED_CATEGORIES → True
+2. Check title/summary for capability keywords (cannot, unable, missing, lack, need, require, capability, knowledge, uncertain, unknown, limitation, inability) → True if any match
+3. Check if category in OPERATIONAL_CATEGORIES → False
+4. Check title/summary for operational keywords (slow, latency, timeout, degraded, performance, provider) → False if any match
+5. Default: return True (treat as capability-shaped if uncertain)
+
+PROBLEM: "provider cannot handle load" would match "cannot" keyword and create a need despite being operational.
+
+AFTER (R8-G4.1 - fail-closed category-based):
+--------------------------------------------
+_is_capability_shaped() logic:
+1. Check if category in OPERATIONAL_CATEGORIES → False (reject immediately)
+2. Check if category in CAPABILITY_SHAPED_CATEGORIES → True
+3. Default: return False (fail-closed for ambiguous categories)
+
+FIX: "provider cannot handle load" is rejected because category="provider_underperformance" is in OPERATIONAL_CATEGORIES.
+
+OPERATIONAL_CATEGORIES (expanded):
+----------------------------------
+- provider_underperformance
+- route_failure
+- latency_high
+- performance_degradation
+- resource_pressure
+- network_failure (NEW)
+- timeout (NEW)
+- throughput_issue (NEW)
+- load_issue (NEW)
+
+CAPABILITY_SHAPED_CATEGORIES (unchanged):
+-----------------------------------------
+- capability_discovery
+- missing_capability
+- missing_knowledge
+- inability
+- uncertainty
+- limitation
+
+AMBIGUOUS CASE BEHAVIOR:
+------------------------
+BEFORE: Ambiguous findings with capability keywords → create need (FAIL-OPEN)
+AFTER: Ambiguous findings → no need (FAIL-CLOSED)
+
+Example: category="generic" with title="System cannot process request"
+BEFORE: Would create need (keyword "cannot" matched)
+AFTER: No need (category not in CAPABILITY_SHAPED_CATEGORIES, fail-closed)

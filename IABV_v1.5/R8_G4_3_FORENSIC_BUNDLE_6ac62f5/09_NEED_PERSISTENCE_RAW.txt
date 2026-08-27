@@ -1,0 +1,14 @@
+NEED PERSISTENCE RAW
+===================
+
+STATUS: SKIPPED
+REASON: Runtime data not available
+
+ANALYSIS:
+- No real structured need to persist
+- Cannot execute StructuredNeedRepository.upsert() with real data
+- Cannot execute StructuredNeedRepository.get() with real data
+- Cannot execute StructuredNeedRepository.list_pending() with real data
+
+CONCLUSION:
+Cannot verify persistence for real needs without runtime data sources.

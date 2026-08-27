@@ -1,0 +1,65 @@
+# Expected Result Derivation from G2 Positive Test
+
+## PLAN PARAMETERS
+PLAN_PARAMETERS: {'relative_path': 'G2_EXECUTION_TIMESTAMP.txt', 'content': 'G2 execution timestamp: {{timestamp}}'}
+
+## DERIVATION FUNCTION
+The expected result is derived in two parts:
+
+### Part 1: Semantic Expectations (from LLM)
+The LLM generates semantic expectations in expected_result:
+- file_exists: True
+- content_contains: 'G2 execution timestamp'
+
+These are provided by the LLM in the plan.
+
+### Part 2: Cryptographic Hash (deterministic derivation)
+The hash is NOT provided by the LLM. It is calculated deterministically by the system.
+
+## CODE DERIVATION (from server.py)
+```python
+# Calculate deterministic expected hash from plan parameters
+# This separates LLM reasoning (what should happen) from deterministic derivation (exact hash)
+calculated_expected_result = {}
+
+# Copy non-hash fields from plan expected_result (semantic expectations)
+# Ignore LLM-generated hash fields (content_hash, file_hash_sha256)
+for key, value in plan_expected_result.items():
+    if key not in ('content_hash', 'file_hash_sha256'):
+        calculated_expected_result[key] = value
+
+# If plan specifies content in parameters, calculate the expected hash
+if 'content' in plan_parameters:
+    content = plan_parameters.get('content', '')
+    import hashlib
+    expected_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
+    calculated_expected_result['file_hash_sha256'] = expected_hash
+    trace['calculated_expected_hash'] = expected_hash
+    trace['hash_derivation'] = 'deterministic_from_plan_parameters'
+```
+
+## DERIVATION STEPS
+1. Extract content from plan_parameters: 'G2 execution timestamp: {{timestamp}}'
+2. Encode content as UTF-8
+3. Calculate SHA256 hash using hashlib
+4. Add hash to calculated_expected_result as 'file_hash_sha256'
+5. Track derivation method in trace as 'deterministic_from_plan_parameters'
+
+## FINAL EXPECTED_RESULT
+{
+  'file_exists': True,
+  'content_contains': 'G2 execution timestamp',
+  'file_hash_sha256': 'babcbce9d86b1d2c027a33975ab9d0b466e32b75173f14790e4ed2db32f45389'
+}
+
+## PROVENANCE
+- file_exists: LLM (semantic expectation)
+- content_contains: LLM (semantic expectation)
+- file_hash_sha256: SYSTEM (deterministic derivation from plan parameters)
+
+## CONCLUSION
+The expected result is a hybrid:
+- Semantic expectations (file_exists, content_contains) come from the LLM
+- Cryptographic hash (file_hash_sha256) is calculated deterministically by the system
+- This separates LLM reasoning (what should happen) from deterministic derivation (exact hash)
+- The LLM is instructed NOT to include cryptographic hashes in expected_result

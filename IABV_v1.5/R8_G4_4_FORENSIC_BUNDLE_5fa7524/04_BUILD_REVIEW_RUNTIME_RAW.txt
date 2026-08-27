@@ -1,0 +1,92 @@
+BUILD REVIEW RUNTIME RAW
+========================
+
+COMMAND: python tests/test_r8_g4_4_runtime_integration.py
+
+OUTPUT:
+================================================================================
+R8-G4.4 RUNTIME INTEGRATION TEST
+================================================================================
+
+WORKSPACE_ROOT: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5
+
+STORAGE_INITIALIZED: True
+
+INITIALIZING OperationalSelfExaminationService...
+
+OSES_INITIALIZED: TRUE
+
+NEED_FORMULATION_SERVICE: True
+STRUCTURED_NEED_REPOSITORY: True
+
+EXECUTING build_review()...
+BUILD_REVIEW_START
+
+BUILD_REVIEW_END
+
+TOTAL_FINDINGS: 8
+
+FINDING_ID: d366427d-34c0-478c-96d2-d08a17c2317f
+  CATEGORY: http_noise
+  TITLE: Ruido excesivo de logs HTTP (httpx)
+  SUMMARY: Detectadas 500 ocurrencias de "HTTP Request:" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.9
+
+FINDING_ID: c55dc2f2-441a-465c-b6b9-05e538fea32b
+  CATEGORY: loop_closure
+  TITLE: Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)
+  SUMMARY: 
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.0
+
+FINDING_ID: 5fb85419-a3ab-4077-a58b-91ac5af024e6
+  CATEGORY: web_session_expired
+  TITLE: Gemini Web necesita re-login
+  SUMMARY: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.85
+
+FINDING_ID: 0c4d4c2b-6fb7-401d-8443-f4b97e8d170e
+  CATEGORY: discernment_frame_missing_in_task_context
+  TITLE: Discernment frame ausente en contexto
+  SUMMARY: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.0
+
+FINDING_ID: 4de56b75-a7c6-455e-9d3d-5e5aa2636424
+  CATEGORY: self_correction
+  TITLE: Auto-correcciones aplicadas desde log: 1
+  SUMMARY: El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 1.0
+
+FINDING_ID: 0fcc4efe-af10-4de3-b0f8-c38e1d1bbd8b
+  CATEGORY: autonomy_index_insufficient_data
+  TITLE: UniversalAutonomyIndex: datos insuficientes
+  SUMMARY: Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 0.95
+
+FINDING_ID: a051879a-6030-4fbf-a365-78c4cee57ab2
+  CATEGORY: functional_gap
+  TITLE: Sesiones activas en navegadores sin cuentas asociadas
+  SUMMARY: Se detectaron sesiones activas en Opera GX pero no hay cuentas de Google asociadas en esos navegadores. El pool de asistentes usa workers anonimos para estas sesiones.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 0.9
+
+FINDING_ID: 4f7aebd6-75bc-4579-b125-651cbc0b5213
+  CATEGORY: functional_gap
+  TITLE: Asistentes con sesion activa sin rastreo de cuotas
+  SUMMARY: 10 asistentes tienen sesion activa pero ninguno tiene cuotas rastreadas. El rastreo se activa automaticamente al enviar mensajes.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 0.85
+
+CAPABILITY_FINDINGS: 0
+OPERATIONAL_FINDINGS: 8
+
+STRUCTURED_NEEDS: 0
+
+================================================================================
+TEST COMPLETED
+================================================================================

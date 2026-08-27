@@ -1,0 +1,13 @@
+# Raw Commands Executed for G2 Forensic Evidence
+
+# G2 Positive E2E Test
+python -m pytest tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g2_goal_to_action_plan -v -s
+
+# G2 Verification-Negative E2E Test
+python -m pytest tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g2_verification_negative -v -s
+
+# G1 Regression Test
+python -m pytest tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_real_e2e -v -s
+
+# C2 Regression Tests
+python -m pytest tests/windows_e2e/test_c2_real_self_update_authority.py -v -s

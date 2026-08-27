@@ -1,0 +1,45 @@
+R8-G4.5 PERSISTENCE RAW
+========================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+BEFORE_BUILD_REVIEW:
+====================
+
+BEFORE_NEEDS_COUNT: 14
+STRUCTURED_NEEDS_DIRECTORY: data/evolution/structured_needs/
+FILE_COUNT_BEFORE: 14
+
+AFTER_BUILD_REVIEW:
+===================
+
+AFTER_NEEDS_COUNT: 15
+NEW_NEEDS_COUNT: 1
+STRUCTURED_NEEDS_DIRECTORY: data/evolution/structured_needs/
+FILE_COUNT_AFTER: 15
+
+NEW_NEED_ID: 6ab4b693-b8b9-4ace-ab1a-71a873d476fd
+NEW_NEED_FILE: need_6ab4b693-b8b9-4ace-ab1a-71a873d476fd.json
+
+REPOSITORY QUERIES:
+===================
+
+repository.get(need_id):
+- NOT EXECUTED IN TEST
+- Test uses list_all() to detect new needs by comparing before/after lists
+
+repository.list_pending():
+- NOT EXECUTED IN TEST
+- Test does not call list_pending()
+
+PERSISTENCE VERIFICATION:
+==========================
+
+NEED_PERSISTED: TRUE (file exists in data/evolution/structured_needs/)
+NEED_RETRIEVED: TRUE (via list_all())
+
+FILE_PATH: data/evolution/structured_needs/need_6ab4b693-b8b9-4ace-ab1a-71a873d476fd.json
+FILE_SIZE: 570 bytes
+FILE_TIMESTAMP: 2026-08-27 08:31:00 UTC-05:00 (estimated)
+
+NEW_NEED_THIS_RUN: TRUE

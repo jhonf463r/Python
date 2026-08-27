@@ -1,0 +1,182 @@
+RAW AUDIT: NEXT TASK GENERATION
+=============================
+
+STAGE: Next Task Generation
+OBJECTIVE: Identify who generates the next task after completing one, what inputs they receive, what outputs they produce, who consumes next task outputs, and whether next task generation changes later behavior.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+WHO GENERATES NEXT TASKS
+-------------------------
+
+1. PlatformPendingQueue.mark_status()
+   - File: src/iabv_v15/services/evolution/platform_pending_queue.py
+   - Method: mark_status(task_id: str, status: PendingTaskStatus)
+   - Updates task status to COMPLETED, READY_FOR_NEXT_SLICE, BLOCKED, etc.
+   - Called by AutonomyCycleService and bootstrap
+   - Does NOT generate new tasks, only updates status
+
+2. EvolutionBacklog.complete_task()
+   - File: src/iabv_v15/services/evolution/evolution_backlog.py
+   - Method: complete_task(task_id: str, workspace: str | None = None)
+   - Auto-completes tasks whose work is already done
+   - Scans workspace for evidence of completion
+   - Returns bool indicating success
+
+3. AutonomyCycleService.bridge_findings()
+   - File: src/iabv_v15/services/evolution/autonomy_cycle_service.py
+   - Lines: 101-145
+   - Converts OSES findings to PlatformPendingTask
+   - Marks existing tasks as COMPLETED if resolved
+   - Does NOT generate next task after completion
+
+4. AutonomyCycleService.seed_capabilities()
+   - File: src/iabv_v15/services/evolution/autonomy_cycle_service.py
+   - Lines: 209-217
+   - Seeds tasks from capability graph
+   - Does NOT generate next task after completion
+
+---
+
+WHAT INPUTS ARE RECEIVED
+-------------------------
+
+From PlatformPendingQueue.mark_status:
+- task_id: str
+- status: PendingTaskStatus (PENDING, BLOCKED, COMPLETED, UNRESOLVED, READY_FOR_NEXT_SLICE)
+
+From EvolutionBacklog.complete_task:
+- task_id: str
+- workspace: str | None
+
+From AutonomyCycleService.bridge_findings:
+- findings: list[SelfExaminationFinding]
+- Existing PlatformPendingQueue state
+
+From AutonomyCycleService.seed_capabilities:
+- Capability graph
+- Existing PlatformPendingQueue state
+
+---
+
+WHAT OUTPUTS ARE PRODUCED
+-------------------------
+
+From PlatformPendingQueue.mark_status:
+- Updated PlatformPendingTask with new status
+- Returns PlatformPendingTask | None (None if task not found)
+
+From EvolutionBacklog.complete_task:
+- bool: True if task was auto-completed, False otherwise
+- Updated task status in backlog
+
+From AutonomyCycleService.bridge_findings:
+- New PlatformPendingTask objects for unresolved findings
+- COMPLETED status for resolved findings
+- Returns count of tasks created/updated
+
+From AutonomyCycleService.seed_capabilities:
+- New PlatformPendingTask objects for missing capabilities
+- Returns count of tasks seeded
+
+---
+
+WHO CONSUMES THE OUTPUTS
+------------------------
+
+1. PlatformPendingQueue
+   - Stores updated tasks
+   - Persists to JSON file
+   - Provides list() and get() methods
+
+2. AutonomyCycleService.startup_summary()
+   - Consumes PlatformPendingQueue state
+   - Returns actionable and blocked tasks
+   - Displays to user via UI
+
+3. UI/ControlCenter
+   - Displays task status to user
+   - Shows COMPLETED tasks
+   - Shows READY_FOR_NEXT_SLICE tasks
+
+4. EvolutionBacklog
+   - Consumes workspace scan results
+   - Auto-completes tasks based on evidence
+
+---
+
+WHETHER OUTPUTS CHANGE LATER BEHAVIOR
+-------------------------------------
+
+YES - Next task outputs change behavior:
+
+1. COMPLETED status:
+   - Task is excluded from actionable list
+   - Task is not re-seeded on subsequent runs
+   - Task does not appear in startup_summary()
+   - Affects queue.list_actionable() results
+
+2. READY_FOR_NEXT_SLICE status:
+   - Task appears in actionable list
+   - Task is eligible for manual execution
+   - Indicates partial completion, needs more work
+   - Affects queue.list_actionable() results
+
+3. BLOCKED status:
+   - Task appears in blocked list
+   - Task is not actionable
+   - Requires manual intervention
+   - Affects queue.list_blocked() results
+
+4. Auto-complete:
+   - Task marked as COMPLETED without manual action
+   - Reduces backlog size
+   - Affects subsequent backlog scans
+
+---
+
+MISSING EDGES
+-------------
+
+1. NO automatic next task generation
+   - When task is marked COMPLETED, NO next task is generated
+   - NO service found that automatically generates next task
+   - Task completion does NOT trigger new task creation
+
+2. NO task dependency resolution
+   - NO service found that resolves task dependencies
+   - NO service found that generates subtasks
+   - Tasks are independent, no parent-child relationships
+
+3. NO task prioritization after completion
+   - Task completion does NOT re-prioritize remaining tasks
+   - NO service found that re-ranks tasks after completion
+   - Task priority is static
+
+4. NO task chaining
+   - NO service found that chains tasks together
+   - NO service found that generates follow-up tasks
+   - Tasks are not linked in sequences
+
+5. NO auto-completion for self-improvement
+   - EvolutionBacklog auto-completes based on workspace scan
+   - NO auto-completion for development tasks
+   - NO auto-completion for self-improvement tasks
+
+---
+
+CONCLUSION
+----------
+
+Next task generation DOES NOT EXIST:
+- Tasks can be marked as COMPLETED
+- Tasks can be marked as READY_FOR_NEXT_SLICE
+- Tasks can be auto-completed by EvolutionBacklog
+- NO automatic generation of next task after completion
+- NO task dependency resolution
+- NO task chaining
+- NO task prioritization after completion
+
+The system can MARK tasks as complete but cannot AUTOMATICALLY GENERATE the next task in a self-improvement sequence.

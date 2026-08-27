@@ -1,0 +1,31 @@
+R8-G4 NEED FORMULATION BUNDLE METADATA
+========================================
+
+BUNDLE NAME: R8_G4_NEED_FORMULATION_BUNDLE
+GATE: R8-G4
+OBJECTIVE: CAPABILITY_GAP → STRUCTURED_NEED
+
+SCOPE:
+- Transform SelfExaminationFinding into StructuredNeed
+- Distinguish capability gaps from operational gaps
+- Persist structured needs
+- Provide human-visible output
+- NO expert selection
+- NO external AI consultation
+- NO development task generation
+- NO learning
+- NO self-development
+
+BASE COMMIT: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+BRANCH: p0213/vfinal5-r3-choke-point
+REMOTE: https://github.com/jhonf463r/Python.git
+
+IMPLEMENTATION:
+- Added StructuredNeed model to models.py
+- Added NeedFormulationService
+- Added StructuredNeedRepository
+- Integrated into OperationalSelfExaminationService
+- Added human-readable formatting
+- Created comprehensive tests
+
+EVIDENCE LEVEL: STATIC (code analysis) + RUNTIME (test execution)

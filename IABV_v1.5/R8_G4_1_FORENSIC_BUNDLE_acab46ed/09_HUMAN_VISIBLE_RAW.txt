@@ -1,0 +1,42 @@
+HUMAN VISIBLE RAW
+=================
+
+HUMAN-READABLE FORMAT (unchanged from R8-G4):
+--------------------------------------------
+format_human_readable() method in StructuredNeedRepository:
+
+NECESITO:
+  {need.capability_gap}
+
+PORQUE:
+  {need.reason}
+
+EVIDENCIA:
+  - {evidence[0]}
+  - {evidence[1]}
+  - {evidence[2]}
+
+PRIORIDAD: {need.priority.upper()}
+ESTADO: {need.status.value.upper()}
+CONOCIMIENTO REQUERIDO: {need.knowledge_required}
+
+VERIFICATION (from tests):
+---------------------------
+test_format_human_readable: PASSED
+- Verified "NECESITO:" present
+- Verified capability_gap present (real value from need)
+- Verified "PORQUE:" present
+- Verified reason present (real value from need)
+- Verified "EVIDENCIA:" present
+- Verified "PRIORIDAD: HIGH" present (real value from need)
+- Verified "ESTADO: PENDING" present (real value from need)
+
+test_format_all_pending: PASSED
+- Verified "NECESIDADES PENDIENTES (2):" present
+- Verified "--- NECESIDAD 1 ---" present
+- Verified "--- NECESIDAD 2 ---" present
+
+test_format_all_pending_empty: PASSED
+- Verified "No hay necesidades pendientes." when no needs
+
+HUMAN VISIBLE STATUS: VERIFIED (uses real StructuredNeed values, no generic prose)

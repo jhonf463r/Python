@@ -1,0 +1,12 @@
+HUMAN VISIBLE NEED RAW
+======================
+
+STATUS: SKIPPED
+REASON: Runtime data not available
+
+ANALYSIS:
+- No real structured need to format
+- Cannot execute StructuredNeedRepository.format_human_readable() with real data
+
+CONCLUSION:
+Cannot verify human-visible output for real needs without runtime data sources.

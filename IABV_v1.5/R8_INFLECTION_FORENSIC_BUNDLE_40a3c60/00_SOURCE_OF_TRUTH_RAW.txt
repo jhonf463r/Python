@@ -1,0 +1,35 @@
+SOURCE OF TRUTH - R8 INFLECTION FORENSIC BUNDLE
+================================================
+
+GIT FETCH OUTPUT:
+----------------
+(no output - already up to date)
+
+CURRENT_HEAD: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+REMOTE_HEAD: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+BRANCH: p0213/vfinal5-r3-choke-point
+PARENT: 9454fc601a224a05e9ead57663ec279ed5a5b11c
+TREE_SHA: 5cee9b6ce6210b3b7a713b3eef5cbc607f687a2d
+REMOTE_URL: https://github.com/jhonf463r/Python.git
+
+WORKTREE_STATUS:
+---------------
+Only untracked files (temporary forensic artifacts, no committed changes)
+
+COMMIT DETAILS:
+---------------
+commit 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Wed Aug 26 15:52:40 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Wed Aug 26 15:52:40 2026 -0500
+
+    R7 G3 FINAL: Fix content_contains logging bug in server.py
+    
+    - Fixed observed_value logging for content_contains, content_not_contains, content_exact_match
+    - Now shows actual file_content instead of None
+    - G3 positive test now shows observed content correctly
+    - G3 negative test still passes
+    - G2, G1, C2 regression tests pass
+    - BEFORE/AFTER capture implemented with distinct timestamps
+    - Commit provenance added to bundle

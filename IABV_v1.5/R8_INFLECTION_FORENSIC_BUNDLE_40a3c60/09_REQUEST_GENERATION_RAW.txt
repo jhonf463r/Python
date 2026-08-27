@@ -1,0 +1,117 @@
+REQUEST GENERATION AUDIT - RAW
+==============================
+
+PROMPT TEMPLATES:
+----------------
+Based on git grep results:
+
+1. codex_consult_v1
+   - Used by: codex_installed tool
+   - Location: tool_registry.py
+
+2. chatgpt_consult_v1
+   - Used by: chatgpt_installed tool
+   - Location: tool_registry.py
+
+3. chatgpt_web_consult_v1
+   - Used by: chatgpt_web_assisted tool
+   - Location: tool_registry.py
+
+4. claude_consult_v1
+   - Used by: claude_installed tool
+   - Location: tool_registry.py
+
+5. claude_web_consult_v1
+   - Used by: claude_web_assisted tool
+   - Location: tool_registry.py
+
+6. windsurf_consult_v1
+   - Used by: windsurf tool
+   - Location: tool_registry.py
+
+7. local_consult_v1
+   - Used by: ollama_llm tool
+   - Location: tool_teach_service.py
+
+WHO GENERATES REQUESTS:
+-----------------------
+Based on code analysis:
+
+1. ToolTeachService
+   - Selects prompt_template_id based on tool_id
+   - Generates consultation request with goal, context, parameters
+   - Called by: ControlCenterViewModel._run_external_consultation()
+
+2. CloudReasoningPlannerService
+   - Generates API requests to cloud providers
+   - Formats messages for OpenAI/Groq/Gemini/Ollama APIs
+   - Called by: AdaptiveTaskOrchestrator
+
+3. Devin repair
+   - Generates prompt for Devin API
+   - Called by: ControlCenterViewModel._try_devin_repair()
+
+INPUT:
+------
+Based on code analysis:
+- ToolTeachService: goal, goal_parameters, context (world model, episodes)
+- CloudReasoningPlannerService: messages (list of chat messages), model name
+- Devin repair: prompt (error description, context)
+
+OUTPUT:
+------
+Based on code analysis:
+- ToolTeachService: consultation request (with prompt_template_id, goal, context)
+- CloudReasoningPlannerService: HTTP request to provider API
+- Devin repair: HTTP request to Devin API
+
+NEED → REQUEST TRANSFORMATION:
+--------------------------------
+Based on code analysis:
+- NO transformation from NEED → REQUEST found
+- Request generation is triggered by:
+  1. User commands (ToolTeachService)
+  2. Task execution (CloudReasoningPlannerService)
+  3. Error conditions (Devin repair)
+- NO need formulation service exists (from previous audit)
+- Therefore, NO need → request transformation exists
+
+PROMPT TEMPLATE RESOLUTION:
+---------------------------
+Based on code analysis:
+- Prompt templates are selected based on tool_id
+- Selection logic in ToolTeachService:
+  - ollama_llm → local_consult_v1
+  - codex_installed → codex_consult_v1
+  - claude_installed → claude_consult_v1
+  - claude_web_assisted → claude_web_consult_v1
+  - chatgpt_installed → chatgpt_consult_v1
+  - chatgpt_web_assisted → chatgpt_web_consult_v1
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- Request is sent to external AI (via API or tool execution)
+- Response is captured (see next audit)
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for request generation
+STRUCTURALLY_REACHABLE: Request generation can be triggered
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Request generation influences consultation
+BEHAVIOR_CHANGE_OBSERVED: Not applicable
+
+CONCLUSION:
+-----------
+REQUEST GENERATION EXISTS:
+- Prompt templates for external consultation (codex, chatgpt, claude, windsurf, local)
+- Request generation for cloud providers (OpenAI, Groq, Gemini, Ollama)
+- Request generation for Devin repair
+
+However:
+- NO transformation from NEED → REQUEST
+- Request generation is triggered by task execution or user commands, not by needs
+- The system can generate requests, but not based on formulated needs
+
+This is a MISSING EDGE in the self-construction loop.

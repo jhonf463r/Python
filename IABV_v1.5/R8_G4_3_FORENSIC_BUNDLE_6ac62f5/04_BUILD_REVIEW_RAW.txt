@@ -1,0 +1,22 @@
+BUILD REVIEW RAW
+================
+
+STATUS: SKIPPED
+REASON: Runtime data not available
+
+COMMAND: Test-Path C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\data\logs\runtime_audit.jsonl
+OUTPUT: False
+
+COMMAND: Test-Path C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\data\chat_research_backlog
+OUTPUT: False
+
+COMMAND: Test-Path C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\data\evolution
+OUTPUT: True
+
+ANALYSIS:
+- runtime_audit.jsonl does not exist (required for capability_promised_but_unavailable findings)
+- chat_research_backlog does not exist (required for research_gap findings)
+- evolution directory exists (for StructuredNeedRepository)
+
+CONCLUSION:
+Cannot execute real build_review without runtime data sources.

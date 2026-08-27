@@ -1,0 +1,32 @@
+FINDING INPUT RAW
+=================
+
+POSITIVE TEST INPUT (capability-shaped finding):
+------------------------------------------------
+SelfExaminationFinding(
+    category="capability_discovery",
+    title="Cannot perform visual inspection",
+    summary="I cannot perform visual inspection of UI elements",
+    severity=IssueSeverity.HIGH,
+    recommendation="Implement visual inspection capability",
+    evidence_refs=["run_123", "episode_456"],
+)
+
+NEGATIVE TEST INPUT (operational finding):
+------------------------------------------
+SelfExaminationFinding(
+    category="provider_underperformance",
+    title="Provider latency is high",
+    summary="Cloud provider showing 5000ms latency",
+    severity=IssueSeverity.MEDIUM,
+    recommendation="Switch to faster provider",
+)
+
+KEYWORD-BASED DETECTION INPUT:
+-------------------------------
+SelfExaminationFinding(
+    category="generic",
+    title="I cannot parse JSON responses",
+    summary="System cannot parse JSON responses from external APIs",
+    severity=IssueSeverity.HIGH,
+)

@@ -1,0 +1,56 @@
+NEED OUTPUT RAW
+===============
+
+POSITIVE TEST OUTPUT (capability discovery → need):
+--------------------------------------------------
+StructuredNeed(
+    need_id=<uuid>,
+    source_finding_id=<finding_id>,
+    category="capability_discovery",
+    capability_gap="Cannot perform visual inspection",
+    current_state="Cannot perform visual inspection of UI elements",
+    desired_state="Implement visual inspection capability",
+    knowledge_required="knowledge_in_capability_discovery",
+    reason="I cannot perform visual inspection of UI elements",
+    evidence=["run_123", "episode_456"],
+    priority="high",
+    status=NeedStatus.PENDING,
+)
+
+POSITIVE TEST OUTPUT (missing capability → need):
+------------------------------------------------
+StructuredNeed(
+    need_id=<uuid>,
+    source_finding_id=<finding_id>,
+    category="missing_capability",
+    capability_gap="Unable to execute shell commands",
+    current_state="unable_to_perform_action",
+    desired_state="Add shell command execution capability",
+    knowledge_required="knowledge_in_missing_capability",
+    reason="I am unable to execute shell commands on Windows",
+    evidence=[],
+    priority="critical",
+    status=NeedStatus.PENDING,
+)
+
+POSITIVE TEST OUTPUT (uncertainty → need):
+------------------------------------------
+StructuredNeed(
+    need_id=<uuid>,
+    source_finding_id=<finding_id>,
+    category="uncertainty",
+    capability_gap="Unknown how to handle API rate limits",
+    current_state="unable_to_perform_action",
+    desired_state="Learn rate limit handling patterns",
+    knowledge_required="knowledge_in_uncertainty",
+    reason="I am uncertain how to handle API rate limits gracefully",
+    evidence=[],
+    priority="medium",
+    status=NeedStatus.PENDING,
+)
+
+NEGATIVE TEST OUTPUT (operational → None):
+------------------------------------------
+None (provider_underperformance finding rejected)
+None (route_failure finding rejected)
+None (performance_degradation finding rejected)

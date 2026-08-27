@@ -1,0 +1,101 @@
+TASK TO ACTION INTEGRATION AUDIT - RAW
+======================================
+
+TASK EXECUTION:
+---------------
+Based on git grep results:
+
+1. ToolTeachService.execute_task()
+   - Location: src/iabv_v15/services/tools/tool_teach_service.py
+   - Purpose: Execute a ToolTask with approval check
+   - Input: task (ToolTask), approved (bool)
+   - Output: ToolResult
+
+2. ToolOperationalExecutor
+   - Location: src/iabv_v15/services/tools/tool_operational_executor.py
+   - Purpose: Execute tool tasks operationally
+   - Calls: tool_teach_service.execute_task()
+
+WHO EXECUTES TASKS:
+------------------
+Based on code analysis:
+
+1. ToolTeachService
+   - execute_task() method executes tasks
+   - Checks approval before execution
+   - Handles capability acquisition failures
+
+2. UIExecutionRunner
+   - Executes task actions in sequence
+   - Handles UI-based tool execution
+
+3. ToolAdapters
+   - Execute specific tool actions (GitHub API, Devin API, etc.)
+   - Transform task actions into API calls
+
+TASK STRUCTURE:
+---------------
+Based on code analysis:
+- ToolTask: task_id, action, target, actions (list), rollback_actions, lease_id, metadata
+- ToolAction: action_type, value, target, destructive, metadata
+- ToolResult: success, error, output, metadata
+
+ACTION TYPES:
+-------------
+Based on code analysis:
+- LLM_QUERY: Query language model
+- RUN_COMMAND: Execute command
+- NAVIGATE: Navigate to URL
+- Other: Various tool-specific actions
+
+WHO INTEGRATES TASKS TO ACTIONS:
+--------------------------------
+Based on code analysis:
+- ToolTeachService: Transforms task into executable actions
+- UIExecutionRunner: Executes actions in sequence
+- ToolAdapters: Transform actions into API calls
+
+INPUT:
+------
+Based on code analysis:
+- ToolTask (with actions list)
+- Approval flag
+- ToolCard (tool metadata)
+
+OUTPUT:
+------
+Based on code analysis:
+- ToolResult (success, error, output, metadata)
+- InteractionEpisode (captured for learning)
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- Task results are captured as episodes
+- Episodes are used for learning (InteractionLearningService)
+- Task results can trigger rollback actions
+- Task results can update tool memory
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for task execution
+STRUCTURALLY_REACHABLE: Task execution can be triggered
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Task results can influence learning
+BEHAVIOR_CHANGE_OBSERVED: Task results can improve future tool usage
+
+CONCLUSION:
+-----------
+TASK TO ACTION INTEGRATION EXISTS:
+- ToolTeachService executes tasks with approval checks
+- UIExecutionRunner executes actions in sequence
+- ToolAdapters transform actions into API calls
+- Task results are captured as episodes for learning
+
+However:
+- Task execution is triggered by user commands or UI actions
+- NO automatic task execution from consultation responses
+- NO automatic task execution from development packets
+- NO automatic task execution from pending queue
+
+This edge exists for tool execution but NOT for autonomous self-construction tasks.

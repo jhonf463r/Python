@@ -1,0 +1,111 @@
+GAP IDENTIFICATION AUDIT - RAW
+=============================
+
+FINDING CATEGORIES:
+------------------
+Based on git grep results:
+
+1. CATEGORY_CAPABILITY_DISCOVERY = 'capability_discovery'
+   - Defined in: platform_pending_queue.py (line 36)
+   - Used in: platform_pending_queue.py (seed_from_capability_graph method)
+   - Used in: autonomy_cycle_service.py (imported)
+   - Used in: tests (test_windsurf_gaps_g1_g2_g3.py, test_platform_pending_queue.py)
+
+2. CATEGORY_OSES_FINDING = 'oses_finding'
+   - Defined in: platform_pending_queue.py (line 35)
+   - Used in: autonomy_cycle_service.py (bridge_findings method)
+   - Used in: tests (test_windsurf_gaps_g1_g2_g3.py)
+
+3. windows_capability_missing
+   - Used in: operational_self_examination_service.py (category='windows_capability_missing')
+   - This is a finding category, not a constant
+
+4. missing_capability
+   - Used in: strategy_pack_registry.py (fallback_signals=['missing_capability'])
+   - Used in: operational_self_examination_service.py ('missing_capability_ids' field)
+   - Used in: tool_teach_service.py (reason='missing_capability_fields')
+   - Used in: many test data files (strategy packs)
+
+PRODUCERS:
+----------
+Based on code analysis:
+
+1. OperationalSelfExaminationService
+   - Produces SelfExaminationFinding objects
+   - Categories include: windows_capability_missing, cross_correlation_failure, 
+     trend_degradation, strategy_decay, background_provider_underperformance,
+     background_confidence_miscalibration, background_error_stagnation,
+     temporal_latency_anomaly, temporal_latency_regression
+
+2. AutonomyCycleService
+   - Consumes OSES findings via bridge_findings() method
+   - Transforms findings into PlatformPendingTask objects
+   - Uses CATEGORY_OSES_FINDING for OSES-derived tasks
+
+3. PlatformPendingQueue
+   - seed_from_capability_graph() method
+   - Transforms EnvironmentCapability objects (with available=False) into
+     PlatformPendingTask objects with CATEGORY_CAPABILITY_DISCOVERY
+
+INPUTS:
+-------
+1. OSES findings:
+   - Input: WorldModelSnapshot, ExperimentRun data, RunRecord data,
+     DecisionAuditTrail data, EnvironmentSelfModel data
+   - Output: SelfExaminationFinding list
+
+2. Capability discovery:
+   - Input: list of EnvironmentCapability objects (capability_id, available, status)
+   - Output: PlatformPendingTask objects with category='capability_discovery'
+
+CONSUMERS:
+----------
+1. AutonomyCycleService
+   - Consumes OSES findings via bridge_findings()
+   - Calls queue.upsert() to create tasks
+
+2. PlatformPendingQueue
+   - Stores tasks as JSON files
+   - Provides list_actionable(), list_blocked() methods
+   - Provides to_portable_items() for PortableContext
+
+3. UI (EvolutionCenterViewModel)
+   - Likely displays pending tasks
+   - Allows human to view and act on tasks
+
+4. PortableContext
+   - Includes pending items in context for external agents
+
+DOWNSTREAM EFFECTS:
+------------------
+Based on code analysis:
+- Findings are transformed into PlatformPendingTask objects
+- Tasks are persisted in queue
+- Tasks can be listed and displayed
+- NO evidence of automatic task execution
+- NO evidence of automatic capability acquisition
+- Tasks appear to wait for human intervention
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for gap identification
+STRUCTURALLY_REACHABLE: Findings can be transformed to tasks
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: No evidence of automatic decisions based on gaps
+BEHAVIOR_CHANGE_OBSERVED: No evidence of automatic behavior changes
+
+CONCLUSION:
+-----------
+Gap identification exists:
+- OSES produces findings about capabilities, performance, trends
+- AutonomyCycleService bridges findings to pending tasks
+- PlatformPendingQueue stores capability discovery tasks
+
+However, there is NO evidence that:
+- Gaps automatically trigger capability acquisition
+- Gaps automatically trigger expert consultation
+- Gaps automatically trigger development tasks
+- The system autonomously closes gaps
+
+The flow appears to be:
+OSES_FINDING → PLATFORM_PENDING_TASK → HUMAN_REVIEW → HUMAN_ACTION

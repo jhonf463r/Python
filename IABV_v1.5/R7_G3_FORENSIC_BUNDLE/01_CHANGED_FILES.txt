@@ -1,0 +1,14 @@
+CHANGED FILES FOR R7 G3 AUDIT
+==============================
+
+1. IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+   - Lines 3533-3694: Enhanced result verification logic for G3
+   - Introduced action_executed, action_result_observed, action_result_verified flags
+   - Enhanced observed_result to perform independent file system observations
+   - Added structured expected_result support (content_contains, content_not_contains, content_exact_match)
+   - Added logic to detect unexpected_content (only when content_not_contains is specified)
+   - Updated final result_verification['status'] based on new explicit verification concepts
+
+2. IABV_v1.5/tests/windows_e2e/test_g2_goal_to_action_plan.py
+   - Added test_g3_independent_result_verification (positive test)
+   - Added test_g3_verification_negative (negative test)

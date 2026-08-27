@@ -1,0 +1,224 @@
+RAW AUDIT: TEST EXECUTION LOOP
+==============================
+
+STAGE: Test Execution Loop
+OBJECTIVE: Identify who runs tests, what inputs they receive, what outputs they produce, who consumes test results, and whether test results change later behavior.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+WHO RUNS TESTS
+--------------
+
+1. ScenarioAutoTestService.run()
+   - File: src/iabv_v15/services/self_teach/scenario_auto_test_service.py
+   - Lines: 38-95
+   - Runs scenario-based tests for self-teaching
+   - Input: RunRecord, AdaptiveSession
+   - Output: ScenarioRun, updated AdaptiveSession
+   - Called by SelfTeachOrchestrator
+
+2. SelfTeachOrchestrator
+   - File: src/iabv_v15/services/self_teach/self_teach_orchestrator.py
+   - Orchestrates self-teaching scenarios
+   - Calls ScenarioAutoTestService.run()
+   - Coordinates with other self-teaching services
+
+3. run_pytest (MCP tool)
+   - File: src/iabv_v15/infra/mcp/audit_tools.py (inferred from grep)
+   - Runs pytest test suite
+   - Input: persist_evidence flag, test directory
+   - Output: TestEvidence summary
+   - Used for runtime audit and governance
+
+4. pytest (external)
+   - Standard Python test runner
+   - Invoked via subprocess
+   - Used for unit tests, integration tests, E2E tests
+   - Test files in tests/ directory
+
+---
+
+WHAT INPUTS ARE RECEIVED
+-------------------------
+
+From ScenarioAutoTestService:
+- RunRecord with:
+  * run_id: str
+  * request: InferenceRequest
+  * status: RunStatus
+  * result: RunResult
+  * error_summary: str
+- AdaptiveSession with:
+  * session_id: str
+  * intent: TaskIntent
+  * chosen_pack_id: str
+  * capability_readiness: list[CapabilityReadiness]
+  * metadata: dict[str, Any]
+
+From run_pytest:
+- persist_evidence: bool (whether to write latest.json)
+- test_directory: str (path to tests)
+- runner: SubprocessRunner (for testing)
+
+From pytest:
+- Test files in tests/ directory
+- Test configuration (pytest.ini, conftest.py)
+- Command-line arguments
+
+---
+
+WHAT OUTPUTS ARE PRODUCED
+-------------------------
+
+From ScenarioAutoTestService:
+- ScenarioRun with:
+  * scenario_run_id: str
+  * scenario: Scenario
+  * goal: str
+  * mode: ScenarioMode
+  * status: RunStatus
+  * summary: str
+  * diagnosis: Diagnosis
+  * runtime_adjustments: list[RuntimeAdjustment]
+  * diagnostic_episode: DiagnosticEpisode
+  * pending_issue_id: str | None
+  * metadata: dict[str, Any]
+- Updated AdaptiveSession with:
+  * scenario_id: str
+  * scenario_mode: ScenarioMode
+  * probe_diagnosis: Diagnosis
+  * runtime_adjustments: list[RuntimeAdjustment]
+  * pending_issue_id: str | None
+  * metadata['self_teach']: dict[str, Any]
+
+From run_pytest:
+- TestEvidence with:
+  * test_count: int
+  * passed: int
+  * failed: int
+  * errors: int
+  * skipped: int
+  * duration_seconds: float
+  * test_results: list[dict[str, Any]]
+- latest.json file (if persist_evidence=True)
+
+From pytest:
+- Console output
+- Exit code (0 = success, non-zero = failure)
+- Test results XML/JSON
+
+---
+
+WHO CONSUMES THE OUTPUTS
+------------------------
+
+1. ScenarioRunRepository
+   - Saves ScenarioRun objects
+   - Provides query methods for scenario runs
+   - Used by ScenarioAutoTestService
+
+2. ExecutionDossierRepository
+   - Updated with scenario_run_id, probe_diagnosis, runtime_adjustments
+   - Updated with self_teach metadata
+   - Used for execution tracking
+
+3. TaskOutcomeRecorder
+   - Records updated AdaptiveSession
+   - Persists to AdaptiveSessionRepository
+   - Updates learning metadata
+
+4. PendingIssueService
+   - Enqueues pending issues for NEED_ADAPTER or NEED_CODEX_FIX
+   - Creates CodexPendingIssue objects
+   - Used for self-improvement task generation
+
+5. RuntimeTuner
+   - Evaluates diagnosis and applies runtime adjustments
+   - Modifies session behavior based on test results
+   - Used for dynamic runtime optimization
+
+6. UI/ControlCenter
+   - Displays test results to user
+   - Shows pending issues from test failures
+   - Allows manual intervention
+
+---
+
+WHETHER OUTPUTS CHANGE LATER BEHAVIOR
+-------------------------------------
+
+YES - Test outputs change behavior:
+
+1. Diagnosis category changes behavior:
+   - NEED_ADAPTER: enqueues pending issue for adapter creation
+   - NEED_CODEX_FIX: enqueues pending issue for Codex fix
+   - Other categories: no pending issue, just recording
+
+2. Runtime adjustments change behavior:
+   - Applied to session immediately
+   - Modify subsequent execution behavior
+   - Can change timeouts, retries, etc.
+
+3. Pending issues change behavior:
+   - Appear in PlatformPendingQueue
+   - Surface in startup_summary()
+   - Require manual or automatic resolution
+
+4. ScenarioRun status changes behavior:
+   - FAILED: may trigger retry or remediation
+   - COMPLETED: marks scenario as successful
+   - ABORTED: may trigger investigation
+
+5. CapabilityReadiness updates:
+   - episode_id updated with latest scenario run
+   - Affects future routing decisions
+   - Influences tool selection
+
+---
+
+MISSING EDGES
+-------------
+
+1. NO automatic test execution loop
+   - Tests are NOT automatically run on a schedule
+   - NO service found that periodically runs tests
+   - Tests are run only when explicitly triggered (by user or scenario)
+
+2. NO automatic test result consumption for self-improvement
+   - Test results are recorded but NOT automatically acted upon
+   - Pending issues are created but NOT automatically resolved
+   - NO service found that automatically fixes failing tests
+
+3. NO test-driven development loop
+   - NO service found that generates tests from code changes
+   - NO service found that runs tests after code changes
+   - NO service found that uses test results to guide development
+
+4. NO continuous integration
+   - NO CI/CD pipeline found
+   - NO automatic test running on commit
+   - NO automatic test result reporting
+
+5. NO test result feedback to learning
+   - Test results are recorded but NOT used for learning
+   - NO service found that learns from test failures
+   - NO service found that adapts behavior based on test patterns
+
+---
+
+CONCLUSION
+----------
+
+Test execution loop EXISTS but is LIMITED:
+- ScenarioAutoTestService runs scenario-based tests
+- run_pytest runs pytest test suite
+- Test results are recorded in repositories
+- Test results can generate pending issues
+- Test results can apply runtime adjustments
+- Tests are NOT automatically run on a schedule
+- Test results are NOT automatically used for self-improvement
+- NO continuous integration or test-driven development loop
+
+The system can RUN tests and RECORD results but cannot AUTONOMOUSLY USE test results for self-improvement.

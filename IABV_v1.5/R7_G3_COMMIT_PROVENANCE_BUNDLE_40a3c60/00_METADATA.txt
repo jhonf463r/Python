@@ -1,0 +1,77 @@
+R7 G3 COMMIT PROVENANCE BUNDLE - METADATA
+========================================
+
+BUNDLE_ID: R7_G3_COMMIT_PROVENANCE_BUNDLE_40a3c60
+BUNDLE_VERSION: 7.3
+CREATED: 2026-08-26T21:37:00Z
+
+OBJECTIVE:
+----------
+Reconcile git state to ensure commit provenance is verifiable and consistent.
+The previous bundle incorrectly claimed NEW_COMMIT = .PENDING. when the commit
+already existed. This bundle provides the correct provenance evidence.
+
+ISSUE ADDRESSED:
+----------------
+The previous forensic bundle (R7_G3_FINAL_FORENSIC_BUNDLE) claimed:
+- NEW_COMMIT = .PENDING.
+- HEAD = 9454fc601a224a05e9ead57663ec279ed5a5b11c
+
+But the actual state was:
+- NEW_COMMIT = 40a3c60d545cd3a8b5cd7a593aa037a818177e4a (REAL)
+- HEAD = 40a3c60d545cd3a8b5cd7a593aa037a818177e4a (REAL)
+
+This bundle reconciles the discrepancy by providing the actual commit
+provenance evidence.
+
+FINDINGS:
+---------
+1. The commit 40a3c60d545cd3a8b5cd7a593aa037a818177e4a EXISTS and is REAL.
+2. This commit was created in the previous session and pushed to remote.
+3. The commit parent is 9454fc601a224a05e9ead57663ec279ed5a5b11c (as required).
+4. The commit contains the G3 forensic fix for content_contains logging.
+5. No history rewrite was performed.
+6. Local and remote SHAs match.
+
+COMMIT DETAILS:
+---------------
+- NEW_REAL_COMMIT: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+- PARENT_SHA: 9454fc601a224a05e9ead57663ec279ed5a5b11c
+- TREE_SHA: 5cee9b6ce6210b3b7a713b3eef5cbc607f687a2d
+- BRANCH: p0213/vfinal5-r3-choke-point
+- REMOTE_URL: https://github.com/jhonf463r/Python.git
+
+CHANGES IN COMMIT:
+------------------
+File: IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+- Fixed observed_value logging for content_contains, content_not_contains, content_exact_match
+- Now shows actual file_content instead of None
+- +3 lines added
+
+VERIFICATION:
+-------------
+- WORKTREE_BEFORE_COMMIT: Clean (no staged changes)
+- WORKTREE_AFTER_COMMIT: Clean (no uncommitted changes)
+- NEW_COMMIT_CREATED: TRUE
+- NEW_COMMIT_REAL: TRUE
+- PARENT_VERIFIED: TRUE
+- COMMIT_CONTENT_VERIFIED: TRUE
+- REMOTE_BRANCH_EXISTS: TRUE
+- REMOTE_SHA: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+- LOCAL_REMOTE_EQUAL: TRUE
+
+FORENSIC DISCIPLINE:
+-------------------
+- No force push used
+- No rebase used
+- No reset used
+- No history rewritten
+- Parent relationship verified via merge-base
+- Remote verification performed
+
+CONCLUSION:
+-----------
+The commit 40a3c60d545cd3a8b5cd7a593aa037a818177e4a is a real, verifiable commit
+that contains the G3 forensic fixes. The commit has proper provenance with
+the correct parent (9454fc601a224a05e9ead57663ec279ed5a5b11c) and is synchronized
+with the remote repository.

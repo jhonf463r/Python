@@ -1,0 +1,103 @@
+RESPONSE CAPTURE AUDIT - RAW
+============================
+
+RESPONSE CAPTURE MODES:
+----------------------
+Based on git grep results:
+
+1. clipboard_capture
+   - Used by: chatgpt_installed, claude_installed, codex_installed
+   - Method: Capture clipboard content after consultation
+
+2. dom_capture / browser_dom
+   - Used by: chatgpt_web_assisted, claude_web_assisted
+   - Method: Capture DOM content from browser after consultation
+
+3. local_evidence
+   - Used by: desktop_human_runner
+   - Method: Capture local evidence (screenshots, logs)
+
+4. tool_result
+   - Used by: ollama_llm
+   - Method: Capture tool execution result directly
+
+WHO CAPTURES RESPONSES:
+------------------------
+Based on code analysis:
+
+1. ControlCenterViewModel
+   - Has response capture logic in _run_external_consultation()
+   - Methods: _build_post_recapture_response_proof(), _attempt_post_recapture_response_retry()
+   - Triggered by: External consultation completion
+
+2. EpisodeRepository
+   - Stores episodes (interaction episodes, teaching episodes)
+   - Captures consultation results as episodes
+   - Triggered by: ToolTeachService
+
+3. CaptureStudioViewModel
+   - Captures interaction episodes
+   - Stores episodes in episode repository
+
+INPUT:
+------
+Based on code analysis:
+- response_capture_mode (from tool metadata)
+- capture_useful_before (state before consultation)
+- capture_useful_after (state after consultation)
+- recapture_status (whether recapture improved state)
+- response_captured (whether response was captured)
+- response_capture_pending (whether capture is pending)
+
+OUTPUT:
+------
+Based on code analysis:
+- Episode object (episode_id, title, created_at, step_count, source, tags, notes)
+- consultation_metadata (response_captured, visual_recapture_status, response_capture_retry)
+- Response proof (response_captured, status, response_capture_retry)
+
+EPISODE STRUCTURE:
+-----------------
+Based on code analysis:
+- EpisodeManifest: episode_id, title, created_at, updated_at, step_count, source, tags, notes
+- CapturedStep: step_id, episode_id, timestamp_utc, action_type, target, text_value, screenshot_path, metadata
+- SessionArtifact: artifact_id, episode_id, kind, path, created_at_utc, metadata
+
+WHO CONSUMES CAPTURED RESPONSES:
+--------------------------------
+Based on code analysis:
+- EpisodeRepository: Stores episodes for later retrieval
+- DashboardViewModel: Displays recent episodes
+- EvolutionCenterViewModel: Uses episodes for analysis
+- Learning services: Use episodes for pattern extraction
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- Captured episodes are stored for learning
+- Episodes can be replayed
+- Episodes can be analyzed for patterns
+- Episodes can be used for teaching
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for response capture
+STRUCTURALLY_REACHABLE: Response capture can be triggered
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Captured responses can influence learning
+BEHAVIOR_CHANGE_OBSERVED: Captured responses can improve future consultations
+
+CONCLUSION:
+-----------
+RESPONSE CAPTURE EXISTS:
+- Multiple capture modes (clipboard, DOM, local evidence, tool result)
+- Episode repository stores captured responses
+- Response capture logic in ControlCenterViewModel
+- Episodes are used for learning and pattern extraction
+
+However:
+- Response capture is tied to external consultation execution
+- NO transformation from EVALUATED_RESPONSE → CAPTURED_RESPONSE
+- Capture is automatic during consultation, not based on evaluation
+
+This edge exists but is tightly coupled to consultation execution, not a separate evaluation step.

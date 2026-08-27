@@ -1,0 +1,99 @@
+TEST EXECUTION LOOP AUDIT - RAW
+===============================
+
+TEST FRAMEWORK:
+--------------
+Based on git grep results:
+- pytest: Primary test framework
+- Test files: tests/ directory with various test modules
+- Windows E2E tests: tests/windows_e2e/ directory
+
+EXPERIMENT LAB:
+---------------
+Based on git grep results:
+- ExperimentLab: src/iabv_v15/services/lab/experiment_lab.py
+- Purpose: Run experiments and evaluate candidates
+- Methods: record_outcome(), evaluate(), generate_training_corpus()
+- Repository: ExperimentLabRepository for persistence
+
+WHO RUNS TESTS:
+---------------
+Based on code analysis:
+1. pytest command-line
+   - Triggered by: User or CI/CD
+   - Runs test files in tests/ directory
+
+2. ExperimentLab
+   - Triggered by: AdaptiveTaskOrchestrator, ToolTeachService
+   - Runs experiments to evaluate candidates
+   - Records outcomes for learning
+
+3. Windows E2E tests
+   - Triggered by: pytest
+   - Tests real Windows functionality (C2, G1, G2, G3)
+
+TEST TYPES:
+-----------
+Based on git grep results:
+- Unit tests: tests/test_*.py
+- Integration tests: tests/windows_e2e/test_*.py
+- Authority tests: tests/test_c2_vfinal5_authority_e2e.py
+- G1 tests: tests/windows_e2e/test_g1_goal_to_protected_tool.py
+- G2 tests: tests/windows_e2e/test_g2_goal_to_action_plan.py
+- G3 tests: tests/test_visual_evidence_offscreen.py
+- Evolution tests: tests/test_f15_autonomous_evolution_authority.py
+
+INPUT:
+------
+Based on code analysis:
+- Test files (test_*.py)
+- Experiment candidates (domain, objective, expected, candidate)
+- Test parameters (fixtures, mocks)
+
+OUTPUT:
+------
+Based on code analysis:
+- Test results (pass/fail/skip)
+- JUnit XML (windows_e2e_junit.xml)
+- Experiment outcomes (precision, robustness, success)
+- Training corpus (from experiment traces)
+
+AUTONOMOUS TEST EXECUTION:
+--------------------------
+Based on code analysis:
+- NO autonomous test execution loop found
+- Tests are run by pytest (manual or CI/CD)
+- ExperimentLab runs experiments but is triggered by orchestrator
+- NO automatic test execution after development tasks
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- Test results are recorded in JUnit XML
+- Experiment outcomes inform model selection
+- Training corpus is generated from experiment traces
+- NO automatic re-test after code changes
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for test execution
+STRUCTURALLY_REACHABLE: Tests can be run via pytest
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Test results can influence model selection
+BEHAVIOR_CHANGE_OBSERVED: Not applicable (manual step required)
+
+CONCLUSION:
+-----------
+TEST EXECUTION LOOP EXISTS:
+- pytest framework for running tests
+- ExperimentLab for running experiments
+- Windows E2E tests for real functionality
+- JUnit XML for test results
+
+However:
+- NO autonomous test execution loop
+- Tests are run manually or via CI/CD
+- NO automatic test execution after development tasks
+- NO automatic re-test after code changes
+
+This is a MISSING EDGE in the self-construction loop - the system can run tests but cannot autonomously execute a test loop after development.

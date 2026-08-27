@@ -1,0 +1,122 @@
+PLATFORM PENDING QUEUE AUDIT - RAW
+==================================
+
+FILE: platform_pending_queue.py
+SIZE: 493 lines
+
+DEFINITION:
+-----------
+Class: PlatformPendingQueue
+Location: src/iabv_v15/services/evolution/platform_pending_queue.py
+
+DATA MODEL:
+-----------
+PlatformPendingTask (from domain/models.py):
+- id: str
+- title: str
+- description: str
+- reason: str
+- dependency_missing: str
+- priority: str (critical/high/medium/low)
+- next_action: str
+- status: PendingTaskStatus (PENDING/READY_FOR_NEXT_SLICE/BLOCKED/COMPLETED)
+- category: str
+- resume_hint: str | None
+
+WHO CREATES PlatformPendingTask:
+--------------------------------
+Based on code analysis:
+
+1. AutonomyCycleService.bridge_findings()
+   - Transforms SelfExaminationFinding into PlatformPendingTask
+   - Uses CATEGORY_OSES_FINDING
+   - Calls queue.upsert(task)
+
+2. PlatformPendingQueue.seed_windows_integration_tasks()
+   - Creates predefined Windows integration tasks
+   - Uses CATEGORY_WINDOWS_NATIVE
+   - Idempotent (checks existing before creating)
+
+3. PlatformPendingQueue.seed_from_capability_graph()
+   - Transforms EnvironmentCapability (available=False) into tasks
+   - Uses CATEGORY_CAPABILITY_DISCOVERY
+   - Idempotent (checks existing before creating)
+
+4. PlatformPendingQueue.seed_metacognition_investigation_phases()
+   - Creates investigation phase tasks
+   - Uses CATEGORY_INVESTIGATION
+   - Idempotent (checks existing before creating)
+
+FIELDS CONTAINED:
+----------------
+- id: unique identifier
+- title: human-readable title
+- description: detailed description
+- reason: why this task exists
+- dependency_missing: what dependency is blocking
+- priority: critical/high/medium/low
+- next_action: suggested action
+- status: PENDING/READY_FOR_NEXT_SLICE/BLOCKED/COMPLETED
+- category: categorization (missing_tool/permission_required/oses_finding/
+           capability_discovery/windows_native/investigation)
+- resume_hint: optional checkpoint data
+
+WHO ADDS actionable/blocked:
+----------------------------
+Based on code analysis:
+- Tasks are created with status PENDING or BLOCKED (if dependency_missing)
+- mark_status() method can change status
+- No automatic promotion from BLOCKED to actionable observed
+- Status changes appear to be manual
+
+WHO READS list_actionable():
+----------------------------
+Based on code analysis:
+- list_actionable() returns tasks with PENDING or READY_FOR_NEXT_SLICE status
+- to_portable_items() uses list_actionable() to provide items to PortableContext
+- UI likely calls list_actionable() or list_all()
+- No runtime consumer observed that automatically executes tasks
+
+RUNTIME CONSUMER:
+----------------
+Based on code analysis:
+- NO automatic task executor found
+- NO task scheduler found
+- NO task-to-action bridge found
+- Tasks appear to be consumed by:
+  1. UI (human review)
+  2. PortableContext (external agent context)
+  3. MCP tools (for listing/querying)
+
+IS IT ONLY UI:
+-------------
+Based on code analysis:
+- YES: No automatic runtime consumer observed
+- Tasks are stored as JSON files
+- No background worker processes tasks
+- No orchestration service consumes tasks automatically
+- The queue is a persistent storage mechanism, not an execution queue
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for queue storage and retrieval
+STRUCTURALLY_REACHABLE: Tasks can be listed and displayed
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: No evidence of automatic task execution
+BEHAVIOR_CHANGE_OBSERVED: No evidence of automatic behavior based on tasks
+
+CONCLUSION:
+-----------
+PlatformPendingQueue is a persistent storage mechanism for pending tasks:
+- Stores tasks as JSON files
+- Provides CRUD operations
+- Provides filtered lists (actionable, blocked)
+- Provides PortableContext integration
+
+However, there is NO evidence of:
+- Automatic task execution
+- Task scheduling
+- Task-to-action orchestration
+- Runtime consumer that processes tasks
+
+The queue appears to be a TODO list for human review, not an execution queue.

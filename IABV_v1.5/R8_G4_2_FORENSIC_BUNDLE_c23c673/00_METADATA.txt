@@ -1,0 +1,34 @@
+R8-G4.2 FORENSIC BUNDLE METADATA
+================================
+
+BUNDLE NAME: R8_G4_2_FORENSIC_BUNDLE_c23c673
+GATE: R8-G4.2
+OBJECTIVE: RECONCILE REAL OSES CATEGORIES WITH NEED FORMULATION
+
+SCOPE:
+- Reconcile real OSES finding categories with NeedFormulationService
+- Add real OSES capability-shaped categories to CAPABILITY_SHAPED_CATEGORIES
+- Add real OSES operational categories to OPERATIONAL_CATEGORIES
+- Add positive tests for real OSES capability-shaped categories
+- Add negative tests for real OSES operational categories
+- Preserve fail-closed behavior from G4.1
+- No keyword matching reintroduced
+
+BASE COMMIT: acab46ed000477ffa678d61a017c94d999add919
+NEW COMMIT: c23c673804bfc4307a2c56cb6d126bddc37b708e
+PARENT: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+BRANCH: p0213/vfinal5-r3-choke-point
+REMOTE: https://github.com/jhonf463r/Python.git
+
+CHANGES:
+- Added capability_promised_but_unavailable to CAPABILITY_SHAPED_CATEGORIES
+- Added windows_capability_missing to CAPABILITY_SHAPED_CATEGORIES
+- Added research_gap to CAPABILITY_SHAPED_CATEGORIES
+- Added 100+ real OSES operational categories to OPERATIONAL_CATEGORIES
+- Added functional_gap to OPERATIONAL_CATEGORIES (underutilized resources, not capability gaps)
+- Added configuration_gap to OPERATIONAL_CATEGORIES (missing config/secrets, not capability gaps)
+- Added underutilized_resource to OPERATIONAL_CATEGORIES (resource available but not used)
+- Added positive tests for capability_promised_but_unavailable, windows_capability_missing, research_gap
+- Added negative tests for functional_gap, configuration_gap, underutilized_resource, temporal_latency_anomaly, cloud_provider_degradation
+
+EVIDENCE LEVEL: STATIC (code analysis) + UNIT TEST (no real runtime data)

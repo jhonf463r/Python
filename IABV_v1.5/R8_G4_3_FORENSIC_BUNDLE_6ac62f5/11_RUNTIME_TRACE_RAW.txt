@@ -1,0 +1,13 @@
+RUNTIME TRACE RAW
+================
+
+STATUS: SKIPPED
+REASON: Runtime data not available
+
+ANALYSIS:
+- No real OSES findings to trace
+- Cannot trace: OSES producer → SelfExaminationFinding → NeedFormulationService → StructuredNeed
+- Cannot trace: OSES producer → SelfExaminationFinding → NO StructuredNeed (operational)
+
+CONCLUSION:
+Cannot trace real runtime transformation without runtime data sources.

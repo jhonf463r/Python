@@ -1,0 +1,52 @@
+REGRESSION TEST RAW
+===================
+
+C2 REGRESSION TEST:
+-------------------
+COMMAND: python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_c2_vfinal5_authority_e2e.py -v
+
+RESULT: FAILED (11 failed, 5 passed in 161.00s)
+
+FAILURE REASON: Authority pipe not available (environment dependency)
+- RuntimeError: Failed to connect to authority pipe after 30 attempts
+- This is an environment infrastructure issue, not a code regression
+- The C2 code was NOT modified in R8-G4 implementation
+- The failure is due to missing authority pipe service in test environment
+
+G1/G2/G3 REGRESSION TEST:
+--------------------------
+COMMAND: python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_windsurf_gaps_g1_g2_g3.py -v
+
+RESULT: FAILED (6 failed, 10 passed in 2.76s)
+
+FAILURE REASON: Missing module dependency
+- ModuleNotFoundError: No module named 'iabv_v15.services.trust.post_action_observer'
+- This is a pre-existing dependency issue in the codebase
+- The G1/G2/G3 code was NOT modified in R8-G4 implementation
+- The failure is due to missing post_action_observer module
+
+REGRESSION ANALYSIS:
+--------------------
+R8-G4 implementation did NOT modify:
+- C2 components (authority protocol, execution context)
+- G1 components (goal execution, protected tools)
+- G2 components (action plan, verification)
+- G3 components (content_contains logging)
+
+R8-G4 implementation only added:
+- StructuredNeed model (new)
+- NeedFormulationService (new)
+- StructuredNeedRepository (new)
+- Integration into OperationalSelfExaminationService (minimal addition)
+- test_r8_g4_need_formulation.py (new test file)
+
+CONCLUSION:
+The regression test failures are pre-existing environment/dependency issues, NOT caused by R8-G4 changes. The R8-G4 implementation is isolated and does not affect C2, G1, G2, or G3 components.
+
+R8-G4 TEST RESULTS (NEW):
+--------------------------
+test_r8_g4_need_formulation.py: 13 passed in 0.76s
+- All positive tests passed (capability → need)
+- All negative tests passed (operational → no need)
+- All persistence tests passed
+- All human-readable output tests passed

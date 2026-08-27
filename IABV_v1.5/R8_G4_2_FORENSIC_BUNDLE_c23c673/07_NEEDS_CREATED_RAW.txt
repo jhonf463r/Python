@@ -1,0 +1,16 @@
+NEEDS CREATED RAW
+=================
+
+STATUS: SKIPPED
+REASON: Requires full IABV environment with runtime data
+
+Real needs created from real OSES findings require:
+- Runtime audit data (runtime_audit.jsonl)
+- Chat research backlog (chat_research_backlog/)
+- Environment capability data
+- World model snapshot
+- Experiment lab data
+
+This environment is not available in the test context.
+
+Alternative: Unit tests with synthetic findings were used instead.

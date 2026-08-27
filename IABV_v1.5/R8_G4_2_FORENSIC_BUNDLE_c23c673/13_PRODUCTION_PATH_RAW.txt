@@ -1,0 +1,66 @@
+PRODUCTION PATH RAW
+==================
+
+PRODUCTION PATH VERIFICATION (unchanged from G4.1):
+----------------------------------------------------
+File: src/iabv_v15/services/evolution/operational_self_examination_service.py
+
+INITIALIZATION (lines 110-123):
+--------------------------------
+def __init__(self, ...):
+    # R8-G4: Need formulation for capability gaps
+    self.need_formulation_service: NeedFormulationService | None = None
+    self.structured_need_repository: StructuredNeedRepository | None = None
+    self._init_need_formulation_services()
+
+def _init_need_formulation_services(self) -> None:
+    """Initialize need formulation services if evolution_dir is available."""
+    try:
+        evolution_dir = Path(self.workspace_root) / 'data' / 'evolution'
+        self.need_formulation_service = NeedFormulationService()
+        self.structured_need_repository = StructuredNeedRepository(evolution_dir)
+    except Exception as exc:
+        logger.warning('oses: failed to initialize need formulation services: %s', exc)
+
+NEED FORMULATION METHOD (lines 124-142):
+-----------------------------------------
+def _formulate_structured_needs(self, findings: list[SelfExaminationFinding]) -> int:
+    """Formulate structured needs from capability-shaped findings.
+
+    Returns the number of needs created and persisted.
+    """
+    if self.need_formulation_service is None or self.structured_need_repository is None:
+        return 0
+
+    needs_created = 0
+    for finding in findings:
+        need = self.need_formulation_service.formulate_need_from_finding(finding)
+        if need is not None:
+            self.structured_need_repository.upsert(need)
+            needs_created += 1
+
+    if needs_created > 0:
+        logger.info('oses: formulated %d structured needs from %d findings', needs_created, len(findings))
+
+    return needs_created
+
+INTEGRATION POINT (line 918):
+------------------------------
+def build_review(self, ...):
+    # ... various findings collected ...
+    needs_formulated = self._formulate_structured_needs(findings)
+    # ... continues with review construction ...
+
+VERIFICATION:
+-------------
+git grep -n "_formulate_structured_needs" -- src/iabv_v15/services/evolution/operational_self_examination_service.py
+OUTPUT:
+src/iabv_v15/services/evolution/operational_self_examination_service.py:124:    def _formulate_structured_needs(self, findings: list[SelfExaminationFinding]) -> int:
+src/iabv_v15/services/evolution/operational_self_examination_service.py:918:        needs_formulated = self._formulate_structured_needs(findings)
+
+PRODUCTION INTEGRATION STATUS: VERIFIED (unchanged from G4.1)
+- NeedFormulationService is initialized in __init__
+- StructuredNeedRepository is initialized in __init__
+- _formulate_structured_needs is called from build_review
+- Graceful degradation if initialization fails (warning logged, returns 0)
+- Now recognizes real OSES categories: capability_promised_but_unavailable, windows_capability_missing, research_gap

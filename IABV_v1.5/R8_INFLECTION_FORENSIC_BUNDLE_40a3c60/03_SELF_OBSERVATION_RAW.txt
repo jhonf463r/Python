@@ -1,0 +1,83 @@
+SELF OBSERVATION AUDIT - RAW
+============================
+
+FILE: operational_self_examination_service.py
+SIZE: 10,002 lines
+
+DEFINITION:
+-----------
+Class: OperationalSelfExaminationService
+Location: src/iabv_v15/services/evolution/operational_self_examination_service.py
+
+WHAT IT OBSERVES:
+-----------------
+Based on code analysis (lines 1-500):
+- Startup health (init_ms, run_to_window_ms, deferred_ms, populate_ui_ms, RSS growth)
+- Boot profile thresholds (p95 boot duration, wiring duration, boot regression)
+- WorldModelSnapshot (active windows, tool_live_status, network_status, background_processes)
+- EnvironmentSelfModel (risk_signals, capability_graph, available_tools, missing_tools)
+- ExperimentRun data (assistant_kind, latency_ms, success/failure, intent_key)
+- RunRecord data (status, latency, outcomes)
+- DecisionAuditTrail (provider_id, confidence, outcome, error_detail)
+- Token rotation ledger (GitHub PAT expiration, Devin API expiration)
+- Embodiment violations (via PCS v1 provider snapshot())
+
+FINDINGS PRODUCED:
+------------------
+SelfExaminationFinding objects with categories:
+- startup_degradation (from _startup_health_findings)
+- cross_correlation_failure (from _deferred_deep_cognition_findings)
+- trend_degradation / trend_improvement (from _deferred_deep_cognition_findings)
+- strategy_decay (from _deferred_deep_cognition_findings)
+- background_provider_underperformance (from _background_decision_review_findings)
+- background_confidence_miscalibration (from _background_decision_review_findings)
+- background_error_stagnation (from _background_decision_review_findings)
+- temporal_latency_anomaly (from _temporal_awareness_findings)
+- temporal_latency_regression (from _temporal_awareness_findings)
+
+WHO CALLS build_review():
+--------------------------
+Based on code structure:
+- current_review() method (lines 104-118) calls build_review() when refresh=True or cache is stale
+- review_summary() method (lines 120-143) calls current_review() which may trigger build_review()
+- External callers likely include bootstrap.py, UI components, MCP tools
+
+WHO CONSUMES THE FINDINGS:
+--------------------------
+Based on code structure:
+- review_summary() returns findings in 'top_findings' field
+- SelfExaminationSnapshot stores findings in findings field
+- UI likely displays findings via EvolutionCenterViewModel
+- PortableContext may include findings in pending section
+
+DOES THE RESULT CHANGE A DECISION?
+----------------------------------
+Based on code analysis:
+- Findings are informational (severity, title, summary)
+- No automatic decision logic observed in first 500 lines
+- Findings may influence human decisions via UI display
+- No evidence of automatic action based on findings
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: The code exists and produces findings
+STRUCTURALLY_REACHABLE: Findings can be consumed by UI and other services
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: No evidence of automatic decision changes
+BEHAVIOR_CHANGE_OBSERVED: No evidence of behavior changes based on findings
+
+CONCLUSION:
+-----------
+Self observation exists and produces structured findings about:
+- Startup performance
+- Cross-correlation failures
+- Trend degradation/improvement
+- Strategy decay
+- Provider underperformance
+- Confidence miscalibration
+- Error stagnation
+- Temporal anomalies
+
+However, there is NO evidence in the first 500 lines that these findings
+automatically trigger decisions or behavior changes. They appear to be
+informational for human consumption via UI display.

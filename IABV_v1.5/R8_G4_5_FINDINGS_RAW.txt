@@ -1,0 +1,93 @@
+R8-G4.5 FINDINGS RAW
+===================
+
+TIMESTAMP = 2026-08-27 08:31:00 UTC-05:00
+
+FULL_FINDINGS_COUNT = 8
+RETURNED_FINDINGS_COUNT = 8
+FORMULATION_INPUT_COUNT = 8
+FORMULATION_INPUT_FINDING_IDS = SAME_AS_RETURNED
+TRUNCATION_APPLIED = FALSE
+TRUNCATION_INDEX = N/A
+
+ALL FINDINGS RETURNED BY build_review():
+==========================================
+
+FINDING_1:
+  ID: 3926dbd3-3e36-4016-9e64-19437acf4e7b
+  CATEGORY: http_noise
+  TITLE: Ruido excesivo de logs HTTP (httpx)
+  SUMMARY: Detectadas 500 ocurrencias de "HTTP Request:" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models "HTTP/1.1 200 OK"
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.9
+  SHAPE: operational
+
+FINDING_2:
+  ID: f935bc70-2373-43ea-bbaa-6327dfacac5e
+  CATEGORY: loop_closure
+  TITLE: Loop introspectivo abierto: 5 mecanismo(s) inactivo(s)
+  SUMMARY: 
+  SEVERITY: IssueSeverity.HIGH
+  CONFIDENCE: 0.0
+  SHAPE: operational
+
+FINDING_3:
+  ID: 83b83ea5-6552-4f11-8ede-bb83c9fc0c71
+  CATEGORY: windows_integration_gaps
+  TITLE: 1 capacidades Windows nativas faltantes
+  SUMMARY: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.9
+  SHAPE: operational
+  METADATA: {'phase': 'windows_integration', 'missing_capability_ids': ['platform.notifications'], 'missing_count': 1, 'total_platform_caps': 8, 'coverage_ratio': 0.88}
+
+FINDING_4:
+  ID: 2aeebe14-6636-491f-93b2-2ef3fffd0863
+  CATEGORY: web_session_expired
+  TITLE: Gemini Web necesita re-login
+  SUMMARY: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.85
+  SHAPE: operational
+
+FINDING_5:
+  ID: 0d55b43b-291e-4525-a5f0-5a7a000c4fad
+  CATEGORY: ui_self_awareness
+  TITLE: iabv_window_missing
+  SUMMARY: No se detecta ninguna ventana IABV entre las 11 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.5
+  SHAPE: operational
+
+FINDING_6:
+  ID: cea086bf-ce6d-4d5f-b3fb-e6994de7c481
+  CATEGORY: discernment_frame_missing_in_task_context
+  TITLE: Discernment frame ausente en contexto
+  SUMMARY: No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.
+  SEVERITY: IssueSeverity.MEDIUM
+  CONFIDENCE: 0.0
+  SHAPE: operational
+
+FINDING_7:
+  ID: 55095420-2b52-4196-8238-18238dbfe742
+  CATEGORY: self_correction
+  TITLE: Auto-correcciones aplicadas desde log: 1
+  SUMMARY: El programa detecto 1 anomalias en su propio log y aplico 1 correcciones automaticas.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 1.0
+  SHAPE: operational
+
+FINDING_8:
+  ID: 25f7b86c-4290-42dc-b68f-c285bfd1e46f
+  CATEGORY: autonomy_index_insufficient_data
+  TITLE: UniversalAutonomyIndex: datos insuficientes
+  SUMMARY: Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.
+  SEVERITY: IssueSeverity.LOW
+  CONFIDENCE: 0.95
+  SHAPE: operational
+
+CAPABILITY_FINDINGS_COUNT = 0
+OPERATIONAL_FINDINGS_COUNT = 8
+
+WINDOWS_PRODUCER_CALLED = TRUE (windows_integration_gaps finding exists)
+WINDOWS_PRODUCER_OUTPUT_COUNT = 1 (windows_integration_gaps finding only, no individual capability findings)

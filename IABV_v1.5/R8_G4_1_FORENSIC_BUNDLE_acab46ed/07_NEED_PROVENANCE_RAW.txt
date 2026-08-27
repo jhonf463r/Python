@@ -1,0 +1,65 @@
+NEED PROVENANCE RAW
+===================
+
+PROVENANCE ASSERTIONS ADDED TO POSITIVE TESTS:
+----------------------------------------------
+All positive tests now include explicit provenance assertions:
+
+1. test_capability_discovery_creates_need:
+   - need.source_finding_id == finding.finding_id
+   - need.category == finding.category
+   - need.capability_gap == finding.title
+   - need.desired_state == finding.recommendation
+   - need.knowledge_required == finding.category
+   - need.reason == finding.summary
+   - need.evidence == finding.evidence_refs
+   - need.priority maps from finding.severity
+   - need.status == NeedStatus.PENDING
+
+2. test_missing_capability_creates_need:
+   - need.source_finding_id == finding.finding_id
+   - need.category == finding.category
+   - need.capability_gap == finding.title
+   - need.desired_state == finding.recommendation
+   - need.knowledge_required == finding.category
+   - need.priority maps from finding.severity
+
+3. test_uncertainty_creates_need:
+   - need.source_finding_id == finding.finding_id
+   - need.category == finding.category
+   - need.capability_gap == finding.title
+   - need.desired_state == finding.recommendation
+   - need.knowledge_required == finding.category
+   - need.priority maps from finding.severity
+
+4. test_inability_with_capability_context_creates_need:
+   - need.source_finding_id == finding.finding_id
+   - need.category == finding.category
+   - need.capability_gap == finding.title
+   - need.desired_state == finding.recommendation
+   - need.knowledge_required == finding.category
+   - need.evidence == finding.evidence_refs
+
+PROVENANCE GUARANTEES:
+----------------------
+Every populated field in StructuredNeed is traceable to:
+- source_finding_id: finding.finding_id (direct copy)
+- category: finding.category (direct copy)
+- capability_gap: finding.title (direct copy)
+- current_state: finding.summary (extracted if explicit pattern exists)
+- desired_state: finding.recommendation (direct copy)
+- knowledge_required: finding.category (direct copy, no template)
+- reason: finding.summary (direct copy)
+- evidence: finding.evidence_refs (direct copy)
+- priority: finding.severity (mapped via _map_severity_to_priority)
+- status: NeedStatus.PENDING (system constant)
+
+NO FABRICATED CONTENT:
+----------------------
+- No "knowledge_in_<category>" template
+- No "unable_to_perform_action" placeholder
+- No "able_to_perform_action" placeholder
+- No "unknown_capability_gap" placeholder
+- No "general_knowledge" placeholder
+
+If the finding does not provide sufficient data, the field is empty string.

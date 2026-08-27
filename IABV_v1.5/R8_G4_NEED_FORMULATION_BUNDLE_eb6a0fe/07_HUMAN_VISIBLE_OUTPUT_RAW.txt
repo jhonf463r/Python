@@ -1,0 +1,74 @@
+HUMAN VISIBLE OUTPUT RAW
+=========================
+
+SINGLE NEED FORMAT:
+-------------------
+NECESITO:
+  Cannot perform visual inspection
+
+PORQUE:
+  Need to inspect UI elements for user goals
+
+EVIDENCIA:
+  - run_123
+  - episode_456
+
+PRIORIDAD: HIGH
+ESTADO: PENDING
+CONOCIMIENTO REQUERIDO: knowledge_in_capability_discovery
+
+ALL PENDING NEEDS FORMAT:
+-------------------------
+NECESIDADES PENDIENTES (2):
+
+--- NECESIDAD 1 ---
+NECESITO:
+  Cannot perform visual inspection
+
+PORQUE:
+  Need to inspect UI elements for user goals
+
+EVIDENCIA:
+  - run_123
+  - episode_456
+
+PRIORIDAD: HIGH
+ESTADO: PENDING
+CONOCIMIENTO REQUERIDO: knowledge_in_capability_discovery
+
+--- NECESIDAD 2 ---
+NECESITO:
+  Unable to execute shell commands
+
+PORQUE:
+  I am unable to execute shell commands on Windows
+
+EVIDENCIA:
+  (ninguna)
+
+PRIORIDAD: CRITICAL
+ESTADO: PENDING
+CONOCIMIENTO REQUERIDO: knowledge_in_missing_capability
+
+EMPTY STATE:
+------------
+No hay necesidades pendientes.
+
+VERIFICATION (from tests):
+--------------------------
+test_format_human_readable: PASSED
+- Verified "NECESITO:" present
+- Verified capability_gap present
+- Verified "PORQUE:" present
+- Verified reason present
+- Verified "EVIDENCIA:" present
+- Verified "PRIORIDAD: HIGH" present
+- Verified "ESTADO: PENDING" present
+
+test_format_all_pending: PASSED
+- Verified "NECESIDADES PENDIENTES (2):" present
+- Verified "--- NECESIDAD 1 ---" present
+- Verified "--- NECESIDAD 2 ---" present
+
+test_format_all_pending_empty: PASSED
+- Verified "No hay necesidades pendientes." when no needs

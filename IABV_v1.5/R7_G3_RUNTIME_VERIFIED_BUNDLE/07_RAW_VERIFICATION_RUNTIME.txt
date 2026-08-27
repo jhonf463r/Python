@@ -1,0 +1,16 @@
+RAW VERIFICATION RUNTIME
+========================
+
+The verification runtime is included in the main test runtime outputs:
+- 05_RAW_G3_POSITIVE_RUNTIME.txt (G3 positive test - passed)
+- 06_RAW_G3_NEGATIVE_RUNTIME.txt (G3 negative test - passed)
+- 09_RAW_G2_REGRESSION.txt (G2 regression test - passed)
+- 10_RAW_G1_REGRESSION.txt (G1 regression test - passed)
+- 11_RAW_C2_REGRESSION.txt (C2 regression tests - passed)
+
+See those files for detailed verification runtime logs including:
+- Expected result calculation
+- Observed result from filesystem
+- Hash verification
+- Semantic verification
+- ACTION_EXECUTED, ACTION_RESULT_OBSERVED, ACTION_RESULT_VERIFIED flags

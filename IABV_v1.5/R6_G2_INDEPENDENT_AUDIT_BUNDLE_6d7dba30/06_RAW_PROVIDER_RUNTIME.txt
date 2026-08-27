@@ -1,0 +1,13 @@
+# Raw Provider Runtime
+# Provider runtime is included in 05_RAW_G2_POSITIVE_RUNTIME.txt
+# The G2 test uses Groq provider with model openai/gpt-oss-120b
+# Provider calls are logged in the full G2 runtime output
+
+# Provider Configuration:
+PROVIDER: Groq
+MODEL: openai/gpt-oss-120b
+REQUEST_URL: https://api.groq.com/openai/v1/chat/completions
+HTTP_STATUS: 200 (success)
+
+# Note: API key and Authorization headers are redacted for security
+# The actual provider response is captured in 05_RAW_G2_POSITIVE_RUNTIME.txt

@@ -1,0 +1,278 @@
+RAW AUDIT: LEARNING MECHANISMS
+==============================
+
+STAGE: Learning Mechanisms
+OBJECTIVE: Identify who learns, what inputs they receive, what outputs they produce, who consumes learning outputs, and whether learning changes later behavior.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+WHO LEARNS
+-----------
+
+1. AdaptiveWeightLayer
+   - File: src/iabv_v15/services/adaptive/adaptive_weight_layer.py
+   - Lines: 15-305
+   - Learns from historical ExperimentRun objects
+   - Applies metacognitive adjustments from OSES
+   - Suggests adaptive preferences based on success rates
+   - Persists adjustments to data/evolution/adaptive_weights/metacognitive_adjustments.json
+
+2. PlatformLearningOrchestrator
+   - File: src/iabv_v15/services/evolution/platform_learning_orchestrator.py
+   - Lines: 221-633
+   - Closed-loop learning for external platforms
+   - Implements: perceive → plan → act → verify → adjust → persist
+   - Learns browser/API/CLI/platform interactions
+   - Persists to data/evolution/platform_learning/
+
+3. InteractionLearningService
+   - File: src/iabv_v15/services/tools/interaction_learning_service.py
+   - Lines: 35-861
+   - Learns from tool executions and teaching sessions
+   - Creates InteractionPattern objects
+   - Generates LearningSignal objects
+   - Persists to ToolRecordRepository
+
+4. TaskOutcomeRecorder
+   - File: src/iabv_v15/services/adaptive/task_outcome_recorder.py
+   - Records session outcomes and learning metadata
+   - Updates ExperimentRun with adaptive_learning summary
+   - Persists to AdaptiveSessionRepository
+
+---
+
+WHAT INPUTS ARE RECEIVED
+-------------------------
+
+From AdaptiveWeightLayer:
+- grouped_runs: dict[tuple[object, str, str], list[ExperimentRun]]
+- historical_runs: list[ExperimentRun]
+- latest_run: ExperimentRun
+- Metacognitive adjustments from OSES:
+  * route: str
+  * assistant_kind: str
+  * adjustment: float
+  * reason: str
+
+From PlatformLearningOrchestrator:
+- platform_id: str
+- goal: str
+- executor: Callable[[str, dict[str, Any]], bool]
+- Perception from UniversalPerceptionService
+- Verification from ReplayConfidenceService
+- API key status from ApiKeyDiscoveryService
+
+From InteractionLearningService:
+- ToolCard with tool_id, tool_type, adapter_key
+- ToolTask with actions, objective, metadata
+- ToolResult with success, validation_status, execution_state
+- Teaching session data:
+  * episode_id, site_id, display_name
+  * objective, expected_outcome, notes
+  * steps: list[CapturedStep]
+  * learning_packet: dict[str, Any]
+
+From TaskOutcomeRecorder:
+- AdaptiveSession with:
+  * session_id, intent, capability_readiness
+  * probe_diagnosis, runtime_adjustments
+  * metadata with learning signals
+
+---
+
+WHAT OUTPUTS ARE PRODUCED
+-------------------------
+
+From AdaptiveWeightLayer:
+- Metacognitive adjustments:
+  * key: route|assistant_kind
+  * adjustment: float (clamped to -0.15 to 0.15)
+  * reason: str
+  * applied_at: datetime
+- Profile suggestions:
+  * sample_count: int
+  * success_rate: float
+  * failure_rate: float
+  * blocked_rate: float
+  * fallback_rate: float
+  * reuse_ratio: float
+  * average_score: float
+  * average_latency_ms: int
+  * adaptive_weight: float
+  * weighted_score: float
+  * reasons: list[str]
+
+From PlatformLearningOrchestrator:
+- PlatformProfile with:
+  * platform_id, name, platform_type
+  * url, login_steps, known_actions
+  * confidence: float
+  * success_count, failure_count
+  * last_used_utc: str
+- LearningAttempt with:
+  * platform_id, goal, phase
+  * success: bool
+  * verification_passed, verification_total
+  * verification_sources_used: list[str]
+  * duration_seconds: float
+  * adjustments_made: list[str]
+  * error: str
+
+From InteractionLearningService:
+- InteractionPattern with:
+  * pattern_id, signature, title
+  * channel, tool_id, tool_type, site_id
+  * operations: list[UniversalInteractionStep]
+  * reusable: bool
+  * success_count, failure_count
+  * last_task_id, last_result_id
+  * created_at_utc, updated_at_utc
+  * metadata: dict[str, Any]
+- InteractionEpisode with:
+  * objective, mode_used, environment
+  * captured_metadata, actions, result
+  * evidence, learning_signals
+  * confidence, human_approval
+  * policy_decision, selector_name
+  * pattern_id, reused_pattern
+  * tool_id, tool_type, task_id, result_id
+- LearningSignal with:
+  * label: str
+  * channel: InteractionChannel
+  * signal_type: str
+  * confidence: float
+  * source: str
+  * evidence_refs: list[str]
+  * metadata: dict[str, Any]
+
+From TaskOutcomeRecorder:
+- Updated ExperimentRun with:
+  * adaptive_learning: dict[str, Any]
+  * weight_snapshot: dict[str, Any]
+  * learning_signals: list[dict[str, Any]]
+
+---
+
+WHO CONSUMES THE OUTPUTS
+------------------------
+
+1. StrategySelector
+   - Consumes AdaptiveWeightLayer profiles
+   - Uses weighted_score to rank strategies
+   - Selects best route/assistant based on learning
+
+2. SynapticRouter
+   - Consumes AdaptiveWeightLayer adjustments
+   - Routes requests based on learned preferences
+   - Applies metacognitive adjustments
+
+3. InteractionModeSelector
+   - Consumes InteractionPattern objects
+   - Matches patterns to new tasks
+   - Reuses successful patterns
+
+4. ToolMemory
+   - Consumes InteractionLearningService patterns
+   - Suggests patterns for similar tasks
+   - Provides pattern summaries
+
+5. OSES (OperationalSelfExaminationService)
+   - Consumes PlatformLearningOrchestrator findings
+   - Generates findings for low-confidence platforms
+   - Detects reliability issues
+
+6. PortableContextService
+   - Consumes learning metadata from sessions
+   - Includes adaptive_learning_summary in context
+   - Provides learning readiness status
+
+7. UI/ControlCenter
+   - Displays learning status to user
+   - Shows platform learning progress
+   - Displays interaction patterns
+
+---
+
+WHETHER OUTPUTS CHANGE LATER BEHAVIOR
+-------------------------------------
+
+YES - Learning outputs change behavior:
+
+1. AdaptiveWeightLayer adjustments:
+   - Metacognitive adjustments bias future scoring
+   - Applied in _profile() to modify adaptive_weight
+   - Affects StrategySelector ranking
+   - Persists across sessions
+
+2. PlatformLearningOrchestrator confidence:
+   - High confidence enables fast-path via DecisionSimplifier
+   - Low confidence triggers full learning cycle
+   - Success/failure updates confidence incrementally
+   - Affects future platform interaction decisions
+
+3. InteractionPattern reuse:
+   - Reusable patterns are matched to new tasks
+   - High success_count increases pattern priority
+   - Pattern reuse reduces execution time
+   - Affects InteractionModeSelector decisions
+
+4. LearningSignal propagation:
+   - Signals are included in session metadata
+   - Signals are propagated to ExperimentRun
+   - Signals influence future routing decisions
+   - Affects tool selection and mode selection
+
+5. TaskOutcomeRecorder metadata:
+   - adaptive_learning_summary included in PortableContext
+   - weight_snapshot used for trend analysis
+   - learning_signals used for pattern matching
+   - Affects future session context
+
+---
+
+MISSING EDGES
+-------------
+
+1. NO automatic learning application
+   - Learning is recorded but NOT automatically applied
+   - NO service found that automatically applies learning to new tasks
+   - Learning requires explicit consumption by selectors/routers
+
+2. NO learning-to-action transformation
+   - Learning produces patterns and profiles
+   - NO service found that converts learning to executable actions
+   - Learning is descriptive, not prescriptive
+
+3. NO self-improvement learning
+   - Learning is about external platforms and tool interactions
+   - NO learning about system's own code or architecture
+   - NO self-reflexive learning for self-improvement
+
+4. NO learning-driven task generation
+   - Learning does NOT automatically generate tasks
+   - NO service found that uses learning to create PlatformPendingTask
+   - Learning findings are surfaced but not acted upon
+
+5. NO learning feedback loop
+   - Learning is one-way: execution → learning
+   - NO loop: learning → action → verification → learning
+   - NO closed-loop learning for self-improvement
+
+---
+
+CONCLUSION
+----------
+
+Learning mechanisms EXIST but are LIMITED:
+- AdaptiveWeightLayer learns from historical runs and applies metacognitive adjustments
+- PlatformLearningOrchestrator learns external platform interactions
+- InteractionLearningService learns tool interaction patterns
+- TaskOutcomeRecorder records learning metadata
+- Learning influences future decisions via selectors/routers
+- Learning is NOT automatically applied to generate actions
+- Learning is NOT used for self-improvement
+- NO closed-loop learning for autonomous self-improvement
+
+The system can LEARN from past executions but cannot AUTONOMOUSLY USE learning for self-improvement.

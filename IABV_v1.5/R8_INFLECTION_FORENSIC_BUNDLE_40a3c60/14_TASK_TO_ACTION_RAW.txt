@@ -1,0 +1,250 @@
+RAW AUDIT: TASK TO ACTION INTEGRATION
+====================================
+
+STAGE: Task to Action Integration
+OBJECTIVE: Identify how tasks (PlatformPendingTask, CloudPlan steps) are converted into executable actions, who executes them, and what the execution flow is.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+TASK TO ACTION PATHWAYS
+------------------------
+
+1. CloudPlan → PlaybookStep → Execution
+   - File: src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py
+   - Method: cloud_plan_to_playbook_steps(plan: CloudPlan) -> list[PlaybookStep]
+   - Converts CloudPlan steps into PlaybookStep instances
+   - PlaybookStep has phase_key, description, executable, simulation_only
+   - ExecutionPlaybookService executes PlaybookStep via _execute_step()
+
+2. CloudPlan Generation
+   - File: src/iabv_v15/services/adaptive/cloud_reasoning_planner.py
+   - Method: generate_plan(user_goal: str, context: str) -> CloudPlan | None
+   - Input: user_goal, optional context
+   - Output: CloudPlan with PlanStep objects
+   - PlanStep fields:
+     * step_id: str
+     * order: int
+     * title: str
+     * description: str
+     * assigned_tool: str (e.g., 'write_repo_file', 'codex', 'chatgpt')
+     * target: str (file path for write_repo_file)
+     * parameters: dict[str, Any] (relative_path, content)
+     * expected_result: dict[str, Any] (file_exists, content_contains)
+     * rationale: str
+     * tool_rationale: str
+     * requires_approval: bool
+     * estimated_seconds: int
+     * status: str
+     * result_summary: str
+     * metadata: dict[str, Any]
+
+3. write_repo_file Tool
+   - File: src/iabv_v15/infra/mcp/self_update_tools.py
+   - Method: write_repo_file(relative_path, content, commit_message, branch)
+   - Implementation: write_repo_file_impl()
+   - Core implementation:
+     * Writes content to file at relative_path
+     * Validates file is within repository
+     * Logs write operation
+     * Returns success/failure status
+   - Registered as MCP tool in server.py
+   - ONLY tool actually available for execution from CloudPlan
+   - Requires C2 authorization for protected scopes
+
+---
+
+WHO CONVERTS TASKS TO ACTIONS
+------------------------------
+
+1. CloudReasoningPlannerService
+   - Generates CloudPlan from user_goal
+   - Decomposes goal into PlanStep objects
+   - Assigns tools to each step (write_repo_file, codex, chatgpt, etc.)
+   - Only write_repo_file is actually executable
+
+2. AdaptiveTaskOrchestrator.cloud_plan_to_playbook_steps()
+   - File: src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py
+   - Converts CloudPlan to PlaybookStep list
+   - Maps PlanStep.assigned_tool to PlaybookStep.executable
+   - Sets simulation_only flag based on governance
+
+3. ExecutionPlaybookService
+   - File: src/iabv_v15/services/adaptive/execution_playbook_service.py
+   - Method: _execute_step(session: AdaptiveSession)
+   - Executes PlaybookStep via executor
+   - Supports simulation_only mode
+   - Returns execution_state
+
+---
+
+WHO EXECUTES ACTIONS
+--------------------
+
+1. write_repo_file (MCP tool)
+   - File: src/iabv_v15/infra/mcp/self_update_tools.py
+   - Executes file writes with C2 authorization
+   - Only tool that can safely create/modify repository files
+   - Requires authority service check for protected scopes
+   - Used for self_update scope mutations
+
+2. ExecutionPlaybookService.executor
+   - Abstract executor interface
+   - Concrete implementations execute specific actions
+   - Supports simulation_only mode for testing
+   - Returns execution_state with success/failure
+
+3. MCP Server
+   - File: src/iabv_v15/infra/mcp/server.py
+   - Registers write_repo_file as MCP tool
+   - Handles tool invocation via _execute_action_plan()
+   - Performs G3 verification after action execution
+   - Checks authority via authorize_action()
+
+---
+
+WHAT INPUTS ARE RECEIVED
+-------------------------
+
+From CloudPlan:
+- user_goal: str
+- PlanStep objects with:
+  * assigned_tool: str
+  * target: str
+  * parameters: dict[str, Any]
+  * expected_result: dict[str, Any]
+
+From PlaybookStep:
+- phase_key: str
+- description: str
+- executable: bool
+- simulation_only: bool
+- metadata: dict[str, Any]
+
+From MCP tool invocation:
+- tool_id: str
+- arguments: dict[str, Any]
+- execution_context: dict[str, Any]
+
+---
+
+WHAT OUTPUTS ARE PRODUCED
+-------------------------
+
+From write_repo_file:
+- success: bool
+- file_path: str
+- bytes_written: int
+- error: str | None
+
+From ExecutionPlaybookService:
+- execution_state: dict[str, Any]
+  * success: bool
+  * detail: str
+  * simulation_only: bool
+  * last_action: str
+
+From MCP server G3 verification:
+- result_verification: dict[str, Any]
+  * status: str (verified/failed/unknown)
+  * action_executed: bool
+  * action_result_observed: bool
+  * action_result_verified: bool
+  * matches: list[str]
+  * mismatches: list[str]
+  * unexpected_content: list[str]
+
+---
+
+WHO CONSUMES THE OUTPUTS
+------------------------
+
+1. AdaptiveTaskOrchestrator
+   - Receives CloudPlan from CloudReasoningPlannerService
+   - Converts to PlaybookStep via cloud_plan_to_playbook_steps()
+   - Passes to ExecutionPlaybookService for execution
+
+2. ExecutionPlaybookService
+   - Receives PlaybookStep list
+   - Executes steps via executor
+   - Returns execution_state to orchestrator
+
+3. MCP Server
+   - Receives tool invocation
+   - Executes tool (write_repo_file)
+   - Performs G3 verification
+   - Returns result to caller
+
+4. TaskOutcomeRecorder
+   - Records execution results
+   - Persists to ExperimentRun
+   - Updates learning metadata
+
+---
+
+WHETHER OUTPUTS CHANGE LATER BEHAVIOR
+-------------------------------------
+
+YES - Execution outputs change behavior:
+
+1. G3 verification results:
+   - If verified: action is considered successful
+   - If failed: action is rolled back or marked as failed
+   - If unexpected_content: action is flagged for review
+
+2. ExecutionPlaybookService execution_state:
+   - success: determines if next step is executed
+   - simulation_only: determines if real action is taken
+   - last_action: determines next phase in playbook
+
+3. write_repo_file results:
+   - success: determines if file was actually written
+   - error: determines if retry is needed
+   - bytes_written: determines if operation was complete
+
+---
+
+MISSING EDGES
+-------------
+
+1. NO automatic PlatformPendingTask execution
+   - PlatformPendingTask objects are NOT automatically converted to actions
+   - NO service found that consumes PlatformPendingTask and executes it
+   - Tasks remain in queue until manually addressed
+
+2. NO CloudPlan auto-execution
+   - CloudPlan is generated but NOT automatically executed
+   - Requires orchestrator to convert to PlaybookStep and execute
+   - NO service found that auto-executes CloudPlan without orchestrator
+
+3. NO tool availability for conceptual tools
+   - CloudPlan can assign 'codex', 'chatgpt', 'claude', 'devin', 'ollama_local'
+   - These tools are NOT registered as executable MCP tools
+   - Only write_repo_file is actually available for execution
+   - Plans using other tools cannot be executed
+
+4. NO task-to-plan transformation for self-improvement
+   - NO service found that converts PlatformPendingTask to CloudPlan
+   - System cannot autonomously plan its own development
+   - Self-improvement tasks remain descriptive, not executable
+
+5. NO automatic action retry
+   - If action fails, NO automatic retry mechanism found
+   - NO service found that retries failed actions
+   - Requires manual intervention or new session
+
+---
+
+CONCLUSION
+----------
+
+Task to action integration EXISTS but is LIMITED:
+- CloudPlan can be generated for user goals
+- CloudPlan can be converted to PlaybookStep
+- PlaybookStep can be executed via ExecutionPlaybookService
+- Only write_repo_file is actually executable
+- PlatformPendingTask cannot be automatically executed
+- Self-improvement tasks cannot be automatically converted to actions
+
+The system can PLAN actions for user goals but cannot AUTONOMOUSLY EXECUTE self-improvement tasks.

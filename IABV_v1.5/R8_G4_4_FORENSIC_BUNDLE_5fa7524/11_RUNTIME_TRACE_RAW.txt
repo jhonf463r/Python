@@ -1,0 +1,15 @@
+RUNTIME TRACE RAW
+=================
+
+SKIPPED: No capability finding → StructuredNeed transformation to trace.
+
+REAL_OSES_TO_NEED = NOT_OBSERVED
+
+Reason: No capability findings produced, so there is no transformation to trace.
+
+The operational finding rejection was demonstrated:
+- All 8 operational findings were correctly rejected by NeedFormulationService
+- No StructuredNeed objects were created from operational findings
+- Fail-closed behavior verified in real runtime
+
+See 07_OPERATIONAL_FINDING_RUNTIME_RAW.txt for operational rejection details.

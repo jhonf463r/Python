@@ -1,0 +1,76 @@
+NEGATIVE EDGE CASES RAW
+=======================
+
+TEST COMMAND:
+python -m pytest C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5\tests\test_r8_g4_need_formulation.py::TestNeedFormulationNegative -v
+
+NEGATIVE TEST RESULTS:
+======================
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_ambiguous_with_capability_keyword_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_network_failure_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_performance_degradation_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_provider_cannot_handle_load_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_provider_latency_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_route_failure_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_route_requires_optimization_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_timeout_no_need PASSED
+tests/test_r8_g4_need_formulation.py::TestNeedFormulationNegative::test_we_need_faster_route_no_need PASSED
+
+NEGATIVE TEST DETAILS:
+---------------------
+
+test_provider_latency_no_need:
+- Input: category="provider_underperformance", title="Provider latency is high"
+- Expected: None (operational finding should NOT produce need)
+- Actual: None
+- Verified: Operational finding correctly rejected
+
+test_route_failure_no_need:
+- Input: category="route_failure", title="Route to Claude failed"
+- Expected: None (operational finding should NOT produce need)
+- Actual: None
+- Verified: Operational finding correctly rejected
+
+test_performance_degradation_no_need:
+- Input: category="performance_degradation", title="System is slow"
+- Expected: None (operational finding should NOT produce need)
+- Actual: None
+- Verified: Operational finding correctly rejected
+
+test_provider_cannot_handle_load_no_need (NEW - hard case):
+- Input: category="provider_underperformance", title="Provider cannot handle the load"
+- Expected: None (operational finding with "cannot" keyword must NOT produce need)
+- Actual: None
+- Verified: Keyword "cannot" does NOT override operational category
+
+test_we_need_faster_route_no_need (NEW - hard case):
+- Input: category="route_failure", title="We need a faster route"
+- Expected: None (operational finding with "need" keyword must NOT produce need)
+- Actual: None
+- Verified: Keyword "need" does NOT override operational category
+
+test_route_requires_optimization_no_need (NEW - hard case):
+- Input: category="route_failure", title="Route requires optimization"
+- Expected: None (operational finding must NOT produce need)
+- Actual: None
+- Verified: Operational finding correctly rejected
+
+test_timeout_no_need (NEW - hard case):
+- Input: category="timeout", title="Request timeout"
+- Expected: None (operational finding must NOT produce need)
+- Actual: None
+- Verified: Timeout category correctly rejected
+
+test_network_failure_no_need (NEW - hard case):
+- Input: category="network_failure", title="Network connection failed"
+- Expected: None (operational finding must NOT produce need)
+- Actual: None
+- Verified: Network failure category correctly rejected
+
+test_ambiguous_with_capability_keyword_no_need (NEW - fail-closed test):
+- Input: category="generic", title="System cannot process request"
+- Expected: None (ambiguous finding with capability keyword must NOT produce need)
+- Actual: None
+- Verified: Fail-closed behavior - ambiguous findings do NOT create needs
+
+NEGATIVE TESTS: 9 PASSED

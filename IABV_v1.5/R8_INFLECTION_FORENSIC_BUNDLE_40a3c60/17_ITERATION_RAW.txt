@@ -1,0 +1,235 @@
+RAW AUDIT: ITERATION MECHANISMS
+===============================
+
+STAGE: Iteration Mechanisms
+OBJECTIVE: Identify who iterates, what inputs they receive, what outputs they produce, who consumes iteration outputs, and whether iteration changes later behavior.
+
+EVIDENCE LEVEL: STATIC (code analysis)
+
+---
+
+WHO ITERATES
+------------
+
+1. ToolCallingBridge.run_tool_loop()
+   - File: src/iabv_v15/services/llm/tool_calling_bridge.py
+   - Lines: (inferred from grep)
+   - Re-invokes LLM with tool results until no more calls or max iterations
+   - MAX_ITERATIONS = 5
+   - Input: LLM, tool results, context
+   - Output: final_summary, tool_calls_made, iterations
+
+2. CommonSenseEngine
+   - File: src/iabv_v15/services/common_sense_engine.py
+   - Lines: (inferred from grep)
+   - max_iterations: int = 10
+   - Iterates while iterations < max_iterations
+   - Input: context, chain
+   - Output: result with inference_iterations
+
+3. AutonomousEvolutionService.reingest_existing_session()
+   - File: src/iabv_v15/services/evolution/autonomous_evolution_service.py
+   - Lines: 275-355
+   - Forces re-ingest of open session before relaunch
+   - Called when session_expired but isolated session still open
+   - Input: existing_consultation, adaptive_payload, user_goal, source
+   - Output: ingested result with pre_capture_ingested flag
+
+4. AdaptiveTaskOrchestrator.prepare_retry()
+   - File: src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py
+   - Lines: (inferred from grep)
+   - Prepares retry payload for failed consultations
+   - Marks reingest flag for session_expired consultations
+   - Input: failed consultation, session
+   - Output: new payload with retry metadata
+
+5. ControlCenterViewModel._attempt_post_recapture_response_retry()
+   - File: src/iabv_v15/ui/viewmodels/control_center_viewmodel.py
+   - Lines: (inferred from grep)
+   - Attempts retry after post-recapture response
+   - Timeout: _POST_RECAPTURE_RESPONSE_RETRY_TIMEOUT_S
+   - Input: consultation state
+   - Output: retry result with retry_attempted, retry_status
+
+---
+
+WHAT INPUTS ARE RECEIVED
+-------------------------
+
+From ToolCallingBridge:
+- LLM instance
+- Initial context/prompt
+- Tool results from previous iterations
+- MAX_ITERATIONS constant (5)
+
+From CommonSenseEngine:
+- Context dict
+- Chain with previous results
+- max_iterations parameter (default 10)
+
+From AutonomousEvolutionService.reingest_existing_session:
+- existing_consultation: dict[str, Any]
+- adaptive_payload: dict[str, Any]
+- user_goal: str
+- source: str
+
+From AdaptiveTaskOrchestrator.prepare_retry:
+- Failed consultation state
+- Session context
+- Error details
+
+From ControlCenterViewModel retry:
+- Consultation state with response_capture_pending
+- AutonomousEvolutionService instance
+
+---
+
+WHAT OUTPUTS ARE PRODUCED
+-------------------------
+
+From ToolCallingBridge:
+- final_summary: str
+- tool_calls_made: list
+- iterations: int (count of iterations performed)
+
+From CommonSenseEngine:
+- result: dict[str, Any]
+  * iteration: int
+  * inference_iterations: int
+  * chain: dict with iterations
+
+From AutonomousEvolutionService.reingest_existing_session:
+- pre_capture_ingested: bool
+- reason: str
+- task_id: str
+- result_id: str
+- pre_capture_source: str
+- pre_capture_task_id: str
+- pre_capture_result_id: str
+
+From AdaptiveTaskOrchestrator.prepare_retry:
+- new_payload: dict[str, Any]
+- retry_metadata: dict[str, Any]
+  * reingest_only: bool
+  * reingest_existing_response: bool
+
+From ControlCenterViewModel retry:
+- retry_attempted: bool
+- retry_status: str (success/no_response/unavailable/error/timeout)
+- reason: str
+
+---
+
+WHO CONSUMES THE OUTPUTS
+------------------------
+
+1. AdaptiveTaskOrchestrator
+   - Consumes ToolCallingBridge iterations
+   - Uses tool_calls_made for tracking
+   - Uses final_summary for response
+
+2. LLM callers
+   - Consume CommonSenseEngine results
+   - Use inference_iterations for monitoring
+   - Use chain results for context
+
+3. AdaptiveTaskOrchestrator
+   - Consumes reingest results
+   - Uses pre_capture_ingested to decide next action
+   - Uses reingest source for tracking
+
+4. External assistant adapters
+   - Consume retry metadata
+   - Use reingest_only flag for capture mode
+   - Use reingest_existing_response for session handling
+
+5. UI/ControlCenter
+   - Displays retry status to user
+   - Shows iteration counts
+   - Displays reingest results
+
+---
+
+WHETHER OUTPUTS CHANGE LATER BEHAVIOR
+-------------------------------------
+
+YES - Iteration outputs change behavior:
+
+1. ToolCallingBridge iterations:
+   - Iterations stop when no more tool calls needed
+   - Max iterations limit prevents infinite loops
+   - Iteration count affects logging and monitoring
+   - Tool calls made affect final response
+
+2. CommonSenseEngine iterations:
+   - Iterations stop when max_iterations reached
+   - Iteration count affects result quality
+   - Chain results accumulate across iterations
+   - Affects subsequent inference calls
+
+3. Reingest results:
+   - pre_capture_ingested=True skips normal consultation
+   - pre_capture_ingested=False triggers normal retry
+   - pre_capture_source affects capture mode selection
+   - Affects session resumption logic
+
+4. Retry metadata:
+   - reingest_only=True changes capture mode to browser_dom_reingest
+   - reingest_existing_response=True skips prompt paste
+   - Affects external assistant adapter behavior
+   - Changes consultation flow
+
+5. Retry status:
+   - success: consultation completed
+   - no_response: no text captured
+   - unavailable: autonomous_evolution_service not available
+   - error: reingest failed
+   - timeout: reingest took too long
+   - Affects next action decision
+
+---
+
+MISSING EDGES
+-------------
+
+1. NO autonomous iteration for self-improvement
+   - Iteration is for LLM tool calling only
+   - NO iteration for development task execution
+   - NO iteration for self-improvement loops
+
+2. NO automatic retry for failed development tasks
+   - Retry is for external consultations only
+   - NO retry for PlatformPendingTask execution
+   - NO retry for CloudPlan step execution
+
+3. NO iteration-based learning
+   - Iteration counts are recorded but NOT used for learning
+   - NO service found that learns from iteration patterns
+   - NO adaptive iteration strategies
+
+4. NO iteration for consensus
+   - Consensus is single-shot (multiple IAs consulted once)
+   - NO iterative consensus refinement
+   - NO iteration based on consensus disagreement
+
+5. NO iteration for test execution
+   - Tests run once per invocation
+   - NO automatic test retry on failure
+   - NO iterative test improvement
+
+---
+
+CONCLUSION
+----------
+
+Iteration mechanisms EXIST but are LIMITED:
+- ToolCallingBridge iterates for LLM tool calling (max 5 iterations)
+- CommonSenseEngine iterates for inference (max 10 iterations)
+- Reingest mechanism for session recovery
+- Retry mechanism for failed consultations
+- Iteration is NOT used for self-improvement
+- NO iteration for development task execution
+- NO automatic retry for PlatformPendingTask
+- NO iteration-based learning
+
+The system can ITERATE for LLM tool calling and consultation recovery but cannot AUTONOMOUSLY ITERATE for self-improvement.

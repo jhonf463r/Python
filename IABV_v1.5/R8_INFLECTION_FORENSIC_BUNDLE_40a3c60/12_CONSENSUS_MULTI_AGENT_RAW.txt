@@ -1,0 +1,94 @@
+CONSENSUS/MULTI-AGENT AUDIT - RAW
+================================
+
+CONSENSUS SERVICES:
+-------------------
+Based on git grep results:
+
+1. ConsensusFusionService
+   - Location: src/iabv_v15/services/adaptive/consensus_fusion_service.py
+   - Purpose: Fuse multiple IATraceEntry into a single winner
+   - Strategies: weighted_vote, highest_confidence, first_success
+   - Input: candidate_traces (list of IATraceEntry)
+   - Output: ConsensusResult (winner, reasoning, unresolved_fields)
+
+2. ConsensusInterpretationService
+   - Location: src/iabv_v15/services/evolution/consensus_interpretation_service.py
+   - Purpose: Ask N external assistants the same question and vote
+   - Input: interpreters (mapping of assistant_id to callable), question
+   - Output: ConsensusResult (decision, winning_interpretation, votes, agreement_ratio)
+
+WHO CALLS CONSENSUS:
+--------------------
+Based on code analysis:
+
+1. MCP Server (consensus_fuse)
+   - Calls ConsensusFusionService.fuse()
+   - Triggered by: MCP tool call
+   - Purpose: Fuse candidate traces from ExperimentLab
+
+2. Bootstrap
+   - Initializes ConsensusFusionService and ConsensusInterpretationService
+   - Wires dependencies (AdaptiveWeightLayer)
+
+INPUT:
+------
+Based on code analysis:
+- ConsensusFusionService: candidate_traces (list of IATraceEntry with comparison_scope_key, result_label, confidence)
+- ConsensusInterpretationService: interpreters (mapping), question, subject
+
+OUTPUT:
+------
+Based on code analysis:
+- ConsensusFusionService: ConsensusResult (strategy_used, reasoning, winner_trace_id, consensus_confidence, unresolved_fields)
+- ConsensusInterpretationService: ConsensusResult (decision, winning_interpretation, votes, agreement_ratio, unresolved)
+
+DECISION TYPES:
+--------------
+Based on code analysis:
+- DECISION_CONSENSUS: majority agreement
+- DECISION_TIE: tie vote
+- DECISION_NO_VOTES: no responses
+- DECISION_INSUFFICIENT_VOTES: below threshold
+- DECISION_HUMAN_DEFERRED: deferred to human
+- DECISION_HUMAN_CONFIRMED: human confirmed
+- DECISION_HUMAN_REJECTED: human rejected
+
+UNRESOLVED STATES:
+-----------------
+Based on code analysis:
+- UNRESOLVED_NO_RESPONSE: no assistant responded
+- UNRESOLVED_LOW_AGREEMENT: low agreement
+- UNRESOLVED_TIE: interpretation tie
+
+DOWNSTREAM EFFECT:
+-----------------
+Based on code analysis:
+- Consensus result is returned to caller
+- Caller decides what to do with the winner
+- NO automatic action based on consensus
+- NO automatic application of consensus result
+
+EVIDENCE LEVEL:
+--------------
+SOURCE_ONLY: Code exists for consensus fusion
+STRUCTURALLY_REACHABLE: Consensus can be called via MCP
+RUNTIME_OBSERVED: Not verified in this audit
+DECISION_OBSERVED: Consensus result can influence decisions
+BEHAVIOR_CHANGE_OBSERVED: Not applicable (no automatic action)
+
+CONCLUSION:
+-----------
+CONSENSUS/MULTI-AGENT EXISTS:
+- ConsensusFusionService for fusing candidate traces
+- ConsensusInterpretationService for multi-IA voting
+- Multiple strategies (weighted_vote, highest_confidence, first_success)
+- Human approval broker integration
+
+However:
+- Consensus is descriptive, not prescriptive
+- NO automatic action based on consensus
+- Caller must decide what to do with consensus result
+- NO transformation from EVALUATED_RESPONSE → CONSENSUS → ACTION
+
+This edge exists but is descriptive only, not a decision-making step.

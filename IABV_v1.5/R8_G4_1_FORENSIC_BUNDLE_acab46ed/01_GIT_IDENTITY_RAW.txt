@@ -1,0 +1,70 @@
+GIT IDENTITY RAW
+=================
+
+COMMAND: git fetch origin
+OUTPUT: (no output - up to date)
+
+COMMAND: git rev-parse HEAD
+OUTPUT: acab46ed000477ffa678d61a017c94d999add919
+
+COMMAND: git rev-parse origin/p0213/vfinal5-r3-choke-point
+OUTPUT: acab46ed000477ffa678d61a017c94d999add919
+
+COMMAND: git log -5 --format=fuller
+OUTPUT:
+commit acab46ed000477ffa678d61a017c94d999add919 (HEAD -> p0213/vfinal5-r3-choke-point, origin/p0213/vfinal5-r3-choke-point)
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Wed Aug 26 19:46:00 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Wed Aug 26 19:46:00 2026 -0500
+
+    R8-G4.1: Fix semantic classification and need provenance
+
+    - Remove heuristic keyword detection (fail-closed for ambiguous findings)
+    - Remove generic placeholders (knowledge_in_<category>, unable_to_perform_action)
+    - Only use explicit category-based classification
+    - Only extract fields when finding provides real data
+    - Add hard case tests for operational false positives
+    - Add provenance assertions to all positive tests
+    - Production integration verified in OperationalSelfExaminationService.build_review()
+
+commit eb6a0fe3a5bc939bc05f612bf57388bede56fbc0
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Wed Aug 26 18:54:49 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Wed Aug 26 18:54:49 2026 -0500
+
+    R8-G4: Implement CAPABILITY_GAP → STRUCTURED_NEED transformation
+
+commit 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Wed Aug 26 15:52:40 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Wed Aug 26 15:52:40 2026 -0500
+
+    R7 G3 FINAL: Fix content_contains logging bug in server.py
+
+commit 9454fc601a224a05e9ead57663ec279ed5a5b11c
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Wed Aug 26 15:09:42 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Wed Aug 26 15:09:42 2026 -0500
+
+    R7 G3 DEBUG: Fix MockContainer authorize_action for G3 positive test
+
+commit 501fba77b4fb23ff425a093b29063ab2cd4544ba
+Author:     jhonf463r <jhonf463r@gmail.com>
+AuthorDate: Wed Aug 26 14:55:25 2026 -0500
+Commit:     jhonf463r <jhonf463r@gmail.com>
+CommitDate: Wed Aug 26 14:55:25 2026 -0500
+
+    R7 G3: Strengthen verifier without modifying C2
+
+COMMAND: git status --porcelain=v1
+OUTPUT: (no staged or unstaged changes - only untracked files)
+
+BASE SHA: eb6a0fe3a5bc939bc05f612bf57388bede56fbc0
+NEW SHA: acab46ed000477ffa678d61a017c94d999add919
+PARENT SHA: 40a3c60d545cd3a8b5cd7a593aa037a818177e4a
+BRANCH: p0213/vfinal5-r3-choke-point
+REMOTE: https://github.com/jhonf463r/Python.git

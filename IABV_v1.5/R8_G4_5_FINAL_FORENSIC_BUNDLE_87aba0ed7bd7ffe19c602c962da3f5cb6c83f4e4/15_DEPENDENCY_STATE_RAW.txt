@@ -1,0 +1,39 @@
+R8-G4.5 DEPENDENCY STATE RAW
+============================
+
+TIMESTAMP = 2026-08-26 23:07:00 UTC-05:00
+
+TEST_DEPENDENCY_DEGRADED = FALSE
+WORLD_MODEL_SERVICE = REAL (initialized with real EnvironmentSelfAwarenessService)
+RUN_REPOSITORY = REAL (from WorldModelService)
+ADAPTIVE_SESSION_REPOSITORY = REAL (from WorldModelService)
+EXPERIMENT_LAB_REPOSITORY = REAL (from WorldModelService)
+OTHER_RELEVANT_DEPENDENCIES = None
+
+DEPENDENCY CHAIN:
+=================
+
+OperationalSelfExaminationService
+  → world_model_service: WorldModelService (REAL)
+    → environment_self_awareness_service: EnvironmentSelfAwarenessService (REAL)
+      → storage: EvolutionStorage (REAL)
+      → workspace_root: C:\Python\IABV_v1.5_runtime_p021v\IABV_v1.5\IABV_v1.5 (REAL)
+  → structured_need_repository: StructuredNeedRepository (REAL)
+    → storage: EvolutionStorage (REAL)
+  → need_formulation_service: NeedFormulationService (REAL)
+
+TEST MODE EFFECTS:
+===================
+
+PYTEST_CURRENT_TEST = test_r8_g4_5_runtime_integration.py::test_real_build_review_with_production_dependencies
+EFFECT: Signals test mode to EnvironmentSelfAwarenessService
+SKIPPED: PowerShell CPU snapshot (_cpu_snapshot with full=False still skips in test mode)
+REAL: OS detection, platform capability enumeration, Windows-specific library detection
+REAL: EnvironmentSelfModel.platform_capabilities (used for capability gap detection)
+REAL: EnvironmentSelfModel.capability_graph (used for capability gap detection)
+
+CONCLUSION:
+===========
+
+All dependencies are REAL. The test uses production-like dependencies with no degradation.
+The only test-mode effect is the CPU snapshot skip, which does NOT affect capability gap detection.

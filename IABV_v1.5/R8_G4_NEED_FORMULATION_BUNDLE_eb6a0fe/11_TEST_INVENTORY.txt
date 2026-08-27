@@ -1,0 +1,55 @@
+TEST INVENTORY
+==============
+
+R8-G4 TESTS (NEW):
+------------------
+File: tests/test_r8_g4_need_formulation.py
+Total Tests: 13
+Passed: 13
+Failed: 0
+Skipped: 0
+Errors: 0
+
+Test Classes:
+1. TestNeedFormulationPositive (4 tests)
+   - test_capability_discovery_creates_need: PASSED
+   - test_missing_capability_creates_need: PASSED
+   - test_uncertainty_creates_need: PASSED
+   - test_keyword_based_detection: PASSED
+
+2. TestNeedFormulationNegative (3 tests)
+   - test_provider_latency_no_need: PASSED
+   - test_route_failure_no_need: PASSED
+   - test_performance_degradation_no_need: PASSED
+
+3. TestStructuredNeedPersistence (3 tests)
+   - test_upsert_and_get: PASSED
+   - test_list_all: PASSED
+   - test_list_pending: PASSED
+
+4. TestHumanReadableOutput (3 tests)
+   - test_format_human_readable: PASSED
+   - test_format_all_pending: PASSED
+   - test_format_all_pending_empty: PASSED
+
+REGRESSION TESTS (EXISTING - NOT MODIFIED):
+-------------------------------------------
+C2 Tests: tests/test_c2_vfinal5_authority_e2e.py
+Status: FAILED (11 failed, 5 passed)
+Failure Reason: Authority pipe not available (environment issue)
+Impact: None - C2 code not modified by R8-G4
+
+G1/G2/G3 Tests: tests/test_windsurf_gaps_g1_g2_g3.py
+Status: FAILED (6 failed, 10 passed)
+Failure Reason: Missing post_action_observer module (pre-existing dependency)
+Impact: None - G1/G2/G3 code not modified by R8-G4
+
+TEST COVERAGE:
+--------------
+R8-G4 implementation is fully tested with 13 new tests covering:
+- Positive cases (capability → need transformation)
+- Negative cases (operational → no need rejection)
+- Persistence (upsert, get, list_all, list_pending)
+- Human-readable output (format_human_readable, format_all_pending)
+
+All R8-G4 tests pass. Regression test failures are pre-existing environment issues unrelated to R8-G4 changes.

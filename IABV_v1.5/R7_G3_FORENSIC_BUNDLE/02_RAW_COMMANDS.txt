@@ -1,0 +1,29 @@
+RAW COMMANDS EXECUTED FOR R7 G3 AUDIT
+=====================================
+
+1. G3 POSITIVE TEST:
+   python -m pytest tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g3_independent_result_verification -v -s
+   Status: SKIPPED (encountered error)
+
+2. G3 NEGATIVE TEST:
+   python -m pytest tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g3_verification_negative -v -s
+   Status: PASSED
+
+3. G2 REGRESSION TEST:
+   python -m pytest tests/windows_e2e/test_g2_goal_to_action_plan.py::test_g2_goal_to_action_plan -v -s
+   Status: PASSED
+
+4. G1 REGRESSION TEST:
+   python -m pytest tests/windows_e2e/test_g1_goal_to_protected_tool.py::test_g1_real_e2e -v -s
+   Status: PASSED
+
+5. C2 REGRESSION TEST:
+   python -m pytest tests/windows_e2e/test_c2_real_self_update_authority.py -v -s
+   Status: PASSED (10/10 tests)
+
+6. GIT STATUS:
+   git status --porcelain
+   git diff --cached --name-only
+   git rev-parse HEAD
+
+All raw output captured in respective R7_TEMP_*.txt files.
