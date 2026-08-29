@@ -38,21 +38,109 @@ def _make_task(objective: str = 'Fix bug #42', context_pack: str = '') -> ToolTa
 
 
 # ---------------------------------------------------------------------------
+# Credential boundary
+# ---------------------------------------------------------------------------
+
+class TestDevinApiAdapterCredentialBoundary:
+    def test_credential_broker_used_when_available(self) -> None:
+        mock_broker = MagicMock()
+        mock_record = MagicMock()
+        mock_record.secret = 'cog_from_broker'
+        mock_broker.get.return_value = mock_record
+
+        adapter = DevinApiToolAdapter(credential_broker=mock_broker, api_key='fallback_key')
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.get.return_value = mock_response
+            adapter.is_available(_make_card())
+
+        # Verify broker was queried (called twice: once in _resolve_api_key for is_available, once in _headers)
+        assert mock_broker.get.call_count == 2
+        mock_broker.get.assert_any_call('api.devin.ai')
+        # Verify the broker's secret was used (not fallback)
+        call_args = mock_httpx.get.call_args
+        assert 'Bearer cog_from_broker' in call_args[1]['headers']['Authorization']
+
+    def test_fallback_api_key_used_when_broker_unavailable(self) -> None:
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='fallback_key')
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.get.return_value = mock_response
+            adapter.is_available(_make_card())
+
+        # Verify fallback key was used
+        call_args = mock_httpx.get.call_args
+        assert 'Bearer fallback_key' in call_args[1]['headers']['Authorization']
+
+    def test_fallback_api_key_used_when_broker_returns_none(self) -> None:
+        mock_broker = MagicMock()
+        mock_broker.get.return_value = None
+
+        adapter = DevinApiToolAdapter(credential_broker=mock_broker, api_key='fallback_key')
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.get.return_value = mock_response
+            adapter.is_available(_make_card())
+
+        # Verify fallback key was used
+        call_args = mock_httpx.get.call_args
+        assert 'Bearer fallback_key' in call_args[1]['headers']['Authorization']
+
+    def test_no_credential_exposure_in_result(self) -> None:
+        mock_broker = MagicMock()
+        mock_record = MagicMock()
+        mock_record.secret = 'cog_secret_key'
+        mock_broker.get.return_value = mock_record
+
+        adapter = DevinApiToolAdapter(credential_broker=mock_broker)
+        create_response = MagicMock()
+        create_response.status_code = 201
+        create_response.json.return_value = {'session_id': 'sess-1', 'status': 'finished'}
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.post.return_value = create_response
+            result = adapter.run(_make_card(), _make_task())
+
+        # Verify API key is not in result
+        result_str = str(result)
+        assert 'cog_secret_key' not in result_str
+        assert 'Bearer' not in result_str
+        assert 'Authorization' not in result_str
+
+    def test_no_credential_exposure_in_exception(self) -> None:
+        mock_broker = MagicMock()
+        mock_record = MagicMock()
+        mock_record.secret = 'cog_secret_key'
+        mock_broker.get.return_value = mock_record
+
+        adapter = DevinApiToolAdapter(credential_broker=mock_broker)
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.post.side_effect = ConnectionError('network error')
+            result = adapter.run(_make_card(), _make_task())
+
+        # Verify API key is not in error message
+        assert 'cog_secret_key' not in result['error_message']
+        assert 'Bearer' not in result['error_message']
+
+
+# ---------------------------------------------------------------------------
 # is_available
 # ---------------------------------------------------------------------------
 
 class TestDevinApiAdapterIsAvailable:
     def test_unavailable_without_credentials(self) -> None:
-        adapter = DevinApiToolAdapter(api_key='', org_id='')
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='', org_id='')
         assert adapter.is_available(_make_card()) is False
 
     def test_unavailable_without_api_key(self) -> None:
-        adapter = DevinApiToolAdapter(api_key='', org_id='org-123')
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='', org_id='org-123')
         assert adapter.is_available(_make_card()) is False
 
     def test_available_without_org_id(self) -> None:
         # v1 API no usa org_id; Bearer identifica la org.
-        adapter = DevinApiToolAdapter(api_key='cog_xxx', org_id='')
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='cog_xxx', org_id='')
         mock_response = MagicMock()
         mock_response.status_code = 200
         with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
@@ -60,7 +148,7 @@ class TestDevinApiAdapterIsAvailable:
             assert adapter.is_available(_make_card()) is True
 
     def test_available_with_credentials_and_successful_api(self) -> None:
-        adapter = DevinApiToolAdapter(api_key='cog_xxx', org_id='org-123')
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='cog_xxx', org_id='org-123')
         mock_response = MagicMock()
         mock_response.status_code = 200
         with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
@@ -72,7 +160,7 @@ class TestDevinApiAdapterIsAvailable:
             assert call_args[0][0] == 'https://api.devin.ai/v1/sessions'
 
     def test_unavailable_when_api_returns_error(self) -> None:
-        adapter = DevinApiToolAdapter(api_key='cog_xxx', org_id='org-123')
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='cog_xxx', org_id='org-123')
         mock_response = MagicMock()
         mock_response.status_code = 401
         with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
@@ -80,7 +168,7 @@ class TestDevinApiAdapterIsAvailable:
             assert adapter.is_available(_make_card()) is False
 
     def test_unavailable_when_api_raises(self) -> None:
-        adapter = DevinApiToolAdapter(api_key='cog_xxx', org_id='org-123')
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='cog_xxx', org_id='org-123')
         with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
             mock_httpx.get.side_effect = ConnectionError('timeout')
             assert adapter.is_available(_make_card()) is False
@@ -92,13 +180,14 @@ class TestDevinApiAdapterIsAvailable:
 
 class TestDevinApiAdapterRun:
     def test_run_returns_error_without_credentials(self) -> None:
-        adapter = DevinApiToolAdapter(api_key='', org_id='')
+        adapter = DevinApiToolAdapter(credential_broker=None, api_key='', org_id='')
         result = adapter.run(_make_card(), _make_task())
         assert result['success'] is False
         assert 'no configurado' in result['error_message']
 
     def test_run_creates_session_and_polls(self) -> None:
         adapter = DevinApiToolAdapter(
+            credential_broker=None,
             api_key='cog_xxx',
             org_id='org-123',
             timeout_seconds=10,
@@ -139,6 +228,7 @@ class TestDevinApiAdapterRun:
 
     def test_run_appends_context_pack_to_prompt(self) -> None:
         adapter = DevinApiToolAdapter(
+            credential_broker=None,
             api_key='cog_xxx',
             org_id='org-123',
             timeout_seconds=10,
@@ -157,6 +247,7 @@ class TestDevinApiAdapterRun:
 
     def test_run_handles_create_failure(self) -> None:
         adapter = DevinApiToolAdapter(
+            credential_broker=None,
             api_key='cog_xxx',
             org_id='org-123',
             timeout_seconds=5,
@@ -174,6 +265,7 @@ class TestDevinApiAdapterRun:
 
     def test_run_handles_exception(self) -> None:
         adapter = DevinApiToolAdapter(
+            credential_broker=None,
             api_key='cog_xxx',
             org_id='org-123',
             timeout_seconds=5,
@@ -185,6 +277,124 @@ class TestDevinApiAdapterRun:
 
         assert result['success'] is False
         assert 'ConnectionError' in result['error_message']
+
+
+# ---------------------------------------------------------------------------
+# Bounded execution (parent deadline)
+# ---------------------------------------------------------------------------
+
+class TestDevinApiAdapterBoundedExecution:
+    def test_respects_parent_deadline(self) -> None:
+        import time as _time
+        adapter = DevinApiToolAdapter(
+            credential_broker=None,
+            api_key='cog_xxx',
+            timeout_seconds=120.0,  # Default 120s
+            poll_interval_seconds=0.01,
+        )
+
+        # Set parent deadline to expire in 0.5s
+        parent_deadline = _time.perf_counter() + 0.5
+        task = _make_task()
+        task.metadata = {'parent_deadline': parent_deadline}
+
+        create_response = MagicMock()
+        create_response.status_code = 201
+        create_response.json.return_value = {'session_id': 'sess-1', 'status': 'running'}
+
+        # Poll always returns running
+        poll_response = MagicMock()
+        poll_response.status_code = 200
+        poll_response.json.return_value = {'status': 'running'}
+
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.post.return_value = create_response
+            mock_httpx.get.return_value = poll_response
+            result = adapter.run(_make_card(), task)
+
+        # Should timeout due to parent deadline, not 120s default
+        assert result['success'] is False
+        assert result['metadata']['devin_session_status'] == 'timeout'
+        assert result['metadata']['timeout_reason'] == 'parent_deadline'
+        assert 'timed out' in result['error_message']
+
+    def test_parent_deadline_already_expired(self) -> None:
+        import time as _time
+        adapter = DevinApiToolAdapter(
+            credential_broker=None,
+            api_key='cog_xxx',
+            timeout_seconds=120.0,
+        )
+
+        # Set parent deadline in the past
+        task = _make_task()
+        task.metadata = {'parent_deadline': _time.perf_counter() - 1.0}
+
+        result = adapter.run(_make_card(), task)
+
+        assert result['success'] is False
+        assert result['metadata']['devin_session_status'] == 'timeout'
+        assert result['metadata']['timeout_reason'] == 'parent_deadline_expired'
+        assert 'already expired' in result['error_message']
+
+    def test_uses_minimum_of_timeout_and_parent_deadline(self) -> None:
+        import time as _time
+        adapter = DevinApiToolAdapter(
+            credential_broker=None,
+            api_key='cog_xxx',
+            timeout_seconds=5.0,  # Shorter than parent deadline
+            poll_interval_seconds=0.01,
+        )
+
+        # Set parent deadline to 10s from now (longer than adapter timeout)
+        parent_deadline = _time.perf_counter() + 10.0
+        task = _make_task()
+        task.metadata = {'parent_deadline': parent_deadline}
+
+        create_response = MagicMock()
+        create_response.status_code = 201
+        create_response.json.return_value = {'session_id': 'sess-1', 'status': 'running'}
+        poll_response = MagicMock()
+        poll_response.status_code = 200
+        poll_response.json.return_value = {'status': 'running'}
+
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.post.return_value = create_response
+            mock_httpx.get.return_value = poll_response
+            result = adapter.run(_make_card(), task)
+
+        # Should timeout due to adapter timeout (5s), not parent deadline (10s)
+        assert result['success'] is False
+        assert result['metadata']['devin_session_status'] == 'timeout'
+        assert result['metadata']['timeout_reason'] == 'local_poll_timeout'
+
+    def test_no_parent_deadline_uses_adapter_timeout(self) -> None:
+        import time as _time
+        adapter = DevinApiToolAdapter(
+            credential_broker=None,
+            api_key='cog_xxx',
+            timeout_seconds=0.5,  # Short timeout for test
+            poll_interval_seconds=0.01,
+        )
+
+        task = _make_task()  # No parent_deadline in metadata
+
+        create_response = MagicMock()
+        create_response.status_code = 201
+        create_response.json.return_value = {'session_id': 'sess-1', 'status': 'running'}
+        poll_response = MagicMock()
+        poll_response.status_code = 200
+        poll_response.json.return_value = {'status': 'running'}
+
+        with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+            mock_httpx.post.return_value = create_response
+            mock_httpx.get.return_value = poll_response
+            result = adapter.run(_make_card(), task)
+
+        # Should timeout due to adapter timeout
+        assert result['success'] is False
+        assert result['metadata']['devin_session_status'] == 'timeout'
+        assert result['metadata']['timeout_reason'] == 'local_poll_timeout'
 
 
 # ---------------------------------------------------------------------------

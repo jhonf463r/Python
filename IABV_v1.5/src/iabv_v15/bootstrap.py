@@ -26,7 +26,7 @@ def _rss_mb() -> float:
     except Exception:
         return 0.0
 
-from iabv_v15.domain.models import ProviderConfig, ProviderKind, WorldModelSnapshot
+from iabv_v15.domain.models import ProviderConfig, ProviderKind, WorldModelSnapshot, AccountType
 from iabv_v15.infra.config import load_app_config, load_theme_config
 from iabv_v15.infra.logging import configure_logging
 
@@ -303,6 +303,14 @@ from iabv_v15.services.evolution.metacognition_evolution_mixin import Metacognit
 from iabv_v15.services.evolution.self_check_orchestrator import SelfCheckOrchestrator
 from iabv_v15.services.evolution.session_health_service import SessionHealthService
 from iabv_v15.services.evolution.user_clue_service import UserClueService
+from iabv_v15.services.evolution.hardware_health_benchmark_service import HardwareHealthBenchmarkService
+from iabv_v15.services.evolution.resource_blacklist_service import ResourceBlacklistService
+from iabv_v15.services.evolution.auto_correction_engine import AutoCorrectionEngine
+from iabv_v15.services.evolution.auto_recommendation_implementation_engine import AutoRecommendationImplementationEngine
+from iabv_v15.services.evolution.autonomous_discovery_service import AutonomousDiscoveryService
+from iabv_v15.services.evolution.dependency_update_orchestrator import DependencyUpdateOrchestrator
+from iabv_v15.services.adaptive.cloud_reasoning_activator import CloudReasoningActivatorService
+from iabv_v15.services.providers.ollama_model_discovery_service import OllamaModelDiscoveryService
 from iabv_v15.services.inference.inference_service import InferenceService
 from iabv_v15.services.self_teach.execution_probe_service import ExecutionProbeService
 from iabv_v15.services.self_teach.expectation_matcher import ExpectationMatcher
@@ -432,6 +440,9 @@ class AppBootstrap:
         _auto_load_secrets()
 
         self.config = load_app_config(workspace_root)
+        # Ensure workspace_root is always a Path object
+        if isinstance(self.config.workspace_root, str):
+            self.config.workspace_root = Path(self.config.workspace_root)
         self.theme = load_theme_config()
         self._ensure_directories()
         configure_logging(self.config.logs_dir)
@@ -459,6 +470,9 @@ class AppBootstrap:
 
         self._services_wired = False
         self._defer_services = _defer_services
+
+        # FIX: context_reuse_service no existe, usar portable_context_service como equivalente
+        self.context_reuse_service = None  # Stub para prevenir crash
 
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
@@ -516,6 +530,10 @@ class AppBootstrap:
         self._timeline.mark('wire_services_start', rss_mb=_rss_mb())
         self._tracer.trace('wire_services_start')
 
+        # FIX: context_reuse_service no existe, asegurar que exista como stub
+        if not hasattr(self, 'context_reuse_service'):
+            self.context_reuse_service = None
+
         _defer_scans = self._defer_services
 
         self.db = AppDatabase(self.config.sqlite_path)
@@ -554,6 +572,9 @@ class AppBootstrap:
         self.secret_vault = SecretVault()
         self.redaction_engine = RedactionEngine(self.sensitive_field_detector, self.secret_vault)
         self.site_session_manager = SiteSessionManager(self.session_state_store)
+        # CredentialBroker for secure credential resolution
+        from iabv_v15.services.security.credential_broker import CredentialBroker
+        self.credential_broker = CredentialBroker(secret_vault=self.secret_vault)
         self.replay_confidence_service = ReplayConfidenceService()
         self.replay_annotation_service = ReplayAnnotationService(self.replay_annotation_repository)
         self.replay_visual_assembler = ReplayVisualAssembler(self.replay_confidence_service)
@@ -598,11 +619,9 @@ class AppBootstrap:
             'mcp': MCPToolAdapter(),
             'external_assistant': ExternalAssistantToolAdapter(),
             'devin_api': DevinApiToolAdapter(
-                # Igual que con ``GITHUB_TOKEN_IABV``, aceptamos varios alias
-                # (``DEVIN_API_KEY_IABV`` preferido) para no forzar al usuario
-                # a duplicar el valor si ya lo tiene cargado bajo otro nombre.
-                # Si nada esta disponible, ``is_available`` devuelve False y
-                # ``run_self_audit`` reporta ``devin_api [missing]``.
+                # CredentialBroker provides secure credential resolution.
+                # Fallback to env var for backward compatibility.
+                credential_broker=self.credential_broker,
                 api_key=_resolve_devin_api_key(os.environ),
                 # DEVIN_ORG_ID ya no es requerido por v1; se mantiene para compat.
                 org_id=os.environ.get('DEVIN_ORG_ID', ''),
@@ -751,6 +770,8 @@ class AppBootstrap:
             registry=self.algorithm_benchmark_registry,
             scoring_engine=self.decision_scoring_engine,
             strategy_selector=self.lab_strategy_selector,
+            decision_audit_trail=None,  # Will be wired after DecisionAuditTrail is created
+            governance_service=None,  # Will be wired after LearningEvidenceGovernanceService is created
         )
         self.gpu_model_benchmark_service = GpuModelBenchmarkService(
             experiment_lab=self.experiment_lab,
@@ -820,6 +841,54 @@ class AppBootstrap:
         self.role_router: LocalRoleRouter | None = None
 
         self.account_approval_ledger = AccountApprovalLedger()
+        # Universal account registry for external resources (Devin, Claude, ChatGPT, etc.)
+        from iabv_v15.services.security.account_registry_service import AccountRegistryService
+        from iabv_v15.services.security.account_validation_service import AccountValidationService
+        from iabv_v15.services.security.account_selection_service import AccountSelectionService
+        from iabv_v15.services.security.account_learning_service import AccountLearningService
+        
+        self.account_registry_service = AccountRegistryService()
+        self.account_validation_service = AccountValidationService()
+        self.account_selection_service = AccountSelectionService()
+        self.account_learning_service = AccountLearningService()
+        
+        # Register Devin capability profile in selection service
+        if self.assistant_capability_registry:
+            devin_profile = self.assistant_capability_registry.get("devin")
+            if devin_profile:
+                self.account_selection_service.register_capability_profile(devin_profile)
+        
+        # Auto-register Devin account if API key is available (idempotent)
+        devin_api_key = _resolve_devin_api_key()
+        if devin_api_key:
+            # Use a stable account identity - for Devin, we use the API key hash as account_id
+            # since Devin doesn't expose a user email via API
+            import hashlib
+            account_id = hashlib.sha256(devin_api_key.encode()).hexdigest()[:16]
+            email = f"devin-{account_id}@cognition.ai"  # Synthetic email for identity stability
+            
+            # Check if already registered (idempotent)
+            is_duplicate, existing_key = self.account_registry_service.detect_duplicate(
+                provider="devin",
+                account_id=account_id,
+                email=email
+            )
+            
+            if is_duplicate:
+                logger.info(f"Devin account already registered: {existing_key}")
+            else:
+                # Register new account with secure credential storage
+                entry, credential_ref = self.account_registry_service.register_account(
+                    provider="devin",
+                    account_id=account_id,
+                    email=email,
+                    display_name="Devin (Cognition)",
+                    credential=devin_api_key,
+                    account_type=AccountType.OWNER,  # Assuming owner if API key is available
+                    metadata={"auto_registered": True, "registered_at_bootstrap": True}
+                )
+                logger.info(f"Registered Devin account: {entry.metadata.get('account_key')}")
+        
         self.role_router = LocalRoleRouter(
             workspace_root=self.config.workspace_root,
             general_provider=self.general_provider,
@@ -1041,6 +1110,80 @@ class AppBootstrap:
         self.intent_understanding_service = IntentUnderstandingService()
         self.autonomy_governance_policy = AutonomyGovernancePolicy()
         self.goal_engine = GoalEngine(self.objective_repository)
+        
+        # --- AgentOrchestrationService: contrato multiagente trazable ---
+        # Wirea el servicio de orquestación multiagente usando componentes existentes.
+        # No crea otro cerebro; coordina los routers existentes para producir
+        # decisiones AgentOrchestrationDecision trazables y reusables.
+        # DEBE crearse ANTES de PortableContextService para poder inyectarlo.
+        self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_dir)
+        self.code_audit_trail = CodeAuditTrail(data_root=self.config.data_dir)
+        self.code_audit_trail.experiment_lab = self.experiment_lab
+        self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
+        
+        # --- LearningEvidenceGovernanceService: gobernanza automática de evidencia ---
+        # Wirea el servicio de gobernanza para aplicar retención, decaimiento,
+        # deduplicación y marcado de estado sobre LearningEvidence automáticamente.
+        try:
+            from iabv_v15.services.evolution.learning_evidence_governance import (
+                LearningEvidenceGovernanceService,
+            )
+            self.learning_evidence_governance_service = LearningEvidenceGovernanceService()
+        except Exception:
+            logger.exception(
+                "No se pudo wirear LearningEvidenceGovernanceService; el servicio será None"
+            )
+            self.learning_evidence_governance_service = None
+        
+        # --- Wire DecisionAuditTrail y LearningEvidenceGovernanceService en ExperimentLab ---
+        # Inyecta las dependencias de gobernanza y persistencia en ExperimentLab
+        # para que la generación automática de LearningEvidence funcione en producción.
+        if hasattr(self.experiment_lab, '_decision_audit_trail'):
+            self.experiment_lab._decision_audit_trail = self.decision_audit_trail
+        if hasattr(self.experiment_lab, '_governance_service'):
+            self.experiment_lab._governance_service = self.learning_evidence_governance_service
+        try:
+            from iabv_v15.services.orchestration.agent_orchestration_service import (
+                AgentOrchestrationService,
+            )
+            self.agent_orchestration_service = AgentOrchestrationService(
+                capability_registry=self.assistant_capability_registry,
+                synaptic_router=self.synaptic_router,
+                local_role_router=self.role_router,
+                credential_broker=None,  # Optional dependency, not currently wired in bootstrap
+                decision_audit_trail=self.decision_audit_trail,
+                experiment_lab=self.experiment_lab,
+                governance_service=self.learning_evidence_governance_service,
+            )
+        except Exception:
+            logger.exception(
+                "No se pudo wirear AgentOrchestrationService; el servicio será None"
+            )
+            self.agent_orchestration_service = None
+        
+        # --- Task Continuity & External Resource Registry: continuidad universal ---
+        # Inicializa los servicios de continuidad para mantener estado de tareas
+        # y recursos externos a través de cambios de sesión/cuenta/proveedor.
+        try:
+            from iabv_v15.services.continuity.task_continuity_manager import (
+                TaskContinuityManager,
+            )
+            from iabv_v15.services.continuity.external_resource_registry import (
+                ExternalResourceRegistry,
+            )
+            self.task_continuity_manager = TaskContinuityManager(
+                workspace_root=self.config.workspace_root,
+            )
+            self.external_resource_registry = ExternalResourceRegistry(
+                workspace_root=self.config.workspace_root,
+            )
+        except Exception:
+            logger.exception(
+                "No se pudo wirear TaskContinuityManager/ExternalResourceRegistry; los servicios serán None"
+            )
+            self.task_continuity_manager = None
+            self.external_resource_registry = None
+        
         self.portable_context_service = PortableContextService(
             workspace_root=self.config.workspace_root,
             storage=self.evolution_storage,
@@ -1056,6 +1199,9 @@ class AppBootstrap:
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
             platform_pending_queue=self.platform_pending_queue,
+            agent_orchestration_service=self.agent_orchestration_service,
+            task_continuity_manager=self.task_continuity_manager,
+            external_resource_registry=self.external_resource_registry,
         )
         # Wire FreezeIncidentReporter into PortableContext for promotion.
         self.portable_context_service.freeze_incident_reporter = (
@@ -1444,6 +1590,11 @@ class AppBootstrap:
         external_adapter = self.tool_adapters.get('external_assistant')
         if external_adapter is not None:
             external_adapter.credential_broker = self.credential_broker
+            # FIX: context_reuse_service no existe, usar PortableContextService como equivalente
+            if hasattr(self, 'context_reuse_service'):
+                external_adapter.context_reuse_service = self.context_reuse_service
+            else:
+                external_adapter.context_reuse_service = getattr(self, 'portable_context_service', None)
 
         self.knowledge_service = KnowledgeService(self.knowledge_repository, unified_memory_layer=self.unified_memory_layer)
         self.adaptive_task_orchestrator = AdaptiveTaskOrchestrator(
@@ -1466,11 +1617,16 @@ class AppBootstrap:
         )
         self.portable_context_service.task_context_assembler = self.task_context_assembler
         self.portable_context_service.adaptive_task_orchestrator = self.adaptive_task_orchestrator
-        self.api_key_discovery_service = ApiKeyDiscoveryService(data_root=self.config.data_dir)
-        self.code_audit_trail = CodeAuditTrail(data_root=self.config.data_dir)
-        self.code_audit_trail.experiment_lab = self.experiment_lab
-        self.decision_audit_trail = DecisionAuditTrail(data_root=self.config.data_dir)
+        self.resource_blacklist = ResourceBlacklistService(evolution_dir=self.config.data_dir)
+        self.hardware_health_benchmark = HardwareHealthBenchmarkService(evolution_dir=self.config.data_dir, auto_start=True)
+        self.auto_correction_engine = AutoCorrectionEngine(resource_blacklist=self.resource_blacklist, evolution_dir=self.config.data_dir)
+        self.auto_recommendation_engine = AutoRecommendationImplementationEngine(oses_service=self.operational_self_examination_service, auto_correction_engine=self.auto_correction_engine, evolution_dir=self.config.data_dir, auto_start=True)
+        self.cloud_reasoning_activator = CloudReasoningActivatorService(api_key_discovery_service=self.api_key_discovery_service, evolution_dir=self.config.data_dir, auto_start=True)
+        self.autonomous_discovery = AutonomousDiscoveryService(platform_learning_orchestrator=None, tool_registry=self.tool_registry, evolution_dir=self.config.data_dir, auto_start=True)
+        self.ollama_model_discovery = OllamaModelDiscoveryService(ollama_provider=self.general_provider, evolution_dir=self.config.data_dir, auto_start=True)
+        self.dependency_update_orchestrator = DependencyUpdateOrchestrator(evolution_dir=self.config.data_dir, requirements_file=Path(self.config.workspace_root) / 'requirements.txt', auto_start=False)
         self.operational_self_examination_service.decision_audit_trail = self.decision_audit_trail
+        self.operational_self_examination_service.auto_correction_engine = self.auto_correction_engine
         self.operational_self_examination_service.chat_message_repository = self.chat_message_repository
         self.operational_self_examination_service.code_audit_trail = self.code_audit_trail
         self.portable_context_service.decision_audit_trail = self.decision_audit_trail
@@ -1489,6 +1645,8 @@ class AppBootstrap:
         self.adaptive_task_orchestrator.control_master_digest_builder = self.control_master_digest_builder
         self.adaptive_task_orchestrator.self_examination_service = self.operational_self_examination_service
         self.adaptive_task_orchestrator.validation_cycle_service = self.autonomous_validation_cycle
+        # Re-initialize Mission Controller now that dependencies are available
+        self.adaptive_task_orchestrator.mission_controller = self.adaptive_task_orchestrator._initialize_mission_controller()
         self.autonomous_validation_cycle.git_sync_service = self.git_sync_service
         # G1: wire orchestrator into validation cycle for proactive auto-execution
         self.autonomous_validation_cycle.adaptive_task_orchestrator = self.adaptive_task_orchestrator
@@ -1560,6 +1718,151 @@ class AppBootstrap:
             archive_service=self.payload_archive_service,
             artifact_repository=self.session_artifact_repository,
         )
+
+        # --- System self-observation layers (Identity, Health, Knowledge) ---
+        # These three registries are explicitly constructed here with consistent
+        # workspace configuration, then injected into ControlCenterViewModel.
+        # This replaces the previous fallback-based instantiation in the VM.
+        from iabv_v15.services.system_identity_registry import SystemIdentityRegistry
+        from iabv_v15.services.system_health_registry import SystemHealthRegistry
+        from iabv_v15.services.system_knowledge_registry import SystemKnowledgeRegistry
+        from iabv_v15.services.project_steering_registry import ProjectSteeringRegistry
+        from iabv_v15.services.project_action_handoff_registry import ProjectActionHandoffRegistry
+        from iabv_v15.services.project_execution_engine import ProjectExecutionEngine
+        
+        self.system_identity_registry = SystemIdentityRegistry(
+            workspace_root=str(self.config.workspace_root)
+        )
+        self.system_health_registry = SystemHealthRegistry(
+            workspace_root=str(self.config.workspace_root)
+        )
+        self.system_knowledge_registry = SystemKnowledgeRegistry(
+            workspace_root=str(self.config.workspace_root)
+        )
+        
+        # --- Project Steering / Next Best Action layer ---
+        # This decision layer consumes snapshots from all three registries
+        # to produce prioritized recommendations for the next project step.
+        self.project_steering_registry = ProjectSteeringRegistry(
+            workspace_root=str(self.config.workspace_root)
+        )
+        
+        # --- Action Handoff / Execution Package layer ---
+        # This layer converts steering recommendations into structured
+        # execution packages ready for handoff to the next AI or human workflow.
+        self.action_handoff_registry = ProjectActionHandoffRegistry(
+            workspace_root=str(self.config.workspace_root)
+        )
+        
+        # --- Execution Engine layer ---
+        # This layer consumes handoff packages and executes actions
+        # in a controlled, traceable, and governed manner.
+        self.execution_engine = ProjectExecutionEngine(
+            workspace_root=str(self.config.workspace_root)
+        )
+
+        # --- Mission Loop Service (autonomous continuous operation) ---
+        # This service orchestrates all existing components into a continuous
+        # autonomous cycle: Observation → Decision → Planning → Execution →
+        # Validation → Correction → Learning → Persistence → Recovery →
+        # Heartbeat → Lifecycle → Intelligent Wait → Next Task
+        try:
+            from iabv_v15.services.autonomous.mission_loop_service import MissionLoopService
+            self.mission_loop_service = MissionLoopService(
+                autonomy_cycle_service=self.autonomy_cycle_service,
+                operational_self_examination_service=self.operational_self_examination_service,
+                adaptive_task_orchestrator=self.adaptive_task_orchestrator,
+                auto_correction_engine=self.auto_correction_engine,
+                ui_heartbeat_watchdog=self.ui_heartbeat_watchdog,
+                chat_interaction_lifecycle=self.chat_interaction_lifecycle,
+                knowledge_repository=self.knowledge_repository,
+                world_model_service=self.world_model_service,
+                portable_context_service=self.portable_context_service,
+                evolution_dir=self.config.evolution_dir,
+            )
+        except Exception as exc:
+            logger.warning('bootstrap: MissionLoopService init failed: %s', exc)
+            self.mission_loop_service = None
+
+        # --- Human-Machine Interaction Layer ---
+        # This layer provides intuitive interaction and meta-development capabilities
+        # Track degraded/missing services for graceful degradation reporting
+        self._degraded_interaction_services: list[str] = []
+        self._missing_interaction_services: list[str] = []
+        
+        try:
+            from iabv_v15.services.interaction.environment_interpreter import EnvironmentInterpreter
+            from iabv_v15.services.interaction.tool_semantics_service import ToolSemanticsService
+            from iabv_v15.services.interaction.interaction_orchestrator import InteractionOrchestrator
+            from iabv_v15.services.interaction.meta_development_orchestrator import MetaDevelopmentOrchestrator
+            
+            # Tool Semantics Service
+            try:
+                self.tool_semantics_service = ToolSemanticsService(
+                    assistant_capability_registry=self.assistant_capability_registry,
+                    tool_registry=self.tool_registry,
+                    interaction_learning_service=self.interaction_learning_service,
+                )
+            except Exception as exc:
+                logger.warning('bootstrap: ToolSemanticsService init failed: %s', exc)
+                self.tool_semantics_service = None
+                self._missing_interaction_services.append('tool_semantics_service')
+            
+            # Environment Interpreter
+            try:
+                self.environment_interpreter = EnvironmentInterpreter(
+                    environment_self_awareness_service=self.environment_self_awareness_service,
+                    tool_registry=self.tool_registry,
+                    assistant_capability_registry=self.assistant_capability_registry,
+                    system_identity_registry=self.system_identity_registry,
+                    system_health_registry=self.system_health_registry,
+                )
+            except Exception as exc:
+                logger.warning('bootstrap: EnvironmentInterpreter init failed: %s', exc)
+                self.environment_interpreter = None
+                self._missing_interaction_services.append('environment_interpreter')
+            
+            # Interaction Orchestrator
+            try:
+                self.interaction_orchestrator = InteractionOrchestrator(
+                    environment_interpreter=self.environment_interpreter,
+                    tool_semantics_service=self.tool_semantics_service,
+                    interaction_mode_selector=self.interaction_mode_selector,
+                    interaction_learning_service=self.interaction_learning_service,
+                )
+            except Exception as exc:
+                logger.warning('bootstrap: InteractionOrchestrator init failed: %s', exc)
+                self.interaction_orchestrator = None
+                self._degraded_interaction_services.append('interaction_orchestrator')
+            
+            # Meta Development Orchestrator
+            try:
+                self.meta_development_orchestrator = MetaDevelopmentOrchestrator(
+                    tool_semantics_service=self.tool_semantics_service,
+                    project_steering_registry=self.project_steering_registry,
+                    project_action_handoff_registry=self.action_handoff_registry,
+                    project_execution_engine=self.execution_engine,
+                    development_assist_service=self.development_assist_service,
+                    knowledge_repository=self.knowledge_repository,
+                    workspace_root=str(self.config.workspace_root),
+                )
+            except Exception as exc:
+                logger.warning('bootstrap: MetaDevelopmentOrchestrator init failed: %s', exc)
+                self.meta_development_orchestrator = None
+                self._degraded_interaction_services.append('meta_development_orchestrator')
+                
+        except Exception as exc:
+            logger.warning('bootstrap: Interaction layer init failed: %s', exc)
+            self.tool_semantics_service = None
+            self.environment_interpreter = None
+            self.interaction_orchestrator = None
+            self.meta_development_orchestrator = None
+            self._missing_interaction_services.extend([
+                'tool_semantics_service',
+                'environment_interpreter',
+                'interaction_orchestrator',
+                'meta_development_orchestrator'
+            ])
 
         # If scans were deferred, trigger an async refresh now that all
         # services are wired.  The background threads (already started by
@@ -2716,7 +3019,10 @@ class AppBootstrap:
         def _run_gpu_startup_health_check() -> None:
             try:
                 from iabv_v15.services.gpu_metacognition import startup_gpu_health_check
-                _gpu_report = startup_gpu_health_check()
+                _gpu_report = startup_gpu_health_check(
+                    resource_blacklist=self.resource_blacklist,
+                    hardware_health_benchmark=self.hardware_health_benchmark
+                )
                 _gpu_issues = _gpu_report.get('issues', [])
                 if _gpu_issues:
                     for _issue in _gpu_issues:
@@ -3432,6 +3738,19 @@ class AppBootstrap:
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             chat_message_repository=self.chat_message_repository,
+            system_identity_registry=self.system_identity_registry,
+            system_health_registry=self.system_health_registry,
+            system_knowledge_registry=self.system_knowledge_registry,
+            project_steering_registry=self.project_steering_registry,
+            action_handoff_registry=self.action_handoff_registry,
+            execution_engine=self.execution_engine,
+            environment_interpreter=self.environment_interpreter,
+            tool_semantics_service=self.tool_semantics_service,
+            interaction_orchestrator=self.interaction_orchestrator,
+            meta_development_orchestrator=self.meta_development_orchestrator,
+            agent_orchestration_service=self.agent_orchestration_service,
+            task_continuity_manager=self.task_continuity_manager,
+            external_resource_registry=self.external_resource_registry,
             defer_initial_refresh=True,
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
@@ -3440,7 +3759,35 @@ class AppBootstrap:
         self.control_center_viewmodel._ui_heartbeat_watchdog = self.ui_heartbeat_watchdog
         self.control_center_viewmodel._chat_interaction_lifecycle = self.chat_interaction_lifecycle
         self.control_center_viewmodel._oses_ref = self.operational_self_examination_service
-        self.control_center_viewmodel._portable_context_ref = self.portable_context_service
+        self.control_center_viewmodel.portable_context_service = self.portable_context_service
+        
+        # Initialize interaction context automatically at startup
+        # This ensures the system "naces bien" by showing its context from the beginning
+        try:
+            self.control_center_viewmodel.refresh_interaction_context()
+            logger.info('Interaction context initialized at startup')
+        except Exception as exc:
+            logger.warning('Failed to initialize interaction context at startup: %s', exc)
+        
+        # Initialize interaction options at startup
+        try:
+            self.control_center_viewmodel.get_interaction_options()
+            logger.info('Interaction options initialized at startup')
+        except Exception as exc:
+            logger.warning('Failed to initialize interaction options at startup: %s', exc)
+        
+        # Report degraded/missing services to ViewModel for UI visibility
+        if self._degraded_interaction_services or self._missing_interaction_services:
+            self.control_center_viewmodel.mark_bootstrap_degraded(
+                self._degraded_interaction_services,
+                self._missing_interaction_services
+            )
+            logger.info('Bootstrap degraded: degraded=%s, missing=%s', 
+                       self._degraded_interaction_services, self._missing_interaction_services)
+        else:
+            # Mark as interaction-ready if no degraded services
+            self.control_center_viewmodel.mark_bootstrap_interaction_ready()
+            logger.info('Bootstrap interaction-ready')
         # Wire CaptureStudioVM reference if already built.
         csvm = getattr(self, 'capture_studio_viewmodel', None)
         if csvm is not None:

@@ -1825,19 +1825,25 @@ class DevinApiToolAdapter:
     El Bearer token identifica la organizacion; ``org_id`` se conserva
     solo por compatibilidad con el constructor previo pero no se usa en
     las llamadas reales.
+
+    Credential boundary: api_key is resolved via CredentialBroker to avoid
+    exposing raw credentials to the reasoning layer.
     """
 
     tool_type = ToolType.MCP_CLIENT
     BASE_URL = 'https://api.devin.ai/v1'
+    _CREDENTIAL_DOMAIN = 'api.devin.ai'
 
     def __init__(
         self,
+        credential_broker: Any | None = None,
         api_key: str = '',
         org_id: str = '',
         timeout_seconds: float = 120.0,
         poll_interval_seconds: float = 5.0,
     ) -> None:
-        self.api_key = api_key
+        self.credential_broker = credential_broker
+        self._fallback_api_key = api_key  # kept for backwards compat; use credential_broker when available
         self.org_id = org_id  # kept for backwards compat; unused in v1 API.
         self.timeout_seconds = timeout_seconds
         self.poll_interval_seconds = poll_interval_seconds
@@ -1849,14 +1855,30 @@ class DevinApiToolAdapter:
     def _session_detail_url(self, session_id: str) -> str:
         return f'{self.BASE_URL}/session/{session_id}'
 
+    def _resolve_api_key(self) -> str:
+        """Resolve API key from CredentialBroker or fallback.
+
+        Never logs the raw credential. Returns empty string if unavailable.
+        """
+        if self.credential_broker is not None:
+            try:
+                record = self.credential_broker.get(self._CREDENTIAL_DOMAIN)
+                if record is not None:
+                    return record.secret
+            except Exception:
+                # Fall through to fallback on any broker error
+                pass
+        return self._fallback_api_key
+
     def _headers(self) -> dict[str, str]:
+        api_key = self._resolve_api_key()
         return {
-            'Authorization': f'Bearer {self.api_key}',
+            'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
         }
 
     def is_available(self, card: ToolCard) -> bool:
-        if not self.api_key:
+        if not self._resolve_api_key():
             return False
         if httpx is None:
             return False
@@ -1883,7 +1905,8 @@ class DevinApiToolAdapter:
                 'execution_ms': int((time.perf_counter() - start) * 1000),
                 'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
             }
-        if not self.api_key:
+        api_key = self._resolve_api_key()
+        if not api_key:
             return {
                 'success': False,
                 'output_text': '',
@@ -1899,11 +1922,48 @@ class DevinApiToolAdapter:
         if context_pack:
             prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
 
+        # Bounded execution: respect parent deadline if available
+        parent_deadline = None
+        if task.metadata:
+            parent_deadline = task.metadata.get('parent_deadline')
+            if parent_deadline is not None:
+                try:
+                    parent_deadline = float(parent_deadline)
+                except (ValueError, TypeError):
+                    parent_deadline = None
+
+        # Use the minimum of configured timeout and parent deadline
+        effective_timeout = self.timeout_seconds
+        timeout_due_to_parent = False
+        if parent_deadline is not None:
+            remaining = parent_deadline - time.perf_counter()
+            if remaining > 0:
+                if remaining < self.timeout_seconds:
+                    effective_timeout = remaining
+                    timeout_due_to_parent = True
+            else:
+                # Parent deadline already expired
+                return {
+                    'success': False,
+                    'output_text': '',
+                    'extracted_data': {},
+                    'artifacts': [],
+                    'error_message': 'Parent deadline already expired before Devin execution.',
+                    'execution_ms': int((time.perf_counter() - start) * 1000),
+                    'metadata': {
+                        'sandbox': sandbox,
+                        'tool_id': card.tool_id,
+                        'devin_session_status': 'timeout',
+                        'timeout_reason': 'parent_deadline_expired',
+                    },
+                }
+
         session_id = ''
         session_url = ''
         session_status = ''
         structured_output = ''
         error_message = ''
+        timeout_reason = ''
         try:
             create_resp = httpx.post(
                 self._sessions_url,
@@ -1928,7 +1988,7 @@ class DevinApiToolAdapter:
             if not session_url and session_id:
                 session_url = f'https://app.devin.ai/sessions/{session_id}'
 
-            deadline = time.perf_counter() + self.timeout_seconds
+            deadline = time.perf_counter() + effective_timeout
             session_status = str(body.get('status') or 'running')
             while session_status == 'running' and time.perf_counter() < deadline:
                 time.sleep(self.poll_interval_seconds)
@@ -1949,6 +2009,13 @@ class DevinApiToolAdapter:
                 else:
                     error_message = f'Devin API poll HTTP {poll_resp.status_code}'
                     break
+
+            # Check if we timed out
+            if session_status == 'running' and time.perf_counter() >= deadline:
+                timeout_reason = 'parent_deadline' if timeout_due_to_parent else 'local_poll_timeout'
+                session_status = 'timeout'
+                error_message = f'Devin session timed out after {effective_timeout:.1f}s ({timeout_reason})'
+
         except Exception as exc:
             error_message = f'{type(exc).__name__}: {exc}'
 
@@ -1966,6 +2033,8 @@ class DevinApiToolAdapter:
                 'devin_session_status': session_status,
             },
         }
+        if timeout_reason:
+            result['metadata']['timeout_reason'] = timeout_reason
         if not sandbox:
             telemetry = ToolAdapter._build_worker_telemetry(
                 result=result,
