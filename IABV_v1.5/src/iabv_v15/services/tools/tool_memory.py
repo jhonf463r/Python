@@ -3,7 +3,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from iabv_v15.domain.models import ToolCard, ToolResult, ToolTask, ToolValidationStatus
+from iabv_v15.domain.models import (
+    ActionRelevance,
+    OperationalLesson,
+    ToolCard,
+    ToolResult,
+    ToolTask,
+    ToolValidationStatus,
+)
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 
@@ -102,3 +109,53 @@ class ToolMemory:
         results = [item.model_dump(mode='json') for item in self.repository.list_results(tool_id=tool_id, limit=limit)]
         log = self.repository.list_log(tool_id=tool_id, limit=limit)
         return {'results': results, 'log': log}
+
+    def record_action_relevance(self, relevance: ActionRelevance) -> ActionRelevance:
+        """Record action relevance for experience persistence.
+
+        Stores goal relevance tracking to ensure future decisions
+        consider current goal applicability, not just historical success.
+        """
+        # Store in repository metadata for persistence
+        self.repository.log_execution(
+            tool_id="action_relevance",
+            task_id=relevance.relevance_id,
+            action_type="goal_relevance",
+            state="recorded",
+            payload=relevance.model_dump(mode='json'),
+            created_at_utc=relevance.created_at_utc.isoformat(),
+        )
+        return relevance
+
+    def record_lesson_application(
+        self,
+        lesson_id: str,
+        goal: str,
+        tool_id: str,
+        action: str,
+        outcome: str,
+        confidence_before: float,
+        confidence_after: float,
+    ) -> None:
+        """Record lesson application outcome for experience persistence.
+
+        Tracks whether lessons influenced decisions correctly and
+        updates confidence based on actual outcomes.
+        """
+        self.repository.log_execution(
+            tool_id="lesson_application",
+            task_id=lesson_id,
+            action_type="lesson_outcome",
+            state=outcome,
+            payload={
+                'lesson_id': lesson_id,
+                'goal': goal,
+                'tool_id': tool_id,
+                'action': action,
+                'outcome': outcome,
+                'confidence_before': confidence_before,
+                'confidence_after': confidence_after,
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+            },
+            created_at_utc=datetime.now(timezone.utc).isoformat(),
+        )

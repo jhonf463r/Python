@@ -19,6 +19,7 @@ from iabv_v15.domain.models import (
     InteractionMode,
     InteractionPattern,
     ModeSelectionDecision,
+    OperationalLesson,
     ReasoningMode,
     ReportKind,
     RoleRoute,
@@ -38,6 +39,7 @@ from iabv_v15.services.tools.interaction_learning_service import InteractionLear
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
 from iabv_v15.services.tools.tool_adapters import ToolAdapter
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
+from iabv_v15.services.tools.lesson_retrieval import LessonRetrieval, RetrievalContext, VERIFIED_LESSONS
 from iabv_v15.services.tools.tool_memory import ToolMemory
 from iabv_v15.services.tools.tool_registry import ToolRegistry
 from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
@@ -64,6 +66,7 @@ class ToolTeachService:
         experiment_lab: ExperimentLab | None = None,
         live_audit_supervisor: LiveAuditSupervisor | None = None,
         synaptic_router: Any | None = None,
+        lesson_retrieval: LessonRetrieval | None = None,
     ) -> None:
         self.registry = registry
         self.memory = memory
@@ -78,6 +81,50 @@ class ToolTeachService:
         self.experiment_lab = experiment_lab
         self.live_audit_supervisor = live_audit_supervisor
         self.synaptic_router = synaptic_router
+        # Initialize lesson retrieval with verified lessons
+        self.lesson_retrieval = lesson_retrieval or LessonRetrieval()
+        self.lesson_retrieval.load_lessons(VERIFIED_LESSONS)
+
+    def _retrieve_lessons_for_decision(
+        self,
+        *,
+        goal: str = "",
+        tool_id: str = "",
+        action: str = "",
+        action_risk: str = "low",
+    ) -> list[OperationalLesson]:
+        """Retrieve relevant lessons for tool/action decision.
+
+        Lightweight retrieval suitable for fast path. Used before
+        non-trivial external tool selection to make operational lessons
+        available to the decision layer.
+        """
+        context = RetrievalContext(
+            goal=goal,
+            tool_id=tool_id,
+            action=action,
+            action_risk=action_risk,
+        )
+        result = self.lesson_retrieval.retrieve_relevant_lessons(context)
+        return result.lessons
+
+    def _check_high_risk_source_truth(
+        self,
+        action: str,
+        goal: str = "",
+    ) -> tuple[bool, list[OperationalLesson]]:
+        """Check if high-risk action requires source-of-truth verification.
+
+        Returns (allowed, blocking_lessons). If blocking lessons exist,
+        the action should not execute automatically.
+        """
+        lessons = self.lesson_retrieval.retrieve_for_high_risk_action(action, goal)
+        # Check for source-of-truth blocking lessons
+        blocking = [
+            lesson for lesson in lessons
+            if "source" in lesson.rule.lower() or "identity" in lesson.rule.lower()
+        ]
+        return (len(blocking) == 0, blocking)
 
     def _assistant_configuration_snapshot(
         self,

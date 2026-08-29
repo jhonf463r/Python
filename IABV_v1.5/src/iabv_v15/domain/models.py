@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 from typing import Any
 from uuid import uuid4
@@ -11,6 +11,409 @@ from pydantic import BaseModel, Field
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+@dataclass(frozen=True)
+class LearningEvidence:
+    """Contrato de evidencia objetiva de aprendizaje.
+
+    Representa evidencia medible del impacto del aprendizaje sin introducir
+    nueva lógica de decisión. Solo almacena datos comparativos antes/después
+    para demostrar objetivamente si el aprendizaje produjo mejora o regresión.
+
+    NO contiene lógica de decisión, NO calcula rutas, NO reemplaza componentes
+    existentes. Es un contrato de datos puro para trazabilidad y análisis.
+    """
+    # Identificación
+    learning_id: str = field(default_factory=lambda: uuid4().hex)
+    timestamp: str = field(default_factory=lambda: utc_now().isoformat())
+    reuse_key: str = ""
+
+    # Decisiones comparadas
+    decision_before: str = ""
+    decision_after: str = ""
+
+    # Agentes seleccionados
+    selected_agent_before: str = ""
+    selected_agent_after: str = ""
+
+    # Confianza
+    confidence_before: float = 0.0
+    confidence_after: float = 0.0
+
+    # Validación
+    validation_before: float = 0.0
+    validation_after: float = 0.0
+
+    # Tasa de éxito
+    success_rate_before: float = 0.0
+    success_rate_after: float = 0.0
+
+    # Latencia
+    latency_before: float = 0.0
+    latency_after: float = 0.0
+
+    # Señal de aprendizaje
+    learning_signal_before: float = 0.0
+    learning_signal_after: float = 0.0
+
+    # Evidencia utilizada
+    evidence_used: dict[str, Any] = field(default_factory=dict)
+
+    # Impacto calculado
+    impact_score: float = 0.0
+
+    # Verificación
+    verified: str = "unknown"  # "true", "false", "unknown"
+    verification_reason: str = ""
+
+    # Detección de cambio
+    improvement_detected: bool = False
+    regression_detected: bool = False
+
+    # Ventana de medición
+    measurement_window: str = ""
+
+    # Resumen visible para usuario
+    user_visible_summary: str = ""
+
+    # Metadata segura
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    # Campos no resueltos
+    unresolved_fields: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializa a dict para persistencia y transporte."""
+        return {
+            "learning_id": self.learning_id,
+            "timestamp": self.timestamp,
+            "reuse_key": self.reuse_key,
+            "decision_before": self.decision_before,
+            "decision_after": self.decision_after,
+            "selected_agent_before": self.selected_agent_before,
+            "selected_agent_after": self.selected_agent_after,
+            "confidence_before": self.confidence_before,
+            "confidence_after": self.confidence_after,
+            "validation_before": self.validation_before,
+            "validation_after": self.validation_after,
+            "success_rate_before": self.success_rate_before,
+            "success_rate_after": self.success_rate_after,
+            "latency_before": self.latency_before,
+            "latency_after": self.latency_after,
+            "learning_signal_before": self.learning_signal_before,
+            "learning_signal_after": self.learning_signal_after,
+            "evidence_used": self.evidence_used,
+            "impact_score": self.impact_score,
+            "verified": self.verified,
+            "verification_reason": self.verification_reason,
+            "improvement_detected": self.improvement_detected,
+            "regression_detected": self.regression_detected,
+            "measurement_window": self.measurement_window,
+            "user_visible_summary": self.user_visible_summary,
+            "metadata": self.metadata,
+            "unresolved_fields": self.unresolved_fields,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "LearningEvidence":
+        """Deserializa desde dict."""
+        return cls(
+            learning_id=data.get("learning_id", ""),
+            timestamp=data.get("timestamp", ""),
+            reuse_key=data.get("reuse_key", ""),
+            decision_before=data.get("decision_before", ""),
+            decision_after=data.get("decision_after", ""),
+            selected_agent_before=data.get("selected_agent_before", ""),
+            selected_agent_after=data.get("selected_agent_after", ""),
+            confidence_before=data.get("confidence_before", 0.0),
+            confidence_after=data.get("confidence_after", 0.0),
+            validation_before=data.get("validation_before", 0.0),
+            validation_after=data.get("validation_after", 0.0),
+            success_rate_before=data.get("success_rate_before", 0.0),
+            success_rate_after=data.get("success_rate_after", 0.0),
+            latency_before=data.get("latency_before", 0.0),
+            latency_after=data.get("latency_after", 0.0),
+            learning_signal_before=data.get("learning_signal_before", 0.0),
+            learning_signal_after=data.get("learning_signal_after", 0.0),
+            evidence_used=data.get("evidence_used", {}),
+            impact_score=data.get("impact_score", 0.0),
+            verified=data.get("verified", "unknown"),
+            verification_reason=data.get("verification_reason", ""),
+            improvement_detected=data.get("improvement_detected", False),
+            regression_detected=data.get("regression_detected", False),
+            measurement_window=data.get("measurement_window", ""),
+            user_visible_summary=data.get("user_visible_summary", ""),
+            metadata=data.get("metadata", {}),
+            unresolved_fields=data.get("unresolved_fields", []),
+        )
+
+
+class EvidenceGovernanceStatus(str, Enum):
+    """Estado de gobernanza de una evidencia de aprendizaje."""
+    ACTIVE = "active"  # Evidencia vigente y relevante
+    STALE = "stale"  # Evidencia antigua pero retenida
+    EXPIRED = "expired"  # Evidencia caducada, lista para pruning
+    PRUNED = "pruned"  # Evidencia eliminada por política
+    RETAINED = "retained"  # Evidencia retenida por importancia estructural
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class LearningEvidenceGovernance:
+    """Contrato de gobernanza para LearningEvidence.
+
+    No es un motor de decisión ni un orquestador. Es una política de retención
+    y consolidación que evalúa evidencia de aprendizaje para decidir qué
+    conservar, degradar o eliminar.
+
+    Principios:
+    - No toma decisiones de orquestación
+    - Solo evalúa y marca evidencia existente
+    - Aplica políticas de recencia y relevancia
+    - Mantiene trazabilidad de acciones de gobernanza
+    """
+    # Identificación
+    learning_id: str
+    governance_timestamp: str = field(default_factory=lambda: utc_now().isoformat())
+
+    # Estado de gobernanza
+    governance_status: EvidenceGovernanceStatus = EvidenceGovernanceStatus.ACTIVE
+    governance_reason: str = ""
+
+    # Peso actual (decaído por tiempo)
+    current_weight: float = 1.0
+    original_weight: float = 1.0
+
+    # Recencia
+    age_hours: float = 0.0
+    is_recent: bool = True
+    recency_threshold_hours: float = 72.0
+
+    # Impacto
+    impact_score: float = 0.0
+    is_high_impact: bool = False
+    impact_threshold: float = 0.5
+
+    # Duplicación
+    is_duplicate: bool = False
+    duplicate_of: str = ""
+    similarity_score: float = 0.0
+
+    # Acción de gobernanza
+    action_taken: str = ""  # "retain", "decay", "prune", "mark_stale"
+    action_reason: str = ""
+
+    # Métricas consolidadas
+    retained_count: int = 0
+    pruned_count: int = 0
+    stale_count: int = 0
+
+    # Auditoría
+    governance_audit_trail: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializa a dict para persistencia."""
+        return {
+            "learning_id": self.learning_id,
+            "governance_timestamp": self.governance_timestamp,
+            "governance_status": self.governance_status.value,
+            "governance_reason": self.governance_reason,
+            "current_weight": self.current_weight,
+            "original_weight": self.original_weight,
+            "age_hours": self.age_hours,
+            "is_recent": self.is_recent,
+            "recency_threshold_hours": self.recency_threshold_hours,
+            "impact_score": self.impact_score,
+            "is_high_impact": self.is_high_impact,
+            "impact_threshold": self.impact_threshold,
+            "is_duplicate": self.is_duplicate,
+            "duplicate_of": self.duplicate_of,
+            "similarity_score": self.similarity_score,
+            "action_taken": self.action_taken,
+            "action_reason": self.action_reason,
+            "retained_count": self.retained_count,
+            "pruned_count": self.pruned_count,
+            "stale_count": self.stale_count,
+            "governance_audit_trail": self.governance_audit_trail,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "LearningEvidenceGovernance":
+        """Deserializa desde dict."""
+        return cls(
+            learning_id=data.get("learning_id", ""),
+            governance_timestamp=data.get("governance_timestamp", ""),
+            governance_status=EvidenceGovernanceStatus(data.get("governance_status", "unknown")),
+            governance_reason=data.get("governance_reason", ""),
+            current_weight=data.get("current_weight", 1.0),
+            original_weight=data.get("original_weight", 1.0),
+            age_hours=data.get("age_hours", 0.0),
+            is_recent=data.get("is_recent", True),
+            recency_threshold_hours=data.get("recency_threshold_hours", 72.0),
+            impact_score=data.get("impact_score", 0.0),
+            is_high_impact=data.get("is_high_impact", False),
+            impact_threshold=data.get("impact_threshold", 0.5),
+            is_duplicate=data.get("is_duplicate", False),
+            duplicate_of=data.get("duplicate_of", ""),
+            similarity_score=data.get("similarity_score", 0.0),
+            action_taken=data.get("action_taken", ""),
+            action_reason=data.get("action_reason", ""),
+            retained_count=data.get("retained_count", 0),
+            pruned_count=data.get("pruned_count", 0),
+            stale_count=data.get("stale_count", 0),
+            governance_audit_trail=data.get("governance_audit_trail", []),
+        )
+
+
+@dataclass(frozen=True)
+class LearningEvidenceRetentionPolicy:
+    """Política de retención para LearningEvidence.
+
+    Define reglas para decidir qué evidencia conservar, degradar o eliminar.
+    No ejecuta acciones, solo define políticas.
+    """
+    # Ventanas de tiempo
+    recent_window_hours: float = 72.0  # Evidencia reciente (3 días)
+    stale_window_hours: float = 168.0  # Evidencia stale (7 días)
+    expire_window_hours: float = 720.0  # Evidencia expirada (30 días)
+
+    # Umbrales de impacto
+    high_impact_threshold: float = 0.7
+    medium_impact_threshold: float = 0.4
+    low_impact_threshold: float = 0.2
+
+    # Umbrales de duplicación
+    duplicate_similarity_threshold: float = 0.9
+
+    # Límites de cantidad
+    max_retained_evidence: int = 100
+    max_stale_evidence: int = 50
+
+    # Factores de decaimiento
+    decay_rate_per_hour: float = 0.01  # 1% por hora
+    min_weight: float = 0.1
+
+    # Preservación estructural
+    preserve_structural_evidence: bool = True
+    structural_keywords: list[str] = field(default_factory=lambda: [
+        "agent_selection", "credential", "quota", "routing",
+    ])
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializa a dict."""
+        return {
+            "recent_window_hours": self.recent_window_hours,
+            "stale_window_hours": self.stale_window_hours,
+            "expire_window_hours": self.expire_window_hours,
+            "high_impact_threshold": self.high_impact_threshold,
+            "medium_impact_threshold": self.medium_impact_threshold,
+            "low_impact_threshold": self.low_impact_threshold,
+            "duplicate_similarity_threshold": self.duplicate_similarity_threshold,
+            "max_retained_evidence": self.max_retained_evidence,
+            "max_stale_evidence": self.max_stale_evidence,
+            "decay_rate_per_hour": self.decay_rate_per_hour,
+            "min_weight": self.min_weight,
+            "preserve_structural_evidence": self.preserve_structural_evidence,
+            "structural_keywords": self.structural_keywords,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "LearningEvidenceRetentionPolicy":
+        """Deserializa desde dict."""
+        return cls(
+            recent_window_hours=data.get("recent_window_hours", 72.0),
+            stale_window_hours=data.get("stale_window_hours", 168.0),
+            expire_window_hours=data.get("expire_window_hours", 720.0),
+            high_impact_threshold=data.get("high_impact_threshold", 0.7),
+            medium_impact_threshold=data.get("medium_impact_threshold", 0.4),
+            low_impact_threshold=data.get("low_impact_threshold", 0.2),
+            duplicate_similarity_threshold=data.get("duplicate_similarity_threshold", 0.9),
+            max_retained_evidence=data.get("max_retained_evidence", 100),
+            max_stale_evidence=data.get("max_stale_evidence", 50),
+            decay_rate_per_hour=data.get("decay_rate_per_hour", 0.01),
+            min_weight=data.get("min_weight", 0.1),
+            preserve_structural_evidence=data.get("preserve_structural_evidence", True),
+            structural_keywords=data.get("structural_keywords", [
+                "agent_selection", "credential", "quota", "routing",
+            ]),
+        )
+
+
+@dataclass(frozen=True)
+class LearningEvidenceSummary:
+    """Resumen consolidado de LearningEvidence después de gobernanza.
+
+    Este es lo que se expone a UI y PortableContext: una vista agregaday
+    segura de la evidencia de aprendizaje, ya gobernada.
+    """
+    # Estado general
+    total_evidence_count: int = 0
+    active_count: int = 0
+    stale_count: int = 0
+    expired_count: int = 0
+    pruned_count: int = 0
+    retained_count: int = 0
+
+    # Métricas agregadas
+    avg_impact_score: float = 0.0
+    avg_confidence_delta: float = 0.0
+    avg_validation_delta: float = 0.0
+
+    # Tendencias
+    improvement_rate: float = 0.0
+    regression_rate: float = 0.0
+
+    # Evidencia reciente (top N por impacto)
+    recent_high_impact: list[dict[str, Any]] = field(default_factory=list)
+
+    # Evidencia estructural retenida
+    structural_retained: list[dict[str, Any]] = field(default_factory=list)
+
+    # Auditoría de gobernanza
+    last_governance_timestamp: str = ""
+    governance_actions_taken: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializa a dict."""
+        return {
+            "total_evidence_count": self.total_evidence_count,
+            "active_count": self.active_count,
+            "stale_count": self.stale_count,
+            "expired_count": self.expired_count,
+            "pruned_count": self.pruned_count,
+            "retained_count": self.retained_count,
+            "avg_impact_score": self.avg_impact_score,
+            "avg_confidence_delta": self.avg_confidence_delta,
+            "avg_validation_delta": self.avg_validation_delta,
+            "improvement_rate": self.improvement_rate,
+            "regression_rate": self.regression_rate,
+            "recent_high_impact": self.recent_high_impact,
+            "structural_retained": self.structural_retained,
+            "last_governance_timestamp": self.last_governance_timestamp,
+            "governance_actions_taken": self.governance_actions_taken,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "LearningEvidenceSummary":
+        """Deserializa desde dict."""
+        return cls(
+            total_evidence_count=data.get("total_evidence_count", 0),
+            active_count=data.get("active_count", 0),
+            stale_count=data.get("stale_count", 0),
+            expired_count=data.get("expired_count", 0),
+            pruned_count=data.get("pruned_count", 0),
+            retained_count=data.get("retained_count", 0),
+            avg_impact_score=data.get("avg_impact_score", 0.0),
+            avg_confidence_delta=data.get("avg_confidence_delta", 0.0),
+            avg_validation_delta=data.get("avg_validation_delta", 0.0),
+            improvement_rate=data.get("improvement_rate", 0.0),
+            regression_rate=data.get("regression_rate", 0.0),
+            recent_high_impact=data.get("recent_high_impact", []),
+            structural_retained=data.get("structural_retained", []),
+            last_governance_timestamp=data.get("last_governance_timestamp", ""),
+            governance_actions_taken=data.get("governance_actions_taken", []),
+        )
 
 
 class ProviderKind(str, Enum):
@@ -844,10 +1247,96 @@ class KnowledgeItem(BaseModel):
 class EvidenceRef(BaseModel):
     evidence_id: str = Field(default_factory=lambda: str(uuid4()))
     kind: EvidenceKind
-    label: str
-    ref_id: str = ""
-    path: str | None = None
+
+
+class OperationalLesson(BaseModel):
+    """Verified operational lesson from cross-agent audit.
+
+    Represents a verified rule that must influence future tool/action selection.
+    Stored and retrieved via existing ToolMemory infrastructure.
+    """
+    lesson_id: str = Field(default_factory=lambda: str(uuid4()))
+    rule: str = ""
+    context: str = ""
+    applicability: str = ""  # When this lesson applies
+    risk_level: str = "low"  # low, medium, high, critical
+    evidence_level: str = "verified"  # unverified, verified, strong
+    confidence: float = 0.0  # 0.0 to 1.0
+    source: str = ""  # Which agent/audit produced this
+    active: bool = True
+    created_at_utc: datetime = Field(default_factory=utc_now)
+    updated_at_utc: datetime = Field(default_factory=utc_now)
+    tags: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    # Matching criteria for retrieval
+    goal_patterns: list[str] = Field(default_factory=list)
+    tool_patterns: list[str] = Field(default_factory=list)
+    action_patterns: list[str] = Field(default_factory=list)
+    resource_requirements: list[str] = Field(default_factory=list)
+
+    def matches_goal(self, goal: str) -> bool:
+        """Check if lesson matches current goal."""
+        if not self.goal_patterns:
+            return True
+        goal_lower = goal.lower()
+        return any(p.lower() in goal_lower for p in self.goal_patterns)
+
+    def matches_tool(self, tool_id: str) -> bool:
+        """Check if lesson matches tool."""
+        if not self.tool_patterns:
+            return True
+        tool_lower = tool_id.lower()
+        return any(p.lower() in tool_lower for p in self.tool_patterns)
+
+    def matches_action(self, action: str) -> bool:
+        """Check if lesson matches action."""
+        if not self.action_patterns:
+            return True
+        action_lower = action.lower()
+        return any(p.lower() in action_lower for p in self.action_patterns)
+
+    def is_applicable(self, *, goal: str = "", tool_id: str = "", action: str = "") -> bool:
+        """Check if lesson is applicable to current context."""
+        if not self.active:
+            return False
+        if goal and not self.matches_goal(goal):
+            return False
+        if tool_id and not self.matches_tool(tool_id):
+            return False
+        if action and not self.matches_action(action):
+            return False
+        return True
+
+
+class ActionRelevance(BaseModel):
+    """Records goal relevance for autonomous candidate actions.
+
+    Ensures actions execute based on current goal relevance, not historical success.
+    """
+    relevance_id: str = Field(default_factory=lambda: str(uuid4()))
+    current_goal: str = ""
+    action: str = ""
+    why_relevant: str = ""
+    expected_effect: str = ""
+    resource_cost: str = "low"  # low, medium, high
+    risk: str = "low"  # low, medium, high, critical
+    reversibility: str = "reversible"  # reversible, partially_reversible, irreversible
+    lessons_considered: list[str] = Field(default_factory=list)  # lesson_ids
+    created_at_utc: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def is_authorized_by_lessons(self, lessons: list[OperationalLesson]) -> bool:
+        """Check if lessons authorize this action."""
+        if not lessons:
+            # No relevant lessons = proceed with caution
+            return True
+        # Check if any blocking lessons exist
+        blocking = [
+            lesson for lesson in lessons
+            if lesson.risk_level in ("high", "critical") and "block" in lesson.rule.lower()
+        ]
+        return len(blocking) == 0
 
 
 class IssueCandidate(BaseModel):
@@ -2988,9 +3477,16 @@ class TestEvidence(BaseModel):
 
 
 class AccountStatus(str, Enum):
+    CONFIGURED = "configured"
+    VALIDATING = "validating"
     ACTIVE = "active"
+    DEGRADED = "degraded"
+    RATE_LIMITED = "rate_limited"
     EXHAUSTED = "exhausted"
     EXPIRED = "expired"
+    AUTH_FAILED = "auth_failed"
+    UNKNOWN = "unknown"
+    DISABLED = "disabled"
     UNRESOLVED = "unresolved"
 
 
@@ -3007,8 +3503,13 @@ class AccountInventoryEntry(BaseModel):
     ``account_resource_scanner``.  Every field is explicit so that
     Control Master, PortableContext and the UI can consume it without
     guessing dict keys.
+
+    Extended to support universal external resources (not just accounts).
+    The model maintains backward compatibility with account-specific usage
+    while allowing generic resource representation via optional fields.
     """
 
+    # Account-specific fields (maintained for backward compatibility)
     email: str
     browser: str = ""
     profile: str = ""
@@ -3020,6 +3521,18 @@ class AccountInventoryEntry(BaseModel):
     quota_resets_at: datetime | None = None
     exhausted: bool = False
     account_type: AccountType = AccountType.UNKNOWN
+    
+    # Universal resource fields (optional, for generic external resources)
+    resource_type: str = "account"  # "account", "agent", "tool", "session", etc.
+    provider_name: str = ""  # Generic provider name (e.g., "github", "claude", "devin")
+    identity_ref: str = ""  # Opaque reference (e.g., account ID, session ID, resource ID)
+    capability_tags: list[str] = Field(default_factory=list)  # Generic capability tags
+    
+    # State fields (universal health and availability tracking)
+    health_state: str = "unknown"  # "healthy", "degraded", "unhealthy", "unknown", "unresolved"
+    availability_state: str = "unknown"  # "available", "unavailable", "rate_limited", "quota_exhausted", "auth_failed", "unknown", "unresolved"
+    
+    # Continuity and scoring fields
     block_signals: list[str] = Field(default_factory=list)
     score: float = 0.0
     status: AccountStatus = AccountStatus.UNRESOLVED
@@ -3034,6 +3547,10 @@ class AccountInventorySnapshot(BaseModel):
     Consumed by Control Master (governance), PortableContext (continuity)
     and CentroVivo (UI).
 
+    Extended to support universal external resources (not just accounts).
+    The model maintains backward compatibility with account-specific usage
+    while allowing generic resource representation via optional fields.
+
     ``continuity_queue`` is the ranked list of non-exhausted entries
     sorted by score descending — the first entry is the recommended
     next account.  The user must approve before any account is used.
@@ -3042,12 +3559,22 @@ class AccountInventorySnapshot(BaseModel):
     entries: list[AccountInventoryEntry] = Field(default_factory=list)
     continuity_queue: list[AccountInventoryEntry] = Field(default_factory=list)
     scanned_at: datetime = Field(default_factory=utc_now)
+    
+    # Account-specific counts (maintained for backward compatibility)
     active_count: int = 0
     exhausted_count: int = 0
     expired_count: int = 0
     unresolved_count: int = 0
     total_remaining_messages: int = 0
     tools_available: list[str] = Field(default_factory=list)
+    
+    # Universal resource counts (for generic external resources)
+    resource_count: int = 0  # Total count of universal resources
+    resource_by_type: dict[str, int] = Field(default_factory=dict)  # Count by resource type
+    resource_by_provider: dict[str, int] = Field(default_factory=dict)  # Count by provider
+    resource_by_health: dict[str, int] = Field(default_factory=dict)  # Count by health state
+    resource_by_availability: dict[str, int] = Field(default_factory=dict)  # Count by availability state
+    
     unresolved_items: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -3086,6 +3613,184 @@ class MetacognitiveDiscernmentFrame(BaseModel):
     selected_action: str = ''
     why_not_other_actions: list[str] = Field(default_factory=list)
     human_help_needed: bool = False
+    unresolved_fields: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Universal External Resource Model (Task Continuity Layer)
+# ---------------------------------------------------------------------------
+
+class ResourceHealthState(str, Enum):
+    """Health state of an external resource."""
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    UNKNOWN = "unknown"
+    UNRESOLVED = "unresolved"
+
+
+class ResourceAvailabilityState(str, Enum):
+    """Availability state of an external resource."""
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+    RATE_LIMITED = "rate_limited"
+    QUOTA_EXHAUSTED = "quota_exhausted"
+    AUTH_FAILED = "auth_failed"
+    UNKNOWN = "unknown"
+    UNRESOLVED = "unresolved"
+
+
+class ExternalResource(BaseModel):
+    """Universal model for any external resource (agent, tool, account, session).
+
+    This is NOT provider-specific — it represents any external resource
+    generically. The system can model Devin, Claude, ChatGPT, Codex, Ollama,
+    or any future tool without creating provider-specific classes.
+
+    Security: Never stores secrets, API keys, passwords, or tokens.
+    Only stores opaque references and safe state information.
+    """
+
+    # Identification
+    resource_id: str = Field(default_factory=lambda: str(uuid4()))
+    provider_name: str = ""
+    identity_ref: str = ""  # Opaque reference (e.g., account ID, session ID)
+    session_ref: str = ""  # Opaque session reference
+
+    # Capabilities
+    capability_tags: list[str] = Field(default_factory=list)
+
+    # Authentication (strategy only, never secrets)
+    auth_strategy: str = ""  # e.g., "api_key", "oauth", "session_cookie"
+
+    # State
+    quota_state: dict[str, Any] = Field(default_factory=dict)  # quota info without secrets
+    health_state: ResourceHealthState = ResourceHealthState.UNKNOWN
+    availability_state: ResourceAvailabilityState = ResourceAvailabilityState.UNKNOWN
+    cost_state: dict[str, Any] = Field(default_factory=dict)  # cost metrics
+    latency_state: dict[str, Any] = Field(default_factory=dict)  # latency metrics
+
+    # Usage history (safe metrics only)
+    usage_history: list[dict[str, Any]] = Field(default_factory=list)
+
+    # Timestamps
+    last_seen: datetime | None = None
+    last_success: datetime | None = None
+    last_failure: datetime | None = None
+
+    # Safe metadata
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    # Unresolved fields
+    unresolved_fields: list[str] = Field(default_factory=list)
+
+
+class TaskContinuityStatus(str, Enum):
+    """Status of a task continuity record."""
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    HANDED_OFF = "handed_off"
+    UNKNOWN = "unknown"
+    UNRESOLVED = "unresolved"
+
+
+class TaskContinuity(BaseModel):
+    """Universal task continuity model that survives session/account/provider changes.
+
+    This represents the operational state of an external task that must
+    persist even if the session, account, or provider changes. It enables
+    IABV to continue work without manual copy/paste.
+
+    Security: Never stores secrets or sensitive context. Only stores
+    operational state needed for continuation.
+    """
+
+    # Identification
+    task_id: str = Field(default_factory=lambda: str(uuid4()))
+    objective: str = ""
+
+    # Current state
+    current_status: TaskContinuityStatus = TaskContinuityStatus.ACTIVE
+    completed_work: list[str] = Field(default_factory=list)
+    active_work: str = ""
+    known_failures: list[dict[str, Any]] = Field(default_factory=list)
+
+    # Important decisions
+    important_decisions: list[dict[str, Any]] = Field(default_factory=list)
+
+    # Context
+    relevant_files: list[str] = Field(default_factory=list)
+    tests: list[str] = Field(default_factory=list)
+    technical_debts: list[str] = Field(default_factory=list)
+    constraints: list[str] = Field(default_factory=list)
+
+    # Last execution context (opaque references only)
+    last_agent: str = ""  # Provider/agent reference (not secret)
+    last_session: str = ""  # Session reference (not secret)
+    last_account_ref: str = ""  # Account reference (not secret)
+
+    # Next action guidance
+    next_action: str = ""
+    continuation_context: dict[str, Any] = Field(default_factory=dict)
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    last_handoff_at: datetime | None = None
+
+    # Safe metadata
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    # Unresolved fields
+    unresolved_fields: list[str] = Field(default_factory=list)
+
+
+class TaskHandoff(BaseModel):
+    """Operational handoff summary for continuing a task in another session/account.
+
+    This is a compact, safe summary that can be passed to a new session or
+    account to continue work without losing context. It excludes secrets
+    and unnecessary raw context.
+
+    Security: Never includes secrets, API keys, or sensitive data.
+    """
+
+    handoff_id: str = Field(default_factory=lambda: str(uuid4()))
+    task_id: str = ""
+    objective: str = ""
+
+    # Current state
+    current_status: str = ""
+    progress_summary: str = ""
+
+    # Important context
+    completed_work: list[str] = Field(default_factory=list)
+    active_work: str = ""
+    known_failures: list[str] = Field(default_factory=list)
+    important_decisions: list[str] = Field(default_factory=list)
+
+    # Next action
+    next_action: str = ""
+    continuation_context: dict[str, Any] = Field(default_factory=dict)
+
+    # Source and target (opaque references only)
+    source_agent: str = ""
+    source_session: str = ""
+    source_account_ref: str = ""
+    target_agent: str = ""
+    target_session: str = ""
+    target_account_ref: str = ""
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=utc_now)
+    expires_at: datetime | None = None
+
+    # Safe metadata
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    # Unresolved fields
     unresolved_fields: list[str] = Field(default_factory=list)
     next_observation: str = ''
     learning_hook: str = ''
