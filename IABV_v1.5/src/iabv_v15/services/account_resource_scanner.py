@@ -61,6 +61,27 @@ def _safe_request(url: str, headers: dict[str, str] | None = None,
 
 def scan_github_api() -> dict[str, Any]:
     """Check GitHub API access and rate limits."""
+    # RESOURCE GUARD: Check if API scan is allowed
+    try:
+        from iabv_v15.services.resource_guard import get_resource_guard
+        guard = get_resource_guard()
+        decision = guard.check_action_allowed(
+            action="account_resource_scan_github",
+            estimated_ram_mb=10,
+            goal_required=False,
+            essential=False,
+        )
+        if not decision.allowed:
+            return {
+                'available': False,
+                'reason': 'resource_guard',
+                'detail': decision.reason,
+                'ram_pressure': decision.pressure.value,
+            }
+    except Exception:
+        # If guard fails, proceed (fail-safe)
+        pass
+
     token = os.environ.get('GITHUB_TOKEN_IABV') or os.environ.get('GITHUB_TOKEN') or ''
     if not token:
         return {
@@ -1223,6 +1244,30 @@ def build_inventory_snapshot(
     total_remaining = sum(e.quota_remaining for e in entries if not e.exhausted)
     tools_available = sorted(set(e.tool for e in entries if e.status == AccountStatus.ACTIVE))
 
+    # Aggregate universal resource counts (for generic external resources)
+    resource_count = len(entries)  # Total count of all resources (accounts + generic)
+    resource_by_type: dict[str, int] = {}
+    resource_by_provider: dict[str, int] = {}
+    resource_by_health: dict[str, int] = {}
+    resource_by_availability: dict[str, int] = {}
+
+    for e in entries:
+        # Count by resource type
+        rtype = e.resource_type or "account"
+        resource_by_type[rtype] = resource_by_type.get(rtype, 0) + 1
+
+        # Count by provider
+        provider = e.provider_name or e.tool or "unknown"
+        resource_by_provider[provider] = resource_by_provider.get(provider, 0) + 1
+
+        # Count by health state
+        health = e.health_state or "unknown"
+        resource_by_health[health] = resource_by_health.get(health, 0) + 1
+
+        # Count by availability state
+        availability = e.availability_state or "unknown"
+        resource_by_availability[availability] = resource_by_availability.get(availability, 0) + 1
+
     # Collect all unresolved items
     all_unresolved: list[str] = []
     for e in entries:
@@ -1241,6 +1286,11 @@ def build_inventory_snapshot(
         unresolved_count=unresolved_count,
         total_remaining_messages=total_remaining,
         tools_available=tools_available,
+        resource_count=resource_count,
+        resource_by_type=resource_by_type,
+        resource_by_provider=resource_by_provider,
+        resource_by_health=resource_by_health,
+        resource_by_availability=resource_by_availability,
         unresolved_items=list(dict.fromkeys(all_unresolved)),
     )
 

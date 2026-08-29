@@ -70,6 +70,25 @@ def scan_bios_firmware() -> dict[str, Any]:
     """Scan BIOS/UEFI, motherboard, and chipset information."""
     result: dict[str, Any] = {'available': False}
 
+    # RESOURCE GUARD: Check if deep scan is allowed
+    try:
+        from iabv_v15.services.resource_guard import get_resource_guard
+        guard = get_resource_guard()
+        decision = guard.check_action_allowed(
+            action="deep_environment_scan_bios",
+            estimated_ram_mb=50,
+            goal_required=False,
+            essential=False,
+        )
+        if not decision.allowed:
+            result['skipped'] = True
+            result['skip_reason'] = decision.reason
+            result['ram_pressure'] = decision.pressure.value
+            return result
+    except Exception:
+        # If guard fails, proceed (fail-safe)
+        pass
+
     if os.name == 'nt':
         bios = _wmi_query('Win32_BIOS', ['Manufacturer', 'SMBIOSBIOSVersion', 'ReleaseDate', 'SerialNumber'])
         if bios:
