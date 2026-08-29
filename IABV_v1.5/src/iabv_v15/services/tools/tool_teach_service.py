@@ -840,6 +840,119 @@ class ToolTeachService:
         if approved and task.approval_decision == ApprovalDecision.PENDING:
             task = task.model_copy(update={'approval_decision': ApprovalDecision.APPROVED})
         self.memory.remember_task(task)
+
+        # ENFORCEMENT: Lesson guard before external tool execution
+        lessons = self._retrieve_lessons_for_decision(
+            goal=task.objective,
+            tool_id=card.tool_id,
+            action="run",
+            action_risk="medium" if card.tool_type == ToolType.MCP_CLIENT else "low",
+        )
+
+        # ENFORCEMENT: Devin-specific safety lessons
+        if card.tool_id == "devin_api":
+            devin_lessons = [
+                lesson for lesson in lessons
+                if "devin" in lesson.rule.lower() or "external" in lesson.rule.lower()
+            ]
+            # Check for Devin-specific blocking conditions
+            if any("mock" in lesson.rule.lower() and "real" in lesson.rule.lower() for lesson in devin_lessons):
+                # Mock success != real capability - require verification
+                if not task.metadata.get('devin_verified'):
+                    result = ToolResult(
+                        task_id=task.task_id,
+                        tool_id=card.tool_id,
+                        tool_type=card.tool_type,
+                        success=False,
+                        validation_status=ToolValidationStatus.BLOCKED,
+                        execution_state=ExecutionState(
+                            state='devin_verification_required',
+                            detail='Devin execution requires verification (mock success != real capability)',
+                            destructive_blocked=True,
+                            metadata={'required_verification': 'devin_verified'},
+                        ),
+                        error_message='devin_verification_required',
+                    )
+                    self.memory.audit_event(
+                        tool_id=card.tool_id,
+                        task_id=task.task_id,
+                        action_type='devin_safety_guard',
+                        state='blocked',
+                        payload={'reason': 'verification_required'},
+                    )
+                    if self.live_audit_supervisor is not None:
+                        result = self.live_audit_supervisor.audit_tool_result(card=None, task=task, result=result)
+                    self.memory.repository.save_result(result)
+                    return result
+
+        # ENFORCEMENT: High-impact action evidence requirements
+        high_impact_keywords = ["branch", "github", "secret", "code", "modify", "update", "self"]
+        is_high_impact = any(keyword in task.objective.lower() for keyword in high_impact_keywords)
+        if is_high_impact:
+            # Check for evidence lesson
+            evidence_lessons = [
+                lesson for lesson in lessons
+                if "evidence" in lesson.rule.lower() or "verification" in lesson.rule.lower()
+            ]
+            if evidence_lessons and not task.metadata.get('evidence_verified'):
+                result = ToolResult(
+                    task_id=task.task_id,
+                    tool_id=card.tool_id,
+                    tool_type=card.tool_type,
+                    success=False,
+                    validation_status=ToolValidationStatus.BLOCKED,
+                    execution_state=ExecutionState(
+                        state='evidence_required',
+                        detail='High-impact action requires independent verification evidence',
+                        destructive_blocked=True,
+                        metadata={'required_evidence': 'independent_verification'},
+                    ),
+                    error_message='evidence_required',
+                )
+                self.memory.audit_event(
+                    tool_id=card.tool_id,
+                    task_id=task.task_id,
+                    action_type='evidence_guard',
+                    state='blocked',
+                    payload={'reason': 'evidence_required', 'objective': task.objective},
+                )
+                if self.live_audit_supervisor is not None:
+                    result = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=result)
+                self.memory.repository.save_result(result)
+                return result
+
+        # Check for blocking lessons
+        blocking_lessons = [
+            lesson for lesson in lessons
+            if lesson.risk_level in ("high", "critical") and "block" in lesson.rule.lower()
+        ]
+        if blocking_lessons:
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='lesson_blocked',
+                    detail=f'Blocked by operational lesson: {blocking_lessons[0].rule}',
+                    destructive_blocked=True,
+                    metadata={'blocking_lesson_ids': [l.lesson_id for l in blocking_lessons]},
+                ),
+                error_message='lesson_blocked',
+            )
+            self.memory.audit_event(
+                tool_id=card.tool_id,
+                task_id=task.task_id,
+                action_type='lesson_guard',
+                state='blocked',
+                payload={'blocking_lessons': [l.rule for l in blocking_lessons]},
+            )
+            if self.live_audit_supervisor is not None:
+                result = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=result)
+            self.memory.repository.save_result(result)
+            return result
+
         sandbox_result = self.sandbox.run(card=card, task=task, adapter=adapter)
         sandbox_result = self.memory.remember_result(card, task, sandbox_result)
         approval_required = bool(task.metadata.get('approval_required'))
