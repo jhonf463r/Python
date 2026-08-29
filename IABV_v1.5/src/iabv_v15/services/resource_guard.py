@@ -63,6 +63,7 @@ class ResourceGuard:
         estimated_ram_mb: int = 0,
         goal_required: bool = False,
         essential: bool = False,
+        lightweight: bool = False,
     ) -> ResourceDecision:
         """Check if an action is allowed given current resource pressure.
 
@@ -71,6 +72,7 @@ class ResourceGuard:
             estimated_ram_mb: Estimated RAM consumption in MB
             goal_required: Whether the action is required by current goal
             essential: Whether the action is essential for safety
+            lightweight: Whether the action is lightweight (low cost)
 
         Returns:
             ResourceDecision with allowed status and reason
@@ -88,13 +90,32 @@ class ResourceGuard:
                 self._snapshot_cache = snap
                 self._last_check_time = now
             except Exception as exc:
-                logger.warning("Resource snapshot failed, allowing action: %s", exc)
-                # If snapshot fails, allow action (fail-safe)
-                return ResourceDecision(
-                    allowed=True,
-                    pressure=ResourcePressure.LOW,
-                    reason="snapshot_failed",
-                )
+                logger.warning("Resource snapshot failed: %s", exc)
+                # Distinguish behavior based on action type:
+                # - Lightweight actions: ALLOW (fail-safe)
+                # - Expensive optional actions: DEFER
+                # - Essential safety actions: ALLOW with strongest available check
+                if essential:
+                    # Essential safety actions always allowed
+                    return ResourceDecision(
+                        allowed=True,
+                        pressure=ResourcePressure.LOW,
+                        reason="essential_action_snapshot_failed",
+                    )
+                elif lightweight:
+                    # Lightweight actions allowed (fail-safe)
+                    return ResourceDecision(
+                        allowed=True,
+                        pressure=ResourcePressure.LOW,
+                        reason="lightweight_action_snapshot_failed",
+                    )
+                else:
+                    # Expensive optional actions deferred when resource state unknown
+                    return ResourceDecision(
+                        allowed=False,
+                        pressure=ResourcePressure.LOW,
+                        reason="expensive_optional_action_deferred_snapshot_failed",
+                    )
 
         pressure = self._classify_pressure(snap.ram_used_pct)
 
