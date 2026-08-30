@@ -33,6 +33,22 @@ from iabv_v15.services.evolution.cognitive_metabolic_tick import (
 class TestCognitiveMetabolicTick:
     """Production-composition tests for cognitive metabolic tick."""
 
+    @staticmethod
+    def _create_mock_policy(observation_mode="act"):
+        """Create a mock policy with specified observation mode."""
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.decision_id = "test-decision-1"
+        mock_decision.observation_mode.value = observation_mode
+        mock_decision.reasoning_depth.value = "LEVEL_1"
+        mock_decision.horizon.value = "MEDIUM"
+        mock_decision.budget.max_iterations = 1
+        mock_decision.budget.max_time_seconds = 300.0
+        mock_decision.chunk_size = "medium"
+        mock_decision.parallelism_allowed = False
+        mock_policy.compute_decision.return_value = mock_decision
+        return mock_policy
+
     def test_user_active_prevents_background_cognition(self):
         """Test 1: User active prevents background cognition."""
         # Mock chat repository with recent message
@@ -94,6 +110,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -214,6 +231,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # First tick should succeed
@@ -320,6 +338,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -370,6 +389,7 @@ class TestCognitiveMetabolicTick:
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
             evolution_dir="/tmp/evolution",
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -416,6 +436,7 @@ class TestCognitiveMetabolicTick:
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
             evolution_dir="/tmp/evolution",
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -461,6 +482,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # Start chunk - it should yield automatically after completion
@@ -516,6 +538,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # First tick with safe resources
@@ -579,6 +602,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # Execute multiple ticks
@@ -628,6 +652,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # The tick implementation does not call providers directly
@@ -666,6 +691,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # Verify no provider calls during admission (CognitiveMetabolicTick is pure)
@@ -711,6 +737,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -754,6 +781,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -798,6 +826,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -844,6 +873,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # Execute tick
@@ -896,6 +926,7 @@ class TestCognitiveMetabolicTick:
             resource_aware_controller=mock_resource_controller,
             control_master_service=mock_control_master,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -1003,6 +1034,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         # Get cognitive process ID
@@ -1135,6 +1167,7 @@ class TestCognitiveMetabolicTick:
             platform_pending_queue=mock_queue,
             task_outcome_recorder=mock_outcome_recorder,
             inference_service=mock_inference_service,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
@@ -1169,6 +1202,7 @@ class TestCognitiveMetabolicTick:
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
         )
 
         result = tick.tick_once(reason="test")
