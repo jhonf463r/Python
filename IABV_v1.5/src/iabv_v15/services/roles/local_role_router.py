@@ -37,6 +37,7 @@ from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexServic
 from iabv_v15.services.roles.engineering_review_service import EngineeringReviewService
 from iabv_v15.services.roles.sql_query_advisor_service import SqlQueryAdvisorService
 from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
+from iabv_v15.services.inference.inference_service import InferenceService
 
 
 class LocalRoleRouter:
@@ -60,6 +61,7 @@ class LocalRoleRouter:
         tool_teach_service: Any | None = None,
         account_resource_scanner: Callable[[], dict[str, Any]] | None = None,
         account_approval_ledger: Any | None = None,
+        inference_service: InferenceService | None = None,
     ) -> None:
         self.workspace_root = Path(workspace_root)
         self.general_provider = general_provider
@@ -78,6 +80,7 @@ class LocalRoleRouter:
         self.tool_teach_service = tool_teach_service
         self._account_resource_scanner = account_resource_scanner
         self._account_approval_ledger = account_approval_ledger
+        self.inference_service = inference_service
         self._health_snapshot_lock = threading.RLock()
         self._health_snapshot_cache: list[ProviderHealth] = []
         self._health_snapshot_checked_at = 0.0
@@ -568,6 +571,11 @@ class LocalRoleRouter:
             }
         )
         try:
+            # Route through canonical InferenceService to enforce reflection routing and resource governance
+            if self.inference_service is not None:
+                planner_result = self.inference_service.infer_task(planner_request)
+                return planner_result.summary.strip()
+            # Fallback to direct provider call if no inference_service
             planner_result = self.general_provider.infer_task(planner_request)
             return planner_result.summary.strip()
         except Exception:
@@ -738,7 +746,16 @@ class LocalRoleRouter:
         )
         fallback_errors: list[str] = []
         try:
-            result = self.visual_provider.analyze_ui(visual_request)
+            # Route through canonical InferenceService to enforce reflection routing and resource governance
+            if self.inference_service is not None:
+                record = self.inference_service.analyze_ui(visual_request)
+                result = record.result
+                if result.used_fallback:
+                    route.used_fallback = True
+                    route.fallback_provider_name = result.provider_name
+                    route.reason = f'{route.reason} Fallback via InferenceService.'
+            else:
+                result = self.visual_provider.analyze_ui(visual_request)
         except Exception as exc:
             fallback_errors.append(f'{self.visual_provider.name}: {exc}')
             result, fallback_name, fallback_errors = self._visual_fallback(visual_request, fallback_errors)
@@ -763,6 +780,14 @@ class LocalRoleRouter:
         return route, result
 
     def _visual_fallback(self, request: InferenceRequest, errors: list[str]) -> tuple[InferenceResult, str, list[str]]:
+        # Route through canonical InferenceService to enforce reflection routing and resource governance
+        if self.inference_service is not None:
+            try:
+                record = self.inference_service.analyze_ui(request)
+                return record.result, record.result.provider_name, errors
+            except Exception as exc:
+                errors.append(f'InferenceService: {exc}')
+        # Fallback to direct provider calls if InferenceService fails or is unavailable
         if self.optional_provider is not None:
             try:
                 return self.optional_provider.analyze_ui(request), self.optional_provider.name, errors
@@ -825,7 +850,15 @@ class LocalRoleRouter:
         )
         enriched_request = request.model_copy(update={'prompt': prompt})
         try:
-            result = self.general_provider.answer_user(enriched_request)
+            # Route through canonical InferenceService to enforce reflection routing and resource governance
+            if self.inference_service is not None:
+                record = self.inference_service.infer_task(enriched_request)
+                result = record.result
+                if result.used_fallback:
+                    route.used_fallback = True
+                    route.reason = f'{route.reason} Fallback via InferenceService.'
+            else:
+                result = self.general_provider.answer_user(enriched_request)
         except Exception as exc:
             fallback_errors = [f'{self.general_provider.name}: {exc}']
             result = self.visual_provider.answer_user(enriched_request)

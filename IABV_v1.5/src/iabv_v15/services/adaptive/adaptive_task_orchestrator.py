@@ -1791,6 +1791,16 @@ class AdaptiveTaskOrchestrator:
                     meta['pre_dispatch_blocked']['fallback_blocked'] = _fb_reason
                     logger.warning('Pre-dispatch guard: fallback %s also blocked: %s', route.fallback_provider_name, _fb_reason)
             saved_session.metadata = meta
+            
+            # FAIL-CLOSED: If still blocked after fallback, return terminal result without invoking provider
+            if not _can_dispatch:
+                from iabv_v15.domain.models import InferenceResult
+                result = InferenceResult(
+                    summary=f'Resource check blocked dispatch: {_block_reason}',
+                    status='blocked',
+                    metadata=meta,
+                )
+                return route, result, saved_session
 
         result = self._build_result(request=request, session=saved_session, pack=pack, route=route)
 
@@ -2870,6 +2880,7 @@ class AdaptiveTaskOrchestrator:
             tool_executor=tool_executor,
             tool_registry=tool_cards,
             governance_snapshot=governance_snapshot,
+            resource_aware_controller=self.resource_aware_controller,
         )
         final_summary, tool_calls_made, iterations = bridge.run_tool_loop(
             provider=provider,
