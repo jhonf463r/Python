@@ -99,6 +99,52 @@ class ResourcePressure(str, Enum):
 
 
 # ============================================================================
+# Resource Projection
+# ============================================================================
+
+@dataclass(frozen=True)
+class ResourceProjection:
+    """Minimal immutable projection of resource state for cognitive policy.
+
+    This is a read-only snapshot of resource state that can be passed to
+    CognitiveStateVector without passing service instances. It contains
+    only policy-relevant information with provenance and freshness.
+
+    This does NOT replace ResourceAwareController. It is a projection
+    that the policy can consume without becoming a resource controller.
+    """
+    # Resource state ID for traceability
+    resource_state_id: str = ""
+
+    # Timestamp for freshness
+    timestamp: str = ""
+
+    # Source/provenance
+    source: str = "ResourceAwareController"
+
+    # Pressure classification
+    pressure: ResourcePressure = ResourcePressure.LOW
+
+    # CPU state
+    cpu_load_1m: float = 0.0
+    cpu_count: int = 1
+
+    # RAM state (in GB for policy normalization)
+    ram_available_gb: float = 8.0
+    ram_used_pct: float = 0.0
+
+    # GPU state (if available)
+    gpu_available: bool = False
+    vram_available_gb: float = 0.0
+
+    # Overall available capacity (0.0 to 1.0)
+    available_capacity: float = 1.0
+
+    # Confidence in resource state (0.0 to 1.0)
+    confidence: float = 1.0
+
+
+# ============================================================================
 # State Vector
 # ============================================================================
 
@@ -117,9 +163,11 @@ class CognitiveStateVector:
     risk: float  # R: Risk (0.0 to 1.0)
     expected_value: float  # V: Expected Value (0.0 to 1.0)
     available_time_seconds: float  # T: Available Time (seconds)
-    available_ram_gb: float  # E: Resource State (RAM in GB)
     memory_relevance: float  # M: Memory Relevance (0.0 to 1.0)
     prior_experience: float  # X: Prior Experience (0.0 to 1.0)
+
+    # Resource projection (with default)
+    resource_projection: ResourceProjection = field(default_factory=ResourceProjection)  # E: Resource State
 
     # Contextual metadata (for traceability, not used in policy logic)
     work_item_id: str = ""
@@ -267,8 +315,8 @@ class CognitiveOperatingPolicy:
         Returns:
             Immutable cognitive policy decision
         """
-        # Compute resource pressure
-        resource_pressure = self._classify_resource_pressure(state_vector.available_ram_gb)
+        # Use resource projection for resource pressure
+        resource_pressure = state_vector.resource_projection.pressure
 
         # Compute horizon
         horizon = self._compute_horizon(state_vector, resource_pressure)
@@ -496,7 +544,7 @@ class CognitiveOperatingPolicy:
         }[reasoning_depth]
 
         # Adjust for resource pressure
-        resource_factor = max(0.1, state_vector.available_ram_gb / 16.0)  # Normalize to 16GB
+        resource_factor = max(0.1, state_vector.resource_projection.ram_available_gb / 16.0)  # Normalize to 16GB
 
         # MRV = gain / (cost * resource_factor)
         if depth_cost * resource_factor == 0:

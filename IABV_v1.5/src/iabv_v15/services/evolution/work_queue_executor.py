@@ -41,6 +41,7 @@ GOVERNANCE PRESERVATION:
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -55,6 +56,8 @@ from iabv_v15.services.cognitive import (
     CognitiveOperatingPolicy,
     CognitiveStateVector,
     CognitivePolicyDecision,
+    ResourceProjection,
+    ResourcePressure,
 )
 
 logger = logging.getLogger(__name__)
@@ -77,11 +80,13 @@ class WorkQueueExecutor:
         inference_service: Any | None = None,
         task_outcome_recorder: Any | None = None,
         cognitive_policy: CognitiveOperatingPolicy | None = None,
+        resource_aware_controller: Any | None = None,
     ) -> None:
         self.control_master_service = control_master_service
         self.inference_service = inference_service
         self.task_outcome_recorder = task_outcome_recorder
         self.cognitive_policy = cognitive_policy or CognitiveOperatingPolicy()
+        self.resource_aware_controller = resource_aware_controller
 
     def select_and_execute_work_item(self) -> dict[str, Any]:
         """Select highest-priority work item and execute it through canonical path.
@@ -375,9 +380,8 @@ class WorkQueueExecutor:
             # For now, use default
             pass
 
-        # Resource state (default to 8GB available RAM)
-        # In production, this would come from ResourceAwareController
-        available_ram_gb = 8.0
+        # Resource state from ResourceAwareController
+        resource_projection = self._build_resource_projection()
 
         # Memory relevance (default to 0.5)
         # In production, this would come from KnowledgeRepository/GoalEngine
@@ -387,7 +391,7 @@ class WorkQueueExecutor:
         # In production, this would come from RunRepository/TaskOutcomeRecorder
         prior_experience = 0.5
 
-        # Build cognitive state vector
+        # Build cognitive state vector with resource projection
         state_vector = CognitiveStateVector(
             goal_value=goal_value,
             complexity=complexity,
@@ -396,7 +400,7 @@ class WorkQueueExecutor:
             risk=risk,
             expected_value=expected_value,
             available_time_seconds=available_time_seconds,
-            available_ram_gb=available_ram_gb,
+            resource_projection=resource_projection,
             memory_relevance=memory_relevance,
             prior_experience=prior_experience,
             work_item_id=work_item.get('id', ''),
@@ -415,3 +419,100 @@ class WorkQueueExecutor:
         )
 
         return decision
+
+    def _build_resource_projection(self) -> ResourceProjection:
+        """Build resource projection from ResourceAwareController.
+
+        Returns an immutable projection of resource state for cognitive policy.
+        If ResourceAwareController is not available, returns a default projection
+        with UNKNOWN pressure and low confidence.
+        """
+        if self.resource_aware_controller is None:
+            # Return default projection with unknown state
+            return ResourceProjection(
+                resource_state_id="default-unknown",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                source="WorkQueueExecutor-default",
+                pressure=ResourcePressure.LOW,  # Default to LOW for safety
+                cpu_load_1m=0.0,
+                cpu_count=1,
+                ram_available_gb=8.0,  # Default assumption
+                ram_used_pct=0.0,
+                gpu_available=False,
+                vram_available_gb=0.0,
+                available_capacity=1.0,
+                confidence=0.0,  # Zero confidence when no controller
+            )
+
+        try:
+            # Query ResourceAwareController for current resource state
+            resource_check = self.resource_aware_controller.check_resource_safety(
+                operation_cost='cheap',  # Use cheap cost for policy evaluation
+                force_refresh=False,  # Use cached state if available
+            )
+
+            # Convert ResourceCheck to ResourceProjection
+            # Convert RAM from MB to GB
+            ram_available_gb = resource_check.ram_available_mb / 1024.0
+
+            # Map ResourcePressure enum to our ResourcePressure
+            # (They should be the same enum, but handle case where they differ)
+            pressure_mapping = {
+                'critical': ResourcePressure.CRITICAL,
+                'high': ResourcePressure.HIGH,
+                'moderate': ResourcePressure.MODERATE,
+                'low': ResourcePressure.LOW,
+            }
+            pressure = pressure_mapping.get(
+                resource_check.current_pressure.value,
+                ResourcePressure.LOW,
+            )
+
+            # Compute available capacity based on pressure
+            capacity_mapping = {
+                ResourcePressure.CRITICAL: 0.1,
+                ResourcePressure.HIGH: 0.3,
+                ResourcePressure.MODERATE: 0.6,
+                ResourcePressure.LOW: 1.0,
+            }
+            available_capacity = capacity_mapping.get(pressure, 1.0)
+
+            # Confidence based on resource state
+            if resource_check.resource_state.value == 'unknown':
+                confidence = 0.0
+            elif resource_check.resource_state.value == 'unsafe':
+                confidence = 0.5
+            else:
+                confidence = 1.0
+
+            return ResourceProjection(
+                resource_state_id=f"resource-{resource_check.timestamp}",
+                timestamp=resource_check.timestamp,
+                source="ResourceAwareController",
+                pressure=pressure,
+                cpu_load_1m=resource_check.cpu_load_1m,
+                cpu_count=1,  # Not available in ResourceCheck
+                ram_available_gb=ram_available_gb,
+                ram_used_pct=resource_check.ram_used_pct,
+                gpu_available=False,  # Not available in ResourceCheck
+                vram_available_gb=0.0,  # Not available in ResourceCheck
+                available_capacity=available_capacity,
+                confidence=confidence,
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to build resource projection: {exc}")
+            # Return default projection on error
+            return ResourceProjection(
+                resource_state_id="error-fallback",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                source="WorkQueueExecutor-fallback",
+                pressure=ResourcePressure.LOW,  # Default to LOW for safety
+                cpu_load_1m=0.0,
+                cpu_count=1,
+                ram_available_gb=8.0,  # Default assumption
+                ram_used_pct=0.0,
+                gpu_available=False,
+                vram_available_gb=0.0,
+                available_capacity=1.0,
+                confidence=0.0,  # Zero confidence on error
+            )

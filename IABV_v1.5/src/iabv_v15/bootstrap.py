@@ -1635,8 +1635,9 @@ class AppBootstrap:
             inference_service=self.inference_service,
             task_outcome_recorder=self.task_outcome_recorder,
             cognitive_policy=CognitiveOperatingPolicy(),
+            resource_aware_controller=self.resource_aware_controller,
         )
-        logger.info('bootstrap: WorkQueueExecutor wired with cognitive policy')
+        logger.info('bootstrap: WorkQueueExecutor wired with cognitive policy and resource-aware controller')
 
         self.training_orchestrator = TrainingOrchestrator(
             workspace_root=self.config.workspace_root,
