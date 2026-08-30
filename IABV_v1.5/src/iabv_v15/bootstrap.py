@@ -769,6 +769,7 @@ class AppBootstrap:
             storage=self.evolution_storage,
             tool_registry=self.tool_registry,
             research_backlog_root=self.config.data_dir,
+            cognitive_metabolic_tick=None,  # Will be set after CognitiveMetabolicTick is created
         )
         self.tool_discovery_service = ToolDiscoveryService(
             storage=self.evolution_storage,
@@ -1651,8 +1652,15 @@ class AppBootstrap:
             chat_message_repository=self.chat_message_repository,
             evolution_dir=self.config.evolution_dir,
             idle_threshold_seconds=300.0,  # 5 minutes of inactivity
+            inference_service=self.inference_service,
+            task_outcome_recorder=self.task_outcome_recorder,
         )
         logger.info('bootstrap: CognitiveMetabolicTick wired with composite admission and policy governance')
+
+        # Wire CognitiveMetabolicTick into AutonomousValidationCycle for production trigger
+        if hasattr(self, 'autonomous_validation_cycle') and self.autonomous_validation_cycle is not None:
+            self.autonomous_validation_cycle.cognitive_metabolic_tick = self.cognitive_metabolic_tick
+            logger.info('bootstrap: CognitiveMetabolicTick wired into AutonomousValidationCycle')
 
         self.training_orchestrator = TrainingOrchestrator(
             workspace_root=self.config.workspace_root,
