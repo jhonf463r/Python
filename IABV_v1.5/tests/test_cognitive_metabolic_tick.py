@@ -822,11 +822,22 @@ class TestCognitiveMetabolicTick:
             )
         ]
 
+        # Mock InferenceService to allow chunk execution
+        mock_inference_service = MagicMock()
+        mock_run_record = MagicMock()
+        mock_run_record.status.value = "success"
+        mock_run_record.result.summary = "Test summary"
+        mock_run_record.result.inferred_task = "Test task"
+        mock_run_record.result.confidence = 0.9
+        mock_run_record.request.request_id = "req-123"
+        mock_inference_service.infer_task.return_value = mock_run_record
+
         tick = CognitiveMetabolicTick(
             chat_message_repository=mock_chat_repo,
             resource_aware_controller=mock_resource_controller,
             platform_pending_queue=mock_queue,
             cognitive_policy=self._create_mock_policy(),
+            inference_service=mock_inference_service,
         )
 
         result = tick.tick_once(reason="test")
@@ -1211,3 +1222,637 @@ class TestCognitiveMetabolicTick:
         if result.admission_blocked and result.metadata:
             # Trace ID may be present in metadata for observability
             pass  # Metadata structure varies by admission reason
+
+    def test_inference_unavailable_returns_deferred_no_false_success(self):
+        """Test 28: InferenceService unavailable returns DEFERRED with no false success."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # NO InferenceService - this is the critical test case
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
+            # inference_service=None (default)
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # CRITICAL: terminal_state MUST NOT be COMPLETED when inference unavailable
+        assert result.terminal_state == "DEFERRED", f"Expected DEFERRED, got {result.terminal_state}"
+        assert result.steps_completed == 0, f"Expected 0 steps, got {result.steps_completed}"
+        assert result.evidence_collected == [], f"Expected empty evidence, got {result.evidence_collected}"
+        assert result.findings == [], f"Expected empty findings, got {result.findings}"
+        assert result.run_record_id == "", f"Expected empty run_record_id, got {result.run_record_id}"
+        assert result.confidence == 0.0, f"Expected 0.0 confidence, got {result.confidence}"
+
+    def test_inference_service_mock_success_returns_completed(self):
+        """Test 29: Mock InferenceService with success returns COMPLETED."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # Mock InferenceService with successful response
+        mock_inference_service = MagicMock()
+        mock_run_record = MagicMock()
+        mock_run_record.status.value = "success"
+        mock_run_record.result.summary = "Test summary"
+        mock_run_record.result.inferred_task = "Test task"
+        mock_run_record.result.confidence = 0.9
+        mock_run_record.request.request_id = "req-123"
+        mock_inference_service.infer_task.return_value = mock_run_record
+
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
+            inference_service=mock_inference_service,
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # CRITICAL: successful inference MUST return COMPLETED
+        assert result.terminal_state == "COMPLETED", f"Expected COMPLETED, got {result.terminal_state}"
+        assert result.steps_completed == 1, f"Expected 1 step, got {result.steps_completed}"
+        assert result.evidence_collected == ["Test summary"], f"Expected evidence, got {result.evidence_collected}"
+        assert result.findings == ["Test task"], f"Expected findings, got {result.findings}"
+        assert result.run_record_id == "req-123", f"Expected run_record_id, got {result.run_record_id}"
+        assert result.confidence == 0.9, f"Expected 0.9 confidence, got {result.confidence}"
+
+    def test_inference_service_mock_failure_returns_failed(self):
+        """Test 30: Mock InferenceService with failure returns FAILED."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # Mock InferenceService with failed response
+        mock_inference_service = MagicMock()
+        mock_run_record = MagicMock()
+        mock_run_record.status.value = "failed"
+        mock_run_record.result.summary = ""
+        mock_run_record.result.inferred_task = ""
+        mock_run_record.result.confidence = 0.0
+        mock_run_record.request.request_id = ""
+        mock_inference_service.infer_task.return_value = mock_run_record
+
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
+            inference_service=mock_inference_service,
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # CRITICAL: failed inference MUST return FAILED
+        assert result.terminal_state == "FAILED", f"Expected FAILED, got {result.terminal_state}"
+        assert result.steps_completed == 1, f"Expected 1 step (attempted), got {result.steps_completed}"
+        # Failed inference may have empty evidence/findings
+        assert result.run_record_id == "", f"Expected empty run_record_id for failure, got {result.run_record_id}"
+
+    def test_inference_service_exception_returns_failed_no_false_success(self):
+        """Test 31: InferenceService exception returns FAILED with no false success."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # Mock InferenceService that raises exception
+        mock_inference_service = MagicMock()
+        mock_inference_service.infer_task.side_effect = Exception("Inference failed")
+
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
+            inference_service=mock_inference_service,
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # CRITICAL: exception MUST return FAILED, not COMPLETED
+        assert result.terminal_state == "FAILED", f"Expected FAILED, got {result.terminal_state}"
+        assert result.steps_completed == 0, f"Expected 0 steps on exception, got {result.steps_completed}"
+        assert result.evidence_collected == [], f"Expected empty evidence on exception, got {result.evidence_collected}"
+        assert result.findings == [], f"Expected empty findings on exception, got {result.findings}"
+        assert result.run_record_id == "", f"Expected empty run_record_id on exception, got {result.run_record_id}"
+
+    def test_runtime_composition_checkpoint_resume_lifecycle(self):
+        """Test 32: Runtime-composition test for complete persistence lifecycle.
+        
+        This test exercises the full checkpoint/resume lifecycle:
+        1. Execute tick N with checkpoint persistence
+        2. Verify checkpoint contains cognitive_process_id
+        3. Simulate process restart by creating new CognitiveMetabolicTick instance
+        4. Verify cognitive_process_id is restored from checkpoint
+        5. Execute tick N+1 with resume from checkpoint
+        6. Verify progress reflects actual checkpoint state
+        """
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # Mock InferenceService with successful response
+        mock_inference_service = MagicMock()
+        mock_run_record = MagicMock()
+        mock_run_record.status.value = "success"
+        mock_run_record.result.summary = "Test summary"
+        mock_run_record.result.inferred_task = "Test task"
+        mock_run_record.result.confidence = 0.9
+        mock_run_record.request.request_id = "req-123"
+        mock_inference_service.infer_task.return_value = mock_run_record
+
+        # TICK N: Execute first tick with checkpoint
+        tick_n = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=self._create_mock_policy(),
+            inference_service=mock_inference_service,
+            evolution_dir="/tmp/evolution",
+        )
+        
+        process_id_n = tick_n._cognitive_process_id
+        assert process_id_n.startswith("cog-process-"), f"Expected process ID to start with cog-process-, got {process_id_n}"
+
+        result_n = tick_n.tick_once(reason="test-tick-n")
+        
+        # Verify tick N completed successfully
+        assert result_n.chunk_completed, "Tick N should have completed chunk"
+        assert result_n.chunk_checkpointed, "Tick N should have checkpointed"
+        assert result_n.terminal_state == "COMPLETED", f"Tick N should be COMPLETED, got {result_n.terminal_state}"
+        
+        # Verify checkpoint was saved with cognitive_process_id
+        assert mock_queue.save_resume_hint.called, "save_resume_hint should have been called"
+        saved_hint = mock_queue.save_resume_hint.call_args[0][0]
+        assert saved_hint.metadata["cognitive_process_id"] == process_id_n, "Checkpoint should contain cognitive_process_id"
+        assert saved_hint.checkpoint_phase == "cognitive_completed", "Checkpoint phase should be cognitive_completed"
+        assert saved_hint.context_snapshot["terminal_state"] == "COMPLETED", "Checkpoint should contain COMPLETED state"
+        assert saved_hint.context_snapshot["steps_completed"] == 1, "Checkpoint should contain steps_completed=1"
+        
+        # SIMULATE PROCESS RESTART: Create new CognitiveMetabolicTick instance
+        # Mock queue to return the saved checkpoint when loading process ID
+        mock_queue_restart = MagicMock()
+        mock_queue_restart.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+        mock_queue_restart.get_resume_hint.return_value = saved_hint
+        
+        # TICK N+1: New instance should restore process ID from checkpoint
+        tick_n_plus_1 = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue_restart,
+            cognitive_policy=self._create_mock_policy(),
+            inference_service=mock_inference_service,
+            evolution_dir="/tmp/evolution",
+        )
+        
+        process_id_n_plus_1 = tick_n_plus_1._cognitive_process_id
+        assert process_id_n_plus_1 == process_id_n, f"Process ID should be restored: expected {process_id_n}, got {process_id_n_plus_1}"
+        
+        # Verify resume_from_checkpoint loads the saved state
+        checkpoint_context = tick_n_plus_1.resume_from_checkpoint("task-1")
+        assert checkpoint_context is not None, "Should be able to resume from checkpoint"
+        assert checkpoint_context["checkpoint_phase"] == "cognitive_completed", "Checkpoint phase should be cognitive_completed"
+        assert checkpoint_context["context_snapshot"]["terminal_state"] == "COMPLETED", "Context should contain COMPLETED state"
+        assert checkpoint_context["context_snapshot"]["steps_completed"] == 1, "Context should contain steps_completed=1"
+        
+        # Execute tick N+1 (should work with restored process ID)
+        result_n_plus_1 = tick_n_plus_1.tick_once(reason="test-tick-n-plus-1")
+        
+        # Verify tick N+1 completed successfully with same process ID
+        assert result_n_plus_1.chunk_completed, "Tick N+1 should have completed chunk"
+        assert result_n_plus_1.terminal_state == "COMPLETED", f"Tick N+1 should be COMPLETED, got {result_n_plus_1.terminal_state}"
+        
+        # Verify cognitive process ID remained stable across restart
+        assert tick_n_plus_1._cognitive_process_id == process_id_n, "Process ID should remain stable across restart"
+
+    def test_policy_deferral_prevents_execution(self):
+        """Test 33: Policy deferral (observation_mode=defer) prevents chunk execution."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # Mock policy that DEFERS
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.decision_id = "defer-decision-1"
+        mock_decision.observation_mode.value = "defer"  # CRITICAL: defer mode
+        mock_decision.reasoning_depth.value = "LEVEL_1"
+        mock_decision.horizon.value = "MEDIUM"
+        mock_policy.compute_decision.return_value = mock_decision
+
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=mock_policy,
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # CRITICAL: deferral MUST prevent chunk execution
+        assert result.admission_blocked, "Admission should be blocked when policy defers"
+        assert result.admission_reason == "Policy deferred execution", f"Expected policy deferral reason, got {result.admission_reason}"
+        assert not result.chunk_started, "Chunk should not have started when policy defers"
+        assert not result.chunk_completed, "Chunk should not have completed when policy defers"
+        assert result.terminal_state == "", "Terminal state should be empty when policy defers"
+
+    def test_policy_budget_max_iterations_enforced(self):
+        """Test 34: Policy budget max_iterations is enforced in execution context."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # Mock policy with specific max_iterations
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.decision_id = "budget-decision-1"
+        mock_decision.observation_mode.value = "act"
+        mock_decision.reasoning_depth.value = "LEVEL_2"
+        mock_decision.horizon.value = "LONG"
+        mock_decision.budget.max_iterations = 5  # CRITICAL: specific budget
+        mock_decision.budget.max_time_seconds = 600.0
+        mock_decision.chunk_size = "large"
+        mock_policy.compute_decision.return_value = mock_decision
+
+        # Mock InferenceService to capture the context
+        mock_inference_service = MagicMock()
+        mock_run_record = MagicMock()
+        mock_run_record.status.value = "success"
+        mock_run_record.result.summary = "Test summary"
+        mock_run_record.result.inferred_task = "Test task"
+        mock_run_record.result.confidence = 0.9
+        mock_run_record.request.request_id = "req-123"
+        mock_inference_service.infer_task.return_value = mock_run_record
+
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=mock_policy,
+            inference_service=mock_inference_service,
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # Verify chunk executed
+        assert result.chunk_completed, "Chunk should have completed"
+
+        # Verify policy budget was passed to inference service
+        assert mock_inference_service.infer_task.called, "InferenceService should have been called"
+        call_args = mock_inference_service.infer_task.call_args
+        request = call_args[0][0] if call_args[0] else call_args.kwargs.get("request")
+        
+        # CRITICAL: Verify budget parameters were passed in context
+        if hasattr(request, 'context'):
+            context = request.context
+            assert context.get("max_iterations") == 5, f"Expected max_iterations=5 in context, got {context.get('max_iterations')}"
+            assert context.get("max_time_seconds") == 600.0, f"Expected max_time_seconds=600.0 in context, got {context.get('max_time_seconds')}"
+
+    def test_policy_reasoning_depth_affects_execution(self):
+        """Test 35: Policy reasoning depth is passed to execution context."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+
+        # Mock policy with specific reasoning depth
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.decision_id = "depth-decision-1"
+        mock_decision.observation_mode.value = "act"
+        mock_decision.reasoning_depth.value = "LEVEL_3"  # CRITICAL: specific depth
+        mock_decision.horizon.value = "LONG"
+        mock_decision.budget.max_iterations = 1
+        mock_decision.budget.max_time_seconds = 300.0
+        mock_policy.compute_decision.return_value = mock_decision
+
+        # Mock InferenceService to capture the context
+        mock_inference_service = MagicMock()
+        mock_run_record = MagicMock()
+        mock_run_record.status.value = "success"
+        mock_run_record.result.summary = "Test summary"
+        mock_run_record.result.inferred_task = "Test task"
+        mock_run_record.result.confidence = 0.9
+        mock_run_record.request.request_id = "req-123"
+        mock_inference_service.infer_task.return_value = mock_run_record
+
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=mock_policy,
+            inference_service=mock_inference_service,
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # Verify chunk executed
+        assert result.chunk_completed, "Chunk should have completed"
+
+        # Verify reasoning depth was passed to inference service
+        assert mock_inference_service.infer_task.called, "InferenceService should have been called"
+        call_args = mock_inference_service.infer_task.call_args
+        request = call_args[0][0] if call_args[0] else call_args.kwargs.get("request")
+        
+        # CRITICAL: Verify reasoning depth was passed in context
+        if hasattr(request, 'context'):
+            context = request.context
+            assert context.get("reasoning_depth") == "LEVEL_3", f"Expected reasoning_depth=LEVEL_3 in context, got {context.get('reasoning_depth')}"
+
+    def test_policy_identity_preserved_through_execution(self):
+        """Test 36: Policy decision identity is preserved through execution."""
+        mock_chat_repo = MagicMock()
+        mock_chat_repo.list_recent.return_value = []
+
+        mock_resource_controller = MagicMock()
+        mock_resource_controller.check_resource_safety.return_value = ResourceCheck(
+            safe=True,
+            resource_state=ResourceState.SAFE,
+            ram_pressure=AdaptiveResourcePressure.LOW,
+            cpu_pressure=AdaptiveResourcePressure.LOW,
+            gpu_pressure=AdaptiveResourcePressure.LOW,
+            current_pressure=AdaptiveResourcePressure.LOW,
+            ram_available_mb=8192,
+            ram_used_pct=30.0,
+            cpu_load_1m=0.5,
+            reason="Low pressure: operation safe",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
+        mock_queue = MagicMock()
+        mock_queue.list_actionable.return_value = [
+            PlatformPendingTask(
+                id="task-1",
+                category="investigation",
+                priority="medium",
+                status=PendingTaskStatus.PENDING,
+                title="Test task",
+                description="Test description",
+            )
+        ]
+        mock_queue.save_resume_hint = MagicMock()  # Add save_resume_hint method for checkpointing
+
+        # Mock policy with specific decision ID
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.decision_id = "identity-decision-abc123"  # CRITICAL: specific ID
+        mock_decision.observation_mode.value = "act"
+        mock_decision.reasoning_depth.value = "LEVEL_1"
+        mock_decision.horizon.value = "MEDIUM"
+        mock_decision.budget.max_iterations = 1
+        mock_decision.budget.max_time_seconds = 300.0
+        mock_policy.compute_decision.return_value = mock_decision
+
+        # Mock InferenceService to capture the context
+        mock_inference_service = MagicMock()
+        mock_run_record = MagicMock()
+        mock_run_record.status.value = "success"
+        mock_run_record.result.summary = "Test summary"
+        mock_run_record.result.inferred_task = "Test task"
+        mock_run_record.result.confidence = 0.9
+        mock_run_record.request.request_id = "req-123"
+        mock_inference_service.infer_task.return_value = mock_run_record
+
+        tick = CognitiveMetabolicTick(
+            chat_message_repository=mock_chat_repo,
+            resource_aware_controller=mock_resource_controller,
+            platform_pending_queue=mock_queue,
+            cognitive_policy=mock_policy,
+            inference_service=mock_inference_service,
+        )
+
+        result = tick.tick_once(reason="test")
+
+        # CRITICAL: Verify policy decision ID is preserved in result
+        assert result.policy_decision_id == "identity-decision-abc123", f"Expected policy_decision_id=identity-decision-abc123, got {result.policy_decision_id}"
+
+        # Verify policy decision ID was passed to inference service context
+        assert mock_inference_service.infer_task.called, "InferenceService should have been called"
+        call_args = mock_inference_service.infer_task.call_args
+        request = call_args[0][0] if call_args[0] else call_args.kwargs.get("request")
+        
+        if hasattr(request, 'context'):
+            context = request.context
+            assert context.get("policy_decision_id") == "identity-decision-abc123", f"Expected policy_decision_id=identity-decision-abc123 in context, got {context.get('policy_decision_id')}"
+

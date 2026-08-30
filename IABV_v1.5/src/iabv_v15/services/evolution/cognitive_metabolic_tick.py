@@ -811,14 +811,20 @@ class CognitiveMetabolicTick:
                     "error": str(exc),
                 }
         else:
-            # InferenceService unavailable - return COMPLETED for test compatibility
-            # In production, this would be DEFERRED, but tests expect chunk completion
-            logger.warning("No InferenceService available for cognitive chunk execution - returning COMPLETED for test compatibility")
+            # InferenceService unavailable - DEFERRED, no false success
+            # terminal_state MUST NOT be COMPLETED when inference is unavailable
+            # steps_completed MUST remain 0
+            # evidence_collected MUST remain empty
+            # findings MUST remain empty
+            # run_record_id MUST remain empty
+            logger.warning("No InferenceService available for cognitive chunk execution - DEFERRED")
             return {
-                "terminal_state": "COMPLETED",
-                "steps_completed": 1,
-                "evidence_collected": ["Mock execution (no InferenceService)"],
-                "findings": ["Mock execution (no InferenceService)"],
+                "terminal_state": "DEFERRED",
+                "steps_completed": 0,
+                "evidence_collected": [],
+                "findings": [],
+                "run_record_id": "",
+                "confidence": 0.0,
             }
 
     def _checkpoint_chunk(
