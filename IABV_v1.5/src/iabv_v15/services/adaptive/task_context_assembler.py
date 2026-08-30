@@ -115,6 +115,10 @@ class TaskContextAssembler:
             user_goal=request.user_goal,
         )
         resolved_visual_signal = self._visual_signal_from_input(visual_signal if visual_signal is not None else request.metadata.get('visual_signal'))
+        
+        # Check if this is a reflection request BEFORE gathering evidence
+        is_reflection = self._is_reflection_request(request=request, intent=intent)
+        
         environment_self_model = self._environment_self_model()
         world_model = self._world_model(request=request, intent=intent)
         unresolved_fields: list[str] = []
@@ -145,6 +149,27 @@ class TaskContextAssembler:
             world_model=world_model,
         )
         conversation_analysis = dict(intent.metadata.get('conversation_analysis') or {})
+        
+        # Build evidence summary for reflection
+        evidence_summary = {}
+        if is_reflection:
+            sufficiency = self._evaluate_evidence_sufficiency(
+                request=request,
+                intent=intent,
+                world_model=world_model,
+                environment_self_model=environment_self_model,
+            )
+            evidence_summary = {
+                'reflection_mode': True,
+                'evidence_source': 'cached',
+                'world_model_available': not self._world_model_unresolved(world_model),
+                'environment_available': bool(str(environment_self_model.environment_id or '').strip()),
+                'world_model_timestamp': world_model.last_updated.isoformat() if world_model.last_updated else None,
+                'world_model_confidence': float(world_model.confidence or 0.0),
+                'world_model_freshness_ms': int(world_model.freshness_ms or 0),
+                'sufficiency': sufficiency,
+            }
+        
         decision_context = DecisionContext(
             user_goal=request.user_goal,
             intent=intent,
@@ -162,6 +187,8 @@ class TaskContextAssembler:
             governance={},
             metadata={
                 'decision_stage': 'pre_governance',
+                'reflection_mode': is_reflection,
+                'reflection_evidence': evidence_summary if is_reflection else None,
                 'decision_source': 'task_context_assembler',
                 'conversational_prompt': bool(intent.metadata.get('conversational_prompt')),
                 'conversation_analysis': conversation_analysis,
@@ -521,7 +548,180 @@ class TaskContextAssembler:
             'probe_status': str((tool.probe_status if tool is not None else '') or ''),
         }
 
+    def _is_reflection_request(self, *, request: InferenceRequest | None, intent: TaskIntent | None) -> bool:
+        """Detect requests to reflect on existing evidence rather than observe.
+
+        Reflection requests ask to analyze/interpret previous observations,
+        supplied evidence, or known facts. They should NOT trigger new
+        environment discovery unless the evidence is missing/stale/insufficient.
+
+        Examples:
+        - "¿Qué puedo concluir de las ventanas que acabas de observar?"
+        - "¿Qué significa esta información de red?"
+        - "¿Qué puedes inferir de los datos que me mostraste?"
+        - "¿Qué no sabes con certeza?"
+
+        Contrast with observe-now:
+        - "¿Qué ventanas están abiertas AHORA?"
+        - "¿Cuál es mi estado de red actual?"
+        """
+        if request is None or intent is None:
+            return False
+        normalized_goal = ' '.join(str(request.user_goal or '').lower().split())
+        
+        # Reflection indicators: asking to analyze/interpret existing evidence
+        reflection_phrases = (
+            'que puedo concluir',
+            'qué puedo concluir',
+            'que puedes inferir',
+            'qué puedes inferir',
+            'que significa esta informacion',
+            'qué significa esta información',
+            'que significa este dato',
+            'qué significa este dato',
+            'que puedes deducir',
+            'qué puedes deducir',
+            'que no sabes',
+            'qué no sabes',
+            'que es lo que desconoces',
+            'qué es lo que desconoces',
+            'analiza lo que observaste',
+            'analiza la informacion que te di',
+            'analiza la información que te di',
+            'que me mostraste',
+            'qué me mostraste',
+            'basado en lo que observaste',
+            'basado en lo que viste',
+            'interpreta estos datos',
+            'que puedes decir de',
+            'qué puedes decir de',
+            'que conclusion sacas',
+            'qué conclusión sacas',
+            'qué conclusión sacas',
+        )
+        
+        # Check for reflection phrases
+        if any(phrase in normalized_goal for phrase in reflection_phrases):
+            return True
+        
+        # Check for reflection on specific evidence types
+        # Only trigger reflection if there's explicit reference to "previous" or "supplied"
+        if any(word in normalized_goal for word in ('anterior', 'previo', 'anteriormente', 'antes', 'que te di', 'que te dije', 'que mostraste')):
+            # And it's asking about analysis/interpretation
+            analysis_words = ('analiza', 'interpreta', 'concluye', 'deduce', 'inferir', 'significa')
+            if any(word in normalized_goal for word in analysis_words):
+                return True
+        
+        # Check for uncertainty/what-you-don't-know questions
+        uncertainty_phrases = (
+            'que no sabes con certeza',
+            'qué no sabes con certeza',
+            'que desconoces',
+            'qué desconoces',
+            'que es lo que no sabes',
+            'qué es lo que no sabes',
+        )
+        if any(phrase in normalized_goal for phrase in uncertainty_phrases):
+            return True
+        
+        # Check intent metadata for reflection markers
+        if intent.metadata.get('metacognition_prompt'):
+            # But only if it's not asking for fresh observation
+            # (explicit "now" or "actual" indicates observe-now, not reflection)
+            if not any(word in normalized_goal for word in ('ahora', 'actual', 'actualmente', 'en este momento')):
+                return True
+        
+        return False
+
+    def _evaluate_evidence_sufficiency(
+        self,
+        *,
+        request: InferenceRequest | None,
+        intent: TaskIntent | None,
+        world_model: WorldModelSnapshot,
+        environment_self_model: EnvironmentSelfModel,
+    ) -> dict[str, Any]:
+        """Evaluate if cached evidence is sufficient for reflection.
+
+        Returns:
+            dict with:
+            - sufficient: bool - whether evidence is sufficient
+            - stale: bool - whether evidence is stale
+            - missing: list[str] - missing evidence keys
+            - world_model_fresh: bool - whether world model is fresh
+            - environment_fresh: bool - whether environment model is fresh
+            - recommended_action: 'use_cached', 'targeted_refresh', 'full_refresh'
+        """
+        if request is None or intent is None:
+            return {'sufficient': False, 'recommended_action': 'full_refresh'}
+        
+        normalized_goal = ' '.join(str(request.user_goal or '').lower().split())
+        
+        # Check world model freshness
+        world_model_fresh = not self._world_model_unresolved(world_model)
+        world_model_age_ms = int(world_model.freshness_ms or 0)
+        world_model_stale = world_model_age_ms > 90000  # 90s TTL for world model
+        
+        # Check environment model freshness
+        environment_fresh = bool(str(environment_self_model.environment_id or '').strip())
+        
+        # Determine what evidence is needed based on request
+        needed_evidence = []
+        
+        # Window-related evidence
+        if any(word in normalized_goal for word in ('ventana', 'abiertas', 'window', 'abierto')):
+            needed_evidence.append('windows')
+        
+        # Network-related evidence
+        if any(word in normalized_goal for word in ('red', 'conexion', 'internet', 'network', 'conexión')):
+            needed_evidence.append('network')
+        
+        # GPU-related evidence
+        if any(word in normalized_goal for word in ('gpu', 'grafica', 'gráfica', 'nvidia')):
+            needed_evidence.append('gpu')
+        
+        # Tool-related evidence
+        if any(word in normalized_goal for word in ('herramienta', 'tool', 'codex', 'chatgpt', 'claude', 'ollama')):
+            needed_evidence.append('tools')
+        
+        # Check if needed evidence is available
+        missing = []
+        if 'windows' in needed_evidence and not world_model.active_windows:
+            missing.append('windows')
+        if 'network' in needed_evidence and not world_model.network_status:
+            missing.append('network')
+        if 'gpu' in needed_evidence and not environment_fresh:
+            missing.append('gpu')
+        if 'tools' in needed_evidence and not world_model.tool_live_status:
+            missing.append('tools')
+        
+        # Determine if evidence is sufficient
+        sufficient = world_model_fresh and not missing and not world_model_stale
+        stale = world_model_stale or not world_model_fresh
+        
+        # Determine recommended action
+        if missing:
+            recommended_action = 'targeted_refresh'
+        elif stale:
+            recommended_action = 'targeted_refresh'
+        else:
+            recommended_action = 'use_cached'
+        
+        return {
+            'sufficient': sufficient,
+            'stale': stale,
+            'missing': missing,
+            'world_model_fresh': world_model_fresh,
+            'environment_fresh': environment_fresh,
+            'world_model_age_ms': world_model_age_ms,
+            'recommended_action': recommended_action,
+        }
+
     def _should_force_full_world_model(self, *, request: InferenceRequest | None, intent: TaskIntent | None) -> bool:
+        # Check for reflection request FIRST - reflection should NOT trigger full world model
+        if self._is_reflection_request(request=request, intent=intent):
+            return False
+        
         if request is None:
             return False
         params = dict(request.goal_parameters or {})
