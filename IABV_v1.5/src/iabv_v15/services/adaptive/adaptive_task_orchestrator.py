@@ -1725,22 +1725,22 @@ class AdaptiveTaskOrchestrator:
         resource_state_data = {}
         if self.resource_aware_controller is not None:
             try:
-                resource_check = self.resource_aware_controller.check_before_operation(
-                    operation_type='external_dispatch',
-                    operation_name=route.provider_name,
-                    estimated_cost='high',
+                from iabv_v15.services.adaptive.resource_aware_controller import OperationCost
+                resource_check = self.resource_aware_controller.check_resource_safety(
+                    operation_cost=OperationCost.EXPENSIVE,  # External dispatch is expensive
+                    force_refresh=False,
                 )
-                resource_check_passed = resource_check.get('allowed', True)
-                resource_check_reason = resource_check.get('reason', '')
+                resource_check_passed = resource_check.safe
+                resource_check_reason = resource_check.reason
                 
                 # Extract resource state for downstream model selection
                 resource_state_data = {
-                    'ram_available_mb': resource_check.get('ram_available_mb', 8 * 1024),
-                    'vram_available_mb': resource_check.get('vram_available_mb', 4 * 1024),
-                    'cpu_load': resource_check.get('cpu_load_1m', 0.0),
-                    'gpu_available': resource_check.get('gpu_available', False),
-                    'resource_pressure': resource_check.get('current_pressure', 'low'),
-                    'resource_state': resource_check.get('resource_state', 'safe'),
+                    'ram_available_mb': resource_check.ram_available_mb,
+                    'vram_available_mb': 0,  # Not yet implemented in controller
+                    'cpu_load': resource_check.cpu_load_1m,
+                    'gpu_available': False,  # Not yet implemented in controller
+                    'resource_pressure': resource_check.current_pressure.value,
+                    'resource_state': resource_check.resource_state.value,
                 }
                 
                 # Inject resource state into request metadata for ResourceAwareModelSelector
@@ -1753,9 +1753,15 @@ class AdaptiveTaskOrchestrator:
                         route.provider_name,
                         resource_check_reason,
                     )
-            except Exception:
-                # Resource check is advisory; fail gracefully
-                pass
+            except Exception as exc:
+                # FAIL-CLOSED: if resource check fails, block dispatch
+                resource_check_passed = False
+                resource_check_reason = f'resource_check_exception: {exc}'
+                logger.error(
+                    'ResourceAwareController check failed for dispatch to %s: %s',
+                    route.provider_name,
+                    exc,
+                )
         
         _can_dispatch, _block_reason = self._pre_dispatch_evidence_guard(route, _wm_guard)
         if not resource_check_passed:
