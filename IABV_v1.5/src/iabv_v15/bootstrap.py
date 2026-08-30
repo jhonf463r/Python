@@ -1639,6 +1639,21 @@ class AppBootstrap:
         )
         logger.info('bootstrap: WorkQueueExecutor wired with cognitive policy and resource-aware controller')
 
+        # Cognitive Metabolic Tick: governed persistent background cognition
+        # Implements single bounded cognitive chunks during user inactivity
+        # Reuses existing infrastructure without creating new queues/schedulers
+        from iabv_v15.services.evolution.cognitive_metabolic_tick import CognitiveMetabolicTick
+        self.cognitive_metabolic_tick = CognitiveMetabolicTick(
+            control_master_service=self.control_master_service,
+            platform_pending_queue=self.platform_pending_queue,
+            resource_aware_controller=self.resource_aware_controller,
+            cognitive_policy=CognitiveOperatingPolicy(),
+            chat_message_repository=self.chat_message_repository,
+            evolution_dir=self.config.evolution_dir,
+            idle_threshold_seconds=300.0,  # 5 minutes of inactivity
+        )
+        logger.info('bootstrap: CognitiveMetabolicTick wired with composite admission and policy governance')
+
         self.training_orchestrator = TrainingOrchestrator(
             workspace_root=self.config.workspace_root,
             episode_repository=self.episode_repository,
