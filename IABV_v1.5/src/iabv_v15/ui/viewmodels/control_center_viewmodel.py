@@ -148,6 +148,7 @@ class ControlCenterViewModel(QObject):
         chat_capability_ingestion_service: Any | None = None,
         chat_message_repository: Any | None = None,
         system_identity_registry: SystemIdentityRegistry | None = None,
+        reflection_routing_service: Any | None = None,
         defer_initial_refresh: bool = False,
     ) -> None:
         super().__init__()
@@ -196,6 +197,7 @@ class ControlCenterViewModel(QObject):
         self.chat_capability_ingestion_service = chat_capability_ingestion_service
         self.chat_message_repository = chat_message_repository
         self.system_identity_registry = system_identity_registry or SystemIdentityRegistry()
+        self.reflection_routing_service = reflection_routing_service
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
         self._last_reasoning_path: str = ''
@@ -13913,7 +13915,51 @@ class ControlCenterViewModel(QObject):
         if self._try_handle_structured_self_audit(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
-        if self._try_handle_lightweight_chat(message):
+        # REFLECTION ROUTING: Evaluate before lightweight chat to prevent bypass
+        reflection_decision = None
+        skip_shortcuts = False  # Flag to skip shortcut analysis when reflection is required
+        if self.reflection_routing_service:
+            try:
+                world_model = getattr(self, '_world_model_snapshot', None)
+                environment_model = getattr(self, '_environment_self_model', None)
+                reflection_decision = self.reflection_routing_service.route_request(
+                    request_text=message,
+                    world_model=world_model,
+                    environment_model=environment_model,
+                )
+                # Log reflection decision for audit
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    get_runtime_tracer().trace(
+                        'reflection_routing_decision',
+                        route=reflection_decision.route.value,
+                        reason=reflection_decision.reason,
+                        message_excerpt=message[:120],
+                        source='sendChat_reflection_guard',
+                    )
+                except Exception:
+                    pass
+                # If reflection routing decides to reflect on existing evidence,
+                # skip lightweight chat AND shortcut analysis to prevent lexical fast path bypass
+                if reflection_decision.route == 'reflect_on_existing_evidence':
+                    skip_shortcuts = True  # Force full orchestrator path
+                elif reflection_decision.route == 'deferred':
+                    # Fail-closed: defer due to resource constraints
+                    self._append_message('assistant', 'IABV', 
+                        f'Reflection deferred: {reflection_decision.reason}')
+                    self._set_live_status('idle')
+                    self._resolve_active_interaction(outcome='deferred', provider='local')
+                    return
+                # If OBSERVE_NOW, allow normal flow including lightweight chat
+            except Exception as e:
+                # Reflection routing failed - fail closed, do not silently re-enable unsafe lexical behavior
+                logger.error('Reflection routing failed: %s', e)
+                self._append_message('assistant', 'IABV',
+                    f'Reflection routing error: {str(e)}. Request deferred for safety.')
+                self._set_live_status('idle')
+                self._resolve_active_interaction(outcome='deferred', provider='local')
+                return
+        if not skip_shortcuts and self._try_handle_lightweight_chat(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         # Escucha pasiva de capacidades declaradas (GPU, modelos, cuentas, runtimes).
@@ -13952,31 +13998,33 @@ class ControlCenterViewModel(QObject):
             timed_out=not _sa_completed,
             message_summary=message[:120],
         )
-        allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
-        if allow_chat_shortcuts and self._is_world_model_question(message):
-            self._answer_world_model_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_self_awareness_question(message):
-            self._answer_self_awareness_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_evolution_status_question(message):
-            self._answer_evolution_status_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_self_examination_question(message):
-            self._answer_self_examination_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_learning_question(message):
-            self._answer_learning_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
-            self._answer_general_chat(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
+        # Skip shortcut analysis when reflection routing requires full orchestrator path
+        if not skip_shortcuts:
+            allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
+            if allow_chat_shortcuts and self._is_world_model_question(message):
+                self._answer_world_model_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_self_awareness_question(message):
+                self._answer_self_awareness_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_evolution_status_question(message):
+                self._answer_evolution_status_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_self_examination_question(message):
+                self._answer_self_examination_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_learning_question(message):
+                self._answer_learning_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
+                self._answer_general_chat(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
         # NOTE: explicit_assistant check was here pre-P0.40 but is now
         # handled earlier in the sovereignty guard (line ~11576).
         # If we reach this point the message has no external intent.
