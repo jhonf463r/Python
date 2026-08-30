@@ -288,6 +288,7 @@ class AdaptiveTaskOrchestrator:
         self.validation_cycle_service: Any | None = None
         self.reflection_routing_service: Any | None = None
         self.resource_aware_controller: Any | None = None
+        self._inference_service: Any | None = None
         # TemporalAwareness: track task timing for anomaly detection.
         # Maps intent_key -> list of elapsed_seconds (most recent first).
         self._task_timing_history: dict[str, list[float]] = {}
@@ -2851,6 +2852,11 @@ class AdaptiveTaskOrchestrator:
         enriched_request = self._inject_system_prompt(request, system_prompt)
 
         try:
+            # Direct provider call: this method is already called from within AdaptiveTaskOrchestrator,
+            # which is itself invoked from InferenceService._execute(). Routing through InferenceService
+            # again would cause reentrancy (InferenceService -> AdaptiveTaskOrchestrator -> InferenceService).
+            # Governance checks (reflection routing, resource safety) have already been applied at the
+            # canonical entry point (InferenceService.infer_task()).
             result = provider.answer_user(enriched_request)
         except Exception as exc:
             return {
@@ -2881,6 +2887,7 @@ class AdaptiveTaskOrchestrator:
             tool_registry=tool_cards,
             governance_snapshot=governance_snapshot,
             resource_aware_controller=self.resource_aware_controller,
+            inference_service=getattr(self, '_inference_service', None),
         )
         final_summary, tool_calls_made, iterations = bridge.run_tool_loop(
             provider=provider,

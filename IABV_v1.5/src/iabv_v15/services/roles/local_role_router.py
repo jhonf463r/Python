@@ -575,9 +575,8 @@ class LocalRoleRouter:
             if self.inference_service is not None:
                 planner_result = self.inference_service.infer_task(planner_request)
                 return planner_result.summary.strip()
-            # Fallback to direct provider call if no inference_service
-            planner_result = self.general_provider.infer_task(planner_request)
-            return planner_result.summary.strip()
+            # Fail-closed: InferenceService unavailable, return empty string without provider call
+            return ''
         except Exception:
             return ''
 
@@ -755,7 +754,12 @@ class LocalRoleRouter:
                     route.fallback_provider_name = result.provider_name
                     route.reason = f'{route.reason} Fallback via InferenceService.'
             else:
-                result = self.visual_provider.analyze_ui(visual_request)
+                # Fail-closed: InferenceService unavailable, return blocked result without provider call
+                result = InferenceResult(
+                    summary='',
+                    status='blocked',
+                    metadata={'error': 'inference_service_unavailable', 'reason': 'InferenceService is None - fail-closed to prevent provider bypass'},
+                )
         except Exception as exc:
             fallback_errors.append(f'{self.visual_provider.name}: {exc}')
             result, fallback_name, fallback_errors = self._visual_fallback(visual_request, fallback_errors)
@@ -787,17 +791,21 @@ class LocalRoleRouter:
                 return record.result, record.result.provider_name, errors
             except Exception as exc:
                 errors.append(f'InferenceService: {exc}')
-        # Fallback to direct provider calls if InferenceService fails or is unavailable
-        if self.optional_provider is not None:
-            try:
-                return self.optional_provider.analyze_ui(request), self.optional_provider.name, errors
-            except Exception as exc:
-                errors.append(f'{self.optional_provider.name}: {exc}')
-        try:
-            return self.general_provider.analyze_ui(request), self.general_provider.name, errors
-        except Exception as exc:
-            errors.append(f'{self.general_provider.name}: {exc}')
-            raise RuntimeError('No pude completar el fallback visual local.') from exc
+        # Fail-closed: InferenceService unavailable, return blocked result without provider call
+        result = InferenceResult(
+            request_id=request.request_id,
+            provider_name='None',
+            reasoning_mode=ReasoningMode.DEGRADED,
+            summary='InferenceService unavailable - canonical governance path not wired for visual analysis',
+            inferred_task=request.user_goal,
+            confidence=0.0,
+            detected_role=request.task_role,
+            executor_model='none',
+            error_summary='InferenceService is None - fail-closed to prevent provider bypass',
+            diagnostic_flags=['inference_service_unavailable'],
+            status='blocked',
+        )
+        return result, 'None', errors
 
     def _route_tooling(self, request: InferenceRequest) -> tuple[RoleRoute, InferenceResult]:
         if self.tool_teach_service is not None:
@@ -858,23 +866,39 @@ class LocalRoleRouter:
                     route.used_fallback = True
                     route.reason = f'{route.reason} Fallback via InferenceService.'
             else:
-                result = self.general_provider.answer_user(enriched_request)
+                # Fail-closed: InferenceService unavailable, return blocked result without provider call
+                result = InferenceResult(
+                    request_id=request.request_id,
+                    provider_name='None',
+                    reasoning_mode=ReasoningMode.DEGRADED,
+                    summary='InferenceService unavailable - canonical governance path not wired',
+                    inferred_task=request.user_goal,
+                    confidence=0.0,
+                    detected_role=request.task_role,
+                    executor_model='none',
+                    error_summary='InferenceService is None - fail-closed to prevent provider bypass',
+                    diagnostic_flags=['inference_service_unavailable'],
+                    status='blocked',
+                )
+                route.reason = f'{route.reason} BLOCKED: InferenceService unavailable.'
+                return route, result
         except Exception as exc:
-            fallback_errors = [f'{self.general_provider.name}: {exc}']
-            result = self.visual_provider.answer_user(enriched_request)
-            result.reasoning_mode = ReasoningMode.DEGRADED
-            result.confidence_reduced = True
-            result.used_fallback = True
-            result.provider_name = self.visual_provider.name
-            route.used_fallback = True
-            route.reason = f'{route.reason} Fallback general -> {self.visual_provider.name}.'
-            self._attach_fallback_trace(
-                result,
-                channel='general',
-                primary_provider=self.general_provider.name,
-                fallback_provider=self.visual_provider.name,
-                errors=fallback_errors,
+            # Fail-closed: InferenceService exception, return blocked result without provider call
+            result = InferenceResult(
+                request_id=request.request_id,
+                provider_name='None',
+                reasoning_mode=ReasoningMode.DEGRADED,
+                summary=f'InferenceService exception: {exc}',
+                inferred_task=request.user_goal,
+                confidence=0.0,
+                detected_role=request.task_role,
+                executor_model='none',
+                error_summary=f'InferenceService raised exception: {exc}',
+                diagnostic_flags=['inference_service_exception'],
+                status='blocked',
             )
+            route.reason = f'{route.reason} BLOCKED: InferenceService exception.'
+            return route, result
         result.used_tools = tool_chain
         result.sources = sources
         result.report_kind = report_kind

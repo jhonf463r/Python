@@ -159,6 +159,7 @@ class _LLMProviderLike:
 def build_llm_local_ollama_runner(
     provider: _LLMProviderLike | None,
     *,
+    inference_service: Any | None = None,
     prompt: str = "Hola, responde con OK.",
     clock: Callable[[], float] = time.monotonic,
 ) -> Callable[..., CapabilityAuditResult]:
@@ -214,7 +215,20 @@ def build_llm_local_ollama_runner(
             metadata={"scope": "capability_audit", "assistant_kind": "ollama"},
         )
         try:
-            result = provider.answer_user(request)
+            # Route through canonical InferenceService to enforce reflection routing and resource governance
+            if inference_service is not None:
+                record = inference_service.infer_task(request)
+                result = record.result
+            else:
+                # Fail-closed: InferenceService unavailable, return failure without provider call
+                return CapabilityAuditResult(
+                    capability_id="llm_local_ollama",
+                    executed=False,
+                    success=False,
+                    latency_ms=int(max(0.0, clock() - started) * 1000),
+                    error="inference_service_unavailable",
+                    evidence={"reason": "InferenceService is None - fail-closed to prevent provider bypass"},
+                )
         except Exception as exc:
             return CapabilityAuditResult(
                 capability_id="llm_local_ollama",

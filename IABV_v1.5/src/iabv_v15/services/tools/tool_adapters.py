@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover - optional dependency for MCP adapter on
     httpx = None
 
 from iabv_v15.domain.models import InferenceRequest, RunStatus, ToolActionType, ToolCard, ToolTask, ToolType
+from iabv_v15.services.inference.inference_service import InferenceService
 from iabv_v15.services.capture.browser_action_service import BrowserActionService
 from iabv_v15.services.capture.browser_session_controller import BrowserSessionController, sync_playwright
 from iabv_v15.services.providers.base import LLMProvider
@@ -1656,8 +1657,9 @@ class MCPToolAdapter:
 class OllamaToolAdapter:
     tool_type = ToolType.LLM_LOCAL
 
-    def __init__(self, provider: LLMProvider) -> None:
+    def __init__(self, provider: LLMProvider, inference_service: InferenceService | None = None) -> None:
         self.provider = provider
+        self.inference_service = inference_service
 
     def is_available(self, card: ToolCard) -> bool:
         health = self.provider.health_check()
@@ -1691,7 +1693,32 @@ class OllamaToolAdapter:
                     'assistant_kind': assistant_kind,
                 },
             )
-            result = self.provider.answer_user(request)
+            # Route through canonical InferenceService to enforce reflection routing and resource governance
+            if self.inference_service is not None:
+                record = self.inference_service.infer_task(request)
+                result = record.result
+            else:
+                # Fail-closed: InferenceService unavailable, return error without provider call
+                return {
+                    'success': False,
+                    'output_text': '',
+                    'extracted_data': {},
+                    'artifacts': [],
+                    'error_message': 'InferenceService unavailable - canonical governance path not wired for tool execution',
+                    'execution_ms': int((time.perf_counter() - start) * 1000),
+                    'metadata': {
+                        'sandbox': sandbox,
+                        'assistant_kind': assistant_kind,
+                        'launch_mode': str(card.metadata.get('launch_mode') or 'local_provider'),
+                        'response_capture_mode': response_capture_mode,
+                        'manual_pasteback_required': False,
+                        'prepared_prompt': prompt_text,
+                        'response_captured': False,
+                        'launched': False,
+                        'consultation_scope': consultation_scope,
+                        'inference_service_unavailable': True,
+                    },
+                }
             return {
                 'success': True,
                 'output_text': result.summary,

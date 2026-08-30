@@ -59,10 +59,14 @@ class ToolCallingBridge:
         tool_executor: Any | None = None,
         tool_registry: Any | None = None,
         governance_snapshot: dict[str, Any] | None = None,
+        resource_aware_controller: Any | None = None,
+        inference_service: Any | None = None,
     ) -> None:
         self._executor = tool_executor
         self._registry = tool_registry
         self._governance = governance_snapshot or {}
+        self._resource_aware_controller = resource_aware_controller
+        self._inference_service = inference_service
 
     # ------------------------------------------------------------------
     # Public API
@@ -183,8 +187,29 @@ class ToolCallingBridge:
                 conversation=conversation,
             )
 
+            # Re-evaluate resource governance before provider re-query
+            if self._resource_aware_controller is not None:
+                try:
+                    from iabv_v15.services.adaptive.resource_aware_controller import OperationCost
+                    resource_check = self._resource_aware_controller.check_resource_safety(
+                        operation_cost=OperationCost.EXPENSIVE,
+                        force_refresh=False,
+                    )
+                    if not resource_check.safe:
+                        # Fail-closed: break loop on resource block
+                        break
+                except Exception:
+                    # If resource check fails, fail-closed and break loop
+                    break
+
             try:
-                llm_result = provider.answer_user(enriched_request)
+                # Route through canonical InferenceService to enforce reflection routing and resource governance
+                if self._inference_service is not None:
+                    record = self._inference_service.infer_task(enriched_request)
+                    llm_result = record.result
+                else:
+                    # Fail-closed: InferenceService unavailable, break loop without provider call
+                    break
                 current_text = str(getattr(llm_result, 'summary', '') or '').strip()
                 conversation.append({'role': 'assistant', 'content': current_text})
             except Exception:

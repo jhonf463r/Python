@@ -591,7 +591,7 @@ class AppBootstrap:
         self._site_exploration_service_cache = None
         self.tool_adapters = {
             'playwright': PlaywrightToolAdapter(),
-            'ollama': OllamaToolAdapter(self.general_provider),
+            'ollama': OllamaToolAdapter(self.general_provider, inference_service=None),  # Wired after InferenceService is created
             'shell': ShellToolAdapter(),
             'desktop_human': DesktopHumanToolAdapter(self.config.workspace_root),
             'aider': AiderToolAdapter(),
@@ -1189,7 +1189,7 @@ class AppBootstrap:
         self.capability_audit_harness = CapabilityAuditHarness()
         self.capability_audit_harness.register(
             "llm_local_ollama",
-            build_llm_local_ollama_runner(self.general_provider),
+            build_llm_local_ollama_runner(self.general_provider, inference_service=None),  # Wired after InferenceService is created
         )
 
         from typing import Any as _Any
@@ -1584,6 +1584,23 @@ class AppBootstrap:
             adaptive_orchestrator=self.adaptive_task_orchestrator,
             knowledge_service=self.knowledge_service,
         )
+        # Wire InferenceService into LocalRoleRouter to enforce reflection routing and resource governance
+        if self.role_router is not None:
+            self.role_router.inference_service = self.inference_service
+        # Wire InferenceService into AdaptiveTaskOrchestrator for ToolCallingBridge re-query routing
+        if self.adaptive_task_orchestrator is not None:
+            self.adaptive_task_orchestrator._inference_service = self.inference_service
+        # Wire InferenceService into OllamaToolAdapter to enforce reflection routing and resource governance
+        ollama_adapter = self.tool_adapters.get('ollama')
+        if ollama_adapter is not None:
+            ollama_adapter.inference_service = self.inference_service
+        # Wire InferenceService into capability audit harness for llm_local_ollama runner
+        if self.capability_audit_harness is not None:
+            from iabv_v15.infra.mcp.audit_tools.audit_capability import build_llm_local_ollama_runner
+            self.capability_audit_harness.register(
+                "llm_local_ollama",
+                build_llm_local_ollama_runner(self.general_provider, inference_service=self.inference_service),
+            )
         self.training_orchestrator = TrainingOrchestrator(
             workspace_root=self.config.workspace_root,
             episode_repository=self.episode_repository,
@@ -3464,6 +3481,7 @@ class AppBootstrap:
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             chat_message_repository=self.chat_message_repository,
+            reflection_routing_service=self.reflection_routing_service,
             defer_initial_refresh=True,
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
