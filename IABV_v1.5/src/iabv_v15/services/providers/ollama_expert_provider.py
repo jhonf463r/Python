@@ -105,12 +105,14 @@ class OllamaExpertProvider(LLMProvider):
         self,
         config: ProviderConfig,
         timeout_seconds: float = 30.0,  # REDUCIDO: 90s era excesivo, causaba congelamiento
+        model_selector: Any = None,  # ResourceAwareModelSelector for resource-aware model selection
     ) -> None:
         self.config = config
         self.timeout_seconds = timeout_seconds
         self._quick_timeout = min(timeout_seconds / 2, 15.0)  # Timeout para retry
         raw_url = (config.base_url or 'http://127.0.0.1:11434').rstrip('/')
         self._base_url = raw_url.removesuffix('/v1')
+        self.model_selector = model_selector
 
     @property
     def name(self) -> str:
@@ -212,7 +214,96 @@ class OllamaExpertProvider(LLMProvider):
             or _SYSTEM_PROMPTS.get(response_mode, _SYSTEM_PROMPTS['user_answer'])
         )
         user_text = self._build_user_content(request)
+        
+        # ResourceAwareModelSelector: select model based on goal, capability, and resources
         model_name = request.metadata.get('override_model') or self.config.model
+        if self.model_selector is not None and not request.metadata.get('override_model'):
+            try:
+                from iabv_v15.services.adaptive.resource_aware_model_selector import (
+                    ModelSelectionCriteria,
+                    Capability,
+                    ResourcePressure,
+                    ResourceState,
+                )
+                # Infer capability from response_mode
+                capability_map = {
+                    'task_inference': Capability.STANDARD,
+                    'ui_analysis': Capability.BASIC,
+                    'session_summary': Capability.STANDARD,
+                    'user_answer': Capability.STANDARD,
+                    'deep_reasoning': Capability.ADVANCED,
+                }
+                required_capability = capability_map.get(response_mode, Capability.STANDARD)
+                
+                # Get resource state from ResourceAwareController if available
+                ram_available_mb = 8 * 1024  # Default fallback
+                vram_available_mb = 4 * 1024  # Default fallback
+                cpu_load = 0.0
+                gpu_available = False
+                resource_pressure = ResourcePressure.LOW
+                resource_state = ResourceState.SAFE
+                
+                # Try to get actual resource state from metadata (populated by ResourceAwareController)
+                if isinstance(request.metadata, dict):
+                    resource_state_data = request.metadata.get('resource_state')
+                    if isinstance(resource_state_data, dict):
+                        ram_available_mb = resource_state_data.get('ram_available_mb', ram_available_mb)
+                        vram_available_mb = resource_state_data.get('vram_available_mb', vram_available_mb)
+                        cpu_load = resource_state_data.get('cpu_load', cpu_load)
+                        gpu_available = resource_state_data.get('gpu_available', gpu_available)
+                        pressure_str = resource_state_data.get('resource_pressure', 'low')
+                        state_str = resource_state_data.get('resource_state', 'safe')
+                        try:
+                            resource_pressure = ResourcePressure(pressure_str.lower())
+                        except ValueError:
+                            resource_pressure = ResourcePressure.LOW
+                        try:
+                            resource_state = ResourceState(state_str.lower())
+                        except ValueError:
+                            resource_state = ResourceState.SAFE
+                
+                # Build selection criteria with goal → capability → resource pipeline
+                criteria_metadata = {}
+                
+                # Include project memory context if available in request metadata
+                if isinstance(request.metadata, dict):
+                    project_memory = request.metadata.get('project_memory')
+                    if project_memory:
+                        criteria_metadata['project_memory'] = project_memory
+                    
+                    # Include session goal context if available
+                    session_goal = request.metadata.get('session_goal')
+                    if session_goal:
+                        criteria_metadata['session_goal'] = session_goal
+                
+                criteria = ModelSelectionCriteria(
+                    goal=request.user_goal,
+                    required_capability=required_capability,
+                    prompt_complexity='medium',
+                    ram_available_mb=ram_available_mb,
+                    vram_available_mb=vram_available_mb,
+                    cpu_load=cpu_load,
+                    gpu_available=gpu_available,
+                    resource_pressure=resource_pressure,
+                    resource_state=resource_state,
+                    offline_only=request.offline_only,
+                    metadata=criteria_metadata,
+                )
+                
+                decision = self.model_selector.select_model(criteria)
+                if decision.selected_model:
+                    model_name = decision.selected_model.model_name
+                    logger.info(
+                        'ResourceAwareModelSelector selected %s for %s: %s',
+                        model_name,
+                        response_mode,
+                        decision.explanation[:200],
+                    )
+                    # Store decision in request metadata for observability
+                    request.metadata = dict(request.metadata or {})
+                    request.metadata['model_selection_decision'] = decision.to_dict()
+            except Exception as exc:
+                logger.warning('ResourceAwareModelSelector failed, using default model: %s', exc)
 
         messages = [
             {'role': 'system', 'content': system_text},

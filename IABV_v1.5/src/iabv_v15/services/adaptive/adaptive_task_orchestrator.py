@@ -286,6 +286,8 @@ class AdaptiveTaskOrchestrator:
         self.control_master_digest_builder: Any | None = None
         self.self_examination_service: Any | None = None
         self.validation_cycle_service: Any | None = None
+        self.reflection_routing_service: Any | None = None
+        self.resource_aware_controller: Any | None = None
         # TemporalAwareness: track task timing for anomaly detection.
         # Maps intent_key -> list of elapsed_seconds (most recent first).
         self._task_timing_history: dict[str, list[float]] = {}
@@ -1479,6 +1481,25 @@ class AdaptiveTaskOrchestrator:
         )
         hypotheses = intent.hypotheses
         route_decision = self.role_router.build_decision_from_intent(request=request, intent=intent)
+        
+        # ReflectionRoutingService: prioritize reflection over lexical world-model matching
+        reflection_decision = None
+        if self.reflection_routing_service is not None:
+            try:
+                reflection_decision = self.reflection_routing_service.route_request(
+                    request_text=request.user_goal,
+                    world_model=None,  # Will be populated after perception snapshot
+                    environment_model=None,
+                )
+                if reflection_decision and reflection_decision.requires_targeted_refresh:
+                    # Inject reflection decision into context metadata
+                    ctx_meta = dict(intent.metadata or {})
+                    ctx_meta['reflection_decision'] = reflection_decision.to_dict()
+                    intent.metadata = ctx_meta
+            except Exception:
+                # Reflection routing is advisory; fail gracefully
+                pass
+        
         perception = self.context_assembler.build_perception_snapshot(
             request, intent, route_decision=route_decision, intent_schema=intent_schema
         )
@@ -1697,7 +1718,49 @@ class AdaptiveTaskOrchestrator:
         # blocked, try the fallback; if both are blocked, record the
         # block and let the caller see it in route metadata.
         _wm_guard = getattr(perception, 'world_model', None) if perception is not None else None
+        
+        # ResourceAwareController: check resource safety before expensive operations
+        resource_check_passed = True
+        resource_check_reason = ''
+        resource_state_data = {}
+        if self.resource_aware_controller is not None:
+            try:
+                resource_check = self.resource_aware_controller.check_before_operation(
+                    operation_type='external_dispatch',
+                    operation_name=route.provider_name,
+                    estimated_cost='high',
+                )
+                resource_check_passed = resource_check.get('allowed', True)
+                resource_check_reason = resource_check.get('reason', '')
+                
+                # Extract resource state for downstream model selection
+                resource_state_data = {
+                    'ram_available_mb': resource_check.get('ram_available_mb', 8 * 1024),
+                    'vram_available_mb': resource_check.get('vram_available_mb', 4 * 1024),
+                    'cpu_load': resource_check.get('cpu_load_1m', 0.0),
+                    'gpu_available': resource_check.get('gpu_available', False),
+                    'resource_pressure': resource_check.get('current_pressure', 'low'),
+                    'resource_state': resource_check.get('resource_state', 'safe'),
+                }
+                
+                # Inject resource state into request metadata for ResourceAwareModelSelector
+                if hasattr(request, 'metadata') and isinstance(request.metadata, dict):
+                    request.metadata['resource_state'] = resource_state_data
+                
+                if not resource_check_passed:
+                    logger.warning(
+                        'ResourceAwareController blocked dispatch to %s: %s',
+                        route.provider_name,
+                        resource_check_reason,
+                    )
+            except Exception:
+                # Resource check is advisory; fail gracefully
+                pass
+        
         _can_dispatch, _block_reason = self._pre_dispatch_evidence_guard(route, _wm_guard)
+        if not resource_check_passed:
+            _can_dispatch = False
+            _block_reason = f'resource_check_failed: {resource_check_reason}'
         if not _can_dispatch:
             logger.warning('Pre-dispatch guard blocked route %s: %s', route.provider_name, _block_reason)
             meta = dict(saved_session.metadata or {})

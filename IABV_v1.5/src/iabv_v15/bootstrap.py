@@ -580,7 +580,7 @@ class AppBootstrap:
             ProviderConfig(name='LM Studio', kind=ProviderKind.LOCAL, base_url=self.config.lm_studio_base_url, model=self.config.lm_studio_model, optional=True),
         ]
 
-        self.general_provider = OllamaExpertProvider(self.provider_configs[0], timeout_seconds=30.0)
+        self.general_provider = OllamaExpertProvider(self.provider_configs[0], timeout_seconds=30.0, model_selector=None)  # Will be set after ResourceAwareModelSelector is initialized
         self.visual_provider = OpenAICompatLocalProvider(self.provider_configs[1], self.config.provider_timeout_seconds)
         self.optional_visual_provider = OpenAICompatLocalProvider(self.provider_configs[2], self.config.provider_timeout_seconds)
         self.site_manual_repository = SiteManualRepository(
@@ -1544,6 +1544,38 @@ class AppBootstrap:
         # Wire metacognition into OSES so build_review() picks up evolution findings
         if self.metacognition_evolution is not None:
             self.operational_self_examination_service.metacognition_evolution = self.metacognition_evolution
+        
+        # Wire ReflectionRoutingService and ResourceAwareController into orchestrator
+        try:
+            from iabv_v15.services.adaptive.reflection_routing import ReflectionRoutingService
+            from iabv_v15.services.adaptive.resource_aware_controller import ResourceAwareController
+            self.reflection_routing_service = ReflectionRoutingService(
+                world_model_service=self.world_model_service,
+                resource_controller=None,  # Will be set after ResourceAwareController is created
+            )
+            self.resource_aware_controller = ResourceAwareController()
+            self.reflection_routing_service.resource_controller = self.resource_aware_controller
+            self.adaptive_task_orchestrator.reflection_routing_service = self.reflection_routing_service
+            self.adaptive_task_orchestrator.resource_aware_controller = self.resource_aware_controller
+            logger.info('bootstrap: ReflectionRoutingService and ResourceAwareController wired')
+        except Exception as exc:
+            logger.warning('bootstrap: ReflectionRoutingService/ResourceAwareController wiring failed: %s', exc)
+            self.reflection_routing_service = None
+            self.resource_aware_controller = None
+        
+        # Wire ResourceAwareModelSelector into bootstrap and providers
+        try:
+            from iabv_v15.services.adaptive.resource_aware_model_selector import ResourceAwareModelSelector
+            self.resource_aware_model_selector = ResourceAwareModelSelector(
+                ollama_inventory=None,  # Can be populated later from Ollama health check
+            )
+            # Wire ResourceAwareModelSelector into OllamaExpertProvider
+            if hasattr(self, 'general_provider'):
+                self.general_provider.model_selector = self.resource_aware_model_selector
+            logger.info('bootstrap: ResourceAwareModelSelector initialized and wired')
+        except Exception as exc:
+            logger.warning('bootstrap: ResourceAwareModelSelector initialization failed: %s', exc)
+            self.resource_aware_model_selector = None
 
         self.inference_service = InferenceService(
             self.role_router,
