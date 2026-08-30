@@ -1601,6 +1601,30 @@ class AppBootstrap:
                 "llm_local_ollama",
                 build_llm_local_ollama_runner(self.general_provider, inference_service=self.inference_service),
             )
+
+        # InternalMetabolicStateService: unified internal state inspection layer
+        # Composes existing self-inspection services without duplication
+        from iabv_v15.services.evolution.internal_metabolic_state_service import (
+            InternalMetabolicStateService,
+        )
+        self.internal_metabolic_state_service = InternalMetabolicStateService(
+            workspace_root=self.config.workspace_root,
+            operational_self_examination_service=self.operational_self_examination_service,
+            control_master_service=self.control_master_service,
+            environment_self_awareness_service=self.environment_self_awareness_service,
+            capability_readiness_service=self.capability_readiness_service,
+            role_router=self.role_router,
+            inference_service=self.inference_service,
+            adaptive_task_orchestrator=self.adaptive_task_orchestrator,
+            task_context_assembler=self.task_context_assembler,
+            reflection_routing_service=self.reflection_routing_service,
+            resource_aware_controller=self.resource_aware_controller,
+            unified_memory_layer=self.unified_memory_layer,
+            autonomous_validation_cycle=self.autonomous_validation_cycle,
+            sandbox_experiment_service=self.sandbox_experiment_service,
+            tool_teach_service=self.tool_teach_service,
+        )
+        logger.info('bootstrap: InternalMetabolicStateService wired')
         self.training_orchestrator = TrainingOrchestrator(
             workspace_root=self.config.workspace_root,
             episode_repository=self.episode_repository,
