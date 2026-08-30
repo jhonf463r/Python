@@ -51,6 +51,11 @@ from iabv_v15.domain.models import (
     RunRecord,
     TaskRole,
 )
+from iabv_v15.services.cognitive import (
+    CognitiveOperatingPolicy,
+    CognitiveStateVector,
+    CognitivePolicyDecision,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,10 +76,12 @@ class WorkQueueExecutor:
         control_master_service: Any | None = None,
         inference_service: Any | None = None,
         task_outcome_recorder: Any | None = None,
+        cognitive_policy: CognitiveOperatingPolicy | None = None,
     ) -> None:
         self.control_master_service = control_master_service
         self.inference_service = inference_service
         self.task_outcome_recorder = task_outcome_recorder
+        self.cognitive_policy = cognitive_policy or CognitiveOperatingPolicy()
 
     def select_and_execute_work_item(self) -> dict[str, Any]:
         """Select highest-priority work item and execute it through canonical path.
@@ -116,8 +123,21 @@ class WorkQueueExecutor:
                 'work_item_id': None,
             }
 
-        # Transform to InferenceRequest
-        request = self._work_item_to_inference_request(selected_item)
+        # Evaluate cognitive policy before execution
+        policy_decision = self._evaluate_cognitive_policy(selected_item)
+
+        # Check if policy says DEFER or STOP
+        if policy_decision.observation_mode.value == 'defer':
+            return {
+                'success': False,
+                'error': 'Policy deferred execution',
+                'work_item_id': selected_item.get('id'),
+                'policy_decision_id': policy_decision.decision_id,
+                'observation_mode': policy_decision.observation_mode.value,
+            }
+
+        # Transform to InferenceRequest with policy envelope
+        request = self._work_item_to_inference_request(selected_item, policy_decision)
 
         # Execute through canonical path
         try:
@@ -130,8 +150,8 @@ class WorkQueueExecutor:
 
             run_record = self.inference_service.infer_task(request)
 
-            # Record outcome to same work item
-            self._record_outcome(selected_item, run_record)
+            # Record outcome to same work item with policy decision trace
+            self._record_outcome(selected_item, run_record, policy_decision)
 
             return {
                 'success': True,
@@ -139,6 +159,10 @@ class WorkQueueExecutor:
                 'run_id': run_record.run_id,
                 'status': run_record.status.value,
                 'duration_ms': run_record.duration_ms,
+                'policy_decision_id': policy_decision.decision_id,
+                'horizon': policy_decision.horizon.value,
+                'reasoning_depth': policy_decision.reasoning_depth.value,
+                'observation_mode': policy_decision.observation_mode.value,
             }
         except Exception as exc:
             logger.error(f"Failed to execute work item {selected_item.get('id')}: {exc}")
@@ -172,10 +196,15 @@ class WorkQueueExecutor:
 
         return eligible_items[0]
 
-    def _work_item_to_inference_request(self, work_item: dict[str, Any]) -> InferenceRequest:
-        """Transform work item into canonical InferenceRequest.
+    def _work_item_to_inference_request(
+        self,
+        work_item: dict[str, Any],
+        policy_decision: CognitivePolicyDecision,
+    ) -> InferenceRequest:
+        """Transform work item into canonical InferenceRequest with policy envelope.
 
         Preserves work item identity in metadata for outcome closure.
+        Applies cognitive policy decision envelope to the request.
         """
         # Extract work item identity
         work_item_id = work_item.get('id')
@@ -192,12 +221,22 @@ class WorkQueueExecutor:
         # Determine task role based on work item source
         task_role = self._determine_task_role(work_item_source, work_item)
 
-        # Build InferenceRequest with work item identity preserved
+        # Apply policy envelope to request
+        # Map policy reasoning depth to complexity level
+        depth_to_complexity = {
+            'level_0': ComplexityLevel.SIMPLE,
+            'level_1': ComplexityLevel.MEDIUM,
+            'level_2': ComplexityLevel.DEEP,
+            'level_3': ComplexityLevel.DEEP,
+        }
+        complexity = depth_to_complexity.get(policy_decision.reasoning_depth.value, ComplexityLevel.MEDIUM)
+
+        # Build InferenceRequest with work item identity and policy envelope preserved
         request = InferenceRequest(
             user_goal=user_goal,
             prompt=user_goal,  # Use goal as prompt for development work
             task_role=task_role,
-            complexity=ComplexityLevel.MEDIUM,  # Development work is typically medium complexity
+            complexity=complexity,  # Apply policy reasoning depth
             ambiguity=AmbiguityLevel.LOW,  # Work items are typically well-defined
             offline_only=True,  # Development work should be offline-first
             enable_planning=True,  # Enable planning for development work
@@ -208,6 +247,13 @@ class WorkQueueExecutor:
                 'work_item_source': work_item_source,
                 'work_item_title': work_item_title,
                 'work_item_priority': work_item.get('priority_score', 0),
+                # Policy envelope
+                'policy_decision_id': policy_decision.decision_id,
+                'policy_horizon': policy_decision.horizon.value,
+                'policy_reasoning_depth': policy_decision.reasoning_depth.value,
+                'policy_observation_mode': policy_decision.observation_mode.value,
+                'policy_chunk_size': policy_decision.chunk_size,
+                'policy_parallelism_allowed': policy_decision.parallelism_allowed,
             },
             metadata={
                 'work_item_id': work_item_id,
@@ -216,6 +262,13 @@ class WorkQueueExecutor:
                 'work_item_status': work_item.get('status'),
                 'original_title': work_item_title,
                 'original_next_action': work_item_next_action,
+                # Policy decision trace (without secrets)
+                'policy_decision_id': policy_decision.decision_id,
+                'policy_horizon': policy_decision.horizon.value,
+                'policy_reasoning_depth': policy_decision.reasoning_depth.value,
+                'policy_observation_mode': policy_decision.observation_mode.value,
+                'policy_mrv': policy_decision.mrv,
+                'policy_mvi': policy_decision.mvi,
             },
         )
 
@@ -238,11 +291,17 @@ class WorkQueueExecutor:
 
         return source_to_role.get(source, TaskRole.PROJECT_EVOLUTION)
 
-    def _record_outcome(self, work_item: dict[str, Any], run_record: RunRecord) -> None:
-        """Record outcome to the same work item.
+    def _record_outcome(
+        self,
+        work_item: dict[str, Any],
+        run_record: RunRecord,
+        policy_decision: CognitivePolicyDecision,
+    ) -> None:
+        """Record outcome to the same work item with policy decision trace.
 
         Associates the run outcome with the original work item via
-        work_item_id in the run metadata.
+        work_item_id in the run metadata. Also preserves policy decision
+        for traceability and learning.
         """
         if self.task_outcome_recorder is None:
             logger.warning("TaskOutcomeRecorder not available, skipping outcome recording")
@@ -255,7 +314,104 @@ class WorkQueueExecutor:
             logger.info(
                 f"Recorded outcome for work item {work_item.get('id')} "
                 f"with run_id {run_record.run_id} "
-                f"status {run_record.status.value}"
+                f"status {run_record.status.value} "
+                f"policy_decision_id {policy_decision.decision_id}"
             )
         except Exception as exc:
             logger.error(f"Failed to record outcome for work item {work_item.get('id')}: {exc}")
+
+    def _evaluate_cognitive_policy(self, work_item: dict[str, Any]) -> CognitivePolicyDecision:
+        """Evaluate cognitive policy for a work item.
+
+        Builds policy input from existing runtime information and computes
+        cognitive envelope before execution.
+
+        Args:
+            work_item: Selected work item from ControlMaster
+
+        Returns:
+            Immutable cognitive policy decision
+        """
+        # Build policy input from work item and existing runtime information
+        # Unknown values remain at sensible defaults (0.5 for uncertainty, etc.)
+
+        # Extract work item properties for policy input
+        priority_score = work_item.get('priority_score', 50)  # 0-100 scale
+        status = work_item.get('status', 'pending')
+        source = work_item.get('source', 'unknown')
+
+        # Normalize priority to 0.0-1.0 scale
+        goal_value = min(1.0, priority_score / 100.0)
+
+        # Estimate complexity from work item properties
+        complexity = 0.5  # Default medium complexity
+        if 'complexity' in work_item:
+            complexity = min(1.0, work_item.get('complexity', 0.5))
+
+        # Estimate ambiguity from work item properties
+        ambiguity = 0.3  # Default low ambiguity
+        if 'ambiguity' in work_item:
+            ambiguity = min(1.0, work_item.get('ambiguity', 0.3))
+
+        # Estimate uncertainty from status and source
+        uncertainty = 0.5  # Default medium uncertainty
+        if status in ('pending', 'needs_fix'):
+            uncertainty = 0.7
+        elif status in ('active', 'in_progress'):
+            uncertainty = 0.4
+
+        # Estimate risk from work item properties
+        risk = 0.3  # Default low risk
+        if 'risk' in work_item:
+            risk = min(1.0, work_item.get('risk', 0.3))
+
+        # Expected value from priority
+        expected_value = goal_value
+
+        # Available time (default to 10 minutes if not specified)
+        available_time_seconds = 600.0
+        if 'deadline' in work_item:
+            # Would parse deadline and compute remaining time
+            # For now, use default
+            pass
+
+        # Resource state (default to 8GB available RAM)
+        # In production, this would come from ResourceAwareController
+        available_ram_gb = 8.0
+
+        # Memory relevance (default to 0.5)
+        # In production, this would come from KnowledgeRepository/GoalEngine
+        memory_relevance = 0.5
+
+        # Prior experience (default to 0.5)
+        # In production, this would come from RunRepository/TaskOutcomeRecorder
+        prior_experience = 0.5
+
+        # Build cognitive state vector
+        state_vector = CognitiveStateVector(
+            goal_value=goal_value,
+            complexity=complexity,
+            ambiguity=ambiguity,
+            uncertainty=uncertainty,
+            risk=risk,
+            expected_value=expected_value,
+            available_time_seconds=available_time_seconds,
+            available_ram_gb=available_ram_gb,
+            memory_relevance=memory_relevance,
+            prior_experience=prior_experience,
+            work_item_id=work_item.get('id', ''),
+            work_item_source=source,
+            work_item_title=work_item.get('title', ''),
+        )
+
+        # Compute policy decision
+        decision = self.cognitive_policy.compute_decision(state_vector)
+
+        logger.info(
+            f"Cognitive policy evaluated for work item {work_item.get('id')}: "
+            f"horizon={decision.horizon.value}, "
+            f"depth={decision.reasoning_depth.value}, "
+            f"observation_mode={decision.observation_mode.value}"
+        )
+
+        return decision
