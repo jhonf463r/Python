@@ -11099,15 +11099,40 @@ class ControlCenterViewModel(QObject):
                 'assistant_title': assistant_title,
             }
         if bool(tool_task.get('metadata', {}).get('reuse_guard_active')):
-            message = f'Ya tenia una consulta equivalente para {assistant_title}, asi que voy a reutilizar ese contexto en lugar de arrancar de cero.'
-            self._latest_response_text = message
+            reuse_message = f'Ya tenia una consulta equivalente para {assistant_title}, asi que voy a reutilizar ese contexto en lugar de arrancar de cero.'
+            self._latest_response_text = reuse_message
             self._latest_response_meta = 'Reutilizando contexto existente.'
+            # Build canonical result payload for context reuse to ensure proper terminal lifecycle
+            # This must match the structure expected by _apply_task_result for external_consultation
+            payload = dict(self._last_adaptive_payload or {})
+            metadata = dict(payload.get('metadata') or {})
+            consultation_metadata = {
+                'status': 'context_reused',
+                'assistant_kind': requested_assistant_kind,
+                'requested_assistant_kind': requested_assistant_kind,
+                'actual_assistant_kind': requested_assistant_kind,
+                'decision_source': 'context_reuse',
+                'recommended_action': f'reuse_context_{requested_assistant_kind}',
+                'reason': 'Context reuse guard activated - equivalent consultation already exists',
+                'context_reuse': True,
+                'external_execution': False,
+            }
+            metadata['external_consultation'] = consultation_metadata
+            metadata['autonomous_evolution'] = consultation_metadata
+            payload['metadata'] = metadata
+            self._update_adaptive_state(payload)
             return {
                 'success': True,
-                'message': message,
+                'message': reuse_message,
                 'meta': 'Reutilizando contexto existente.',
-                'payload': dict(self._last_adaptive_payload or {}),
+                'payload': payload,
                 'assistant_title': assistant_title,
+                'external_state_flags': [],
+                'metadata': {
+                    'context_reuse': True,
+                    'reuse_guard_active': True,
+                    'external_execution': False,
+                },
             }
         task, result, _ = self.tool_teach_service.execute_external_consultation(
             user_goal=self._last_user_goal or 'abre Wplay e inicia sesion',
