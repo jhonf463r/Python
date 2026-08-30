@@ -1625,6 +1625,17 @@ class AppBootstrap:
             tool_teach_service=self.tool_teach_service,
         )
         logger.info('bootstrap: InternalMetabolicStateService wired')
+
+        # WorkQueueExecutor: bridge between ControlMaster work queue and canonical inference
+        # Implements the executive loop bridge without owning the queue or becoming a new ControlMaster
+        from iabv_v15.services.evolution.work_queue_executor import WorkQueueExecutor
+        self.work_queue_executor = WorkQueueExecutor(
+            control_master_service=self.control_master_service,
+            inference_service=self.inference_service,
+            task_outcome_recorder=self.task_outcome_recorder,
+        )
+        logger.info('bootstrap: WorkQueueExecutor wired')
+
         self.training_orchestrator = TrainingOrchestrator(
             workspace_root=self.config.workspace_root,
             episode_repository=self.episode_repository,
