@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -8,14 +9,18 @@ from iabv_v15.domain.models import (
     AssistantConfigurationSnapshot,
     EvaluationRoute,
     ExperimentDomain,
+    ProcessReference,
     RoleRoute,
     RunRecord,
     RunStatus,
     TaskRole,
+    UniversalProcessLifecycle,
+    UniversalProcessOwnerType,
 )
 from iabv_v15.infra.persistence.adaptive_session_repository import AdaptiveSessionRepository
 from iabv_v15.infra.persistence.approval_checkpoint_repository import ApprovalCheckpointRepository
 from iabv_v15.infra.persistence.capability_repository import CapabilityRepository
+from iabv_v15.services.adaptive.objective_evidence import extract_objective_evidence
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 
 
@@ -44,6 +49,7 @@ class TaskOutcomeRecorder:
         adaptive_weight_layer: Any | None = None,
         control_master_service: Any | None = None,
         intent_understanding_service: Any | None = None,
+        universal_process_repository: Any | None = None,
     ) -> None:
         self.adaptive_session_repository = adaptive_session_repository
         self.capability_repository = capability_repository
@@ -52,6 +58,7 @@ class TaskOutcomeRecorder:
         self.adaptive_weight_layer = adaptive_weight_layer
         self.control_master_service = control_master_service
         self.intent_understanding_service = intent_understanding_service
+        self.universal_process_repository = universal_process_repository
 
     def record(self, session: AdaptiveSession, run_record: RunRecord | None = None) -> AdaptiveSession:
         if run_record is not None and self.experiment_lab is not None:
@@ -63,6 +70,8 @@ class TaskOutcomeRecorder:
             self.approval_checkpoint_repository.save_many(session.approval_checkpoints)
         saved = self.adaptive_session_repository.save(session)
         self._propagate_to_control_master(saved)
+        # UniversalProcess: update with run_id and outcome at finalization
+        self._update_universal_process_with_run(saved, run_record=run_record)
         # Autonomy cycle: delegate to AutonomyCycleService if wired.
         # Falls back to inline implementation for backward compatibility.
         acs = getattr(self, 'autonomy_cycle_service', None)
@@ -182,6 +191,91 @@ class TaskOutcomeRecorder:
         except Exception:
             pass
 
+    def _update_universal_process_with_run(self, session: AdaptiveSession, *, run_record: RunRecord | None = None) -> None:
+        """Update the existing UniversalProcess with run_id and outcome at finalization.
+
+        This preserves the invariant: ONE BOUNDED PROCESS → ONE UNIVERSAL PROCESS ID.
+        The process was created at request start with PLANNED state and is now updated
+        with execution results.
+
+        Uses the process_id stored in session.metadata['universal_process_id'].
+        """
+        if self.universal_process_repository is None:
+            # Repository not wired - no-op (backward compatibility)
+            return
+
+        metadata = session.metadata or {}
+        process_id = metadata.get('universal_process_id')
+
+        if not process_id or not isinstance(process_id, str):
+            # No process_id in metadata - nothing to update
+            return
+
+        try:
+            from iabv_v15.domain.models import UniversalProcess, UniversalProcessLifecycle
+
+            # Load the existing process
+            existing = self.universal_process_repository.get(process_id)
+            if existing is None:
+                # Process not found - this shouldn't happen in normal flow
+                # Log and continue without blocking
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning('UniversalProcess %s not found for session %s', process_id, session.session_id)
+                return
+
+            # Determine final lifecycle state based on session status
+            lifecycle_map = {
+                AdaptiveSessionStatus.COMPLETED: UniversalProcessLifecycle.COMPLETED,
+                AdaptiveSessionStatus.FAILED: UniversalProcessLifecycle.FAILED,
+                AdaptiveSessionStatus.ABORTED: UniversalProcessLifecycle.WAITING,
+                AdaptiveSessionStatus.EXECUTING: UniversalProcessLifecycle.RUNNING,
+            }
+            final_lifecycle = lifecycle_map.get(session.status, UniversalProcessLifecycle.RUNNING)
+
+            # Build update dict with only authoritative new information
+            update_data = {
+                'lifecycle': final_lifecycle,
+                'updated_at_utc': datetime.now(timezone.utc),
+            }
+
+            # Set completion timestamp when transitioning to COMPLETED
+            if final_lifecycle == UniversalProcessLifecycle.COMPLETED:
+                update_data['completed_at_utc'] = datetime.now(timezone.utc)
+
+            # Add run_id if available
+            if run_record is not None and run_record.run_id:
+                update_data['run_id'] = run_record.run_id
+
+            # Add outcome reference if available
+            if run_record is not None:
+                from iabv_v15.domain.models import ProcessReference
+                outcome_ref = ProcessReference(
+                    reference_id=run_record.run_id,
+                    owner_type=UniversalProcessOwnerType.RUN_RECORD,
+                    owner_scope=session.session_id,
+                )
+                update_data['outcome_ref'] = outcome_ref
+
+                # Map run status to outcome status
+                outcome_status_map = {
+                    RunStatus.SUCCESS: 'SUCCESS',
+                    RunStatus.FAILED: 'FAILURE',
+                    RunStatus.PARTIAL: 'PARTIAL',
+                    RunStatus.CANCELLED: 'CANCELLED',
+                }
+                update_data['outcome_status'] = outcome_status_map.get(run_record.status, 'UNKNOWN')
+
+            # Update the process
+            updated = existing.model_copy(update=update_data)
+            self.universal_process_repository.save(updated)
+
+        except Exception as exc:
+            # Failure visibility: log but do not block the request
+            # The session outcome is preserved even if UniversalProcess update fails
+            import logging
+            logging.getLogger(__name__).warning('Failed to update UniversalProcess %s for session %s: %s', process_id, session.session_id, exc, exc_info=True)
+
     def _record_learning(self, *, session: AdaptiveSession, run_record: RunRecord) -> AdaptiveSession:
         if self.experiment_lab is None:
             return session
@@ -210,6 +304,13 @@ class TaskOutcomeRecorder:
         )
         external_state_flags = self._external_state_flags(session=session, run_record=run_record)
         source_trace_ids = self._source_trace_ids(session)
+        
+        # Extract objective evidence using conservative deterministic comparison
+        objective_addressed, objective_addressed_is_observed = extract_objective_evidence(
+            expected_summary=expected_summary,
+            observed_summary=observed_summary,
+        )
+        
         metadata = {
             'assistant_kind': assistant_kind,
             'assistant_configuration': assistant_configuration.model_dump(mode='json'),
@@ -315,6 +416,8 @@ class TaskOutcomeRecorder:
                 evidence_refs=list(dict.fromkeys([*session.evidence_refs, *source_trace_ids]))[:8],
                 metadata={**metadata, 'subject_key': subject_key},
                 suite_name='adaptive_session_finalize',
+                objective_addressed=objective_addressed,
+                objective_addressed_is_observed=objective_addressed_is_observed,
             )
 
             # --- Post-execution evaluation: compare prediction vs actual ---
