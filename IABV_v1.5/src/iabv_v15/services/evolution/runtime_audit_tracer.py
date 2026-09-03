@@ -178,6 +178,8 @@ class RuntimeAuditTracer:
         self._enabled = os.environ.get('IABV_RUNTIME_TRACE', '1') != '0'
         self._in_memory: list[dict[str, Any]] = []
         self._max_in_memory = 500
+        # P0.21x-R51A: Terminal authority - ensure only one terminal event per lifecycle
+        self._terminal_emitted = False  # Tracks whether a terminal event has been emitted
 
     def configure(self, log_dir: str | Path) -> None:
         """Set or update the log directory (called once bootstrap knows it)."""
@@ -471,7 +473,15 @@ class RuntimeAuditTracer:
         Emitted only when the process reaches its known normal shutdown path.
         The event represents an actual normal application/process exit.
         Does NOT infer normal exit merely because the process disappeared.
+
+        P0.21x-R51A: Terminal authority - only one terminal event per lifecycle.
+        Returns None if a terminal event was already emitted.
         """
+        with self._lock:
+            if self._terminal_emitted:
+                # Terminal already emitted - reject duplicate
+                return None
+            self._terminal_emitted = True
         return self.trace(
             'runtime_process_exit',
             exit_code=exit_code,
@@ -493,7 +503,15 @@ class RuntimeAuditTracer:
         Emitted when the real top-level application/process exception path
         demonstrates a crash. Uses existing exception/error evidence.
         Does NOT classify arbitrary disappearance as crash.
+
+        P0.21x-R51A: Terminal authority - only one terminal event per lifecycle.
+        Returns None if a terminal event was already emitted.
         """
+        with self._lock:
+            if self._terminal_emitted:
+                # Terminal already emitted - reject duplicate
+                return None
+            self._terminal_emitted = True
         return self.trace(
             'runtime_process_crash',
             error_type=error_type,
