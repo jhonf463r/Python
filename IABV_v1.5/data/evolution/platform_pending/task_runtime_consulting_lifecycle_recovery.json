@@ -39,6 +39,13 @@
       ],
       "next_structural_step": "Move the causal-failure follow-up gate into a shared reasoning budget / metacognition layer consumed by the orchestrator, so future UI surfaces reuse the same rule without duplicating ViewModel logic."
     },
+    "p021_additions": {
+      "covered_by_branch": "codex/p021-chatgpt-reuse-processing-fix",
+      "root_cause_evidence": "Live runtime_audit showed explicit ChatGPT requests ending with dispatch_terminal success but interaction_outcome outcome=reused_context and is_final=false. The UI then kept acting as if follow-up work was pending even though no new ChatGPT answer had been captured.",
+      "guard_added": "Explicit external consultations now force a new external consultation through ToolTeachService instead of allowing reuse_guard_active. If a reused_context result still returns, ControlCenterViewModel finalizes it as reused_context_resolved and answers status questions from telemetry instead of heavy local inference.",
+      "attractor_followup": "New platform task runtime_semantic_attractor_diagnostics tracks the broader concept/proximity algorithm so this rule can be generalized without creating another brain.",
+      "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF"
+    },
     "verification_status": "CODE_VERIFIED_AWAITING_LIVE_PROOF",
     "p03_live_proof_result": "VISUAL_ALIGNMENT_FAILED_BLACK_CAPTURE",
     "p03_live_proof_detail": "Runtime cycle did not freeze, but visual handoff failed: ChatGPT window was offscreen (rect=[-32000,-32000,199,34]), capture was black (blank_probability=0.98), status was incorrectly reported as visual_captured. P0.3 fix: status now correctly set to visual_unresolved with guided handoff message.",

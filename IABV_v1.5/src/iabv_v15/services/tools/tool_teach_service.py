@@ -557,7 +557,11 @@ class ToolTeachService:
                 selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
         selection = self._enforce_explicit_external_selection(request=request, selection=selection, suggested_tool_id=suggested_tool_id)
         tool_id = str(selection.selected_tool_id or suggested_tool_id)
-        reusable_pattern = self._pattern_from_selection(selection)
+        force_new_external = (
+            bool(goal_parameters.get('force_new_external_consultation', False))
+            and str(goal_parameters.get('consultation_scope') or '').strip().lower() == 'external_assistant'
+        )
+        reusable_pattern = None if force_new_external else self._pattern_from_selection(selection)
         actions = self._build_actions(request, tool_id, reusable_pattern)
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
@@ -603,14 +607,15 @@ class ToolTeachService:
                 'already_resolved': selection.already_resolved,
                 'equivalent_pattern_exists': selection.equivalent_pattern_exists,
                 'improvement_already_implemented': selection.improvement_already_implemented,
-                'reuse_guard_active': bool(selection.already_resolved or selection.equivalent_pattern_exists),
+                'reuse_guard_active': bool((selection.already_resolved or selection.equivalent_pattern_exists) and not force_new_external),
+                'force_new_external_consultation': force_new_external,
                 'reused_pattern_id': selection.reusable_pattern_id or '',
                 'reused_episode_id': selection.reusable_episode_id or '',
                 'adapter_exists': selection.adapter_exists,
                 'selected_mode': selection.selected_mode.value,
                 'selector_reason': selection.reason,
                 'requested_tool_id': suggested_tool_id,
-                'reused_actions_from_pattern': bool(reusable_pattern is not None and actions and all(item.metadata.get('reused_from_pattern') for item in actions)),
+                'reused_actions_from_pattern': bool((not force_new_external) and reusable_pattern is not None and actions and all(item.metadata.get('reused_from_pattern') for item in actions)),
                 'requested_assistant_kind': str(goal_parameters.get('assistant_preference') or goal_parameters.get('assistant_kind') or ''),
                 'assistant_kind': str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or ''),
                 'actual_assistant_kind': self._assistant_family_for_tool_id(tool_id),
