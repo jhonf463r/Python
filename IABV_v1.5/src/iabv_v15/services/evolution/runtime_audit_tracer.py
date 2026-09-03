@@ -432,6 +432,77 @@ class RuntimeAuditTracer:
         return event
 
     # ------------------------------------------------------------------
+    # P0.21x-R51: Runtime lifecycle observability
+    # ------------------------------------------------------------------
+
+    def trace_runtime_process_started(
+        self,
+        *,
+        pid: int = 0,
+        workspace: str = '',
+        branch: str = '',
+        head: str = '',
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Record runtime process start event at the canonical process lifecycle boundary.
+
+        Emitted once at the real canonical process/application lifecycle boundary.
+        Includes authoritative process identity information available at startup.
+        """
+        return self.trace(
+            'runtime_process_started',
+            pid=pid or os.getpid(),
+            workspace=str(workspace) if workspace else '',
+            branch=branch,
+            head=head,
+            **extra,
+        )
+
+    def trace_runtime_process_exit(
+        self,
+        *,
+        exit_code: int = 0,
+        reason: str = '',
+        duration_ms: float = 0.0,
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Record runtime process exit event on normal shutdown path.
+
+        Emitted only when the process reaches its known normal shutdown path.
+        The event represents an actual normal application/process exit.
+        Does NOT infer normal exit merely because the process disappeared.
+        """
+        return self.trace(
+            'runtime_process_exit',
+            exit_code=exit_code,
+            reason=reason[:200] if reason else '',
+            duration_ms=round(duration_ms, 1),
+            **extra,
+        )
+
+    def trace_runtime_process_crash(
+        self,
+        *,
+        error_type: str = '',
+        error_message: str = '',
+        traceback_summary: str = '',
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Record runtime process crash event on top-level exception path.
+
+        Emitted when the real top-level application/process exception path
+        demonstrates a crash. Uses existing exception/error evidence.
+        Does NOT classify arbitrary disappearance as crash.
+        """
+        return self.trace(
+            'runtime_process_crash',
+            error_type=error_type,
+            error_message=error_message[:500] if error_message else '',
+            traceback_summary=traceback_summary[:1000] if traceback_summary else '',
+            **extra,
+        )
+
+    # ------------------------------------------------------------------
     # P0.24: Build-State Sovereignty trace helpers
     # ------------------------------------------------------------------
 

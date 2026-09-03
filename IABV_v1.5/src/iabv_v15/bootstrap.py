@@ -5340,6 +5340,20 @@ class AppBootstrap:
                         pass
                     setattr(self, handle_name, None)
 
+            # Emit runtime_process_exit on normal shutdown path
+            try:
+                from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                import time as _time
+                tracer = get_runtime_tracer()
+                duration_ms = (_time.perf_counter() - self._timeline._t0) * 1000.0
+                tracer.trace_runtime_process_exit(
+                    exit_code=0,
+                    reason='normal_shutdown',
+                    duration_ms=duration_ms,
+                )
+            except Exception:
+                pass
+
 
 
 
