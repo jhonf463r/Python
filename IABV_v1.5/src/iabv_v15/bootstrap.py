@@ -5304,8 +5304,9 @@ class AppBootstrap:
             # P0.21x-R51B: Track normal completion for causal terminal classification
             _normal_completion = True
             return app.exec()
-        except Exception as fatal:
+        except BaseException as fatal:
             # P0.21x-R51B: Mark that we did NOT complete normally (exception path)
+            # P0.21x-R51C: Catch BaseException to include KeyboardInterrupt, SystemExit
             _normal_completion = False
             # Write crash log so the error survives hidden-console launches
             import traceback
