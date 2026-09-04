@@ -330,7 +330,12 @@ from iabv_v15.services.tools.tool_validator import ToolValidator
 # F14: Authority integration imports
 from iabv_v15.services.trust.authority_client import AuthorityClient
 from iabv_v15.services.trust.capability_action_bridge import CapabilityActionBridge
-from iabv_v15.services.trust.post_action_observer import PostActionObserver
+
+# F14: PostActionObserver is optional - import conditionally
+try:
+    from iabv_v15.services.trust.post_action_observer import PostActionObserver
+except ImportError:
+    PostActionObserver = None  # type: ignore
 from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
 from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
@@ -797,7 +802,8 @@ class AppBootstrap:
             # Attempt to connect to authority process
             self.authority_client = AuthorityClient()
             self.capability_action_bridge = CapabilityActionBridge(self.authority_client)
-            self.post_action_observer = PostActionObserver(self.tool_memory)
+            if PostActionObserver is not None:
+                self.post_action_observer = PostActionObserver(self.tool_memory)
             logger.info("F14: Authority components wired successfully")
         except Exception as e:
             logger.warning(f"F14: Authority components not available: {e}")

@@ -44,8 +44,13 @@ from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
 from iabv_v15.services.tools.tool_sandbox import ToolSandbox
 from iabv_v15.services.tools.tool_validator import ToolValidator
 from iabv_v15.services.trust.capability_action_bridge import CapabilityActionBridge, ActionRequest
-from iabv_v15.services.trust.post_action_observer import PostActionObserver
 from iabv_v15.services.trust.capability_lifecycle import acquire_capability_for_execution
+
+# F14: PostActionObserver is optional - import conditionally
+try:
+    from iabv_v15.services.trust.post_action_observer import PostActionObserver
+except ImportError:
+    PostActionObserver = None  # type: ignore
 
 
 class ToolTeachService:
@@ -69,7 +74,7 @@ class ToolTeachService:
         synaptic_router: Any | None = None,
         # F14: Authority integration
         capability_action_bridge: CapabilityActionBridge | None = None,
-        post_action_observer: PostActionObserver | None = None,
+        post_action_observer: Any | None = None,  # PostActionObserver if available
     ) -> None:
         self.registry = registry
         self.memory = memory
