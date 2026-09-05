@@ -119,20 +119,18 @@ class TestAdequacyWithObjectiveEvidence:
     """Test that adequacy computation respects objective evidence."""
 
     def test_adequate_reachable_only_with_independent_observation(self):
-        """Scenario A: ADEQUATE ONLY when independently observed (True, True)."""
+        """Scenario A: ADEQUATE: ONLY when independently observed (True, True) WITH provenance"""
         classification, reason = compute_adequacy(
-            expected_summary="file created",
-            observed_summary="file created successfully",
+            expected_summary="test objective",
+            observed_summary="test result",
             success=True,
             precision=0.9,
-            robustness=0.8,
-            user_progress=0.8,
             objective_addressed=True,
             objective_addressed_is_observed=True,  # INDEPENDENT OBSERVATION required
+            evidence_source="pytest",  # Provenance required
         )
-        
         assert classification == AdequacyClassification.ADEQUATE
-        assert "independently observed objective addressed" in reason
+        assert "independently observed objective addressed with provenance" in reason
 
     def test_textual_match_not_adequate(self):
         """Scenario B: TEXTUAL MATCH (True, False) is NOT ADEQUATE."""
@@ -244,6 +242,34 @@ class TestAdequacyWithObjectiveEvidence:
         )
         
         assert classification != AdequacyClassification.ADEQUATE
+
+    def test_forged_true_true_without_provenance_rejected(self):
+        """Anti-forgery test: caller-supplied True/True WITHOUT provenance is rejected.
+        
+        This is the critical Codex finding: a caller cannot simply pass
+        objective_addressed=True, objective_addressed_is_observed=True
+        to fabricate ADEQUATE classification without providing verifiable
+        provenance (evidence_source, observer_identity, or evidence_reference).
+        """
+        classification, reason = compute_adequacy(
+            expected_summary="file created",
+            observed_summary="file created successfully",
+            success=True,
+            precision=0.9,
+            robustness=0.8,
+            user_progress=0.8,
+            objective_addressed=True,  # FORGED: caller asserts True
+            objective_addressed_is_observed=True,  # FORGED: caller asserts True
+            # NO provenance provided - this is the forgery
+            evidence_source="",  # Empty
+            observer_identity="",  # Empty
+            evidence_reference="",  # Empty
+        )
+        
+        # Must NOT be ADEQUATE - forgery detected
+        assert classification != AdequacyClassification.ADEQUATE
+        assert classification == AdequacyClassification.INCONCLUSIVE
+        assert "forged assertion" in reason or "provenance" in reason
 
 
 class TestConservativeSemantics:

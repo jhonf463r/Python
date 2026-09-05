@@ -63,7 +63,7 @@ def test_adequacy_computation_minimal():
     assert classification == AdequacyClassification.INCONCLUSIVE
     assert "caller assertion" in reason
     
-    # ADEQUATE: ONLY when independently observed (True, True)
+    # ADEQUATE: ONLY when independently observed (True, True) WITH provenance
     classification, reason = compute_adequacy(
         expected_summary="test objective",
         observed_summary="test result",
@@ -71,9 +71,10 @@ def test_adequacy_computation_minimal():
         precision=0.9,
         objective_addressed=True,
         objective_addressed_is_observed=True,  # INDEPENDENT OBSERVATION required
+        evidence_source="pytest",  # Provenance required
     )
     assert classification == AdequacyClassification.ADEQUATE
-    assert "independently observed objective addressed" in reason
+    assert "independently observed objective addressed with provenance" in reason
 
 
 def test_experiment_lab_with_adequacy():
