@@ -1306,6 +1306,349 @@ Each stage requires independent verification before proceeding to the next.
 
 ---
 
+## R14. DUAL-FRAME / MULTI-AGENT EVIDENCE PROTOCOL
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Strategic Principle
+
+External AIs and tools that audit, test, or develop IABV should be able to use, when evidence and interfaces permit, IABV's own observation, context, state, and diagnostic capabilities as an additional information source about the system being studied.
+
+**This does NOT mean blindly trusting IABV.**
+
+The goal is to establish a model of:
+
+```
+EXTERNAL OBSERVATION + IABV SELF-OBSERVATION + REPOSITORY EVIDENCE + RUNTIME EVIDENCE
+```
+
+to produce a more complete representation of reality.
+
+### Two Perspectives
+
+**EXTERNAL FRAME** (External AI):
+- Observes
+- Inspects
+- Formulates hypotheses
+- Executes tests when appropriate
+- Analyzes evidence
+- Audits results
+
+**IABV FRAME** (IABV):
+- Observes its own state
+- Observes environment
+- Records resources
+- Records capabilities
+- Declares uncertainty
+- Preserves experience
+- Identifies contradictions
+- Explains what it believes it knows
+
+**Neither frame should be considered infallible.**
+
+### Triangulation Model
+
+```
+EXTERNAL OBSERVATION
+        +
+IABV SELF-OBSERVATION
+        +
+REPOSITORY STATE
+        +
+RUNTIME STATE
+        ↓
+EVIDENCE RECONCILIATION
+        ↓
+CONSISTENT STATE
+or
+CONTRADICTION
+or
+UNKNOWN
+```
+
+The existence of four sources does NOT imply equal epistemological weight. Weight depends on available evidence.
+
+### IABV-AS-INSTRUMENT
+
+Claude / Codex / Devin / ChatGPT / future agents may, when real infrastructure exists:
+- Query IABV state
+- Query capabilities
+- Query resources
+- Query context
+- Query relevant experience
+- Query self-report
+- Query previous observations
+- Use this data as additional evidence
+
+**But:**
+- `IABV SELF-REPORT ≠ TRUTH`
+- `IABV OBSERVATION ≠ AUTOMATIC VALIDATION`
+
+External AI must be able to contrast what IABV declares with independent evidence.
+
+### External AI as Auxiliary Capability
+
+Complementarily, IABV may eventually use external agents to:
+- Obtain a second perspective
+- Investigate contradictions
+- Verify hypotheses
+- Perform specialized audits
+- Obtain evidence IABV cannot produce itself
+- Compare models/interpretations
+- Evaluate proposals
+
+This should be viewed as:
+- `EXTERNAL AGENT = AUXILIARY EVIDENCE / CAPABILITY`
+
+NOT:
+- `EXTERNAL AGENT = AUTHORITY`
+
+### Dual Audit
+
+Future goal:
+
+```
+IABV CLAIM
+      ↓
+EXTERNAL AUDIT
+      ↓
+COUNTEREVIDENCE
+      ↓
+RECONCILIATION
+```
+
+Simultaneously:
+
+```
+EXTERNAL AGENT CLAIM
+      ↓
+IABV OBSERVATION
+      ↓
+COUNTEREVIDENCE
+      ↓
+RECONCILIATION
+```
+
+This enables:
+- IABV to audit external claims
+- External agents to audit IABV claims
+
+### Disagreement Matrix
+
+Future matrix:
+
+| External      | IABV          | Interpretation                   |
+| ------------- | ------------- | -------------------------------- |
+| correct       | correct       | agreement                        |
+| correct       | incorrect     | IABV calibration problem         |
+| incorrect     | correct       | external-agent reasoning problem |
+| incorrect     | incorrect     | insufficient/shared evidence     |
+| unknown       | unknown       | unresolved                       |
+| contradictory | contradictory | evidence reconciliation required  |
+
+Do NOT automatically assume which side is correct.
+
+### IABV-AS-INSTRUMENT Principle
+
+IABV may progressively become an instrument that helps other intelligences study the system containing IABV.
+
+Future examples:
+- Auditor queries resource state through IABV
+- Auditor queries capabilities IABV believes available
+- Auditor requests contextual reconstruction
+- Auditor compares self-report with runtime
+- Auditor uses IABV experience to understand an anomaly
+
+This should NOT substitute independent evidence.
+
+### Multi-Agent Learning
+
+Future goal:
+
+```
+OBSERVE
+→
+CLAIM
+→
+SECOND PERSPECTIVE
+→
+COUNTEREVIDENCE
+→
+RECONCILE
+→
+UPDATE
+→
+GENERALIZE
+```
+
+Accumulated experience should preserve:
+- Agent
+- Perspective
+- Claim
+- Evidence
+- Counterevidence
+- Resolution
+- Uncertainty
+- Lesson
+- Applicability
+
+### Human-IABV-Agent Triad
+
+Future architecture:
+
+```
+             HUMAN
+            /     \
+           /       \
+       IABV ------- EXTERNAL AI
+```
+
+Each vertex contributes:
+
+**HUMAN:** intent / authority / governance / judgment
+
+**IABV:** self-state / context / experience / internal observations
+
+**EXTERNAL AI:** independent analysis / alternative hypotheses / specialized capabilities
+
+Goal: Enable evidence exchange without losing traceability.
+
+### Context Expansion (Connection to R1-R13)
+
+Future audit may analyze:
+
+```
+HUMAN INTENT
++
+IABV STATE
++
+EXTERNAL AGENT STATE
++
+DEVICE
++
+RESOURCES
++
+MODEL
++
+TOOLS
++
+TIME
++
+ENVIRONMENT
++
+GOVERNANCE
+```
+
+and study how these conditions influence results.
+
+### Bias / Friction Analysis
+
+Interaction between:
+
+`HUMAN × IABV × EXTERNAL AI`
+
+may generate frictions not necessarily belonging to a single component.
+
+Therefore:
+
+`observed failure ≠ algorithm bug`
+
+Must study:
+
+`algorithm × model × tool × context × resource × human × agent`
+
+### IABV Learning from the Audit Itself
+
+Future goal: When external AI audits IABV, the result should eventually become IABV experience.
+
+Conceptual example:
+
+```
+Claude observes X
+        ↓
+Claude claims Y
+        ↓
+IABV observes Z
+        ↓
+Contradiction
+        ↓
+Evidence reconciliation
+        ↓
+Validated conclusion
+        ↓
+Experience
+        ↓
+Future decision
+```
+
+### Security / Governance
+
+External AI use of IABV must respect:
+- Authority
+- Capability
+- Lease
+- Execution context
+- Approval gates
+- Secret isolation
+- Resource limits
+
+External AI does NOT obtain authority simply by querying IABV.
+
+Maintain:
+
+`INFORMATION ACCESS ≠ EXECUTION AUTHORITY`
+
+### Epistemic Safety
+
+Maintain:
+
+- `CLAIM ≠ TRUTH`
+- `SELF-REPORT ≠ TRUTH`
+- `SECOND OPINION ≠ TRUTH`
+- `RECOMMENDATION ≠ PROOF`
+- `PERSISTED EXPERIENCE ≠ CURRENT STATE`
+- `HISTORICAL EVIDENCE ≠ CURRENT RUNTIME`
+
+All sources must preserve provenance.
+
+### Relation to Future Self-Development
+
+This architecture enables:
+
+```
+IABV OBSERVES ITSELF
+        ↓
+IABV OBSERVES EXTERNAL AUDIT
+        ↓
+IABV COMPARES PERSPECTIVES
+        ↓
+IABV IDENTIFIES GAP
+        ↓
+IABV SELECTS NEXT EXPERIMENT
+        ↓
+IABV USES EXTERNAL CAPABILITY
+        ↓
+IABV VALIDATES
+        ↓
+IABV LEARNS
+        ↓
+IABV IMPROVES FUTURE DECISION
+```
+
+This is a goal AFTER G0.
+
+### No Confusion with Superiority
+
+Do NOT record:
+> IABV is superior to Claude/Codex/Devin.
+
+Correct hypothesis:
+> IABV may evolve toward a system capable of integrating its own observations and external perspectives in a cumulative and verifiable manner.
+
+Any future superiority must be demonstrated experimentally.
+
+---
+
 ## R. CURRENT ROADMAP
 
 ### NOW
