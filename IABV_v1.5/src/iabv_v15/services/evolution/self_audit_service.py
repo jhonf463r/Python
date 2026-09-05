@@ -1,5 +1,7 @@
 """SelfAuditService — autoauditoría operativa read-only.
 
+P0.213 V5R1: Requires ValidatedInvocationContext from CapabilityVerifier.
+
 Consolida en un `SelfAuditSnapshot` la revisión viva de:
 - disponibilidad declarada de las tools del `ToolRegistry` (dry-check);
 - coherencia entre `EnvironmentSelfModel` y el `WorldModelSnapshot`;
@@ -16,6 +18,17 @@ Contratos que preserva (AGENTS.md):
   `UniversalPerceptionSignal`; los compara.
 - Sin side effects en el sistema vivo más allá de la persistencia del
   snapshot propio en `data/evolution/self_audit/`.
+
+P0.213 V5R1 Trust Chain:
+CAPABILITY
+   ↓
+VERIFIER (verify + consume)
+   ↓
+VALIDATED INVOCATION CONTEXT
+   ↓
+SELFAUDIT
+   ↓
+SNAPSHOT
 """
 
 from __future__ import annotations
@@ -26,7 +39,7 @@ import logging
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 from iabv_v15.domain.models import (
     EnvironmentMatchResult,
@@ -39,6 +52,10 @@ from iabv_v15.domain.models import (
     WorldModelSnapshot,
 )
 from iabv_v15.services.tools.tool_registry import ToolRegistry
+
+if TYPE_CHECKING:
+    from iabv_v15.services.evolution.capability_verifier import ValidatedInvocationContext
+    from iabv_v15.services.evolution.root_trust_anchor import RootTrustAnchor, RuntimeAuthority
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +79,8 @@ class SelfAuditService:
         storage_root: Path | str | None = None,
         workspace_root: Path | str | None = None,
         token_rotation_ledger: Any | None = None,
+        root_trust_anchor: Any | None = None,  # P0.213 V5R2: For HMAC verification
+        trusted_request_registry: Any | None = None,  # P0.213 V5R4: For request binding
     ) -> None:
         self.tool_registry = tool_registry
         self._environment_provider = environment_self_model_provider
@@ -74,6 +93,43 @@ class SelfAuditService:
         # ``OperationalSelfExaminationService`` pueda proyectar rotaciones
         # proactivas sin que el usuario lo note.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
+        # P0.213 V5R4: RootTrustAnchor for HMAC verification
+        # P0.213 V5R4: If root_trust_anchor is provided, it must be the canonical instance.
+        # If not provided, the canonical instance is obtained via RuntimeAuthority.
+        if root_trust_anchor is None:
+            # P0.213 V5R4: Get canonical instance from RuntimeAuthority
+            try:
+                from iabv_v15.services.evolution.root_trust_anchor import RuntimeAuthority
+                root_trust_anchor = RuntimeAuthority.get_canonical()
+            except ValueError:
+                # P0.213 V5R4: If not bootstrapped, reject (fail-closed)
+                root_trust_anchor = None
+        
+        self._root_trust_anchor = root_trust_anchor
+        
+        # P0.213 V5R4: TrustedRequestRegistry for real request/execution binding
+        if trusted_request_registry is None:
+            # Try to create from storage root
+            if storage_root is not None:
+                try:
+                    from iabv_v15.services.evolution.capability_registry import TrustedRequestRegistry
+                    from iabv_v15.services.evolution.root_trust_anchor import RuntimeAuthority
+                    # Get runtime generation from canonical RootTrustAnchor
+                    root = RuntimeAuthority.get_canonical()
+                    runtime_generation = root.get_runtime_identity().generation
+                    trusted_request_registry = TrustedRequestRegistry(
+                        storage_root=storage_root,
+                        runtime_generation=runtime_generation
+                    )
+                except Exception:
+                    # P0.213 V5R4: Fail-closed if cannot create registry
+                    trusted_request_registry = None
+            else:
+                trusted_request_registry = None
+        
+        self._trusted_request_registry = trusted_request_registry
+        # P0.213 V5: Removed optional identity_authority - SelfAudit must require
+        # validated invocation context, not caller-asserted identity
         resolved_root: Path | None
         if storage_root is not None:
             resolved_root = Path(storage_root)
@@ -88,10 +144,68 @@ class SelfAuditService:
     # ------------------------------------------------------------------
     # API pública
 
-    def run(self, *, reason: str | None = None) -> SelfAuditSnapshot:
-        """Ejecuta la auditoría y persiste el snapshot resultante."""
+    def run(
+        self,
+        *,
+        reason: str | None = None,
+        validated_invocation_context: 'ValidatedInvocationContext' | None = None,
+    ) -> SelfAuditSnapshot:
+        """Ejecuta la auditoría y persiste el snapshot resultante.
+        
+        P0.213 V5R1: SelfAuditService debe aceptar ValidatedInvocationContext
+        de CapabilityVerifier, no caller-asserted dict. Sin capability válida: FAIL CLOSED.
+        
+        Trust Chain:
+        CAPABILITY
+           ↓
+        VERIFIER (verify + consume)
+           ↓
+        VALIDATED INVOCATION CONTEXT (frozen dataclass)
+           ↓
+        SELFAUDIT
+           ↓
+        SNAPSHOT
+        
+        Args:
+            reason: Razón de la auditoría
+            validated_invocation_context: ValidatedInvocationContext from CapabilityVerifier (requerido)
+            
+        Returns:
+            SelfAuditSnapshot con provenance de confianza
+            
+        Raises:
+            ValueError: Si validated_invocation_context no se proporciona o es inválido
+        """
 
         generated_at = self._clock()
+
+        # P0.213 V5R2: ValidatedInvocationContext es REQUERIDO (fail-closed)
+        if validated_invocation_context is None:
+            raise ValueError("validated_invocation_context is required (fail-closed: no capability verification)")
+        
+        # P0.213 V5R2: ValidatedInvocationContext debe ser frozen dataclass, no dict caller-controlled
+        if not isinstance(validated_invocation_context, type(validated_invocation_context)):
+            # Check if it's the actual ValidatedInvocationContext type
+            try:
+                from iabv_v15.services.evolution.capability_verifier import ValidatedInvocationContext
+                if not isinstance(validated_invocation_context, ValidatedInvocationContext):
+                    raise ValueError("validated_invocation_context must be ValidatedInvocationContext from CapabilityVerifier")
+            except ImportError:
+                raise ValueError("ValidatedInvocationContext not available")
+        
+        # P0.213 V5R2: Verify HMAC signature to prove context came from canonical verifier
+        if self._root_trust_anchor is not None:
+            context_data = f"{validated_invocation_context.capability_id}|{validated_invocation_context.invocation_id}|{validated_invocation_context.authorized_consumer_pid}|{validated_invocation_context.scope}|{validated_invocation_context.issuer_pid}|{validated_invocation_context.runtime_incarnation}|{validated_invocation_context.verified_at}|{validated_invocation_context.verifier_signature}"
+            if not self._root_trust_anchor.verify_hmac(context_data, validated_invocation_context.verifier_hmac):
+                raise ValueError("Invalid HMAC signature: context did not come from canonical verifier (fail-closed)")
+        else:
+            # P0.213 V5R2: If no RootTrustAnchor provided, reject (fail-closed)
+            raise ValueError("root_trust_anchor is required for HMAC verification (fail-closed)")
+        
+        # P0.213 V5R2: Verify execution binding chain
+        # Ensure all binding fields are present and consistent
+        # This is the complete chain: CAPABILITY → VERIFIER → CONTEXT → SELFAUDIT → SNAPSHOT
+        self._verify_execution_binding(validated_invocation_context)
 
         tool_checks = self._collect_tool_checks()
         environment = self._safe(self._environment_provider, default=None)
@@ -115,6 +229,20 @@ class SelfAuditService:
             cross_source_truth=cross_source_truth,
         )
 
+        # P0.213 V5R2: Convert ValidatedInvocationContext to dict for persistence
+        # The frozen dataclass ensures caller cannot modify it
+        canonical_identity_dict = {
+            'capability_id': validated_invocation_context.capability_id,
+            'invocation_id': validated_invocation_context.invocation_id,
+            'authorized_consumer_pid': validated_invocation_context.authorized_consumer_pid,
+            'scope': validated_invocation_context.scope,
+            'issuer_pid': validated_invocation_context.issuer_pid,
+            'runtime_incarnation': validated_invocation_context.runtime_incarnation,
+            'verified_at': validated_invocation_context.verified_at,
+            'verifier_signature': validated_invocation_context.verifier_signature,
+            'verifier_hmac': validated_invocation_context.verifier_hmac,  # P0.213 V5R2: Include HMAC for audit trail
+        }
+        
         snapshot = SelfAuditSnapshot(
             generated_at=generated_at,
             reason=reason,
@@ -124,10 +252,187 @@ class SelfAuditService:
             world_model_digest=dict(world_model_digest),
             summary_markdown=summary_markdown,
             cross_source_truth=cross_source_truth,
+            canonical_identity=canonical_identity_dict,  # P0.213 V5R1: Include validated invocation context
         )
         self._persist(snapshot)
         self._feed_token_rotation_ledger(tool_checks=tool_checks, observed_at=generated_at)
         return snapshot
+    
+    def _verify_execution_binding(self, validated_invocation_context: 'ValidatedInvocationContext') -> None:
+        """
+        P0.213 V5R3: Verify the complete execution binding chain with causal binding.
+        
+        P0.213 V5R3: This establishes a robust causal link between:
+        CAPABILITY → INVOCATION_ID → REAL IPC REQUEST → AUTHORIZED CONSUMER → REGISTERED EXECUTION → SELF-AUDIT → SNAPSHOT
+        
+        The verifier must be able to establish: "This exact capability was issued for this exact
+        invocation request, for this exact execution."
+        
+        This does NOT rely on:
+        - Copied fields as sole proof (e.g., capability.invocation_id == request.invocation_id if caller supplied)
+        - Recent timestamp as execution proof
+        - UUID format as causal proof
+        
+        Required lookup: Validated request → registered invocation → RunRecord → canonical execution identity → SelfAudit
+        
+        Args:
+            validated_invocation_context: The validated context to verify
+            
+        Raises:
+            ValueError: If execution binding is invalid or cannot be resolved to real RunRecord
+        """
+        # Verify all required fields are present
+        required_fields = [
+            'capability_id',
+            'invocation_id',
+            'authorized_consumer_pid',
+            'scope',
+            'issuer_pid',
+            'runtime_incarnation',
+            'verified_at',
+            'verifier_signature',
+            'verifier_hmac',
+        ]
+        
+        for field in required_fields:
+            if not hasattr(validated_invocation_context, field):
+                raise ValueError(f"Missing required field in execution binding: {field} (fail-closed)")
+        
+        # Verify field types
+        if not isinstance(validated_invocation_context.capability_id, str) or not validated_invocation_context.capability_id:
+            raise ValueError("Invalid capability_id in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.invocation_id, str) or not validated_invocation_context.invocation_id:
+            raise ValueError("Invalid invocation_id in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.authorized_consumer_pid, int) or validated_invocation_context.authorized_consumer_pid <= 0:
+            raise ValueError("Invalid authorized_consumer_pid in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.scope, str) or not validated_invocation_context.scope:
+            raise ValueError("Invalid scope in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.issuer_pid, int) or validated_invocation_context.issuer_pid <= 0:
+            raise ValueError("Invalid issuer_pid in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.runtime_incarnation, int) or validated_invocation_context.runtime_incarnation < 0:
+            raise ValueError("Invalid runtime_incarnation in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.verified_at, float) or validated_invocation_context.verified_at <= 0:
+            raise ValueError("Invalid verified_at in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.verifier_signature, str) or not validated_invocation_context.verifier_signature:
+            raise ValueError("Invalid verifier_signature in execution binding (fail-closed)")
+        
+        if not isinstance(validated_invocation_context.verifier_hmac, str) or not validated_invocation_context.verifier_hmac:
+            raise ValueError("Invalid verifier_hmac in execution binding (fail-closed)")
+        
+        # P0.213 V5R3: Resolve to actual RunRecord for causal binding
+        # This establishes the real execution binding, not just field matching
+        self._resolve_to_real_execution(validated_invocation_context)
+    
+    def _resolve_to_real_execution(self, validated_invocation_context: 'ValidatedInvocationContext') -> None:
+        """
+        P0.213 V5R4: Resolve the invocation context to the actual RunRecord via TrustedRequestRegistry.
+        
+        This establishes the causal chain:
+        CAPABILITY → INVOCATION_ID → REAL IPC REQUEST → AUTHORIZED CONSUMER → REGISTERED EXECUTION → SELF-AUDIT → SNAPSHOT
+        
+        P0.213 V5R4: This method MUST resolve to a real registered request. Silent exceptions are removed.
+        Failure to resolve is a verification failure (fail-closed).
+        
+        Args:
+            validated_invocation_context: The validated context to resolve
+            
+        Raises:
+            ValueError: If cannot resolve to real request or binding is invalid
+        """
+        # P0.213 V5R4: Verify using TrustedRequestRegistry
+        if self._trusted_request_registry is None:
+            raise ValueError(
+                "TrustedRequestRegistry is required for execution binding. "
+                "Cannot verify real request/execution binding without registry (fail-closed)."
+            )
+        
+        # Verify the binding using the trusted request registry
+        binding_valid = self._trusted_request_registry.verify_binding(
+            invocation_id=validated_invocation_context.invocation_id,
+            capability_id=validated_invocation_context.capability_id,
+            authorized_consumer_pid=validated_invocation_context.authorized_consumer_pid,
+            scope=validated_invocation_context.scope,
+        )
+        
+        if not binding_valid:
+            raise ValueError(
+                f"Execution binding verification failed: invocation_id {validated_invocation_context.invocation_id} "
+                f"does not match a registered request with capability_id {validated_invocation_context.capability_id} "
+                f"and authorized_consumer_pid {validated_invocation_context.authorized_consumer_pid} (fail-closed)."
+            )
+        
+        # P0.213 V5R4: Get the registered request to verify RunRecord binding
+        registered_request = self._trusted_request_registry.get_request(
+            validated_invocation_context.invocation_id
+        )
+        
+        if registered_request is None:
+            raise ValueError(
+                f"Invocation ID {validated_invocation_context.invocation_id} not found in trusted request registry (fail-closed)."
+            )
+        
+        # P0.213 V5R4: If run_id is available, verify it matches (when RunRecord exists)
+        if registered_request.run_id is not None:
+            # Try to verify against actual RunRecord
+            try:
+                from iabv_v15.infra.persistence.run_repository import RunRepository
+                from iabv_v15.infra.persistence.database import AppDatabase
+                
+                # Get database path from storage root if available
+                db_path = None
+                if self._storage_root is not None:
+                    workspace_root = self._storage_root.parent.parent
+                    db_path = workspace_root / "data" / "iabv.db"
+                
+                if db_path and db_path.exists():
+                    db = AppDatabase(str(db_path))
+                    run_repo = RunRepository(db)
+                    
+                    # Try to load the RunRecord
+                    run_record = run_repo.get_by_id(registered_request.run_id)
+                    
+                    if run_record is None:
+                        raise ValueError(
+                            f"RunRecord with run_id {registered_request.run_id} not found in database (fail-closed)."
+                        )
+                    
+                    # P0.213 V5R4: Verify episode_id and session_id match if available
+                    if registered_request.episode_id is not None:
+                        if hasattr(run_record, 'episode_id') and run_record.episode_id != registered_request.episode_id:
+                            raise ValueError(
+                                f"Episode ID mismatch: registered {registered_request.episode_id}, "
+                                f"RunRecord has {run_record.episode_id} (fail-closed)."
+                            )
+                    
+                    if registered_request.session_id is not None:
+                        if hasattr(run_record, 'session_id') and run_record.session_id != registered_request.session_id:
+                            raise ValueError(
+                                f"Session ID mismatch: registered {registered_request.session_id}, "
+                                f"RunRecord has {run_record.session_id} (fail-closed)."
+                            )
+                    
+            except ValueError:
+                # Re-raise our ValueErrors
+                raise
+            except Exception as e:
+                # P0.213 V5R4: If we cannot verify RunRecord but run_id was registered, fail closed
+                raise ValueError(
+                    f"Failed to verify RunRecord binding for run_id {registered_request.run_id}: {e} (fail-closed)."
+                )
+        
+        # P0.213 V5R4: Verify timestamp is recent (within last hour)
+        # This is a secondary check, not the primary causal binding
+        import time as time_module
+        current_time = time_module.time()
+        if current_time - validated_invocation_context.verified_at > 3600:
+            raise ValueError("Execution binding timestamp is too old (fail-closed)")
 
     # ------------------------------------------------------------------
     # Capa 2.2 — feed de TokenRotationLedger

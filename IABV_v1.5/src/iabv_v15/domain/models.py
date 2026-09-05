@@ -2721,6 +2721,9 @@ class SelfAuditSnapshot:
     `data/evolution/self_audit/{latest.json, latest.md, history/<ISO>.json}`.
     Es la fuente única consumida por el botón "Auditarme ahora" del
     Control Center y por la tool MCP `run_self_audit`.
+    
+    P0.213 V4: Agregado campo opcional `canonical_identity` para provenance
+    de confianza. Si se proporciona, debe ser validado por RuntimeIdentityAuthority.
     """
 
     generated_at: datetime
@@ -2731,6 +2734,7 @@ class SelfAuditSnapshot:
     world_model_digest: dict[str, Any]
     summary_markdown: str
     cross_source_truth: dict[str, Any] = field(default_factory=dict)
+    canonical_identity: dict[str, Any] | None = None  # P0.213 V4: Trusted execution identity
 
 
 # ---------------------------------------------------------------------------
