@@ -3,11 +3,15 @@
 **CANONICAL ENTRY POINT FOR IABV DEVELOPMENT AND AUDIT**
 
 **Last Updated:** 2026-09-04  
+**Last Reconciled Against Main:** 80e1c9ffbe58925754394f7bb5e8494887eeb62b (2026-09-04)  
 **Version:** 1.5  
 **Repository:** jhonf463r/Python  
 **IABV Location:** IABV_v1.5/  
-**Current HEAD (main):** 0087fa66  
+**Documentation Branch:** docs/canonical-state-constitution  
+**Documentation SHA:** a3edf621b86c51dcc7bff68ad3a547734535f810  
 **Capability Gap Bridge Branch:** origin/iabv-bridge/capability-gap-self-diagnosis (abc99a19)
+
+**IMPORTANT:** The SHA recorded above for main (80e1c9ff) is a reconciliation anchor, NOT a permanent current-main truth. The repository HEAD must always be independently checked.
 
 ---
 
@@ -24,7 +28,7 @@ This document is the single source of truth for:
 - What has been learned (including mistakes)
 - What the next single action is
 
-**DO NOT rely on conversation history. DO NOT assume main is canonical. DO NOT assume a class exists means capability is proven.**
+**DO NOT rely on conversation history. DO NOT assume main is canonical. DO NOT assume a class exists means capability is proven. DO NOT assume this document's stored main SHA represents current repository state.**
 
 ---
 
@@ -49,6 +53,34 @@ This document is the single source of truth for:
 **UI:** Python + PySide6 + QML
 
 **Philosophy:** local-first, operational observability, governed autonomy, cumulative learning, portable context
+
+---
+
+## A1. CANONICAL DOCUMENT LOCATION
+
+**Current Location:**
+- Branch: `docs/canonical-state-constitution`
+- SHA: `a3edf621b86c51dcc7bff68ad3a547734535f810`
+- Path: `IABV_v1.5/docs/IABV_CANONICAL_STATE.md`
+
+**Verification Protocol:**
+```bash
+git fetch origin
+git rev-parse origin/docs/canonical-state-constitution
+git checkout docs/canonical-state-constitution
+```
+
+**Important:**
+- This document currently lives in `docs/canonical-state-constitution` and is NOT present in `main`
+- "Canonical" is currently a documentation concept, not a guarantee that any checkout of `main` contains it
+- If the document does not exist in your checkout, switch to the canonical branch
+- Do NOT assume the checkout current branch contains the canonical version
+
+**What to do if document is missing:**
+1. Check if branch `docs/canonical-state-constitution` exists remotely
+2. Checkout that branch
+3. Verify SHA matches expected value
+4. If SHA differs, review changes before proceeding
 
 ---
 
@@ -159,6 +191,7 @@ OBJECTIVE → PERCEIVE → MODEL STATE → ASSESS CAPABILITIES/RESOURCES
 - **Self-Report Truthfulness:** Historical incident where mcp_client self-report contradicted observed state
 - **Capability Gap Integration:** Bridge exists but not connected to cognitive flow
 - **Decision-Only Experiment:** Not ready - needs integration with AdaptiveTaskOrchestrator
+- **Repository Hygiene:** Remote main branch contains `__pycache__` and possibly `.vendor_*` artifacts (REPOSITORY HYGIENE / UNRESOLVED)
 
 ### NOT IMPLEMENTED
 
@@ -170,6 +203,27 @@ OBJECTIVE → PERCEIVE → MODEL STATE → ASSESS CAPABILITIES/RESOURCES
 - Autonomous external-agent execution
 - Automatic learning from unverified results
 - Unrestricted model selection
+
+### DELTA ANALYSIS (0087fa66 → 80e1c9ff)
+
+**Files Added/Modified:** ~40 files including:
+- Historical documentation in `docs/history/` (30+ conversation archaeology files)
+- `organism_state_snapshot.py` - organism state snapshot service
+- `agent_handoff_trail.py` - agent handoff tracking
+- `reproducibility_validation_service.py` - reproducibility validation
+- Environment self-awareness service modifications
+- Deletions: `active_perception.py`, `environment_baseline.py`, `resource_guard.py`, lesson retrieval services
+
+**Classification:**
+- HISTORICAL: Documentation archaeology files (CHAT-ARCH-2026-*) - preserve as context, not frontier
+- RELEVANT TO FRONTIER: organism_state_snapshot, agent_handoff_trail, reproducibility_validation - NEW SERVICES, NOT YET RUNTIME VERIFIED
+- NO IMPACT: Historical conversation records, P0.213 reconciliation documentation
+
+**Frontier Impact:**
+- New services exist but are NOT runtime verified
+- No change to G0 (Birth/Stability) priority
+- No change to Capability Gap Bridge status (still COMPATIBLE_PROJECTION, not integrated)
+- No change to decision-only experiment readiness
 
 ---
 
@@ -348,47 +402,47 @@ A capability is only DEMONSTRATED when there is adequate evidence of:
 ### Key Components
 
 **Perception & Decision**
-- PerceptionSnapshot: EXISTS, WIRED, RUNTIME VERIFIED
+- PerceptionSnapshot: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
 - AdaptiveTaskOrchestrator: EXISTS, WIRED, PARTIALLY VERIFIED (entry point works, self-diagnosis not integrated)
-- TaskContextAssembler: EXISTS, WIRED, RUNTIME VERIFIED
-- AutonomyGovernancePolicy: EXISTS, WIRED, RUNTIME VERIFIED
-- IntentUnderstandingService: EXISTS, WIRED, RUNTIME VERIFIED
-- LocalRoleRouter: EXISTS, WIRED, RUNTIME VERIFIED
+- TaskContextAssembler: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- AutonomyGovernancePolicy: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- IntentUnderstandingService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- LocalRoleRouter: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
 
 **Environment Models**
-- EnvironmentSelfModel: EXISTS, WIRED, RUNTIME VERIFIED
-- WorldModelSnapshot: EXISTS, WIRED, RUNTIME VERIFIED (P1 CLOSED)
-- UniversalPerceptionSignal: EXISTS, WIRED, RUNTIME VERIFIED
+- EnvironmentSelfModel: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- WorldModelSnapshot: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, P1 CLOSED per AGENTS.md but no runtime artifact reference)
+- UniversalPerceptionSignal: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
 
 **Cloud Reasoning & Audit**
-- CloudReasoningPlannerService: EXISTS, WIRED, RUNTIME VERIFIED
-- DecisionAuditTrail: EXISTS, WIRED, RUNTIME VERIFIED
-- ApiKeyDiscoveryService: EXISTS, WIRED, RUNTIME VERIFIED
+- CloudReasoningPlannerService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- DecisionAuditTrail: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- ApiKeyDiscoveryService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
 
 **Learning & Context**
-- ExperimentLab: EXISTS, WIRED, RUNTIME VERIFIED (P2 CORE CLOSED)
-- StrategySelector: EXISTS, WIRED, RUNTIME VERIFIED
-- AdaptiveWeightLayer: EXISTS, WIRED, RUNTIME VERIFIED
-- TaskOutcomeRecorder: EXISTS, WIRED, RUNTIME VERIFIED
-- PortableContextService: EXISTS, WIRED, RUNTIME VERIFIED (P3 CLOSED)
-- OperationalSelfExaminationService: EXISTS, WIRED, RUNTIME VERIFIED (P4 CLOSED)
+- ExperimentLab: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, P2 CORE CLOSED per AGENTS.md but no runtime artifact reference)
+- StrategySelector: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- AdaptiveWeightLayer: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- TaskOutcomeRecorder: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- PortableContextService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, P3 CLOSED per AGENTS.md but no runtime artifact reference)
+- OperationalSelfExaminationService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, P4 CLOSED per AGENTS.md but no runtime artifact reference)
 
 **Governance**
 - ControlMasterService: EXISTS, WIRED, PARTIALLY VERIFIED (governance layer exists, cognitive arbitration not integrated)
-- GoalEngine: EXISTS, WIRED, RUNTIME VERIFIED
-- ApprovalGateService: EXISTS, WIRED, RUNTIME VERIFIED
-- CapabilityReadinessService: EXISTS, WIRED, RUNTIME VERIFIED
+- GoalEngine: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- ApprovalGateService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- CapabilityReadinessService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
 
 **Tools & Execution**
-- ToolTeachService: EXISTS, WIRED, RUNTIME VERIFIED
-- ToolRegistry: EXISTS, WIRED, RUNTIME VERIFIED
-- AutonomousEvolutionService: EXISTS, WIRED, RUNTIME VERIFIED
-- UIExecutionRunner: EXISTS, WIRED, RUNTIME VERIFIED
+- ToolTeachService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- ToolRegistry: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- AutonomousEvolutionService: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- UIExecutionRunner: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
 
 **UI**
-- ControlCenterViewModel: EXISTS, WIRED, RUNTIME VERIFIED
-- EvolutionCenterViewModel: EXISTS, WIRED, RUNTIME VERIFIED
-- MainWindowBridge: EXISTS, WIRED, RUNTIME VERIFIED (signals: shellLoaderReady, pageLoaderReady)
+- ControlCenterViewModel: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- EvolutionCenterViewModel: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, no runtime artifact reference)
+- MainWindowBridge: EXISTS, WIRED, STATIC SOURCE EVIDENCE (code exists, signals documented but no runtime artifact reference)
 
 **Evolution**
 - CapabilityGapBridge: EXISTS (in branch), NOT WIRED, STATIC ONLY (25 tests pass, not integrated)
@@ -396,9 +450,11 @@ A capability is only DEMONSTRATED when there is adequate evidence of:
 **Status Legend:**
 - EXISTS: Code exists
 - WIRED: Connected to system
-- RUNTIME VERIFIED: Actually works in production
+- RUNTIME VERIFIED: Actually works in production (requires concrete evidence: commit, runtime artifact, execution ID, log, report, date, test/runtime provenance)
 - PARTIALLY VERIFIED: Some aspects verified, others not
+- STATIC SOURCE EVIDENCE: Code exists and can be inspected, but no runtime artifact reference available
 - STATIC ONLY: Tests pass, but not runtime-verified
+- UNRESOLVED: Cannot be verified with available evidence
 
 ---
 
@@ -546,19 +602,66 @@ When persisted state contradicts live evidence:
 
 **Every new agent MUST:**
 
-1. Read this document (IABV_CANONICAL_STATE.md)
-2. Verify current branch
-3. Verify HEAD SHA
-4. Review current frontier (Section C)
-5. Review unresolved (Section C)
-6. Review recent evidence (Issues #454, #450)
-7. Review agent role (Section L)
-8. Review next single action (Section O)
-9. **NOT implement before completing these steps**
+1. **Locate IABV_CANONICAL_STATE.md**
+   - If not present, checkout branch `docs/canonical-state-constitution`
+   - Verify document SHA matches expected value
+
+2. **Verify branch containing the document**
+   - Confirm current branch is `docs/canonical-state-constitution` or equivalent
+
+3. **Verify canonical document SHA**
+   - `git rev-parse HEAD` should match documented SHA
+   - If different, review changes before proceeding
+
+4. **Verify origin/main current HEAD**
+   - `git fetch origin`
+   - `git rev-parse origin/main`
+
+5. **Compare documented frontier commit vs current main**
+   - Documented reconciliation anchor: 80e1c9ffbe58925754394f7bb5e8494887eeb62b
+   - If different: `DOCUMENTATION_STALE_DELTA = TRUE`
+   - Review git log between commits to identify relevant changes
+
+6. **Identify stale delta**
+   - Classify changes: RELEVANT TO FRONTIER / HISTORICAL / PARALLEL / NO IMPACT
+   - Only update frontier based on demonstrated evidence
+
+7. **Read current frontier** (Section C)
+
+8. **Read unresolved** (Section C)
+
+9. **Read recent Issues/evidence** (Issues #454, #450)
+
+10. **Determine own agent role** (Section L)
+
+11. **Inspect next single action** (Section Y)
+
+12. **Do NOT implement until repository state is reconciled**
+
+**IMPORTANT:** The document is the entry point to reasoning, NOT a substitute for Git verification.
 
 ---
 
 ## N. BRANCH DISCIPLINE
+
+### CRITICAL RULE: CANONICAL DOCUMENT != CURRENT CODE BRANCH
+
+**The canonical document describes the verified state known when it was last reconciled.**
+**The repository HEAD must always be independently checked.**
+
+**Verification Protocol:**
+```bash
+git fetch origin
+git rev-parse origin/main
+```
+
+**Compare documented frontier commit vs current main:**
+- If different: `DOCUMENTATION_STALE_DELTA = TRUE`
+- Agent must review changes before implementing
+- DO NOT assume document already represents new HEAD until audited
+
+**This prevents agents from thinking:**
+- canonical document → automatically equals main
 
 ### Historical and Experimental Branches
 
@@ -577,6 +680,35 @@ When persisted state contradicts live evidence:
 - Do NOT assume a branch is canonical just because it has more code
 - Verify evidence and integration status
 - Check Issues #454, #450 for current strategic direction
+
+### LOCAL WORKTREE SAFETY
+
+**NEVER PERFORM DESTRUCTIVE CLEANUP BEFORE INSPECTION**
+
+Do NOT automatically execute:
+```bash
+git clean -fd
+git reset --hard
+git stash drop
+```
+
+Without:
+1. `git status` - identify what exists
+2. Identify artifacts - distinguish source from runtime artifacts
+3. Verify if unbacked information exists
+4. Conserve or backup when appropriate
+
+**Runtime artifacts to preserve:**
+- `__pycache__` - may contain useful compilation state
+- `.vendor_deps` - may contain dependency state
+- `.execution_backups` - may contain execution evidence
+- `.env` - may contain local configuration
+- Runtime data directories
+
+**Only clean after:**
+- Explicit inspection confirms safety
+- No unbacked information at risk
+- User approval obtained
 
 ---
 
@@ -850,41 +982,50 @@ If you cannot verify something:
 ## W. DOCUMENTATION INDEX
 
 ### Canonical Entry Point
-- **IABV_CANONICAL_STATE.md** (this file) - PURPOSE: Single source of truth for IABV development - STATUS: CANONICAL - LAST VERIFIED: 2026-09-04
+- **IABV_CANONICAL_STATE.md** (this file) - PURPOSE: Single source of truth for IABV development - STATUS: CANONICAL - LAST VERIFIED: 2026-09-04 - LOCATION: docs/canonical-state-constitution branch
 
 ### Architecture Documentation
-- **AGENTS.md** - PURPOSE: Instructions for agents - STATUS: CANONICAL - LAST VERIFIED: 2026-07-26
-- **ARCHITECTURAL_DECISIONS.md** - PURPOSE: Architectural decisions - STATUS: CANONICAL - LAST VERIFIED: 2026-07-26
-- **ARCHITECT_REVIEW_GUIDE.md** - PURPOSE: Architect review guide - STATUS: HISTORICAL
-- **PROJECT_STATUS.md** - PURPOSE: Project status - STATUS: HISTORICAL (2026-07-26)
-- **ENTRY_POINTS.md** - PURPOSE: System entry points - STATUS: CANONICAL - LAST VERIFIED: 2026-07-26
-- **CURRENT_RUNTIME.md** - PURPOSE: Runtime state - STATUS: HISTORICAL (2026-07-26)
-- **SYMBOL_INDEX.md** - PURPOSE: Symbol index - STATUS: HISTORICAL
-- **COMPONENT_DEPENDENCY_GRAPH.md** - PURPOSE: Component dependencies - STATUS: HISTORICAL
+- **AGENTS.md** - PURPOSE: Instructions for agents - STATUS: CANONICAL - LAST VERIFIED: 2026-07-26 - LOCATION: IABV_v1.5/
+- **ARCHITECTURAL_DECISIONS.md** - PURPOSE: Architectural decisions - STATUS: CANONICAL - LAST VERIFIED: 2026-07-26 - LOCATION: IABV_v1.5/
+- **ARCHITECT_REVIEW_GUIDE.md** - PURPOSE: Architect review guide - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **PROJECT_STATUS.md** - PURPOSE: Project status - STATUS: HISTORICAL (2026-07-26) - LOCATION: IABV_v1.5/
+- **ENTRY_POINTS.md** - PURPOSE: System entry points - STATUS: CANONICAL - LAST VERIFIED: 2026-07-26 - LOCATION: IABV_v1.5/
+- **CURRENT_RUNTIME.md** - PURPOSE: Runtime state - STATUS: HISTORICAL (2026-07-26) - LOCATION: IABV_v1.5/
+- **SYMBOL_INDEX.md** - PURPOSE: Symbol index - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **COMPONENT_DEPENDENCY_GRAPH.md** - PURPOSE: Component dependencies - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
 
 ### Audit Reports (Historical)
-- **AUDITORIA_PERCEPCION_RUNTIME_UNIVERSAL_REPORTE_FINAL.md** - PURPOSE: Runtime perception audit - STATUS: HISTORICAL
-- **AUDIT_METACOGNICION_PROFUNDO.md** - PURPOSE: Metacognition audit - STATUS: HISTORICAL
-- **AUTONOMY_CYCLE_AUDIT.md** - PURPOSE: Autonomy cycle audit - STATUS: HISTORICAL
-- **AUTONOMY_VALIDATION_REPORT.md** - PURPOSE: Autonomy validation - STATUS: HISTORICAL
-- **BOOTSTRAP_VISIBILITY_REPORT.md** - PURPOSE: Bootstrap visibility - STATUS: HISTORICAL
-- **BUILD_INVENTORY_SNAPSHOT_UNIVERSALIZATION_REPORT.md** - PURPOSE: Universalization report - STATUS: HISTORICAL
-- **CONTROL_CENTER_VIEWMODEL_UNIVERSALIZATION_REPORT.md** - PURPOSE: ViewModel universalization - STATUS: HISTORICAL
-- **PORTABLE_CONTEXT_UNIVERSALIZATION_REPORT.md** - PURPOSE: Portable context universalization - STATUS: HISTORICAL
-- **RECONCILIATION_AUDIT_REPORT.md** - PURPOSE: Reconciliation audit - STATUS: HISTORICAL
-- **UI_INTEGRATION_REPORT.md** - PURPOSE: UI integration - STATUS: HISTORICAL
-- **UNIVERSAL_CONTINUITY_REEXPRESSED_REPORT.md** - PURPOSE: Continuity reexpression - STATUS: HISTORICAL
+- **AUDITORIA_PERCEPCION_RUNTIME_UNIVERSAL_REPORTE_FINAL.md** - PURPOSE: Runtime perception audit - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **AUDIT_METACOGNICION_PROFUNDO.md** - PURPOSE: Metacognition audit - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **AUTONOMY_CYCLE_AUDIT.md** - PURPOSE: Autonomy cycle audit - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **AUTONOMY_VALIDATION_REPORT.md** - PURPOSE: Autonomy validation - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **BOOTSTRAP_VISIBILITY_REPORT.md** - PURPOSE: Bootstrap visibility - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **BUILD_INVENTORY_SNAPSHOT_UNIVERSALIZATION_REPORT.md** - PURPOSE: Universalization report - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **CONTROL_CENTER_VIEWMODEL_UNIVERSALIZATION_REPORT.md** - PURPOSE: ViewModel universalization - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **PORTABLE_CONTEXT_UNIVERSALIZATION_REPORT.md** - PURPOSE: Portable context universalization - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **RECONCILIATION_AUDIT_REPORT.md** - PURPOSE: Reconciliation audit - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **UI_INTEGRATION_REPORT.md** - PURPOSE: UI integration - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **UNIVERSAL_CONTINUITY_REEXPRESSED_REPORT.md** - PURPOSE: Continuity reexpression - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
 
 ### Other Documentation
-- **TOOLS_CANONICAL_POLICY.md** - PURPOSE: Tools policy - STATUS: HISTORICAL
-- **TEST_SUMMARY.md** - PURPOSE: Test summary - STATUS: HISTORICAL
-- **TECHNICAL_DEBT_REGISTRATION_REPORT.md** - PURPOSE: Technical debt - STATUS: HISTORICAL
+- **TOOLS_CANONICAL_POLICY.md** - PURPOSE: Tools policy - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **TEST_SUMMARY.md** - PURPOSE: Test summary - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
+- **TECHNICAL_DEBT_REGISTRATION_REPORT.md** - PURPOSE: Technical debt - STATUS: HISTORICAL - LOCATION: IABV_v1.5/
 
 ### docs/ Directory
-- **ROADMAP_ALGORITHMIC_AUDIT_PLATFORM.md** - PURPOSE: Algorithmic audit roadmap - STATUS: EXPERIMENTAL
-- **mcp-bridge.md** - PURPOSE: MCP bridge documentation - STATUS: EXPERIMENTAL
-- **windsurf_diagnostic_prompt.md** - PURPOSE: Windsurf diagnostics - STATUS: EXPERIMENTAL
-- **windsurf_live_report_prompt.md** - PURPOSE: Windsurf reporting - STATUS: EXPERIMENTAL
+- **ROADMAP_ALGORITHMIC_AUDIT_PLATFORM.md** - PURPOSE: Algorithmic audit roadmap - STATUS: EXPERIMENTAL - LOCATION: IABV_v1.5/docs/
+- **mcp-bridge.md** - PURPOSE: MCP bridge documentation - STATUS: EXPERIMENTAL - LOCATION: IABV_v1.5/docs/
+- **windsurf_diagnostic_prompt.md** - PURPOSE: Windsurf diagnostics - STATUS: EXPERIMENTAL - LOCATION: IABV_v1.5/docs/
+- **windsurf_live_report_prompt.md** - PURPOSE: Windsurf reporting - STATUS: EXPERIMENTAL - LOCATION: IABV_v1.5/docs/
+
+### docs/history/ Directory (Added in delta 0087fa66 → 80e1c9ff)
+- **2026-09-01_conversation_knowledge_sync.md** - PURPOSE: Conversation archaeology - STATUS: HISTORICAL - LOCATION: IABV_v1.5/docs/history/
+- **2026-09-03_* (30+ files)** - PURPOSE: P0.213 and conversation archaeology - STATUS: HISTORICAL - LOCATION: IABV_v1.5/docs/history/
+
+### New Services (Added in delta 0081fa66 → 80e1c9ff, NOT RUNTIME VERIFIED)
+- **organism_state_snapshot.py** - PURPOSE: Organism state snapshot service - STATUS: STATIC ONLY - LOCATION: src/iabv_v15/services/evolution/
+- **agent_handoff_trail.py** - PURPOSE: Agent handoff tracking - STATUS: STATIC ONLY - LOCATION: src/iabv_v15/services/evolution/
+- **reproducibility_validation_service.py** - PURPOSE: Reproducibility validation - STATUS: STATIC ONLY - LOCATION: src/iabv_v15/services/learning/
 
 ---
 
