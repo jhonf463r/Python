@@ -2145,28 +2145,17 @@ class AppBootstrap:
             logger.debug('deferred_auto_install: failed — %s', exc)
 
     def _handle_shell_loader_ready(self) -> None:
-        """Punto de aterrizaje honesto para el readiness real del shell.
+        """Marca ``shell_loader_ready`` (hito honesto de readiness).
 
         Disparado por ``MainWindowBridge.shellLoaderReady`` cuando QML
         confirma que ``mainShellLoader`` termino de instanciar el
         contenido real del shell.  Aqui — y solo aqui — marcamos el
         hito ``shell_loader_ready`` y disparamos
-        ``splashController.set_ready()`` para que el splash empiece a
-        desvanecer.
-
-        With synchronous mainShellLoader (``asynchronous: false``), this
-        fires during the first ``processEvents()`` after ``mainShellKickoff``
-        triggers — typically inside Phase 2's ``_yield_to_event_loop()``.
-
-        Also starts a safety-net timer for Phase 3: if ``page_loader_ready``
-        never arrives (pageLoader stuck), Phase 3 VMs still get built
-        after 5 s.  Idempotent via ``_schedule_pending_deferred_2``.
-
-        Idempotente: solo el primer disparo cuenta.
         """
         if getattr(self, '_shell_loader_ready_handled', False):
             return
         self._shell_loader_ready_handled = True
+        self._shell_loader_ready_honest = True  # Mark as honest (not fallback)
         # Update splash to 90% before closing — honest progress.
         splash = getattr(self, '_splash', None)
         if splash is not None:
@@ -2269,6 +2258,7 @@ class AppBootstrap:
         content.
         """
         self._page_loader_ready_received = True
+        self._page_loader_ready_honest = True  # Mark as honest (always from QML)
         try:
             self._timeline.mark('page_loader_ready')
         except Exception:
@@ -2472,66 +2462,101 @@ class AppBootstrap:
     def is_birth_ready(self) -> bool:
         """Return True only when VERIFIED BIRTH READY conditions are met.
         
-        BIRTH_READY = UI_READY AND CHAT_BRIDGE_READY AND NO_CRITICAL_STARTUP_FINDINGS
+        BIRTH_READY = HONEST_UI_READY AND CHAT_BRIDGE_READY AND BIRTH_RELEVANT_CRITICAL_FINDINGS_ABSENT_CONFIRMED
         
         This is distinct from SPLASH_READY (visual UX). The splash may close
         via fallback even if the system is not birth-ready. Birth readiness
         requires:
-        1. UI/page readiness (at least one honest signal: shell or page loader)
+        1. Honest UI/page readiness (QML signal, not fallback timer)
         2. Startup chat bridge operational (can accept user messages)
-        3. Absence of critical startup contradictions or OSES findings
+        3. Confirmed absence of birth-relevant critical OSES findings
+        
+        Epistemic rule: UNKNOWN != TRUE. If evidence is unavailable,
+        the gate returns False (conservative).
         
         This gate provides a consultable boolean for future self-observation
         and multi-agent cooperation without breaking the existing fallback UX.
         """
-        # UI readiness: at least one honest signal received
-        ui_ready = (
-            getattr(self, '_shell_loader_ready_handled', False)
-            or getattr(self, '_page_loader_ready_received', False)
+        # UI readiness: at least one HONEST signal received (not fallback)
+        honest_ui_ready = (
+            getattr(self, '_shell_loader_ready_honest', False)
+            or getattr(self, '_page_loader_ready_honest', False)
         )
         
         # Chat bridge operational
         chat_bridge_ready = self._startup_chat_bridge_is_ready()
         
-        # No critical OSES findings from startup
-        no_critical_findings = self._has_no_critical_startup_findings()
+        # No birth-relevant critical OSES findings from startup
+        # Conservative: if OSES unavailable or check fails, return False
+        no_critical_findings = self._has_no_birth_relevant_critical_findings()
         
-        return ui_ready and chat_bridge_ready and no_critical_findings
+        return honest_ui_ready and chat_bridge_ready and no_critical_findings
 
-    def _has_no_critical_startup_findings(self) -> bool:
-        """Check if there are no critical OSES findings from startup.
+    def _has_no_birth_relevant_critical_findings(self) -> bool:
+        """Check if there are no birth-relevant critical OSES findings from startup.
         
-        Returns False if any CRITICAL or HIGH severity findings exist in
-        the operational self-examination service from the startup phase.
+        Returns False if:
+        - OSES service is unavailable (UNKNOWN != TRUE)
+        - OSES snapshot is unavailable (UNKNOWN != TRUE)
+        - Any CRITICAL or HIGH severity findings exist for birth-relevant categories
+        
+        Birth-relevant categories:
+        - startup_false_ready
+        - startup_chat_bridge_missing
+        
+        Other findings (e.g., tool availability, resource warnings) do not block birth
+        unless they are explicitly marked as CRITICAL/HIGH in a birth-specific context.
+        
+        Epistemic rule: UNKNOWN != TRUE. If evidence is unavailable, return False.
         """
         oses = getattr(self, 'operational_self_examination_service', None)
         if oses is None:
-            return True  # No OSES service = no findings to block birth
+            logger.debug('birth_ready_blocked: OSES service unavailable')
+            return False  # UNKNOWN != TRUE
         
         try:
             # Get recent findings (e.g., from latest snapshot)
             snapshot = getattr(oses, 'current_snapshot', None)
             if snapshot is None:
-                return True
+                logger.debug('birth_ready_blocked: OSES snapshot unavailable')
+                return False  # UNKNOWN != TRUE
             
             findings = getattr(snapshot, 'findings', [])
+            if findings is None:
+                logger.debug('birth_ready_blocked: OSES findings list unavailable')
+                return False  # UNKNOWN != TRUE
+            
             if not findings:
+                # Empty findings list is evidence of absence
                 return True
             
-            # Check for CRITICAL or HIGH severity findings
+            # Check for CRITICAL or HIGH severity findings in birth-relevant categories
+            birth_relevant_categories = {'startup_false_ready', 'startup_chat_bridge_missing'}
             for finding in findings:
                 severity = getattr(finding, 'severity', '').upper()
-                if severity in ('CRITICAL', 'HIGH'):
+                if severity not in ('CRITICAL', 'HIGH'):
+                    continue  # Only CRITICAL/HIGH block birth
+                
+                # Check if finding is birth-relevant
+                title = getattr(finding, 'title', '').lower()
+                category = getattr(finding, 'category', '').lower()
+                
+                # Block if finding is in birth-relevant category
+                if (any(cat in title for cat in birth_relevant_categories) or
+                    any(cat in category for cat in birth_relevant_categories)):
                     logger.warning(
-                        'birth_ready_blocked: critical finding %s (severity=%s)',
+                        'birth_ready_blocked: birth-relevant critical finding %s (severity=%s)',
                         getattr(finding, 'title', 'unknown'), severity,
                     )
                     return False
             
             return True
-        except Exception:
-            logger.debug('_has_no_critical_startup_findings: check failed, assuming no block', exc_info=True)
-            return True  # Fail-open: don't block birth on check failure
+        except Exception as exc:
+            logger.warning(
+                'birth_ready_blocked: OSES check failed with exception: %s',
+                exc, exc_info=True,
+            )
+            return False  # UNKNOWN != TRUE - fail-closed
 
     def _mark_startup_chat_bridge_ready(self, source: str, bridge: Any | None = None) -> None:
         """Persist the earliest point where UI chat is actually reachable.
@@ -4006,6 +4031,12 @@ class AppBootstrap:
     _truth_refresh_active: bool = False
     _startup_chat_bridge_ready: bool = False
     _startup_evolution_active: bool = False
+    
+    # -- Birth readiness tracking --
+    # Distinguish honest UI signals from fallback visual readiness.
+    # Fallback sets _shell_loader_ready_handled but NOT _shell_loader_ready_honest.
+    _shell_loader_ready_honest: bool = False
+    _page_loader_ready_honest: bool = False
     _STARTUP_EVOLUTION_INITIAL_DELAY_MS: int = 120_000
     _STARTUP_EVOLUTION_RETRY_BASE_MS: int = 60_000
     _STARTUP_EVOLUTION_MAX_DEFERRALS: int = 6
