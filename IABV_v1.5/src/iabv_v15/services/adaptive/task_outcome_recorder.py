@@ -39,6 +39,21 @@ _INTENT_CORRECTION_CONFIDENCE_THRESHOLD = 0.75
 
 
 class TaskOutcomeRecorder:
+    """Records task outcomes for adaptive learning.
+    
+    SCOPE NOTE: This component is NOT a universal learning gate.
+    Other callers of ExperimentLab.record_outcome() exist:
+    - autonomous_evolution_service.py
+    - code_audit_trail.py
+    - sandbox_experiment_service.py
+    - self_teach_orchestrator.py
+    
+    This recorder handles the adaptive_session_finalize path only.
+    The objective evidence extraction here is TEXTUAL MATCH only,
+    NOT independent world validation.
+    
+    EPISTEMIC RULE: TEXTUAL_CONTAINMENT != OBJECTIVE_WORLD_EVIDENCE
+    """
     def __init__(
         self,
         *,

@@ -168,6 +168,8 @@ class ExperimentLab:
         metadata: dict[str, Any] | None = None,
         suite_name: str = 'observed_outcome',
         candidate_id: str = '',
+        objective_addressed: bool = False,
+        objective_addressed_is_observed: bool = False,
     ) -> tuple[ExperimentRun, ExperimentRecommendation]:
         historical_runs = self.repository.list_runs(domain=domain.value, subject_key=subject_key, limit=20)
         payload_metadata = dict(metadata or {})
@@ -239,6 +241,8 @@ class ExperimentLab:
                 'source_trace_ids': list(payload_metadata.get('source_trace_ids') or []),
                 'proposal_summary': str(payload_metadata.get('proposal_summary') or '')[:240],
                 'outcome_summary': str(payload_metadata.get('outcome_summary') or observed_summary or '')[:240],
+                'objective_addressed': objective_addressed,
+                'objective_addressed_is_observed': objective_addressed_is_observed,
             },
         )
         self.repository.save_run(run)

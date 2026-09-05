@@ -6,6 +6,8 @@ was addressed.
 
 DO NOT use execution success, model confidence, or LLM judgment
 as proof of objective satisfaction.
+
+EPISTEMIC RULE: TEXTUAL_CONTAINMENT != OBJECTIVE_WORLD_EVIDENCE
 """
 
 import pytest
@@ -17,8 +19,12 @@ from iabv_v15.services.lab.adequacy_computation import compute_adequacy, Adequac
 class TestObjectiveEvidenceExtraction:
     """Test conservative objective evidence extraction logic."""
 
-    def test_matching_expected_outcome_returns_true_observed(self):
-        """Scenario A: expected_outcome + matching observed result."""
+    def test_matching_expected_outcome_returns_textual_match_not_observed(self):
+        """Scenario A: expected_outcome + matching observed result.
+        
+        TEXTUAL MATCH = True, but INDEPENDENT OBSERVATION = False
+        because textual containment is NOT equivalent to world validation.
+        """
         expected = "file created"
         observed = "file created successfully"
         
@@ -27,8 +33,8 @@ class TestObjectiveEvidenceExtraction:
             observed_summary=observed,
         )
         
-        assert objective_addressed is True
-        assert objective_addressed_is_observed is True
+        assert objective_addressed is True  # TEXTUAL MATCH
+        assert objective_addressed_is_observed is False  # NOT INDEPENDENT OBSERVATION
 
     def test_mismatching_expected_outcome_returns_false(self):
         """Scenario B: expected_outcome present but observed result does not match."""
@@ -92,8 +98,8 @@ class TestObjectiveEvidenceExtraction:
             observed_summary=observed,
         )
         
-        assert objective_addressed is True
-        assert objective_addressed_is_observed is True
+        assert objective_addressed is True  # TEXTUAL MATCH
+        assert objective_addressed_is_observed is False  # NOT INDEPENDENT OBSERVATION
 
     def test_whitespace_insensitive_containment(self):
         """Test that containment check is whitespace-insensitive."""
@@ -105,15 +111,15 @@ class TestObjectiveEvidenceExtraction:
             observed_summary=observed,
         )
         
-        assert objective_addressed is True
-        assert objective_addressed_is_observed is True
+        assert objective_addressed is True  # TEXTUAL MATCH
+        assert objective_addressed_is_observed is False  # NOT INDEPENDENT OBSERVATION
 
 
 class TestAdequacyWithObjectiveEvidence:
     """Test that adequacy computation respects objective evidence."""
 
-    def test_adequate_reachable_with_evidence(self):
-        """Scenario A: ADEQUATE can be reached when evidence is present."""
+    def test_adequate_reachable_only_with_independent_observation(self):
+        """Scenario A: ADEQUATE ONLY when independently observed (True, True)."""
         classification, reason = compute_adequacy(
             expected_summary="file created",
             observed_summary="file created successfully",
@@ -122,14 +128,31 @@ class TestAdequacyWithObjectiveEvidence:
             robustness=0.8,
             user_progress=0.8,
             objective_addressed=True,
-            objective_addressed_is_observed=True,
+            objective_addressed_is_observed=True,  # INDEPENDENT OBSERVATION required
         )
         
         assert classification == AdequacyClassification.ADEQUATE
         assert "independently observed objective addressed" in reason
 
+    def test_textual_match_not_adequate(self):
+        """Scenario B: TEXTUAL MATCH (True, False) is NOT ADEQUATE."""
+        classification, reason = compute_adequacy(
+            expected_summary="file created",
+            observed_summary="file created successfully",
+            success=True,
+            precision=0.9,
+            robustness=0.8,
+            user_progress=0.8,
+            objective_addressed=True,  # TEXTUAL MATCH
+            objective_addressed_is_observed=False,  # NOT INDEPENDENT OBSERVATION
+        )
+        
+        # Textual match alone is NOT sufficient for ADEQUATE
+        assert classification == AdequacyClassification.INCONCLUSIVE
+        assert "caller assertion" in reason
+
     def test_not_adequate_without_evidence(self):
-        """Scenario B: NOT ADEQUATE when evidence does not match."""
+        """Scenario C: NOT ADEQUATE when evidence does not match."""
         classification, reason = compute_adequacy(
             expected_summary="file created",
             observed_summary="error occurred",
@@ -144,7 +167,7 @@ class TestAdequacyWithObjectiveEvidence:
         assert classification != AdequacyClassification.ADEQUATE
 
     def test_not_adequate_missing_expected(self):
-        """Scenario C: NOT ADEQUATE when expected outcome is missing."""
+        """Scenario D: NOT ADEQUATE when expected outcome is missing."""
         classification, reason = compute_adequacy(
             expected_summary="",
             observed_summary="file created successfully",
@@ -160,7 +183,7 @@ class TestAdequacyWithObjectiveEvidence:
         assert "no expected objective" in reason
 
     def test_not_adequate_success_without_evidence(self):
-        """Scenario D: NOT ADEQUATE when success=True but no objective evidence."""
+        """Scenario E: NOT ADEQUATE when success=True but no objective evidence."""
         classification, reason = compute_adequacy(
             expected_summary="file created",
             observed_summary="operation completed",
@@ -175,7 +198,7 @@ class TestAdequacyWithObjectiveEvidence:
         assert classification != AdequacyClassification.ADEQUATE
 
     def test_not_adequate_high_confidence_without_evidence(self):
-        """Scenario E: NOT ADEQUATE when confidence is high but no objective evidence."""
+        """Scenario F: NOT ADEQUATE when confidence is high but no objective evidence."""
         classification, reason = compute_adequacy(
             expected_summary="file created",
             observed_summary="operation completed",
@@ -265,3 +288,38 @@ class TestConservativeSemantics:
         # "file deleted" is not in "file removed"
         assert objective_addressed is False
         assert objective_addressed_is_observed is False
+
+
+class TestAPIContract:
+    """Test that TaskOutcomeRecorder and ExperimentLab.record_outcome() use compatible contract."""
+    
+    def test_record_outcome_accepts_new_parameters(self):
+        """Verify ExperimentLab.record_outcome() accepts the new parameters."""
+        from iabv_v15.services.lab.experiment_lab import ExperimentLab
+        from iabv_v15.domain.models import ExperimentDomain, EvaluationRoute
+        from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
+        from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+        from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+        from iabv_v15.services.lab.strategy_selector import StrategySelector
+        
+        # This test verifies the signature is compatible
+        # We don't need a real repository for this signature check
+        import inspect
+        sig = inspect.signature(ExperimentLab.record_outcome)
+        params = sig.parameters
+        
+        # Verify new parameters exist with defaults
+        assert 'objective_addressed' in params
+        assert params['objective_addressed'].default == False
+        assert 'objective_addressed_is_observed' in params
+        assert params['objective_addressed_is_observed'].default == False
+        
+        # Verify existing parameters still exist
+        assert 'domain' in params
+        assert 'objective' in params
+        assert 'subject_key' in params
+        assert 'route' in params
+        assert 'candidate_label' in params
+        assert 'success' in params
+        assert 'observed_summary' in params
+        assert 'expected_summary' in params
