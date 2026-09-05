@@ -7,8 +7,8 @@
 **Version:** 1.5  
 **Repository:** jhonf463r/Python  
 **IABV Location:** IABV_v1.5/  
-**Documentation Branch:** docs/canonical-state-constitution  
-**Documentation SHA:** a3edf621b86c51dcc7bff68ad3a547734535f810  
+**Documentation Branch:** docs/interaction-experience-architecture  
+**Documentation SHA:** e8c648bb9cd112bfe879ec89e0a4c9881cbbb0eb  
 **Capability Gap Bridge Branch:** origin/iabv-bridge/capability-gap-self-diagnosis (abc99a19)
 
 **IMPORTANT:** The SHA recorded above for main (80e1c9ff) is a reconciliation anchor, NOT a permanent current-main truth. The repository HEAD must always be independently checked.
@@ -59,28 +59,32 @@ This document is the single source of truth for:
 ## A1. CANONICAL DOCUMENT LOCATION
 
 **Current Location:**
-- Branch: `docs/canonical-state-constitution`
-- SHA: `a3edf621b86c51dcc7bff68ad3a547734535f810`
+- Branch: `docs/interaction-experience-architecture`
+- SHA: `e8c648bb9cd112bfe879ec89e0a4c9881cbbb0eb`
 - Path: `IABV_v1.5/docs/IABV_CANONICAL_STATE.md`
 
 **Verification Protocol:**
 ```bash
 git fetch origin
-git rev-parse origin/docs/canonical-state-constitution
-git checkout docs/canonical-state-constitution
+git rev-parse origin/docs/interaction-experience-architecture
+git checkout docs/interaction-experience-architecture
 ```
 
 **Important:**
-- This document currently lives in `docs/canonical-state-constitution` and is NOT present in `main`
+- This document currently lives in `docs/interaction-experience-architecture` and is NOT present in `main`
 - "Canonical" is currently a documentation concept, not a guarantee that any checkout of `main` contains it
 - If the document does not exist in your checkout, switch to the canonical branch
 - Do NOT assume the checkout current branch contains the canonical version
 
 **What to do if document is missing:**
-1. Check if branch `docs/canonical-state-constitution` exists remotely
+1. Check if branch `docs/interaction-experience-architecture` exists remotely
 2. Checkout that branch
 3. Verify SHA matches expected value
 4. If SHA differs, review changes before proceeding
+
+**Historical Parent:**
+- Previous canonical branch: `docs/canonical-state-constitution` (SHA: a3edf621b86c51dcc7bff68ad3a547734535f810)
+- This branch contains the canonical state before Interaction Experience Architecture was added
 
 ---
 
@@ -605,11 +609,11 @@ When persisted state contradicts live evidence:
 **Every new agent MUST:**
 
 1. **Locate IABV_CANONICAL_STATE.md**
-   - If not present, checkout branch `docs/canonical-state-constitution`
+   - If not present, checkout branch `docs/interaction-experience-architecture`
    - Verify document SHA matches expected value
 
 2. **Verify branch containing the document**
-   - Confirm current branch is `docs/canonical-state-constitution` or equivalent
+   - Confirm current branch is `docs/interaction-experience-architecture` or equivalent
 
 3. **Verify canonical document SHA**
    - `git rev-parse HEAD` should match documented SHA
@@ -1445,7 +1449,7 @@ If you cannot verify something:
 ## W. DOCUMENTATION INDEX
 
 ### Canonical Entry Point
-- **IABV_CANONICAL_STATE.md** (this file) - PURPOSE: Single source of truth for IABV development - STATUS: CANONICAL - LAST VERIFIED: 2026-09-04 - LOCATION: docs/canonical-state-constitution branch
+- **IABV_CANONICAL_STATE.md** (this file) - PURPOSE: Single source of truth for IABV development - STATUS: CANONICAL - LAST VERIFIED: 2026-09-04 - LOCATION: docs/interaction-experience-architecture branch
 
 ### Architecture Documentation
 - **AGENTS.md** - PURPOSE: Instructions for agents - STATUS: CANONICAL - LAST VERIFIED: 2026-07-26 - LOCATION: IABV_v1.5/
