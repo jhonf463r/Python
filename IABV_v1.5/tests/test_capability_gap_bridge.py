@@ -32,7 +32,10 @@ class TestFreshnessClassification:
         now = datetime.now(timezone.utc)
         last_validated = (now - timedelta(seconds=300)).isoformat()  # 5 minutes ago
         
-        result = classify_freshness(last_validated_at_utc=last_validated)
+        result = classify_freshness(
+            last_validated_at_utc=last_validated,
+            reference_time=now,
+        )
         assert result == Freshness.FRESH
     
     def test_fresh_boundary_case(self) -> None:
@@ -42,6 +45,7 @@ class TestFreshnessClassification:
         
         result = classify_freshness(
             last_validated_at_utc=last_validated,
+            reference_time=now,
             max_freshness_seconds=3600.0,
         )
         assert result == Freshness.FRESH
@@ -55,7 +59,10 @@ class TestStaleEvidence:
         now = datetime.now(timezone.utc)
         last_validated = (now - timedelta(seconds=7200)).isoformat()  # 2 hours ago
         
-        result = classify_freshness(last_validated_at_utc=last_validated)
+        result = classify_freshness(
+            last_validated_at_utc=last_validated,
+            reference_time=now,
+        )
         assert result == Freshness.STALE
     
     def test_stale_boundary_case(self) -> None:
@@ -65,6 +72,7 @@ class TestStaleEvidence:
         
         result = classify_freshness(
             last_validated_at_utc=last_validated,
+            reference_time=now,
             max_freshness_seconds=3600.0,
         )
         assert result == Freshness.STALE
@@ -75,17 +83,26 @@ class TestUnknownEvidence:
     
     def test_null_timestamp_classified_as_unknown(self) -> None:
         """Missing timestamp (None) is classified as UNKNOWN."""
-        result = classify_freshness(last_validated_at_utc=None)
+        result = classify_freshness(
+            last_validated_at_utc=None,
+            reference_time=datetime.now(timezone.utc),
+        )
         assert result == Freshness.UNKNOWN
     
     def test_invalid_timestamp_classified_as_unknown(self) -> None:
         """Invalid timestamp format is classified as UNKNOWN."""
-        result = classify_freshness(last_validated_at_utc="invalid-timestamp")
+        result = classify_freshness(
+            last_validated_at_utc="invalid-timestamp",
+            reference_time=datetime.now(timezone.utc),
+        )
         assert result == Freshness.UNKNOWN
     
     def test_empty_string_timestamp_classified_as_unknown(self) -> None:
         """Empty string timestamp is classified as UNKNOWN."""
-        result = classify_freshness(last_validated_at_utc="")
+        result = classify_freshness(
+            last_validated_at_utc="",
+            reference_time=datetime.now(timezone.utc),
+        )
         assert result == Freshness.UNKNOWN
 
 
@@ -94,35 +111,44 @@ class TestCapabilityGapProjection:
     
     def test_available_capability_with_fresh_evidence(self) -> None:
         """Available capability with fresh evidence is projected as AVAILABLE."""
+        now = datetime.now(timezone.utc)
         tool_cards = {
             'mcp_client': {
                 'available': True,
-                'last_validated_at_utc': datetime.now(timezone.utc).isoformat(),
+                'last_validated_at_utc': now.isoformat(),
             }
         }
         
-        gaps = project_capability_gaps(tool_cards=tool_cards)
+        gaps = project_capability_gaps(
+            tool_cards=tool_cards,
+            reference_time=now,
+        )
         assert len(gaps) == 1
         assert gaps[0]['capability'] == 'mcp_client'
         assert gaps[0]['status'] == CapabilityGapStatus.AVAILABLE
         assert gaps[0]['freshness'] == Freshness.FRESH
-        assert gaps[0]['confidence'] >= 0.8
+        assert gaps[0]['heuristic_score'] >= 0.8
+        assert gaps[0]['provenance']['timestamp'] == now.isoformat()  # Not fabricated
     
     def test_missing_capability_with_fresh_evidence(self) -> None:
         """Missing capability with fresh evidence is projected as MISSING."""
+        now = datetime.now(timezone.utc)
         tool_cards = {
             'mcp_client': {
                 'available': False,
-                'last_validated_at_utc': datetime.now(timezone.utc).isoformat(),
+                'last_validated_at_utc': now.isoformat(),
             }
         }
         
-        gaps = project_capability_gaps(tool_cards=tool_cards)
+        gaps = project_capability_gaps(
+            tool_cards=tool_cards,
+            reference_time=now,
+        )
         assert len(gaps) == 1
         assert gaps[0]['capability'] == 'mcp_client'
         assert gaps[0]['status'] == CapabilityGapStatus.MISSING
         assert gaps[0]['freshness'] == Freshness.FRESH
-        assert gaps[0]['confidence'] >= 0.8
+        assert gaps[0]['heuristic_score'] >= 0.8
     
     def test_stale_available_capability_is_uncertain(self) -> None:
         """Available capability with stale evidence is projected as UNCERTAIN."""
@@ -136,49 +162,90 @@ class TestCapabilityGapProjection:
             }
         }
         
-        gaps = project_capability_gaps(tool_cards=tool_cards)
+        gaps = project_capability_gaps(
+            tool_cards=tool_cards,
+            reference_time=now,
+        )
         assert len(gaps) == 1
         assert gaps[0]['status'] == CapabilityGapStatus.UNCERTAIN
         assert gaps[0]['freshness'] == Freshness.STALE
-        assert gaps[0]['confidence'] <= 0.5
+        assert gaps[0]['heuristic_score'] <= 0.5
     
     def test_capability_readiness_integration(self) -> None:
         """Capability readiness data is integrated into gap projection."""
         from iabv_v15.domain.models import CapabilityStatus
         
+        now = datetime.now(timezone.utc)
         capability_readiness = [
             {
                 'capability_id': 'wplay.login',
                 'status': CapabilityStatus.READY.value,
                 'score': 0.94,
                 'evidence': ['login_detected', 'visual_complete'],
+                'last_updated_at_utc': now.isoformat(),
             }
         ]
         
-        gaps = project_capability_gaps(capability_readiness=capability_readiness)
+        gaps = project_capability_gaps(
+            capability_readiness=capability_readiness,
+            reference_time=now,
+        )
         assert len(gaps) == 1
         assert gaps[0]['capability'] == 'wplay.login'
         assert gaps[0]['status'] == CapabilityGapStatus.AVAILABLE
         assert gaps[0]['freshness'] == Freshness.FRESH
         assert 'login_detected' in gaps[0]['evidence_refs']
+        assert gaps[0]['provenance']['evidence_type'] == 'derived'  # Not runtime_evaluation
     
     def test_environment_self_model_integration(self) -> None:
-        """Environment self-model data is integrated into gap projection."""
+        """Environment self-model data is integrated into gap projection with freshness discipline."""
+        now = datetime.now(timezone.utc)
         environment_self_model = {
-            'gpu': {'available': False},
+            'gpu': {'available': False},  # Explicitly unavailable
             'ram': {'pressure': 'critical'},
+            'last_scan_at_utc': now.isoformat(),  # Fresh scan
         }
         
-        gaps = project_capability_gaps(environment_self_model=environment_self_model)
+        gaps = project_capability_gaps(
+            environment_self_model=environment_self_model,
+            reference_time=now,
+        )
         assert len(gaps) >= 2
         
         gpu_gap = next((g for g in gaps if g['capability'] == 'gpu_compute'), None)
         assert gpu_gap is not None
-        assert gpu_gap['status'] in (CapabilityGapStatus.MISSING, CapabilityGapStatus.UNCERTAIN)
+        assert gpu_gap['status'] == CapabilityGapStatus.MISSING  # Fresh scan + explicitly unavailable = MISSING
+        assert gpu_gap['freshness'] == Freshness.FRESH
         
         ram_gap = next((g for g in gaps if g['capability'] == 'ram_capacity'), None)
         assert ram_gap is not None
         assert ram_gap['status'] == CapabilityGapStatus.DEGRADED
+        assert ram_gap['freshness'] == Freshness.FRESH
+    
+    def test_stale_environment_model_is_uncertain(self) -> None:
+        """Stale environment self-model produces UNCERTAIN status."""
+        now = datetime.now(timezone.utc)
+        stale_timestamp = (now - timedelta(seconds=7200)).isoformat()
+        environment_self_model = {
+            'gpu': {'available': False},
+            'ram': {'pressure': 'critical'},
+            'last_scan_at_utc': stale_timestamp,  # Stale scan
+        }
+        
+        gaps = project_capability_gaps(
+            environment_self_model=environment_self_model,
+            reference_time=now,
+        )
+        
+        gpu_gap = next((g for g in gaps if g['capability'] == 'gpu_compute'), None)
+        assert gpu_gap is not None
+        assert gpu_gap['status'] == CapabilityGapStatus.UNCERTAIN  # Stale scan → UNCERTAIN
+        assert gpu_gap['freshness'] == Freshness.STALE
+        
+        ram_gap = next((g for g in gaps if g['capability'] == 'ram_capacity'), None)
+        assert ram_gap is not None
+        assert ram_gap['status'] == CapabilityGapStatus.UNCERTAIN  # Stale scan → UNCERTAIN
+        assert ram_gap['freshness'] == Freshness.STALE
 
 
 class TestWorkCandidateConversion:
@@ -192,7 +259,7 @@ class TestWorkCandidateConversion:
             'reason': 'Fresh evidence confirms unavailability',
             'evidence_refs': ['tool_card:mcp_client'],
             'freshness': Freshness.FRESH,
-            'confidence': 0.9,
+            'heuristic_score': 0.9,
             'provenance': {'source': 'tool_card'},
         }
         
@@ -201,6 +268,7 @@ class TestWorkCandidateConversion:
         assert candidate['source'] == 'capability_gap_bridge'
         assert 'Implement missing capability' in candidate['next_action']
         assert candidate['score_breakdown']['capability_missing'] == 80
+        assert candidate['metadata']['heuristic_score'] == 0.9  # Renamed from confidence
     
     def test_degraded_gap_converts_to_improvement_work(self) -> None:
         """DEGRADED capability gap converts to needs_improvement work candidate."""
@@ -210,7 +278,7 @@ class TestWorkCandidateConversion:
             'reason': 'RAM pressure is critical',
             'evidence_refs': ['environment_self_model:ram'],
             'freshness': Freshness.FRESH,
-            'confidence': 0.9,
+            'heuristic_score': 0.9,
             'provenance': {'source': 'environment_self_awareness_service'},
         }
         
@@ -218,6 +286,7 @@ class TestWorkCandidateConversion:
         assert candidate['status'] == 'needs_improvement'
         assert 'Improve degraded capability' in candidate['next_action']
         assert candidate['score_breakdown']['capability_degraded'] == 60
+        assert candidate['metadata']['heuristic_score'] == 0.9
     
     def test_uncertain_gap_converts_to_validation_work(self) -> None:
         """UNCERTAIN capability gap converts to needs_validation work candidate."""
@@ -227,7 +296,7 @@ class TestWorkCandidateConversion:
             'reason': 'Evidence is stale - current state unknown',
             'evidence_refs': ['tool_card:mcp_client'],
             'freshness': Freshness.STALE,
-            'confidence': 0.4,
+            'heuristic_score': 0.4,
             'provenance': {'source': 'tool_card'},
         }
         
@@ -235,6 +304,7 @@ class TestWorkCandidateConversion:
         assert candidate['status'] == 'needs_validation'
         assert 'Validate uncertain capability' in candidate['next_action']
         assert candidate['score_breakdown']['capability_uncertain'] == 40
+        assert candidate['metadata']['heuristic_score'] == 0.4
     
     def test_available_gap_has_low_priority(self) -> None:
         """AVAILABLE capability gap converts to available work with low priority."""
@@ -244,7 +314,7 @@ class TestWorkCandidateConversion:
             'reason': 'Fresh evidence confirms availability',
             'evidence_refs': ['tool_card:wplay.login'],
             'freshness': Freshness.FRESH,
-            'confidence': 0.9,
+            'heuristic_score': 0.9,
             'provenance': {'source': 'tool_card'},
         }
         
@@ -252,6 +322,7 @@ class TestWorkCandidateConversion:
         assert candidate['status'] == 'available'
         assert candidate['score_breakdown']['capability_available'] == 0
         assert candidate['score_breakdown']['base'] == 0
+        assert candidate['metadata']['heuristic_score'] == 0.9
     
     def test_work_candidate_preserves_provenance(self) -> None:
         """Work candidate preserves provenance from capability gap."""
@@ -261,7 +332,7 @@ class TestWorkCandidateConversion:
             'reason': 'Fresh evidence confirms unavailability',
             'evidence_refs': ['tool_card:mcp_client'],
             'freshness': Freshness.FRESH,
-            'confidence': 0.9,
+            'heuristic_score': 0.9,
             'provenance': {
                 'source': 'tool_card',
                 'timestamp': datetime.now(timezone.utc).isoformat(),
@@ -272,23 +343,30 @@ class TestWorkCandidateConversion:
         candidate = convert_gap_to_work_candidate(gap)
         assert candidate['metadata']['provenance'] == gap['provenance']
         assert candidate['metadata']['freshness'] == gap['freshness']
-        assert candidate['metadata']['confidence'] == gap['confidence']
+        assert candidate['metadata']['heuristic_score'] == gap['heuristic_score']
 
 
 class TestDeterminism:
     """Test F: identical inputs → deterministic result."""
     
     def test_identical_inputs_produce_identical_gaps(self) -> None:
-        """Identical inputs produce identical capability gaps."""
+        """Identical inputs with same reference_time produce identical capability gaps."""
+        now = datetime.now(timezone.utc)
         tool_cards = {
             'mcp_client': {
                 'available': False,
-                'last_validated_at_utc': datetime.now(timezone.utc).isoformat(),
+                'last_validated_at_utc': now.isoformat(),
             }
         }
         
-        gaps1 = project_capability_gaps(tool_cards=tool_cards)
-        gaps2 = project_capability_gaps(tool_cards=tool_cards)
+        gaps1 = project_capability_gaps(
+            tool_cards=tool_cards,
+            reference_time=now,
+        )
+        gaps2 = project_capability_gaps(
+            tool_cards=tool_cards,
+            reference_time=now,
+        )
         
         assert len(gaps1) == len(gaps2)
         assert gaps1[0]['capability'] == gaps2[0]['capability']
@@ -303,7 +381,7 @@ class TestDeterminism:
             'reason': 'Fresh evidence confirms unavailability',
             'evidence_refs': ['tool_card:mcp_client'],
             'freshness': Freshness.FRESH,
-            'confidence': 0.9,
+            'heuristic_score': 0.9,
             'provenance': {'source': 'tool_card'},
         }
         
@@ -319,7 +397,8 @@ class TestFalseConfidencePrevention:
     """Test G: missing evidence → no false confidence."""
     
     def test_missing_timestamp_has_low_confidence(self) -> None:
-        """Tool card with missing timestamp has low confidence."""
+        """Tool card with missing timestamp has low heuristic_score."""
+        now = datetime.now(timezone.utc)
         tool_cards = {
             'mcp_client': {
                 'available': True,
@@ -327,13 +406,16 @@ class TestFalseConfidencePrevention:
             }
         }
         
-        gaps = project_capability_gaps(tool_cards=tool_cards)
+        gaps = project_capability_gaps(
+            tool_cards=tool_cards,
+            reference_time=now,
+        )
         assert gaps[0]['status'] == CapabilityGapStatus.UNCERTAIN
         assert gaps[0]['freshness'] == Freshness.UNKNOWN
-        assert gaps[0]['confidence'] <= 0.3
+        assert gaps[0]['heuristic_score'] <= 0.3
     
     def test_stale_evidence_has_reduced_confidence(self) -> None:
-        """Stale evidence has reduced confidence compared to fresh evidence."""
+        """Stale evidence has reduced heuristic_score compared to fresh evidence."""
         now = datetime.now(timezone.utc)
         fresh_timestamp = now.isoformat()
         stale_timestamp = (now - timedelta(seconds=7200)).isoformat()
@@ -351,23 +433,33 @@ class TestFalseConfidencePrevention:
             }
         }
         
-        gaps_fresh = project_capability_gaps(tool_cards=tool_cards_fresh)
-        gaps_stale = project_capability_gaps(tool_cards=tool_cards_stale)
+        gaps_fresh = project_capability_gaps(
+            tool_cards=tool_cards_fresh,
+            reference_time=now,
+        )
+        gaps_stale = project_capability_gaps(
+            tool_cards=tool_cards_stale,
+            reference_time=now,
+        )
         
-        assert gaps_fresh[0]['confidence'] > gaps_stale[0]['confidence']
+        assert gaps_fresh[0]['heuristic_score'] > gaps_stale[0]['heuristic_score']
     
     def test_ambiguous_availability_has_low_confidence(self) -> None:
-        """Tool card with ambiguous availability field has low confidence."""
+        """Tool card with ambiguous availability field has low heuristic_score."""
+        now = datetime.now(timezone.utc)
         tool_cards = {
             'mcp_client': {
                 'available': None,  # Ambiguous
-                'last_validated_at_utc': datetime.now(timezone.utc).isoformat(),
+                'last_validated_at_utc': now.isoformat(),
             }
         }
         
-        gaps = project_capability_gaps(tool_cards=tool_cards)
+        gaps = project_capability_gaps(
+            tool_cards=tool_cards,
+            reference_time=now,
+        )
         assert gaps[0]['status'] == CapabilityGapStatus.UNCERTAIN
-        assert gaps[0]['confidence'] <= 0.5
+        assert gaps[0]['heuristic_score'] <= 0.5
 
 
 class TestDecisionRecord:
@@ -375,6 +467,7 @@ class TestDecisionRecord:
     
     def test_decision_record_includes_all_required_fields(self) -> None:
         """Decision record includes all required fields for traceability."""
+        now = datetime.now(timezone.utc)
         recommended_work = {
             'id': 'capability_gap:mcp_client',
             'title': 'Capability Gap: mcp_client (MISSING)',
@@ -384,6 +477,7 @@ class TestDecisionRecord:
         capability_gap = {
             'capability': 'mcp_client',
             'status': CapabilityGapStatus.MISSING,
+            'provenance': {'timestamp': now.isoformat()},
         }
         
         record = build_decision_record(
@@ -392,8 +486,9 @@ class TestDecisionRecord:
             evidence=['tool_card_mcp_client_unavailable'],
             blocked_by=['dependency_x'],
             resource_constraints={'ram': 'critical'},
-            confidence=0.8,
+            heuristic_score=0.8,
             alternatives=[{'id': 'alternative_1'}],
+            decision_timestamp=now,
         )
         
         assert record['recommended_work'] == recommended_work
@@ -401,9 +496,10 @@ class TestDecisionRecord:
         assert record['evidence'] == ['tool_card_mcp_client_unavailable']
         assert record['blocked_by'] == ['dependency_x']
         assert record['resource_constraints'] == {'ram': 'critical'}
-        assert record['confidence'] == 0.8
+        assert record['heuristic_score'] == 0.8
         assert record['alternatives'] == [{'id': 'alternative_1'}]
-        assert 'timestamp' in record
+        assert 'decision_timestamp' in record
+        assert 'evidence_timestamps' in record
         assert record['provenance']['source'] == 'capability_gap_bridge'
     
     def test_decision_record_has_minimal_defaults(self) -> None:
@@ -417,6 +513,7 @@ class TestDecisionRecord:
         assert record['evidence'] == []
         assert record['blocked_by'] == []
         assert record['resource_constraints'] == {}
-        assert record['confidence'] == 0.5
+        assert record['heuristic_score'] == 0.5
         assert record['alternatives'] == []
-        assert 'timestamp' in record
+        assert 'decision_timestamp' in record
+        assert 'evidence_timestamps' in record
