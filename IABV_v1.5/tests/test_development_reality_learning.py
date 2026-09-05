@@ -24,17 +24,10 @@ from iabv_v15.services.lab.adequacy_computation import compute_adequacy, Adequac
 
 
 def test_adequacy_computation_minimal():
-    """Test minimal adequacy computation without guessing."""
+    """Test minimal adequacy computation without guessing.
     
-    # INCONCLUSIVE: no observed evidence
-    classification, reason = compute_adequacy(
-        expected_summary="test objective",
-        observed_summary="",
-        success=True,
-        precision=0.9,
-    )
-    assert classification == AdequacyClassification.INCONCLUSIVE
-    assert "no observed evidence" in reason
+    Updated for corrected semantics: TEXTUAL_MATCH != INDEPENDENT_OBSERVATION
+    """
     
     # INCONCLUSIVE: no expected objective
     classification, reason = compute_adequacy(
@@ -46,47 +39,41 @@ def test_adequacy_computation_minimal():
     assert classification == AdequacyClassification.INCONCLUSIVE
     assert "no expected objective" in reason
     
-    # INADEQUATE: operation failed with low precision
+    # NOT_ADEQUATE: no independent observation (even with high precision)
     classification, reason = compute_adequacy(
         expected_summary="test objective",
         observed_summary="test result",
-        success=False,
-        precision=0.2,
+        success=True,
+        precision=0.9,
+        objective_addressed=False,
+        objective_addressed_is_observed=False,
     )
-    assert classification == AdequacyClassification.INADEQUATE
-    assert "operation failed" in reason
+    assert classification == AdequacyClassification.NOT_ADEQUATE
+    assert "no independent observation" in reason
     
-    # ADEQUATE: high precision and objective addressed (with independent observation)
+    # INCONCLUSIVE: caller assertion without independent observation
+    classification, reason = compute_adequacy(
+        expected_summary="test objective",
+        observed_summary="test result",
+        success=True,
+        precision=0.9,
+        objective_addressed=True,  # Caller assertion
+        objective_addressed_is_observed=False,  # Not independently observed
+    )
+    assert classification == AdequacyClassification.INCONCLUSIVE
+    assert "caller assertion" in reason
+    
+    # ADEQUATE: ONLY when independently observed (True, True)
     classification, reason = compute_adequacy(
         expected_summary="test objective",
         observed_summary="test result",
         success=True,
         precision=0.9,
         objective_addressed=True,
-        objective_addressed_is_observed=True,
+        objective_addressed_is_observed=True,  # INDEPENDENT OBSERVATION required
     )
     assert classification == AdequacyClassification.ADEQUATE
-    assert "high precision" in reason
-    
-    # PARTIAL: moderate precision
-    classification, reason = compute_adequacy(
-        expected_summary="test objective",
-        observed_summary="test result",
-        success=True,
-        precision=0.6,
-    )
-    assert classification == AdequacyClassification.PARTIAL
-    assert "moderate precision" in reason
-    
-    # PARTIAL: low precision despite success
-    classification, reason = compute_adequacy(
-        expected_summary="test objective",
-        observed_summary="test result",
-        success=True,
-        precision=0.4,
-    )
-    assert classification == AdequacyClassification.PARTIAL
-    assert "low precision" in reason
+    assert "independently observed objective addressed" in reason
 
 
 def test_experiment_lab_with_adequacy():
@@ -143,12 +130,12 @@ def test_experiment_lab_with_adequacy():
             },
         )
         
-        # Verify adequacy was computed and stored
+        # Verify objective evidence flags were stored (NOT adequacy classification)
         assert run is not None
-        assert 'adequacy_classification' in run.metadata
-        assert run.metadata['adequacy_classification'] == 'adequate'
-        assert 'adequacy_reason' in run.metadata
-        assert 'high precision' in run.metadata['adequacy_reason']
+        assert 'objective_addressed' in run.metadata
+        assert run.metadata['objective_addressed'] == True
+        assert 'objective_addressed_is_observed' in run.metadata
+        assert run.metadata['objective_addressed_is_observed'] == True
         
         # Verify recommendation was generated
         assert recommendation is not None
@@ -161,10 +148,12 @@ def test_experiment_lab_with_adequacy():
         )
         assert len(reloaded_runs) > 0
         
-        # Verify adequacy persisted
+        # Verify objective evidence flags persisted
         reloaded_run = reloaded_runs[0]
-        assert 'adequacy_classification' in reloaded_run.metadata
-        assert reloaded_run.metadata['adequacy_classification'] == 'adequate'
+        assert 'objective_addressed' in reloaded_run.metadata
+        assert reloaded_run.metadata['objective_addressed'] == True
+        assert 'objective_addressed_is_observed' in reloaded_run.metadata
+        assert reloaded_run.metadata['objective_addressed_is_observed'] == True
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -277,12 +266,14 @@ def test_development_learning_bridge_end_to_end():
             },
         )
         
-        # Verify adequacy computation
-        assert run.metadata['adequacy_classification'] == 'adequate'
-        assert 'high precision' in run.metadata['adequacy_reason']
+        # Verify objective evidence flags stored (NOT adequacy classification)
+        assert run is not None
+        assert 'objective_addressed' in run.metadata
+        assert run.metadata['objective_addressed'] == True
+        assert 'objective_addressed_is_observed' in run.metadata
+        assert run.metadata['objective_addressed_is_observed'] == True
         
         # Verify experience persisted
-        assert run is not None
         assert recommendation is not None
         
         # ========================================================================
@@ -296,6 +287,7 @@ def test_development_learning_bridge_end_to_end():
             limit=20,
         )
         assert len(historical_runs) > 0
-        assert historical_runs[0].metadata['adequacy_classification'] == 'adequate'
+        assert historical_runs[0].metadata['objective_addressed'] == True
+        assert historical_runs[0].metadata['objective_addressed_is_observed'] == True
     finally:
         shutil.rmtree(root, ignore_errors=True)
