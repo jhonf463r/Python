@@ -2469,6 +2469,70 @@ class AppBootstrap:
             and getattr(status, 'control_vm_bound', False)
         )
 
+    def is_birth_ready(self) -> bool:
+        """Return True only when VERIFIED BIRTH READY conditions are met.
+        
+        BIRTH_READY = UI_READY AND CHAT_BRIDGE_READY AND NO_CRITICAL_STARTUP_FINDINGS
+        
+        This is distinct from SPLASH_READY (visual UX). The splash may close
+        via fallback even if the system is not birth-ready. Birth readiness
+        requires:
+        1. UI/page readiness (at least one honest signal: shell or page loader)
+        2. Startup chat bridge operational (can accept user messages)
+        3. Absence of critical startup contradictions or OSES findings
+        
+        This gate provides a consultable boolean for future self-observation
+        and multi-agent cooperation without breaking the existing fallback UX.
+        """
+        # UI readiness: at least one honest signal received
+        ui_ready = (
+            getattr(self, '_shell_loader_ready_handled', False)
+            or getattr(self, '_page_loader_ready_received', False)
+        )
+        
+        # Chat bridge operational
+        chat_bridge_ready = self._startup_chat_bridge_is_ready()
+        
+        # No critical OSES findings from startup
+        no_critical_findings = self._has_no_critical_startup_findings()
+        
+        return ui_ready and chat_bridge_ready and no_critical_findings
+
+    def _has_no_critical_startup_findings(self) -> bool:
+        """Check if there are no critical OSES findings from startup.
+        
+        Returns False if any CRITICAL or HIGH severity findings exist in
+        the operational self-examination service from the startup phase.
+        """
+        oses = getattr(self, 'operational_self_examination_service', None)
+        if oses is None:
+            return True  # No OSES service = no findings to block birth
+        
+        try:
+            # Get recent findings (e.g., from latest snapshot)
+            snapshot = getattr(oses, 'current_snapshot', None)
+            if snapshot is None:
+                return True
+            
+            findings = getattr(snapshot, 'findings', [])
+            if not findings:
+                return True
+            
+            # Check for CRITICAL or HIGH severity findings
+            for finding in findings:
+                severity = getattr(finding, 'severity', '').upper()
+                if severity in ('CRITICAL', 'HIGH'):
+                    logger.warning(
+                        'birth_ready_blocked: critical finding %s (severity=%s)',
+                        getattr(finding, 'title', 'unknown'), severity,
+                    )
+                    return False
+            
+            return True
+        except Exception:
+            logger.debug('_has_no_critical_startup_findings: check failed, assuming no block', exc_info=True)
+            return True  # Fail-open: don't block birth on check failure
+
     def _mark_startup_chat_bridge_ready(self, source: str, bridge: Any | None = None) -> None:
         """Persist the earliest point where UI chat is actually reachable.
 

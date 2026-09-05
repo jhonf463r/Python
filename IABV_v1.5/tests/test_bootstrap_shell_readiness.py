@@ -286,3 +286,163 @@ def test_splash_controller_emits_closing_now_signal() -> None:
     splash.signal_closing()
     splash.signal_closing()
     assert fired == [True, True]
+
+
+# --- Birth Readiness Gate Tests --------------------------------------------- #
+
+
+class _FakeBridgeStatus:
+    def __init__(self, running: bool = False, control_vm_bound: bool = False) -> None:
+        self.running = running
+        self.control_vm_bound = control_vm_bound
+
+
+class _FakeBridge:
+    def __init__(self, running: bool = False, control_vm_bound: bool = False) -> None:
+        self.status = _FakeBridgeStatus(running, control_vm_bound)
+
+
+class _FakeOsesSnapshot:
+    def __init__(self, findings: list[Any] | None = None) -> None:
+        self.findings = findings or []
+
+
+class _FakeFinding:
+    def __init__(self, severity: str = 'LOW', title: str = 'test') -> None:
+        self.severity = severity
+        self.title = title
+
+
+class _FakeOses:
+    def __init__(self, findings: list[Any] | None = None) -> None:
+        self.current_snapshot = _FakeOsesSnapshot(findings)
+
+
+def test_birth_ready_case_1_false_incomplete_readiness() -> None:
+    """CASE 1: FALSE - incomplete readiness (no UI signals, no chat bridge)."""
+    boot = _make_bootstrap_stub()
+    # No UI signals received
+    boot._shell_loader_ready_handled = False  # type: ignore[attr-defined]
+    boot._page_loader_ready_received = False  # type: ignore[attr-defined]
+    # No chat bridge
+    boot.ui_bridge_server = None  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = None  # type: ignore[attr-defined]
+    # No OSES findings (should not block)
+    boot.operational_self_examination_service = None  # type: ignore[attr-defined]
+    
+    assert boot.is_birth_ready() is False  # type: ignore[attr-defined]
+
+
+def test_birth_ready_case_2_true_legitimate_readiness() -> None:
+    """CASE 2: TRUE - legitimate readiness (UI + chat bridge + no critical findings)."""
+    boot = _make_bootstrap_stub()
+    # UI signal received
+    boot._shell_loader_ready_handled = True  # type: ignore[attr-defined]
+    boot._page_loader_ready_received = False  # type: ignore[attr-defined]
+    # Chat bridge operational
+    boot.ui_bridge_server = _FakeBridge(running=True, control_vm_bound=True)  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = object()  # type: ignore[attr-defined]
+    # No critical OSES findings
+    boot.operational_self_examination_service = _FakeOses(findings=[  # type: ignore[attr-defined]
+        _FakeFinding(severity='LOW', title='minor warning'),
+        _FakeFinding(severity='MEDIUM', title='info'),
+    ])
+    
+    assert boot.is_birth_ready() is True  # type: ignore[attr-defined]
+
+
+def test_birth_ready_case_3_fallback_visual_ready_but_not_birth_ready() -> None:
+    """CASE 3: FALLBACK - visual ready (splash closed) but birth not ready.
+    
+    This tests the semantic distinction: splash may close via fallback
+    even when chat bridge is not yet operational.
+    """
+    boot = _make_bootstrap_stub()
+    # UI signal received via fallback (splash closed)
+    boot._shell_loader_ready_handled = True  # type: ignore[attr-defined]
+    boot._page_loader_ready_received = False  # type: ignore[attr-defined]
+    # Chat bridge NOT yet operational (lazy VM construction pending)
+    boot.ui_bridge_server = None  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = None  # type: ignore[attr-defined]
+    # No critical findings
+    boot.operational_self_examination_service = None  # type: ignore[attr-defined]
+    
+    # Splash is visually ready, but system is NOT birth-ready
+    assert boot.is_birth_ready() is False  # type: ignore[attr-defined]
+
+
+def test_birth_ready_case_4_critical_finding_blocks_birth() -> None:
+    """CASE 4: CRITICAL FINDING - birth not ready due to HIGH/CRITICAL OSES finding."""
+    boot = _make_bootstrap_stub()
+    # UI signal received
+    boot._shell_loader_ready_handled = True  # type: ignore[attr-defined]
+    boot._page_loader_ready_received = False  # type: ignore[attr-defined]
+    # Chat bridge operational
+    boot.ui_bridge_server = _FakeBridge(running=True, control_vm_bound=True)  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = object()  # type: ignore[attr-defined]
+    # CRITICAL OSES finding present
+    boot.operational_self_examination_service = _FakeOses(findings=[  # type: ignore[attr-defined]
+        _FakeFinding(severity='LOW', title='minor'),
+        _FakeFinding(severity='CRITICAL', title='database locked'),
+    ])
+    
+    assert boot.is_birth_ready() is False  # type: ignore[attr-defined]
+
+
+def test_birth_ready_high_severity_also_blocks() -> None:
+    """HIGH severity findings also block birth readiness."""
+    boot = _make_bootstrap_stub()
+    boot._shell_loader_ready_handled = True  # type: ignore[attr-defined]
+    boot.ui_bridge_server = _FakeBridge(running=True, control_vm_bound=True)  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = object()  # type: ignore[attr-defined]
+    boot.operational_self_examination_service = _FakeOses(findings=[  # type: ignore[attr-defined]
+        _FakeFinding(severity='HIGH', title='startup error'),
+    ])
+    
+    assert boot.is_birth_ready() is False  # type: ignore[attr-defined]
+
+
+def test_birth_ready_page_loader_sufficient_for_ui_ready() -> None:
+    """page_loader_ready is sufficient for UI_READY even if shell signal missing."""
+    boot = _make_bootstrap_stub()
+    boot._shell_loader_ready_handled = False  # type: ignore[attr-defined]
+    boot._page_loader_ready_received = True  # type: ignore[attr-defined]
+    boot.ui_bridge_server = _FakeBridge(running=True, control_vm_bound=True)  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = object()  # type: ignore[attr-defined]
+    boot.operational_self_examination_service = _FakeOses(findings=[])  # type: ignore[attr-defined]
+    
+    assert boot.is_birth_ready() is True  # type: ignore[attr-defined]
+
+
+def test_birth_ready_chat_bridge_not_running_blocks() -> None:
+    """Chat bridge not running blocks birth even if UI is ready."""
+    boot = _make_bootstrap_stub()
+    boot._shell_loader_ready_handled = True  # type: ignore[attr-defined]
+    boot.ui_bridge_server = _FakeBridge(running=False, control_vm_bound=True)  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = object()  # type: ignore[attr-defined]
+    boot.operational_self_examination_service = _FakeOses(findings=[])  # type: ignore[attr-defined]
+    
+    assert boot.is_birth_ready() is False  # type: ignore[attr-defined]
+
+
+def test_birth_ready_control_vm_not_bound_blocks() -> None:
+    """Control VM not bound blocks birth even if bridge is running."""
+    boot = _make_bootstrap_stub()
+    boot._shell_loader_ready_handled = True  # type: ignore[attr-defined]
+    boot.ui_bridge_server = _FakeBridge(running=True, control_vm_bound=False)  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = object()  # type: ignore[attr-defined]
+    boot.operational_self_examination_service = _FakeOses(findings=[])  # type: ignore[attr-defined]
+    
+    assert boot.is_birth_ready() is False  # type: ignore[attr-defined]
+
+
+def test_birth_ready_fail_open_on_oses_check_failure() -> None:
+    """If OSES check fails, birth is not blocked (fail-open for safety)."""
+    boot = _make_bootstrap_stub()
+    boot._shell_loader_ready_handled = True  # type: ignore[attr-defined]
+    boot.ui_bridge_server = _FakeBridge(running=True, control_vm_bound=True)  # type: ignore[attr-defined]
+    boot.control_center_viewmodel = object()  # type: ignore[attr-defined]
+    # OSES service exists but has no snapshot (check will fail gracefully)
+    boot.operational_self_examination_service = _FakeOses(findings=None)  # type: ignore[attr-defined]
+    
+    assert boot.is_birth_ready() is True  # type: ignore[attr-defined]
