@@ -594,6 +594,8 @@ When persisted state contradicts live evidence:
 - Once runtime foundation is verified
 - NOT currently in this role
 
+**CRITICAL:** Until G0 is runtime verified, IABV must NOT be treated as an autonomous development agent.
+
 **Do NOT exchange roles arbitrarily.**
 
 ---
@@ -838,10 +840,472 @@ Without:
 
 ---
 
+## R1. HUMAN-MACHINE INTERACTION EXPERIENCE MODEL
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Strategic Principle
+
+The interaction between human and IABV is not merely input/output. It is a future fundamental unit of observation, experimentation, and learning.
+
+### Conceptual Flow
+
+```
+HUMAN INTENT
+    ↓
+CONTEXT
+    ↓
+IABV SELF / ENVIRONMENT OBSERVATION
+    ↓
+CAPABILITY ASSESSMENT
+    ↓
+RESOURCE ASSESSMENT
+    ↓
+DECISION
+    ↓
+GOVERNANCE
+    ↓
+ACTION
+    ↓
+OBSERVATION
+    ↓
+EXPECTED vs ACTUAL
+    ↓
+DISCREPANCY
+    ↓
+CAUSAL ANALYSIS
+    ↓
+EXPERIENCE
+    ↓
+GENERALIZED LESSON
+    ↓
+FUTURE DECISION
+```
+
+### Future Goal
+
+Eventually enable IABV to say:
+> "This was what the human intended. This was my state. These were my capabilities. These were my conditions. This was my decision. This is what I expected to happen. This is what actually happened. Here is the evidence. Here exists a discrepancy. These are the possible causes. This cause is demonstrated. This other remains unknown. This is what I legitimately learned. And this learning must influence my next decision."
+
+**This is NOT biological consciousness.** This is evidence-based self-observation + contextual experience + controlled learning.
+
+---
+
+## R2. CONTEXT MODEL
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+Future interaction experiences will contain context when real evidence exists:
+
+### HUMAN CONTEXT
+- objective
+- intent
+- requested action
+- constraints
+- interaction modality
+
+### TEMPORAL CONTEXT
+- timestamp
+- duration
+- sequence position
+- prior relevant events
+
+### SYSTEM CONTEXT
+- process identity
+- session identity
+- lifecycle state
+- current cognitive process
+
+### HARDWARE / ENVIRONMENT CONTEXT
+- CPU
+- RAM
+- GPU
+- disk
+- OS
+- device
+- network conditions
+- relevant runtime pressure
+
+### SOFTWARE / CAPABILITY CONTEXT
+- models available
+- model selected
+- tools available
+- tool selected
+- provider
+- version
+- capability state
+- freshness
+
+### GOVERNANCE CONTEXT
+- permissions
+- authority
+- capabilities
+- leases
+- approval requirements
+- resource constraints
+
+### KNOWLEDGE CONTEXT
+- relevant memory
+- previous experience
+- known limitations
+- known errors
+- uncertainty
+
+**Do NOT register a field as available simply because it conceptually exists.** Only when real evidence demonstrates availability.
+
+---
+
+## R3. EVIDENCE MODEL
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+For each future interaction, distinguish:
+
+- **OBSERVED** - Direct runtime evidence
+- **EXPECTED** - Predicted outcome
+- **INFERRED** - Derived from other evidence
+- **VALIDATED** - Independently verified
+- **UNKNOWN** - No evidence available
+- **UNRESOLVED** - Contradictory evidence
+
+Use established evidence taxonomy:
+- DIRECT_RUNTIME_EVIDENCE
+- STATIC_SOURCE_EVIDENCE
+- TEST_EVIDENCE
+- DERIVED_EVIDENCE
+- ENGINEERING_DESIGN
+- HISTORICAL_EVIDENCE
+- UNVERIFIED_ASSUMPTION
+
+---
+
+## R4. DISCREPANCY MODEL
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+Future interactions must distinguish:
+
+### SUCCESS
+Observed result matches validated objective.
+
+### PARTIAL
+Only part of the result could be validated.
+
+### FAILURE
+Result contrary to objective.
+
+### CONTRADICTION
+Two sources present incompatible states.
+
+### UNKNOWN
+Insufficient evidence.
+
+**Do NOT automatically assume:**
+- response received = success
+- execution completed = objective satisfied
+
+---
+
+## R5. CAUSAL DISCIPLINE
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Critical Invariants
+
+**CORRELATION ≠ CAUSATION**
+**TEMPORAL PROXIMITY ≠ CAUSALITY**
+
+An interaction occurring after a change does NOT prove the change caused the difference.
+
+### Future Experience Must Record
+- observation
+- candidate cause
+- evidence
+- counterevidence
+- confidence
+- unresolved causality
+
+**Never fabricate cause.**
+
+---
+
+## R6. CONTEXT-DEPENDENT BIAS / FRICTION
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Future Capability
+
+Study how the same algorithm behaves differently under different circumstances:
+
+```
+ALGORITHM
++
+CONTEXT
++
+RESOURCES
++
+DEVICE
++
+MODEL
++
+TOOL
++
+TIME
++
+HUMAN INTENT
+```
+
+→
+**OBSERVED BEHAVIOR**
+
+### Future Questions
+- Does the failure belong to the algorithm?
+- The model?
+- The tool?
+- The resource?
+- The environment?
+- The context?
+- The persisted state?
+- An ambiguous human interaction?
+- A combination of factors?
+- Or simply insufficient evidence?
+
+**Do NOT implement a cause classifier now.** Only document the objective.
+
+---
+
+## R7. SELF-REPORT TRUTHFULNESS (Enhanced)
+
+**Connection to Historical Incident (mcp_client)**
+
+### Principle
+
+IABV must differentiate what it believes it knows from what it is observing now.
+
+### Model
+
+```
+PERSISTED BELIEF
+       +
+LIVE OBSERVATION
+       ↓
+RECONCILIATION
+       ↓
+CONSISTENT STATE
+or
+EXPLICIT CONTRADICTION
+```
+
+### Required Behavior
+- Do NOT silently overwrite contradiction
+- Do NOT assert a causal explanation not demonstrated
+- Keep contradictions explicit
+- Require resolution decision
+
+---
+
+## R8. EXPERIENCE MODEL
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Target Schema
+
+```
+experience_id
+objective
+human_intent
+context
+system_state
+capabilities
+resources
+decision
+action
+expected_result
+observed_result
+evidence
+discrepancy
+candidate_causes
+validated_cause
+uncertainty
+outcome
+lesson
+generalization
+applicability
+next_decision
+```
+
+**All fields are TARGET SCHEMA / NOT YET IMPLEMENTED.**
+
+Do NOT create new persistence if existing infrastructure can eventually represent these concepts.
+
+---
+
+## R9. LEARNING RULE (Enhanced)
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Pipeline
+
+```
+OBSERVE
+→
+FORM CLAIM
+→
+INDEPENDENT AUDIT
+→
+COUNTEREVIDENCE
+→
+RECONCILE
+→
+UPDATE KNOWLEDGE / UNCERTAINTY
+→
+SELECT NEXT ACTION
+→
+VERIFY
+→
+GENERALIZE LESSON
+```
+
+### Preserve Existing Invariants
+
+**VERIFIED ≠ ELIGIBLE**
+- Verification does not automatically make something eligible for learning.
+
+**AUTHORIZED ≠ ACCEPTED_FOR_LEARNING**
+- Authorization does not automatically accept for learning.
+
+### Do NOT Automatically Convert
+- Successful interaction → positive learning
+- Response received → learning
+- Execution completed → learning
+
+**Learning requires:**
+- Independent verification
+- Evidence-based validation
+- Governance approval
+
+---
+
+## R10. ALGORITHM UNDER TEST
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### New Concept
+
+Each relevant interaction can serve as observation of one or more organism algorithms.
+
+### Future Experience Will Indicate
+- algorithm
+- category
+- version
+- input conditions
+- context
+- expected behavior
+- actual behavior
+- deviations
+- evidence
+- outcome
+
+### Enables Study Of
+
+`ALGORITHM × CONTEXT × RESOURCE × ENVIRONMENT × HUMAN INTERACTION`
+
+Without assuming a deviation is necessarily an algorithm bug.
+
+---
+
+## R11. SPACE-TIME-DEVICE MODEL
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Principle
+
+IABV behavior must be analyzable with respect to the concrete environment where it occurred.
+
+### Conceptual Context
+
+```
+SPACE
+TIME
+DEVICE
+PROCESS
+SESSION
+RESOURCES
+MODEL
+TOOLS
+HUMAN
+OBJECTIVE
+GOVERNANCE
+``
+
+**This is NOT biological spatial/temporal consciousness.** This is experimental contextualization architecture.
+
+---
+
+## R12. TRANSITION TOWARD SELF-DEVELOPMENT
+
+**STATUS: FUTURE ARCHITECTURAL TARGET / NOT IMPLEMENTED**
+
+### Stages
+
+**Stage 1:** IABV IS BUILT BY HUMANS
+
+**Stage 2:** IABV OBSERVES ITSELF
+
+**Stage 3:** IABV IDENTIFIES ITS GAPS
+
+**Stage 4:** IABV RECOMMENDS NEXT WORK
+
+**Stage 5:** IABV PARTICIPATES IN A CONTROLLED EXPERIMENT
+
+**Stage 6:** IABV PROPOSES A DEVELOPMENT CHANGE
+
+**Stage 7:** IABV DEVELOPS/TESTS/VALIDATES IN SANDBOX
+
+**Stage 8:** IABV PRODUCES EVIDENCE FOR PROMOTION OR REJECTION
+
+**Stage 9:** IABV LEARNS FROM THE RESULT
+
+**Stages 4–9 = FUTURE TARGET.**
+
+---
+
+## R13. BIRTH GATE REMAINS THE FOUNDATION
+
+**CRITICAL RULE**
+
+Do NOT interpret the existence of this Interaction Experience Architecture as evidence of runtime metacognition.
+
+### Required Sequence
+
+```
+BIRTH
+→
+STABILITY
+→
+SELF-OBSERVATION
+→
+INTERACTION EXPERIENCE
+→
+SELF-DIAGNOSIS
+→
+RECOMMENDATION
+→
+LEARNING
+→
+ASSISTED DEVELOPMENT
+→
+SELF-DEVELOPMENT
+```
+
+Each stage requires independent verification before proceeding to the next.
+
+---
+
 ## R. CURRENT ROADMAP
 
 ### NOW
-**Birth + Stability + Truthful Readiness**
+**Birth + Stability + Truthful Readiness** (G0)
 - Reliable startup
 - Verified READY gate
 - Stable interaction
@@ -849,43 +1313,42 @@ Without:
 - Safe termination
 
 ### NEXT
-**Runtime Verification of Birth/Stability**
+**Independent Runtime Proof of Birth + Stability**
 - Actual runtime testing
 - Evidence collection
 - Freeze diagnosis
 
-### THEN
-**Reliable Self-Observation**
+### AFTER FOUNDATION
+**Self-Observation and Truthful State Reconciliation**
 - Capability gap detection
 - State introspection
 - Evidence-based claims
 
 ### THEN
-**Decision-Only Self-Diagnosis**
+**Capability Gap / Decision-Only Experiment**
 - Integrate CapabilityGapBridge with AdaptiveTaskOrchestrator
 - Self-diagnosis endpoint
 - Recommendation (NO execution)
 
 ### THEN
-**Next-Best-Work Recommendation**
-- Cognitive arbitration
-- Work inventory comparison
-- Recommendation generation
+**Interaction Experience Measurement**
+- Context capture
+- Evidence collection
+- Discrepancy detection
 
 ### THEN
-**Measured Experiment/Learning Loop**
-- Sandbox changes
-- Runtime observation
-- Objective validation
-- Experience accumulation
+**Learning / Causal Validation**
+- Independent verification
+- Evidence-based validation
+- Governance approval
 
-### THEN
-**Controlled Development Assistance**
+### LATER
+**Assisted Development**
 - IABV recommends development work
 - Human audits and approves
 - Governed execution
 
-### LATER
+### FUTURE
 **Controlled Self-Development**
 - Bounded self-modification
 - Independent verification
@@ -1048,11 +1511,19 @@ This work supports:
 
 ---
 
-## Y. NEXT SINGLE ACTION
+## Y. CURRENT SINGLE ACTION
 
-**Integrate capability_gap_bridge with AdaptiveTaskOrchestrator to expose a self-diagnosis endpoint that can be called by the LLM to enable the decision-only self-development experiment.**
+**Obtain independent runtime verification of Birth Gate + Stability + Truthful Readiness.**
 
-This is the explicitly stated next action in Issue #454 (comment from 2026-09-04).
+The Capability Gap Bridge integration remains as the next stage AFTER the foundation (G0) is runtime verified.
+
+**Priority Sequence:**
+1. NOW: Birth + Stability + Truthful Readiness (G0)
+2. NEXT: Independent runtime proof of Birth + Stability
+3. AFTER FOUNDATION: Self-observation and truthful state reconciliation
+4. THEN: Capability gap / decision-only experiment (bridge integration)
+
+**Rationale:** No cognitive autonomy expansion before reliable startup, truthful readiness, stable interaction, safe operation, and safe termination are independently verified.
 
 ---
 
