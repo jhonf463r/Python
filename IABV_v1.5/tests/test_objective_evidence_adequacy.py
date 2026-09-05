@@ -119,7 +119,11 @@ class TestAdequacyWithObjectiveEvidence:
     """Test that adequacy computation respects objective evidence."""
 
     def test_adequate_reachable_only_with_independent_observation(self):
-        """Scenario A: ADEQUATE: ONLY when independently observed (True, True) WITH provenance"""
+        """Scenario A: ADEQUATE is NOT reachable in this PR scope.
+        
+        Even with provenance metadata, caller-supplied strings are DECLARED, not VERIFIED.
+        ADEQUATE requires a verified observation producer which does not exist in scope.
+        """
         classification, reason = compute_adequacy(
             expected_summary="test objective",
             observed_summary="test result",
@@ -127,10 +131,12 @@ class TestAdequacyWithObjectiveEvidence:
             precision=0.9,
             objective_addressed=True,
             objective_addressed_is_observed=True,  # INDEPENDENT OBSERVATION required
-            evidence_source="pytest",  # Provenance required
+            evidence_source="pytest",  # DECLARED provenance, not VERIFIED
         )
-        assert classification == AdequacyClassification.ADEQUATE
-        assert "independently observed objective addressed with provenance" in reason
+        # ADEQUATE is NOT reachable in this PR scope
+        assert classification != AdequacyClassification.ADEQUATE
+        assert classification == AdequacyClassification.INCONCLUSIVE
+        assert "DECLARED" in reason or "not reachable" in reason
 
     def test_textual_match_not_adequate(self):
         """Scenario B: TEXTUAL MATCH (True, False) is NOT ADEQUATE."""
@@ -269,7 +275,36 @@ class TestAdequacyWithObjectiveEvidence:
         # Must NOT be ADEQUATE - forgery detected
         assert classification != AdequacyClassification.ADEQUATE
         assert classification == AdequacyClassification.INCONCLUSIVE
-        assert "forged assertion" in reason or "provenance" in reason
+        assert "not reachable" in reason or "provenance" in reason
+
+    def test_forged_true_true_with_fake_provenance_rejected(self):
+        """Anti-forgery test: caller-supplied True/True WITH FAKE provenance is rejected.
+        
+        This is the MAIN adversarial test: even if the caller invents
+        evidence_source="filesystem", observer_identity="trusted", evidence_reference="fake-123",
+        these are DECLARED strings, not VERIFIED evidence, and must NOT produce ADEQUATE.
+        
+        PROVENANCE_METADATA != VERIFIED_PROVENANCE
+        """
+        classification, reason = compute_adequacy(
+            expected_summary="file created",
+            observed_summary="file created successfully",
+            success=True,
+            precision=0.9,
+            robustness=0.8,
+            user_progress=0.8,
+            objective_addressed=True,  # FORGED: caller asserts True
+            objective_addressed_is_observed=True,  # FORGED: caller asserts True
+            # FAKE provenance - caller can invent any strings
+            evidence_source="filesystem",  # Invented
+            observer_identity="trusted_observer",  # Invented
+            evidence_reference="fake-123",  # Invented
+        )
+        
+        # Must NOT be ADEQUATE - fake provenance detected
+        assert classification != AdequacyClassification.ADEQUATE
+        assert classification == AdequacyClassification.INCONCLUSIVE
+        assert "DECLARED" in reason or "not reachable" in reason
 
 
 class TestConservativeSemantics:

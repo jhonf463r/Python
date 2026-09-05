@@ -63,7 +63,8 @@ def test_adequacy_computation_minimal():
     assert classification == AdequacyClassification.INCONCLUSIVE
     assert "caller assertion" in reason
     
-    # ADEQUATE: ONLY when independently observed (True, True) WITH provenance
+    # ADEQUATE is NOT reachable in this PR scope
+    # Even with provenance metadata, caller-supplied strings are DECLARED, not VERIFIED
     classification, reason = compute_adequacy(
         expected_summary="test objective",
         observed_summary="test result",
@@ -71,10 +72,11 @@ def test_adequacy_computation_minimal():
         precision=0.9,
         objective_addressed=True,
         objective_addressed_is_observed=True,  # INDEPENDENT OBSERVATION required
-        evidence_source="pytest",  # Provenance required
+        evidence_source="pytest",  # DECLARED provenance, not VERIFIED
     )
-    assert classification == AdequacyClassification.ADEQUATE
-    assert "independently observed objective addressed with provenance" in reason
+    assert classification != AdequacyClassification.ADEQUATE
+    assert classification == AdequacyClassification.INCONCLUSIVE
+    assert "DECLARED" in reason or "not reachable" in reason
 
 
 def test_experiment_lab_with_adequacy():
