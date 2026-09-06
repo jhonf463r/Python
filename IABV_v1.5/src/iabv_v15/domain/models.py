@@ -317,6 +317,12 @@ class AdaptiveSessionStatus(str, Enum):
     FAILED = "failed"
 
 
+class SessionContinuationType(str, Enum):
+    """Type of session continuation: external user request vs automatic replan."""
+    EXTERNAL_REQUEST = "external_request"
+    AUTO_REPLAN = "auto_replan"
+
+
 class ScenarioMode(str, Enum):
     REPLAY_ONLY = "replay_only"
     SIMULATE = "simulate"
@@ -2424,6 +2430,10 @@ class AdaptiveSession(BaseModel):
     runtime_adjustments: list[RuntimeAdjustment] = Field(default_factory=list)
     pending_issue_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Provenance: distinguish external requests from auto-replans
+    continuation_type: SessionContinuationType = SessionContinuationType.EXTERNAL_REQUEST
+    parent_session_id: str | None = None
+    replan_depth: int = 0
 
 
 class InferenceRequest(BaseModel):

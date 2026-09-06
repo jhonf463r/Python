@@ -1567,6 +1567,15 @@ class AdaptiveTaskOrchestrator:
         )
         approvals = self.approval_gate_service.evaluate(intent=intent, pack=pack, strategy_candidates=strategy_candidates)
         session_status = self._derive_session_status(intent=intent, playbook=playbook, approvals=approvals)
+        # Initialize provenance from request metadata for replan sessions
+        from iabv_v15.domain.models import SessionContinuationType
+        request_metadata = dict(request.metadata or {})
+        continuation_type = SessionContinuationType.EXTERNAL_REQUEST
+        parent_session_id = request_metadata.get('replanned_from_session_id')
+        replan_depth = int(request_metadata.get('replan_count') or 0)
+        if parent_session_id:
+            continuation_type = SessionContinuationType.AUTO_REPLAN
+
         session = AdaptiveSession(
             user_goal=request.user_goal,
             intent=intent,
@@ -1581,6 +1590,9 @@ class AdaptiveTaskOrchestrator:
             approval_checkpoints=[],
             outcome=None,
             evidence_refs=list(context.evidence_summary),
+            continuation_type=continuation_type,
+            parent_session_id=parent_session_id,
+            replan_depth=replan_depth,
             metadata={
                 'approval_mode': request.approval_mode,
                 'execution_scope': request.execution_scope,
@@ -1996,6 +2008,9 @@ class AdaptiveTaskOrchestrator:
         session.metadata['linked_run_id'] = run_record.run_id
         session.metadata['linked_run_summary'] = run_record.result.summary
         session.metadata['linked_run_error'] = run_record.error_summary or run_record.result.error_summary
+        # Preserve replan_count for provenance tracking
+        if 'replan_count' not in session.metadata:
+            session.metadata['replan_count'] = session.replan_depth
         session = self._apply_run_feedback(session, run_record)
         session = self._refresh_session_metadata(session)
         saved_session = self.task_outcome_recorder.record(session, run_record=run_record)
@@ -2118,11 +2133,14 @@ class AdaptiveTaskOrchestrator:
         if session is None:
             return None
         request = self._request_from_session(session)
+        # Increment replan_count for provenance tracking
+        current_replan_count = int(session.metadata.get('replan_count') or 0)
         request = request.model_copy(
             update={
                 'metadata': {
                     **dict(request.metadata or {}),
                     'replanned_from_session_id': session.session_id,
+                    'replan_count': current_replan_count + 1,
                     'replan_reason': str((session.metadata.get('governance') or {}).get('reason') or (session.outcome.summary if session.outcome is not None else '') or ''),
                 }
             }
