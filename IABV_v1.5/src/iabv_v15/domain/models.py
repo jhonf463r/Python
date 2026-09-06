@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 def utc_now() -> datetime:
@@ -2434,6 +2434,33 @@ class AdaptiveSession(BaseModel):
     continuation_type: SessionContinuationType = SessionContinuationType.EXTERNAL_REQUEST
     parent_session_id: str | None = None
     replan_depth: int = 0
+
+    @model_validator(mode='after')
+    def migrate_legacy_provenance(self) -> 'AdaptiveSession':
+        """Migrate legacy metadata to typed provenance fields for historical sessions.
+        
+        Priority: existing typed field > legacy migration > default.
+        This ensures historical sessions don't lose semantic information.
+        """
+        # Only migrate if typed fields are at default values AND legacy metadata exists
+        legacy_parent = self.metadata.get('replanned_from_session_id')
+        legacy_count = int(self.metadata.get('replan_count') or 0)
+        
+        if (self.continuation_type == SessionContinuationType.EXTERNAL_REQUEST and 
+            self.parent_session_id is None and 
+            self.replan_depth == 0 and
+            (legacy_parent or legacy_count > 0)):
+            
+            if legacy_parent:
+                self.parent_session_id = legacy_parent
+                self.continuation_type = SessionContinuationType.AUTO_REPLAN
+            
+            if legacy_count > 0:
+                self.replan_depth = legacy_count
+                if self.continuation_type == SessionContinuationType.EXTERNAL_REQUEST:
+                    self.continuation_type = SessionContinuationType.AUTO_REPLAN
+        
+        return self
 
 
 class InferenceRequest(BaseModel):
