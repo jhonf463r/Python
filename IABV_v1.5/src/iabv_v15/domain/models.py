@@ -2441,33 +2441,32 @@ class AdaptiveSession(BaseModel):
         """Migrate legacy metadata to typed provenance fields for historical sessions.
         
         This validator runs BEFORE field validation to detect whether provenance
-        fields were explicitly provided in the input. If they are absent, we migrate
-        from legacy metadata. If they are present (even with default-looking values),
-        we respect the explicit input.
+        fields were explicitly provided in the input. For each field individually:
+        - If the field is explicitly provided, keep it (no migration for that field)
+        - If the field is absent, migrate from legacy metadata if available
+        
+        This allows partial typed provenance to be completed from legacy without
+        overwriting explicit typed values.
         
         Priority: explicit typed provenance > legacy migration > defaults.
         """
-        # Check if provenance fields were explicitly provided in input
-        has_explicit_provenance = (
-            'continuation_type' in data or
-            'parent_session_id' in data or
-            'replan_depth' in data
-        )
+        legacy_parent = data.get('metadata', {}).get('replanned_from_session_id')
+        legacy_count = int(data.get('metadata', {}).get('replan_count') or 0)
         
-        # Only migrate if provenance fields were NOT explicitly provided
-        if not has_explicit_provenance:
-            legacy_parent = data.get('metadata', {}).get('replanned_from_session_id')
-            legacy_count = int(data.get('metadata', {}).get('replan_count') or 0)
-            
+        # Migrate continuation_type if not explicitly provided
+        if 'continuation_type' not in data:
+            if legacy_parent or legacy_count > 0:
+                data['continuation_type'] = SessionContinuationType.AUTO_REPLAN
+        
+        # Migrate parent_session_id if not explicitly provided
+        if 'parent_session_id' not in data:
             if legacy_parent:
                 data['parent_session_id'] = legacy_parent
-                data['continuation_type'] = SessionContinuationType.AUTO_REPLAN
-            
+        
+        # Migrate replan_depth if not explicitly provided
+        if 'replan_depth' not in data:
             if legacy_count > 0:
                 data['replan_depth'] = legacy_count
-                # Ensure continuation_type is set if we have a count
-                if 'continuation_type' not in data:
-                    data['continuation_type'] = SessionContinuationType.AUTO_REPLAN
         
         return data
 

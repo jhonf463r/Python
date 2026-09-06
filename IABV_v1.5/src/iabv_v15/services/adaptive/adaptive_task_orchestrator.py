@@ -2157,7 +2157,8 @@ class AdaptiveTaskOrchestrator:
         )
         _, _, replanned = self.handle_request(request)
         replanned.metadata['replanned_from_session_id'] = session.session_id
-        replanned.metadata['replan_count'] = int(session.metadata.get('replan_count') or 0) + 1
+        # Mirror synchronization: use canonical typed value, not legacy metadata
+        replanned.metadata['replan_count'] = current_replan_depth + 1
         return self.task_outcome_recorder.record(replanned)
 
     # ------------------------------------------------------------------

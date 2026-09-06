@@ -717,3 +717,155 @@ class TestCanonicalReplanProvenance:
         # Verify replan_session used typed depth=2, not legacy count=0
         assert result is not None
         assert result.replan_depth == 3, "Should use typed depth=2 + 1, not legacy count=0 + 1"
+
+    def test_mirror_synchronization_in_replan_session(self):
+        """Legacy mirror must be synchronized with canonical typed state after replan."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        role_router = MagicMock()
+        intent_service = MagicMock()
+        context_assembler = MagicMock()
+        capability_service = MagicMock()
+        strategy_pack_registry = MagicMock()
+        planner_service = MagicMock()
+        approval_gate_service = MagicMock()
+        execution_playbook_service = MagicMock()
+        task_outcome_recorder = MagicMock()
+
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=role_router,
+            adaptive_session_repository=session_repo,
+            intent_service=intent_service,
+            context_assembler=context_assembler,
+            capability_service=capability_service,
+            strategy_pack_registry=strategy_pack_registry,
+            planner_service=planner_service,
+            approval_gate_service=approval_gate_service,
+            execution_playbook_service=execution_playbook_service,
+            task_outcome_recorder=task_outcome_recorder,
+        )
+
+        # Original session: typed depth=2, legacy count=0 (divergent)
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            chosen_pack_id="test_pack",
+            chosen_pack_title="Test Pack",
+            status=AdaptiveSessionStatus.FAILED,
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="parent-id",
+            replan_depth=2,  # Typed canonical
+            metadata={"replan_count": 0, "governance": {"should_replan": True}},  # Legacy divergent
+        )
+        session_repo.get.return_value = session
+
+        orchestrator._request_from_session = MagicMock(
+            return_value=InferenceRequest(user_goal="test goal", metadata={})
+        )
+
+        # Mock handle_request to return a session
+        replanned_session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            chosen_pack_id="test_pack",
+            chosen_pack_title="Test Pack",
+            status=AdaptiveSessionStatus.PLANNED,
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id=session.session_id,
+            replan_depth=3,  # Canonical: 2 + 1
+        )
+        orchestrator.handle_request = MagicMock(return_value=(MagicMock(), MagicMock(), replanned_session))
+
+        task_outcome_recorder.record.return_value = replanned_session
+
+        # Execute replan
+        result = orchestrator.replan_session(session.session_id)
+
+        # Verify mirror is synchronized with canonical typed state
+        assert result is not None
+        assert result.replan_depth == 3, "Canonical typed depth should be 3"
+        assert result.metadata.get('replan_count') == 3, "Legacy mirror should be 3 (synchronized), not 1 (from old legacy)"
+
+    def test_partial_typed_provenance_completion_from_legacy(self):
+        """Partial typed provenance should be completed from legacy without overwriting explicit values."""
+        # Case: only continuation_type provided, parent and depth from legacy
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,  # Explicit typed
+            # parent_session_id and replan_depth absent - should migrate from legacy
+            metadata={
+                "replanned_from_session_id": "legacy-parent",
+                "replan_count": 2,
+            },
+        )
+
+        # Verify: explicit continuation_type preserved, parent and depth migrated
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "legacy-parent"
+        assert session.replan_depth == 2
+
+    def test_partial_typed_parent_only(self):
+        """Only parent_session_id provided, type and depth from legacy."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            parent_session_id="explicit-parent",  # Explicit typed
+            # continuation_type and replan_depth absent - should migrate from legacy
+            metadata={
+                "replanned_from_session_id": "legacy-parent",
+                "replan_count": 2,
+            },
+        )
+
+        # Verify: explicit parent preserved, type and depth migrated
+        assert session.parent_session_id == "explicit-parent"
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.replan_depth == 2
+
+    def test_partial_typed_depth_only(self):
+        """Only replan_depth provided, type and parent from legacy."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            replan_depth=3,  # Explicit typed
+            # continuation_type and parent_session_id absent - should migrate from legacy
+            metadata={
+                "replanned_from_session_id": "legacy-parent",
+                "replan_count": 2,
+            },
+        )
+
+        # Verify: explicit depth preserved, type and parent migrated
+        assert session.replan_depth == 3  # Explicit value preserved
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "legacy-parent"
