@@ -490,3 +490,230 @@ class TestCanonicalReplanProvenance:
         assert external_loaded.continuation_type == SessionContinuationType.EXTERNAL_REQUEST
         assert external_loaded.parent_session_id is None
         assert external_loaded.replan_depth == 0
+
+    def test_guard_uses_only_typed_provenance_with_stale_legacy(self):
+        """_should_auto_replan must use only typed provenance, ignoring stale legacy metadata."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        role_router = MagicMock()
+        intent_service = MagicMock()
+        context_assembler = MagicMock()
+        capability_service = MagicMock()
+        strategy_pack_registry = MagicMock()
+        planner_service = MagicMock()
+        approval_gate_service = MagicMock()
+        execution_playbook_service = MagicMock()
+        task_outcome_recorder = MagicMock()
+
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=role_router,
+            adaptive_session_repository=session_repo,
+            intent_service=intent_service,
+            context_assembler=context_assembler,
+            capability_service=capability_service,
+            strategy_pack_registry=strategy_pack_registry,
+            planner_service=planner_service,
+            approval_gate_service=approval_gate_service,
+            execution_playbook_service=execution_playbook_service,
+            task_outcome_recorder=task_outcome_recorder,
+        )
+
+        # Create session with typed EXTERNAL/None/0 but stale legacy metadata
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            status=AdaptiveSessionStatus.FAILED,
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,  # Typed: allows replan
+            metadata={
+                "replanned_from_session_id": "STALE-PARENT",  # Legacy: would block
+                "replan_count": 2,  # Legacy: would block
+                "governance": {"should_replan": True},
+            },
+        )
+        session_repo.get.return_value = session
+
+        # Guard must use only typed provenance, ignoring legacy metadata
+        should_replan = orchestrator._should_auto_replan(session)
+        assert should_replan is True, "Typed depth=0 should allow replan, ignoring legacy count=2"
+
+    def test_guard_depth_zero_vs_legacy_count_two(self):
+        """Guard decision must depend on typed depth=0, not legacy count=2."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        role_router = MagicMock()
+        intent_service = MagicMock()
+        context_assembler = MagicMock()
+        capability_service = MagicMock()
+        strategy_pack_registry = MagicMock()
+        planner_service = MagicMock()
+        approval_gate_service = MagicMock()
+        execution_playbook_service = MagicMock()
+        task_outcome_recorder = MagicMock()
+
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=role_router,
+            adaptive_session_repository=session_repo,
+            intent_service=intent_service,
+            context_assembler=context_assembler,
+            capability_service=capability_service,
+            strategy_pack_registry=strategy_pack_registry,
+            planner_service=planner_service,
+            approval_gate_service=approval_gate_service,
+            execution_playbook_service=execution_playbook_service,
+            task_outcome_recorder=task_outcome_recorder,
+        )
+
+        # typed depth=0, legacy count=2
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            status=AdaptiveSessionStatus.FAILED,
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={"replan_count": 2, "governance": {"should_replan": True}},
+        )
+        session_repo.get.return_value = session
+
+        should_replan = orchestrator._should_auto_replan(session)
+        assert should_replan is True, "Typed depth=0 must allow replan, ignoring legacy count=2"
+
+    def test_guard_parent_none_vs_legacy_parent(self):
+        """Guard decision must depend on typed parent=None, not legacy parent."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        role_router = MagicMock()
+        intent_service = MagicMock()
+        context_assembler = MagicMock()
+        capability_service = MagicMock()
+        strategy_pack_registry = MagicMock()
+        planner_service = MagicMock()
+        approval_gate_service = MagicMock()
+        execution_playbook_service = MagicMock()
+        task_outcome_recorder = MagicMock()
+
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=role_router,
+            adaptive_session_repository=session_repo,
+            intent_service=intent_service,
+            context_assembler=context_assembler,
+            capability_service=capability_service,
+            strategy_pack_registry=strategy_pack_registry,
+            planner_service=planner_service,
+            approval_gate_service=approval_gate_service,
+            execution_playbook_service=execution_playbook_service,
+            task_outcome_recorder=task_outcome_recorder,
+        )
+
+        # typed parent=None, legacy parent=STALE
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            status=AdaptiveSessionStatus.FAILED,
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={
+                "replanned_from_session_id": "STALE-PARENT",
+                "governance": {"should_replan": True},
+            },
+        )
+        session_repo.get.return_value = session
+
+        should_replan = orchestrator._should_auto_replan(session)
+        assert should_replan is True, "Typed parent=None must allow replan, ignoring legacy parent"
+
+    def test_replan_session_uses_only_typed_depth(self):
+        """replan_session must use only typed replan_depth, not legacy count."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        role_router = MagicMock()
+        intent_service = MagicMock()
+        context_assembler = MagicMock()
+        capability_service = MagicMock()
+        strategy_pack_registry = MagicMock()
+        planner_service = MagicMock()
+        approval_gate_service = MagicMock()
+        execution_playbook_service = MagicMock()
+        task_outcome_recorder = MagicMock()
+
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=role_router,
+            adaptive_session_repository=session_repo,
+            intent_service=intent_service,
+            context_assembler=context_assembler,
+            capability_service=capability_service,
+            strategy_pack_registry=strategy_pack_registry,
+            planner_service=planner_service,
+            approval_gate_service=approval_gate_service,
+            execution_playbook_service=execution_playbook_service,
+            task_outcome_recorder=task_outcome_recorder,
+        )
+
+        # typed depth=2, legacy count=0
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            chosen_pack_id="test_pack",
+            chosen_pack_title="Test Pack",
+            status=AdaptiveSessionStatus.FAILED,
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="parent-id",
+            replan_depth=2,  # Typed: at limit
+            metadata={"replan_count": 0, "governance": {"should_replan": True}},  # Legacy: would allow
+        )
+        session_repo.get.return_value = session
+
+        orchestrator._request_from_session = MagicMock(
+            return_value=InferenceRequest(user_goal="test goal", metadata={})
+        )
+
+        # Mock handle_request to return a session
+        replanned_session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            chosen_pack_id="test_pack",
+            chosen_pack_title="Test Pack",
+            status=AdaptiveSessionStatus.PLANNED,
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id=session.session_id,
+            replan_depth=3,  # Should be 2 + 1 from typed depth, not 0 + 1 from legacy
+        )
+        orchestrator.handle_request = MagicMock(return_value=(MagicMock(), MagicMock(), replanned_session))
+
+        task_outcome_recorder.record.return_value = replanned_session
+
+        # Execute replan
+        result = orchestrator.replan_session(session.session_id)
+
+        # Verify replan_session used typed depth=2, not legacy count=0
+        assert result is not None
+        assert result.replan_depth == 3, "Should use typed depth=2 + 1, not legacy count=0 + 1"

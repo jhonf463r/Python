@@ -2086,11 +2086,10 @@ class AdaptiveTaskOrchestrator:
             return False
         if session.metadata.get('auto_replanned_session_id') or session.metadata.get('replanned_automatically'):
             return False
-        # Canonical source: use typed provenance fields with legacy fallback
-        if session.parent_session_id or session.metadata.get('replanned_from_session_id'):
+        # Canonical source: use typed provenance fields only (no legacy fallback)
+        if session.parent_session_id:
             return False
-        replan_count = session.replan_depth if session.replan_depth > 0 else int(session.metadata.get('replan_count') or 0)
-        return replan_count < 2
+        return session.replan_depth < 2
 
     def get_session(self, session_id: str) -> AdaptiveSession | None:
         return self.adaptive_session_repository.get(session_id)
@@ -2144,8 +2143,8 @@ class AdaptiveTaskOrchestrator:
         if session is None:
             return None
         request = self._request_from_session(session)
-        # Canonical source: use typed provenance fields with legacy fallback
-        current_replan_depth = session.replan_depth if session.replan_depth > 0 else int(session.metadata.get('replan_count') or 0)
+        # Canonical source: use typed provenance fields only (no legacy fallback)
+        current_replan_depth = session.replan_depth
         request = request.model_copy(
             update={
                 'metadata': {
