@@ -2435,32 +2435,41 @@ class AdaptiveSession(BaseModel):
     parent_session_id: str | None = None
     replan_depth: int = 0
 
-    @model_validator(mode='after')
-    def migrate_legacy_provenance(self) -> 'AdaptiveSession':
+    @model_validator(mode='before')
+    @classmethod
+    def migrate_legacy_provenance(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Migrate legacy metadata to typed provenance fields for historical sessions.
         
-        Priority: existing typed field > legacy migration > default.
-        This ensures historical sessions don't lose semantic information.
-        """
-        # Only migrate if typed fields are at default values AND legacy metadata exists
-        legacy_parent = self.metadata.get('replanned_from_session_id')
-        legacy_count = int(self.metadata.get('replan_count') or 0)
+        This validator runs BEFORE field validation to detect whether provenance
+        fields were explicitly provided in the input. If they are absent, we migrate
+        from legacy metadata. If they are present (even with default-looking values),
+        we respect the explicit input.
         
-        if (self.continuation_type == SessionContinuationType.EXTERNAL_REQUEST and 
-            self.parent_session_id is None and 
-            self.replan_depth == 0 and
-            (legacy_parent or legacy_count > 0)):
+        Priority: explicit typed provenance > legacy migration > defaults.
+        """
+        # Check if provenance fields were explicitly provided in input
+        has_explicit_provenance = (
+            'continuation_type' in data or
+            'parent_session_id' in data or
+            'replan_depth' in data
+        )
+        
+        # Only migrate if provenance fields were NOT explicitly provided
+        if not has_explicit_provenance:
+            legacy_parent = data.get('metadata', {}).get('replanned_from_session_id')
+            legacy_count = int(data.get('metadata', {}).get('replan_count') or 0)
             
             if legacy_parent:
-                self.parent_session_id = legacy_parent
-                self.continuation_type = SessionContinuationType.AUTO_REPLAN
+                data['parent_session_id'] = legacy_parent
+                data['continuation_type'] = SessionContinuationType.AUTO_REPLAN
             
             if legacy_count > 0:
-                self.replan_depth = legacy_count
-                if self.continuation_type == SessionContinuationType.EXTERNAL_REQUEST:
-                    self.continuation_type = SessionContinuationType.AUTO_REPLAN
+                data['replan_depth'] = legacy_count
+                # Ensure continuation_type is set if we have a count
+                if 'continuation_type' not in data:
+                    data['continuation_type'] = SessionContinuationType.AUTO_REPLAN
         
-        return self
+        return data
 
 
 class InferenceRequest(BaseModel):
