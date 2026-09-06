@@ -1552,6 +1552,9 @@ class AppBootstrap:
             adaptive_orchestrator=self.adaptive_task_orchestrator,
             knowledge_service=self.knowledge_service,
         )
+        # Wire InferenceService into LocalRoleRouter to enforce canonical inference choke point
+        if self.role_router is not None:
+            self.role_router.inference_service = self.inference_service
         self.training_orchestrator = TrainingOrchestrator(
             workspace_root=self.config.workspace_root,
             episode_repository=self.episode_repository,

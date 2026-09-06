@@ -37,6 +37,7 @@ class InferenceService:
     def _execute(self, method_name: str, request: InferenceRequest) -> RunRecord:
         started = time.perf_counter()
         adaptive_session = None
+        is_internal = request.internal_operation
         try:
             if method_name == 'infer_task' and self.adaptive_orchestrator is not None:
                 route, result, adaptive_session = self.adaptive_orchestrator.handle_request(request)
@@ -52,16 +53,20 @@ class InferenceService:
                 duration_ms=int((time.perf_counter() - started) * 1000),
                 error_summary=result.error_summary or '',
             )
-            saved = self.run_repository.record(run_record)
+            if not is_internal:
+                saved = self.run_repository.record(run_record)
+            else:
+                saved = run_record
             if adaptive_session is not None and self.adaptive_orchestrator is not None:
                 finalized_session = self.adaptive_orchestrator.finalize_with_run(adaptive_session.session_id, saved)
                 if finalized_session is not None and isinstance(saved.result.raw_output, dict):
                     saved.result.raw_output['adaptive_session'] = finalized_session.model_dump(mode='json')
                     saved.result.raw_output['adaptive_replanned'] = bool(finalized_session.metadata.get('replanned_automatically'))
-            if self.knowledge_service is not None:
-                self.knowledge_service.remember_run(saved)
-            if self.execution_dossier_service is not None:
-                self.execution_dossier_service.build_for_run(saved)
+            if not is_internal:
+                if self.knowledge_service is not None:
+                    self.knowledge_service.remember_run(saved)
+                if self.execution_dossier_service is not None:
+                    self.execution_dossier_service.build_for_run(saved)
             return saved
         except Exception as exc:
             failed_route = RoleRoute(
@@ -92,9 +97,13 @@ class InferenceService:
                 duration_ms=int((time.perf_counter() - started) * 1000),
                 error_summary=str(exc),
             )
-            saved = self.run_repository.record(failed_record)
-            if self.knowledge_service is not None:
-                self.knowledge_service.remember_run(saved)
-            if self.execution_dossier_service is not None:
-                self.execution_dossier_service.build_for_run(saved)
+            if not is_internal:
+                saved = self.run_repository.record(failed_record)
+            else:
+                saved = failed_record
+            if not is_internal:
+                if self.knowledge_service is not None:
+                    self.knowledge_service.remember_run(saved)
+                if self.execution_dossier_service is not None:
+                    self.execution_dossier_service.build_for_run(saved)
             raise

@@ -60,6 +60,7 @@ class LocalRoleRouter:
         tool_teach_service: Any | None = None,
         account_resource_scanner: Callable[[], dict[str, Any]] | None = None,
         account_approval_ledger: Any | None = None,
+        inference_service: Any | None = None,
     ) -> None:
         self.workspace_root = Path(workspace_root)
         self.general_provider = general_provider
@@ -78,6 +79,7 @@ class LocalRoleRouter:
         self.tool_teach_service = tool_teach_service
         self._account_resource_scanner = account_resource_scanner
         self._account_approval_ledger = account_approval_ledger
+        self.inference_service = inference_service
         self._health_snapshot_lock = threading.RLock()
         self._health_snapshot_cache: list[ProviderHealth] = []
         self._health_snapshot_checked_at = 0.0
@@ -387,9 +389,17 @@ class LocalRoleRouter:
         )
         planner_summary = ''
         planner_used = False
+        internal_planner_invoked = False
+        internal_planner_duration_ms = 0
+        internal_planner_failed = False
         if dispatch_request.enable_planning and decision.planner_required and decision.detected_role != TaskRole.VISUAL:
+            import time
+            planner_start = time.perf_counter()
+            internal_planner_invoked = True
             planner_summary = self._run_planner(dispatch_request, decision)
+            internal_planner_duration_ms = int((time.perf_counter() - planner_start) * 1000)
             planner_used = bool(planner_summary)
+            internal_planner_failed = not planner_summary
             if planner_summary:
                 dispatch_request = dispatch_request.model_copy(
                     update={'prompt': self._append_context(dispatch_request.prompt, f'Plan previo:\n{planner_summary}')}
@@ -403,8 +413,12 @@ class LocalRoleRouter:
         result.planner_used = planner_used
         result.executor_model = route.model_name or result.executor_model
         result.raw_output['intent_route_decision'] = decision.model_dump(mode='json')
-        if planner_summary:
-            result.raw_output['planner_summary'] = planner_summary
+        if internal_planner_invoked:
+            result.raw_output['internal_planner_invoked'] = True
+            result.raw_output['internal_planner_duration_ms'] = internal_planner_duration_ms
+            result.raw_output['internal_planner_failed'] = internal_planner_failed
+            if planner_summary:
+                result.raw_output['internal_planner_summary'] = planner_summary
         return route, result
 
     def build_decision_from_intent(self, *, request: InferenceRequest, intent: TaskIntent) -> IntentRouteDecision:
@@ -565,11 +579,16 @@ class LocalRoleRouter:
                 'task_role': TaskRole.RESEARCH,
                 'complexity': ComplexityLevel.MEDIUM,
                 'ambiguity': AmbiguityLevel.MEDIUM,
+                'enable_planning': False,
+                'internal_operation': True,
             }
         )
         try:
-            planner_result = self.general_provider.infer_task(planner_request)
-            return planner_result.summary.strip()
+            if self.inference_service is not None:
+                planner_run_record = self.inference_service.infer_task(planner_request)
+                return planner_run_record.result.summary.strip()
+            else:
+                return ''
         except Exception:
             return ''
 

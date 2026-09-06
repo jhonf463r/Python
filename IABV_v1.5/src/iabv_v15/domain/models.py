@@ -2445,6 +2445,7 @@ class InferenceRequest(BaseModel):
     auto_route: bool = False
     role_hint: TaskRole | None = None
     enable_planning: bool = False
+    internal_operation: bool = False
     conversation_context: list[dict[str, Any]] = Field(default_factory=list)
     site_hint: str | None = None
     approval_mode: str = "phased"
