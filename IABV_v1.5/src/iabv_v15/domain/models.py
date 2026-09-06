@@ -2445,47 +2445,84 @@ class AdaptiveSession(BaseModel):
         - If the field is explicitly provided, keep it (no migration for that field)
         - If the field is absent, migrate from legacy metadata if available
         
-        This allows partial typed provenance to be completed from legacy without
-        overwriting explicit typed values.
-        
         Cross-lineage contamination prevention:
-        - If explicit parent_session_id conflicts with legacy parent, reject migration
-        - If explicit parent=None with legacy parent present, reject migration
-        - If explicit depth=0 with legacy count>0, reject migration
+        - When completing partial provenance from legacy, ensure lineage compatibility
+        - Reject if typed components conflict with legacy components
+        - Never mix components from different lineage sources
         
         Priority: explicit typed provenance > legacy migration > defaults.
         """
         legacy_parent = data.get('metadata', {}).get('replanned_from_session_id')
         legacy_count = int(data.get('metadata', {}).get('replan_count') or 0)
         
-        # Detect cross-lineage contamination: only when completing partial provenance from legacy
-        # If parent_session_id is explicitly provided but continuation_type and replan_depth are absent,
-        # and we're about to migrate them from legacy, check for lineage conflict
-        # Skip this check if all three provenance fields are explicitly provided (complete override)
+        # Skip migration if all three provenance fields are explicitly provided (complete override)
         has_complete_provenance = (
             'continuation_type' in data and
             'parent_session_id' in data and
             'replan_depth' in data
         )
-        if not has_complete_provenance:
-            if ('parent_session_id' in data and data['parent_session_id'] is not None and 
-                'continuation_type' not in data and 'replan_depth' not in data and
-                legacy_parent is not None and data['parent_session_id'] != legacy_parent):
+        if has_complete_provenance:
+            return data
+        
+        # Cross-lineage validation: check compatibility between typed and legacy components
+        # Only validate when we have both typed and legacy components that could conflict
+        
+        # Case: type+parent typed, depth absent, legacy parent present
+        if ('continuation_type' in data and 'parent_session_id' in data and 
+            'replan_depth' not in data and legacy_parent is not None):
+            if data['parent_session_id'] != legacy_parent:
                 raise ValueError(
-                    f"Cross-lineage contamination: explicit parent_session_id='{data['parent_session_id']}' "
+                    f"Cross-lineage contamination: typed parent_session_id='{data['parent_session_id']}' "
                     f"conflicts with legacy replanned_from_session_id='{legacy_parent}'. "
-                    "Cannot mix lineage from different sources when completing partial provenance."
+                    "Cannot complete depth from different lineage."
                 )
         
-        # Detect explicit parent=None with legacy parent present (Case F)
-        # Only reject if parent_session_id is explicitly set to None (not just default)
-        # This is tricky because None is the default, so we can't distinguish "explicit None" from "default None"
-        # For now, we allow this case since it represents EXTERNAL_REQUEST with stale legacy (valid use case)
+        # Case: type+depth typed, parent absent, legacy parent present
+        if ('continuation_type' in data and 'replan_depth' in data and 
+            'parent_session_id' not in data and legacy_parent is not None):
+            # Check if typed depth matches legacy count (same lineage evidence)
+            if data['replan_depth'] != legacy_count:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed replan_depth={data['replan_depth']} "
+                    f"conflicts with legacy replan_count={legacy_count}. "
+                    "Cannot complete parent from different lineage."
+                )
         
-        # Detect explicit depth=0 with legacy count>0 (Case G)
-        # Only reject if replan_depth is explicitly set to 0 (not just default)
-        # This is tricky because 0 is the default, so we can't distinguish "explicit 0" from "default 0"
-        # For now, we allow this case since it represents EXTERNAL_REQUEST with stale legacy (valid use case)
+        # Case: parent+depth typed, type absent, legacy components present
+        if ('parent_session_id' in data and 'replan_depth' in data and 
+            'continuation_type' not in data):
+            if legacy_parent is not None and data['parent_session_id'] != legacy_parent:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed parent_session_id='{data['parent_session_id']}' "
+                    f"conflicts with legacy replanned_from_session_id='{legacy_parent}'. "
+                    "Cannot complete type from different lineage."
+                )
+            if legacy_count > 0 and data['replan_depth'] != legacy_count:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed replan_depth={data['replan_depth']} "
+                    f"conflicts with legacy replan_count={legacy_count}. "
+                    "Cannot complete type from different lineage."
+                )
+        
+        # Case: parent typed only, type and depth absent, legacy parent present
+        if ('parent_session_id' in data and 'continuation_type' not in data and 
+            'replan_depth' not in data and legacy_parent is not None):
+            if data['parent_session_id'] != legacy_parent:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed parent_session_id='{data['parent_session_id']}' "
+                    f"conflicts with legacy replanned_from_session_id='{legacy_parent}'. "
+                    "Cannot complete type and depth from different lineage."
+                )
+        
+        # Case: depth typed only, type and parent absent, legacy components present
+        if ('replan_depth' in data and 'continuation_type' not in data and 
+            'parent_session_id' not in data):
+            if legacy_parent is not None and data['replan_depth'] != legacy_count:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed replan_depth={data['replan_depth']} "
+                    f"conflicts with legacy replan_count={legacy_count}. "
+                    "Cannot complete type and parent from different lineage."
+                )
         
         # Migrate continuation_type if not explicitly provided
         if 'continuation_type' not in data:

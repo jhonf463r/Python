@@ -847,7 +847,9 @@ class TestCanonicalReplanProvenance:
             )
 
     def test_partial_typed_depth_only(self):
-        """Only replan_depth provided, type and parent from legacy."""
+        """Only replan_depth provided, type and parent from legacy - requires matching lineage."""
+        # When only depth is typed, we need legacy to match the depth to ensure same lineage
+        # If legacy count differs, we reject to avoid cross-lineage contamination
         session = AdaptiveSession(
             user_goal="test goal",
             intent=TaskIntent(
@@ -857,60 +859,64 @@ class TestCanonicalReplanProvenance:
                 confidence=1.0,
             ),
             context=TaskContext(),
-            replan_depth=3,  # Explicit typed
+            replan_depth=2,  # Explicit typed matching legacy count
             # continuation_type and parent_session_id absent - should migrate from legacy
+            metadata={
+                "replanned_from_session_id": "legacy-parent",
+                "replan_count": 2,  # Matches typed depth
+            },
+        )
+
+        # Verify: explicit depth preserved, type and parent migrated (lineage compatible)
+        assert session.replan_depth == 2
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "legacy-parent"
+
+    def test_case_f_default_parent_with_legacy_parent_migrates(self):
+        """Case F: parent=None (default) with legacy parent migrates to valid AUTO_REPLAN."""
+        # Since None is the default, migration occurs and creates valid AUTO_REPLAN
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            # parent_session_id=None (default, cannot distinguish from explicit)
             metadata={
                 "replanned_from_session_id": "legacy-parent",
                 "replan_count": 2,
             },
         )
-
-        # Verify: explicit depth preserved, type and parent migrated
-        assert session.replan_depth == 3  # Explicit value preserved
+        # Migration occurred: parent from legacy, depth from legacy
         assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
         assert session.parent_session_id == "legacy-parent"
+        assert session.replan_depth == 2
 
-    def test_case_f_explicit_parent_none_with_legacy_parent_fails_validation(self):
-        """Case F: parent=None (default) with legacy parent migrates but fails coherence validation."""
-        import pytest
-        # Since None is the default, migration occurs, but creates incoherent AUTO_REPLAN with parent=None
-        with pytest.raises(ValueError, match="AUTO_REPLAN requires parent_session_id"):
-            AdaptiveSession(
-                user_goal="test goal",
-                intent=TaskIntent(
-                    intent_key="test.intent",
-                    title="Test Intent",
-                    detected_role="training",
-                    confidence=1.0,
-                ),
-                context=TaskContext(),
-                parent_session_id=None,  # Cannot distinguish from default
-                metadata={
-                    "replanned_from_session_id": "legacy-parent",
-                    "replan_count": 2,
-                },
-            )
-
-    def test_case_g_explicit_depth_zero_with_legacy_count_fails_validation(self):
-        """Case G: depth=0 (default) with legacy count migrates but fails coherence validation."""
-        import pytest
-        # Since 0 is the default, migration occurs, but creates incoherent AUTO_REPLAN with depth=0
-        with pytest.raises(ValueError, match="AUTO_REPLAN requires replan_depth>=1"):
-            AdaptiveSession(
-                user_goal="test goal",
-                intent=TaskIntent(
-                    intent_key="test.intent",
-                    title="Test Intent",
-                    detected_role="training",
-                    confidence=1.0,
-                ),
-                context=TaskContext(),
-                replan_depth=0,  # Cannot distinguish from default
-                metadata={
-                    "replanned_from_session_id": "legacy-parent",
-                    "replan_count": 2,
-                },
-            )
+    def test_case_g_default_depth_with_legacy_count_migrates(self):
+        """Case G: depth=0 (default) with legacy count migrates to valid AUTO_REPLAN."""
+        # Since 0 is the default, migration occurs and creates valid AUTO_REPLAN
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            # replan_depth=0 (default, cannot distinguish from explicit)
+            metadata={
+                "replanned_from_session_id": "legacy-parent",
+                "replan_count": 2,
+            },
+        )
+        # Migration occurred: parent from legacy, depth from legacy
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "legacy-parent"
+        assert session.replan_depth == 2
 
     def test_case_e2_cross_lineage_contamination_rejected(self):
         """Case E2: explicit parent conflicts with legacy parent should be rejected."""
@@ -1004,3 +1010,329 @@ class TestCanonicalReplanProvenance:
                 parent_session_id="some-parent",
                 replan_depth=0,
             )
+
+    def test_case_1_type_parent_matching_legacy(self):
+        """Case 1: type+parent typed with matching legacy - accept and complete depth."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="A",
+            metadata={
+                "replanned_from_session_id": "A",
+                "replan_count": 2,
+            },
+        )
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "A"
+        assert session.replan_depth == 2  # Completed from legacy
+
+    def test_case_2_type_parent_conflicting_legacy(self):
+        """Case 2: type+parent typed with conflicting legacy - reject."""
+        import pytest
+        with pytest.raises(ValueError, match="Cross-lineage contamination"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.AUTO_REPLAN,
+                parent_session_id="A",
+                metadata={
+                    "replanned_from_session_id": "B",
+                    "replan_count": 2,
+                },
+            )
+
+    def test_case_3_type_depth_matching_legacy(self):
+        """Case 3: type+depth typed with matching legacy - accept and complete parent."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            replan_depth=2,
+            metadata={
+                "replanned_from_session_id": "A",
+                "replan_count": 2,
+            },
+        )
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "A"  # Completed from legacy
+        assert session.replan_depth == 2
+
+    def test_case_4_type_depth_conflicting_legacy_count(self):
+        """Case 4: type+depth typed with conflicting legacy count - reject."""
+        import pytest
+        with pytest.raises(ValueError, match="Cross-lineage contamination"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.AUTO_REPLAN,
+                replan_depth=2,
+                metadata={
+                    "replanned_from_session_id": "A",
+                    "replan_count": 3,
+                },
+            )
+
+    def test_case_5_parent_depth_matching_legacy(self):
+        """Case 5: parent+depth typed with matching legacy - accept and complete type."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            parent_session_id="A",
+            replan_depth=2,
+            metadata={
+                "replanned_from_session_id": "A",
+                "replan_count": 2,
+            },
+        )
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN  # Completed from legacy
+        assert session.parent_session_id == "A"
+        assert session.replan_depth == 2
+
+    def test_case_6_parent_depth_conflicting_legacy(self):
+        """Case 6: parent+depth typed with conflicting legacy - reject."""
+        import pytest
+        with pytest.raises(ValueError, match="Cross-lineage contamination"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                parent_session_id="A",
+                replan_depth=2,
+                metadata={
+                    "replanned_from_session_id": "B",
+                    "replan_count": 2,
+                },
+            )
+
+    def test_case_7_external_with_stale_legacy(self):
+        """Case 7: EXTERNAL_REQUEST with stale legacy - remain EXTERNAL."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={
+                "replanned_from_session_id": "A",
+                "replan_count": 2,
+            },
+        )
+        assert session.continuation_type == SessionContinuationType.EXTERNAL_REQUEST
+        assert session.parent_session_id is None
+        assert session.replan_depth == 0
+
+    def test_case_8_full_typed_conflicting_legacy(self):
+        """Case 8: full typed with conflicting legacy - remain as typed (complete override)."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="A",
+            replan_depth=1,
+            metadata={
+                "replanned_from_session_id": "B",
+                "replan_count": 0,
+            },
+        )
+        # Complete override: legacy is ignored
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "A"
+        assert session.replan_depth == 1
+
+    def test_real_decision_full_typed_auto_replan(self):
+        """Real decision: full typed AUTO_REPLAN session governs _should_auto_replan."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+        
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="parent-id",
+            replan_depth=1,
+            metadata={"governance": {"should_replan": True}},
+        )
+        
+        # Should allow replan (depth=1 < 2)
+        result = orchestrator._should_auto_replan(session)
+        assert result is True
+
+    def test_real_decision_full_typed_external_request(self):
+        """Real decision: full typed EXTERNAL_REQUEST session governs _should_auto_replan."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+        
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={"governance": {"should_replan": True}},
+        )
+        
+        # Should allow replan (depth=0 < 2)
+        result = orchestrator._should_auto_replan(session)
+        assert result is True
+
+    def test_real_decision_historical_legacy_migrated(self):
+        """Real decision: historical legacy session migrates and governs _should_auto_replan."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+        
+        # Historical session with only legacy metadata
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            metadata={
+                "replanned_from_session_id": "parent-id",
+                "replan_count": 1,
+                "governance": {"should_replan": True},
+            },
+        )
+        
+        # Should migrate to AUTO_REPLAN and allow replan (depth=1 < 2)
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == "parent-id"
+        assert session.replan_depth == 1
+        result = orchestrator._should_auto_replan(session)
+        assert result is True
+
+    def test_real_decision_partial_typed_matching_legacy(self):
+        """Real decision: partial typed with matching legacy completes and governs decision."""
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+        
+        # Partial typed: type+parent, depth from matching legacy
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="A",
+            metadata={
+                "replanned_from_session_id": "A",
+                "replan_count": 1,
+                "governance": {"should_replan": True},
+            },
+        )
+        
+        # Should complete depth=1 and allow replan
+        assert session.replan_depth == 1
+        result = orchestrator._should_auto_replan(session)
+        assert result is True

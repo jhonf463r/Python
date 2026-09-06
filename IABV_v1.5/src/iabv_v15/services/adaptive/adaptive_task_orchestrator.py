@@ -2086,9 +2086,7 @@ class AdaptiveTaskOrchestrator:
             return False
         if session.metadata.get('auto_replanned_session_id') or session.metadata.get('replanned_automatically'):
             return False
-        # Canonical source: use typed provenance fields only (no legacy fallback)
-        if session.parent_session_id:
-            return False
+        # Canonical source: use typed replan_depth only (bounded replan policy: depth < 2)
         return session.replan_depth < 2
 
     def get_session(self, session_id: str) -> AdaptiveSession | None:
