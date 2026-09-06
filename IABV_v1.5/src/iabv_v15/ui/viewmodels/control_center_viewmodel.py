@@ -10139,7 +10139,8 @@ class ControlCenterViewModel(QObject):
         preferred_config_signature = str(decision_metadata.get('preferred_config_signature') or '').strip()
         supporting_trace_ids = [str(item) for item in (decision_metadata.get('supporting_trace_ids') or []) if str(item).strip()][:4]
         auto_replanned = bool(metadata.get('replanned_automatically') or metadata.get('auto_replanned') or payload.get('adaptive_replanned'))
-        replan_source = str(metadata.get('replanned_from_session_id') or metadata.get('auto_replanned_session_id') or '')
+        # Use canonical parent_session_id from session, fallback to legacy metadata for backward compatibility
+        replan_source = str(payload.get('parent_session_id') or metadata.get('replanned_from_session_id') or metadata.get('auto_replanned_session_id') or '')
         if self._is_general_conversation_session(payload, intent, context):
             current_goal = str(payload.get('user_goal') or self._last_user_goal or '')
             self_awareness = self._is_self_awareness_session(intent) or self._is_self_awareness_question(current_goal)

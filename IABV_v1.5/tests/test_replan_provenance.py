@@ -824,27 +824,27 @@ class TestCanonicalReplanProvenance:
 
     def test_partial_typed_parent_only(self):
         """Only parent_session_id provided, type and depth from legacy."""
-        session = AdaptiveSession(
-            user_goal="test goal",
-            intent=TaskIntent(
-                intent_key="test.intent",
-                title="Test Intent",
-                detected_role="training",
-                confidence=1.0,
-            ),
-            context=TaskContext(),
-            parent_session_id="explicit-parent",  # Explicit typed
-            # continuation_type and replan_depth absent - should migrate from legacy
-            metadata={
-                "replanned_from_session_id": "legacy-parent",
-                "replan_count": 2,
-            },
-        )
-
-        # Verify: explicit parent preserved, type and depth migrated
-        assert session.parent_session_id == "explicit-parent"
-        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
-        assert session.replan_depth == 2
+        # When explicit parent differs from legacy parent, we should reject cross-lineage contamination
+        # because we would be mixing lineage from different sources
+        import pytest
+        
+        with pytest.raises(ValueError, match="Cross-lineage contamination"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                parent_session_id="explicit-parent",  # Explicit typed
+                # continuation_type and replan_depth absent - would migrate from legacy
+                metadata={
+                    "replanned_from_session_id": "legacy-parent",  # Different lineage
+                    "replan_count": 2,
+                },
+            )
 
     def test_partial_typed_depth_only(self):
         """Only replan_depth provided, type and parent from legacy."""
@@ -869,3 +869,138 @@ class TestCanonicalReplanProvenance:
         assert session.replan_depth == 3  # Explicit value preserved
         assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
         assert session.parent_session_id == "legacy-parent"
+
+    def test_case_f_explicit_parent_none_with_legacy_parent_fails_validation(self):
+        """Case F: parent=None (default) with legacy parent migrates but fails coherence validation."""
+        import pytest
+        # Since None is the default, migration occurs, but creates incoherent AUTO_REPLAN with parent=None
+        with pytest.raises(ValueError, match="AUTO_REPLAN requires parent_session_id"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                parent_session_id=None,  # Cannot distinguish from default
+                metadata={
+                    "replanned_from_session_id": "legacy-parent",
+                    "replan_count": 2,
+                },
+            )
+
+    def test_case_g_explicit_depth_zero_with_legacy_count_fails_validation(self):
+        """Case G: depth=0 (default) with legacy count migrates but fails coherence validation."""
+        import pytest
+        # Since 0 is the default, migration occurs, but creates incoherent AUTO_REPLAN with depth=0
+        with pytest.raises(ValueError, match="AUTO_REPLAN requires replan_depth>=1"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                replan_depth=0,  # Cannot distinguish from default
+                metadata={
+                    "replanned_from_session_id": "legacy-parent",
+                    "replan_count": 2,
+                },
+            )
+
+    def test_case_e2_cross_lineage_contamination_rejected(self):
+        """Case E2: explicit parent conflicts with legacy parent should be rejected."""
+        import pytest
+        
+        with pytest.raises(ValueError, match="Cross-lineage contamination"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                parent_session_id="typed-parent-A",  # Explicit parent A
+                metadata={
+                    "replanned_from_session_id": "legacy-parent-B",  # Legacy parent B
+                    "replan_count": 2,
+                },
+            )
+
+    def test_invariant_external_request_coherence(self):
+        """EXTERNAL_REQUEST must have parent=None and depth=0."""
+        import pytest
+        
+        # EXTERNAL_REQUEST with parent should fail
+        with pytest.raises(ValueError, match="EXTERNAL_REQUEST requires parent_session_id=None"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+                parent_session_id="some-parent",
+                replan_depth=0,
+            )
+        
+        # EXTERNAL_REQUEST with depth>0 should fail
+        with pytest.raises(ValueError, match="EXTERNAL_REQUEST requires replan_depth=0"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+                parent_session_id=None,
+                replan_depth=1,
+            )
+
+    def test_invariant_auto_replan_coherence(self):
+        """AUTO_REPLAN must have parent!=None and depth>=1."""
+        import pytest
+        
+        # AUTO_REPLAN with parent=None should fail
+        with pytest.raises(ValueError, match="AUTO_REPLAN requires parent_session_id"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.AUTO_REPLAN,
+                parent_session_id=None,
+                replan_depth=1,
+            )
+        
+        # AUTO_REPLAN with depth=0 should fail
+        with pytest.raises(ValueError, match="AUTO_REPLAN requires replan_depth>=1"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.AUTO_REPLAN,
+                parent_session_id="some-parent",
+                replan_depth=0,
+            )
