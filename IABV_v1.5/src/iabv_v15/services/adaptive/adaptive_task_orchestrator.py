@@ -1567,6 +1567,37 @@ class AdaptiveTaskOrchestrator:
         )
         approvals = self.approval_gate_service.evaluate(intent=intent, pack=pack, strategy_candidates=strategy_candidates)
         session_status = self._derive_session_status(intent=intent, playbook=playbook, approvals=approvals)
+        # Initialize provenance from request metadata for replan sessions
+        from iabv_v15.domain.models import SessionContinuationType
+        request_metadata = dict(request.metadata or {})
+        continuation_type = SessionContinuationType.EXTERNAL_REQUEST
+        parent_session_id = request_metadata.get('replanned_from_session_id')
+        replan_depth = int(request_metadata.get('replan_count') or 0)
+        if parent_session_id:
+            continuation_type = SessionContinuationType.AUTO_REPLAN
+
+        # Build metadata with legacy mirror for backward compatibility
+        session_metadata = {
+            'approval_mode': request.approval_mode,
+            'execution_scope': request.execution_scope,
+            'goal_parameters': dict(request.goal_parameters),
+            'perception_snapshot': perception.model_dump(mode='json'),
+            'etapa2_conversation_analysis': {
+                'ambiguity_score': ambiguity_score,
+                'requires_clarification': requires_clarification,
+                'sub_intents': sub_intents,
+                'risk_level': risk_level,
+                'compound_intent': len(sub_intents) > 1 if sub_intents else False,
+                'semantic_source': intent_schema.semantic_source if intent_schema else 'keywords',
+                'intent_confidence': intent_schema.confidence if intent_schema else 0.0,
+            },
+        }
+        # Sync legacy metadata mirror with canonical provenance
+        if parent_session_id:
+            session_metadata['replanned_from_session_id'] = parent_session_id
+        if replan_depth > 0:
+            session_metadata['replan_count'] = replan_depth
+
         session = AdaptiveSession(
             user_goal=request.user_goal,
             intent=intent,
@@ -1581,21 +1612,10 @@ class AdaptiveTaskOrchestrator:
             approval_checkpoints=[],
             outcome=None,
             evidence_refs=list(context.evidence_summary),
-            metadata={
-                'approval_mode': request.approval_mode,
-                'execution_scope': request.execution_scope,
-                'goal_parameters': dict(request.goal_parameters),
-                'perception_snapshot': perception.model_dump(mode='json'),
-                'etapa2_conversation_analysis': {
-                    'ambiguity_score': ambiguity_score,
-                    'requires_clarification': requires_clarification,
-                    'sub_intents': sub_intents,
-                    'risk_level': risk_level,
-                    'compound_intent': len(sub_intents) > 1 if sub_intents else False,
-                    'semantic_source': intent_schema.semantic_source if intent_schema else 'keywords',
-                    'intent_confidence': intent_schema.confidence if intent_schema else 0.0,
-                },
-            },
+            continuation_type=continuation_type,
+            parent_session_id=parent_session_id,
+            replan_depth=replan_depth,
+            metadata=session_metadata,
         )
         # Opt-in Control Master link. When the consumer passes
         # ``control_master_objective_id`` in the request metadata, carry
@@ -1996,6 +2016,10 @@ class AdaptiveTaskOrchestrator:
         session.metadata['linked_run_id'] = run_record.run_id
         session.metadata['linked_run_summary'] = run_record.result.summary
         session.metadata['linked_run_error'] = run_record.error_summary or run_record.result.error_summary
+        # Sync legacy metadata mirror with canonical provenance
+        session.metadata['replan_count'] = session.replan_depth
+        if session.parent_session_id:
+            session.metadata['replanned_from_session_id'] = session.parent_session_id
         session = self._apply_run_feedback(session, run_record)
         session = self._refresh_session_metadata(session)
         saved_session = self.task_outcome_recorder.record(session, run_record=run_record)
@@ -2062,9 +2086,9 @@ class AdaptiveTaskOrchestrator:
             return False
         if session.metadata.get('auto_replanned_session_id') or session.metadata.get('replanned_automatically'):
             return False
-        if session.metadata.get('replanned_from_session_id'):
-            return False
-        return int(session.metadata.get('replan_count') or 0) < 2
+        # Canonical source: use typed replan_depth only (bounded replan policy: depth < 1)
+        # At most one automatic replan hop: depth=0 may create depth=1, but depth=1 cannot create depth=2
+        return session.replan_depth < 1
 
     def get_session(self, session_id: str) -> AdaptiveSession | None:
         return self.adaptive_session_repository.get(session_id)
@@ -2117,19 +2141,26 @@ class AdaptiveTaskOrchestrator:
         session = self.adaptive_session_repository.get(session_id)
         if session is None:
             return None
+        # Enforce bounded replan policy: depth < 2
+        if session.replan_depth >= 1:
+            return None
         request = self._request_from_session(session)
+        # Canonical source: use typed provenance fields only
+        current_replan_depth = session.replan_depth
         request = request.model_copy(
             update={
                 'metadata': {
                     **dict(request.metadata or {}),
                     'replanned_from_session_id': session.session_id,
+                    'replan_count': current_replan_depth + 1,
                     'replan_reason': str((session.metadata.get('governance') or {}).get('reason') or (session.outcome.summary if session.outcome is not None else '') or ''),
                 }
             }
         )
         _, _, replanned = self.handle_request(request)
+        # Mirror synchronization: canonical → legacy
         replanned.metadata['replanned_from_session_id'] = session.session_id
-        replanned.metadata['replan_count'] = int(session.metadata.get('replan_count') or 0) + 1
+        replanned.metadata['replan_count'] = current_replan_depth + 1
         return self.task_outcome_recorder.record(replanned)
 
     # ------------------------------------------------------------------

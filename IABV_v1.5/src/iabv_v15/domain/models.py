@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 def utc_now() -> datetime:
@@ -315,6 +315,12 @@ class AdaptiveSessionStatus(str, Enum):
     COMPLETED = "completed"
     ABORTED = "aborted"
     FAILED = "failed"
+
+
+class SessionContinuationType(str, Enum):
+    """Type of session continuation: external user request vs automatic replan."""
+    EXTERNAL_REQUEST = "external_request"
+    AUTO_REPLAN = "auto_replan"
 
 
 class ScenarioMode(str, Enum):
@@ -2424,6 +2430,147 @@ class AdaptiveSession(BaseModel):
     runtime_adjustments: list[RuntimeAdjustment] = Field(default_factory=list)
     pending_issue_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Canonical provenance: distinguish external requests from auto-replans
+    continuation_type: SessionContinuationType = SessionContinuationType.EXTERNAL_REQUEST
+    parent_session_id: str | None = None
+    replan_depth: int = 0
+
+    @model_validator(mode='before')
+    @classmethod
+    def migrate_legacy_provenance(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate legacy metadata to typed provenance fields for historical sessions.
+        
+        This validator runs BEFORE field validation to detect whether provenance
+        fields were explicitly provided in the input. For each field individually:
+        - If the field is explicitly provided, keep it (no migration for that field)
+        - If the field is absent, migrate from legacy metadata if available
+        
+        Cross-lineage contamination prevention:
+        - When completing partial provenance from legacy, ensure lineage compatibility
+        - Reject if typed components conflict with legacy components
+        - Never mix components from different lineage sources
+        
+        Priority: explicit typed provenance > legacy migration > defaults.
+        """
+        legacy_parent = data.get('metadata', {}).get('replanned_from_session_id')
+        legacy_count = int(data.get('metadata', {}).get('replan_count') or 0)
+        
+        # Skip migration if all three provenance fields are explicitly provided (complete override)
+        has_complete_provenance = (
+            'continuation_type' in data and
+            'parent_session_id' in data and
+            'replan_depth' in data
+        )
+        if has_complete_provenance:
+            return data
+        
+        # Cross-lineage validation: check compatibility between typed and legacy components
+        # Only validate when we have both typed and legacy components that could conflict
+        
+        # Case: type+parent typed, depth absent, legacy parent present
+        if ('continuation_type' in data and 'parent_session_id' in data and 
+            'replan_depth' not in data and legacy_parent is not None):
+            if data['parent_session_id'] != legacy_parent:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed parent_session_id='{data['parent_session_id']}' "
+                    f"conflicts with legacy replanned_from_session_id='{legacy_parent}'. "
+                    "Cannot complete depth from different lineage."
+                )
+        
+        # Case: type+depth typed, parent absent, legacy parent present
+        if ('continuation_type' in data and 'replan_depth' in data and 
+            'parent_session_id' not in data and legacy_parent is not None):
+            # Check if typed depth matches legacy count (same lineage evidence)
+            if data['replan_depth'] != legacy_count:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed replan_depth={data['replan_depth']} "
+                    f"conflicts with legacy replan_count={legacy_count}. "
+                    "Cannot complete parent from different lineage."
+                )
+        
+        # Case: parent+depth typed, type absent, legacy components present
+        if ('parent_session_id' in data and 'replan_depth' in data and 
+            'continuation_type' not in data):
+            if legacy_parent is not None and data['parent_session_id'] != legacy_parent:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed parent_session_id='{data['parent_session_id']}' "
+                    f"conflicts with legacy replanned_from_session_id='{legacy_parent}'. "
+                    "Cannot complete type from different lineage."
+                )
+            if legacy_count > 0 and data['replan_depth'] != legacy_count:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed replan_depth={data['replan_depth']} "
+                    f"conflicts with legacy replan_count={legacy_count}. "
+                    "Cannot complete type from different lineage."
+                )
+        
+        # Case: parent typed only, type and depth absent, legacy parent present
+        if ('parent_session_id' in data and 'continuation_type' not in data and 
+            'replan_depth' not in data and legacy_parent is not None):
+            if data['parent_session_id'] != legacy_parent:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed parent_session_id='{data['parent_session_id']}' "
+                    f"conflicts with legacy replanned_from_session_id='{legacy_parent}'. "
+                    "Cannot complete type and depth from different lineage."
+                )
+        
+        # Case: depth typed only, type and parent absent, legacy components present
+        if ('replan_depth' in data and 'continuation_type' not in data and 
+            'parent_session_id' not in data):
+            if legacy_parent is not None and data['replan_depth'] != legacy_count:
+                raise ValueError(
+                    f"Cross-lineage contamination: typed replan_depth={data['replan_depth']} "
+                    f"conflicts with legacy replan_count={legacy_count}. "
+                    "Cannot complete type and parent from different lineage."
+                )
+        
+        # Migrate continuation_type if not explicitly provided
+        if 'continuation_type' not in data:
+            if legacy_parent or legacy_count > 0:
+                data['continuation_type'] = SessionContinuationType.AUTO_REPLAN
+        
+        # Migrate parent_session_id if not explicitly provided
+        if 'parent_session_id' not in data:
+            if legacy_parent:
+                data['parent_session_id'] = legacy_parent
+        
+        # Migrate replan_depth if not explicitly provided
+        if 'replan_depth' not in data:
+            if legacy_count > 0:
+                data['replan_depth'] = legacy_count
+        
+        return data
+
+    @model_validator(mode='after')
+    def validate_provenance_coherence(self) -> 'AdaptiveSession':
+        """Validate that provenance tuple is semantically coherent.
+        
+        After migration, ensure the provenance tuple obeys:
+        - EXTERNAL_REQUEST: parent_session_id=None, replan_depth=0
+        - AUTO_REPLAN: parent_session_id!=None, replan_depth>=1
+        
+        This validator runs AFTER field validation to catch any incoherent states.
+        """
+        if self.continuation_type == SessionContinuationType.EXTERNAL_REQUEST:
+            if self.parent_session_id is not None:
+                raise ValueError(
+                    f"EXTERNAL_REQUEST requires parent_session_id=None, got '{self.parent_session_id}'"
+                )
+            if self.replan_depth != 0:
+                raise ValueError(
+                    f"EXTERNAL_REQUEST requires replan_depth=0, got {self.replan_depth}"
+                )
+        elif self.continuation_type == SessionContinuationType.AUTO_REPLAN:
+            if self.parent_session_id is None:
+                raise ValueError(
+                    f"AUTO_REPLAN requires parent_session_id!=None, got None"
+                )
+            if self.replan_depth < 1:
+                raise ValueError(
+                    f"AUTO_REPLAN requires replan_depth>=1, got {self.replan_depth}"
+                )
+        
+        return self
 
 
 class InferenceRequest(BaseModel):
