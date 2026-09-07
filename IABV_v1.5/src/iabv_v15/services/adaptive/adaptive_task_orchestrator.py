@@ -76,6 +76,9 @@ _CONDITIONAL_LOCAL_CHAT_INTENT_KEYS = frozenset({
 })
 _LOCAL_CHAT_ROLES = frozenset({TaskRole.KNOWLEDGE, TaskRole.ANALYTICS, TaskRole.RESEARCH})
 
+# Canonical auto-replan depth policy: at most one automatic replan generation
+MAX_AUTO_REPLAN_DEPTH = 1
+
 
 # --- H6: intent -> synaptic task_kind mapping ---------------------------------
 # Mapea (intent_key, detected_role, metadata flags) a un ``task_kind`` reconocido
@@ -2092,8 +2095,10 @@ class AdaptiveTaskOrchestrator:
         # Idempotency guard: prevent repeated automatic replans of the same source session
         if session.auto_replan_child_session_id is not None:
             return False
-        # Bounded replan policy: at most one automatic replan hop (depth=0 may create depth=1)
-        return session.replan_depth < 1
+        # Bounded replan policy: at most one automatic replan generation (MAX_AUTO_REPLAN_DEPTH=1)
+        # depth 0: eligible for one automatic replan
+        # depth >= 1: NOT eligible for another automatic replan
+        return session.replan_depth < MAX_AUTO_REPLAN_DEPTH
 
     def get_session(self, session_id: str) -> AdaptiveSession | None:
         return self.adaptive_session_repository.get(session_id)
@@ -2146,8 +2151,10 @@ class AdaptiveTaskOrchestrator:
         session = self.adaptive_session_repository.get(session_id)
         if session is None:
             return None
-        # Enforce bounded replan policy: depth < 1 (same for manual and automatic)
-        if session.replan_depth >= 1:
+        # Enforce bounded replan policy: depth < MAX_AUTO_REPLAN_DEPTH (same for manual and automatic)
+        # depth 0: eligible for replan (creates depth 1)
+        # depth >= 1: NOT eligible for replan (blocked by MAX_AUTO_REPLAN_DEPTH=1)
+        if session.replan_depth >= MAX_AUTO_REPLAN_DEPTH:
             return None
         request = self._request_from_session(session)
         # Canonical source: use typed provenance fields only

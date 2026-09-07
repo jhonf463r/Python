@@ -2567,8 +2567,25 @@ class AdaptiveSession(BaseModel):
         - EXTERNAL_REQUEST: parent_session_id=None, replan_depth=0
         - AUTO_REPLAN: parent_session_id!=None, replan_depth>=1
         
+        Also enforce cycle safety invariants:
+        - parent_session_id must not equal session_id (self-parent)
+        - auto_replan_child_session_id must not equal session_id (self-child)
+        
         This validator runs AFTER field validation to catch any incoherent states.
         """
+        # Enforce cycle safety: prevent self-parent
+        if self.parent_session_id is not None and self.parent_session_id == self.session_id:
+            raise ValueError(
+                f"parent_session_id cannot equal session_id (self-parent cycle): '{self.session_id}'"
+            )
+        
+        # Enforce cycle safety: prevent self-child
+        if self.auto_replan_child_session_id is not None and self.auto_replan_child_session_id == self.session_id:
+            raise ValueError(
+                f"auto_replan_child_session_id cannot equal session_id (self-child cycle): '{self.session_id}'"
+            )
+        
+        # Validate provenance coherence
         if self.continuation_type == SessionContinuationType.EXTERNAL_REQUEST:
             if self.parent_session_id is not None:
                 raise ValueError(
