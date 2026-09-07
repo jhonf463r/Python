@@ -77,6 +77,7 @@ class EvidenceKind(str, Enum):
     INCIDENT = "incident"
     USER_CLUE = "user_clue"
     DEVELOPMENT_TEST = "development_test"
+    DEVELOPMENT_EXECUTION = "development_execution"
 
 
 class DevelopmentTestStatus(str, Enum):
@@ -85,6 +86,14 @@ class DevelopmentTestStatus(str, Enum):
     ERROR = "error"
     TIMEOUT = "timeout"
     NOT_RUN = "not_run"
+
+
+class DevelopmentExecutionStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class IncidentStatus(str, Enum):
@@ -2743,6 +2752,56 @@ class DevelopmentTestResult(BaseModel):
             count_sum = self.passed_count + self.failed_count + self.error_count + self.skipped_count
             if count_sum != self.test_count:
                 raise ValueError(f"Count sum ({count_sum}) does not equal test_count ({self.test_count})")
+        
+        return self
+
+
+class DevelopmentExecutionEvidence(BaseModel):
+    """Aggregated evidence from a development execution.
+    
+    Connects verifiable facts about development work:
+    - What development work was executed
+    - On what code (repository, commits, changed files)
+    - What objective evidence was produced (test results, artifacts)
+    
+    This is an evidence structure, not a task/session system.
+    It unites facts without introducing new task or agent abstractions.
+    """
+    evidence_id: str = Field(default_factory=lambda: str(uuid4()))
+    repository: str
+    base_commit: str | None = None
+    result_commit: str | None = None
+    changed_files: list[str] = Field(default_factory=list)
+    executor_id: str | None = None  # Nullable until agent abstraction exists
+    started_at_utc: datetime = Field(default_factory=utc_now)
+    completed_at_utc: datetime | None = None
+    duration_seconds: float | None = None
+    execution_status: DevelopmentExecutionStatus = DevelopmentExecutionStatus.PENDING
+    test_result_id: str | None = None  # Reference to DevelopmentTestResult
+    evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode='after')
+    def validate_temporal_consistency(self) -> DevelopmentExecutionEvidence:
+        # completed_at_utc must be >= started_at_utc when both are explicitly set
+        # Note: We only enforce this when both are provided by the caller
+        # If one uses the default factory, we don't enforce comparison
+        # to avoid false positives with auto-generated timestamps
+        if self.completed_at_utc is not None and self.started_at_utc is not None:
+            if self.completed_at_utc < self.started_at_utc:
+                raise ValueError("completed_at_utc must be >= started_at_utc")
+        
+        # duration_seconds must be non-negative when present
+        if self.duration_seconds is not None and self.duration_seconds < 0:
+            raise ValueError("duration_seconds cannot be negative")
+        
+        # result_commit must be non-empty string when present
+        if self.result_commit is not None and self.result_commit == "":
+            raise ValueError("result_commit cannot be empty when provided")
+        
+        # base_commit must be non-empty string when present
+        if self.base_commit is not None and self.base_commit == "":
+            raise ValueError("base_commit cannot be empty when provided")
         
         return self
 
