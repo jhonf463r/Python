@@ -2548,9 +2548,10 @@ class AdaptiveSession(BaseModel):
                 data['parent_session_id'] = legacy_parent
         
         # Migrate replan_depth if not explicitly provided
+        # Cap legacy replan_count at 1 to enforce domain invariant
         if 'replan_depth' not in data:
             if legacy_count > 0:
-                data['replan_depth'] = legacy_count
+                data['replan_depth'] = min(legacy_count, 1)
         
         # Migrate auto_replan_child_session_id if not explicitly provided
         if 'auto_replan_child_session_id' not in data:
@@ -2604,8 +2605,23 @@ class AdaptiveSession(BaseModel):
                 raise ValueError(
                     f"AUTO_REPLAN requires replan_depth>=1, got {self.replan_depth}"
                 )
+            if self.replan_depth > 1:
+                raise ValueError(
+                    f"AUTO_REPLAN depth cannot exceed 1, got {self.replan_depth}. "
+                    "Nested replans are not supported."
+                )
         
         return self
+
+
+class InternalReplanContext(BaseModel):
+    """Typed context for internal auto-replan construction.
+    
+    This is the ONLY authoritative source for provenance when constructing
+    an AUTO_REPLAN session. External requests cannot set this field.
+    """
+    parent_session_id: str
+    replan_depth: int = 1
 
 
 class InferenceRequest(BaseModel):
@@ -2633,6 +2649,8 @@ class InferenceRequest(BaseModel):
     execution_scope: str = "operational"
     goal_parameters: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Internal replan context: only set by internal replan mechanisms, never from external requests
+    internal_replan_context: InternalReplanContext | None = None
 
 
 class InferenceResult(BaseModel):

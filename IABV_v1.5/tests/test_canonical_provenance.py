@@ -107,7 +107,7 @@ class TestCanonicalProvenance:
             )
 
     def test_legacy_migration_full_legacy(self):
-        """Full legacy metadata migrates to AUTO_REPLAN."""
+        """Full legacy metadata migrates to AUTO_REPLAN with depth capped at 1."""
         session = AdaptiveSession(
             user_goal="test goal",
             intent=TaskIntent(
@@ -124,7 +124,7 @@ class TestCanonicalProvenance:
         )
         assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
         assert session.parent_session_id == "parent-id"
-        assert session.replan_depth == 2
+        assert session.replan_depth == 1  # Capped at 1 by domain invariant
 
     def test_legacy_migration_partial_typed_parent(self):
         """Partial typed parent with matching legacy migrates depth."""
@@ -284,38 +284,24 @@ class TestBoundedReplanPolicy:
         assert result is False  # B→C blocked (depth=1 < 1 is False)
 
     def test_should_auto_replan_depth_2_blocked(self):
-        """depth=2 blocks automatic replan (C→D blocked)."""
-        session_repo = MagicMock(spec=AdaptiveSessionRepository)
-        orchestrator = AdaptiveTaskOrchestrator(
-            role_router=MagicMock(),
-            adaptive_session_repository=session_repo,
-            intent_service=MagicMock(),
-            context_assembler=MagicMock(),
-            capability_service=MagicMock(),
-            strategy_pack_registry=MagicMock(),
-            planner_service=MagicMock(),
-            approval_gate_service=MagicMock(),
-            execution_playbook_service=MagicMock(),
-            task_outcome_recorder=MagicMock(),
-        )
-
-        session = AdaptiveSession(
-            user_goal="test goal",
-            intent=TaskIntent(
-                intent_key="test.intent",
-                title="Test Intent",
-                detected_role="training",
-                confidence=1.0,
-            ),
-            context=TaskContext(),
-            continuation_type=SessionContinuationType.AUTO_REPLAN,
-            parent_session_id="parent-id",
-            replan_depth=2,
-            metadata={"governance": {"should_replan": True}},
-        )
-
-        result = orchestrator._should_auto_replan(session)
-        assert result is False  # C→D blocked
+        """depth=2 is rejected at domain construction (C→D blocked by invariant)."""
+        # With the new domain invariant, depth=2 is rejected at construction time
+        # This test verifies the domain-level rejection
+        with pytest.raises(ValueError, match="AUTO_REPLAN depth cannot exceed 1"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.AUTO_REPLAN,
+                parent_session_id="parent-id",
+                replan_depth=2,
+                metadata={"governance": {"should_replan": True}},
+            )
 
     def test_manual_replan_depth_0_allowed(self):
         """Manual replan respects policy: depth=0 allowed."""
@@ -427,7 +413,7 @@ class TestPersistenceRoundTrip:
         assert restored.replan_depth == 1
 
     def test_reload_after_migration_preserves_canonical(self):
-        """Legacy session migrates and preserves canonical after reload."""
+        """Legacy session migrates with depth capped at 1 and preserves canonical after reload."""
         # Simulate persisted legacy session
         legacy_data = {
             "user_goal": "test goal",
@@ -444,12 +430,12 @@ class TestPersistenceRoundTrip:
             },
         }
 
-        # Migrate on load
+        # Migrate on load (depth capped at 1 by domain invariant)
         session = AdaptiveSession(**legacy_data)
 
         assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
         assert session.parent_session_id == "parent-id"
-        assert session.replan_depth == 2
+        assert session.replan_depth == 1  # Capped at 1
 
         # Serialize and reload
         json_data = session.model_dump(mode='json')
@@ -458,7 +444,7 @@ class TestPersistenceRoundTrip:
         # Canonical provenance preserved after round-trip
         assert restored.continuation_type == SessionContinuationType.AUTO_REPLAN
         assert restored.parent_session_id == "parent-id"
-        assert restored.replan_depth == 2
+        assert restored.replan_depth == 1
 
     def test_repeated_finalize_cannot_create_multiple_children(self):
         """Repeated finalize of depth=0 session cannot create multiple automatic children.
@@ -910,48 +896,26 @@ class TestCausalIndependence:
         assert result is False  # depth=1 < 1 is False, blocked
 
     def test_depth_2_auto_replan_canonical_construction_rejected(self):
-        """TEST H: depth=2 AUTO_REPLAN canonical construction.
+        """TEST H: depth=2 AUTO_REPLAN canonical construction is rejected by domain invariant.
         
         Expected: deterministic rejection (depth >= MAX_AUTO_REPLAN_DEPTH violates policy).
         """
-        # depth=2 with AUTO_REPLAN is incoherent with MAX_AUTO_REPLAN_DEPTH=1 policy
-        # The model validator allows it (depth >= 1 is valid for AUTO_REPLAN),
-        # but the orchestrator will block replan decisions at depth >= 1
-        session = AdaptiveSession(
-            user_goal="test goal",
-            intent=TaskIntent(
-                intent_key="test.intent",
-                title="Test Intent",
-                detected_role="training",
-                confidence=1.0,
-            ),
-            context=TaskContext(),
-            continuation_type=SessionContinuationType.AUTO_REPLAN,
-            parent_session_id="parent-id",
-            replan_depth=2,
-        )
-        
-        # Session construction succeeds (depth >= 1 is valid for AUTO_REPLAN)
-        assert session.replan_depth == 2
-        
-        # But orchestrator blocks replan at depth >= 1
-        session_repo = MagicMock(spec=AdaptiveSessionRepository)
-        orchestrator = AdaptiveTaskOrchestrator(
-            role_router=MagicMock(),
-            adaptive_session_repository=session_repo,
-            intent_service=MagicMock(),
-            context_assembler=MagicMock(),
-            capability_service=MagicMock(),
-            strategy_pack_registry=MagicMock(),
-            planner_service=MagicMock(),
-            approval_gate_service=MagicMock(),
-            execution_playbook_service=MagicMock(),
-            task_outcome_recorder=MagicMock(),
-        )
-
-        session_repo.get.return_value = session
-        result = orchestrator._should_auto_replan(session)
-        assert result is False  # depth=2 < 1 is False, blocked
+        # depth=2 with AUTO_REPLAN is now rejected at domain construction time
+        # by the new depth invariant (max depth = 1)
+        with pytest.raises(ValueError, match="AUTO_REPLAN depth cannot exceed 1"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.AUTO_REPLAN,
+                parent_session_id="parent-id",
+                replan_depth=2,
+            )
 
     def test_persist_reload_preserves_canonical(self):
         """TEST I: Persist + reload AdaptiveSession.

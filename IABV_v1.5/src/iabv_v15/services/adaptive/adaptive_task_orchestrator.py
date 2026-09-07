@@ -1570,16 +1570,23 @@ class AdaptiveTaskOrchestrator:
         )
         approvals = self.approval_gate_service.evaluate(intent=intent, pack=pack, strategy_candidates=strategy_candidates)
         session_status = self._derive_session_status(intent=intent, playbook=playbook, approvals=approvals)
-        # Initialize provenance from request metadata for replan sessions
+        # Initialize provenance from typed internal_replan_context ONLY
+        # External request metadata (replanned_from_session_id, replan_count) is IGNORED
+        # to prevent fabrication of provenance from untrusted sources
         from iabv_v15.domain.models import SessionContinuationType
-        request_metadata = dict(request.metadata or {})
         continuation_type = SessionContinuationType.EXTERNAL_REQUEST
-        parent_session_id = request_metadata.get('replanned_from_session_id')
-        replan_depth = int(request_metadata.get('replan_count') or 0)
-        if parent_session_id:
+        parent_session_id = None
+        replan_depth = 0
+        
+        # Only use internal_replan_context for AUTO_REPLAN construction
+        if request.internal_replan_context is not None:
             continuation_type = SessionContinuationType.AUTO_REPLAN
+            parent_session_id = request.internal_replan_context.parent_session_id
+            replan_depth = request.internal_replan_context.replan_depth
 
         # Build metadata with legacy mirror for backward compatibility
+        # NOTE: This mirror is for READ-ONLY backward compatibility with legacy consumers.
+        # It does NOT drive provenance construction - that comes from internal_replan_context.
         session_metadata = {
             'approval_mode': request.approval_mode,
             'execution_scope': request.execution_scope,
@@ -1595,7 +1602,7 @@ class AdaptiveTaskOrchestrator:
                 'intent_confidence': intent_schema.confidence if intent_schema else 0.0,
             },
         }
-        # Sync legacy metadata mirror with canonical provenance
+        # Sync legacy metadata mirror with canonical provenance (read-only mirror)
         if parent_session_id:
             session_metadata['replanned_from_session_id'] = parent_session_id
         if replan_depth > 0:
