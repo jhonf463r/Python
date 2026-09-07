@@ -194,6 +194,7 @@ class DevelopmentOutcomeAttributionBuilder:
         When task_outcome already has development attribution, ensure that:
         - New objects are coherent with existing attribution
         - Omitted objects do not silently erase existing attribution
+        - Audit identity is preserved (cannot be silently swapped)
         
         Raises:
             DevelopmentOutcomeAttributionError: If augmentation would corrupt attribution
@@ -201,6 +202,17 @@ class DevelopmentOutcomeAttributionBuilder:
         existing_audit_id = task_outcome.development_audit_result_id
         existing_execution_id = task_outcome.development_execution_evidence_id
         existing_test_id = task_outcome.development_test_result_id
+        
+        # AUDIT IDENTITY PRESERVATION: Reject audit swap
+        # Existing audit=A + new audit=B must be rejected even if B references same execution
+        if existing_audit_id is not None and audit_result is not None:
+            if audit_result.audit_id != existing_audit_id:
+                raise DevelopmentOutcomeAttributionError(
+                    f"Augmentation would corrupt existing attribution: existing audit_id='{existing_audit_id}' "
+                    f"but new audit_result.audit_id='{audit_result.audit_id}'. "
+                    f"Cannot replace audit identity with a different audit object. "
+                    f"The audit object is itself a distinct evidence identity that must remain stable."
+                )
         
         # CASE A: Reject mixed graph augment (existing execution A + execution B)
         # This applies regardless of whether audit exists
