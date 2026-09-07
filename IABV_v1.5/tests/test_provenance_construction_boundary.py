@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 from iabv_v15.domain.models import (
     AdaptiveSession,
     InferenceRequest,
+    InferenceResult,
     InternalReplanContext,
     SessionContinuationType,
     TaskIntent,
@@ -36,6 +37,62 @@ from iabv_v15.services.adaptive.execution_playbook_service import ExecutionPlayb
 from iabv_v15.services.adaptive.task_outcome_recorder import TaskOutcomeRecorder
 from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.episode_repository import EpisodeRepository
+from iabv_v15.infra.persistence.knowledge_repository import KnowledgeRepository
+from iabv_v15.infra.persistence.run_repository import RunRepository
+from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
+from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
+from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
+from iabv_v15.infra.persistence.hidden_incident_repository import HiddenIncidentRepository
+from iabv_v15.infra.persistence.user_clue_repository import UserClueRepository
+from iabv_v15.services.capture.site_policy_registry import SitePolicyRegistry
+from iabv_v15.services.roles.embedding_index_service import EmbeddingIndexService
+from iabv_v15.services.roles.sql_query_advisor_service import SqlQueryAdvisorService
+from iabv_v15.services.roles.analytics_strategy_service import AnalyticsStrategyService
+from iabv_v15.services.roles.customer_support_service import CustomerSupportService
+from iabv_v15.services.development.development_assist_service import DevelopmentAssistService
+from iabv_v15.services.training.pbt_control_service import PBTControlService
+from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
+from iabv_v15.services.roles.engineering_review_service import EngineeringReviewService
+from iabv_v15.services.roles.local_role_router import LocalRoleRouter
+from iabv_v15.services.lab.experiment_lab import ExperimentLab
+from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
+from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
+from iabv_v15.services.lab.strategy_selector import StrategySelector
+from iabv_v15.services.adaptive.adaptive_weight_layer import AdaptiveWeightLayer
+from iabv_v15.services.providers.base import LLMProvider
+
+
+class FakeProvider(LLMProvider):
+    def __init__(self, name: str):
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def analyze_ui(self, request: InferenceRequest) -> InferenceResult:
+        return self._result(request)
+
+    def infer_task(self, request: InferenceRequest) -> InferenceResult:
+        return self._result(request)
+
+    def answer_user(self, request: InferenceRequest) -> InferenceResult:
+        return self._result(request)
+
+    def summarize_session(self, request: InferenceRequest) -> InferenceResult:
+        return self._result(request)
+
+    def health_check(self) -> bool:
+        return True
+
+    def _result(self, request: InferenceRequest) -> InferenceResult:
+        return InferenceResult(
+            response="fake response",
+            reasoning_mode="direct",
+            confidence=1.0,
+            metadata={},
+        )
 
 
 class TestExternalLegacyProvenanceBlocked:
@@ -347,24 +404,98 @@ class TestDepthZeroCreatesChild:
 
 @pytest.fixture
 def orchestrator_with_repo(tmp_path: Path) -> tuple[AdaptiveTaskOrchestrator, AdaptiveSessionRepository]:
-    """Create a real orchestrator with minimal infrastructure for provenance testing."""
+    """Create a real orchestrator with full infrastructure for provenance testing."""
     db = AppDatabase(str(tmp_path / 'app.sqlite'))
+    episodes = EpisodeRepository(str(tmp_path / 'episodes'), db)
+    knowledge = KnowledgeRepository(db)
+    runs = RunRepository(db)
+    artifacts = SessionArtifactRepository(db, ArtifactStorage(str(tmp_path / 'artifacts')))
     evolution_storage = ArtifactStorage(str(tmp_path / 'evolution'))
+    dossiers = ExecutionDossierRepository(db, evolution_storage)
+    experiment_lab = ExperimentLabRepository(db, evolution_storage)
+    adaptive_weight_layer = AdaptiveWeightLayer()
+    experiment_lab_service = ExperimentLab(
+        repository=experiment_lab,
+        registry=AlgorithmBenchmarkRegistry(),
+        scoring_engine=DecisionScoringEngine(),
+        strategy_selector=StrategySelector(adaptive_weight_layer=adaptive_weight_layer),
+    )
+    incidents = HiddenIncidentRepository(db, evolution_storage)
+    clues = UserClueRepository(db, evolution_storage)
     adaptive_sessions = AdaptiveSessionRepository(db, evolution_storage)
-    
-    # Minimal mock dependencies for provenance testing
+    strategy_packs = StrategyPackRepository(db, evolution_storage)
+    capabilities = CapabilityRepository(db, evolution_storage)
+    approvals = ApprovalCheckpointRepository(db, evolution_storage)
+    site_policies = SitePolicyRegistry(str(tmp_path / 'site_policies'))
+    embedding = EmbeddingIndexService(
+        base_url='http://127.0.0.1:11434/v1',
+        primary_model='qwen3-embedding:0.6b',
+        lightweight_model='embeddinggemma',
+        state_path=str(tmp_path / 'embedding_state.json'),
+    )
+    sql = SqlQueryAdvisorService(str(tmp_path / 'app.sqlite'))
+    analytics = AnalyticsStrategyService(episodes, knowledge, runs, artifacts)
+    support = CustomerSupportService(knowledge, embedding, sql)
+    devassist = DevelopmentAssistService(str(tmp_path))
+    pbt = PBTControlService(str(tmp_path / 'models'))
+    gaps = TeachingGapAnalyzer()
+    engineering = EngineeringReviewService(
+        workspace_root=str(tmp_path),
+        episode_repository=episodes,
+        knowledge_repository=knowledge,
+        run_repository=runs,
+        artifact_repository=artifacts,
+        analytics_service=analytics,
+        teaching_gap_analyzer=gaps,
+        pbt_service=pbt,
+        development_assist_service=devassist,
+    )
+    router = LocalRoleRouter(
+        workspace_root=str(tmp_path),
+        general_provider=FakeProvider('Ollama'),
+        visual_provider=FakeProvider('Ollama Vision'),
+        optional_provider=FakeProvider('LM Studio'),
+        embedding_service=embedding,
+        sql_service=sql,
+        analytics_service=analytics,
+        customer_support_service=support,
+        engineering_review_service=engineering,
+        teaching_gap_analyzer=gaps,
+        episode_repository=episodes,
+        knowledge_repository=knowledge,
+        run_repository=runs,
+        artifact_repository=artifacts,
+    )
+    context = TaskContextAssembler(
+        episode_repository=episodes,
+        knowledge_repository=knowledge,
+        run_repository=runs,
+        dossier_repository=dossiers,
+        hidden_incident_repository=incidents,
+        site_policy_registry=site_policies,
+        capability_repository=capabilities,
+        adaptive_session_repository=adaptive_sessions,
+        artifact_repository=artifacts,
+        experiment_lab_repository=experiment_lab,
+    )
     orchestrator = AdaptiveTaskOrchestrator(
-        role_router=MagicMock(),
+        role_router=router,
         adaptive_session_repository=adaptive_sessions,
         intent_service=IntentUnderstandingService(),
-        context_assembler=MagicMock(),
-        capability_service=MagicMock(),
-        strategy_pack_registry=MagicMock(),
-        planner_service=MagicMock(),
-        approval_gate_service=MagicMock(),
-        execution_playbook_service=MagicMock(),
-        task_outcome_recorder=MagicMock(),
-        autonomy_governance_policy=MagicMock(),
+        context_assembler=context,
+        capability_service=CapabilityReadinessService(capabilities),
+        strategy_pack_registry=StrategyPackRegistry(strategy_packs),
+        planner_service=AdaptivePlannerService(),
+        approval_gate_service=ApprovalGateService(),
+        execution_playbook_service=ExecutionPlaybookService(),
+        task_outcome_recorder=TaskOutcomeRecorder(
+            adaptive_session_repository=adaptive_sessions,
+            capability_repository=capabilities,
+            approval_checkpoint_repository=approvals,
+            experiment_lab=experiment_lab_service,
+            adaptive_weight_layer=adaptive_weight_layer,
+        ),
+        autonomy_governance_policy=AutonomyGovernancePolicy(),
     )
     return orchestrator, adaptive_sessions
 
@@ -376,9 +507,6 @@ class TestRealOrchestratorProvenance:
         """A. External request with forged legacy metadata must remain EXTERNAL_REQUEST."""
         orchestrator, repo = orchestrator_with_repo
         
-        # Test the provenance extraction logic directly
-        from iabv_v15.domain.models import SessionContinuationType
-        
         request = InferenceRequest(
             user_goal="test goal",
             metadata={
@@ -389,26 +517,17 @@ class TestRealOrchestratorProvenance:
             }
         )
         
-        # Verify that without internal_replan_context, the logic would create EXTERNAL_REQUEST
-        # This is the logic in handle_request lines 1570-1609
-        if request.internal_replan_context is not None:
-            continuation_type = SessionContinuationType.AUTO_REPLAN
-            parent_session_id = request.internal_replan_context.parent_session_id
-            replan_depth = request.internal_replan_context.replan_depth
-        else:
-            continuation_type = SessionContinuationType.EXTERNAL_REQUEST
-            parent_session_id = None
-            replan_depth = 0
+        # Execute real handle_request
+        _, _, session = orchestrator.handle_request(request)
         
-        assert continuation_type == SessionContinuationType.EXTERNAL_REQUEST
-        assert parent_session_id is None
-        assert replan_depth == 0
+        # Verify EXTERNAL_REQUEST provenance (legacy metadata ignored)
+        assert session.continuation_type == SessionContinuationType.EXTERNAL_REQUEST
+        assert session.parent_session_id is None
+        assert session.replan_depth == 0
 
     def test_external_request_with_valid_replan_metadata_no_auto_replan(self, orchestrator_with_repo):
         """B. External request with apparently valid legacy replan metadata must NOT create AUTO_REPLAN."""
         orchestrator, repo = orchestrator_with_repo
-        
-        from iabv_v15.domain.models import SessionContinuationType
         
         request = InferenceRequest(
             user_goal="test goal",
@@ -418,19 +537,13 @@ class TestRealOrchestratorProvenance:
             }
         )
         
-        # Verify that without internal_replan_context, the logic creates EXTERNAL_REQUEST
-        if request.internal_replan_context is not None:
-            continuation_type = SessionContinuationType.AUTO_REPLAN
-            parent_session_id = request.internal_replan_context.parent_session_id
-            replan_depth = request.internal_replan_context.replan_depth
-        else:
-            continuation_type = SessionContinuationType.EXTERNAL_REQUEST
-            parent_session_id = None
-            replan_depth = 0
+        # Execute real handle_request
+        _, _, session = orchestrator.handle_request(request)
         
-        assert continuation_type == SessionContinuationType.EXTERNAL_REQUEST
-        assert parent_session_id is None
-        assert replan_depth == 0
+        # Verify EXTERNAL_REQUEST (no internal_replan_context)
+        assert session.continuation_type == SessionContinuationType.EXTERNAL_REQUEST
+        assert session.parent_session_id is None
+        assert session.replan_depth == 0
 
     def test_internal_replan_from_depth_0_creates_depth_1(self, orchestrator_with_repo):
         """C. Internal replan from depth=0 must create AUTO_REPLAN with depth=1."""
@@ -452,16 +565,14 @@ class TestRealOrchestratorProvenance:
         )
         repo.save(parent)
         
-        # Verify that replan_session would create InternalReplanContext with depth=1
-        # This is the logic in replan_session lines 2167-2175
-        current_replan_depth = parent.replan_depth
-        context = InternalReplanContext(
-            parent_session_id=parent.session_id,
-            replan_depth=current_replan_depth + 1,
-        )
+        # Execute real replan_session
+        child = orchestrator.replan_session(parent.session_id)
         
-        assert context.parent_session_id == parent.session_id
-        assert context.replan_depth == 1
+        # Verify AUTO_REPLAN with depth=1
+        assert child is not None
+        assert child.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert child.parent_session_id == parent.session_id
+        assert child.replan_depth == 1
 
     def test_internal_replan_from_depth_1_blocked(self, orchestrator_with_repo):
         """D. Replan from depth=1 must be blocked by policy."""
@@ -483,21 +594,15 @@ class TestRealOrchestratorProvenance:
         )
         repo.save(parent)
         
-        # Verify that replan_session would block this
-        # This is the logic in replan_session lines 2164-2165
-        from iabv_v15.services.adaptive.adaptive_task_orchestrator import MAX_AUTO_REPLAN_DEPTH
-        if parent.replan_depth >= MAX_AUTO_REPLAN_DEPTH:
-            blocked = True
-        else:
-            blocked = False
+        # Execute real replan_session
+        result = orchestrator.replan_session(parent.session_id)
         
-        assert blocked is True
+        # Verify blocked (returns None)
+        assert result is None
 
     def test_cross_channel_typed_context_wins_over_legacy(self, orchestrator_with_repo):
         """E. Typed internal_replanContext must win over contradictory legacy metadata."""
         orchestrator, repo = orchestrator_with_repo
-        
-        from iabv_v15.domain.models import SessionContinuationType
         
         request = InferenceRequest(
             user_goal="test goal",
@@ -511,19 +616,13 @@ class TestRealOrchestratorProvenance:
             }
         )
         
-        # Verify that typed context wins (this is the logic in handle_request)
-        if request.internal_replan_context is not None:
-            continuation_type = SessionContinuationType.AUTO_REPLAN
-            parent_session_id = request.internal_replan_context.parent_session_id
-            replan_depth = request.internal_replan_context.replan_depth
-        else:
-            continuation_type = SessionContinuationType.EXTERNAL_REQUEST
-            parent_session_id = None
-            replan_depth = 0
+        # Execute real handle_request
+        _, _, session = orchestrator.handle_request(request)
         
-        assert continuation_type == SessionContinuationType.AUTO_REPLAN
-        assert parent_session_id == 'real-parent'
-        assert replan_depth == 1
+        # Verify typed context wins
+        assert session.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert session.parent_session_id == 'real-parent'
+        assert session.replan_depth == 1
 
     def test_persistence_preserves_provenance(self, orchestrator_with_repo):
         """F. Real repository save/reload must preserve provenance fields."""
