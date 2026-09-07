@@ -181,6 +181,93 @@ class TestDevelopmentTestResultInvariants:
                 duration_seconds=-1.0,
             )
 
+    def test_failed_with_failed_count_zero_rejected(self):
+        """FAILED status with explicit failed_count=0 is contradictory."""
+        with pytest.raises(ValueError, match="FAILED status with explicit failed_count=0 is contradictory"):
+            DevelopmentTestResult(
+                status=DevelopmentTestStatus.FAILED,
+                command="pytest tests/",
+                exit_code=1,
+                failed_count=0,  # Invalid when explicitly provided
+            )
+
+    def test_failed_with_failed_count_none_valid(self):
+        """FAILED status with failed_count=None is valid (counts unknown)."""
+        result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.FAILED,
+            command="pytest tests/",
+            exit_code=1,
+            failed_count=None,  # Valid when unknown
+        )
+        assert result.status == DevelopmentTestStatus.FAILED
+        assert result.failed_count is None
+
+    def test_failed_with_failed_count_positive_valid(self):
+        """FAILED status with failed_count > 0 is valid."""
+        result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.FAILED,
+            command="pytest tests/",
+            exit_code=1,
+            failed_count=2,
+        )
+        assert result.status == DevelopmentTestStatus.FAILED
+        assert result.failed_count == 2
+
+    def test_count_sum_exact_valid(self):
+        """Count sum equals test_count is valid when all counters present."""
+        result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            test_count=10,
+            passed_count=9,
+            failed_count=0,
+            error_count=0,
+            skipped_count=1,
+        )
+        assert result.test_count == 10
+        assert result.passed_count + result.failed_count + result.error_count + result.skipped_count == 10
+
+    def test_count_sum_greater_than_total_rejected(self):
+        """Count sum greater than test_count is rejected when all counters present."""
+        with pytest.raises(ValueError, match="Count sum .* does not equal test_count"):
+            DevelopmentTestResult(
+                status=DevelopmentTestStatus.FAILED,
+                command="pytest tests/",
+                test_count=10,
+                passed_count=8,
+                failed_count=1,
+                error_count=5,  # Sum would be 15 > 10
+                skipped_count=1,
+            )
+
+    def test_count_sum_less_than_total_rejected(self):
+        """Count sum less than test_count is rejected when all counters present."""
+        with pytest.raises(ValueError, match="Count sum .* does not equal test_count"):
+            DevelopmentTestResult(
+                status=DevelopmentTestStatus.FAILED,
+                command="pytest tests/",
+                test_count=10,
+                passed_count=5,
+                failed_count=1,
+                error_count=0,
+                skipped_count=1,  # Sum would be 7 < 10
+            )
+
+    def test_count_sum_with_none_counters_valid(self):
+        """Count sum is not enforced when any counter is None (partial information)."""
+        # This should NOT raise an error even though sum != test_count
+        result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.FAILED,
+            command="pytest tests/",
+            test_count=10,
+            passed_count=8,
+            failed_count=1,
+            error_count=None,  # Missing, so sum not enforced
+            skipped_count=1,
+        )
+        assert result.test_count == 10
+        assert result.error_count is None
+
 
 class TestDevelopmentTestResultPersistence:
     """Test JSON round-trip persistence."""
@@ -275,6 +362,33 @@ class TestDevelopmentTestResultPersistence:
 
         assert restored.stdout == original.stdout
         assert restored.stderr == original.stderr
+
+    def test_executed_at_utc_preserved(self):
+        """executed_at_utc is preserved through round-trip."""
+        original = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+        )
+
+        json_data = original.model_dump(mode='json')
+        restored = DevelopmentTestResult(**json_data)
+
+        assert restored.executed_at_utc == original.executed_at_utc
+
+    def test_metadata_preserved(self):
+        """metadata dictionary is preserved through round-trip."""
+        original = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            metadata={"framework": "pytest", "version": "8.0.0", "environment": "ci"},
+        )
+
+        json_data = original.model_dump(mode='json')
+        restored = DevelopmentTestResult(**json_data)
+
+        assert restored.metadata == original.metadata
+        assert restored.metadata["framework"] == "pytest"
+        assert restored.metadata["version"] == "8.0.0"
 
 
 class TestDevelopmentTestResultEvidenceIntegration:

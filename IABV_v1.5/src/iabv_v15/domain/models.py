@@ -2717,13 +2717,33 @@ class DevelopmentTestResult(BaseModel):
 
     @model_validator(mode='after')
     def validate_coherence(self) -> DevelopmentTestResult:
+        # PASSED cannot have failed_count > 0
         if self.status == DevelopmentTestStatus.PASSED and self.failed_count is not None and self.failed_count > 0:
             raise ValueError("PASSED status cannot have failed_count > 0")
+        
+        # FAILED with explicit failed_count=0 is contradictory
+        # When failed_count is explicitly provided as 0 but status is FAILED,
+        # this indicates a contradiction unless there's another documented reason.
+        # When failed_count=None (unknown), FAILED is allowed (e.g., process failure without detailed counts).
+        if self.status == DevelopmentTestStatus.FAILED and self.failed_count is not None and self.failed_count == 0:
+            raise ValueError("FAILED status with explicit failed_count=0 is contradictory")
+        
+        # duration_seconds cannot be negative
         if self.duration_seconds is not None and self.duration_seconds < 0:
             raise ValueError("duration_seconds cannot be negative")
+        
+        # Test counts cannot be negative
         for count_field in [self.test_count, self.passed_count, self.failed_count, self.error_count, self.skipped_count]:
             if count_field is not None and count_field < 0:
                 raise ValueError("Test counts cannot be negative")
+        
+        # Count consistency: when ALL five counters are present, their sum must equal test_count
+        # If any counter is None, we do not enforce the sum (partial information is valid)
+        if all(c is not None for c in [self.test_count, self.passed_count, self.failed_count, self.error_count, self.skipped_count]):
+            count_sum = self.passed_count + self.failed_count + self.error_count + self.skipped_count
+            if count_sum != self.test_count:
+                raise ValueError(f"Count sum ({count_sum}) does not equal test_count ({self.test_count})")
+        
         return self
 
 
