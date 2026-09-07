@@ -96,6 +96,13 @@ class DevelopmentExecutionStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class DevelopmentAuditVerdict(str, Enum):
+    """Verdict of a development audit over execution evidence."""
+    PASS = "pass"
+    FAIL = "fail"
+    INCONCLUSIVE = "inconclusive"
+
+
 class IncidentStatus(str, Enum):
     OPEN = "open"
     OBSERVED = "observed"
@@ -2834,6 +2841,89 @@ class DevelopmentExecutionEvidence(BaseModel):
         if self.base_commit is not None:
             if self.base_commit.strip() == "":
                 raise ValueError("base_commit cannot be empty or whitespace-only when provided")
+        
+        return self
+
+
+class DevelopmentAuditFinding(BaseModel):
+    """A finding from a development audit.
+    
+    Explains why a verdict was produced.
+    Reuses existing finding pattern (finding_id, severity, summary).
+    """
+    finding_id: str = Field(default_factory=lambda: str(uuid4()))
+    severity: IssueSeverity = IssueSeverity.MEDIUM
+    summary: str = ""
+    criterion: str = ""  # Which criterion/check this finding relates to
+    evidence_refs: list[str] = Field(default_factory=list)  # References to evidence supporting this finding
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DevelopmentAuditCriterion(BaseModel):
+    """A criterion/check evaluated during a development audit.
+    
+    Preserves what was actually evaluated.
+    """
+    criterion_id: str
+    name: str
+    description: str = ""
+    required: bool = True
+    status: str = ""  # e.g., "satisfied", "violated", "not_evaluated"
+    evidence_refs: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DevelopmentAuditResult(BaseModel):
+    """Structured result of an audit over development execution evidence.
+    
+    This is the RECORD of an audit conclusion, not the audit engine itself.
+    It preserves:
+    - What was audited (execution_evidence_id)
+    - What evidence was used (evidence_refs)
+    - What criteria were checked (criteria)
+    - What verdict resulted (verdict)
+    - Why (findings)
+    
+    This is NOT:
+    - a task
+    - an execution
+    - a session
+    - a test result
+    - an experience
+    - a learning record
+    - a policy engine
+    - an AI judge
+    """
+    audit_id: str = Field(default_factory=lambda: str(uuid4()))
+    execution_evidence_id: str  # Points to DevelopmentExecutionEvidence.evidence_id
+    verdict: DevelopmentAuditVerdict
+    auditor_id: str | None = None  # Nullable until canonical auditor identity exists
+    audited_at_utc: datetime = Field(default_factory=utc_now)
+    findings: list[DevelopmentAuditFinding] = Field(default_factory=list)
+    criteria: list[DevelopmentAuditCriterion] = Field(default_factory=list)
+    evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode='after')
+    def validate_coherence(self) -> DevelopmentAuditResult:
+        # execution_evidence_id must be non-empty when supplied
+        if self.execution_evidence_id is not None and self.execution_evidence_id.strip() == "":
+            raise ValueError("execution_evidence_id cannot be empty or whitespace-only")
+        
+        # DEVELOPMENT_EXECUTION EvidenceRef, when present, must match execution_evidence_id
+        dev_exec_refs = [ref for ref in self.evidence_refs if ref.kind == EvidenceKind.DEVELOPMENT_EXECUTION]
+        if len(dev_exec_refs) > 0:
+            if len(dev_exec_refs) > 1:
+                raise ValueError("Multiple DEVELOPMENT_EXECUTION EvidenceRefs found; only one is allowed")
+            if dev_exec_refs[0].ref_id != self.execution_evidence_id:
+                raise ValueError(
+                    f"DEVELOPMENT_EXECUTION EvidenceRef.ref_id '{dev_exec_refs[0].ref_id}' "
+                    f"does not match execution_evidence_id '{self.execution_evidence_id}'"
+                )
+        
+        # Verdict must be explicit (enum ensures this, but validate for clarity)
+        if self.verdict not in DevelopmentAuditVerdict:
+            raise ValueError(f"Invalid verdict: {self.verdict}")
         
         return self
 
