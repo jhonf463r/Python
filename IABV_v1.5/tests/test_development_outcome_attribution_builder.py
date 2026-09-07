@@ -113,11 +113,12 @@ class TestCrossGraphIncoherence:
             builder.build(
                 audit_result=audit_result_a,  # References execution A
                 execution_evidence=execution_evidence_b,  # But execution B provided
+                outcome_status=RunStatus.SUCCESS,
             )
 
     def test_execution_a_test_b_rejected(self):
-        """Execution A + Test Result B (different graphs) is rejected."""
-        # Graph A
+        """Execution A + Test B (execution references test A but test B provided) is rejected."""
+        # Graph A for execution
         test_result_a = DevelopmentTestResult(
             status=DevelopmentTestStatus.PASSED,
             command="pytest tests/",
@@ -126,9 +127,16 @@ class TestCrossGraphIncoherence:
         execution_evidence_a = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo-a",
             test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
         )
         
-        # Graph B (different test result)
+        # Graph B for test
         test_result_b = DevelopmentTestResult(
             status=DevelopmentTestStatus.PASSED,
             command="pytest tests/",
@@ -140,6 +148,7 @@ class TestCrossGraphIncoherence:
             builder.build(
                 execution_evidence=execution_evidence_a,  # References test A
                 test_result=test_result_b,  # But test B provided
+                outcome_status=RunStatus.SUCCESS,
             )
 
     def test_audit_a_execution_a_test_b_rejected(self):
@@ -153,6 +162,13 @@ class TestCrossGraphIncoherence:
         execution_evidence_a = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo-a",
             test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
         )
         audit_result_a = DevelopmentAuditResult(
             execution_evidence_id=execution_evidence_a.evidence_id,
@@ -172,6 +188,7 @@ class TestCrossGraphIncoherence:
                 audit_result=audit_result_a,
                 execution_evidence=execution_evidence_a,
                 test_result=test_result_b,  # Test B doesn't match execution A's reference
+                outcome_status=RunStatus.SUCCESS,
             )
 
     def test_audit_a_execution_b_test_b_rejected(self):
@@ -194,6 +211,13 @@ class TestCrossGraphIncoherence:
         execution_evidence_b = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo-b",
             test_result_id=test_result_b.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_b.test_result_id,
+                )
+            ],
         )
         
         builder = DevelopmentOutcomeAttributionBuilder()
@@ -202,6 +226,7 @@ class TestCrossGraphIncoherence:
                 audit_result=audit_result_a,  # References execution A
                 execution_evidence=execution_evidence_b,  # But execution B provided
                 test_result=test_result_b,
+                outcome_status=RunStatus.SUCCESS,
             )
 
     def test_independent_real_ids_rejected(self):
@@ -222,17 +247,14 @@ class TestCrossGraphIncoherence:
         )
         
         builder = DevelopmentOutcomeAttributionBuilder()
-        # This should pass because execution doesn't reference test_result
-        outcome = builder.build(
-            audit_result=audit_result,
-            execution_evidence=execution_evidence,
-            test_result=test_result,
-        )
-        
-        # Verify IDs are set
-        assert outcome.development_test_result_id == test_result.test_result_id
-        assert outcome.development_execution_evidence_id == execution_evidence.evidence_id
-        assert outcome.development_audit_result_id == audit_result.audit_id
+        # This should reject because execution.test_result_id is None but test_result is supplied
+        with pytest.raises(DevelopmentOutcomeAttributionError, match="execution_evidence.test_result_id is None"):
+            builder.build(
+                audit_result=audit_result,
+                execution_evidence=execution_evidence,
+                test_result=test_result,
+                outcome_status=RunStatus.SUCCESS,
+            )
 
 
 class TestPartialAttribution:
@@ -264,6 +286,13 @@ class TestPartialAttribution:
         execution_evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             test_result_id=test_result.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result.test_result_id,
+                )
+            ],
         )
         
         builder = DevelopmentOutcomeAttributionBuilder()
@@ -284,13 +313,16 @@ class TestAuditRequiresExecution:
     def test_audit_without_execution_rejected(self):
         """Audit without execution evidence is rejected."""
         audit_result = DevelopmentAuditResult(
-            execution_evidence_id="some-exec-id",
+            execution_evidence_id="exec-123",
             verdict=DevelopmentAuditVerdict.PASS,
         )
         
         builder = DevelopmentOutcomeAttributionBuilder()
         with pytest.raises(DevelopmentOutcomeAttributionError, match="requires DevelopmentExecutionEvidence"):
-            builder.build(audit_result=audit_result)
+            builder.build(
+                audit_result=audit_result,
+                outcome_status=RunStatus.SUCCESS,
+            )
 
 
 class TestOrdinaryOutcome:
@@ -685,7 +717,7 @@ class TestRejectPartialOverwrite:
         )
         
         # Attempt to augment with only test B
-        with pytest.raises(DevelopmentOutcomeAttributionError, match="Augmentation would corrupt existing attribution"):
+        with pytest.raises(DevelopmentOutcomeAttributionError, match="Test result alone is invalid"):
             builder.build(
                 task_outcome=outcome_a,
                 test_result=test_result_b,
@@ -758,6 +790,7 @@ class TestRejectExecutionWithoutTestReference:
             builder.build(
                 execution_evidence=execution_evidence_a,
                 test_result=test_result_b,
+                outcome_status=RunStatus.SUCCESS,
             )
 
 
@@ -776,6 +809,7 @@ class TestRejectTestOnlyAttribution:
         with pytest.raises(DevelopmentOutcomeAttributionError, match="Test result alone is invalid"):
             builder.build(
                 test_result=test_result,
+                outcome_status=RunStatus.SUCCESS,
             )
 
 
@@ -1051,6 +1085,13 @@ class TestExplicitOutcomeStatus:
         execution_evidence_a = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo-a",
             test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
         )
         
         builder = DevelopmentOutcomeAttributionBuilder()
