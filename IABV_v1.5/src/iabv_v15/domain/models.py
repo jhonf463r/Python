@@ -2773,7 +2773,7 @@ class DevelopmentExecutionEvidence(BaseModel):
     result_commit: str | None = None
     changed_files: list[str] = Field(default_factory=list)
     executor_id: str | None = None  # Nullable until agent abstraction exists
-    started_at_utc: datetime = Field(default_factory=utc_now)
+    started_at_utc: datetime | None = None
     completed_at_utc: datetime | None = None
     duration_seconds: float | None = None
     execution_status: DevelopmentExecutionStatus = DevelopmentExecutionStatus.PENDING
@@ -2782,12 +2782,42 @@ class DevelopmentExecutionEvidence(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode='after')
-    def validate_temporal_consistency(self) -> DevelopmentExecutionEvidence:
-        # completed_at_utc must be >= started_at_utc when both are explicitly set
-        # Note: We only enforce this when both are provided by the caller
-        # If one uses the default factory, we don't enforce comparison
-        # to avoid false positives with auto-generated timestamps
-        if self.completed_at_utc is not None and self.started_at_utc is not None:
+    def validate_coherence(self) -> DevelopmentExecutionEvidence:
+        # Linkage coherence: test_result_id must match DEVELOPMENT_TEST EvidenceRef.ref_id
+        dev_test_refs = [ref for ref in self.evidence_refs if ref.kind == EvidenceKind.DEVELOPMENT_TEST]
+        
+        if self.test_result_id is not None:
+            # If test_result_id is present, there must be exactly one DEVELOPMENT_TEST ref with matching ref_id
+            if len(dev_test_refs) == 0:
+                raise ValueError("test_result_id is present but no DEVELOPMENT_TEST EvidenceRef found")
+            if len(dev_test_refs) > 1:
+                raise ValueError("Multiple DEVELOPMENT_TEST EvidenceRefs found; only one is allowed when test_result_id is present")
+            if dev_test_refs[0].ref_id != self.test_result_id:
+                raise ValueError(f"test_result_id '{self.test_result_id}' does not match DEVELOPMENT_TEST EvidenceRef.ref_id '{dev_test_refs[0].ref_id}'")
+        else:
+            # If test_result_id is None, there must be no DEVELOPMENT_TEST refs
+            if len(dev_test_refs) > 0:
+                raise ValueError("DEVELOPMENT_TEST EvidenceRef present but test_result_id is None")
+        
+        # Terminal states require completed_at_utc
+        terminal_states = {
+            DevelopmentExecutionStatus.COMPLETED,
+            DevelopmentExecutionStatus.FAILED,
+            DevelopmentExecutionStatus.CANCELLED,
+        }
+        if self.execution_status in terminal_states and self.completed_at_utc is None:
+            raise ValueError(f"execution_status {self.execution_status} requires completed_at_utc")
+        
+        # Non-terminal states should not have completed_at_utc (optional but semantically clearer)
+        non_terminal_states = {
+            DevelopmentExecutionStatus.PENDING,
+            DevelopmentExecutionStatus.RUNNING,
+        }
+        if self.execution_status in non_terminal_states and self.completed_at_utc is not None:
+            raise ValueError(f"execution_status {self.execution_status} should not have completed_at_utc")
+        
+        # Temporal consistency: completed_at_utc must be >= started_at_utc when both present
+        if self.started_at_utc is not None and self.completed_at_utc is not None:
             if self.completed_at_utc < self.started_at_utc:
                 raise ValueError("completed_at_utc must be >= started_at_utc")
         
@@ -2795,13 +2825,15 @@ class DevelopmentExecutionEvidence(BaseModel):
         if self.duration_seconds is not None and self.duration_seconds < 0:
             raise ValueError("duration_seconds cannot be negative")
         
-        # result_commit must be non-empty string when present
-        if self.result_commit is not None and self.result_commit == "":
-            raise ValueError("result_commit cannot be empty when provided")
+        # result_commit must be non-empty and non-whitespace when present
+        if self.result_commit is not None:
+            if self.result_commit.strip() == "":
+                raise ValueError("result_commit cannot be empty or whitespace-only when provided")
         
-        # base_commit must be non-empty string when present
-        if self.base_commit is not None and self.base_commit == "":
-            raise ValueError("base_commit cannot be empty when provided")
+        # base_commit must be non-empty and non-whitespace when present
+        if self.base_commit is not None:
+            if self.base_commit.strip() == "":
+                raise ValueError("base_commit cannot be empty or whitespace-only when provided")
         
         return self
 

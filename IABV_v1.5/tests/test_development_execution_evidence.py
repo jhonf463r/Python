@@ -137,6 +137,48 @@ class TestDevelopmentExecutionEvidenceCommits:
                 result_commit="",
             )
 
+    def test_whitespace_base_commit_rejected(self):
+        """Whitespace-only base_commit is rejected."""
+        with pytest.raises(ValueError, match="base_commit cannot be empty or whitespace-only"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                base_commit="   ",
+            )
+
+    def test_tab_base_commit_rejected(self):
+        """Tab-only base_commit is rejected."""
+        with pytest.raises(ValueError, match="base_commit cannot be empty or whitespace-only"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                base_commit="\t",
+            )
+
+    def test_newline_base_commit_rejected(self):
+        """Newline-only base_commit is rejected."""
+        with pytest.raises(ValueError, match="base_commit cannot be empty or whitespace-only"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                base_commit="\n",
+            )
+
+    def test_whitespace_result_commit_rejected(self):
+        """Whitespace-only result_commit is rejected."""
+        with pytest.raises(ValueError, match="result_commit cannot be empty or whitespace-only"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                result_commit="   ",
+            )
+
+    def test_valid_commit_string(self):
+        """Valid commit string is accepted."""
+        evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            base_commit="abc123",
+            result_commit="def456",
+        )
+        assert evidence.base_commit == "abc123"
+        assert evidence.result_commit == "def456"
+
 
 class TestDevelopmentExecutionEvidenceChangedFiles:
     """Test changed_files handling."""
@@ -161,6 +203,16 @@ class TestDevelopmentExecutionEvidenceChangedFiles:
 class TestDevelopmentExecutionEvidenceTimestamps:
     """Test timestamp and duration handling."""
 
+    def test_both_timestamps_none(self):
+        """Both timestamps can be None (no execution started yet)."""
+        evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            started_at_utc=None,
+            completed_at_utc=None,
+        )
+        assert evidence.started_at_utc is None
+        assert evidence.completed_at_utc is None
+
     def test_started_at_only(self):
         """Evidence can have only started_at_utc."""
         started = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
@@ -171,17 +223,53 @@ class TestDevelopmentExecutionEvidenceTimestamps:
         assert evidence.started_at_utc == started
         assert evidence.completed_at_utc is None
 
-    def test_both_timestamps(self):
-        """Evidence can have both timestamps."""
+    def test_completed_at_only(self):
+        """Evidence can have only completed_at_utc (historical evidence) with COMPLETED status."""
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
+        evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            started_at_utc=None,
+            completed_at_utc=completed,
+            execution_status=DevelopmentExecutionStatus.COMPLETED,
+        )
+        assert evidence.started_at_utc is None
+        assert evidence.completed_at_utc == completed
+
+    def test_both_timestamps_equal(self):
+        """Both timestamps can be equal (instant execution)."""
+        now = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            started_at_utc=now,
+            completed_at_utc=now,
+            execution_status=DevelopmentExecutionStatus.COMPLETED,
+        )
+        assert evidence.started_at_utc == now
+        assert evidence.completed_at_utc == now
+
+    def test_completed_after_started(self):
+        """completed_at_utc can be after started_at_utc."""
         started = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
         completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             started_at_utc=started,
             completed_at_utc=completed,
+            execution_status=DevelopmentExecutionStatus.COMPLETED,
         )
-        assert evidence.started_at_utc == started
-        assert evidence.completed_at_utc == completed
+        assert evidence.completed_at_utc > evidence.started_at_utc
+
+    def test_completed_before_started_rejected(self):
+        """completed_at_utc < started_at_utc is rejected."""
+        started = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
+        completed = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        with pytest.raises(ValueError, match="completed_at_utc must be >= started_at_utc"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                started_at_utc=started,
+                completed_at_utc=completed,
+                execution_status=DevelopmentExecutionStatus.COMPLETED,
+            )
 
     def test_duration_seconds(self):
         """Duration can be specified."""
@@ -212,53 +300,106 @@ class TestDevelopmentExecutionEvidenceStatus:
         assert evidence.execution_status == DevelopmentExecutionStatus.RUNNING
 
     def test_completed_status(self):
-        """Evidence can have COMPLETED status."""
+        """Evidence can have COMPLETED status with completed_at_utc."""
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             execution_status=DevelopmentExecutionStatus.COMPLETED,
+            completed_at_utc=completed,
         )
         assert evidence.execution_status == DevelopmentExecutionStatus.COMPLETED
 
     def test_failed_status(self):
-        """Evidence can have FAILED status."""
+        """Evidence can have FAILED status with completed_at_utc."""
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             execution_status=DevelopmentExecutionStatus.FAILED,
+            completed_at_utc=completed,
         )
         assert evidence.execution_status == DevelopmentExecutionStatus.FAILED
 
     def test_cancelled_status(self):
-        """Evidence can have CANCELLED status."""
+        """Evidence can have CANCELLED status with completed_at_utc."""
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             execution_status=DevelopmentExecutionStatus.CANCELLED,
+            completed_at_utc=completed,
         )
         assert evidence.execution_status == DevelopmentExecutionStatus.CANCELLED
+
+    def test_completed_status_requires_completed_at(self):
+        """COMPLETED status requires completed_at_utc."""
+        with pytest.raises(ValueError, match="COMPLETED requires completed_at_utc"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                execution_status=DevelopmentExecutionStatus.COMPLETED,
+                completed_at_utc=None,
+            )
+
+    def test_failed_status_requires_completed_at(self):
+        """FAILED status requires completed_at_utc."""
+        with pytest.raises(ValueError, match="FAILED requires completed_at_utc"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                execution_status=DevelopmentExecutionStatus.FAILED,
+                completed_at_utc=None,
+            )
+
+    def test_cancelled_status_requires_completed_at(self):
+        """CANCELLED status requires completed_at_utc."""
+        with pytest.raises(ValueError, match="CANCELLED requires completed_at_utc"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                execution_status=DevelopmentExecutionStatus.CANCELLED,
+                completed_at_utc=None,
+            )
+
+    def test_pending_status_should_not_have_completed_at(self):
+        """PENDING status should not have completed_at_utc."""
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
+        with pytest.raises(ValueError, match="PENDING should not have completed_at_utc"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                execution_status=DevelopmentExecutionStatus.PENDING,
+                completed_at_utc=completed,
+            )
+
+    def test_running_status_should_not_have_completed_at(self):
+        """RUNNING status should not have completed_at_utc."""
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
+        with pytest.raises(ValueError, match="RUNNING should not have completed_at_utc"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                execution_status=DevelopmentExecutionStatus.RUNNING,
+                completed_at_utc=completed,
+            )
 
 
 class TestDevelopmentExecutionEvidenceEvidenceRef:
     """Test EvidenceRef integration."""
 
     def test_evidence_refs_list(self):
-        """Evidence can have multiple EvidenceRef entries."""
+        """Evidence can have multiple EvidenceRef entries (non-DEVELOPMENT_TEST kind)."""
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             evidence_refs=[
-                EvidenceRef(
-                    kind=EvidenceKind.DEVELOPMENT_TEST,
-                    label="Test results",
-                    ref_id="test-123",
-                ),
                 EvidenceRef(
                     kind=EvidenceKind.LOG,
                     label="Execution log",
                     ref_id="log-456",
                 ),
+                EvidenceRef(
+                    kind=EvidenceKind.ARTIFACT,
+                    label="Build artifact",
+                    ref_id="artifact-789",
+                ),
             ],
         )
         assert len(evidence.evidence_refs) == 2
-        assert evidence.evidence_refs[0].kind == EvidenceKind.DEVELOPMENT_TEST
-        assert evidence.evidence_refs[1].kind == EvidenceKind.LOG
+        assert evidence.evidence_refs[0].kind == EvidenceKind.LOG
+        assert evidence.evidence_refs[1].kind == EvidenceKind.ARTIFACT
 
     def test_evidence_refs_empty(self):
         """Evidence can have empty evidence_refs list."""
@@ -273,10 +414,17 @@ class TestDevelopmentExecutionEvidenceTestResultReference:
     """Test DevelopmentTestResult reference."""
 
     def test_test_result_id(self):
-        """Evidence can reference a DevelopmentTestResult by ID."""
+        """Evidence can reference a DevelopmentTestResult by ID with matching EvidenceRef."""
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             test_result_id="test-result-123",
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id="test-result-123",
+                )
+            ],
         )
         assert evidence.test_result_id == "test-result-123"
 
@@ -289,11 +437,106 @@ class TestDevelopmentExecutionEvidenceTestResultReference:
         assert evidence.test_result_id is None
 
 
+class TestDevelopmentExecutionEvidenceLinkageCoherence:
+    """Test linkage coherence between test_result_id and DEVELOPMENT_TEST EvidenceRef."""
+
+    def test_linkage_valid(self):
+        """Valid linkage: test_result_id matches DEVELOPMENT_TEST EvidenceRef.ref_id."""
+        evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id="test-123",
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id="test-123",
+                )
+            ],
+        )
+        assert evidence.test_result_id == "test-123"
+        assert evidence.evidence_refs[0].ref_id == "test-123"
+
+    def test_test_result_id_without_ref_rejected(self):
+        """test_result_id present without DEVELOPMENT_TEST EvidenceRef is rejected."""
+        with pytest.raises(ValueError, match="test_result_id is present but no DEVELOPMENT_TEST EvidenceRef found"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                test_result_id="test-123",
+                evidence_refs=[],
+            )
+
+    def test_ref_without_test_result_id_rejected(self):
+        """DEVELOPMENT_TEST EvidenceRef present without test_result_id is rejected."""
+        with pytest.raises(ValueError, match="DEVELOPMENT_TEST EvidenceRef present but test_result_id is None"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                test_result_id=None,
+                evidence_refs=[
+                    EvidenceRef(
+                        kind=EvidenceKind.DEVELOPMENT_TEST,
+                        label="Test results",
+                        ref_id="test-123",
+                    )
+                ],
+            )
+
+    def test_mismatched_ids_rejected(self):
+        """test_result_id and EvidenceRef.ref_id must match."""
+        with pytest.raises(ValueError, match="test_result_id.*does not match DEVELOPMENT_TEST EvidenceRef.ref_id"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                test_result_id="test-123",
+                evidence_refs=[
+                    EvidenceRef(
+                        kind=EvidenceKind.DEVELOPMENT_TEST,
+                        label="Test results",
+                        ref_id="test-456",
+                    )
+                ],
+            )
+
+    def test_multiple_dev_test_refs_rejected(self):
+        """Multiple DEVELOPMENT_TEST EvidenceRefs are rejected when test_result_id is present."""
+        with pytest.raises(ValueError, match="Multiple DEVELOPMENT_TEST EvidenceRefs found"):
+            DevelopmentExecutionEvidence(
+                repository="https://github.com/example/repo",
+                test_result_id="test-123",
+                evidence_refs=[
+                    EvidenceRef(
+                        kind=EvidenceKind.DEVELOPMENT_TEST,
+                        label="Test results 1",
+                        ref_id="test-123",
+                    ),
+                    EvidenceRef(
+                        kind=EvidenceKind.DEVELOPMENT_TEST,
+                        label="Test results 2",
+                        ref_id="test-123",
+                    )
+                ],
+            )
+
+    def test_no_linkage_valid(self):
+        """No linkage is valid when both test_result_id and DEVELOPMENT_TEST refs are absent."""
+        evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=None,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.LOG,
+                    label="Execution log",
+                    ref_id="log-456",
+                )
+            ],
+        )
+        assert evidence.test_result_id is None
+        assert len(evidence.evidence_refs) == 1
+
+
 class TestDevelopmentExecutionEvidencePersistence:
     """Test JSON round-trip persistence."""
 
     def test_json_round_trip(self):
-        """JSON serialization and deserialization preserves all fields."""
+        """JSON serialization and deserialization preserves all fields including EvidenceRef."""
         started = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
         completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         
@@ -308,6 +551,18 @@ class TestDevelopmentExecutionEvidencePersistence:
             duration_seconds=300.0,
             execution_status=DevelopmentExecutionStatus.COMPLETED,
             test_result_id="test-123",
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id="test-123",
+                ),
+                EvidenceRef(
+                    kind=EvidenceKind.LOG,
+                    label="Execution log",
+                    ref_id="log-456",
+                )
+            ],
             metadata={"key": "value"},
         )
 
@@ -325,33 +580,17 @@ class TestDevelopmentExecutionEvidencePersistence:
         assert restored.duration_seconds == original.duration_seconds
         assert restored.execution_status == original.execution_status
         assert restored.test_result_id == original.test_result_id
+        assert len(restored.evidence_refs) == 2
+        assert restored.evidence_refs[0].kind == EvidenceKind.DEVELOPMENT_TEST
+        assert restored.evidence_refs[0].ref_id == "test-123"
+        assert restored.evidence_refs[0].label == "Test results"
+        assert restored.evidence_refs[1].kind == EvidenceKind.LOG
+        assert restored.evidence_refs[1].ref_id == "log-456"
         assert restored.metadata == original.metadata
 
 
 class TestDevelopmentExecutionEvidenceInvariants:
     """Test invariant validation."""
-
-    def test_completed_before_started_rejected(self):
-        """completed_at_utc < started_at_utc is rejected."""
-        started = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
-        completed = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-        
-        with pytest.raises(ValueError, match="completed_at_utc must be >= started_at_utc"):
-            DevelopmentExecutionEvidence(
-                repository="https://github.com/example/repo",
-                started_at_utc=started,
-                completed_at_utc=completed,
-            )
-
-    def test_completed_equal_started_valid(self):
-        """completed_at_utc == started_at_utc is valid (instant execution)."""
-        now = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-        evidence = DevelopmentExecutionEvidence(
-            repository="https://github.com/example/repo",
-            started_at_utc=now,
-            completed_at_utc=now,
-        )
-        assert evidence.completed_at_utc == evidence.started_at_utc
 
     def test_negative_duration_rejected(self):
         """Negative duration_seconds is rejected."""

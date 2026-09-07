@@ -6,7 +6,9 @@ demonstrating verifiable linkage with DevelopmentTestResult.
 """
 
 import subprocess
+import pytest
 from pathlib import Path
+from datetime import datetime, timezone
 from iabv_v15.domain.models import (
     DevelopmentExecutionEvidence,
     DevelopmentExecutionStatus,
@@ -112,12 +114,15 @@ def test_real_repository_evidence_with_test_result_linkage():
     )
     
     # Create DevelopmentExecutionEvidence that links to the test result
+    completed_at = datetime.now(timezone.utc)
     evidence = DevelopmentExecutionEvidence(
         repository=repository,
         base_commit=base_commit,
         result_commit=result_commit,
         changed_files=changed_files,
         executor_id=None,  # No agent abstraction yet
+        started_at_utc=completed_at,  # Using same time for simplicity
+        completed_at_utc=completed_at,
         execution_status=DevelopmentExecutionStatus.COMPLETED,
         duration_seconds=test_result.duration_seconds,
         test_result_id=test_result.test_result_id,
@@ -157,3 +162,88 @@ def test_real_repository_evidence_with_test_result_linkage():
     print(f"  Test result ID: {evidence.test_result_id}")
     print(f"  Evidence refs: {len(evidence.evidence_refs)}")
     print(f"  CWD strategy: portable (derived from test file location)")
+
+
+def test_real_non_empty_changed_files_evidence():
+    """Demonstrate get_git_changed_files() with a real non-empty diff."""
+    import tempfile
+    import os
+    
+    # Portable path resolution
+    test_file = Path(__file__).resolve()
+    project_root = test_file.parent.parent
+    
+    # Get current commit as base
+    base_commit = get_git_commit(project_root)
+    if base_commit is None:
+        pytest.skip("Git not available, skipping real changed files test")
+    
+    # Create a temporary file in the project to generate a real diff
+    temp_file_path = project_root / ".temp_test_file_for_development_execution_evidence.txt"
+    
+    try:
+        # Create the temporary file
+        temp_file_path.write_text("Temporary test file for DevelopmentExecutionEvidence changed_files test")
+        
+        # Stage the file so git diff --name-only can detect it
+        subprocess.run(
+            ["git", "add", str(temp_file_path)],
+            capture_output=True,
+            cwd=project_root,
+            timeout=5
+        )
+        
+        # Get changed files from staged changes (using --cached to see staged files)
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "--cached", base_commit],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=5
+        )
+        
+        # Parse changed files
+        changed_files = []
+        if result.returncode == 0 and result.stdout.strip():
+            changed_files = [line.strip() for line in result.stdout.strip().split('\n') if line.strip()]
+        
+        # Verify the temporary file is in the changed files list
+        # The path will be relative to project root
+        temp_file_relative = ".temp_test_file_for_development_execution_evidence.txt"
+        assert any(temp_file_relative in f for f in changed_files), \
+            f"Expected temporary file in changed files, got: {changed_files}"
+        
+        # Verify we can construct evidence with these real changed files
+        evidence = DevelopmentExecutionEvidence(
+            repository=get_git_remote_url(project_root),
+            base_commit=base_commit,
+            result_commit=base_commit,  # Same commit, but we have staged changes
+            changed_files=changed_files,
+            execution_status=DevelopmentExecutionStatus.RUNNING,
+        )
+        
+        assert len(evidence.changed_files) > 0
+        assert evidence.changed_files is not None
+        
+        print(f"\nReal non-empty changed files test:")
+        print(f"  Changed files: {evidence.changed_files}")
+        print(f"  Count: {len(evidence.changed_files)}")
+        
+    finally:
+        # Cleanup: unstage and remove the temporary file
+        try:
+            subprocess.run(
+                ["git", "reset", "HEAD", str(temp_file_path)],
+                capture_output=True,
+                cwd=project_root,
+                timeout=5
+            )
+            if temp_file_path.exists():
+                temp_file_path.unlink()
+        except Exception:
+            # Best effort cleanup
+            if temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception:
+                    pass
