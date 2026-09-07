@@ -653,3 +653,293 @@ class TestAugmentExistingOutcome:
         # Attribution added
         assert augmented.development_execution_evidence_id == execution_evidence.evidence_id
         assert augmented.development_test_result_id == test_result.test_result_id
+
+
+class TestAugmentationIntegrity:
+    """TEST A — REJECT MIXED GRAPH AUGMENT: Existing graph A + execution B."""
+
+    def test_reject_mixed_graph_augment(self):
+        """Existing coherent graph A cannot be augmented with execution B."""
+        # Create graph A
+        test_result_a = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence_a = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo-a",
+            test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
+        )
+        
+        audit_result_a = DevelopmentAuditResult(
+            execution_evidence_id=execution_evidence_a.evidence_id,
+            verdict=DevelopmentAuditVerdict.PASS,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_EXECUTION,
+                    label="Execution evidence",
+                    ref_id=execution_evidence_a.evidence_id,
+                )
+            ],
+        )
+        
+        # Build attributed outcome A
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome_a = builder.build(
+            audit_result=audit_result_a,
+            execution_evidence=execution_evidence_a,
+            test_result=test_result_a,
+        )
+        
+        # Create execution B (different graph)
+        execution_evidence_b = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo-b",
+        )
+        
+        # Attempt to augment with execution B
+        with pytest.raises(DevelopmentOutcomeAttributionError, match="Augmentation would corrupt existing attribution"):
+            builder.build(
+                task_outcome=outcome_a,
+                execution_evidence=execution_evidence_b,
+            )
+
+
+class TestPreserveExistingGraph:
+    """TEST B — PRESERVE EXISTING GRAPH: Existing graph A + no new attribution objects."""
+
+    def test_preserve_existing_graph(self):
+        """Existing attribution must be preserved when no new objects provided."""
+        # Create graph A
+        test_result_a = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence_a = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome_a = builder.build(
+            execution_evidence=execution_evidence_a,
+            test_result=test_result_a,
+        )
+        
+        # Augment with no new objects
+        augmented = builder.build(task_outcome=outcome_a)
+        
+        # All existing IDs must be preserved
+        assert augmented.development_execution_evidence_id == execution_evidence_a.evidence_id
+        assert augmented.development_test_result_id == test_result_a.test_result_id
+
+
+class TestRejectPartialOverwrite:
+    """TEST C — REJECT PARTIAL OVERWRITE: Existing graph A + only test B."""
+
+    def test_reject_partial_overwrite(self):
+        """Existing graph A cannot be partially overwritten with test B."""
+        # Create graph A
+        test_result_a = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence_a = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
+        )
+        
+        audit_result_a = DevelopmentAuditResult(
+            execution_evidence_id=execution_evidence_a.evidence_id,
+            verdict=DevelopmentAuditVerdict.PASS,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_EXECUTION,
+                    label="Execution evidence",
+                    ref_id=execution_evidence_a.evidence_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome_a = builder.build(
+            audit_result=audit_result_a,
+            execution_evidence=execution_evidence_a,
+            test_result=test_result_a,
+        )
+        
+        # Create test B
+        test_result_b = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        # Attempt to augment with only test B
+        with pytest.raises(DevelopmentOutcomeAttributionError, match="Augmentation would corrupt existing attribution"):
+            builder.build(
+                task_outcome=outcome_a,
+                test_result=test_result_b,
+            )
+
+
+class TestAcceptSameGraphAugment:
+    """TEST D — ACCEPT SAME-GRAPH AUGMENT: Existing execution A + test A."""
+
+    def test_accept_same_graph_augment(self):
+        """Existing execution A can be augmented with test A if coherent."""
+        # Create test A
+        test_result_a = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        # Create execution A (references test A)
+        execution_evidence_a = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome_a = builder.build(
+            execution_evidence=execution_evidence_a,
+        )
+        
+        # Augment with test A
+        augmented = builder.build(
+            task_outcome=outcome_a,
+            execution_evidence=execution_evidence_a,
+            test_result=test_result_a,
+        )
+        
+        # Should succeed and include test attribution
+        assert augmented.development_execution_evidence_id == execution_evidence_a.evidence_id
+        assert augmented.development_test_result_id == test_result_a.test_result_id
+
+
+class TestRejectExecutionWithoutTestReference:
+    """TEST E — REJECT EXECUTION WITHOUT TEST REFERENCE: DEE-A.test_result_id=None + TEST-B."""
+
+    def test_reject_execution_without_test_reference(self):
+        """Execution with test_result_id=None cannot be combined with any test_result."""
+        # Create execution A with no test reference
+        execution_evidence_a = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=None,  # No test reference
+        )
+        
+        # Create test B
+        test_result_b = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        with pytest.raises(DevelopmentOutcomeAttributionError, match="execution_evidence.test_result_id is None"):
+            builder.build(
+                execution_evidence=execution_evidence_a,
+                test_result=test_result_b,
+            )
+
+
+class TestRejectTestOnlyAttribution:
+    """TEST G — REJECT TEST-ONLY ATTRIBUTION: test_result only without execution."""
+
+    def test_reject_test_only_attribution(self):
+        """Test result alone is invalid for development attribution."""
+        test_result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        with pytest.raises(DevelopmentOutcomeAttributionError, match="Test result alone is invalid"):
+            builder.build(
+                test_result=test_result,
+            )
+
+
+class TestOriginalOutcomeImmutableAfterFailedAugment:
+    """TEST H — ORIGINAL OUTCOME IMMUTABLE AFTER FAILED AUGMENT."""
+
+    def test_original_outcome_immutable_after_failed_augment(self):
+        """Original outcome must remain unchanged after rejected augmentation."""
+        # Create graph A
+        test_result_a = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence_a = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo-a",
+            test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome_a = builder.build(
+            execution_evidence=execution_evidence_a,
+            test_result=test_result_a,
+        )
+        
+        # Store original IDs
+        original_execution_id = outcome_a.development_execution_evidence_id
+        original_test_id = outcome_a.development_test_result_id
+        
+        # Create execution B (different graph)
+        execution_evidence_b = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo-b",
+        )
+        
+        # Attempt invalid augment
+        with pytest.raises(DevelopmentOutcomeAttributionError):
+            builder.build(
+                task_outcome=outcome_a,
+                execution_evidence=execution_evidence_b,
+            )
+        
+        # Original outcome must remain unchanged
+        assert outcome_a.development_execution_evidence_id == original_execution_id
+        assert outcome_a.development_test_result_id == original_test_id
