@@ -2617,8 +2617,17 @@ class AdaptiveSession(BaseModel):
 class InternalReplanContext(BaseModel):
     """Typed context for internal auto-replan construction.
     
-    This is the ONLY authoritative source for provenance when constructing
-    an AUTO_REPLAN session. External requests cannot set this field.
+    This is the authoritative source for provenance when constructing
+    an AUTO_REPLAN session from internal replan mechanisms (e.g., replan_session()).
+    
+    TRUST BOUNDARY NOTE:
+    This field is an optional field on InferenceRequest. The current architecture
+    does not enforce a strict trust boundary at the domain model level. External callers
+    (e.g., UI layer) could theoretically set this field. The protection relies on:
+    1. Convention: Only internal replan mechanisms should set this field
+    2. handle_request() ignores legacy metadata and only uses internal_replan_context
+    3. Future architectural changes should separate external request construction
+       from internal request construction to enforce this boundary strictly.
     """
     parent_session_id: str
     replan_depth: int = 1

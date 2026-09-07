@@ -2164,20 +2164,23 @@ class AdaptiveTaskOrchestrator:
         if session.replan_depth >= MAX_AUTO_REPLAN_DEPTH:
             return None
         request = self._request_from_session(session)
-        # Canonical source: use typed provenance fields only
+        # Canonical source: use typed InternalReplanContext for provenance
+        from iabv_v15.domain.models import InternalReplanContext
         current_replan_depth = session.replan_depth
         request = request.model_copy(
             update={
+                'internal_replan_context': InternalReplanContext(
+                    parent_session_id=session.session_id,
+                    replan_depth=current_replan_depth + 1,
+                ),
                 'metadata': {
                     **dict(request.metadata or {}),
-                    'replanned_from_session_id': session.session_id,
-                    'replan_count': current_replan_depth + 1,
                     'replan_reason': str((session.metadata.get('governance') or {}).get('reason') or (session.outcome.summary if session.outcome is not None else '') or ''),
                 }
             }
         )
         _, _, replanned = self.handle_request(request)
-        # Mirror synchronization: canonical → legacy
+        # Mirror synchronization: canonical → legacy (read-only mirror)
         replanned.metadata['replanned_from_session_id'] = session.session_id
         replanned.metadata['replan_count'] = current_replan_depth + 1
         return self.task_outcome_recorder.record(replanned)
