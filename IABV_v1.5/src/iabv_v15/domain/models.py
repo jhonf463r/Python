@@ -78,6 +78,7 @@ class EvidenceKind(str, Enum):
     USER_CLUE = "user_clue"
     DEVELOPMENT_TEST = "development_test"
     DEVELOPMENT_EXECUTION = "development_execution"
+    DEVELOPMENT_AUDIT = "development_audit"
 
 
 class DevelopmentTestStatus(str, Enum):
@@ -94,6 +95,12 @@ class DevelopmentExecutionStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+
+
+class DevelopmentAuditVerdict(str, Enum):
+    PASS = "pass"
+    FAIL = "fail"
+    INCONCLUSIVE = "inconclusive"
 
 
 class IncidentStatus(str, Enum):
@@ -2625,6 +2632,51 @@ class DevelopmentExecutionEvidence(BaseModel):
         for file_path in self.changed_files:
             if not file_path or file_path.isspace():
                 raise ValueError("changed_files cannot contain empty or whitespace-only strings")
+        
+        return self
+
+
+class DevelopmentAuditFinding(BaseModel):
+    severity: IssueSeverity
+    summary: str
+    criterion: str | None = None
+    details: str = ""
+    location: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DevelopmentAuditCriterion(BaseModel):
+    criterion_id: str
+    name: str
+    status: str  # "satisfied", "not_satisfied", "not_applicable", etc.
+    description: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DevelopmentAuditResult(BaseModel):
+    audit_id: str = Field(default_factory=lambda: str(uuid4()))
+    execution_evidence_id: str
+    verdict: DevelopmentAuditVerdict
+    auditor_id: str | None = None
+    audited_at_utc: datetime = Field(default_factory=utc_now)
+    findings: list[DevelopmentAuditFinding] = Field(default_factory=list)
+    criteria: list[DevelopmentAuditCriterion] = Field(default_factory=list)
+    evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_coherence(self) -> "DevelopmentAuditResult":
+        # execution_evidence_id must be non-empty
+        if not self.execution_evidence_id or self.execution_evidence_id.isspace():
+            raise ValueError("execution_evidence_id must be non-empty")
+        
+        # If evidence_refs contains DEVELOPMENT_EXECUTION, it must match execution_evidence_id
+        dev_exec_refs = [ref for ref in self.evidence_refs if ref.kind == EvidenceKind.DEVELOPMENT_EXECUTION]
+        if dev_exec_refs:
+            if len(dev_exec_refs) > 1:
+                raise ValueError("Multiple DEVELOPMENT_EXECUTION evidence_refs not allowed")
+            if dev_exec_refs[0].ref_id != self.execution_evidence_id:
+                raise ValueError("DEVELOPMENT_EXECUTION evidence_ref must match execution_evidence_id")
         
         return self
 
