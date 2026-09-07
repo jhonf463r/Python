@@ -2423,6 +2423,25 @@ class TaskOutcome(BaseModel):
     next_actions: list[str] = Field(default_factory=list)
     evidence_refs: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    development_audit_result_id: str | None = None
+    development_execution_evidence_id: str | None = None
+    development_test_result_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_development_attribution(self) -> "TaskOutcome":
+        # development_audit_result_id requires development_execution_evidence_id
+        if self.development_audit_result_id is not None and self.development_execution_evidence_id is None:
+            raise ValueError("development_audit_result_id requires development_execution_evidence_id")
+        
+        # All IDs must be non-empty when present
+        if self.development_audit_result_id is not None and (not self.development_audit_result_id or self.development_audit_result_id.isspace()):
+            raise ValueError("development_audit_result_id must be non-empty when present")
+        if self.development_execution_evidence_id is not None and (not self.development_execution_evidence_id or self.development_execution_evidence_id.isspace()):
+            raise ValueError("development_execution_evidence_id must be non-empty when present")
+        if self.development_test_result_id is not None and (not self.development_test_result_id or self.development_test_result_id.isspace()):
+            raise ValueError("development_test_result_id must be non-empty when present")
+        
+        return self
 
 
 class AdaptiveSession(BaseModel):
