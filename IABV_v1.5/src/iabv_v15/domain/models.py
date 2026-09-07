@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 def utc_now() -> datetime:
@@ -76,6 +76,15 @@ class EvidenceKind(str, Enum):
     DOSSIER = "dossier"
     INCIDENT = "incident"
     USER_CLUE = "user_clue"
+    DEVELOPMENT_TEST = "development_test"
+
+
+class DevelopmentTestStatus(str, Enum):
+    PASSED = "passed"
+    FAILED = "failed"
+    ERROR = "error"
+    TIMEOUT = "timeout"
+    NOT_RUN = "not_run"
 
 
 class IncidentStatus(str, Enum):
@@ -2522,6 +2531,45 @@ class RunRecord(BaseModel):
     status: RunStatus = RunStatus.SUCCESS
     duration_ms: int | None = None
     error_summary: str = ""
+
+
+class DevelopmentTestResult(BaseModel):
+    test_result_id: str = Field(default_factory=lambda: str(uuid4()))
+    status: DevelopmentTestStatus
+    command: str
+    exit_code: int | None = None
+    duration_seconds: float | None = None
+    stdout: str = ""
+    stderr: str = ""
+    test_count: int | None = None
+    passed_count: int | None = None
+    failed_count: int | None = None
+    error_count: int | None = None
+    skipped_count: int | None = None
+    commit: str | None = None
+    executed_at_utc: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_coherence(self) -> "DevelopmentTestResult":
+        if self.status == DevelopmentTestStatus.PASSED and self.failed_count is not None and self.failed_count > 0:
+            raise ValueError("PASSED status cannot have failed_count > 0")
+        
+        if self.passed_count is not None and self.passed_count < 0:
+            raise ValueError("Test counts cannot be negative")
+        if self.failed_count is not None and self.failed_count < 0:
+            raise ValueError("Test counts cannot be negative")
+        if self.error_count is not None and self.error_count < 0:
+            raise ValueError("Test counts cannot be negative")
+        if self.skipped_count is not None and self.skipped_count < 0:
+            raise ValueError("Test counts cannot be negative")
+        if self.test_count is not None and self.test_count < 0:
+            raise ValueError("Test counts cannot be negative")
+        
+        if self.duration_seconds is not None and self.duration_seconds < 0:
+            raise ValueError("duration_seconds cannot be negative")
+        
+        return self
 
 
 class ExecutionDossier(BaseModel):
