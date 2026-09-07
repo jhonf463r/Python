@@ -7,6 +7,7 @@ from the actual execution data.
 
 import subprocess
 import time
+from pathlib import Path
 from iabv_v15.domain.models import DevelopmentTestResult, DevelopmentTestStatus
 
 
@@ -15,13 +16,16 @@ def test_real_pytest_execution_produces_development_test_result():
     # Execute a small, stable test
     command = "pytest tests/test_development_test_result.py::TestDevelopmentTestResultStatus::test_passed_complete -v --tb=no"
     
+    # Derive project root from test file location for portability
+    project_root = Path(__file__).resolve().parent.parent
+    
     start_time = time.time()
     result = subprocess.run(
         command,
         shell=True,
         capture_output=True,
         text=True,
-        cwd="C:\\w\\iabv-main\\IABV_v1.5"
+        cwd=str(project_root)
     )
     duration_seconds = time.time() - start_time
     
