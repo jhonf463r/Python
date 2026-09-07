@@ -2429,10 +2429,6 @@ class TaskOutcome(BaseModel):
 
     @model_validator(mode="after")
     def validate_development_attribution(self) -> "TaskOutcome":
-        # development_audit_result_id requires development_execution_evidence_id
-        if self.development_audit_result_id is not None and self.development_execution_evidence_id is None:
-            raise ValueError("development_audit_result_id requires development_execution_evidence_id")
-        
         # All IDs must be non-empty when present
         if self.development_audit_result_id is not None and (not self.development_audit_result_id or self.development_audit_result_id.isspace()):
             raise ValueError("development_audit_result_id must be non-empty when present")
@@ -2440,6 +2436,10 @@ class TaskOutcome(BaseModel):
             raise ValueError("development_execution_evidence_id must be non-empty when present")
         if self.development_test_result_id is not None and (not self.development_test_result_id or self.development_test_result_id.isspace()):
             raise ValueError("development_test_result_id must be non-empty when present")
+        
+        # development_audit_result_id requires development_execution_evidence_id
+        if self.development_audit_result_id is not None and self.development_execution_evidence_id is None:
+            raise ValueError("development_audit_result_id requires development_execution_evidence_id")
         
         return self
 
