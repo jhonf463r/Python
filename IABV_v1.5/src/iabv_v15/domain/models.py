@@ -77,6 +77,7 @@ class EvidenceKind(str, Enum):
     INCIDENT = "incident"
     USER_CLUE = "user_clue"
     DEVELOPMENT_TEST = "development_test"
+    DEVELOPMENT_EXECUTION = "development_execution"
 
 
 class DevelopmentTestStatus(str, Enum):
@@ -85,6 +86,14 @@ class DevelopmentTestStatus(str, Enum):
     ERROR = "error"
     TIMEOUT = "timeout"
     NOT_RUN = "not_run"
+
+
+class DevelopmentExecutionStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class IncidentStatus(str, Enum):
@@ -2568,6 +2577,54 @@ class DevelopmentTestResult(BaseModel):
         
         if self.duration_seconds is not None and self.duration_seconds < 0:
             raise ValueError("duration_seconds cannot be negative")
+        
+        return self
+
+
+class DevelopmentExecutionEvidence(BaseModel):
+    evidence_id: str = Field(default_factory=lambda: str(uuid4()))
+    repository: str
+    base_commit: str | None = None
+    result_commit: str | None = None
+    changed_files: list[str] = Field(default_factory=list)
+    executor_id: str | None = None
+    started_at_utc: datetime = Field(default_factory=utc_now)
+    completed_at_utc: datetime | None = None
+    duration_seconds: float | None = None
+    execution_status: DevelopmentExecutionStatus = DevelopmentExecutionStatus.PENDING
+    test_result_id: str | None = None
+    evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_coherence(self) -> "DevelopmentExecutionEvidence":
+        # Terminal states must have completed_at_utc
+        if self.execution_status in (DevelopmentExecutionStatus.COMPLETED, DevelopmentExecutionStatus.FAILED, DevelopmentExecutionStatus.CANCELLED):
+            if self.completed_at_utc is None:
+                raise ValueError(f"{self.execution_status} must have completed_at_utc")
+        
+        # Non-terminal states must not have completed_at_utc
+        if self.execution_status in (DevelopmentExecutionStatus.PENDING, DevelopmentExecutionStatus.RUNNING):
+            if self.completed_at_utc is not None:
+                raise ValueError(f"{self.execution_status} cannot have completed_at_utc")
+        
+        # duration_seconds cannot be negative
+        if self.duration_seconds is not None and self.duration_seconds < 0:
+            raise ValueError("duration_seconds cannot be negative")
+        
+        # If test_result_id is set, must have corresponding evidence_ref
+        if self.test_result_id is not None:
+            has_test_ref = any(
+                ref.kind == EvidenceKind.DEVELOPMENT_TEST and ref.ref_id == self.test_result_id
+                for ref in self.evidence_refs
+            )
+            if not has_test_ref:
+                raise ValueError("test_result_id requires corresponding DEVELOPMENT_TEST evidence_ref")
+        
+        # changed_files must not contain empty strings or whitespace-only strings
+        for file_path in self.changed_files:
+            if not file_path or file_path.isspace():
+                raise ValueError("changed_files cannot contain empty or whitespace-only strings")
         
         return self
 
