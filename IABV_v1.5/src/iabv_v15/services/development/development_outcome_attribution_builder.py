@@ -172,6 +172,7 @@ class DevelopmentOutcomeAttributionBuilder:
         if task_outcome is not None:
             self._validate_augmentation_coherence(
                 task_outcome=task_outcome,
+                audit_result=audit_result,
                 execution_evidence=execution_evidence,
                 test_result=test_result,
             )
@@ -180,6 +181,7 @@ class DevelopmentOutcomeAttributionBuilder:
         self,
         *,
         task_outcome: TaskOutcome,
+        audit_result: DevelopmentAuditResult | None,
         execution_evidence: DevelopmentExecutionEvidence | None,
         test_result: DevelopmentTestResult | None,
     ) -> None:
@@ -224,3 +226,16 @@ class DevelopmentOutcomeAttributionBuilder:
                                 f"execution.test_result_id='{execution_evidence.test_result_id}' "
                                 f"does not match test_result.test_result_id='{test_result.test_result_id}'."
                             )
+        
+        # Rule 9: Audit identity preservation
+        # If outcome has audit A, cannot replace with audit B even if new audit references same execution
+        # The audit object is itself a distinct evidence identity that must remain stable
+        if task_outcome.development_audit_result_id is not None:
+            if audit_result is not None:
+                if audit_result.audit_id != task_outcome.development_audit_result_id:
+                    raise DevelopmentOutcomeAttributionError(
+                        f"Cannot replace audit identity with a different audit object. "
+                        f"existing audit_id='{task_outcome.development_audit_result_id}' "
+                        f"does not match new audit.audit_id='{audit_result.audit_id}'. "
+                        f"The audit object is itself a distinct evidence identity that must remain stable."
+                    )
