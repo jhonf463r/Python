@@ -49,6 +49,8 @@ class DevelopmentOutcomeAttributionBuilder:
     6. Augmentation preserves existing attribution unless explicitly replaced
     7. No cross-graph incoherence (e.g., audit referencing execution A but execution B provided)
     8. Mixed graph augmentation is rejected (existing graph A + execution B)
+    9. Audit identity is preserved (cannot be silently swapped)
+    10. TaskOutcome.status must be explicitly provided for new outcomes (not derived from audit verdict)
     """
 
     def build(
@@ -58,6 +60,7 @@ class DevelopmentOutcomeAttributionBuilder:
         audit_result: DevelopmentAuditResult | None = None,
         execution_evidence: DevelopmentExecutionEvidence | None = None,
         test_result: DevelopmentTestResult | None = None,
+        outcome_status: RunStatus | None = None,
     ) -> TaskOutcome:
         """
         Build a TaskOutcome with validated development attribution.
@@ -67,12 +70,13 @@ class DevelopmentOutcomeAttributionBuilder:
             audit_result: DevelopmentAuditResult for attribution (optional)
             execution_evidence: DevelopmentExecutionEvidence for attribution (optional)
             test_result: DevelopmentTestResult for attribution (optional)
+            outcome_status: RunStatus for new TaskOutcome (required when task_outcome is None)
             
         Returns:
             TaskOutcome with validated development attribution
             
         Raises:
-            DevelopmentOutcomeAttributionError: If the evidence graph is incoherent
+            DevelopmentOutcomeAttributionError: If the evidence graph is incoherent or outcome_status is missing for new outcome
         """
         # Validate cross-graph coherence including existing attribution
         self._validate_coherence(
@@ -89,9 +93,15 @@ class DevelopmentOutcomeAttributionBuilder:
         
         # Build or augment the TaskOutcome
         if task_outcome is None:
-            # Create new TaskOutcome
+            # Create new TaskOutcome - require explicit outcome_status
+            if outcome_status is None:
+                raise DevelopmentOutcomeAttributionError(
+                    "outcome_status is required when creating a new TaskOutcome. "
+                    "The builder cannot fabricate a default status. "
+                    "TaskOutcome.status must be explicitly provided by the caller."
+                )
             return TaskOutcome(
-                status=RunStatus.SUCCESS,
+                status=outcome_status,
                 summary="Development task completed",
                 development_audit_result_id=audit_id,
                 development_execution_evidence_id=execution_id,
@@ -99,7 +109,7 @@ class DevelopmentOutcomeAttributionBuilder:
             )
         else:
             # Augment existing TaskOutcome
-            # Preserve existing attribution unless explicitly replaced
+            # Preserve existing status and attribution unless explicitly replaced
             update_dict = {}
             
             # Only update fields that are explicitly provided in this call

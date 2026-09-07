@@ -70,12 +70,14 @@ class TestRealCoherentGraph:
             audit_result=audit_result_a,
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Verify attribution is correct
         assert outcome.development_audit_result_id == audit_result_a.audit_id
         assert outcome.development_execution_evidence_id == execution_evidence_a.evidence_id
         assert outcome.development_test_result_id == test_result_a.test_result_id
+        assert outcome.status == RunStatus.SUCCESS
 
 
 class TestAuditAExecutionB:
@@ -346,6 +348,7 @@ class TestValidPartialAttribution:
         builder = DevelopmentOutcomeAttributionBuilder()
         outcome = builder.build(
             execution_evidence=execution_evidence,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         assert outcome.development_execution_evidence_id == execution_evidence.evidence_id
@@ -376,6 +379,7 @@ class TestValidPartialAttribution:
         outcome = builder.build(
             execution_evidence=execution_evidence,
             test_result=test_result,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         assert outcome.development_execution_evidence_id == execution_evidence.evidence_id
@@ -406,7 +410,7 @@ class TestOrdinaryOutcome:
     def test_ordinary_outcome_without_attribution(self):
         """TaskOutcome without any development attribution should be allowed."""
         builder = DevelopmentOutcomeAttributionBuilder()
-        outcome = builder.build()
+        outcome = builder.build(outcome_status=RunStatus.SUCCESS)
         
         assert outcome.development_audit_result_id is None
         assert outcome.development_execution_evidence_id is None
@@ -456,6 +460,7 @@ class TestPersistence:
             audit_result=audit_result,
             execution_evidence=execution_evidence,
             test_result=test_result,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Serialize
@@ -511,6 +516,7 @@ class TestSemanticSeparation:
             audit_result=audit_result,
             execution_evidence=execution_evidence,
             test_result=test_result,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Both facts are preserved independently
@@ -555,6 +561,7 @@ class TestSemanticSeparation:
             audit_result=audit_result,
             execution_evidence=execution_evidence,
             test_result=test_result,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         assert outcome.status == RunStatus.SUCCESS
@@ -697,6 +704,7 @@ class TestAugmentationIntegrity:
             audit_result=audit_result_a,
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Create execution B (different graph)
@@ -740,6 +748,7 @@ class TestPreserveExistingGraph:
         outcome_a = builder.build(
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Augment with no new objects
@@ -791,6 +800,7 @@ class TestRejectPartialOverwrite:
             audit_result=audit_result_a,
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Create test B
@@ -836,6 +846,7 @@ class TestAcceptSameGraphAugment:
         builder = DevelopmentOutcomeAttributionBuilder()
         outcome_a = builder.build(
             execution_evidence=execution_evidence_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Augment with test A
@@ -922,6 +933,7 @@ class TestOriginalOutcomeImmutableAfterFailedAugment:
         outcome_a = builder.build(
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Store original IDs
@@ -987,6 +999,7 @@ class TestAuditIdentityPreservation:
             audit_result=audit_result_a,
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Create audit B (different audit, same execution reference, different verdict)
@@ -1063,6 +1076,7 @@ class TestSameAuditAugment:
             audit_result=audit_result_a,
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Augment with same audit and execution
@@ -1120,6 +1134,7 @@ class TestOmittedAuditAugment:
             audit_result=audit_result_a,
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Augment with only execution (no audit)
@@ -1176,6 +1191,7 @@ class TestCrossGraphAudit:
             audit_result=audit_result_a,
             execution_evidence=execution_evidence_a,
             test_result=test_result_a,
+            outcome_status=RunStatus.SUCCESS,
         )
         
         # Create graph B
@@ -1202,3 +1218,251 @@ class TestCrossGraphAudit:
                 audit_result=audit_result_b,
                 execution_evidence=execution_evidence_b,
             )
+
+
+class TestExplicitOutcomeStatus:
+    """MANDATORY TESTS 1-7 — EXPLICIT OUTCOME STATUS: New outcomes require explicit status."""
+
+    def test_new_outcome_with_explicit_success(self):
+        """TEST 1: New outcome with explicit SUCCESS."""
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome = builder.build(
+            execution_evidence=execution_evidence,
+            outcome_status=RunStatus.SUCCESS,
+        )
+        
+        assert outcome.status == RunStatus.SUCCESS
+
+    def test_new_outcome_with_explicit_failure(self):
+        """TEST 2: New outcome with explicit FAILURE."""
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome = builder.build(
+            execution_evidence=execution_evidence,
+            outcome_status=RunStatus.FAILED,
+        )
+        
+        assert outcome.status == RunStatus.FAILED
+
+    def test_new_outcome_with_explicit_partial(self):
+        """TEST 3: New outcome with explicit PARTIAL."""
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome = builder.build(
+            execution_evidence=execution_evidence,
+            outcome_status=RunStatus.PARTIAL,
+        )
+        
+        assert outcome.status == RunStatus.PARTIAL
+
+    def test_fail_audit_with_explicit_success_outcome(self):
+        """TEST 4: FAIL audit + explicitly supplied SUCCESS outcome."""
+        test_result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=test_result.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result.test_result_id,
+                )
+            ],
+        )
+        
+        audit_result = DevelopmentAuditResult(
+            execution_evidence_id=execution_evidence.evidence_id,
+            verdict=DevelopmentAuditVerdict.FAIL,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_EXECUTION,
+                    label="Execution evidence",
+                    ref_id=execution_evidence.evidence_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome = builder.build(
+            audit_result=audit_result,
+            execution_evidence=execution_evidence,
+            test_result=test_result,
+            outcome_status=RunStatus.SUCCESS,
+        )
+        
+        assert outcome.status == RunStatus.SUCCESS
+        assert outcome.development_audit_result_id == audit_result.audit_id
+
+    def test_pass_audit_with_explicit_failure_outcome(self):
+        """TEST 5: PASS audit + explicitly supplied FAILURE outcome."""
+        test_result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=test_result.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result.test_result_id,
+                )
+            ],
+        )
+        
+        audit_result = DevelopmentAuditResult(
+            execution_evidence_id=execution_evidence.evidence_id,
+            verdict=DevelopmentAuditVerdict.PASS,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_EXECUTION,
+                    label="Execution evidence",
+                    ref_id=execution_evidence.evidence_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome = builder.build(
+            audit_result=audit_result,
+            execution_evidence=execution_evidence,
+            test_result=test_result,
+            outcome_status=RunStatus.FAILED,
+        )
+        
+        assert outcome.status == RunStatus.FAILED
+        assert outcome.development_audit_result_id == audit_result.audit_id
+
+    def test_inconclusive_audit_with_explicit_success_outcome(self):
+        """TEST 6: INCONCLUSIVE audit + explicitly supplied SUCCESS outcome."""
+        test_result = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+            test_result_id=test_result.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result.test_result_id,
+                )
+            ],
+        )
+        
+        audit_result = DevelopmentAuditResult(
+            execution_evidence_id=execution_evidence.evidence_id,
+            verdict=DevelopmentAuditVerdict.INCONCLUSIVE,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_EXECUTION,
+                    label="Execution evidence",
+                    ref_id=execution_evidence.evidence_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome = builder.build(
+            audit_result=audit_result,
+            execution_evidence=execution_evidence,
+            test_result=test_result,
+            outcome_status=RunStatus.SUCCESS,
+        )
+        
+        assert outcome.status == RunStatus.SUCCESS
+        assert outcome.development_audit_result_id == audit_result.audit_id
+
+    def test_new_outcome_without_status_rejected(self):
+        """TEST 7: Attempt creating a NEW TaskOutcome without supplying the required outcome status."""
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        with pytest.raises(DevelopmentOutcomeAttributionError, match="outcome_status is required"):
+            builder.build(
+                execution_evidence=execution_evidence,
+            )
+
+    def test_augment_preserves_existing_status(self):
+        """TEST 8: Augment an existing TaskOutcome - status remains unchanged."""
+        existing_outcome = TaskOutcome(
+            status=RunStatus.FAILED,
+            summary="Existing outcome",
+        )
+        
+        execution_evidence = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo",
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        augmented = builder.build(
+            task_outcome=existing_outcome,
+            execution_evidence=execution_evidence,
+        )
+        
+        assert augmented.status == RunStatus.FAILED
+        assert augmented.development_execution_evidence_id == execution_evidence.evidence_id
+
+    def test_rejected_augmentation_preserves_status(self):
+        """TEST 9: Rejected augmentation from previous adversarial cases - status remains unchanged."""
+        test_result_a = DevelopmentTestResult(
+            status=DevelopmentTestStatus.PASSED,
+            command="pytest tests/",
+            exit_code=0,
+        )
+        
+        execution_evidence_a = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo-a",
+            test_result_id=test_result_a.test_result_id,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id=test_result_a.test_result_id,
+                )
+            ],
+        )
+        
+        builder = DevelopmentOutcomeAttributionBuilder()
+        outcome_a = builder.build(
+            execution_evidence=execution_evidence_a,
+            test_result=test_result_a,
+            outcome_status=RunStatus.PARTIAL,
+        )
+        
+        original_status = outcome_a.status
+        
+        execution_evidence_b = DevelopmentExecutionEvidence(
+            repository="https://github.com/example/repo-b",
+        )
+        
+        with pytest.raises(DevelopmentOutcomeAttributionError):
+            builder.build(
+                task_outcome=outcome_a,
+                execution_evidence=execution_evidence_b,
+            )
+        
+        assert outcome_a.status == original_status
