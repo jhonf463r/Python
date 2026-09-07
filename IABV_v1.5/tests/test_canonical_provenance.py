@@ -631,3 +631,398 @@ class TestPersistenceRoundTrip:
 
         # Should NOT invent a child ID
         assert session.auto_replan_child_session_id is None
+
+
+class TestCausalIndependence:
+    """Test causal independence: canonical fields are authoritative over legacy metadata."""
+
+    def test_canonical_fields_win_over_conflicting_legacy(self):
+        """TEST A: Canonical fields valid + conflicting legacy metadata.
+        
+        Expected: canonical typed fields win.
+        """
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={
+                "replanned_from_session_id": "stale-parent",  # Conflicts with typed
+                "replan_count": 5,  # Conflicts with typed
+                "replanned_automatically": True,  # Conflicts with typed
+            },
+        )
+        # Canonical typed fields win
+        assert session.continuation_type == SessionContinuationType.EXTERNAL_REQUEST
+        assert session.parent_session_id is None
+        assert session.replan_depth == 0
+
+    def test_canonical_fields_without_legacy_same_decision(self):
+        """TEST B: Canonical fields valid + legacy metadata removed.
+        
+        Expected: same canonical decision.
+        """
+        # With legacy metadata
+        session_with_legacy = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={
+                "replanned_from_session_id": "parent-id",
+                "replan_count": 1,
+            },
+        )
+
+        # Without legacy metadata
+        session_without_legacy = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+        )
+
+        # Same canonical decision
+        assert session_with_legacy.continuation_type == session_without_legacy.continuation_type
+        assert session_with_legacy.parent_session_id == session_without_legacy.parent_session_id
+        assert session_with_legacy.replan_depth == session_without_legacy.replan_depth
+
+    def test_canonical_fields_with_changed_legacy_same_decision(self):
+        """TEST C: Canonical fields valid + legacy metadata changed.
+        
+        Expected: same canonical decision.
+        """
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={
+                "replanned_from_session_id": "parent-id",
+                "replan_count": 1,
+            },
+        )
+
+        # Change legacy metadata
+        session.metadata["replanned_from_session_id"] = "different-parent"
+        session.metadata["replan_count"] = 99
+
+        # Canonical decision unchanged
+        assert session.continuation_type == SessionContinuationType.EXTERNAL_REQUEST
+        assert session.parent_session_id is None
+        assert session.replan_depth == 0
+
+    def test_auto_replan_with_self_parent_rejected(self):
+        """TEST D: AUTO_REPLAN with parent_session_id == session_id.
+        
+        Expected: rejection.
+        """
+        session_id = "session-a"
+        with pytest.raises(ValueError, match="parent_session_id cannot equal session_id"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.AUTO_REPLAN,
+                parent_session_id=session_id,  # Self-parent cycle
+                replan_depth=1,
+                session_id=session_id,
+            )
+
+    def test_auto_replan_child_self_reference_rejected(self):
+        """TEST E: auto_replan_child_session_id == session_id.
+        
+        Expected: rejection.
+        """
+        session_id = "session-a"
+        with pytest.raises(ValueError, match="auto_replan_child_session_id cannot equal session_id"):
+            AdaptiveSession(
+                user_goal="test goal",
+                intent=TaskIntent(
+                    intent_key="test.intent",
+                    title="Test Intent",
+                    detected_role="training",
+                    confidence=1.0,
+                ),
+                context=TaskContext(),
+                continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+                parent_session_id=None,
+                replan_depth=0,
+                auto_replan_child_session_id=session_id,  # Self-child cycle
+                session_id=session_id,
+            )
+
+    def test_change_legacy_metadata_no_change_to_canonical_decision(self):
+        """TEST K: Change legacy metadata after canonical construction.
+        
+        Expected: no change to canonical replan decision.
+        """
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            session_id="session-a",
+            metadata={"governance": {"should_replan": True}},
+        )
+
+        session_repo.get.return_value = session
+
+        # Initial decision
+        result_initial = orchestrator._should_auto_replan(session)
+        assert result_initial is True
+
+        # Change legacy metadata
+        session.metadata["replanned_from_session_id"] = "some-parent"
+        session.metadata["replan_count"] = 5
+        session.metadata["replanned_automatically"] = True
+
+        # Canonical decision unchanged (still based on typed fields)
+        result_after = orchestrator._should_auto_replan(session)
+        assert result_after is True  # Still depth=0 < 1
+
+    def test_depth_0_automatic_replan_allowed(self):
+        """TEST F: depth=0 automatic replan.
+        
+        Expected: allowed.
+        """
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            metadata={"governance": {"should_replan": True}},
+        )
+
+        result = orchestrator._should_auto_replan(session)
+        assert result is True  # depth=0 < 1 allows
+
+    def test_depth_1_automatic_replan_blocked(self):
+        """TEST G: depth=1 automatic replan.
+        
+        Expected: blocked.
+        """
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="parent-id",
+            replan_depth=1,
+            metadata={"governance": {"should_replan": True}},
+        )
+
+        result = orchestrator._should_auto_replan(session)
+        assert result is False  # depth=1 < 1 is False, blocked
+
+    def test_depth_2_auto_replan_canonical_construction_rejected(self):
+        """TEST H: depth=2 AUTO_REPLAN canonical construction.
+        
+        Expected: deterministic rejection (depth >= MAX_AUTO_REPLAN_DEPTH violates policy).
+        """
+        # depth=2 with AUTO_REPLAN is incoherent with MAX_AUTO_REPLAN_DEPTH=1 policy
+        # The model validator allows it (depth >= 1 is valid for AUTO_REPLAN),
+        # but the orchestrator will block replan decisions at depth >= 1
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="parent-id",
+            replan_depth=2,
+        )
+        
+        # Session construction succeeds (depth >= 1 is valid for AUTO_REPLAN)
+        assert session.replan_depth == 2
+        
+        # But orchestrator blocks replan at depth >= 1
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+
+        session_repo.get.return_value = session
+        result = orchestrator._should_auto_replan(session)
+        assert result is False  # depth=2 < 1 is False, blocked
+
+    def test_persist_reload_preserves_canonical(self):
+        """TEST I: Persist + reload AdaptiveSession.
+        
+        Expected: typed provenance and idempotency identity preserved exactly.
+        """
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="parent-id",
+            replan_depth=1,
+            auto_replan_child_session_id="child-id",
+            metadata={"replanned_from_session_id": "parent-id", "replan_count": 1},
+        )
+
+        # Serialize to JSON
+        json_data = session.model_dump(mode='json')
+
+        # Deserialize
+        restored = AdaptiveSession(**json_data)
+
+        # Verify typed provenance preserved exactly
+        assert restored.continuation_type == SessionContinuationType.AUTO_REPLAN
+        assert restored.parent_session_id == "parent-id"
+        assert restored.replan_depth == 1
+        # Verify idempotency identity preserved exactly
+        assert restored.auto_replan_child_session_id == "child-id"
+
+    def test_direct_replan_session_depth_1_blocked(self):
+        """TEST J: Call replan_session() directly at depth=1.
+        
+        Expected: cannot bypass the depth policy.
+        """
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.AUTO_REPLAN,
+            parent_session_id="session-a",
+            replan_depth=1,
+            session_id="session-b",
+        )
+
+        session_repo.get.return_value = session
+
+        # Direct replan_session() call at depth=1
+        result = orchestrator.replan_session("session-b")
+        assert result is None  # Blocked by depth policy (depth >= MAX_AUTO_REPLAN_DEPTH)

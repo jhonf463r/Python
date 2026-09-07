@@ -1208,6 +1208,8 @@ class ControlCenterViewModel(QObject):
         autonomous_response = dict(metadata.get('autonomous_evolution_response') or {})
         response_validation = dict(autonomous_response.get('response_validation') or {})
         adoption_plan = dict(autonomous_response.get('adoption_plan') or {})
+        # Canonical source: use typed continuation_type instead of legacy metadata
+        continuation_type = str(self._last_adaptive_payload.get('continuation_type') or 'external_request')
         current_intent = dict(self._last_adaptive_payload.get('intent') or {})
         goal_context = self._goal_context_for_display(self._current_site_id() or None)
         objective = dict(goal_context.get('objective') or {})
@@ -1330,7 +1332,7 @@ class ControlCenterViewModel(QObject):
         maturity_detail = (
             f"autonomia {autonomy_level} | accion {governance.get('recommended_action') or 'continue_local'} | "
             f"sandbox {bool(governance.get('require_sandbox'))} | confianza {autonomy_confidence:.2f} | "
-            f"decision {governance.get('decision_source') or 'n/d'} | replan auto {bool(metadata.get('replanned_automatically') or metadata.get('auto_replanned'))}"
+            f"decision {governance.get('decision_source') or 'n/d'} | replan auto {bool(continuation_type == 'auto_replan')}"
         )
         maturity_blocker = '; '.join(str(item).strip() for item in (governance.get('blockers') or []) if str(item).strip()[:160])
 
@@ -10138,8 +10140,11 @@ class ControlCenterViewModel(QObject):
         preferred_assistant_kind = str(decision_metadata.get('preferred_assistant_kind') or '').strip()
         preferred_config_signature = str(decision_metadata.get('preferred_config_signature') or '').strip()
         supporting_trace_ids = [str(item) for item in (decision_metadata.get('supporting_trace_ids') or []) if str(item).strip()][:4]
-        auto_replanned = bool(metadata.get('replanned_automatically') or metadata.get('auto_replanned') or payload.get('adaptive_replanned'))
-        replan_source = str(metadata.get('replanned_from_session_id') or metadata.get('auto_replanned_session_id') or '')
+        # Canonical source: use typed continuation_type instead of legacy metadata
+        continuation_type = str(payload.get('continuation_type') or 'external_request')
+        auto_replanned = continuation_type == 'auto_replan'
+        # Canonical source: use typed parent_session_id instead of legacy metadata
+        replan_source = str(payload.get('parent_session_id') or '')
         if self._is_general_conversation_session(payload, intent, context):
             current_goal = str(payload.get('user_goal') or self._last_user_goal or '')
             self_awareness = self._is_self_awareness_session(intent) or self._is_self_awareness_question(current_goal)

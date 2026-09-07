@@ -2,7 +2,38 @@ from __future__ import annotations
 
 import time
 
-from iabv_v15.domain.models import InferenceRequest, InferenceResult, ReasoningMode, RoleRoute, RunRecord, RunStatus
+from iabv_v15.domain.models import (
+    AdaptiveSession,
+    AdaptiveSessionStatus,
+    ApprovalCheckpoint,
+    AssistantConfigurationSnapshot,
+    CapabilityReadiness,
+    ClarificationItem,
+    DecisionContext,
+    EnvironmentSelfModel,
+    EvaluationRoute,
+    ExperimentDomain,
+    ExperimentRun,
+    GoalContext,
+    InferenceRequest,
+    InferenceResult,
+    IssueSeverity,
+    IntentSchema,
+    PerceptionSnapshot,
+    ReasoningMode,
+    ReportKind,
+    RoleRoute,
+    RunRecord,
+    RunStatus,
+    SessionContinuationType,
+    SynapticRoutingDecision,
+    TaskContext,
+    TaskIntent,
+    TaskOutcome,
+    TaskRole,
+    VisualSignalSnapshot,
+    WorldModelSnapshot,
+)
 from iabv_v15.infra.persistence.run_repository import RunRepository
 from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
 from iabv_v15.services.evolution.execution_dossier_service import ExecutionDossierService
@@ -57,7 +88,8 @@ class InferenceService:
                 finalized_session = self.adaptive_orchestrator.finalize_with_run(adaptive_session.session_id, saved)
                 if finalized_session is not None and isinstance(saved.result.raw_output, dict):
                     saved.result.raw_output['adaptive_session'] = finalized_session.model_dump(mode='json')
-                    saved.result.raw_output['adaptive_replanned'] = bool(finalized_session.metadata.get('replanned_automatically'))
+                    # Canonical source: use typed continuation_type instead of legacy metadata
+                    saved.result.raw_output['adaptive_replanned'] = bool(finalized_session.continuation_type == SessionContinuationType.AUTO_REPLAN)
             if self.knowledge_service is not None:
                 self.knowledge_service.remember_run(saved)
             if self.execution_dossier_service is not None:
