@@ -55,6 +55,7 @@ class DevelopmentOutcomeAttributionBuilder:
         self,
         *,
         task_outcome: TaskOutcome | None = None,
+        outcome_status: RunStatus | None = None,
         audit_result: DevelopmentAuditResult | None = None,
         execution_evidence: DevelopmentExecutionEvidence | None = None,
         test_result: DevelopmentTestResult | None = None,
@@ -64,6 +65,7 @@ class DevelopmentOutcomeAttributionBuilder:
         
         Args:
             task_outcome: Existing TaskOutcome to augment, or None to create new
+            outcome_status: Required when task_outcome is None (new outcome). Must be explicit.
             audit_result: DevelopmentAuditResult for attribution (optional)
             execution_evidence: DevelopmentExecutionEvidence for attribution (optional)
             test_result: DevelopmentTestResult for attribution (optional)
@@ -72,8 +74,17 @@ class DevelopmentOutcomeAttributionBuilder:
             TaskOutcome with validated development attribution
             
         Raises:
-            DevelopmentOutcomeAttributionError: If the evidence graph is incoherent
+            DevelopmentOutcomeAttributionError: If the evidence graph is incoherent or outcome_status missing
         """
+        # Rule: outcome_status is required when creating new outcome
+        if task_outcome is None and outcome_status is None:
+            raise DevelopmentOutcomeAttributionError(
+                "outcome_status is required when creating a new TaskOutcome. "
+                "The builder cannot fabricate a default status. "
+                "DevelopmentAuditVerdict ≠ TaskOutcome.status. "
+                "TaskOutcome.status must represent the ACTUAL operational outcome."
+            )
+        
         # Validate cross-graph coherence
         self._validate_coherence(
             task_outcome=task_outcome,
@@ -89,9 +100,9 @@ class DevelopmentOutcomeAttributionBuilder:
         
         # Build or augment the TaskOutcome
         if task_outcome is None:
-            # Create new TaskOutcome
+            # Create new TaskOutcome with explicit status
             return TaskOutcome(
-                status=RunStatus.SUCCESS,
+                status=outcome_status,  # Explicit status, not fabricated
                 summary="Development task completed",
                 development_audit_result_id=audit_id,
                 development_execution_evidence_id=execution_id,
@@ -108,7 +119,7 @@ class DevelopmentOutcomeAttributionBuilder:
             if test_result is not None:
                 update_dict["development_test_result_id"] = test_id
             
-            # Create a copy with attribution added
+            # Create a copy with attribution added (status preserved)
             return task_outcome.model_copy(update=update_dict)
 
     def _validate_coherence(
