@@ -2016,19 +2016,24 @@ class AdaptiveTaskOrchestrator:
         session.metadata['linked_run_id'] = run_record.run_id
         session.metadata['linked_run_summary'] = run_record.result.summary
         session.metadata['linked_run_error'] = run_record.error_summary or run_record.result.error_summary
-        # Sync legacy metadata mirror with canonical provenance
+        # Sync legacy metadata mirror with canonical provenance and idempotency
         session.metadata['replan_count'] = session.replan_depth
         if session.parent_session_id:
             session.metadata['replanned_from_session_id'] = session.parent_session_id
+        if session.auto_replan_child_session_id:
+            session.metadata['auto_replanned_session_id'] = session.auto_replan_child_session_id
         session = self._apply_run_feedback(session, run_record)
         session = self._refresh_session_metadata(session)
         saved_session = self.task_outcome_recorder.record(session, run_record=run_record)
         if self._should_auto_replan(saved_session):
             replanned = self.replan_session(saved_session.session_id)
             if replanned is not None:
+                # Set typed idempotency state (canonical source)
+                saved_session.auto_replan_child_session_id = replanned.session_id
+                saved_session.updated_at_utc = datetime.now(timezone.utc)
+                # Legacy mirror for compatibility
                 saved_session.metadata['auto_replanned_session_id'] = replanned.session_id
                 saved_session.metadata['auto_replanned'] = True
-                saved_session.updated_at_utc = datetime.now(timezone.utc)
                 self.task_outcome_recorder.record(saved_session)
                 replanned.metadata['replanned_automatically'] = True
                 replanned.metadata['replan_triggered_by_run_id'] = run_record.run_id
@@ -2084,10 +2089,10 @@ class AdaptiveTaskOrchestrator:
             return False
         if bool(governance.get('should_consult')) or bool(governance.get('approval_required')) or bool(governance.get('block_risky_action')):
             return False
-        if session.metadata.get('auto_replanned_session_id') or session.metadata.get('replanned_automatically'):
+        # Idempotency guard: prevent repeated automatic replans of the same source session
+        if session.auto_replan_child_session_id is not None:
             return False
-        # Canonical source: use typed replan_depth only (bounded replan policy: depth < 1)
-        # At most one automatic replan hop: depth=0 may create depth=1, but depth=1 cannot create depth=2
+        # Bounded replan policy: at most one automatic replan hop (depth=0 may create depth=1)
         return session.replan_depth < 1
 
     def get_session(self, session_id: str) -> AdaptiveSession | None:
@@ -2141,7 +2146,7 @@ class AdaptiveTaskOrchestrator:
         session = self.adaptive_session_repository.get(session_id)
         if session is None:
             return None
-        # Enforce bounded replan policy: depth < 2
+        # Enforce bounded replan policy: depth < 1 (same for manual and automatic)
         if session.replan_depth >= 1:
             return None
         request = self._request_from_session(session)

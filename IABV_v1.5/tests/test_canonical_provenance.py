@@ -463,9 +463,8 @@ class TestPersistenceRoundTrip:
     def test_repeated_finalize_cannot_create_multiple_children(self):
         """Repeated finalize of depth=0 session cannot create multiple automatic children.
         
-        This is enforced by:
-        1. Bounded replan policy (depth < 1 for auto-replan)
-        2. auto_replanned_session_id flag prevents multiple auto-replans
+        This is enforced by typed idempotency state (auto_replan_child_session_id).
+        After first finalize creates child B, second finalize should not create B2.
         """
         session_repo = MagicMock(spec=AdaptiveSessionRepository)
         orchestrator = AdaptiveTaskOrchestrator(
@@ -481,7 +480,7 @@ class TestPersistenceRoundTrip:
             task_outcome_recorder=MagicMock(),
         )
 
-        # Session at depth=1 (already auto-replanned once)
+        # Session at depth=0 (eligible for auto-replan)
         session = AdaptiveSession(
             user_goal="test goal",
             intent=TaskIntent(
@@ -491,19 +490,144 @@ class TestPersistenceRoundTrip:
                 confidence=1.0,
             ),
             context=TaskContext(),
-            continuation_type=SessionContinuationType.AUTO_REPLAN,
-            parent_session_id="session-a",
-            replan_depth=1,
-            session_id="session-b",
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            session_id="session-a",
             metadata={
                 "governance": {"should_replan": True},
-                "auto_replanned_session_id": "session-b",
-                "auto_replanned": True,
             },
         )
 
         session_repo.get.return_value = session
 
-        # Verify _should_auto_replan returns False for depth=1
+        # First call: idempotency state is None, should allow auto-replan
         result = orchestrator._should_auto_replan(session)
-        assert result is False  # depth=1 < 1 is False, prevents further auto-replan
+        assert result is True  # depth=0 < 1 is True, idempotency=None
+
+        # After first replan, idempotency state would be set
+        session_with_child = session.model_copy(update={
+            'auto_replan_child_session_id': 'session-b'
+        })
+        session_repo.get.return_value = session_with_child
+
+        # Second call: idempotency state is set, should block even though depth=0
+        result = orchestrator._should_auto_replan(session_with_child)
+        assert result is False  # idempotency guard blocks re-entry
+
+    def test_idempotency_guard_independent_from_legacy_metadata(self):
+        """Typed idempotency guard is independent from legacy metadata flags.
+        
+        Even if legacy metadata indicates previous replan, typed idempotency
+        state is the authoritative guard.
+        """
+        session_repo = MagicMock(spec=AdaptiveSessionRepository)
+        orchestrator = AdaptiveTaskOrchestrator(
+            role_router=MagicMock(),
+            adaptive_session_repository=session_repo,
+            intent_service=MagicMock(),
+            context_assembler=MagicMock(),
+            capability_service=MagicMock(),
+            strategy_pack_registry=MagicMock(),
+            planner_service=MagicMock(),
+            approval_gate_service=MagicMock(),
+            execution_playbook_service=MagicMock(),
+            task_outcome_recorder=MagicMock(),
+        )
+
+        # Session with legacy metadata but NO typed idempotency state
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            session_id="session-a",
+            auto_replan_child_session_id=None,  # Typed idempotency is None
+            metadata={
+                "governance": {"should_replan": True},
+                "auto_replanned_session_id": "session-b",  # Legacy flag present
+                "auto_replanned": True,  # Legacy flag present
+            },
+        )
+
+        session_repo.get.return_value = session
+
+        # Should allow auto-replan because typed idempotency is None
+        # Legacy metadata is ignored for the guard decision
+        result = orchestrator._should_auto_replan(session)
+        assert result is True  # Typed idempotency=None allows, legacy ignored
+
+    def test_persistence_preserves_idempotency_state(self):
+        """JSON round-trip preserves typed idempotency state."""
+        session = AdaptiveSession(
+            user_goal="test goal",
+            intent=TaskIntent(
+                intent_key="test.intent",
+                title="Test Intent",
+                detected_role="training",
+                confidence=1.0,
+            ),
+            context=TaskContext(),
+            continuation_type=SessionContinuationType.EXTERNAL_REQUEST,
+            parent_session_id=None,
+            replan_depth=0,
+            auto_replan_child_session_id="session-b",
+        )
+
+        # Serialize to JSON
+        json_data = session.model_dump(mode='json')
+
+        # Deserialize
+        restored = AdaptiveSession(**json_data)
+
+        # Verify idempotency state preserved
+        assert restored.auto_replan_child_session_id == "session-b"
+
+    def test_legacy_idempotency_migration(self):
+        """Legacy auto_replanned_session_id migrates to typed field."""
+        legacy_data = {
+            "user_goal": "test goal",
+            "intent": {
+                "intent_key": "test.intent",
+                "title": "Test Intent",
+                "detected_role": "training",
+                "confidence": 1.0,
+            },
+            "context": {},
+            "metadata": {
+                "auto_replanned_session_id": "session-b",
+            },
+        }
+
+        session = AdaptiveSession(**legacy_data)
+
+        # Should migrate legacy to typed field
+        assert session.auto_replan_child_session_id == "session-b"
+
+    def test_legacy_idempotency_without_child_id_no_invention(self):
+        """Legacy replanned_automatically=True without child ID does NOT invent child ID."""
+        legacy_data = {
+            "user_goal": "test goal",
+            "intent": {
+                "intent_key": "test.intent",
+                "title": "Test Intent",
+                "detected_role": "training",
+                "confidence": 1.0,
+            },
+            "context": {},
+            "metadata": {
+                "replanned_automatically": True,  # No child ID
+            },
+        }
+
+        session = AdaptiveSession(**legacy_data)
+
+        # Should NOT invent a child ID
+        assert session.auto_replan_child_session_id is None

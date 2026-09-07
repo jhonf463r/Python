@@ -2434,14 +2434,17 @@ class AdaptiveSession(BaseModel):
     continuation_type: SessionContinuationType = SessionContinuationType.EXTERNAL_REQUEST
     parent_session_id: str | None = None
     replan_depth: int = 0
+    # Idempotency/re-entry control: tracks if this session already produced its automatic child
+    # This is separate from provenance - it prevents repeated automatic replans of the same source session
+    auto_replan_child_session_id: str | None = None
 
     @model_validator(mode='before')
     @classmethod
     def migrate_legacy_provenance(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Migrate legacy metadata to typed provenance fields for historical sessions.
+        """Migrate legacy metadata to typed provenance and idempotency fields for historical sessions.
         
-        This validator runs BEFORE field validation to detect whether provenance
-        fields were explicitly provided in the input. For each field individually:
+        This validator runs BEFORE field validation to detect whether fields
+        were explicitly provided in the input. For each field individually:
         - If the field is explicitly provided, keep it (no migration for that field)
         - If the field is absent, migrate from legacy metadata if available
         
@@ -2450,18 +2453,28 @@ class AdaptiveSession(BaseModel):
         - Reject if typed components conflict with legacy components
         - Never mix components from different lineage sources
         
+        Idempotency migration policy:
+        - Legacy auto_replanned_session_id migrates to auto_replan_child_session_id if present and non-empty
+        - Legacy replanned_automatically=True without a child ID does NOT invent a child ID
+        - Priority: explicit typed idempotency > legacy migration > None
+        
         Priority: explicit typed provenance > legacy migration > defaults.
         """
         legacy_parent = data.get('metadata', {}).get('replanned_from_session_id')
         legacy_count = int(data.get('metadata', {}).get('replan_count') or 0)
+        legacy_auto_child = data.get('metadata', {}).get('auto_replanned_session_id')
         
-        # Skip migration if all three provenance fields are explicitly provided (complete override)
+        # Skip migration if all provenance fields are explicitly provided (complete override)
         has_complete_provenance = (
             'continuation_type' in data and
             'parent_session_id' in data and
             'replan_depth' in data
         )
         if has_complete_provenance:
+            # Still migrate idempotency if not explicitly provided
+            if 'auto_replan_child_session_id' not in data:
+                if legacy_auto_child and isinstance(legacy_auto_child, str) and legacy_auto_child.strip():
+                    data['auto_replan_child_session_id'] = legacy_auto_child
             return data
         
         # Cross-lineage validation: check compatibility between typed and legacy components
@@ -2538,6 +2551,11 @@ class AdaptiveSession(BaseModel):
         if 'replan_depth' not in data:
             if legacy_count > 0:
                 data['replan_depth'] = legacy_count
+        
+        # Migrate auto_replan_child_session_id if not explicitly provided
+        if 'auto_replan_child_session_id' not in data:
+            if legacy_auto_child and isinstance(legacy_auto_child, str) and legacy_auto_child.strip():
+                data['auto_replan_child_session_id'] = legacy_auto_child
         
         return data
 
