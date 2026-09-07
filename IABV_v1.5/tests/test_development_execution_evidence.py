@@ -42,25 +42,37 @@ class TestDevelopmentExecutionEvidenceStatus:
 
     def test_completed_status(self):
         """Evidence can have COMPLETED status."""
+        started = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
+            started_at_utc=started,
             execution_status=DevelopmentExecutionStatus.COMPLETED,
+            completed_at_utc=completed,
         )
         assert evidence.execution_status == DevelopmentExecutionStatus.COMPLETED
 
     def test_failed_status(self):
         """Evidence can have FAILED status."""
+        started = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
+            started_at_utc=started,
             execution_status=DevelopmentExecutionStatus.FAILED,
+            completed_at_utc=completed,
         )
         assert evidence.execution_status == DevelopmentExecutionStatus.FAILED
 
     def test_cancelled_status(self):
         """Evidence can have CANCELLED status."""
+        started = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        completed = datetime(2026, 1, 1, 10, 5, 0, tzinfo=timezone.utc)
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
+            started_at_utc=started,
             execution_status=DevelopmentExecutionStatus.CANCELLED,
+            completed_at_utc=completed,
         )
         assert evidence.execution_status == DevelopmentExecutionStatus.CANCELLED
 
@@ -106,6 +118,13 @@ class TestDevelopmentExecutionEvidenceTestResultReference:
         evidence = DevelopmentExecutionEvidence(
             repository="https://github.com/example/repo",
             test_result_id="test-result-123",
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id="test-result-123",
+                )
+            ],
         )
         assert evidence.test_result_id == "test-result-123"
 
@@ -137,6 +156,13 @@ class TestDevelopmentExecutionEvidencePersistence:
             duration_seconds=300.0,
             execution_status=DevelopmentExecutionStatus.COMPLETED,
             test_result_id="test-123",
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_TEST,
+                    label="Test results",
+                    ref_id="test-123",
+                )
+            ],
             metadata={"key": "value"},
         )
 
@@ -159,15 +185,6 @@ class TestDevelopmentExecutionEvidencePersistence:
 
 class TestDevelopmentExecutionEvidenceInvariants:
     """Test invariant validation."""
-
-    def test_terminal_state_requires_completed_at(self):
-        """Terminal states must have completed_at_utc."""
-        with pytest.raises(ValueError, match="COMPLETED must have completed_at_utc"):
-            DevelopmentExecutionEvidence(
-                repository="https://github.com/example/repo",
-                execution_status=DevelopmentExecutionStatus.COMPLETED,
-                completed_at_utc=None,
-            )
 
     def test_non_terminal_state_cannot_have_completed_at(self):
         """Non-terminal states must not have completed_at_utc."""

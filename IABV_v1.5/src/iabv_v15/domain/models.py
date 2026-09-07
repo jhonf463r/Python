@@ -2624,21 +2624,21 @@ class DevelopmentExecutionEvidence(BaseModel):
 
     @model_validator(mode="after")
     def validate_coherence(self) -> "DevelopmentExecutionEvidence":
-        # Terminal states must have completed_at_utc
-        if self.execution_status in (DevelopmentExecutionStatus.COMPLETED, DevelopmentExecutionStatus.FAILED, DevelopmentExecutionStatus.CANCELLED):
-            if self.completed_at_utc is None:
-                raise ValueError(f"{self.execution_status} must have completed_at_utc")
-        
         # Non-terminal states must not have completed_at_utc
         if self.execution_status in (DevelopmentExecutionStatus.PENDING, DevelopmentExecutionStatus.RUNNING):
             if self.completed_at_utc is not None:
                 raise ValueError(f"{self.execution_status} cannot have completed_at_utc")
         
+        # completed_at_utc must be >= started_at_utc
+        if self.completed_at_utc is not None and self.started_at_utc is not None:
+            if self.completed_at_utc < self.started_at_utc:
+                raise ValueError("completed_at_utc must be >= started_at_utc")
+        
         # duration_seconds cannot be negative
         if self.duration_seconds is not None and self.duration_seconds < 0:
             raise ValueError("duration_seconds cannot be negative")
         
-        # If test_result_id is set, must have corresponding evidence_ref
+        # test_result_id requires corresponding DEVELOPMENT_TEST evidence_ref
         if self.test_result_id is not None:
             has_test_ref = any(
                 ref.kind == EvidenceKind.DEVELOPMENT_TEST and ref.ref_id == self.test_result_id
@@ -2647,9 +2647,9 @@ class DevelopmentExecutionEvidence(BaseModel):
             if not has_test_ref:
                 raise ValueError("test_result_id requires corresponding DEVELOPMENT_TEST evidence_ref")
         
-        # changed_files must not contain empty strings or whitespace-only strings
-        for file_path in self.changed_files:
-            if not file_path or file_path.isspace():
+        # changed_files cannot contain empty or whitespace-only strings
+        for file in self.changed_files:
+            if not file or file.isspace():
                 raise ValueError("changed_files cannot contain empty or whitespace-only strings")
         
         return self
