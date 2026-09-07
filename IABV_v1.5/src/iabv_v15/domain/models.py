@@ -2429,6 +2429,33 @@ class TaskOutcome(BaseModel):
     next_actions: list[str] = Field(default_factory=list)
     evidence_refs: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Development attribution: optional references to development evidence layers
+    # These allow reconstruction of the full evidence graph for development outcomes
+    # without duplicating payload. Non-development outcomes leave these as None.
+    development_audit_result_id: str | None = None  # Reference to DevelopmentAuditResult.audit_id
+    development_execution_evidence_id: str | None = None  # Reference to DevelopmentExecutionEvidence.evidence_id
+    development_test_result_id: str | None = None  # Reference to DevelopmentTestResult.test_result_id
+
+    @model_validator(mode='after')
+    def validate_development_attribution(self) -> TaskOutcome:
+        # If development_audit_result_id is present, development_execution_evidence_id must also be present
+        # (audit requires execution evidence to audit)
+        if self.development_audit_result_id is not None and self.development_execution_evidence_id is None:
+            raise ValueError(
+                "development_audit_result_id requires development_execution_evidence_id "
+                "(audit cannot exist without execution evidence)"
+            )
+        
+        # IDs must be non-empty when present
+        for field_name, field_value in [
+            ("development_audit_result_id", self.development_audit_result_id),
+            ("development_execution_evidence_id", self.development_execution_evidence_id),
+            ("development_test_result_id", self.development_test_result_id),
+        ]:
+            if field_value is not None and field_value.strip() == "":
+                raise ValueError(f"{field_name} cannot be empty or whitespace-only when provided")
+        
+        return self
 
 
 class AdaptiveSession(BaseModel):
