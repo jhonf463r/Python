@@ -166,6 +166,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         message: str,
         files: str = ".",
         push: bool = True,
+        task_spec: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Hace git add + commit + push de los cambios del programa.
 
@@ -195,6 +196,11 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
 
         ws = workspace_root_fn()
         try:
+            base_result = subprocess.run(
+                ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                timeout=10, cwd=str(ws),
+            )
+            base_commit = base_result.stdout.strip() if base_result.returncode == 0 else None
             # git add
             file_list = [f.strip() for f in files.split(",") if f.strip()]
             add_cmd = ["git", "add"] + file_list
@@ -234,6 +240,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             branch = branch_result.stdout.strip() if branch_result.returncode == 0 else None
 
             push_output = None
+            push_succeeded: bool | None = None
             if push:
                 push_result = subprocess.run(
                     ["git", "push"],
@@ -242,13 +249,42 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
                 )
                 push_output = push_result.stdout.strip() or push_result.stderr.strip()
                 if push_result.returncode != 0:
-                    return {
-                        "status": "partial",
-                        "detail": "committed but push failed",
-                        "commit_hash": commit_hash,
-                        "branch": branch,
-                        "push_error": push_output,
+                    push_succeeded = False
+                else:
+                    push_succeeded = True
+
+            development_evidence = None
+            if task_spec is not None and base_commit and commit_hash:
+                try:
+                    from iabv_v15.domain.models import CodexTaskSpec
+                    from iabv_v15.services.development.development_evidence_capture import DevelopmentEvidenceCapture
+                    captured = DevelopmentEvidenceCapture(ws).capture(
+                        task_spec=CodexTaskSpec.model_validate(task_spec),
+                        base_commit=base_commit,
+                        result_commit=commit_hash,
+                        push_succeeded=push_succeeded,
+                        push_detail=push_output or "",
+                    )
+                    development_evidence = {
+                        "path": captured["path"],
+                        "test_result_id": captured["test_result"].test_result_id,
+                        "execution_evidence_id": captured["execution_evidence"].evidence_id,
+                        "audit_result_id": captured["audit_result"].audit_id,
+                        "task_outcome_id": captured["task_outcome"].outcome_id,
+                        "task_outcome_status": captured["task_outcome"].status.value,
                     }
+                except Exception as exc:
+                    return {
+                        "status": "partial", "detail": "committed but development evidence capture failed",
+                        "commit_hash": commit_hash, "branch": branch,
+                        "push_output": push_output, "evidence_error": str(exc),
+                    }
+
+            if push_succeeded is False:
+                return {
+                    "status": "partial", "detail": "committed but push failed", "commit_hash": commit_hash,
+                    "branch": branch, "push_error": push_output, "development_evidence": development_evidence,
+                }
 
             logger.info("git_commit_and_push: %s on %s — %s", commit_hash, branch, message)
             return {
@@ -257,6 +293,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
                 "branch": branch,
                 "push_output": push_output,
                 "message": message,
+                "development_evidence": development_evidence,
             }
         except subprocess.TimeoutExpired:
             return {"status": "error", "detail": "git operation timed out"}
