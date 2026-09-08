@@ -1723,6 +1723,11 @@ class CodexAcceptanceCriteria(BaseModel):
     description: str
     required: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Distinguish between execution criteria (mechanical) and objective criteria (goal verification)
+    # Execution criteria: tests_passed, commit_created, changed_files_nonempty, push_succeeded
+    # Objective criteria: must verify the actual goal was achieved
+    # If no objective criteria exist, the goal is UNPROVEN and cannot produce SUCCESS
+    criterion_type: str = Field(default="execution")  # "execution" or "objective"
 
 
 class CodexConstraints(BaseModel):

@@ -1349,29 +1349,39 @@ class AutonomousEvolutionService:
             for item in file_scope[:6]
         ]
         # Build evaluable acceptance criteria with explicit observations.
-        # Only include observations that can be objectively verified from real evidence.
-        # If the objective cannot be verified, it remains declared but not evaluable.
+        # Distinguish between execution criteria (mechanical) and objective criteria (goal verification).
+        # Execution criteria: tests_passed, commit_created, changed_files_nonempty, push_succeeded
+        # These are necessary but NOT sufficient to prove the goal was achieved.
+        # Objective criteria: must verify the actual goal was achieved through a verifier.
+        # If no objective criteria exist, the goal is UNPROVEN and cannot produce SUCCESS.
         acceptance = []
+        # Execution criteria (mechanical signals)
         if suggested_tests:
             acceptance.append(
                 CodexAcceptanceCriteria(
                     description="Tests pass",
-                    metadata={"observation": "tests_passed", "expected": True, "required": True}
+                    metadata={"observation": "tests_passed", "expected": True, "required": True},
+                    criterion_type="execution"
                 )
             )
         acceptance.append(
             CodexAcceptanceCriteria(
                 description="Commit created",
-                metadata={"observation": "commit_created", "expected": True, "required": True}
+                metadata={"observation": "commit_created", "expected": True, "required": True},
+                criterion_type="execution"
             )
         )
         if file_scope:
             acceptance.append(
                 CodexAcceptanceCriteria(
                     description="Files changed",
-                    metadata={"observation": "changed_files_nonempty", "expected": True, "required": True}
+                    metadata={"observation": "changed_files_nonempty", "expected": True, "required": True},
+                    criterion_type="execution"
                 )
             )
+        # NOTE: Objective criteria are NOT generated automatically.
+        # They must be explicitly provided by the producer when a verifiable goal exists.
+        # Without objective criteria, the goal remains UNPROVEN.
         test_plan = CodexTestPlan(
             title='Pruebas sugeridas por la consulta externa',
             commands=suggested_tests[:4],

@@ -50,7 +50,26 @@ class DevelopmentEvidenceCapture:
         required = [item for item in criteria if item.metadata.get("required", True)]
         # Check for unobservable required criteria
         unobservable_required = any(item.metadata.get("reason") == "observation_not_supported" for item in required)
-        verdict = DevelopmentAuditVerdict.PASS if required and all(item.status == "satisfied" for item in required) and not unobservable_required else DevelopmentAuditVerdict.FAIL if required else DevelopmentAuditVerdict.INCONCLUSIVE
+        # Separate execution and objective criteria
+        objective_criteria = [item for item in criteria if item.metadata.get("criterion_type", "execution") == "objective"]
+        required_objective = [item for item in objective_criteria if item.metadata.get("required", True)]
+        # CRITICAL: If no objective criteria exist, goal is UNPROVEN and cannot produce SUCCESS
+        # Mechanical criteria (tests_passed, commit_created, etc.) are NOT sufficient to prove the goal
+        has_objective_criteria = len(objective_criteria) > 0
+        objective_satisfied = has_objective_criteria and all(item.status == "satisfied" for item in required_objective)
+        # Verdict logic:
+        # - PASS only if all required criteria satisfied AND objective criteria exist AND objective satisfied
+        # - FAIL if any required criterion not satisfied OR objective criteria missing OR objective not satisfied
+        # - INCONCLUSIVE if no required criteria
+        if required and all(item.status == "satisfied" for item in required) and not unobservable_required and has_objective_criteria and objective_satisfied:
+            verdict = DevelopmentAuditVerdict.PASS
+        elif required and (not all(item.status == "satisfied" for item in required) or unobservable_required):
+            verdict = DevelopmentAuditVerdict.FAIL
+        elif not has_objective_criteria:
+            # Goal is UNPROVEN - no objective criteria to verify it
+            verdict = DevelopmentAuditVerdict.INCONCLUSIVE
+        else:
+            verdict = DevelopmentAuditVerdict.INCONCLUSIVE
         audit = DevelopmentAuditResult(
             execution_evidence_id=evidence.evidence_id, verdict=verdict, auditor_id="deterministic_development_evidence",
             criteria=criteria,
@@ -80,13 +99,30 @@ class DevelopmentEvidenceCapture:
         # that exact test plan through the interpreter that hosts IABV instead
         # of depending on PATH; arguments and the requested test remain intact.
         # Idempotent: only normalize bare "pytest", not "python -m pytest" or similar.
-        # Use word boundary to match standalone pytest, not part of other commands.
-        if "pytest" in command and "python -m pytest" not in command and "python3 -m pytest" not in command:
-            command = re.sub(
-                r"\bpytest\b",
-                f'"{sys.executable}" -m pytest',
-                command,
-            )
+        # Use deterministic parsing to avoid double normalization.
+        
+        # Check if command already contains a python interpreter with -m pytest
+        # Patterns to match: "python -m pytest", "python3 -m pytest", "python.exe -m pytest", "/path/to/python -m pytest"
+        import shlex
+        try:
+            # Parse the command to get the first token
+            parts = shlex.split(command, posix=False)
+            if parts and len(parts) >= 3:
+                # Check if it's already a python invocation with -m pytest
+                first = parts[0].lower()
+                if ("python" in first or first.endswith(".exe")) and parts[1] == "-m" and parts[2].lower() == "pytest":
+                    # Already normalized, do nothing
+                    pass
+                elif parts[0].lower() == "pytest":
+                    # Bare pytest, normalize it
+                    parts[0] = f'"{sys.executable}"'
+                    parts.insert(1, "-m")
+                    parts.insert(2, "pytest")
+                    command = " ".join(parts)
+        except Exception:
+            # If parsing fails, fall back to simple check
+            if "pytest" in command and "python -m pytest" not in command and "python3 -m pytest" not in command:
+                command = re.sub(r"\bpytest\b", f'"{sys.executable}" -m pytest', command)
         began = time.monotonic()
         try:
             result = subprocess.run(command, cwd=self.workspace_root, shell=True, text=True, capture_output=True, timeout=300)
@@ -134,6 +170,7 @@ class DevelopmentEvidenceCapture:
                             "observed": None,
                             "expected": expected,
                             "reason": "observation_not_supported",
+                            "criterion_type": criterion.metadata.get("criterion_type", "execution"),
                         },
                     )
                 )
@@ -157,6 +194,7 @@ class DevelopmentEvidenceCapture:
                         "observation": key,
                         "observed": value,
                         "expected": expected,
+                        "criterion_type": criterion.metadata.get("criterion_type", "execution"),
                     },
                 )
             )
