@@ -48,13 +48,26 @@ class DevelopmentEvidenceCapture:
         )
         criteria = self._evaluate(task_spec.acceptance_criteria, test, result_commit, changed_files, push_succeeded)
         required = [item for item in criteria if item.metadata.get("required", True)]
-        verdict = DevelopmentAuditVerdict.PASS if required and all(item.status == "satisfied" for item in required) else DevelopmentAuditVerdict.FAIL if required else DevelopmentAuditVerdict.INCONCLUSIVE
+        # Check for unobservable required criteria
+        unobservable_required = any(item.metadata.get("reason") == "observation_not_supported" for item in required)
+        verdict = DevelopmentAuditVerdict.PASS if required and all(item.status == "satisfied" for item in required) and not unobservable_required else DevelopmentAuditVerdict.FAIL if required else DevelopmentAuditVerdict.INCONCLUSIVE
         audit = DevelopmentAuditResult(
             execution_evidence_id=evidence.evidence_id, verdict=verdict, auditor_id="deterministic_development_evidence",
             criteria=criteria,
             evidence_refs=[EvidenceRef(kind=EvidenceKind.DEVELOPMENT_EXECUTION, label="real commit execution", ref_id=evidence.evidence_id)],
         )
-        outcome_status = RunStatus.SUCCESS if test.status == DevelopmentTestStatus.PASSED and push_succeeded is not False else (RunStatus.PARTIAL if test.status == DevelopmentTestStatus.PASSED else RunStatus.FAILED)
+        # Audit verdict has authority over objective outcome.
+        # SUCCESS only if audit PASS, test passed, and push succeeded.
+        # FAIL if audit FAIL, regardless of test/push state.
+        # PARTIAL if audit INCONCLUSIVE or push failed but test passed.
+        if verdict == DevelopmentAuditVerdict.PASS and test.status == DevelopmentTestStatus.PASSED and push_succeeded is not False:
+            outcome_status = RunStatus.SUCCESS
+        elif verdict == DevelopmentAuditVerdict.FAIL:
+            outcome_status = RunStatus.FAILED
+        elif test.status == DevelopmentTestStatus.PASSED and push_succeeded is False:
+            outcome_status = RunStatus.PARTIAL
+        else:
+            outcome_status = RunStatus.FAILED
         outcome = DevelopmentOutcomeAttributionBuilder().build(outcome_status=outcome_status, audit_result=audit, execution_evidence=evidence, test_result=test)
         payload = {"task_spec": task_spec.model_dump(mode="json"), "test_result": test.model_dump(mode="json"), "execution_evidence": evidence.model_dump(mode="json"), "audit_result": audit.model_dump(mode="json"), "task_outcome": outcome.model_dump(mode="json")}
         path = self.storage.save_json_atomic(f"attempts/{evidence.evidence_id}.json", payload)
@@ -66,11 +79,14 @@ class DevelopmentEvidenceCapture:
         # Specs commonly name pytest without its console-script path.  Execute
         # that exact test plan through the interpreter that hosts IABV instead
         # of depending on PATH; arguments and the requested test remain intact.
-        command = re.sub(
-            r"(?<!\S)pytest(?=\s|$)",
-            lambda _match: f'"{sys.executable}" -m pytest',
-            command,
-        )
+        # Idempotent: only normalize bare "pytest", not "python -m pytest" or similar.
+        # Use word boundary to match standalone pytest, not part of other commands.
+        if "pytest" in command and "python -m pytest" not in command and "python3 -m pytest" not in command:
+            command = re.sub(
+                r"\bpytest\b",
+                f'"{sys.executable}" -m pytest',
+                command,
+            )
         began = time.monotonic()
         try:
             result = subprocess.run(command, cwd=self.workspace_root, shell=True, text=True, capture_output=True, timeout=300)
@@ -90,14 +106,60 @@ class DevelopmentEvidenceCapture:
         return {"test_count": sum(values), "passed_count": values[0], "failed_count": values[1], "error_count": values[2], "skipped_count": values[3]}
 
     def _evaluate(self, criteria: list[CodexAcceptanceCriteria], test: DevelopmentTestResult, result_commit: str, changed_files: list[str], push_succeeded: bool | None) -> list[DevelopmentAuditCriterion]:
-        observed = {"tests_passed": test.status == DevelopmentTestStatus.PASSED, "commit_created": bool(result_commit), "push_succeeded": push_succeeded is True}
+        # Closed-world set of observations that can be objectively verified.
+        # Unknown observations are explicitly not_satisfied, never satisfied by absence.
+        SUPPORTED_OBSERVATIONS = {"tests_passed", "commit_created", "push_succeeded", "changed_files_nonempty"}
+        observed = {
+            "tests_passed": test.status == DevelopmentTestStatus.PASSED,
+            "commit_created": bool(result_commit),
+            "push_succeeded": push_succeeded is True,
+            "changed_files_nonempty": bool(changed_files),
+        }
         evaluated = []
         for criterion in criteria:
             key = str(criterion.metadata.get("observation") or "")
             expected = criterion.metadata.get("expected", True)
-            value = (changed_files if key == "changed_files" else observed.get(key))
-            satisfied = bool(value) == bool(expected) if key != "changed_files" else bool(value) == bool(expected)
-            evaluated.append(DevelopmentAuditCriterion(criterion_id=criterion.criterion_id, name=criterion.description, status="satisfied" if key and satisfied else "not_satisfied", description=criterion.description, metadata={"required": criterion.required, "observation": key, "observed": value, "expected": expected}))
+            
+            # Unknown observation: never satisfied
+            if key not in SUPPORTED_OBSERVATIONS:
+                evaluated.append(
+                    DevelopmentAuditCriterion(
+                        criterion_id=criterion.criterion_id,
+                        name=criterion.description,
+                        status="not_satisfied",
+                        description=criterion.description,
+                        metadata={
+                            "required": criterion.required,
+                            "observation": key,
+                            "observed": None,
+                            "expected": expected,
+                            "reason": "observation_not_supported",
+                        },
+                    )
+                )
+                continue
+            
+            value = observed.get(key)
+            # Explicit comparison: None/unknown never satisfies, even if expected=False
+            if value is None:
+                satisfied = False
+            else:
+                satisfied = bool(value) == bool(expected)
+            
+            evaluated.append(
+                DevelopmentAuditCriterion(
+                    criterion_id=criterion.criterion_id,
+                    name=criterion.description,
+                    status="satisfied" if satisfied else "not_satisfied",
+                    description=criterion.description,
+                    metadata={
+                        "required": criterion.required,
+                        "observation": key,
+                        "observed": value,
+                        "expected": expected,
+                    },
+                )
+            )
         return evaluated
 
     def _git_lines(self, args: list[str]) -> list[str]:

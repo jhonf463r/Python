@@ -1348,9 +1348,30 @@ class AutonomousEvolutionService:
             CodexFileScope(path=item.replace('\\', '/'), writable=item.replace('\\', '/').startswith('src/'), reason='Sugerido por la respuesta externa.')
             for item in file_scope[:6]
         ]
-        acceptance = [
-            CodexAcceptanceCriteria(description=summary or recommended_change or 'La causa raiz debe quedar explicada con evidencia reutilizable.')
-        ]
+        # Build evaluable acceptance criteria with explicit observations.
+        # Only include observations that can be objectively verified from real evidence.
+        # If the objective cannot be verified, it remains declared but not evaluable.
+        acceptance = []
+        if suggested_tests:
+            acceptance.append(
+                CodexAcceptanceCriteria(
+                    description="Tests pass",
+                    metadata={"observation": "tests_passed", "expected": True, "required": True}
+                )
+            )
+        acceptance.append(
+            CodexAcceptanceCriteria(
+                description="Commit created",
+                metadata={"observation": "commit_created", "expected": True, "required": True}
+            )
+        )
+        if file_scope:
+            acceptance.append(
+                CodexAcceptanceCriteria(
+                    description="Files changed",
+                    metadata={"observation": "changed_files_nonempty", "expected": True, "required": True}
+                )
+            )
         test_plan = CodexTestPlan(
             title='Pruebas sugeridas por la consulta externa',
             commands=suggested_tests[:4],

@@ -204,13 +204,24 @@ def register_self_update_tools(
         if len(message) > 500:
             return {"status": "error", "detail": "commit message too long (max 500 chars)"}
 
+        # Resolve canonical spec BEFORE any git mutations
         resolved_task_spec = task_spec
-        if resolved_task_spec is None and codex_task_id:
+        if codex_task_id:
             if canonical_task_spec_fn is None:
                 return {"status": "error", "detail": "canonical CodexTaskSpec resolver unavailable"}
-            resolved_task_spec = canonical_task_spec_fn(codex_task_id)
-            if resolved_task_spec is None:
+            canonical_spec = canonical_task_spec_fn(codex_task_id)
+            if canonical_spec is None:
                 return {"status": "error", "detail": "canonical CodexTaskSpec not found"}
+            # If both codex_task_id and task_spec are provided, verify consistency
+            if task_spec is not None:
+                # Compare key identifiers to detect silent override
+                task_spec_id = task_spec.get("codex_task_id")
+                canonical_id = canonical_spec.get("codex_task_id")
+                if task_spec_id != canonical_id:
+                    return {"status": "error", "detail": f"task_spec codex_task_id {task_spec_id} does not match canonical {canonical_id}"}
+            # Use canonical spec when codex_task_id is present
+            resolved_task_spec = canonical_spec
+        # Legacy case: if no codex_task_id, use provided task_spec as-is
 
         ws = workspace_root_fn()
         try:
@@ -296,6 +307,7 @@ def register_self_update_tools(
                         "status": "partial", "detail": "committed but development evidence capture failed",
                         "commit_hash": commit_hash, "branch": branch,
                         "push_output": push_output, "evidence_error": str(exc),
+                        "development_evidence": None,
                     }
 
             if push_succeeded is False:
