@@ -46,7 +46,7 @@ class DevelopmentEvidenceCapture:
             evidence_refs=[EvidenceRef(kind=EvidenceKind.DEVELOPMENT_TEST, label="real subprocess test", ref_id=test.test_result_id)],
             metadata={"task_spec_id": task_spec.codex_task_id, "push_succeeded": push_succeeded, "push_detail": push_detail},
         )
-        criteria = self._evaluate(task_spec.acceptance_criteria, test, result_commit, changed_files, push_succeeded)
+        criteria = self._evaluate(task_spec.acceptance_criteria, test, base_commit, result_commit, changed_files, push_succeeded)
         required = [item for item in criteria if item.metadata.get("required", True)]
         # Check for unobservable required criteria
         unobservable_required = any(item.metadata.get("reason") == "observation_not_supported" for item in required)
@@ -141,7 +141,7 @@ class DevelopmentEvidenceCapture:
         values = [int(value or 0) for value in match.groups()]
         return {"test_count": sum(values), "passed_count": values[0], "failed_count": values[1], "error_count": values[2], "skipped_count": values[3]}
 
-    def _evaluate(self, criteria: list[CodexAcceptanceCriteria], test: DevelopmentTestResult, result_commit: str, changed_files: list[str], push_succeeded: bool | None) -> list[DevelopmentAuditCriterion]:
+    def _evaluate(self, criteria: list[CodexAcceptanceCriteria], test: DevelopmentTestResult, base_commit: str, result_commit: str, changed_files: list[str], push_succeeded: bool | None) -> list[DevelopmentAuditCriterion]:
         # Closed-world set of observations that can be objectively verified.
         # Unknown observations are explicitly not_satisfied, never satisfied by absence.
         SUPPORTED_OBSERVATIONS = {"tests_passed", "commit_created", "push_succeeded", "changed_files_nonempty", "file_content_changed"}
@@ -150,15 +150,22 @@ class DevelopmentEvidenceCapture:
             "commit_created": bool(result_commit),
             "push_succeeded": push_succeeded is True,
             "changed_files_nonempty": bool(changed_files),
-            "file_content_changed": bool(changed_files),  # Simplified: any file change counts as content change
         }
         evaluated = []
         for criterion in criteria:
             key = str(criterion.metadata.get("observation") or "")
             expected = criterion.metadata.get("expected", True)
+            target_file = criterion.metadata.get("target_file")
             
-            # Unknown observation: never satisfied
-            if key not in SUPPORTED_OBSERVATIONS:
+            # Special handling for file_content_changed observation
+            if key == "file_content_changed" and target_file:
+                # Use the deterministic verifier that compares base vs result content
+                content_changed = self._verify_file_content_changed(base_commit, result_commit, target_file)
+                value = content_changed
+            elif key in observed:
+                value = observed.get(key)
+            else:
+                # Unknown observation: never satisfied
                 evaluated.append(
                     DevelopmentAuditCriterion(
                         criterion_id=criterion.criterion_id,
@@ -173,12 +180,12 @@ class DevelopmentEvidenceCapture:
                             "expected": expected,
                             "reason": "observation_not_supported",
                             "verifier": criterion.metadata.get("verifier"),
+                            "target_file": target_file,
                         },
                     )
                 )
                 continue
             
-            value = observed.get(key)
             # Explicit comparison: None/unknown never satisfies, even if expected=False
             if value is None:
                 satisfied = False
@@ -198,6 +205,7 @@ class DevelopmentEvidenceCapture:
                         "observed": value,
                         "expected": expected,
                         "verifier": criterion.metadata.get("verifier"),
+                        "target_file": target_file,
                     },
                 )
             )
@@ -210,3 +218,60 @@ class DevelopmentEvidenceCapture:
     def _git_one(self, args: list[str]) -> str:
         values = self._git_lines(args)
         return values[0] if values else ""
+
+    def _git_show_file(self, commit: str, file_path: str) -> str:
+        """Read file content at a specific commit using git show."""
+        try:
+            result = subprocess.run(
+                ["git", "show", f"{commit}:{file_path}"],
+                cwd=self.workspace_root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            return result.stdout if result.returncode == 0 else ""
+        except Exception:
+            return ""
+
+    def _verify_file_content_changed(self, base_commit: str, result_commit: str, target_file: str) -> bool:
+        """Deterministically verify that file content actually changed between commits.
+        
+        This verifier compares the actual base and result content using git show.
+        It distinguishes between:
+        - Real content changes (base != result)
+        - Comment-only changes (content semantically identical)
+        - Whitespace/formatting changes (can be filtered)
+        
+        Returns True only if the actual content meaningfully changed.
+        """
+        base_content = self._git_show_file(base_commit, target_file)
+        result_content = self._git_show_file(result_commit, target_file)
+        
+        # If either file doesn't exist, consider it a change
+        if not base_content or not result_content:
+            return base_content != result_content
+        
+        # Normalize whitespace for comparison (ignore formatting-only changes)
+        # But preserve actual code structure
+        base_normalized = "\n".join(line.strip() for line in base_content.splitlines() if line.strip())
+        result_normalized = "\n".join(line.strip() for line in result_content.splitlines() if line.strip())
+        
+        # Remove comment-only lines for comparison
+        # This is a simple heuristic: remove lines that are only comments
+        # A more sophisticated approach would use AST parsing, but that's overkill for this verifier
+        import re
+        def remove_comments(code: str) -> str:
+            # Remove Python-style comments (lines starting with #)
+            lines = []
+            for line in code.splitlines():
+                # Remove inline comments
+                line = re.sub(r"#.*$", "", line).strip()
+                if line:
+                    lines.append(line)
+            return "\n".join(lines)
+        
+        base_no_comments = remove_comments(base_normalized)
+        result_no_comments = remove_comments(result_normalized)
+        
+        # Content changed only if the non-comment, normalized content differs
+        return base_no_comments != result_no_comments

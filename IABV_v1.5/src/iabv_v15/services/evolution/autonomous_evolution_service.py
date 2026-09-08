@@ -1379,17 +1379,27 @@ class AutonomousEvolutionService:
                     criterion_type="execution"
                 )
             )
-            # Add objective criterion only when file_scope is non-empty and goal is about content change
+            # Add objective criterion only when file_scope is non-empty and we can identify the target file
+            # The objective criterion requires explicit target_file for the verifier to work
             # This is a minimal objective verifier: file_content_changed
             # It verifies that the actual file content was modified (not just comments)
-            acceptance.append(
-                CodexAcceptanceCriteria(
-                    description="File content changed (objective verifier)",
-                    metadata={"observation": "file_content_changed", "expected": True, "required": True, "verifier": "file_content_change_detector"},
-                    criterion_type="objective"
+            # by comparing base vs result content using git show
+            if file_scope and len(file_scope) > 0:
+                target_file = file_scope[0]  # Use the first file in scope as the target
+                acceptance.append(
+                    CodexAcceptanceCriteria(
+                        description=f"File content changed: {target_file}",
+                        metadata={
+                            "observation": "file_content_changed",
+                            "expected": True,
+                            "required": True,
+                            "verifier": "file_content_change_detector",
+                            "target_file": target_file,
+                        },
+                        criterion_type="objective"
+                    )
                 )
-            )
-        # NOTE: Objective criteria are added only when a verifier is available.
+        # NOTE: Objective criteria are added only when a verifier is available AND target_file is known.
         # Without objective criteria, the goal remains UNPROVEN.
         test_plan = CodexTestPlan(
             title='Pruebas sugeridas por la consulta externa',

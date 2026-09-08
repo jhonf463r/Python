@@ -42,7 +42,7 @@ def _repo(tmp_path: Path) -> Path:
     return root
 
 
-def _spec(*, include_unsatisfied: bool = False, include_objective: bool = False, include_file_content_verifier: bool = False) -> dict:
+def _spec(*, include_unsatisfied: bool = False, include_objective: bool = False, include_file_content_verifier: bool = False, target_file: str = "sample.txt") -> dict:
     criteria = [
         CodexAcceptanceCriteria(description="A real commit exists", metadata={"observation": "commit_created", "expected": True, "required": True}, criterion_type="execution"),
         CodexAcceptanceCriteria(description="Real subprocess passed", metadata={"observation": "tests_passed", "expected": True, "required": True}, criterion_type="execution"),
@@ -53,8 +53,18 @@ def _spec(*, include_unsatisfied: bool = False, include_objective: bool = False,
         # Add an objective criterion that verifies the actual goal
         criteria.append(CodexAcceptanceCriteria(description="Goal verified", metadata={"observation": "goal_verified", "expected": True, "required": True}, criterion_type="objective"))
     if include_file_content_verifier:
-        # Add objective criterion with real verifier
-        criteria.append(CodexAcceptanceCriteria(description="File content changed", metadata={"observation": "file_content_changed", "expected": True, "required": True, "verifier": "file_content_change_detector"}, criterion_type="objective"))
+        # Add objective criterion with real verifier and explicit target file
+        criteria.append(CodexAcceptanceCriteria(
+            description=f"File content changed: {target_file}",
+            metadata={
+                "observation": "file_content_changed",
+                "expected": True,
+                "required": True,
+                "verifier": "file_content_change_detector",
+                "target_file": target_file,
+            },
+            criterion_type="objective"
+        ))
     # Use pytest with a simple inline test that will pass
     return CodexTaskSpec(title="real loop", goal="change sample", acceptance_criteria=criteria, test_plan=CodexTestPlan(commands=[f'"{sys.executable}" -m pytest --version'])).model_dump(mode="json")
 
@@ -106,6 +116,54 @@ def test_registered_production_path_without_objective_verifier_is_not_success(tm
         # Verify no objective criteria exist
         objective_criteria = [item for item in payload["audit_result"]["criteria"] if item.get("criterion_type") == "objective"]
         assert len(objective_criteria) == 0
+
+
+def test_comment_only_change_negative_control(tmp_path):
+    """Negative control: comment-only change + mechanical pass → objective NOT SATISFIED"""
+    # Unit test for the verifier logic directly
+    from iabv_v15.services.development.development_evidence_capture import DevelopmentEvidenceCapture
+    
+    root = _repo(tmp_path)
+    base = _git(root, "rev-parse", "HEAD")
+    
+    # Test case A: real content change should be detected
+    (root / "sample.txt").write_text("after\n", encoding="utf-8")
+    _git(root, "add", "sample.txt")
+    _git(root, "commit", "-m", "real change")
+    result_commit = _git(root, "rev-parse", "HEAD")
+    
+    capture = DevelopmentEvidenceCapture(root)
+    content_changed = capture._verify_file_content_changed(base, result_commit, "sample.txt")
+    assert content_changed == True, "Real content change should be detected"
+    
+    # Test case B: comment-only change should NOT be detected as content change
+    (root / "sample.txt").write_text("# comment\nafter\n", encoding="utf-8")
+    _git(root, "add", "sample.txt")
+    _git(root, "commit", "-m", "comment only")
+    comment_commit = _git(root, "rev-parse", "HEAD")
+    
+    content_changed = capture._verify_file_content_changed(result_commit, comment_commit, "sample.txt")
+    assert content_changed == False, "Comment-only change should NOT be detected as content change"
+
+
+def test_wrong_target_file_negative_control(tmp_path):
+    """Negative control: modify wrong file + objective criterion for different file → objective NOT SATISFIED"""
+    # Unit test for the verifier logic directly
+    from iabv_v15.services.development.development_evidence_capture import DevelopmentEvidenceCapture
+    
+    root = _repo(tmp_path)
+    base = _git(root, "rev-parse", "HEAD")
+    
+    # Create a different file and modify it
+    (root / "other.txt").write_text("other content\n", encoding="utf-8")
+    _git(root, "add", "other.txt")
+    _git(root, "commit", "-m", "add other file")
+    result_commit = _git(root, "rev-parse", "HEAD")
+    
+    capture = DevelopmentEvidenceCapture(root)
+    # Verify that sample.txt did NOT change (it should be the same as base)
+    content_changed = capture._verify_file_content_changed(base, result_commit, "sample.txt")
+    assert content_changed == False, "Target file sample.txt should NOT be detected as changed when only other.txt was modified"
 
 
 def test_registered_path_resolves_existing_canonical_spec_by_id(tmp_path):
@@ -204,7 +262,7 @@ def test_canonical_spec_with_unobservable_objective_cannot_produce_success(tmp_p
         CodexAcceptanceCriteria(description="Semantic correctness", metadata={"observation": "semantic_correctness", "expected": True, "required": True}),
     ]
     test = DevelopmentTestResult(status=DevelopmentTestStatus.PASSED, command="test", commit="abc123")
-    evaluated = capture._evaluate(criteria, test, "abc123", ["file.txt"], True)
+    evaluated = capture._evaluate(criteria, test, "base123", "abc123", ["file.txt"], True)
     # Unknown observation should be not_satisfied
     assert evaluated[0].status == "not_satisfied"
     assert evaluated[0].metadata.get("reason") == "observation_not_supported"
@@ -221,7 +279,7 @@ def test_canonical_spec_with_test_fail_cannot_produce_success(tmp_path):
         CodexAcceptanceCriteria(description="Tests pass", metadata={"observation": "tests_passed", "expected": True, "required": True}),
     ]
     test = DevelopmentTestResult(status=DevelopmentTestStatus.FAILED, command="test", commit="abc123")
-    evaluated = capture._evaluate(criteria, test, "abc123", ["file.txt"], True)
+    evaluated = capture._evaluate(criteria, test, "base123", "abc123", ["file.txt"], True)
     # Failed test should not satisfy tests_passed observation
     assert evaluated[0].status == "not_satisfied"
 
@@ -237,7 +295,7 @@ def test_unknown_observation_with_expected_false_cannot_satisfy(tmp_path):
         CodexAcceptanceCriteria(description="Unknown property absent", metadata={"observation": "unknown_property", "expected": False, "required": True}),
     ]
     test = DevelopmentTestResult(status=DevelopmentTestStatus.PASSED, command="test", commit="abc123")
-    evaluated = capture._evaluate(criteria, test, "abc123", ["file.txt"], True)
+    evaluated = capture._evaluate(criteria, test, "base123", "abc123", ["file.txt"], True)
     # Unknown observation should be not_satisfied regardless of expected value
     assert evaluated[0].status == "not_satisfied"
     assert evaluated[0].metadata.get("reason") == "observation_not_supported"
@@ -387,7 +445,7 @@ def test_real_commit_and_test_pass_with_unobservable_objective_is_not_success(tm
     capture = DevelopmentEvidenceCapture(tmp_path)
     criteria = spec.acceptance_criteria
     test = DevelopmentTestResult(status=DevelopmentTestStatus.PASSED, command="test", commit="abc123", exit_code=0)
-    evaluated = capture._evaluate(criteria, test, "abc123", ["file.txt"], True)
+    evaluated = capture._evaluate(criteria, test, "base123", "abc123", ["file.txt"], True)
     
     # Real test passed
     assert test.status == DevelopmentTestStatus.PASSED
@@ -421,7 +479,7 @@ def test_comment_only_change_attack_blocked(tmp_path):
     criteria = spec.acceptance_criteria
     # Simulate all mechanical signals passing
     test = DevelopmentTestResult(status=DevelopmentTestStatus.PASSED, command="test", commit="abc123", exit_code=0)
-    evaluated = capture._evaluate(criteria, test, "abc123", ["retry_handler.py"], True)
+    evaluated = capture._evaluate(criteria, test, "base123", "abc123", ["retry_handler.py"], True)
     
     # All mechanical criteria satisfied
     assert all(item.status == "satisfied" for item in evaluated if item.metadata.get("criterion_type", "execution") == "execution")
@@ -455,7 +513,7 @@ def test_verifiable_goal_with_objective_criterion_produces_success(tmp_path):
     capture = DevelopmentEvidenceCapture(tmp_path)
     criteria = spec.acceptance_criteria
     test = DevelopmentTestResult(status=DevelopmentTestStatus.PASSED, command="test", commit="abc123", exit_code=0)
-    evaluated = capture._evaluate(criteria, test, "abc123", ["file.txt"], True)
+    evaluated = capture._evaluate(criteria, test, "base123", "abc123", ["file.txt"], True)
     
     # All criteria satisfied
     assert all(item.status == "satisfied" for item in evaluated)
