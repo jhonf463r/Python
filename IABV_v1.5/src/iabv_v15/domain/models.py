@@ -2675,6 +2675,8 @@ class DevelopmentAuditCriterion(BaseModel):
     status: str  # "satisfied", "not_satisfied", "not_applicable", etc.
     description: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Preserve criterion_type from CodexAcceptanceCriteria to distinguish execution vs objective
+    criterion_type: str = "execution"  # "execution" or "objective"
 
 
 class DevelopmentAuditResult(BaseModel):

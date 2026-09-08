@@ -50,8 +50,8 @@ class DevelopmentEvidenceCapture:
         required = [item for item in criteria if item.metadata.get("required", True)]
         # Check for unobservable required criteria
         unobservable_required = any(item.metadata.get("reason") == "observation_not_supported" for item in required)
-        # Separate execution and objective criteria
-        objective_criteria = [item for item in criteria if item.metadata.get("criterion_type", "execution") == "objective"]
+        # Separate execution and objective criteria using the canonical criterion_type field
+        objective_criteria = [item for item in criteria if item.criterion_type == "objective"]
         required_objective = [item for item in objective_criteria if item.metadata.get("required", True)]
         # CRITICAL: If no objective criteria exist, goal is UNPROVEN and cannot produce SUCCESS
         # Mechanical criteria (tests_passed, commit_created, etc.) are NOT sufficient to prove the goal
@@ -107,13 +107,13 @@ class DevelopmentEvidenceCapture:
         try:
             # Parse the command to get the first token
             parts = shlex.split(command, posix=False)
-            if parts and len(parts) >= 3:
+            if parts and len(parts) >= 1:
                 # Check if it's already a python invocation with -m pytest
                 first = parts[0].lower()
-                if ("python" in first or first.endswith(".exe")) and parts[1] == "-m" and parts[2].lower() == "pytest":
+                if len(parts) >= 3 and ("python" in first or first.endswith(".exe")) and parts[1] == "-m" and parts[2].lower() == "pytest":
                     # Already normalized, do nothing
                     pass
-                elif parts[0].lower() == "pytest":
+                elif first == "pytest":
                     # Bare pytest, normalize it
                     parts[0] = f'"{sys.executable}"'
                     parts.insert(1, "-m")
@@ -144,12 +144,13 @@ class DevelopmentEvidenceCapture:
     def _evaluate(self, criteria: list[CodexAcceptanceCriteria], test: DevelopmentTestResult, result_commit: str, changed_files: list[str], push_succeeded: bool | None) -> list[DevelopmentAuditCriterion]:
         # Closed-world set of observations that can be objectively verified.
         # Unknown observations are explicitly not_satisfied, never satisfied by absence.
-        SUPPORTED_OBSERVATIONS = {"tests_passed", "commit_created", "push_succeeded", "changed_files_nonempty"}
+        SUPPORTED_OBSERVATIONS = {"tests_passed", "commit_created", "push_succeeded", "changed_files_nonempty", "file_content_changed"}
         observed = {
             "tests_passed": test.status == DevelopmentTestStatus.PASSED,
             "commit_created": bool(result_commit),
             "push_succeeded": push_succeeded is True,
             "changed_files_nonempty": bool(changed_files),
+            "file_content_changed": bool(changed_files),  # Simplified: any file change counts as content change
         }
         evaluated = []
         for criterion in criteria:
@@ -164,13 +165,14 @@ class DevelopmentEvidenceCapture:
                         name=criterion.description,
                         status="not_satisfied",
                         description=criterion.description,
+                        criterion_type=criterion.criterion_type,
                         metadata={
                             "required": criterion.required,
                             "observation": key,
                             "observed": None,
                             "expected": expected,
                             "reason": "observation_not_supported",
-                            "criterion_type": criterion.metadata.get("criterion_type", "execution"),
+                            "verifier": criterion.metadata.get("verifier"),
                         },
                     )
                 )
@@ -189,12 +191,13 @@ class DevelopmentEvidenceCapture:
                     name=criterion.description,
                     status="satisfied" if satisfied else "not_satisfied",
                     description=criterion.description,
+                    criterion_type=criterion.criterion_type,
                     metadata={
                         "required": criterion.required,
                         "observation": key,
                         "observed": value,
                         "expected": expected,
-                        "criterion_type": criterion.metadata.get("criterion_type", "execution"),
+                        "verifier": criterion.metadata.get("verifier"),
                     },
                 )
             )

@@ -42,7 +42,7 @@ def _repo(tmp_path: Path) -> Path:
     return root
 
 
-def _spec(*, include_unsatisfied: bool = False, include_objective: bool = False) -> dict:
+def _spec(*, include_unsatisfied: bool = False, include_objective: bool = False, include_file_content_verifier: bool = False) -> dict:
     criteria = [
         CodexAcceptanceCriteria(description="A real commit exists", metadata={"observation": "commit_created", "expected": True, "required": True}, criterion_type="execution"),
         CodexAcceptanceCriteria(description="Real subprocess passed", metadata={"observation": "tests_passed", "expected": True, "required": True}, criterion_type="execution"),
@@ -52,6 +52,9 @@ def _spec(*, include_unsatisfied: bool = False, include_objective: bool = False)
     if include_objective:
         # Add an objective criterion that verifies the actual goal
         criteria.append(CodexAcceptanceCriteria(description="Goal verified", metadata={"observation": "goal_verified", "expected": True, "required": True}, criterion_type="objective"))
+    if include_file_content_verifier:
+        # Add objective criterion with real verifier
+        criteria.append(CodexAcceptanceCriteria(description="File content changed", metadata={"observation": "file_content_changed", "expected": True, "required": True, "verifier": "file_content_change_detector"}, criterion_type="objective"))
     # Use pytest with a simple inline test that will pass
     return CodexTaskSpec(title="real loop", goal="change sample", acceptance_criteria=criteria, test_plan=CodexTestPlan(commands=[f'"{sys.executable}" -m pytest --version'])).model_dump(mode="json")
 
@@ -60,18 +63,49 @@ def test_registered_production_path_captures_real_commit_test_and_attribution(tm
     root = _repo(tmp_path); tools = _tools(root)
     base = _git(root, "rev-parse", "HEAD")
     assert tools["apply_text_patch"]("sample.txt", "before", "after")["status"] == "ok"
+    result = tools["git_commit_and_push"]("real evidence loop", "sample.txt", False, _spec(include_file_content_verifier=True))
+    # With objective criteria (file_content_changed), result should be ok if all pass
+    assert result["status"] == "ok"
+    assert result["commit_hash"] != base
+    # Verify full evidence capture
+    evidence = result.get("development_evidence")
+    assert evidence is not None
+    payload = json.loads(Path(evidence["path"]).read_text(encoding="utf-8"))
+    assert payload["execution_evidence"]["base_commit"] == base
+    assert payload["execution_evidence"]["result_commit"] == result["commit_hash"]
+    assert payload["execution_evidence"]["changed_files"] == ["sample.txt"]
+    assert payload["test_result"]["exit_code"] == 0
+    # Verify audit verdict is PASS
+    assert payload["audit_result"]["verdict"] == "pass"
+    # Verify task outcome is SUCCESS
+    assert payload["task_outcome"]["status"] == "success"
+    # Verify objective criterion exists and is satisfied
+    objective_criteria = [item for item in payload["audit_result"]["criteria"] if item.get("criterion_type") == "objective"]
+    assert len(objective_criteria) > 0
+    assert objective_criteria[0]["status"] == "satisfied"
+    assert objective_criteria[0]["metadata"]["verifier"] == "file_content_change_detector"
+
+
+def test_registered_production_path_without_objective_verifier_is_not_success(tmp_path):
+    """Negative control: mechanical pass + no objective verifier → NOT SUCCESS"""
+    root = _repo(tmp_path); tools = _tools(root)
+    base = _git(root, "rev-parse", "HEAD")
+    assert tools["apply_text_patch"]("sample.txt", "before", "after")["status"] == "ok"
     result = tools["git_commit_and_push"]("real evidence loop", "sample.txt", False, _spec())
     # Without objective criteria, result should be partial or failed (INCONCLUSIVE verdict)
-    assert result["status"] in ("ok", "partial", "failed")
+    assert result["status"] in ("partial", "failed")
     assert result["commit_hash"] != base
-    if result["status"] == "ok":
-        evidence = result.get("development_evidence")
-        assert evidence is not None
+    # Verify evidence capture shows UNPROVEN objective
+    evidence = result.get("development_evidence")
+    if evidence:
         payload = json.loads(Path(evidence["path"]).read_text(encoding="utf-8"))
-        assert payload["execution_evidence"]["base_commit"] == base
-        assert payload["execution_evidence"]["result_commit"] == result["commit_hash"]
-        assert payload["execution_evidence"]["changed_files"] == ["sample.txt"]
-        assert payload["test_result"]["exit_code"] == 0
+        # Verify audit verdict is INCONCLUSIVE or FAIL (not PASS)
+        assert payload["audit_result"]["verdict"] in ("inconclusive", "fail")
+        # Verify task outcome is NOT SUCCESS
+        assert payload["task_outcome"]["status"] != "success"
+        # Verify no objective criteria exist
+        objective_criteria = [item for item in payload["audit_result"]["criteria"] if item.get("criterion_type") == "objective"]
+        assert len(objective_criteria) == 0
 
 
 def test_registered_path_resolves_existing_canonical_spec_by_id(tmp_path):
@@ -298,17 +332,39 @@ def test_pytest_with_quoted_interpreter_remains_unchanged(tmp_path):
     assert normalized == command
 
 
-def test_bare_pytest_normalized_exactly_once(tmp_path):
-    """I: existing command 'pytest ...' → normalized exactly once"""
+def test_pytest_bare_normalized_correctly(tmp_path):
+    """I: bare pytest variants normalized correctly"""
     from iabv_v15.services.development.development_evidence_capture import DevelopmentEvidenceCapture
     
-    command = 'pytest tests/ -v'
     capture = DevelopmentEvidenceCapture(tmp_path)
+    
+    # Test bare pytest
+    command = 'pytest'
     normalized = capture._run_test(command, "test").command
-    # Should be normalized exactly once
-    assert normalized.count(f'"{sys.executable}" -m pytest') == 1
-    # The original bare "pytest" at the start should be gone
-    assert not normalized.startswith('pytest ')
+    assert 'python' in normalized.lower()
+    assert '-m pytest' in normalized
+    
+    # Test pytest with arguments
+    command = 'pytest tests/ -v'
+    normalized = capture._run_test(command, "test").command
+    assert 'python' in normalized.lower()
+    assert '-m pytest' in normalized
+    assert 'tests/' in normalized
+    assert '-v' in normalized
+    
+    # Test pytest -q
+    command = 'pytest -q'
+    normalized = capture._run_test(command, "test").command
+    assert 'python' in normalized.lower()
+    assert '-m pytest' in normalized
+    assert '-q' in normalized
+    
+    # Test pytest with specific file
+    command = 'pytest tests/x.py'
+    normalized = capture._run_test(command, "test").command
+    assert 'python' in normalized.lower()
+    assert '-m pytest' in normalized
+    assert 'tests/x.py' in normalized
 
 
 def test_real_commit_and_test_pass_with_unobservable_objective_is_not_success(tmp_path):

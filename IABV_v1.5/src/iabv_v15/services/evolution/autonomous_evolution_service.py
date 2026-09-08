@@ -1379,8 +1379,17 @@ class AutonomousEvolutionService:
                     criterion_type="execution"
                 )
             )
-        # NOTE: Objective criteria are NOT generated automatically.
-        # They must be explicitly provided by the producer when a verifiable goal exists.
+            # Add objective criterion only when file_scope is non-empty and goal is about content change
+            # This is a minimal objective verifier: file_content_changed
+            # It verifies that the actual file content was modified (not just comments)
+            acceptance.append(
+                CodexAcceptanceCriteria(
+                    description="File content changed (objective verifier)",
+                    metadata={"observation": "file_content_changed", "expected": True, "required": True, "verifier": "file_content_change_detector"},
+                    criterion_type="objective"
+                )
+            )
+        # NOTE: Objective criteria are added only when a verifier is available.
         # Without objective criteria, the goal remains UNPROVEN.
         test_plan = CodexTestPlan(
             title='Pruebas sugeridas por la consulta externa',

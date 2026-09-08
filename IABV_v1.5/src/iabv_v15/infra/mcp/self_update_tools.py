@@ -317,14 +317,42 @@ def register_self_update_tools(
                 }
 
             logger.info("git_commit_and_push: %s on %s — %s", commit_hash, branch, message)
-            return {
-                "status": "ok",
-                "commit_hash": commit_hash,
-                "branch": branch,
-                "push_output": push_output,
-                "message": message,
-                "development_evidence": development_evidence,
-            }
+            
+            # Separate git status from objective outcome
+            # Git succeeded (commit + push), but objective outcome may differ
+            objective_outcome_status = development_evidence.get("task_outcome_status") if development_evidence else None
+            
+            if objective_outcome_status == "success":
+                # Both git and objective succeeded
+                return {
+                    "status": "ok",
+                    "commit_hash": commit_hash,
+                    "branch": branch,
+                    "push_output": push_output,
+                    "message": message,
+                    "development_evidence": development_evidence,
+                }
+            elif objective_outcome_status in ("failed", "partial"):
+                # Git succeeded but objective failed/unproven
+                return {
+                    "status": "partial",
+                    "detail": f"git succeeded but objective outcome: {objective_outcome_status}",
+                    "commit_hash": commit_hash,
+                    "branch": branch,
+                    "push_output": push_output,
+                    "message": message,
+                    "development_evidence": development_evidence,
+                }
+            else:
+                # No development evidence or unknown outcome
+                return {
+                    "status": "ok",
+                    "commit_hash": commit_hash,
+                    "branch": branch,
+                    "push_output": push_output,
+                    "message": message,
+                    "development_evidence": development_evidence,
+                }
         except subprocess.TimeoutExpired:
             return {"status": "error", "detail": "git operation timed out"}
         except Exception as exc:
