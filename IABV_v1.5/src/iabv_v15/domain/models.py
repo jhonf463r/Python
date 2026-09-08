@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 def utc_now() -> datetime:
@@ -76,6 +76,8 @@ class EvidenceKind(str, Enum):
     DOSSIER = "dossier"
     INCIDENT = "incident"
     USER_CLUE = "user_clue"
+    DEVELOPMENT_TEST = "development_test"
+    DEVELOPMENT_EXECUTION = "development_execution"
 
 
 class IncidentStatus(str, Enum):
@@ -3213,3 +3215,220 @@ class AccountApproval(BaseModel):
     snapshot_id: str = ""
     valid: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Development Evidence — Audit and Verification
+# ---------------------------------------------------------------------------
+#
+# Models for development execution evidence, audit results, and verification.
+# These support F-01 (audit verdict authority) and F-02 (Git evidence verification).
+
+
+class DevelopmentTestStatus(str, Enum):
+    PASSED = "passed"
+    FAILED = "failed"
+    ERROR = "error"
+    TIMEOUT = "timeout"
+    NOT_RUN = "not_run"
+
+
+class DevelopmentExecutionStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class DevelopmentAuditVerdict(str, Enum):
+    """Verdict of a development audit over execution evidence."""
+    PASS = "pass"
+    FAIL = "fail"
+    INCONCLUSIVE = "inconclusive"
+
+
+class GitDiffClassification(str, Enum):
+    """Classification of a Git diff for audit purposes."""
+    VALID_CHANGE = "valid_change"
+    NO_OP = "no_op"
+    WHITESPACE_ONLY = "whitespace_only"
+    COMMENT_ONLY = "comment_only"
+    MISMATCHED_FILE_SET = "mismatched_file_set"
+    INVALID_GIT_STATE = "invalid_git_state"
+    UNVERIFIABLE_GIT_STATE = "unverifiable_git_state"
+
+
+class DevelopmentTestResult(BaseModel):
+    test_result_id: str = Field(default_factory=lambda: str(uuid4()))
+    status: DevelopmentTestStatus
+    command: str
+    exit_code: int | None = None
+    duration_seconds: float | None = None
+    stdout: str = ""
+    stderr: str = ""
+    test_count: int | None = None
+    passed_count: int | None = None
+    failed_count: int | None = None
+    error_count: int | None = None
+    skipped_count: int | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode='after')
+    def validate_coherence(self) -> DevelopmentTestResult:
+        # FAILED status with failed_count=0 is contradictory unless there's another documented reason
+        if self.status == DevelopmentTestStatus.FAILED and self.failed_count is not None and self.failed_count == 0:
+            raise ValueError("FAILED status with explicit failed_count=0 is contradictory")
+        
+        # duration_seconds cannot be negative
+        if self.duration_seconds is not None and self.duration_seconds < 0:
+            raise ValueError("duration_seconds cannot be negative")
+        
+        # Test counts cannot be negative
+        for count_field in [self.test_count, self.passed_count, self.failed_count, self.error_count, self.skipped_count]:
+            if count_field is not None and count_field < 0:
+                raise ValueError("Test counts cannot be negative")
+        
+        # Count consistency: when ALL five counters are present, their sum must equal test_count
+        if all(c is not None for c in [self.test_count, self.passed_count, self.failed_count, self.error_count, self.skipped_count]):
+            count_sum = self.passed_count + self.failed_count + self.error_count + self.skipped_count
+            if count_sum != self.test_count:
+                raise ValueError(f"Count sum ({count_sum}) does not equal test_count ({self.test_count})")
+        
+        return self
+
+
+class DevelopmentExecutionEvidence(BaseModel):
+    """Aggregated evidence from a development execution.
+    
+    Connects verifiable facts about development work:
+    - What development work was executed
+    - On what code (repository, commits, changed files)
+    - What objective evidence was produced (test results, artifacts)
+    
+    This is an evidence structure, not a task/session system.
+    It unites facts without introducing new task or agent abstractions.
+    """
+    evidence_id: str = Field(default_factory=lambda: str(uuid4()))
+    repository: str
+    base_commit: str | None = None
+    result_commit: str | None = None
+    changed_files: list[str] = Field(default_factory=list)
+    executor_id: str | None = None
+    started_at_utc: datetime | None = None
+    completed_at_utc: datetime | None = None
+    duration_seconds: float | None = None
+    execution_status: DevelopmentExecutionStatus = DevelopmentExecutionStatus.PENDING
+    test_result_id: str | None = None
+    evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode='after')
+    def validate_coherence(self) -> DevelopmentExecutionEvidence:
+        # Linkage coherence: test_result_id must match DEVELOPMENT_TEST EvidenceRef.ref_id
+        dev_test_refs = [ref for ref in self.evidence_refs if ref.kind == EvidenceKind.DEVELOPMENT_TEST]
+        
+        if self.test_result_id is not None:
+            if len(dev_test_refs) == 0:
+                raise ValueError("test_result_id is present but no DEVELOPMENT_TEST EvidenceRef found")
+            if len(dev_test_refs) > 1:
+                raise ValueError("Multiple DEVELOPMENT_TEST EvidenceRefs found; only one is allowed when test_result_id is present")
+            if dev_test_refs[0].ref_id != self.test_result_id:
+                raise ValueError(f"test_result_id '{self.test_result_id}' does not match DEVELOPMENT_TEST EvidenceRef.ref_id '{dev_test_refs[0].ref_id}'")
+        else:
+            if len(dev_test_refs) > 0:
+                raise ValueError("DEVELOPMENT_TEST EvidenceRef present but test_result_id is None")
+        
+        # Terminal states require completed_at_utc
+        terminal_states = {
+            DevelopmentExecutionStatus.COMPLETED,
+            DevelopmentExecutionStatus.FAILED,
+            DevelopmentExecutionStatus.CANCELLED,
+        }
+        if self.execution_status in terminal_states and self.completed_at_utc is None:
+            raise ValueError(f"execution_status {self.execution_status} requires completed_at_utc")
+        
+        return self
+
+
+class DevelopmentAuditFinding(BaseModel):
+    """A finding from a development audit.
+    
+    Explains why a verdict was produced.
+    Reuses existing finding pattern (finding_id, severity, summary).
+    """
+    finding_id: str = Field(default_factory=lambda: str(uuid4()))
+    severity: IssueSeverity = IssueSeverity.MEDIUM
+    summary: str = ""
+    criterion: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DevelopmentAuditCriterion(BaseModel):
+    """A criterion/check evaluated during a development audit.
+    
+    Preserves what was actually evaluated.
+    """
+    criterion_id: str
+    name: str
+    description: str = ""
+    required: bool = True
+    status: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DevelopmentAuditResult(BaseModel):
+    """Structured result of an audit over development execution evidence.
+    
+    This is the RECORD of an audit conclusion, not the audit engine itself.
+    It preserves:
+    - What was audited (execution_evidence_id)
+    - What evidence was used (evidence_refs)
+    - What criteria were checked (criteria)
+    - What verdict resulted (verdict)
+    - Why (findings)
+    
+    This is NOT:
+    - a task
+    - an execution
+    - a session
+    - a test result
+    - an experience
+    - a learning record
+    - a policy engine
+    - an AI judge
+    """
+    audit_id: str = Field(default_factory=lambda: str(uuid4()))
+    execution_evidence_id: str
+    verdict: DevelopmentAuditVerdict
+    auditor_id: str | None = None
+    audited_at_utc: datetime = Field(default_factory=utc_now)
+    findings: list[DevelopmentAuditFinding] = Field(default_factory=list)
+    criteria: list[DevelopmentAuditCriterion] = Field(default_factory=list)
+    evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode='after')
+    def validate_coherence(self) -> DevelopmentAuditResult:
+        # execution_evidence_id must be non-empty when supplied
+        if self.execution_evidence_id is not None and self.execution_evidence_id.strip() == "":
+            raise ValueError("execution_evidence_id cannot be empty or whitespace-only")
+        
+        # DEVELOPMENT_EXECUTION EvidenceRef, when present, must match execution_evidence_id
+        dev_exec_refs = [ref for ref in self.evidence_refs if ref.kind == EvidenceKind.DEVELOPMENT_EXECUTION]
+        if len(dev_exec_refs) > 0:
+            if len(dev_exec_refs) > 1:
+                raise ValueError("Multiple DEVELOPMENT_EXECUTION EvidenceRefs found; only one is allowed")
+            if dev_exec_refs[0].ref_id != self.execution_evidence_id:
+                raise ValueError(
+                    f"DEVELOPMENT_EXECUTION EvidenceRef.ref_id '{dev_exec_refs[0].ref_id}' "
+                    f"does not match execution_evidence_id '{self.execution_evidence_id}'"
+                )
+        
+        # Verdict must be explicit (enum ensures this, but validate for clarity)
+        if self.verdict not in DevelopmentAuditVerdict:
+            raise ValueError(f"Invalid verdict: {self.verdict}")
+        
+        return self
