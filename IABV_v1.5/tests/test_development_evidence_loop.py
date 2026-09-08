@@ -4,8 +4,10 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
-from iabv_v15.domain.models import CodexAcceptanceCriteria, CodexTaskSpec, CodexTestPlan
+from iabv_v15.domain.models import CodexAcceptanceCriteria, CodexPendingIssue, CodexTaskSpec, CodexTestPlan
+from iabv_v15.infra.mcp.server import IABVMCPServer
 from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
 
 
@@ -20,9 +22,12 @@ def _git(root: Path, *args: str) -> str:
     return subprocess.run(["git", *args], cwd=root, text=True, capture_output=True, check=True).stdout.strip()
 
 
-def _tools(root: Path):
+def _tools(root: Path, canonical_task_spec_fn=None):
     mcp = _Mcp()
-    register_self_update_tools(mcp, lambda: root, lambda **_: None, lambda value: value)
+    register_self_update_tools(
+        mcp, lambda: root, lambda **_: None, lambda value: value,
+        canonical_task_spec_fn,
+    )
     return mcp.tools
 
 
@@ -60,6 +65,27 @@ def test_registered_production_path_captures_real_commit_test_and_attribution(tm
     assert payload["test_result"]["passed_count"] == 1
     assert payload["audit_result"]["execution_evidence_id"] == evidence["execution_evidence_id"]
     assert payload["task_outcome"]["development_audit_result_id"] == evidence["audit_result_id"]
+
+
+def test_registered_path_resolves_existing_canonical_spec_by_id(tmp_path):
+    root = _repo(tmp_path)
+    canonical = CodexTaskSpec.model_validate(_spec())
+    issue = CodexPendingIssue(
+        summary="canonical task is persisted by evolution",
+        metadata={"autonomous_response_codex_task_spec": canonical.model_dump(mode="json")},
+    )
+    server = object.__new__(IABVMCPServer)
+    server.container = SimpleNamespace(
+        pending_issue_repository=SimpleNamespace(list_recent=lambda limit: [issue]),
+    )
+    tools = _tools(root, server._canonical_codex_task_spec)
+    tools["apply_text_patch"]("sample.txt", "before", "after")
+    result = tools["git_commit_and_push"](
+        "canonical evidence loop", "sample.txt", False, None, canonical.codex_task_id,
+    )
+    payload = json.loads(Path(result["development_evidence"]["path"]).read_text(encoding="utf-8"))
+    assert payload["task_spec"]["codex_task_id"] == canonical.codex_task_id
+    assert payload["audit_result"]["criteria"][0]["name"] == canonical.acceptance_criteria[0].description
 
 
 def test_passing_test_without_declared_observation_does_not_pass_objective(tmp_path):

@@ -6,6 +6,7 @@ from the actual execution data.
 """
 
 import subprocess
+import sys
 import time
 from pathlib import Path
 from iabv_v15.domain.models import DevelopmentTestResult, DevelopmentTestStatus
@@ -14,7 +15,7 @@ from iabv_v15.domain.models import DevelopmentTestResult, DevelopmentTestStatus
 def test_real_pytest_execution_produces_development_test_result():
     """Execute real pytest and construct DevelopmentTestResult from actual data."""
     # Execute a small, stable test
-    command = "pytest tests/test_development_test_result.py::TestDevelopmentTestResultStatus::test_passed_complete -v --tb=no"
+    command = f'"{sys.executable}" -m pytest tests/test_development_test_result.py::TestDevelopmentTestResultStatus::test_passed_complete -v --tb=no'
     
     # Derive project root from test file location for portability
     project_root = Path(__file__).resolve().parent.parent

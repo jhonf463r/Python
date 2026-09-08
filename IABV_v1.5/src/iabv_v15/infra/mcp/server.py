@@ -197,6 +197,22 @@ class IABVMCPServer:
             raise RuntimeError("adaptive_task_orchestrator no está disponible en el container")
         return svc
 
+    def _canonical_codex_task_spec(self, codex_task_id: str) -> dict[str, Any] | None:
+        """Resolve, by identity, the spec already persisted by evolution.
+
+        The self-update tool receives only a reference, never a reconstructed
+        objective or copied acceptance criteria.  A missing/stale reference is
+        deliberately unresolved rather than being fabricated for a commit.
+        """
+        repository = getattr(self.container, "pending_issue_repository", None)
+        if repository is None:
+            return None
+        for issue in repository.list_recent(limit=200):
+            payload = dict(issue.metadata or {}).get("autonomous_response_codex_task_spec")
+            if isinstance(payload, dict) and payload.get("codex_task_id") == codex_task_id:
+                return payload
+        return None
+
     def _autonomy_cycle_service(self) -> Any:
         svc = getattr(self.container, "autonomy_cycle_service", None)
         if svc is None:
@@ -3181,6 +3197,7 @@ class IABVMCPServer:
                 workspace_root_fn=self._workspace_root,
                 governance_fn=self._governance_block_for_route,
                 to_jsonable_fn=_to_jsonable,
+                canonical_task_spec_fn=self._canonical_codex_task_spec,
             )
             logger.info("self_update_tools: %d write tools registered", _n_write_tools)
         except Exception as _sut_exc:

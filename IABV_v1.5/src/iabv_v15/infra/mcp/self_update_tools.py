@@ -22,7 +22,13 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: Any, to_jsonable_fn: Any) -> int:
+def register_self_update_tools(
+    mcp: Any,
+    workspace_root_fn: Any,
+    governance_fn: Any,
+    to_jsonable_fn: Any,
+    canonical_task_spec_fn: Any | None = None,
+) -> int:
     """Register write-capable tools on the MCP server.
 
     Args:
@@ -167,6 +173,7 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
         files: str = ".",
         push: bool = True,
         task_spec: dict[str, Any] | None = None,
+        codex_task_id: str | None = None,
     ) -> dict[str, Any]:
         """Hace git add + commit + push de los cambios del programa.
 
@@ -177,6 +184,9 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             message: mensaje de commit.
             files: archivos a agregar (default: todos los modificados).
             push: si hacer push al remoto (default: True).
+            task_spec: contrato legado opcional para llamadores que ya lo envian.
+            codex_task_id: referencia al CodexTaskSpec canónico persistido por
+                el flujo de evolución; evita volver a declarar el objetivo.
 
         Returns:
             dict con status, commit_hash, branch, push_output.
@@ -193,6 +203,14 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
             return {"status": "error", "detail": "commit message too short (min 5 chars)"}
         if len(message) > 500:
             return {"status": "error", "detail": "commit message too long (max 500 chars)"}
+
+        resolved_task_spec = task_spec
+        if resolved_task_spec is None and codex_task_id:
+            if canonical_task_spec_fn is None:
+                return {"status": "error", "detail": "canonical CodexTaskSpec resolver unavailable"}
+            resolved_task_spec = canonical_task_spec_fn(codex_task_id)
+            if resolved_task_spec is None:
+                return {"status": "error", "detail": "canonical CodexTaskSpec not found"}
 
         ws = workspace_root_fn()
         try:
@@ -254,12 +272,12 @@ def register_self_update_tools(mcp: Any, workspace_root_fn: Any, governance_fn: 
                     push_succeeded = True
 
             development_evidence = None
-            if task_spec is not None and base_commit and commit_hash:
+            if resolved_task_spec is not None and base_commit and commit_hash:
                 try:
                     from iabv_v15.domain.models import CodexTaskSpec
                     from iabv_v15.services.development.development_evidence_capture import DevelopmentEvidenceCapture
                     captured = DevelopmentEvidenceCapture(ws).capture(
-                        task_spec=CodexTaskSpec.model_validate(task_spec),
+                        task_spec=CodexTaskSpec.model_validate(resolved_task_spec),
                         base_commit=base_commit,
                         result_commit=commit_hash,
                         push_succeeded=push_succeeded,

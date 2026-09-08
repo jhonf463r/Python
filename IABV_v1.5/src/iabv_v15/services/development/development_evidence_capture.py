@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -62,6 +63,14 @@ class DevelopmentEvidenceCapture:
     def _run_test(self, command: str, commit: str) -> DevelopmentTestResult:
         if not command:
             return DevelopmentTestResult(status=DevelopmentTestStatus.NOT_RUN, command="", commit=commit)
+        # Specs commonly name pytest without its console-script path.  Execute
+        # that exact test plan through the interpreter that hosts IABV instead
+        # of depending on PATH; arguments and the requested test remain intact.
+        command = re.sub(
+            r"(?<!\S)pytest(?=\s|$)",
+            lambda _match: f'"{sys.executable}" -m pytest',
+            command,
+        )
         began = time.monotonic()
         try:
             result = subprocess.run(command, cwd=self.workspace_root, shell=True, text=True, capture_output=True, timeout=300)
