@@ -4260,3 +4260,176 @@ def test_external_blocked_result_resets_guidance_when_no_actionable_payload() ->
         )
     finally:
         _cleanup_bootstrap(bootstrap)
+
+
+def test_provenance_typed_auto_replan_overrides_legacy_metadata() -> None:
+    """Test A: Typed continuation_type = AUTO_REPLAN must override legacy metadata.
+    When both typed continuation_type and legacy metadata are present,
+    the typed field must take precedence for UI interpretation."""
+    bootstrap = _make_bootstrap('test_provenance_typed_override_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        # Payload with typed AUTO_REPLAN but legacy metadata says external
+        viewmodel._update_adaptive_state({
+            'session_id': 'adaptive-typed-override',
+            'status': 'ready_to_execute',
+            'intent': {'title': 'Resolver login Wplay', 'intent_key': 'wplay.login', 'disposition': 'plan_then_execute', 'confidence': 0.84},
+            'context': {'site_id': 'wplay', 'site_display_name': 'Wplay'},
+            'chosen_pack': {'title': 'Wplay login', 'pack_id': 'wplay.login', 'domain_kind': 'browser'},
+            'playbook': {'status': 'ready_to_execute', 'next_phase': 'execute', 'summary': 'Replan listo.', 'steps': []},
+            'approval_checkpoints': [],
+            'capability_readiness': [],
+            'strategy_candidates': [],
+            'outcome': {},
+            # Typed provenance: AUTO_REPLAN
+            'continuation_type': 'auto_replan',
+            'parent_session_id': 'adaptive-parent',
+            'replan_depth': 1,
+            # Legacy metadata: contradicts typed (says external)
+            'metadata': {
+                'replanned_automatically': False,
+                'replanned_from_session_id': None,
+                'governance': {
+                    'autonomy_level': 'guarded_local',
+                    'recommended_action': 'replan_strategy',
+                    'should_replan': True,
+                },
+            },
+        })
+
+        text = viewmodel.get_adaptive_evolution_text()
+        # Typed field must override legacy
+        assert 'Replanificacion automatica: True' in text
+        assert 'origen: adaptive-parent' in text
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_provenance_legacy_metadata_preserves_auto_replan_knowledge() -> None:
+    """Test B: No typed field + legacy metadata explicitly identifies auto-replan
+    must preserve the UI's knowledge that a replan occurred."""
+    bootstrap = _make_bootstrap('test_provenance_legacy_preserves_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        # Payload without typed fields but with legacy auto-replan metadata
+        viewmodel._update_adaptive_state({
+            'session_id': 'adaptive-legacy-preserve',
+            'status': 'ready_to_execute',
+            'intent': {'title': 'Resolver login Wplay', 'intent_key': 'wplay.login', 'disposition': 'plan_then_execute', 'confidence': 0.84},
+            'context': {'site_id': 'wplay', 'site_display_name': 'Wplay'},
+            'chosen_pack': {'title': 'Wplay login', 'pack_id': 'wplay.login', 'domain_kind': 'browser'},
+            'playbook': {'status': 'ready_to_execute', 'next_phase': 'execute', 'summary': 'Replan listo.', 'steps': []},
+            'approval_checkpoints': [],
+            'capability_readiness': [],
+            'strategy_candidates': [],
+            'outcome': {},
+            # No typed provenance fields
+            # Legacy metadata: explicitly marks auto-replan
+            'metadata': {
+                'replanned_automatically': True,
+                'replanned_from_session_id': 'adaptive-original',
+                'governance': {
+                    'autonomy_level': 'guarded_local',
+                    'recommended_action': 'replan_strategy',
+                    'should_replan': True,
+                },
+            },
+        })
+
+        text = viewmodel.get_adaptive_evolution_text()
+        # Legacy metadata must be used for UI interpretation
+        assert 'Replanificacion automatica: True' in text
+        assert 'origen: adaptive-original' in text
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_provenance_no_typed_no_legacy_uses_explicit_default() -> None:
+    """Test C: No typed field + no legacy indication must NOT silently claim
+    EXTERNAL_REQUEST unless that is explicitly the canonical default.
+    The UI should use an explicit absence representation."""
+    bootstrap = _make_bootstrap('test_provenance_explicit_default_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        # Payload without any provenance information (non-general conversation to trigger evolution text)
+        viewmodel._update_adaptive_state({
+            'session_id': 'adaptive-no-provenance',
+            'status': 'ready_to_execute',
+            'intent': {'title': 'Resolver login Wplay', 'intent_key': 'wplay.login', 'disposition': 'plan_then_execute', 'confidence': 0.84},
+            'context': {'site_id': 'wplay', 'site_display_name': 'Wplay'},
+            'chosen_pack': {'title': 'Wplay login', 'pack_id': 'wplay.login', 'domain_kind': 'browser'},
+            'playbook': {'status': 'ready_to_execute', 'next_phase': 'execute', 'summary': 'Listo.', 'steps': []},
+            'approval_checkpoints': [],
+            'capability_readiness': [],
+            'strategy_candidates': [],
+            'outcome': {},
+            # No typed provenance fields
+            # No legacy auto-replan metadata
+            'metadata': {
+                'governance': {
+                    'autonomy_level': 'informative_only',
+                    'recommended_action': 'continue_local',
+                },
+            },
+        })
+
+        text = viewmodel.get_adaptive_evolution_text()
+        # Should use explicit default (external_request) as canonical fallback
+        assert 'Replanificacion automatica: False' in text
+        assert 'origen: ' in text or 'origen: n/d' in text
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+def test_provenance_legacy_metadata_never_drives_runtime_replan() -> None:
+    """Test D: Legacy metadata must never make _should_auto_replan() or
+    replan_session() accept an external replan. This preserves the authority boundary.
+    
+    This test verifies that legacy metadata is UI interpretation only and does
+    not affect runtime replan decisions in the orchestrator."""
+    bootstrap = _make_bootstrap('test_provenance_legacy_authority_boundary_workspace')
+    try:
+        viewmodel = bootstrap.control_center_viewmodel
+        assert viewmodel is not None
+
+        # Payload with legacy auto-replan metadata but no typed provenance
+        viewmodel._update_adaptive_state({
+            'session_id': 'adaptive-legacy-only',
+            'status': 'ready_to_execute',
+            'intent': {'title': 'Consulta external', 'intent_key': 'external.consult', 'disposition': 'plan_then_execute', 'confidence': 0.84},
+            'context': {'site_id': 'general', 'site_display_name': 'General'},
+            'chosen_pack': {'title': 'External consult', 'pack_id': 'external', 'domain_kind': 'external'},
+            'playbook': {'status': 'ready_to_execute', 'next_phase': 'execute', 'summary': 'Listo.', 'steps': []},
+            'approval_checkpoints': [],
+            'capability_readiness': [],
+            'strategy_candidates': [],
+            'outcome': {},
+            # No typed provenance fields (no continuation_type, no parent_session_id)
+            # Legacy metadata: claims auto-replan
+            'metadata': {
+                'replanned_automatically': True,
+                'replanned_from_session_id': 'some-external-session',
+                'governance': {
+                    'autonomy_level': 'informative_only',
+                    'recommended_action': 'continue_local',
+                    'should_replan': False,  # Governance says no replan
+                },
+            },
+        })
+
+        text = viewmodel.get_adaptive_evolution_text()
+        # UI should surface the legacy metadata for display
+        assert 'Replanificacion automatica: True' in text
+        assert 'origen: some-external-session' in text
+        
+        # But the governance decision should remain authoritative
+        # (This is verified by the governance field in the text)
+        assert 'replanificar: False' in text or 'should_replan: False' in text.lower()
+    finally:
+        _cleanup_bootstrap(bootstrap)

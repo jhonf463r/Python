@@ -10141,10 +10141,22 @@ class ControlCenterViewModel(QObject):
         preferred_config_signature = str(decision_metadata.get('preferred_config_signature') or '').strip()
         supporting_trace_ids = [str(item) for item in (decision_metadata.get('supporting_trace_ids') or []) if str(item).strip()][:4]
         # Canonical source: use typed continuation_type instead of legacy metadata
-        continuation_type = str(payload.get('continuation_type') or 'external_request')
+        # Compatibility policy: inspect legacy metadata if typed field is absent
+        typed_continuation = payload.get('continuation_type')
+        if typed_continuation is not None:
+            continuation_type = str(typed_continuation)
+        else:
+            # Legacy compatibility: inspect metadata for auto-replan indication
+            legacy_auto = metadata.get('replanned_automatically')
+            legacy_parent = metadata.get('replanned_from_session_id')
+            if legacy_auto or legacy_parent:
+                continuation_type = 'auto_replan'
+            else:
+                # Explicit absence: use 'external_request' as canonical default
+                continuation_type = 'external_request'
         auto_replanned = continuation_type == 'auto_replan'
         # Canonical source: use typed parent_session_id instead of legacy metadata
-        replan_source = str(payload.get('parent_session_id') or '')
+        replan_source = str(payload.get('parent_session_id') or metadata.get('replanned_from_session_id') or '')
         if self._is_general_conversation_session(payload, intent, context):
             current_goal = str(payload.get('user_goal') or self._last_user_goal or '')
             self_awareness = self._is_self_awareness_session(intent) or self._is_self_awareness_question(current_goal)

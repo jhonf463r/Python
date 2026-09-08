@@ -38,11 +38,20 @@ class _FakeAdaptiveSession:
     def __init__(self, session_id: str, *, replanned: bool = False) -> None:
         self.session_id = session_id
         self.metadata = {'replanned_automatically': replanned}
+        # Typed provenance fields for compatibility with AdaptiveSession
+        self.continuation_type = 'auto_replan' if replanned else 'external_request'
+        self.parent_session_id = 'adaptive-session-1' if replanned else None
+        self.replan_depth = 1 if replanned else 0
+        self.auto_replan_child_session_id = None
 
     def model_dump(self, mode: str = 'json') -> dict[str, object]:
         return {
             'session_id': self.session_id,
             'metadata': dict(self.metadata),
+            'continuation_type': self.continuation_type,
+            'parent_session_id': self.parent_session_id,
+            'replan_depth': self.replan_depth,
+            'auto_replan_child_session_id': self.auto_replan_child_session_id,
         }
 
 
