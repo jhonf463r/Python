@@ -18,6 +18,14 @@ from iabv_v15.domain.models import GitDiffClassification
 
 
 @dataclass
+class ChangedFilesResult:
+    """Result of getting changed files between commits."""
+    success: bool
+    files: list[str]
+    error: str = ""
+
+
+@dataclass
 class GitVerificationResult:
     """Result of Git evidence verification."""
     
@@ -26,6 +34,7 @@ class GitVerificationResult:
     actual_result_commit: str | None = None
     actual_changed_files: list[str] | None = None
     repository_valid: bool = False
+    repository_identity: str | None = None
     error_message: str = ""
     metadata: dict[str, Any] | None = None
 
@@ -43,8 +52,9 @@ class GitEvidenceVerifier:
     The caller cannot fabricate Git state — it must be observed.
     """
     
-    def __init__(self, repository_path: str | Path):
+    def __init__(self, repository_path: str | Path, expected_repository_identity: str | None = None):
         self.repository_path = Path(repository_path)
+        self.expected_repository_identity = expected_repository_identity
     
     def verify_execution(
         self,
@@ -76,11 +86,49 @@ class GitEvidenceVerifier:
         repository_valid = True
         metadata["repository_path"] = str(self.repository_path)
         
+        # CRITICAL-3: Verify repository identity
+        actual_identity = self._get_repository_identity()
+        metadata["actual_repository_identity"] = actual_identity
+        
+        if self.expected_repository_identity and actual_identity != self.expected_repository_identity:
+            return GitVerificationResult(
+                classification=GitDiffClassification.INVALID_GIT_STATE,
+                repository_valid=repository_valid,
+                repository_identity=actual_identity,
+                error_message=(
+                    f"Repository identity mismatch: "
+                    f"expected '{self.expected_repository_identity}', "
+                    f"actual '{actual_identity}'"
+                ),
+                metadata=metadata,
+            )
+        
+        # MAJOR-3: Verify base commit is a commit object (not blob, tree, etc.)
+        if base_commit and not self._is_commit_object(base_commit):
+            return GitVerificationResult(
+                classification=GitDiffClassification.INVALID_GIT_STATE,
+                repository_valid=repository_valid,
+                repository_identity=actual_identity,
+                error_message=f"Base commit is not a commit object: {base_commit}",
+                metadata=metadata,
+            )
+        
+        # MAJOR-3: Verify result commit is a commit object
+        if result_commit and not self._is_commit_object(result_commit):
+            return GitVerificationResult(
+                classification=GitDiffClassification.INVALID_GIT_STATE,
+                repository_valid=repository_valid,
+                repository_identity=actual_identity,
+                error_message=f"Result commit is not a commit object: {result_commit}",
+                metadata=metadata,
+            )
+        
         # Verify base commit exists
         if base_commit and not self._commit_exists(base_commit):
             return GitVerificationResult(
                 classification=GitDiffClassification.INVALID_GIT_STATE,
                 repository_valid=repository_valid,
+                repository_identity=actual_identity,
                 error_message=f"Base commit does not exist: {base_commit}",
                 metadata=metadata,
             )
@@ -90,6 +138,7 @@ class GitEvidenceVerifier:
             return GitVerificationResult(
                 classification=GitDiffClassification.INVALID_GIT_STATE,
                 repository_valid=repository_valid,
+                repository_identity=actual_identity,
                 error_message=f"Result commit does not exist: {result_commit}",
                 metadata=metadata,
             )
@@ -99,6 +148,7 @@ class GitEvidenceVerifier:
             return GitVerificationResult(
                 classification=GitDiffClassification.UNVERIFIABLE_GIT_STATE,
                 repository_valid=repository_valid,
+                repository_identity=actual_identity,
                 error_message="Base or result commit not provided",
                 metadata=metadata,
             )
@@ -106,13 +156,28 @@ class GitEvidenceVerifier:
         # Check for no-op (base == result)
         if base_commit == result_commit:
             # If base == result, there should be no changed files
-            actual_changed = self._get_changed_files(base_commit, result_commit)
+            actual_changed_result = self._get_changed_files(base_commit, result_commit)
+            
+            # MAJOR-1: Handle git diff failure
+            if not actual_changed_result.success:
+                return GitVerificationResult(
+                    classification=GitDiffClassification.UNVERIFIABLE_GIT_STATE,
+                    repository_valid=repository_valid,
+                    repository_identity=actual_identity,
+                    actual_base_commit=base_commit,
+                    actual_result_commit=result_commit,
+                    error_message=f"Git diff failed: {actual_changed_result.error}",
+                    metadata=metadata,
+                )
+            
+            actual_changed = actual_changed_result.files
             
             # If caller claims changed files but base == result, that's invalid
             if claimed_changed_files and claimed_changed_files:
                 return GitVerificationResult(
                     classification=GitDiffClassification.INVALID_GIT_STATE,
                     repository_valid=repository_valid,
+                    repository_identity=actual_identity,
                     actual_base_commit=base_commit,
                     actual_result_commit=result_commit,
                     actual_changed_files=actual_changed,
@@ -124,6 +189,7 @@ class GitEvidenceVerifier:
             return GitVerificationResult(
                 classification=GitDiffClassification.NO_OP,
                 repository_valid=repository_valid,
+                repository_identity=actual_identity,
                 actual_base_commit=base_commit,
                 actual_result_commit=result_commit,
                 actual_changed_files=actual_changed,
@@ -135,6 +201,7 @@ class GitEvidenceVerifier:
             return GitVerificationResult(
                 classification=GitDiffClassification.INVALID_GIT_STATE,
                 repository_valid=repository_valid,
+                repository_identity=actual_identity,
                 actual_base_commit=base_commit,
                 actual_result_commit=result_commit,
                 error_message=f"Result commit {result_commit} is not a descendant of base commit {base_commit}",
@@ -142,7 +209,21 @@ class GitEvidenceVerifier:
             )
         
         # Get actual changed files
-        actual_changed = self._get_changed_files(base_commit, result_commit)
+        actual_changed_result = self._get_changed_files(base_commit, result_commit)
+        
+        # MAJOR-1: Handle git diff failure
+        if not actual_changed_result.success:
+            return GitVerificationResult(
+                classification=GitDiffClassification.UNVERIFIABLE_GIT_STATE,
+                repository_valid=repository_valid,
+                repository_identity=actual_identity,
+                actual_base_commit=base_commit,
+                actual_result_commit=result_commit,
+                error_message=f"Git diff failed: {actual_changed_result.error}",
+                metadata=metadata,
+            )
+        
+        actual_changed = actual_changed_result.files
         
         # Check for mismatched file set
         if claimed_changed_files is not None:
@@ -150,6 +231,7 @@ class GitEvidenceVerifier:
                 return GitVerificationResult(
                     classification=GitDiffClassification.MISMATCHED_FILE_SET,
                     repository_valid=repository_valid,
+                    repository_identity=actual_identity,
                     actual_base_commit=base_commit,
                     actual_result_commit=result_commit,
                     actual_changed_files=actual_changed,
@@ -163,6 +245,7 @@ class GitEvidenceVerifier:
         return GitVerificationResult(
             classification=classification,
             repository_valid=repository_valid,
+            repository_identity=actual_identity,
             actual_base_commit=base_commit,
             actual_result_commit=result_commit,
             actual_changed_files=actual_changed,
@@ -180,6 +263,62 @@ class GitEvidenceVerifier:
                 timeout=10,
             )
             return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            return False
+    
+    def _get_repository_identity(self) -> str:
+        """Get repository identity from remote origin URL.
+        
+        Returns normalized GitHub owner/name or remote URL.
+        This provides a deterministic identity independent of local path.
+        """
+        try:
+            # Try to get remote origin URL
+            result = subprocess.run(
+                ["git", "config", "--get", "remote.origin.url"],
+                cwd=self.repository_path,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                url = result.stdout.strip()
+                # Normalize GitHub URLs to owner/name format
+                if "github.com" in url:
+                    # Extract owner/repo from various GitHub URL formats
+                    # https://github.com/owner/repo.git
+                    # git@github.com:owner/repo.git
+                    if "/" in url:
+                        parts = url.split("/")
+                        repo_part = parts[-1].replace(".git", "")
+                        owner_part = parts[-2]
+                        return f"{owner_part}/{repo_part}"
+                return url
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            pass
+        
+        # Fallback: use directory name as identity (less ideal but deterministic)
+        return self.repository_path.name
+    
+    def _is_commit_object(self, commit: str) -> bool:
+        """Check if the given SHA is a commit object (not blob, tree, tag, etc.).
+        
+        MAJOR-3: Prevents non-commit objects from being accepted as commits.
+        """
+        try:
+            result = subprocess.run(
+                ["git", "cat-file", "-t", commit],
+                cwd=self.repository_path,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            
+            if result.returncode == 0:
+                # Only accept if object type is "commit"
+                return result.stdout.strip() == "commit"
+            return False
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             return False
     
@@ -211,8 +350,12 @@ class GitEvidenceVerifier:
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             return False
     
-    def _get_changed_files(self, base: str, result: str) -> list[str]:
-        """Get the list of changed files between two commits."""
+    def _get_changed_files(self, base: str, result: str) -> ChangedFilesResult:
+        """Get the list of changed files between two commits.
+        
+        MAJOR-1: Returns ChangedFilesResult to distinguish success from failure.
+        Never returns [] for command failure - uses UNVERIFIABLE_GIT_STATE instead.
+        """
         try:
             result = subprocess.run(
                 ["git", "diff", "--name-only", base, result],
@@ -222,12 +365,20 @@ class GitEvidenceVerifier:
                 timeout=10,
             )
             if result.returncode != 0:
-                return []
+                return ChangedFilesResult(
+                    success=False,
+                    files=[],
+                    error=result.stderr.strip() or f"git diff failed with exit code {result.returncode}",
+                )
             
             files = [f for f in result.stdout.strip().split("\n") if f]
-            return files
-        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
-            return []
+            return ChangedFilesResult(success=True, files=files)
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
+            return ChangedFilesResult(
+                success=False,
+                files=[],
+                error=str(e),
+            )
     
     def _classify_diff(
         self,
@@ -237,15 +388,18 @@ class GitEvidenceVerifier:
     ) -> GitDiffClassification:
         """Classify the diff between two commits.
         
-        Attempts to detect:
-        - WHITESPACE_ONLY: Only whitespace changes
-        - COMMENT_ONLY: Only comment changes (in code files)
+        MAJOR-2: Deterministic classification.
+        - WHITESPACE_ONLY: Only whitespace changes (verified with git diff -w)
+        - COMMENT_ONLY: Only comment changes in supported languages (Python)
         - VALID_CHANGE: Real content changes
+        - UNVERIFIABLE_GIT_STATE: Cannot determine classification
+        
+        For unsupported languages, returns VALID_CHANGE rather than guessing.
         """
         if not changed_files:
             return GitDiffClassification.NO_OP
         
-        # Check if all changes are whitespace-only
+        # MAJOR-2: Deterministic whitespace detection
         try:
             # Get diff ignoring whitespace
             diff_result = subprocess.run(
@@ -257,40 +411,49 @@ class GitEvidenceVerifier:
             )
             
             # If diff with -w is empty, changes are whitespace-only
-            if not diff_result.stdout.strip():
+            if diff_result.returncode == 0 and not diff_result.stdout.strip():
                 return GitDiffClassification.WHITESPACE_ONLY
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
-            # If we can't determine, assume valid change
-            return GitDiffClassification.VALID_CHANGE
+            # If we can't determine, return UNVERIFIABLE_GIT_STATE
+            return GitDiffClassification.UNVERIFIABLE_GIT_STATE
         
-        # Check for comment-only changes (heuristic)
-        # This is a basic check - full comment detection would require language-specific parsing
-        try:
-            diff_result = subprocess.run(
-                ["git", "diff", base, result],
-                cwd=self.repository_path,
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            
-            diff_lines = diff_result.stdout.split("\n")
-            # Check if all added/removed lines are comments
-            # This is a simplified heuristic
-            non_comment_changes = 0
-            for line in diff_lines:
-                if line.startswith("+") and not line.startswith("+++"):
-                    stripped = line[1:].strip()
-                    if stripped and not stripped.startswith("#") and not stripped.startswith("//") and not stripped.startswith("/*"):
-                        non_comment_changes += 1
-                elif line.startswith("-") and not line.startswith("---"):
-                    stripped = line[1:].strip()
-                    if stripped and not stripped.startswith("#") and not stripped.startswith("//") and not stripped.startswith("/*"):
-                        non_comment_changes += 1
-            
-            if non_comment_changes == 0:
-                return GitDiffClassification.COMMENT_ONLY
-        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
-            pass
+        # MAJOR-2: Deterministic comment detection for Python only
+        # Only attempt comment detection for Python files
+        python_files = [f for f in changed_files if f.endswith('.py')]
         
+        if python_files and len(changed_files) == len(python_files):
+            # All changed files are Python - attempt comment detection
+            try:
+                diff_result = subprocess.run(
+                    ["git", "diff", base, result],
+                    cwd=self.repository_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                
+                if diff_result.returncode == 0:
+                    diff_lines = diff_result.stdout.split("\n")
+                    # Check if all added/removed lines are comments
+                    non_comment_changes = 0
+                    for line in diff_lines:
+                        if line.startswith("+") and not line.startswith("+++"):
+                            stripped = line[1:].lstrip()
+                            # Python comment starts with #
+                            if stripped and not stripped.startswith("#"):
+                                non_comment_changes += 1
+                        elif line.startswith("-") and not line.startswith("---"):
+                            stripped = line[1:].lstrip()
+                            # Python comment starts with #
+                            if stripped and not stripped.startswith("#"):
+                                non_comment_changes += 1
+                    
+                    if non_comment_changes == 0:
+                        return GitDiffClassification.COMMENT_ONLY
+            except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+                # If we can't determine, return UNVERIFIABLE_GIT_STATE
+                return GitDiffClassification.UNVERIFIABLE_GIT_STATE
+        
+        # For non-Python files or mixed file types, return VALID_CHANGE
+        # MAJOR-2: Don't guess for unsupported languages
         return GitDiffClassification.VALID_CHANGE
