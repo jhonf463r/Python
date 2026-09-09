@@ -1,0 +1,36 @@
+{
+  "recommendation_id": "4eb2a400-46c8-4752-adb8-f3011c2b9191",
+  "domain": "language",
+  "subject_key": "chatgpt_web_assisted",
+  "recommended_route": "fallback",
+  "recommended_assistant_kind": "",
+  "recommended_assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "recommended_config_signature": "",
+  "score": 0.0,
+  "confidence": 0.0,
+  "rationale": "Todavia no hay una corrida exitosa para recomendar una via; conviene evitar recomendaciones automaticas hasta tener evidencia mejor.",
+  "supporting_run_ids": [],
+  "metadata": {
+    "ranked_routes": [],
+    "ranked_configurations": [],
+    "winning_trace_ids": [],
+    "losing_trace_ids": [
+      "25b4b54e"
+    ],
+    "comparison_scope_keys": [
+      "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r"
+    ]
+  },
+  "created_at_utc": "2026-09-08T18:58:26.535304Z"
+}

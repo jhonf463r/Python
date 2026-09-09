@@ -29,147 +29,10 @@ from iabv_v15.services.development.git_evidence_verifier import (
 )
 
 
-# P0-B FIX: Closure-based secret to prevent external construction
-# The secret is captured in a closure and is NOT exposed at module level
-def _make_receipt_factory():
-    """Create a factory function with a closure-captured secret.
-    
-    The secret is not exposed at module level and cannot be imported.
-    Only the returned factory function can create authoritative receipts.
-    """
-    class _SecretToken:
-        """Private token class - not accessible outside this closure."""
-        __slots__ = ()
-    
-    secret = _SecretToken()
-    
-    def create_receipt(
-        receipt_id: str,
-        audit_id: str,
-        execution_evidence_id: str,
-        verdict: DevelopmentAuditVerdict,
-        audited_at_utc: datetime,
-        auditor_id: str | None = None,
-        git_verification: GitVerificationResult | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> DevelopmentAuditReceipt:
-        """Factory function that can only create receipts with the captured secret."""
-        return DevelopmentAuditReceipt(
-            _secret=secret,
-            receipt_id=receipt_id,
-            audit_id=audit_id,
-            execution_evidence_id=execution_evidence_id,
-            verdict=verdict,
-            audited_at_utc=audited_at_utc,
-            auditor_id=auditor_id,
-            git_verification=git_verification,
-            metadata=metadata,
-        )
-    
-    # Store the secret in the closure of the factory function itself
-    # This way it's accessible for verification but not as a module-level variable
-    create_receipt._secret = secret
-    
-    return create_receipt
-
-
-# Module-level factory - the only way to create authoritative receipts
-# The secret is captured in the closure and NOT exposed as a module variable
-_create_authoritative_receipt = _make_receipt_factory()
-
-
-class DevelopmentAuditReceipt:
-    """Trusted receipt of a development audit execution.
-    
-    This represents that an audit was actually executed by the authority
-    and produced a result from verified evidence.
-    
-    A DevelopmentAuditResult can be constructed by anyone, but a
-    DevelopmentAuditReceipt can only be produced by the audit engine.
-    
-    P0-B FIX: The receipt requires a closure-captured secret token that
-    cannot be imported or instantiated from outside this module.
-    Only _create_authoritative_receipt can create authoritative receipts.
-    """
-    
-    def __init__(
-        self,
-        _secret: object,  # Type is object to hide the actual secret type
-        receipt_id: str,
-        audit_id: str,
-        execution_evidence_id: str,
-        verdict: DevelopmentAuditVerdict,
-        audited_at_utc: datetime,
-        auditor_id: str | None = None,
-        git_verification: GitVerificationResult | None = None,
-        metadata: dict[str, Any] | None = None,
-    ):
-        """Private constructor requiring closure-captured secret token."""
-        # P0-B FIX: Verify the secret is the exact instance captured in the factory closure
-        # We check identity (is) not equality (==) to prevent forgery
-        if _secret is not _create_authoritative_receipt._secret:
-            raise TypeError(
-                "DevelopmentAuditReceipt cannot be constructed directly. "
-                "Use DevelopmentAuditEngine.audit_execution() to produce trusted receipts."
-            )
-        self._receipt_id = receipt_id
-        self._audit_id = audit_id
-        self._execution_evidence_id = execution_evidence_id
-        self._verdict = verdict
-        self._audited_at_utc = audited_at_utc
-        self._auditor_id = auditor_id
-        self._git_verification = git_verification
-        self._metadata = metadata or {}
-    
-    @property
-    def receipt_id(self) -> str:
-        return self._receipt_id
-    
-    @property
-    def audit_id(self) -> str:
-        return self._audit_id
-    
-    @property
-    def execution_evidence_id(self) -> str:
-        return self._execution_evidence_id
-    
-    @property
-    def verdict(self) -> DevelopmentAuditVerdict:
-        return self._verdict
-    
-    @property
-    def audited_at_utc(self) -> datetime:
-        return self._audited_at_utc
-    
-    @property
-    def auditor_id(self) -> str | None:
-        return self._auditor_id
-    
-    @property
-    def git_verification(self) -> GitVerificationResult | None:
-        return self._git_verification
-    
-    @property
-    def metadata(self) -> dict[str, Any]:
-        return self._metadata.copy()
-    
-    def to_audit_result(self) -> DevelopmentAuditResult:
-        """Convert receipt to a persistent audit result record."""
-        return DevelopmentAuditResult(
-            audit_id=self._audit_id,
-            execution_evidence_id=self._execution_evidence_id,
-            verdict=self._verdict,
-            auditor_id=self._auditor_id,
-            audited_at_utc=self._audited_at_utc,
-            evidence_refs=[
-                EvidenceRef(
-                    kind=EvidenceKind.DEVELOPMENT_EXECUTION,
-                    label="Development Execution Evidence",
-                    ref_id=self._execution_evidence_id,
-                )
-            ],
-            metadata=self._metadata.copy(),
-        )
+# P0-B V2 FIX: Removed DevelopmentAuditReceipt class
+# Authority is now based on verifiable evidence chain, not a forgeable Python object.
+# Only DevelopmentAuditEngine.audit_execution() can produce results with verified Git evidence.
+# Consumers verify authority by re-validating against Git evidence, not by object type.
 
 
 class DevelopmentAuditEngine:
@@ -178,12 +41,16 @@ class DevelopmentAuditEngine:
     This engine derives audit verdicts from verified evidence.
     It does not accept caller-declared verdicts as authority.
     
+    P0-B V2: Authority is based on verifiable evidence chain, not a forgeable object.
+    Only this engine can produce results with verified Git evidence.
+    Consumers verify authority by re-validating against Git evidence.
+    
     The flow is:
     1. Receive execution evidence
     2. Verify Git state (via GitEvidenceVerifier)
     3. Evaluate audit criteria
     4. Derive verdict
-    5. Produce trusted receipt
+    5. Return DevelopmentAuditResult with verified evidence metadata
     """
     
     def __init__(self, repository_path: str | None = None, expected_repository_identity: str | None = None):
@@ -194,19 +61,19 @@ class DevelopmentAuditEngine:
         self,
         evidence: DevelopmentExecutionEvidence,
         auditor_id: str | None = None,
-    ) -> DevelopmentAuditReceipt:
+    ) -> DevelopmentAuditResult:
         """Audit development execution evidence.
         
-        This is the ONLY way to produce a trusted audit receipt.
-        Caller-constructed DevelopmentAuditResult objects are NOT
-        considered authoritative.
+        This is the ONLY way to produce an audit result with verified Git evidence.
+        Caller-constructed DevelopmentAuditResult objects are NOT considered authoritative
+        unless they can be re-verified against Git evidence.
         
         Args:
             evidence: Development execution evidence to audit
             auditor_id: Optional auditor identifier
         
         Returns:
-            DevelopmentAuditReceipt representing the trusted audit result
+            DevelopmentAuditResult with verified Git evidence metadata
         
         Raises:
             ValueError: If repository_path is not provided
@@ -219,7 +86,6 @@ class DevelopmentAuditEngine:
                 "Cannot produce trusted verdict without Git verification."
             )
         
-        receipt_id = str(uuid4())
         audit_id = str(uuid4())
         audited_at = datetime.now(timezone.utc)
         
@@ -246,24 +112,106 @@ class DevelopmentAuditEngine:
         findings = self._generate_findings(evidence, git_verification, criteria)
         verdict = self._derive_verdict(criteria, git_verification)
         
-        # P0-B FIX: Build receipt using the authoritative factory function
-        receipt = _create_authoritative_receipt(
-            receipt_id=receipt_id,
+        # P0-B V2 FIX: Return DevelopmentAuditResult with verified evidence metadata
+        # Authority is in the verifiable evidence chain, not in object type
+        result = DevelopmentAuditResult(
             audit_id=audit_id,
             execution_evidence_id=evidence.evidence_id,
             verdict=verdict,
-            audited_at_utc=audited_at,
             auditor_id=auditor_id,
-            git_verification=git_verification,
+            audited_at_utc=audited_at,
+            evidence_refs=[
+                EvidenceRef(
+                    kind=EvidenceKind.DEVELOPMENT_EXECUTION,
+                    label="Development Execution Evidence",
+                    ref_id=evidence.evidence_id,
+                )
+            ],
+            criteria=criteria,
+            findings=findings,
             metadata={
                 "repository": evidence.repository,
                 "base_commit": evidence.base_commit,
                 "result_commit": evidence.result_commit,
                 "execution_status": evidence.execution_status.value,
+                "git_verification": {
+                    "classification": git_verification.classification.value,
+                    "actual_base_commit": git_verification.actual_base_commit,
+                    "actual_result_commit": git_verification.actual_result_commit,
+                    "repository_valid": git_verification.repository_valid,
+                    "repository_identity": git_verification.repository_identity,
+                },
             },
         )
         
-        return receipt
+        return result
+    
+    def verify_result(
+        self,
+        result: DevelopmentAuditResult,
+        repository_path: str | None = None,
+        expected_repository_identity: str | None = None,
+    ) -> bool:
+        """Re-verify an audit result against Git evidence.
+        
+        This method allows consumers to verify that a DevelopmentAuditResult
+        was produced from legitimate Git evidence. This is the authority check:
+        a result is authoritative only if its Git evidence can be re-verified.
+        
+        Args:
+            result: DevelopmentAuditResult to verify
+            repository_path: Path to Git repository (uses engine path if None)
+            expected_repository_identity: Expected repository identity
+        
+        Returns:
+            True if result can be re-verified against Git evidence, False otherwise
+        """
+        repo_path = repository_path or self.repository_path
+        if not repo_path:
+            return False
+        
+        # Extract Git evidence from result metadata
+        metadata = result.metadata or {}
+        base_commit = metadata.get("base_commit")
+        result_commit = metadata.get("result_commit")
+        git_meta = metadata.get("git_verification", {})
+        
+        if not base_commit or not result_commit:
+            return False
+        
+        # Re-verify Git evidence
+        verifier = GitEvidenceVerifier(repo_path, expected_repository_identity or self.expected_repository_identity)
+        try:
+            git_verification = verifier.verify_execution(
+                base_commit=base_commit,
+                result_commit=result_commit,
+                claimed_changed_files=None,  # Re-verify without claimed files
+            )
+            
+            # Check if Git state is valid
+            if git_verification.classification in [
+                GitDiffClassification.INVALID_GIT_STATE,
+                GitDiffClassification.UNVERIFIABLE_GIT_STATE,
+            ]:
+                return False
+            
+            # Check if classification matches
+            expected_classification = git_meta.get("classification")
+            if expected_classification and git_verification.classification.value != expected_classification:
+                return False
+            
+            # Check if repository is valid
+            if git_meta.get("repository_valid") and not git_verification.repository_valid:
+                return False
+            
+            # Check if repository identity matches
+            expected_identity = git_meta.get("repository_identity")
+            if expected_identity and git_verification.repository_identity != expected_identity:
+                return False
+            
+            return True
+        except Exception:
+            return False
     
     def _evaluate_criteria(
         self,

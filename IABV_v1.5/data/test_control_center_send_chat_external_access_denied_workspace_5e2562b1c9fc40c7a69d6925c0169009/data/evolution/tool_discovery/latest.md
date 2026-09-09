@@ -1,0 +1,7 @@
+# IABV v1.5 - Tool Discovery
+
+Generado: 2026-09-08T18:58:38.753645+00:00
+Resumen: Detecte 1 senal(es) de descubrimiento: 1 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).
+
+## Senales
+- chatgpt_web_assisted: ChatGPT web asistido | estado=detected | confianza=0.89 | ChatGPT web asistido aparece disponible y compatible con chatgpt_web_assisted. Conviene validarlo frente a fallback.

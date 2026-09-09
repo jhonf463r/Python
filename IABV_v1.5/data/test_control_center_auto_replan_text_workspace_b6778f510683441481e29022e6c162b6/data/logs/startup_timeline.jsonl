@@ -1,0 +1,84 @@
+{"phase": "bootstrap_init_start", "t_ms_from_start": 28755.4, "rss_mb": 145.7, "extra": {"rss_mb": 145.69140625}}
+{"phase": "wire_services_start", "t_ms_from_start": 28901.2, "rss_mb": 157.5, "extra": {"rss_mb": 157.48046875}}
+{"phase": "phase_tools_adapters_done", "t_ms_from_start": 29283.2, "rss_mb": 142.2, "extra": {"rss_mb": 142.15234375}}
+{"phase": "phase_oses_done", "t_ms_from_start": 35761.1, "rss_mb": 142.8, "extra": {"rss_mb": 142.83203125}}
+{"phase": "wire_services_done", "t_ms_from_start": 35981.8, "rss_mb": 144.5, "extra": {"tool_availability_deferred": true, "scans_deferred": false, "rss_mb": 144.5}}
+{"phase": "bootstrap_init_done", "t_ms_from_start": 35983.1, "rss_mb": 144.5, "extra": {"services_deferred": false, "tool_availability_deferred": true, "rss_mb": 144.5}}
+{"phase": "populate_ui_vm_navigation", "t_ms_from_start": 35983.5, "rss_mb": 144.5}
+{"phase": "populate_ui_vm_dashboard", "t_ms_from_start": 36375.9, "rss_mb": 144.7}
+{"phase": "populate_ui_vm_mcp_side_effects", "t_ms_from_start": 36376.5, "rss_mb": 144.7}
+{"phase": "populate_ui_vm_control_center", "t_ms_from_start": 36377.3, "rss_mb": 144.7}
+{"phase": "startup_chat_bridge_priority_granted", "t_ms_from_start": 36377.6, "rss_mb": 144.7}
+{"phase": "populate_ui_vm_capture_studio", "t_ms_from_start": 36388.9, "rss_mb": 145.3}
+{"phase": "populate_ui_vm_evolution_center", "t_ms_from_start": 36394.3, "rss_mb": 145.5}
+{"phase": "dashboard_vm_refresh_start", "t_ms_from_start": 38575.9, "rss_mb": 147.7}
+{"phase": "dashboard_vm_refresh_query_episodes_start", "t_ms_from_start": 38576.7, "rss_mb": 147.7}
+{"phase": "dashboard_vm_refresh_query_episodes_done", "t_ms_from_start": 38578.4, "rss_mb": 147.7}
+{"phase": "dashboard_vm_refresh_query_knowledge_done", "t_ms_from_start": 38582.3, "rss_mb": 147.7}
+{"phase": "dashboard_vm_refresh_query_runs_done", "t_ms_from_start": 38586.1, "rss_mb": 147.9}
+{"phase": "dashboard_vm_refresh_query_index_done", "t_ms_from_start": 38587.4, "rss_mb": 148.0}
+{"phase": "dashboard_vm_refresh_done", "t_ms_from_start": 38588.1, "rss_mb": 148.1}
+{"phase": "populate_ui_vm_remaining", "t_ms_from_start": 38593.8, "rss_mb": 149.1}
+{"phase": "bootstrap_init_start", "t_ms_from_start": 38613.6, "rss_mb": 151.0, "extra": {"rss_mb": 151.0078125}}
+{"phase": "wire_services_start", "t_ms_from_start": 38747.5, "rss_mb": 161.0, "extra": {"rss_mb": 161.0390625}}
+{"phase": "phase_tools_adapters_done", "t_ms_from_start": 39026.1, "rss_mb": 149.5, "extra": {"rss_mb": 149.53125}}
+{"phase": "phase_oses_done", "t_ms_from_start": 45806.1, "rss_mb": 149.1, "extra": {"rss_mb": 149.09765625}}
+{"phase": "wire_services_done", "t_ms_from_start": 46082.7, "rss_mb": 151.0, "extra": {"tool_availability_deferred": true, "scans_deferred": false, "rss_mb": 150.95703125}}
+{"phase": "bootstrap_init_done", "t_ms_from_start": 46083.6, "rss_mb": 151.0, "extra": {"services_deferred": false, "tool_availability_deferred": true, "rss_mb": 150.95703125}}
+{"phase": "populate_ui_vm_navigation", "t_ms_from_start": 46083.9, "rss_mb": 151.0}
+{"phase": "populate_ui_vm_dashboard", "t_ms_from_start": 46452.2, "rss_mb": 150.4}
+{"phase": "populate_ui_vm_mcp_side_effects", "t_ms_from_start": 46452.8, "rss_mb": 150.4}
+{"phase": "populate_ui_vm_control_center", "t_ms_from_start": 46453.6, "rss_mb": 150.4}
+{"phase": "startup_chat_bridge_priority_granted", "t_ms_from_start": 46454.0, "rss_mb": 150.4}
+{"phase": "populate_ui_vm_capture_studio", "t_ms_from_start": 46467.2, "rss_mb": 152.2}
+{"phase": "populate_ui_vm_evolution_center", "t_ms_from_start": 46473.9, "rss_mb": 152.8}
+{"phase": "dashboard_vm_refresh_start", "t_ms_from_start": 48950.8, "rss_mb": 149.9}
+{"phase": "dashboard_vm_refresh_query_episodes_start", "t_ms_from_start": 48951.4, "rss_mb": 149.9}
+{"phase": "dashboard_vm_refresh_query_episodes_done", "t_ms_from_start": 48952.9, "rss_mb": 149.9}
+{"phase": "dashboard_vm_refresh_query_knowledge_done", "t_ms_from_start": 48955.6, "rss_mb": 149.9}
+{"phase": "dashboard_vm_refresh_query_runs_done", "t_ms_from_start": 48957.0, "rss_mb": 149.9}
+{"phase": "dashboard_vm_refresh_query_index_done", "t_ms_from_start": 48957.3, "rss_mb": 149.9}
+{"phase": "dashboard_vm_refresh_done", "t_ms_from_start": 48957.8, "rss_mb": 149.9}
+{"phase": "populate_ui_vm_remaining", "t_ms_from_start": 48962.7, "rss_mb": 150.7}
+{"phase": "bootstrap_init_start", "t_ms_from_start": 48986.8, "rss_mb": 152.4, "extra": {"rss_mb": 152.38671875}}
+{"phase": "wire_services_start", "t_ms_from_start": 49112.5, "rss_mb": 163.6, "extra": {"rss_mb": 163.55078125}}
+{"phase": "phase_tools_adapters_done", "t_ms_from_start": 49402.9, "rss_mb": 150.9, "extra": {"rss_mb": 150.8984375}}
+{"phase": "phase_oses_done", "t_ms_from_start": 55836.9, "rss_mb": 152.2, "extra": {"rss_mb": 152.203125}}
+{"phase": "wire_services_done", "t_ms_from_start": 56069.0, "rss_mb": 153.9, "extra": {"tool_availability_deferred": true, "scans_deferred": false, "rss_mb": 153.94921875}}
+{"phase": "bootstrap_init_done", "t_ms_from_start": 56069.9, "rss_mb": 153.9, "extra": {"services_deferred": false, "tool_availability_deferred": true, "rss_mb": 153.94921875}}
+{"phase": "populate_ui_vm_navigation", "t_ms_from_start": 56070.2, "rss_mb": 153.9}
+{"phase": "populate_ui_vm_dashboard", "t_ms_from_start": 56409.2, "rss_mb": 154.1}
+{"phase": "populate_ui_vm_mcp_side_effects", "t_ms_from_start": 56409.9, "rss_mb": 154.1}
+{"phase": "populate_ui_vm_control_center", "t_ms_from_start": 56410.8, "rss_mb": 154.1}
+{"phase": "startup_chat_bridge_priority_granted", "t_ms_from_start": 56411.2, "rss_mb": 154.1}
+{"phase": "populate_ui_vm_capture_studio", "t_ms_from_start": 56423.2, "rss_mb": 155.8}
+{"phase": "populate_ui_vm_evolution_center", "t_ms_from_start": 56429.6, "rss_mb": 156.5}
+{"phase": "dashboard_vm_refresh_start", "t_ms_from_start": 58589.2, "rss_mb": 153.3}
+{"phase": "dashboard_vm_refresh_query_episodes_start", "t_ms_from_start": 58589.8, "rss_mb": 153.3}
+{"phase": "dashboard_vm_refresh_query_episodes_done", "t_ms_from_start": 58591.2, "rss_mb": 153.3}
+{"phase": "dashboard_vm_refresh_query_knowledge_done", "t_ms_from_start": 58592.9, "rss_mb": 153.3}
+{"phase": "dashboard_vm_refresh_query_runs_done", "t_ms_from_start": 58594.4, "rss_mb": 153.6}
+{"phase": "dashboard_vm_refresh_query_index_done", "t_ms_from_start": 58594.9, "rss_mb": 153.6}
+{"phase": "dashboard_vm_refresh_done", "t_ms_from_start": 58595.3, "rss_mb": 153.8}
+{"phase": "populate_ui_vm_remaining", "t_ms_from_start": 58600.0, "rss_mb": 154.9}
+{"phase": "bootstrap_init_start", "t_ms_from_start": 58617.0, "rss_mb": 157.0, "extra": {"rss_mb": 157.0390625}}
+{"phase": "wire_services_start", "t_ms_from_start": 58759.0, "rss_mb": 167.5, "extra": {"rss_mb": 167.50390625}}
+{"phase": "phase_tools_adapters_done", "t_ms_from_start": 59032.7, "rss_mb": 153.7, "extra": {"rss_mb": 153.703125}}
+{"phase": "phase_oses_done", "t_ms_from_start": 65524.2, "rss_mb": 153.3, "extra": {"rss_mb": 153.30859375}}
+{"phase": "wire_services_done", "t_ms_from_start": 65841.2, "rss_mb": 155.0, "extra": {"tool_availability_deferred": true, "scans_deferred": false, "rss_mb": 154.95703125}}
+{"phase": "bootstrap_init_done", "t_ms_from_start": 65842.4, "rss_mb": 155.0, "extra": {"services_deferred": false, "tool_availability_deferred": true, "rss_mb": 154.95703125}}
+{"phase": "populate_ui_vm_navigation", "t_ms_from_start": 65842.8, "rss_mb": 155.0}
+{"phase": "populate_ui_vm_dashboard", "t_ms_from_start": 66163.4, "rss_mb": 156.3}
+{"phase": "populate_ui_vm_mcp_side_effects", "t_ms_from_start": 66163.9, "rss_mb": 156.3}
+{"phase": "populate_ui_vm_control_center", "t_ms_from_start": 66164.6, "rss_mb": 156.3}
+{"phase": "startup_chat_bridge_priority_granted", "t_ms_from_start": 66164.9, "rss_mb": 156.3}
+{"phase": "populate_ui_vm_capture_studio", "t_ms_from_start": 66176.7, "rss_mb": 157.1}
+{"phase": "populate_ui_vm_evolution_center", "t_ms_from_start": 66182.5, "rss_mb": 157.7}
+{"phase": "dashboard_vm_refresh_start", "t_ms_from_start": 68408.8, "rss_mb": 156.1}
+{"phase": "dashboard_vm_refresh_query_episodes_start", "t_ms_from_start": 68409.4, "rss_mb": 156.1}
+{"phase": "dashboard_vm_refresh_query_episodes_done", "t_ms_from_start": 68410.6, "rss_mb": 156.1}
+{"phase": "dashboard_vm_refresh_query_knowledge_done", "t_ms_from_start": 68411.9, "rss_mb": 156.1}
+{"phase": "dashboard_vm_refresh_query_runs_done", "t_ms_from_start": 68413.6, "rss_mb": 156.1}
+{"phase": "dashboard_vm_refresh_query_index_done", "t_ms_from_start": 68414.4, "rss_mb": 156.1}
+{"phase": "dashboard_vm_refresh_done", "t_ms_from_start": 68414.7, "rss_mb": 156.1}
+{"phase": "populate_ui_vm_remaining", "t_ms_from_start": 68418.8, "rss_mb": 156.1}

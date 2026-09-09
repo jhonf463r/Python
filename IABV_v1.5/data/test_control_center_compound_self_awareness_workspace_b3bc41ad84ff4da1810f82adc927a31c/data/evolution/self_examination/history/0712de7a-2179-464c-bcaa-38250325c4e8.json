@@ -1,0 +1,621 @@
+{
+  "review_id": "0712de7a-2179-464c-bcaa-38250325c4e8",
+  "created_at_utc": "2026-09-08T18:58:35.332117Z",
+  "updated_at_utc": "2026-09-08T18:58:35.332117Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion needs_attention: 17 hallazgos activos. Lo mas fuerte ahora es 11 consultas externas diferidas por presion de recursos. Mejoras validadas: 0 | issues recurrentes: 5.",
+  "status": "needs_attention",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-09-08T18:58:35.332117+00:00\nResumen: Autoexaminacion needs_attention: 17 hallazgos activos. Lo mas fuerte ahora es 11 consultas externas diferidas por presion de recursos. Mejoras validadas: 0 | issues recurrentes: 5.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- 11 consultas externas diferidas por presion de recursos: Se han diferido 11 consultas externas por presion de recursos en esta sesion. Esto indica que el entorno necesita liberacion de recursos o que las consultas deben programarse en momentos de menor carga. | recomendacion: sin ajuste concreto | confianza 0.00\n- Blocked interaction episodes: 1 of 2 recent: 1 of the last 2 interaction episodes were blocked (terminal, not resolved). Episodes: [chat-dfafc06d1578] \"Necesito una consulta externa con ChatGP\" outcome=blocked provider=ChatGPT web asistido | recomendacion: Review blocked interactions for access, quota or preflight issues. | confianza 0.90\n- RAM bajo presion: 2.0GB libre: 2.0GB de RAM disponible. Solo modelos pequenos caben. | recomendacion: Considerar liberar RAM si se necesita un modelo mas grande | confianza 0.90\n- 4 cloud providers not configured: Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up. | recomendacion: Run auto_provision_missing_secrets() | confianza 0.90\n- 1 capacidades Windows nativas faltantes: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows. | recomendacion: Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario. | confianza 0.90\n- excessive_threads: 136 hilos activos en el proceso. Python GIL causa contention entre hilos — cada hilo adicional degrada latencia de respuesta. | recomendacion: Consolidar hilos de polling: WorldModelService, EnvironmentSelfAwareness y HealthRouter podrian compartir un unico hilo con diferentes intervalos. Usar asyncio en vez de threads donde sea posible. | confianza 0.85\n\n## Ajustes recomendados\n- Blocked interaction episodes: 1 of 2 recent: Review blocked interactions for access, quota or preflight issues. | fuente n/d\n- RAM bajo presion: 2.0GB libre: Considerar liberar RAM si se necesita un modelo mas grande | fuente n/d\n- 4 cloud providers not configured: Run auto_provision_missing_secrets() | fuente n/d\n- 1 capacidades Windows nativas faltantes: Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario. | fuente iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities, data/evolution/platform_pending/\n- excessive_threads: Consolidar hilos de polling: WorldModelService, EnvironmentSelfAwareness y HealthRouter podrian compartir un unico hilo con diferentes intervalos. Usar asyncio en vez de threads donde sea posible. | fuente runtime_performance_monitor\n- Gemini Web necesita re-login: Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente. | fuente check_web_session_health, AccountResourceScanner\n\n## Mejoras validadas\n- Sin mejoras validadas fuertes todavia.\n\n## Retroalimentacion de ajustes\n- RAM bajo presion: 2.1GB libre: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- 4 cloud providers not configured: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- 1 capacidades Windows nativas faltantes: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- excessive_threads: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n\nUNRESOLVED: UNRESOLVED:codex_thread_tracking, autonomy_score, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+  "findings": [
+    {
+      "finding_id": "4036e957-69df-4332-978d-b4f13eb6d6f1",
+      "category": "repeated_resource_pressure_blocks",
+      "title": "11 consultas externas diferidas por presion de recursos",
+      "summary": "Se han diferido 11 consultas externas por presion de recursos en esta sesion. Esto indica que el entorno necesita liberacion de recursos o que las consultas deben programarse en momentos de menor carga.",
+      "severity": "high",
+      "confidence": 0.0,
+      "recommendation": "",
+      "evidence_refs": [],
+      "source_refs": [
+        "RuntimeAuditTracer.external_consultation_quiescence"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "finding_id": "72119e27-71ef-45d6-b7c4-a612c04c6a28",
+      "category": "interaction_episode_blocked",
+      "title": "Blocked interaction episodes: 1 of 2 recent",
+      "summary": "1 of the last 2 interaction episodes were blocked (terminal, not resolved). Episodes: [chat-dfafc06d1578] \"Necesito una consulta externa con ChatGP\" outcome=blocked provider=ChatGPT web asistido",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Review blocked interactions for access, quota or preflight issues.",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "blocked_count": 1,
+        "total_episodes": 2,
+        "blocked_episodes": [
+          {
+            "interaction_id": "chat-dfafc06d1578",
+            "message_preview": "Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa",
+            "outcome": "blocked",
+            "provider": "ChatGPT web asistido",
+            "total_duration_ms": 82058.1,
+            "phases": {
+              "start": "2026-09-08T18:57:13.294+00:00",
+              "dispatch_pending": "2026-09-08T18:57:17.566+00:00",
+              "final_resolution": "2026-09-08T18:58:35.352+00:00"
+            },
+            "stalls_during": [],
+            "stall_count": 0,
+            "window_inactive_intervals": [],
+            "initial_window_active": true,
+            "initial_window_visible": true,
+            "had_early_technical_response": false,
+            "window_went_inactive": false,
+            "is_final": true
+          }
+        ],
+        "source": "runtime_audit"
+      }
+    },
+    {
+      "finding_id": "76e7452b-d759-4204-831f-cc3132a50559",
+      "category": "resource_metacognition",
+      "title": "RAM bajo presion: 2.0GB libre",
+      "summary": "2.0GB de RAM disponible. Solo modelos pequenos caben.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Considerar liberar RAM si se necesita un modelo mas grande",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "ram_free_gb": 2.0416793823242188,
+        "ram_total_gb": 15.710453033447266,
+        "actionable": false
+      }
+    },
+    {
+      "finding_id": "7be9c1c8-9bd3-4fe8-b525-44d24115c652",
+      "category": "metacognition_evolution",
+      "title": "4 cloud providers not configured",
+      "summary": "Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Run auto_provision_missing_secrets()",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "missing_providers": [
+          "openai",
+          "gemini",
+          "openrouter",
+          "together"
+        ],
+        "actionable": true
+      }
+    },
+    {
+      "finding_id": "fef51ed7-bb8b-4261-b83d-a297afb28c5f",
+      "category": "windows_integration_gaps",
+      "title": "1 capacidades Windows nativas faltantes",
+      "summary": "El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario.",
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "phase": "windows_integration",
+        "missing_capability_ids": [
+          "platform.notifications"
+        ],
+        "missing_count": 1,
+        "total_platform_caps": 8,
+        "coverage_ratio": 0.88
+      }
+    },
+    {
+      "finding_id": "a3b0051f-7ac1-4f23-a194-bae832fb57c5",
+      "category": "runtime_performance",
+      "title": "excessive_threads",
+      "summary": "136 hilos activos en el proceso. Python GIL causa contention entre hilos — cada hilo adicional degrada latencia de respuesta.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "recommendation": "Consolidar hilos de polling: WorldModelService, EnvironmentSelfAwareness y HealthRouter podrian compartir un unico hilo con diferentes intervalos. Usar asyncio en vez de threads donde sea posible.",
+      "evidence_refs": [
+        "total_threads:136",
+        "polling_threads:1"
+      ],
+      "source_refs": [
+        "runtime_performance_monitor"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "finding_id": "e9e86002-c423-4da3-ad21-5501cfbdd442",
+      "category": "web_session_expired",
+      "title": "Gemini Web necesita re-login",
+      "summary": "La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "recommendation": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider"
+      }
+    },
+    {
+      "finding_id": "4ecef79f-dc87-47b0-9251-dd50f6f38376",
+      "category": "human_assist_bridge",
+      "title": "External incident without actionable handoff (1x)",
+      "summary": "1 external consultation(s) were blocked but no governed launch or structured handoff followed. The user was left without a concrete next action.",
+      "severity": "medium",
+      "confidence": 0.8,
+      "recommendation": "After a security_verification block, always emit the four-line human-assist message and offer a governed browser launch.",
+      "evidence_refs": [
+        "6e37304e49a5"
+      ],
+      "source_refs": [
+        "runtime_audit"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "pattern": "external_incident_without_actionable_handoff",
+        "block_count": 1,
+        "handoff_signals": 0
+      }
+    }
+  ],
+  "recurring_issues": [
+    {
+      "title": "11 consultas externas diferidas por presion de recursos",
+      "category": "repeated_resource_pressure_blocks",
+      "summary": "Se han diferido 11 consultas externas por presion de recursos en esta sesion. Esto indica que el entorno necesita liberacion de recursos o que las consultas deben programarse en momentos de menor carga.",
+      "severity": "high",
+      "confidence": 0.0,
+      "evidence_refs": [],
+      "source_refs": [
+        "RuntimeAuditTracer.external_consultation_quiescence"
+      ]
+    },
+    {
+      "title": "Blocked interaction episodes: 1 of 2 recent",
+      "category": "interaction_episode_blocked",
+      "summary": "1 of the last 2 interaction episodes were blocked (terminal, not resolved). Episodes: [chat-dfafc06d1578] \"Necesito una consulta externa con ChatGP\" outcome=blocked provider=ChatGPT web asistido",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "RAM bajo presion: 2.0GB libre",
+      "category": "resource_metacognition",
+      "summary": "2.0GB de RAM disponible. Solo modelos pequenos caben.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "4 cloud providers not configured",
+      "category": "metacognition_evolution",
+      "summary": "Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "1 capacidades Windows nativas faltantes",
+      "category": "windows_integration_gaps",
+      "summary": "El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ]
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "Blocked interaction episodes: 1 of 2 recent",
+      "recommended_change": "Review blocked interactions for access, quota or preflight issues.",
+      "category": "interaction_episode_blocked",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "blocked_count": 1,
+        "total_episodes": 2,
+        "blocked_episodes": [
+          {
+            "interaction_id": "chat-dfafc06d1578",
+            "message_preview": "Necesito una consulta externa con ChatGPT para revisar por que Playwright no logra abrir bien desde el programa",
+            "outcome": "blocked",
+            "provider": "ChatGPT web asistido",
+            "total_duration_ms": 82058.1,
+            "phases": {
+              "start": "2026-09-08T18:57:13.294+00:00",
+              "dispatch_pending": "2026-09-08T18:57:17.566+00:00",
+              "final_resolution": "2026-09-08T18:58:35.352+00:00"
+            },
+            "stalls_during": [],
+            "stall_count": 0,
+            "window_inactive_intervals": [],
+            "initial_window_active": true,
+            "initial_window_visible": true,
+            "had_early_technical_response": false,
+            "window_went_inactive": false,
+            "is_final": true
+          }
+        ],
+        "source": "runtime_audit",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Review blocked interactions for access, quota or preflight issues."
+        ]
+      },
+      "feedback_key": "interaction_episode_blocked:blocked interaction episodes: 1 of 2 recent"
+    },
+    {
+      "title": "RAM bajo presion: 2.0GB libre",
+      "recommended_change": "Considerar liberar RAM si se necesita un modelo mas grande",
+      "category": "resource_metacognition",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "ram_free_gb": 2.0416793823242188,
+        "ram_total_gb": 15.710453033447266,
+        "actionable": false,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Considerar liberar RAM si se necesita un modelo mas grande"
+        ]
+      },
+      "feedback_key": "resource_metacognition:ram bajo presion: 2.0gb libre"
+    },
+    {
+      "title": "4 cloud providers not configured",
+      "recommended_change": "Run auto_provision_missing_secrets()",
+      "category": "metacognition_evolution",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "missing_providers": [
+          "openai",
+          "gemini",
+          "openrouter",
+          "together"
+        ],
+        "actionable": true,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Run auto_provision_missing_secrets()"
+        ]
+      },
+      "feedback_key": "metacognition_evolution:4 cloud providers not configured",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "1 capacidades Windows nativas faltantes",
+      "recommended_change": "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario.",
+      "category": "windows_integration_gaps",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ],
+      "metadata": {
+        "phase": "windows_integration",
+        "missing_capability_ids": [
+          "platform.notifications"
+        ],
+        "missing_count": 1,
+        "total_platform_caps": 8,
+        "coverage_ratio": 0.88,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario."
+        ]
+      },
+      "feedback_key": "windows_integration_gaps:1 capacidades windows nativas faltantes",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "excessive_threads",
+      "recommended_change": "Consolidar hilos de polling: WorldModelService, EnvironmentSelfAwareness y HealthRouter podrian compartir un unico hilo con diferentes intervalos. Usar asyncio en vez de threads donde sea posible.",
+      "category": "runtime_performance",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [
+        "total_threads:136",
+        "polling_threads:1"
+      ],
+      "source_refs": [
+        "runtime_performance_monitor"
+      ],
+      "metadata": {
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Consolidar hilos de polling: WorldModelService, EnvironmentSelfAwareness y HealthRouter podrian compartir un unico hilo con diferentes intervalos. Usar asyncio en vez de threads donde sea posible."
+        ]
+      },
+      "feedback_key": "runtime_performance:excessive_threads",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Gemini Web necesita re-login",
+      "recommended_change": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "category": "web_session_expired",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente."
+        ]
+      },
+      "feedback_key": "web_session_expired:gemini web necesita re-login",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    }
+  ],
+  "validated_improvements": [],
+  "unresolved_risks": [
+    "UNRESOLVED:codex_thread_tracking",
+    "autonomy_score",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "package_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_compound_self_awareness_workspace_b3bc41ad84ff4da1810f82adc927a31c\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_compound_self_awareness_workspace_b3bc41ad84ff4da1810f82adc927a31c\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [
+      {
+        "title": "RAM bajo presion: 2.1GB libre",
+        "category": "resource_metacognition",
+        "feedback_key": "resource_metacognition:ram bajo presion: 2.1gb libre",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:58:38.296681+00:00"
+      },
+      {
+        "title": "4 cloud providers not configured",
+        "category": "metacognition_evolution",
+        "feedback_key": "metacognition_evolution:4 cloud providers not configured",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:58:38.296698+00:00"
+      },
+      {
+        "title": "1 capacidades Windows nativas faltantes",
+        "category": "windows_integration_gaps",
+        "feedback_key": "windows_integration_gaps:1 capacidades windows nativas faltantes",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+          "data/evolution/platform_pending/",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:58:38.296708+00:00"
+      },
+      {
+        "title": "excessive_threads",
+        "category": "runtime_performance",
+        "feedback_key": "runtime_performance:excessive_threads",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "total_threads:138",
+          "polling_threads:2"
+        ],
+        "source_refs": [
+          "runtime_performance_monitor",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:58:38.296717+00:00"
+      },
+      {
+        "title": "Gemini Web necesita re-login",
+        "category": "web_session_expired",
+        "feedback_key": "web_session_expired:gemini web necesita re-login",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "check_web_session_health",
+          "AccountResourceScanner",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:58:38.296725+00:00"
+      },
+      {
+        "title": "5 platforms need learning",
+        "category": "platform_learning",
+        "feedback_key": "platform_learning:5 platforms need learning",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:58:38.296733+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 6,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 6
+    },
+    "solution_proposals": [],
+    "adaptive_threshold_nc": 3,
+    "workspace_root": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_compound_self_awareness_workspace_b3bc41ad84ff4da1810f82adc927a31c",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ],
+    "embodiment_violations": [],
+    "pending_auto_probes": []
+  }
+}

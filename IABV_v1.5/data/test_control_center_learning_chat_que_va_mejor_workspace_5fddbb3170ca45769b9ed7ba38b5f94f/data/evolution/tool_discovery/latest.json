@@ -1,0 +1,21 @@
+{
+  "status_id": "8352cf1d-b958-4aca-82f9-debd0bc2cff7",
+  "created_at_utc": "2026-09-08T18:59:42.438982Z",
+  "updated_at_utc": "2026-09-08T18:59:42.438982Z",
+  "summary": "Detecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).",
+  "signals": [],
+  "unresolved_fields": [
+    "UNRESOLVED:tool_discovery_subjects",
+    "UNRESOLVED:tool_discovery_catalog"
+  ],
+  "package_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_learning_chat_que_va_mejor_workspace_5fddbb3170ca45769b9ed7ba38b5f94f\\data\\evolution\\tool_discovery\\latest.json",
+  "markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_learning_chat_que_va_mejor_workspace_5fddbb3170ca45769b9ed7ba38b5f94f\\data\\evolution\\tool_discovery\\latest.md",
+  "metadata": {
+    "subject_keys": [],
+    "active_signals": [],
+    "in_validation_signals": [],
+    "promoted_signals": [],
+    "discarded_signals": [],
+    "unresolved_signals": []
+  }
+}

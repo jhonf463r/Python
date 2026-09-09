@@ -1,0 +1,1552 @@
+{
+  "package_id": "1d6e053a-5e7c-4fce-94d7-ef1856ff0ea2",
+  "created_at_utc": "2026-09-08T18:45:26.408001Z",
+  "updated_at_utc": "2026-09-08T18:45:26.408001Z",
+  "package_version": "portable_context.v1",
+  "project_id": "IABV_v1.5",
+  "summary": "Objetivo actual: sin objetivo activo confirmado | mejor ruta conocida: sin preferencia de ruta consolidada | bloqueos activos: 0 | pendientes: 0 | ajustes sugeridos: 0 | unresolved: 5",
+  "sections": [
+    {
+      "section_id": "project_state",
+      "title": "Estado actual del proyecto",
+      "summary": "Sin objetivo activo confirmado | World model: conectado | Validacion: bootstrapping",
+      "items": [
+        {
+          "label": "Objetivo activo",
+          "value": "sin objetivo activo confirmado"
+        },
+        {
+          "label": "Proyecto activo",
+          "value": "sin proyecto activo confirmado"
+        },
+        {
+          "label": "Tarea activa",
+          "value": "sin tarea activa confirmada"
+        },
+        {
+          "label": "Pulso evolutivo",
+          "value": "Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local."
+        },
+        {
+          "label": "World model",
+          "value": "Observacion operativa actualizada."
+        },
+        {
+          "label": "Validacion autonoma",
+          "value": "Ciclo de validacion autonoma iniciando; a la espera del primer tick."
+        }
+      ],
+      "source_kind": "aggregated_live_state",
+      "source_refs": [
+        "objective_repository",
+        "evolution_review_service",
+        "world_model_service",
+        "autonomous_validation_cycle"
+      ],
+      "confidence": 0.7,
+      "last_updated": "2026-09-08T18:45:18.963661Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "architecture",
+      "title": "Arquitectura central vigente",
+      "summary": "La arquitectura sigue siendo una sola: perception -> orchestrator -> governance -> ejecucion -> aprendizaje.",
+      "items": [
+        {
+          "component": "PerceptionSnapshot",
+          "status": "wired",
+          "detail": "Entrada unificada antes de decidir."
+        },
+        {
+          "component": "TaskContextAssembler",
+          "status": "wired",
+          "detail": "Arma contexto, memoria, aprendizaje y world model."
+        },
+        {
+          "component": "AdaptiveTaskOrchestrator",
+          "status": "wired",
+          "detail": "Decide ruta, governance y resultado final."
+        },
+        {
+          "component": "EnvironmentSelfModel",
+          "status": "wired",
+          "detail": "Describe hardware, runtime y riesgo operativo."
+        },
+        {
+          "component": "WorldModelSnapshot",
+          "status": "wired",
+          "detail": "Panorama operativo vivo de herramientas, red y ventanas."
+        },
+        {
+          "component": "ExperimentLab",
+          "status": "wired",
+          "detail": "Memoria persistida de resultados y recomendaciones."
+        },
+        {
+          "component": "AdaptiveWeightLayer",
+          "status": "wired",
+          "detail": "Ajusta preferencia futura segun evidencia real."
+        },
+        {
+          "component": "ToolEvolutionMonitor",
+          "status": "wired",
+          "detail": "Monitorea desempeno por herramienta y problema, y propone cambios con evidencia."
+        },
+        {
+          "component": "AutonomousValidationCycle",
+          "status": "wired",
+          "detail": "Valida candidatos en sandbox antes de promoverlos."
+        },
+        {
+          "component": "PortableContextPackage",
+          "status": "wired",
+          "detail": "Exporta contexto comprimido reusable para nuevas sesiones."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "AGENTS.md",
+        "bootstrap wiring"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "user_metacognitive_intent",
+      "title": "Intencion persistente del usuario",
+      "summary": "Direccion estable: todas las IAs deben alimentar la metacognicion de IABV para mejorar coherencia, memoria operativa y autonomia gobernada.",
+      "items": [
+        {
+          "label": "centro_metacognitivo_local",
+          "detail": "IABV debe ser el centro local-first que observa laptop, nube, herramientas, sesiones y resultados sin crear otro cerebro."
+        },
+        {
+          "label": "ias_como_organos_externos",
+          "detail": "Devin, Codex, ChatGPT, Claude y otros asistentes deben aportar evidencia, trazas y rendimiento al ExperimentLab."
+        },
+        {
+          "label": "no_repetir_intencion",
+          "detail": "Las ideas recurrentes del usuario se condensan en contexto portable para que cada sesion arranque con la misma direccion."
+        },
+        {
+          "label": "evolucion_gobernada",
+          "detail": "Toda incubacion cognitiva, algoritmo mutable o ajuste de prompts pasa por sandbox, consenso y validacion antes de promoverse."
+        },
+        {
+          "label": "percepcion_segura_de_cuentas",
+          "detail": "El sistema puede detectar presencia/sesion y recomendar rutas, pero no extrae contrasenas, cookies ni tokens; pide permiso cuando corresponda."
+        }
+      ],
+      "source_kind": "user_intent",
+      "source_refs": [
+        "chat:metacognicion_extendida",
+        "AGENTS.md",
+        "portable_context"
+      ],
+      "confidence": 0.9,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "implemented_capabilities",
+      "title": "Piezas ya implementadas",
+      "summary": "Capas cerradas: P1 y nucleo de P2. P3 ya deja paquete portable util para sesiones nuevas. Validacion actual: Ciclo de validacion autonoma iniciando; a la espera del primer tick.",
+      "items": [
+        {
+          "capability": "P1 World Model operativo",
+          "status": "active",
+          "detail": "Observa estado de herramientas, red, foco, procesos y bloqueos antes de actuar."
+        },
+        {
+          "capability": "P2 Neuroplasticidad operativa",
+          "status": "partial",
+          "detail": "Aprende resultados reales y ajusta preferencia futura de rutas e IAs."
+        },
+        {
+          "capability": "Monitor de evolucion de herramientas",
+          "status": "active",
+          "detail": "Resume desempeno por problema, detecta degradacion y genera propuestas para sandbox."
+        },
+        {
+          "capability": "SandboxExperiment",
+          "status": "active",
+          "detail": "Valida candidatos antes de promoverlos como decision estable."
+        },
+        {
+          "capability": "P3 Contexto portable",
+          "status": "active",
+          "detail": "Condensa arquitectura, aprendizaje, bloqueos y pendientes en JSON + Markdown reutilizable."
+        },
+        {
+          "capability": "Preguntas humanas de aprendizaje",
+          "status": "active",
+          "detail": "Responde desde ExperimentLab y validacion sin disparar autonomia operativa."
+        },
+        {
+          "capability": "Preflight de asistentes externos",
+          "status": "active",
+          "detail": "Consulta world model y governance antes de abrir o pegar en otra herramienta."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "bootstrap wiring",
+        "world_model_service",
+        "experiment_lab_repository",
+        "autonomous_validation_cycle"
+      ],
+      "confidence": 0.95,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "learning",
+      "title": "Aprendizaje acumulado util",
+      "summary": "Aun no hay aprendizaje consolidado.",
+      "items": [],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer",
+        "TaskOutcomeRecorder"
+      ],
+      "confidence": 0.58,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:learning_summary"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "coordination_patterns",
+      "title": "Patrones de coordinacion IA-IA",
+      "summary": "No IA-IA coordination patterns detected yet.",
+      "items": [],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "ia_trace_summary"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:coordination_patterns"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "tool_discovery",
+      "title": "Descubrimiento de herramientas",
+      "summary": "Detecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).",
+      "items": [],
+      "source_kind": "tool_discovery",
+      "source_refs": [
+        "ToolRegistry",
+        "WorldModelSnapshot",
+        "ExperimentLab",
+        "AutonomousValidationCycleService"
+      ],
+      "confidence": 0.35,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:tool_discovery_subjects",
+        "UNRESOLVED:tool_discovery_catalog"
+      ],
+      "metadata": {
+        "active_signal_count": 0,
+        "in_validation_signal_count": 0,
+        "promoted_signal_count": 0,
+        "discarded_signal_count": 0
+      }
+    },
+    {
+      "section_id": "tool_evolution",
+      "title": "Evolucion de herramientas",
+      "summary": "Todavia no hay suficiente evidencia comparativa para un monitor de evolucion de herramientas.",
+      "items": [],
+      "source_kind": "experiment_lab_monitor",
+      "source_refs": [
+        "ExperimentLab",
+        "AdaptiveWeightLayer",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 0.35,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:tool_evolution_subjects",
+        "UNRESOLVED:tool_evolution_performance"
+      ],
+      "metadata": {
+        "degraded_subjects": [],
+        "proposal_count": 0,
+        "active_proposal_count": 0,
+        "decided_proposal_count": 0,
+        "winning_by_problem": {},
+        "in_validation": [],
+        "discarded_proposals": [],
+        "recent_decisions": []
+      }
+    },
+    {
+      "section_id": "tool_evolution_decisions",
+      "title": "Decisiones evolutivas",
+      "summary": "Sin decisiones evolutivas registradas todavia.",
+      "items": [],
+      "source_kind": "autonomous_validation_cycle",
+      "source_refs": [
+        "AutonomousValidationCycleService",
+        "SandboxExperimentService",
+        "ExperimentLab"
+      ],
+      "confidence": 0.35,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {
+        "winning_by_problem": {},
+        "degraded_tools": [],
+        "in_validation": []
+      }
+    },
+    {
+      "section_id": "self_examination",
+      "title": "Autoexaminacion operativa",
+      "summary": "Todavia no hay una autoexaminacion fuerte exportada.",
+      "items": [],
+      "source_kind": "derived_review",
+      "source_refs": [
+        "OperationalSelfExaminationService",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:self_examination"
+      ],
+      "metadata": {
+        "recurring_issues": [],
+        "validated_improvements": [],
+        "recommendation_feedback": [],
+        "feedback_summary": {}
+      }
+    },
+    {
+      "section_id": "code_audit_trail",
+      "title": "Historial de auditorias de codigo",
+      "summary": "Sin auditorias registradas. Usar register_audit_finding via MCP para registrar hallazgos.",
+      "items": [],
+      "source_kind": "code_audit",
+      "source_refs": [
+        "CodeAuditTrail"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {
+        "total_rounds": 0,
+        "total_bugs_fixed": 0,
+        "total_loc_audited": 0,
+        "auditors": [],
+        "environments_used": [],
+        "pending_cross_verifications": 0
+      }
+    },
+    {
+      "section_id": "cloud_reasoning",
+      "title": "Estado de Cloud Reasoning",
+      "summary": "Sin decisiones registradas. Ejecutar \"soluciona X\" para iniciar el trail de auditoria.",
+      "items": [
+        {
+          "label": "Recomendacion",
+          "summary": "Configurar al menos GROQ_API_KEY y ejecutar un plan de prueba"
+        }
+      ],
+      "source_kind": "decision_audit",
+      "source_refs": [
+        "DecisionAuditTrail",
+        "ApiKeyDiscoveryService"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {
+        "health_score": 0.0,
+        "overall_trend": "unknown",
+        "total_decisions": 0,
+        "best_provider": ""
+      }
+    },
+    {
+      "section_id": "startup_health",
+      "title": "Salud del arranque (startup_timeline)",
+      "summary": "Sin data/logs/startup_timeline.jsonl. Lanzar la UI con IABV_STARTUP_TIMELINE=1 para registrar arranque.",
+      "items": [],
+      "source_kind": "startup_timeline_jsonl",
+      "source_refs": [
+        "data/logs/startup_timeline.jsonl",
+        "iabv_v15.infra.startup_timeline"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:startup_timeline_missing"
+      ],
+      "metadata": {
+        "status": "no_log",
+        "init_ms": null,
+        "run_to_window_ms": null,
+        "deferred_ms": null,
+        "rss_mb_max": null,
+        "last_started_at_utc": "",
+        "phases_seen": [],
+        "recent_blockers": [],
+        "freeze_incidents": [],
+        "ui_heartbeat": {
+          "tick_count": 0,
+          "stall_count": 0,
+          "stall_threshold_ms": 2000,
+          "recent_stalls": []
+        },
+        "interaction_lifecycle": {
+          "active_count": 0,
+          "completed_count": 2,
+          "active_ids": [],
+          "recent_completed": [
+            {
+              "interaction_id": "chat-f809e81d35fd",
+              "started_at_utc": "2026-09-08T18:45:23.141+00:00",
+              "message_preview": "mostrar avanzado",
+              "phases": {
+                "start": "2026-09-08T18:45:23.141+00:00",
+                "final_resolution": "2026-09-08T18:45:23.168+00:00"
+              },
+              "stalls_during": [],
+              "window_inactive_intervals": [],
+              "initial_window_active": true,
+              "initial_window_visible": true,
+              "resolved": true,
+              "outcome": "resolved",
+              "provider": "local",
+              "total_duration_ms": 26.9
+            },
+            {
+              "interaction_id": "chat-ebcf20f81185",
+              "started_at_utc": "2026-09-08T18:45:23.181+00:00",
+              "message_preview": "ocultar avanzado",
+              "phases": {
+                "start": "2026-09-08T18:45:23.181+00:00",
+                "final_resolution": "2026-09-08T18:45:23.206+00:00"
+              },
+              "stalls_during": [],
+              "window_inactive_intervals": [],
+              "initial_window_active": true,
+              "initial_window_visible": true,
+              "resolved": true,
+              "outcome": "resolved",
+              "provider": "local",
+              "total_duration_ms": 25.1
+            }
+          ],
+          "reconstructed_from_audit": false
+        }
+      }
+    },
+    {
+      "section_id": "interaction_lifecycle",
+      "title": "Ciclo de vida de interacciones recientes",
+      "summary": "2 episodio(s) reciente(s).",
+      "items": [
+        {
+          "interaction_id": "chat-f809e81d35fd",
+          "message_preview": "mostrar avanzado",
+          "outcome": "resolved",
+          "resolved": true,
+          "is_final": true,
+          "provider": "local",
+          "total_duration_ms": 26.9,
+          "stall_count": 0,
+          "had_early_technical_response": false,
+          "window_went_inactive": false,
+          "source": "in_memory"
+        },
+        {
+          "interaction_id": "chat-ebcf20f81185",
+          "message_preview": "ocultar avanzado",
+          "outcome": "resolved",
+          "resolved": true,
+          "is_final": true,
+          "provider": "local",
+          "total_duration_ms": 25.1,
+          "stall_count": 0,
+          "had_early_technical_response": false,
+          "window_went_inactive": false,
+          "source": "in_memory"
+        }
+      ],
+      "source_kind": "runtime_audit_jsonl+in_memory",
+      "source_refs": [
+        "data/logs/runtime_audit.jsonl",
+        "ChatInteractionLifecycle"
+      ],
+      "confidence": 0.9,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {
+        "active_count": 0,
+        "completed_count": 2,
+        "active_ids": [],
+        "recent_completed": [
+          {
+            "interaction_id": "chat-f809e81d35fd",
+            "started_at_utc": "2026-09-08T18:45:23.141+00:00",
+            "message_preview": "mostrar avanzado",
+            "phases": {
+              "start": "2026-09-08T18:45:23.141+00:00",
+              "final_resolution": "2026-09-08T18:45:23.168+00:00"
+            },
+            "stalls_during": [],
+            "window_inactive_intervals": [],
+            "initial_window_active": true,
+            "initial_window_visible": true,
+            "resolved": true,
+            "outcome": "resolved",
+            "provider": "local",
+            "total_duration_ms": 26.9
+          },
+          {
+            "interaction_id": "chat-ebcf20f81185",
+            "started_at_utc": "2026-09-08T18:45:23.181+00:00",
+            "message_preview": "ocultar avanzado",
+            "phases": {
+              "start": "2026-09-08T18:45:23.181+00:00",
+              "final_resolution": "2026-09-08T18:45:23.206+00:00"
+            },
+            "stalls_during": [],
+            "window_inactive_intervals": [],
+            "initial_window_active": true,
+            "initial_window_visible": true,
+            "resolved": true,
+            "outcome": "resolved",
+            "provider": "local",
+            "total_duration_ms": 25.1
+          }
+        ],
+        "reconstructed_from_audit": false
+      }
+    },
+    {
+      "section_id": "account_resource_health",
+      "title": "Salud de cuentas, cuotas y workers",
+      "summary": "40 workers disponibles | 10540 mensajes restantes | tools: github, claude, codex, chatgpt | 5 secretos faltantes",
+      "items": [
+        {
+          "label": "github: jhonf463r@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "github: proveedorjf@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "github: storeburve@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "github: hectorgeoruiz@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "github: harvytrujillo156@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "github: bonikobk@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "github: bisuteria.emfapro@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "github: cuent4numer4@gmail.com",
+          "remaining": 999,
+          "limit": 999,
+          "status": "available"
+        },
+        {
+          "label": "Secreto faltante: OPENAI_API_KEY",
+          "status": "missing"
+        },
+        {
+          "label": "Secreto faltante: ANTHROPIC_API_KEY",
+          "status": "missing"
+        },
+        {
+          "label": "Secreto faltante: CLOUDFLARE_TUNNEL_TOKEN",
+          "status": "missing"
+        }
+      ],
+      "source_kind": "account_resource_scanner",
+      "source_refs": [
+        "account_resource_scanner",
+        "quota_tracker.json"
+      ],
+      "confidence": 0.85,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {
+        "status": "ok",
+        "worker_available_count": 40,
+        "quota_exhausted_count": 0,
+        "total_remaining_messages": 10540,
+        "tools_available": [
+          "github",
+          "claude",
+          "codex",
+          "chatgpt"
+        ],
+        "secrets_configured": 2,
+        "secrets_missing": [
+          "OPENAI_API_KEY",
+          "ANTHROPIC_API_KEY",
+          "CLOUDFLARE_TUNNEL_TOKEN",
+          "CLOUDFLARED_TOKEN",
+          "IABV_MCP_API_KEY"
+        ]
+      }
+    },
+    {
+      "section_id": "account_inventory_continuity",
+      "title": "Inventario de cuentas y cola de continuidad",
+      "summary": "40 cuentas activas | 10540 mensajes disponibles | siguiente recomendada: jhonf463r@gmail.com (github, score=1.00)",
+      "items": [
+        {
+          "label": "github: jhonf463r@gmail.com",
+          "score": 1.0,
+          "quota_remaining": 999,
+          "quota_limit": 999,
+          "status": "active",
+          "browser": "Chrome"
+        },
+        {
+          "label": "github: proveedorjf@gmail.com",
+          "score": 1.0,
+          "quota_remaining": 999,
+          "quota_limit": 999,
+          "status": "active",
+          "browser": "Chrome"
+        },
+        {
+          "label": "github: storeburve@gmail.com",
+          "score": 1.0,
+          "quota_remaining": 999,
+          "quota_limit": 999,
+          "status": "active",
+          "browser": "Chrome"
+        },
+        {
+          "label": "github: hectorgeoruiz@gmail.com",
+          "score": 1.0,
+          "quota_remaining": 999,
+          "quota_limit": 999,
+          "status": "active",
+          "browser": "Chrome"
+        },
+        {
+          "label": "github: harvytrujillo156@gmail.com",
+          "score": 1.0,
+          "quota_remaining": 999,
+          "quota_limit": 999,
+          "status": "active",
+          "browser": "Chrome"
+        },
+        {
+          "label": "github: bonikobk@gmail.com",
+          "score": 1.0,
+          "quota_remaining": 999,
+          "quota_limit": 999,
+          "status": "active",
+          "browser": "Chrome"
+        }
+      ],
+      "source_kind": "account_resource_scanner",
+      "source_refs": [
+        "account_resource_scanner",
+        "build_inventory_snapshot"
+      ],
+      "confidence": 0.85,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:quota_never_tracked — cuota real desconocida",
+        "UNRESOLVED:visible_account_state_requires_user_permission"
+      ],
+      "metadata": {
+        "section_purpose": "continuity_for_next_session",
+        "requires_human_approval": true
+      }
+    },
+    {
+      "section_id": "tool_coordination",
+      "title": "Coordinacion limit-aware de herramientas",
+      "summary": "Sin datos de coordinacion de herramientas.",
+      "items": [],
+      "source_kind": "adaptive_task_orchestrator",
+      "source_refs": [
+        "tool_selection_summary",
+        "worker_gate"
+      ],
+      "confidence": 0.3,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:no_recent_tool_selections"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "boot_profile",
+      "title": "Perfil de arranque (boot telemetry)",
+      "summary": "Boot profile (msi-f11f77ddd2e2): sin datos de arranque todavia.",
+      "items": [],
+      "source_kind": "boot_profile_store",
+      "source_refs": [
+        "data/evolution/boot_profiles/",
+        "iabv_v15.services.evolution.boot_profile_store"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:boot_profile_no_data"
+      ],
+      "metadata": {
+        "status": "no_data",
+        "environment_id": "msi-f11f77ddd2e2",
+        "boot_count": 0,
+        "boot_duration": null,
+        "wiring_duration": null,
+        "rss_peak": null,
+        "slowest_phases": [],
+        "first_seen": "",
+        "last_seen": ""
+      }
+    },
+    {
+      "section_id": "evidence_basis",
+      "title": "Base evidencial del contexto",
+      "summary": "Evidencia observada en vivo (world_model, environment_self_model). Fuentes persistidas: ninguna.",
+      "items": [
+        {
+          "label": "state",
+          "value": "observed"
+        },
+        {
+          "label": "live_sources",
+          "value": "world_model, environment_self_model"
+        },
+        {
+          "label": "unresolved_fields",
+          "value": "UNRESOLVED:codex_thread_tracking, UNRESOLVED:ollama_inventory"
+        }
+      ],
+      "source_kind": "task_context_assembler",
+      "source_refs": [
+        "iabv_v15.services.adaptive.task_context_assembler",
+        "WorldModelSnapshot",
+        "EnvironmentSelfModel"
+      ],
+      "confidence": 0.9,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {
+        "state": "observed",
+        "live_sources": [
+          "world_model",
+          "environment_self_model"
+        ],
+        "persisted_sources": [],
+        "unresolved": [
+          "UNRESOLVED:codex_thread_tracking",
+          "UNRESOLVED:ollama_inventory"
+        ]
+      }
+    },
+    {
+      "section_id": "test_evidence",
+      "title": "Evidencia de tests",
+      "summary": "Sin evidencia de tests reciente.",
+      "items": [
+        {
+          "label": "status",
+          "value": "no_recent_evidence"
+        }
+      ],
+      "source_kind": "audit_tools",
+      "source_refs": [
+        "iabv_v15.infra.mcp.audit_tools"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:no_test_evidence"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "task_packet_summary",
+      "title": "Task-packet pattern summary",
+      "summary": "Task-packet: sin datos de runs recientes.",
+      "items": [],
+      "source_kind": "experiment_lab_repository",
+      "source_refs": [
+        "ExperimentLab",
+        "TaskOutcomeRecorder"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:task_packet_no_data"
+      ],
+      "metadata": {
+        "status": "no_data",
+        "run_count": 0
+      }
+    },
+    {
+      "section_id": "recommended_routes",
+      "title": "Herramientas y rutas recomendadas",
+      "summary": "No hay rutas recomendadas con evidencia suficiente.",
+      "items": [],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "StrategySelector",
+        "comparison_scope_key"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:recommended_routes"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "operational_blocks",
+      "title": "Bloqueos, limites y rutas inviables",
+      "summary": "2 bloqueos o limitaciones activas.",
+      "items": [
+        {
+          "kind": "tool_status",
+          "target_scope": "aider_coder",
+          "assistant_kind": "",
+          "detail": "La herramienta no quedo confirmada como disponible en esta laptop."
+        },
+        {
+          "kind": "tool_status",
+          "target_scope": "mcp_client",
+          "assistant_kind": "",
+          "detail": "La herramienta no quedo confirmada como disponible en esta laptop."
+        }
+      ],
+      "source_kind": "live_operational_state",
+      "source_refs": [
+        "WorldModelSnapshot"
+      ],
+      "confidence": 0.7,
+      "last_updated": "2026-09-08T18:45:18.963661Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "validated_decisions",
+      "title": "Decisiones ya validadas",
+      "summary": "1 decisiones ya tienen validacion o confianza suficiente para reutilizarse.",
+      "items": [
+        {
+          "decision": "validation_cycle",
+          "summary": "Ciclo de validacion autonoma iniciando; a la espera del primer tick.",
+          "status": "bootstrapping",
+          "promoted_count": 0,
+          "candidate_assistant_kind": "",
+          "candidate_route": "",
+          "verdict": ""
+        }
+      ],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 0.82,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "decision_history",
+      "title": "Historial condensado de decisiones",
+      "summary": "No hay historial condensado de decisiones relevantes.",
+      "items": [],
+      "source_kind": "persistent_learning",
+      "source_refs": [
+        "ExperimentLab",
+        "ia_trace_summary"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:decision_history"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "pending",
+      "title": "Pendientes priorizados",
+      "summary": "0 pending issues y 1 mejoras priorizadas.",
+      "items": [
+        {
+          "title": "Seguir capturando evidencia evolutiva",
+          "rationale": "Todavia no hay suficientes dossiers o incidentes para priorizar backlog fino.",
+          "recommended_change": "Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.",
+          "priority_score": 35,
+          "suggested_tests": [
+            "Centro Evolutivo",
+            "Historial de Ejecuciones"
+          ]
+        }
+      ],
+      "source_kind": "persistent_backlog",
+      "source_refs": [
+        "pending_issue_repository",
+        "evolution_review_service",
+        "platform_pending_queue"
+      ],
+      "confidence": 0.8,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "canonical_work_queue",
+      "title": "Cola canónica de trabajo",
+      "summary": "Cola canónica vacía o sin fuentes conectadas.",
+      "items": [],
+      "source_kind": "control_master",
+      "source_refs": [
+        "ControlMasterService",
+        "ObjectiveRepository",
+        "PlatformPendingQueue",
+        "PendingIssueRepository",
+        "OSES",
+        "runtime_audit"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "shared_reality_learning",
+      "title": "Shared Reality Learning",
+      "summary": "Sin patrones de mismatch visual ni remediación repetida",
+      "items": [],
+      "source_kind": "oses_shared_reality",
+      "source_refs": [
+        "OperationalSelfExaminationService",
+        "runtime_audit"
+      ],
+      "confidence": 0.3,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "user_chrome_bridge",
+      "title": "User Chrome Bridge (P0.32)",
+      "summary": "CDP bridge activo: no. 0 eventos de bridge registrados.",
+      "items": [
+        {
+          "cdp_session_active": false,
+          "bridge_events_total": 0,
+          "session_mode": "isolated_profile"
+        }
+      ],
+      "source_kind": "runtime_audit",
+      "source_refs": [
+        "RuntimeAuditTracer",
+        "IABV_PREFER_CDP_SESSION"
+      ],
+      "confidence": 0.5,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "active_incident_frame",
+      "title": "Active Incident Frame (P0.37)",
+      "summary": "Ultimo incidente: none. 0 frames creados. Handoff sin resolver: no.",
+      "items": [
+        {
+          "last_incident_state": "none",
+          "unresolved_external_handoff": false,
+          "incident_frame_count": 0,
+          "user_assistance_loop_status": "idle"
+        }
+      ],
+      "source_kind": "runtime_audit",
+      "source_refs": [
+        "RuntimeAuditTracer",
+        "ActiveIncidentFrame"
+      ],
+      "confidence": 0.5,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "web_skill_status",
+      "title": "Web Skill Status (P0.38)",
+      "summary": "Sin eventos de web skill registrados",
+      "items": [],
+      "source_kind": "runtime_audit_web_skill",
+      "source_refs": [
+        "RuntimeAuditTracer"
+      ],
+      "confidence": 0.3,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "devin_repair_status",
+      "title": "Devin Repair Worker Status (P0.38)",
+      "summary": "Sin eventos de Devin repair worker",
+      "items": [],
+      "source_kind": "runtime_audit_devin_repair",
+      "source_refs": [
+        "RuntimeAuditTracer"
+      ],
+      "confidence": 0.3,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "capability_readiness",
+      "title": "External Tool Capability Readiness (P0.39)",
+      "summary": "0 herramientas evaluadas; ninguna lista actualmente",
+      "items": [],
+      "source_kind": "runtime_audit_readiness",
+      "source_refs": [
+        "RuntimeAuditTracer",
+        "_assess_external_readiness"
+      ],
+      "confidence": 0.3,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "no_readiness_data"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "next_time_policies",
+      "title": "Next-Time Policies (P0.40)",
+      "summary": "1 default policy (no runtime events yet)",
+      "items": [
+        {
+          "policy": "when_security_verification_show_window_first",
+          "trigger": "security_verification",
+          "action": "focus/open problem window before generic explanation",
+          "source": "default_from_P0.40"
+        }
+      ],
+      "source_kind": "runtime_audit_learning",
+      "source_refs": [
+        "RuntimeAuditTracer",
+        "_record_show_window_learning"
+      ],
+      "confidence": 0.7,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "human_assist_bridge",
+      "title": "Human-Assist Bridge Status (P0.72)",
+      "summary": "bridge=idle; cdp=isolated_profile; visible_fallback=silent_default",
+      "items": [
+        {
+          "last_external_consultation_failure": {
+            "status": "none_recent"
+          },
+          "human_assist_bridge_status": "idle",
+          "cdp_bridge_status": "isolated_profile",
+          "visible_fallback_policy": "silent_default",
+          "governed_launch_offers": 0,
+          "governed_launches_succeeded": 0,
+          "security_window_unbound_count": 0
+        }
+      ],
+      "source_kind": "runtime_audit_human_assist",
+      "source_refs": [
+        "RuntimeAuditTracer",
+        "ControlCenterViewModel",
+        "ExternalAssistantToolAdapter"
+      ],
+      "confidence": 0.7,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "discernment_frame",
+      "title": "Metacognitive Discernment Frame (P0.69)",
+      "summary": "phase=unknown, grounding=unknown, confidence=0.0",
+      "items": [
+        {
+          "status": "no_frame_yet"
+        }
+      ],
+      "source_kind": "discernment_frame_service",
+      "source_refs": [
+        "DiscernmentFrameService"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "no_discernment_frame_generated"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "metacognitive_roadmap_matrix",
+      "title": "Metacognitive Autonomy Roadmap Matrix (P0.70)",
+      "summary": "no roadmap",
+      "items": [
+        {
+          "status": "roadmap_file_not_found"
+        }
+      ],
+      "source_kind": "platform_pending",
+      "source_refs": [
+        "task_metacognitive_autonomy_roadmap_matrix_p070.json"
+      ],
+      "confidence": 0.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "metacognitive_roadmap_matrix_not_found"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "unresolved_metacognitive_links",
+      "title": "Unresolved Metacognitive Links (P0.70)",
+      "summary": "all clear",
+      "items": [
+        {
+          "status": "no_unresolved_links"
+        }
+      ],
+      "source_kind": "aggregated",
+      "source_refs": [
+        "DiscernmentFrameService",
+        "roadmap_matrix"
+      ],
+      "confidence": 0.7,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "unresolved",
+      "title": "UNRESOLVED",
+      "summary": "5 campos siguen sin evidencia suficiente y no deben asumirse.",
+      "items": [
+        {
+          "field": "UNRESOLVED:ollama_inventory"
+        },
+        {
+          "field": "UNRESOLVED:codex_thread_tracking"
+        },
+        {
+          "field": "UNRESOLVED:recommendation_history"
+        },
+        {
+          "field": "UNRESOLVED:active_goal_context"
+        },
+        {
+          "field": "UNRESOLVED:self_examination"
+        }
+      ],
+      "source_kind": "honest_runtime_limits",
+      "source_refs": [
+        "WorldModelSnapshot",
+        "EnvironmentSelfModel",
+        "AutonomousValidationCycle"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [
+        "UNRESOLVED:ollama_inventory",
+        "UNRESOLVED:codex_thread_tracking",
+        "UNRESOLVED:recommendation_history",
+        "UNRESOLVED:active_goal_context",
+        "UNRESOLVED:self_examination"
+      ],
+      "metadata": {}
+    },
+    {
+      "section_id": "hard_rules",
+      "title": "Reglas duras que no deben romperse",
+      "summary": "Este paquete portable no reemplaza la arquitectura: solo la condensa y la hace reutilizable.",
+      "items": [
+        {
+          "rule": "No crear otro cerebro ni otro orquestador."
+        },
+        {
+          "rule": "No duplicar PerceptionSnapshot ni crear una memoria paralela."
+        },
+        {
+          "rule": "No romper governance ni saltarse bloqueos del world model."
+        },
+        {
+          "rule": "Cambios minimos, reversibles y verificables."
+        },
+        {
+          "rule": "Si algo no puede confirmarse con evidencia, marcar UNRESOLVED."
+        },
+        {
+          "rule": "Los ViewModels observan y explican; no inventan decisiones de ruta."
+        },
+        {
+          "rule": "Antes de usar una herramienta externa, consultar estado y bloqueos reales."
+        },
+        {
+          "rule": "El aprendizaje acumulado debe respetarse, pero sin dogma: cambiar de ruta solo con evidencia."
+        }
+      ],
+      "source_kind": "project_contract",
+      "source_refs": [
+        "AGENTS.md"
+      ],
+      "confidence": 1.0,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "user_identity",
+      "title": "Identidad persistente del usuario",
+      "summary": "Preferencias, hábitos y perfil del entorno que persisten entre sesiones.",
+      "items": [
+        {
+          "label": "status",
+          "value": "No identity profile persisted yet"
+        }
+      ],
+      "source_kind": "user_identity",
+      "source_refs": [
+        "portable_context/user_identity.json"
+      ],
+      "confidence": 0.3,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "section_id": "long_term_goals",
+      "title": "Objetivos a largo plazo",
+      "summary": "Metas persistentes del usuario que sobreviven entre sesiones.",
+      "items": [
+        {
+          "title": "No long-term goals defined",
+          "status": "empty",
+          "priority": "",
+          "created_at": ""
+        }
+      ],
+      "source_kind": "user_goals",
+      "source_refs": [
+        "portable_context/long_term_goals.json"
+      ],
+      "confidence": 0.3,
+      "last_updated": "2026-09-08T18:45:26.408001Z",
+      "unresolved_fields": [],
+      "metadata": {}
+    }
+  ],
+  "assistant_brief": "# IABV v1.5 - Portable Context Package\n\nGenerado: 2026-09-08T18:45:26.408001+00:00\nResumen: Objetivo actual: sin objetivo activo confirmado | mejor ruta conocida: sin preferencia de ruta consolidada | bloqueos activos: 0 | pendientes: 0 | ajustes sugeridos: 0 | unresolved: 5\n\nUsa este contexto como arranque rapido para una sesion nueva. Si algo aparece como UNRESOLVED, no lo des por confirmado.\n\n## Estado actual del proyecto\nSin objetivo activo confirmado | World model: conectado | Validacion: bootstrapping\n- Objetivo activo: sin objetivo activo confirmado\n- Proyecto activo: sin proyecto activo confirmado\n- Tarea activa: sin tarea activa confirmada\n- Pulso evolutivo: Dossiers recientes: 0 | fallos: 0 | parciales: 0 | incidentes invisibles: 0 | sesiones adaptativas: 0 | autotests: 0 | pendientes Codex: 0. Prioridad sugerida: seguir reforzando evidencia y conocimiento local.\n- World model: Observacion operativa actualizada.\n- Validacion autonoma: Ciclo de validacion autonoma iniciando; a la espera del primer tick.\nFuente: aggregated_live_state | refs: objective_repository, evolution_review_service, world_model_service, autonomous_validation_cycle | actualizado: 2026-09-08T18:45:18.963661+00:00\n\n## Arquitectura central vigente\nLa arquitectura sigue siendo una sola: perception -> orchestrator -> governance -> ejecucion -> aprendizaje.\n- PerceptionSnapshot: wired | Entrada unificada antes de decidir.\n- TaskContextAssembler: wired | Arma contexto, memoria, aprendizaje y world model.\n- AdaptiveTaskOrchestrator: wired | Decide ruta, governance y resultado final.\n- EnvironmentSelfModel: wired | Describe hardware, runtime y riesgo operativo.\n- WorldModelSnapshot: wired | Panorama operativo vivo de herramientas, red y ventanas.\n- ExperimentLab: wired | Memoria persistida de resultados y recomendaciones.\nFuente: project_contract | refs: AGENTS.md, bootstrap wiring | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Intencion persistente del usuario\nDireccion estable: todas las IAs deben alimentar la metacognicion de IABV para mejorar coherencia, memoria operativa y autonomia gobernada.\n- centro_metacognitivo_local: IABV debe ser el centro local-first que observa laptop, nube, herramientas, sesiones y resultados sin crear otro cerebro.\n- ias_como_organos_externos: Devin, Codex, ChatGPT, Claude y otros asistentes deben aportar evidencia, trazas y rendimiento al ExperimentLab.\n- no_repetir_intencion: Las ideas recurrentes del usuario se condensan en contexto portable para que cada sesion arranque con la misma direccion.\n- evolucion_gobernada: Toda incubacion cognitiva, algoritmo mutable o ajuste de prompts pasa por sandbox, consenso y validacion antes de promoverse.\n- percepcion_segura_de_cuentas: El sistema puede detectar presencia/sesion y recomendar rutas, pero no extrae contrasenas, cookies ni tokens; pide permiso cuando corresponda.\nFuente: user_intent | refs: chat:metacognicion_extendida, AGENTS.md, portable_context | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Piezas ya implementadas\nCapas cerradas: P1 y nucleo de P2. P3 ya deja paquete portable util para sesiones nuevas. Validacion actual: Ciclo de validacion autonoma iniciando; a la espera del primer tick.\n- P1 World Model operativo: active | Observa estado de herramientas, red, foco, procesos y bloqueos antes de actuar.\n- P2 Neuroplasticidad operativa: partial | Aprende resultados reales y ajusta preferencia futura de rutas e IAs.\n- Monitor de evolucion de herramientas: active | Resume desempeno por problema, detecta degradacion y genera propuestas para sandbox.\n- SandboxExperiment: active | Valida candidatos antes de promoverlos como decision estable.\n- P3 Contexto portable: active | Condensa arquitectura, aprendizaje, bloqueos y pendientes en JSON + Markdown reutilizable.\n- Preguntas humanas de aprendizaje: active | Responde desde ExperimentLab y validacion sin disparar autonomia operativa.\nFuente: project_contract | refs: bootstrap wiring, world_model_service, experiment_lab_repository, autonomous_validation_cycle | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Aprendizaje acumulado util\nAun no hay aprendizaje consolidado.\nFuente: persistent_learning | refs: ExperimentLab, AdaptiveWeightLayer, TaskOutcomeRecorder | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:learning_summary\n\n## Patrones de coordinacion IA-IA\nNo IA-IA coordination patterns detected yet.\nFuente: persistent_learning | refs: ExperimentLab, ia_trace_summary | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:coordination_patterns\n\n## Descubrimiento de herramientas\nDetecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).\nFuente: tool_discovery | refs: ToolRegistry, WorldModelSnapshot, ExperimentLab, AutonomousValidationCycleService | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:tool_discovery_subjects, UNRESOLVED:tool_discovery_catalog\n\n## Evolucion de herramientas\nTodavia no hay suficiente evidencia comparativa para un monitor de evolucion de herramientas.\nFuente: experiment_lab_monitor | refs: ExperimentLab, AdaptiveWeightLayer, AutonomousValidationCycle | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:tool_evolution_subjects, UNRESOLVED:tool_evolution_performance\n\n## Decisiones evolutivas\nSin decisiones evolutivas registradas todavia.\nFuente: autonomous_validation_cycle | refs: AutonomousValidationCycleService, SandboxExperimentService, ExperimentLab | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Autoexaminacion operativa\nTodavia no hay una autoexaminacion fuerte exportada.\nFuente: derived_review | refs: OperationalSelfExaminationService, ExperimentLab, WorldModelSnapshot | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:self_examination\n\n## Historial de auditorias de codigo\nSin auditorias registradas. Usar register_audit_finding via MCP para registrar hallazgos.\nFuente: code_audit | refs: CodeAuditTrail | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Estado de Cloud Reasoning\nSin decisiones registradas. Ejecutar \"soluciona X\" para iniciar el trail de auditoria.\n- Recomendacion: Configurar al menos GROQ_API_KEY y ejecutar un plan de prueba\nFuente: decision_audit | refs: DecisionAuditTrail, ApiKeyDiscoveryService | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Salud del arranque (startup_timeline)\nSin data/logs/startup_timeline.jsonl. Lanzar la UI con IABV_STARTUP_TIMELINE=1 para registrar arranque.\nFuente: startup_timeline_jsonl | refs: data/logs/startup_timeline.jsonl, iabv_v15.infra.startup_timeline | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:startup_timeline_missing\n\n## Ciclo de vida de interacciones recientes\n2 episodio(s) reciente(s).\n- [chat-f809e81d35fd] \"mostrar avanzado\" | outcome=resolved resolved=true is_final=true provider=local duration=26.9ms stalls=0 early_technical=False window_inactive=False source=in_memory\n- [chat-ebcf20f81185] \"ocultar avanzado\" | outcome=resolved resolved=true is_final=true provider=local duration=25.1ms stalls=0 early_technical=False window_inactive=False source=in_memory\nFuente: runtime_audit_jsonl+in_memory | refs: data/logs/runtime_audit.jsonl, ChatInteractionLifecycle | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Salud de cuentas, cuotas y workers\n40 workers disponibles | 10540 mensajes restantes | tools: github, claude, codex, chatgpt | 5 secretos faltantes\n- github: jhonf463r@gmail.com: \n- github: proveedorjf@gmail.com: \n- github: storeburve@gmail.com: \n- github: hectorgeoruiz@gmail.com: \n- github: harvytrujillo156@gmail.com: \n- github: bonikobk@gmail.com: \nFuente: account_resource_scanner | refs: account_resource_scanner, quota_tracker.json | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Inventario de cuentas y cola de continuidad\n40 cuentas activas | 10540 mensajes disponibles | siguiente recomendada: jhonf463r@gmail.com (github, score=1.00)\n- github: jhonf463r@gmail.com: \n- github: proveedorjf@gmail.com: \n- github: storeburve@gmail.com: \n- github: hectorgeoruiz@gmail.com: \n- github: harvytrujillo156@gmail.com: \n- github: bonikobk@gmail.com: \nFuente: account_resource_scanner | refs: account_resource_scanner, build_inventory_snapshot | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:quota_never_tracked — cuota real desconocida, UNRESOLVED:visible_account_state_requires_user_permission\n\n## Coordinacion limit-aware de herramientas\nSin datos de coordinacion de herramientas.\nFuente: adaptive_task_orchestrator | refs: tool_selection_summary, worker_gate | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:no_recent_tool_selections\n\n## Perfil de arranque (boot telemetry)\nBoot profile (msi-f11f77ddd2e2): sin datos de arranque todavia.\nFuente: boot_profile_store | refs: data/evolution/boot_profiles/, iabv_v15.services.evolution.boot_profile_store | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:boot_profile_no_data\n\n## Base evidencial del contexto\nEvidencia observada en vivo (world_model, environment_self_model). Fuentes persistidas: ninguna.\n- state: observed\n- live_sources: world_model, environment_self_model\n- unresolved_fields: UNRESOLVED:codex_thread_tracking, UNRESOLVED:ollama_inventory\nFuente: task_context_assembler | refs: iabv_v15.services.adaptive.task_context_assembler, WorldModelSnapshot, EnvironmentSelfModel | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Evidencia de tests\nSin evidencia de tests reciente.\n- status: no_recent_evidence\nFuente: audit_tools | refs: iabv_v15.infra.mcp.audit_tools | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:no_test_evidence\n\n## Task-packet pattern summary\nTask-packet: sin datos de runs recientes.\nFuente: experiment_lab_repository | refs: ExperimentLab, TaskOutcomeRecorder | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:task_packet_no_data\n\n## Herramientas y rutas recomendadas\nNo hay rutas recomendadas con evidencia suficiente.\nFuente: persistent_learning | refs: ExperimentLab, StrategySelector, comparison_scope_key | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:recommended_routes\n\n## Bloqueos, limites y rutas inviables\n2 bloqueos o limitaciones activas.\n- tool_status: La herramienta no quedo confirmada como disponible en esta laptop.\n- tool_status: La herramienta no quedo confirmada como disponible en esta laptop.\nFuente: live_operational_state | refs: WorldModelSnapshot | actualizado: 2026-09-08T18:45:18.963661+00:00\n\n## Decisiones ya validadas\n1 decisiones ya tienen validacion o confianza suficiente para reutilizarse.\n- validation_cycle: Ciclo de validacion autonoma iniciando; a la espera del primer tick.\nFuente: persistent_learning | refs: ExperimentLab, AutonomousValidationCycle | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Historial condensado de decisiones\nNo hay historial condensado de decisiones relevantes.\nFuente: persistent_learning | refs: ExperimentLab, ia_trace_summary | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:decision_history\n\n## Pendientes priorizados\n0 pending issues y 1 mejoras priorizadas.\n- Seguir capturando evidencia evolutiva: Ejecutar consultas, ensenanzas y autodiagnosticos para poblar la capa evolutiva.\nFuente: persistent_backlog | refs: pending_issue_repository, evolution_review_service, platform_pending_queue | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Cola canónica de trabajo\nCola canónica vacía o sin fuentes conectadas.\nFuente: control_master | refs: ControlMasterService, ObjectiveRepository, PlatformPendingQueue, PendingIssueRepository, OSES, runtime_audit | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Shared Reality Learning\nSin patrones de mismatch visual ni remediación repetida\nFuente: oses_shared_reality | refs: OperationalSelfExaminationService, runtime_audit | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## User Chrome Bridge (P0.32)\nCDP bridge activo: no. 0 eventos de bridge registrados.\n- n/d: \nFuente: runtime_audit | refs: RuntimeAuditTracer, IABV_PREFER_CDP_SESSION | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Active Incident Frame (P0.37)\nUltimo incidente: none. 0 frames creados. Handoff sin resolver: no.\n- n/d: \nFuente: runtime_audit | refs: RuntimeAuditTracer, ActiveIncidentFrame | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Web Skill Status (P0.38)\nSin eventos de web skill registrados\nFuente: runtime_audit_web_skill | refs: RuntimeAuditTracer | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Devin Repair Worker Status (P0.38)\nSin eventos de Devin repair worker\nFuente: runtime_audit_devin_repair | refs: RuntimeAuditTracer | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## External Tool Capability Readiness (P0.39)\n0 herramientas evaluadas; ninguna lista actualmente\nFuente: runtime_audit_readiness | refs: RuntimeAuditTracer, _assess_external_readiness | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: no_readiness_data\n\n## Next-Time Policies (P0.40)\n1 default policy (no runtime events yet)\n- n/d: \nFuente: runtime_audit_learning | refs: RuntimeAuditTracer, _record_show_window_learning | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Human-Assist Bridge Status (P0.72)\nbridge=idle; cdp=isolated_profile; visible_fallback=silent_default\n- n/d: \nFuente: runtime_audit_human_assist | refs: RuntimeAuditTracer, ControlCenterViewModel, ExternalAssistantToolAdapter | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Metacognitive Discernment Frame (P0.69)\nphase=unknown, grounding=unknown, confidence=0.0\n- n/d: \nFuente: discernment_frame_service | refs: DiscernmentFrameService | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: no_discernment_frame_generated\n\n## Metacognitive Autonomy Roadmap Matrix (P0.70)\nno roadmap\n- n/d: \nFuente: platform_pending | refs: task_metacognitive_autonomy_roadmap_matrix_p070.json | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: metacognitive_roadmap_matrix_not_found\n\n## Unresolved Metacognitive Links (P0.70)\nall clear\n- n/d: \nFuente: aggregated | refs: DiscernmentFrameService, roadmap_matrix | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## UNRESOLVED\n5 campos siguen sin evidencia suficiente y no deben asumirse.\n- UNRESOLVED:ollama_inventory: \n- UNRESOLVED:codex_thread_tracking: \n- UNRESOLVED:recommendation_history: \n- UNRESOLVED:active_goal_context: \n- UNRESOLVED:self_examination: \nFuente: honest_runtime_limits | refs: WorldModelSnapshot, EnvironmentSelfModel, AutonomousValidationCycle | actualizado: 2026-09-08T18:45:26.408001+00:00\nUNRESOLVED: UNRESOLVED:ollama_inventory, UNRESOLVED:codex_thread_tracking, UNRESOLVED:recommendation_history, UNRESOLVED:active_goal_context, UNRESOLVED:self_examination\n\n## Reglas duras que no deben romperse\nEste paquete portable no reemplaza la arquitectura: solo la condensa y la hace reutilizable.\n- No crear otro cerebro ni otro orquestador.\n- No duplicar PerceptionSnapshot ni crear una memoria paralela.\n- No romper governance ni saltarse bloqueos del world model.\n- Cambios minimos, reversibles y verificables.\n- Si algo no puede confirmarse con evidencia, marcar UNRESOLVED.\n- Los ViewModels observan y explican; no inventan decisiones de ruta.\nFuente: project_contract | refs: AGENTS.md | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Identidad persistente del usuario\nPreferencias, hábitos y perfil del entorno que persisten entre sesiones.\n- status: No identity profile persisted yet\nFuente: user_identity | refs: portable_context/user_identity.json | actualizado: 2026-09-08T18:45:26.408001+00:00\n\n## Objetivos a largo plazo\nMetas persistentes del usuario que sobreviven entre sesiones.\n- No long-term goals defined: \nFuente: user_goals | refs: portable_context/long_term_goals.json | actualizado: 2026-09-08T18:45:26.408001+00:00",
+  "package_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\portable_context\\latest.json",
+  "markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\portable_context\\latest.md",
+  "unresolved_fields": [
+    "UNRESOLVED:ollama_inventory",
+    "UNRESOLVED:codex_thread_tracking",
+    "UNRESOLVED:recommendation_history",
+    "UNRESOLVED:active_goal_context",
+    "UNRESOLVED:self_examination"
+  ],
+  "metadata": {
+    "workspace_root": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96",
+    "site_id": "",
+    "active_objective_id": "",
+    "refresh_policy": "refresh_if_stale_or_goal_shift",
+    "source_count": 94,
+    "tool_discovery_summary": {
+      "summary": "Detecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).",
+      "status_id": "19662fb7-3af2-4386-a47a-c767dee12d46",
+      "updated_at_utc": "2026-09-08T18:45:26.555555+00:00",
+      "signals": [],
+      "active_signals": [],
+      "in_validation_signals": [],
+      "promoted_signals": [],
+      "discarded_signals": [],
+      "unresolved_fields": [
+        "UNRESOLVED:tool_discovery_subjects",
+        "UNRESOLVED:tool_discovery_catalog"
+      ],
+      "package_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\tool_discovery\\latest.json",
+      "markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\tool_discovery\\latest.md"
+    },
+    "tool_discovery_signals": [],
+    "tool_evolution_summary": {
+      "summary": "Todavia no hay suficiente evidencia comparativa para un monitor de evolucion de herramientas.",
+      "status_id": "d9f4942d-ce3a-4040-bd12-3a5a39d7b164",
+      "updated_at_utc": "2026-09-08T18:45:26.568317+00:00",
+      "degraded_subjects": [],
+      "top_performers": [],
+      "proposals": [],
+      "active_proposals": [],
+      "decided_proposals": [],
+      "active_proposal_count": 0,
+      "decided_proposal_count": 0,
+      "winning_by_problem": {},
+      "in_validation": [],
+      "discarded_proposals": [],
+      "recent_decisions": [],
+      "unresolved_fields": [
+        "UNRESOLVED:tool_evolution_subjects",
+        "UNRESOLVED:tool_evolution_performance"
+      ],
+      "package_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\tool_evolution\\latest.json",
+      "markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\tool_evolution\\latest.md"
+    },
+    "tool_evolution_proposals": [],
+    "tool_evolution_degraded_subjects": [],
+    "tool_evolution_decision_summary": {
+      "winning_by_problem": {},
+      "degraded_tools": [],
+      "in_validation": [],
+      "discarded_proposals": [],
+      "recent_decisions": [],
+      "last_decision": {},
+      "summary_by_tool": {},
+      "summary_by_problem": {},
+      "unresolved_fields": [],
+      "package_path": "",
+      "markdown_path": "",
+      "pending_auto_probes": []
+    },
+    "tool_evolution_validated_proposals": [],
+    "cloud_reasoning_status": {
+      "status": "no_data",
+      "message": "No hay decisiones registradas aun. Usa \"soluciona X\" para generar el primer plan.",
+      "health_score": 0.0,
+      "overall_trend": "unknown",
+      "trends": [],
+      "recommendations": [
+        "Configurar al menos GROQ_API_KEY y ejecutar un plan de prueba"
+      ]
+    },
+    "startup_health": {
+      "status": "no_log",
+      "unresolved_fields": [
+        "UNRESOLVED:startup_timeline_missing"
+      ]
+    },
+    "account_resource": {
+      "status": "ok",
+      "read_failures": [],
+      "quota_total_tracked": 0,
+      "quota_exhausted_count": 0,
+      "quota_available_count": 0,
+      "exhausted_accounts": [],
+      "worker_available_count": 40,
+      "worker_exhausted_count": 0,
+      "worker_total_remaining_messages": 10540,
+      "workers_by_tool": [
+        "github",
+        "claude",
+        "codex",
+        "chatgpt"
+      ],
+      "available_workers": [
+        {
+          "tool": "github",
+          "email": "jhonf463r@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "proveedorjf@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "storeburve@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "hectorgeoruiz@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "harvytrujillo156@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "bonikobk@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "bisuteria.emfapro@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "cuent4numer4@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "emfaprochile@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "github",
+          "email": "misterjf8@gmail.com",
+          "remaining": 999,
+          "limit": 999
+        },
+        {
+          "tool": "claude",
+          "email": "jhonf463r@gmail.com",
+          "remaining": 20,
+          "limit": 20
+        },
+        {
+          "tool": "codex",
+          "email": "jhonf463r@gmail.com",
+          "remaining": 20,
+          "limit": 20
+        },
+        {
+          "tool": "claude",
+          "email": "proveedorjf@gmail.com",
+          "remaining": 20,
+          "limit": 20
+        },
+        {
+          "tool": "codex",
+          "email": "proveedorjf@gmail.com",
+          "remaining": 20,
+          "limit": 20
+        },
+        {
+          "tool": "claude",
+          "email": "storeburve@gmail.com",
+          "remaining": 20,
+          "limit": 20
+        }
+      ],
+      "secrets_configured": 2,
+      "secrets_missing": [
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "CLOUDFLARE_TUNNEL_TOKEN",
+        "CLOUDFLARED_TOKEN",
+        "IABV_MCP_API_KEY"
+      ]
+    },
+    "boot_profile": {
+      "environment_id": "msi-f11f77ddd2e2",
+      "boot_count": 0,
+      "status": "no_data"
+    },
+    "evidence_basis": {
+      "state": "observed",
+      "live_sources": [
+        "world_model",
+        "environment_self_model"
+      ],
+      "persisted_sources": [],
+      "unresolved": [
+        "UNRESOLVED:codex_thread_tracking",
+        "UNRESOLVED:ollama_inventory"
+      ]
+    },
+    "task_packet_summary": {
+      "status": "no_data",
+      "run_count": 0
+    },
+    "coordination_patterns": [],
+    "chat_stats": {
+      "status": "active",
+      "total": 5,
+      "sessions": 1,
+      "recent_sample": 5,
+      "by_reasoning_path": {
+        "untagged": 5
+      },
+      "by_evidence_tag": {
+        "untagged": 5
+      },
+      "routing_decisions": {
+        "status": "no_data",
+        "total_chat_decisions": 0,
+        "by_path": {},
+        "by_provider": {}
+      }
+    },
+    "autoexamination_summary": {},
+    "recurring_issues": [],
+    "recommended_adjustments": [],
+    "validated_improvements": [],
+    "recommendation_feedback": [],
+    "feedback_summary": {},
+    "unresolved_risks": [
+      "UNRESOLVED:self_examination"
+    ],
+    "archive_json_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\portable_context\\history\\1d6e053a-5e7c-4fce-94d7-ef1856ff0ea2.json",
+    "archive_markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_commands_workspace_1613c39ac7f544db84e675d4e0a12b96\\data\\evolution\\portable_context\\history\\1d6e053a-5e7c-4fce-94d7-ef1856ff0ea2.md"
+  }
+}

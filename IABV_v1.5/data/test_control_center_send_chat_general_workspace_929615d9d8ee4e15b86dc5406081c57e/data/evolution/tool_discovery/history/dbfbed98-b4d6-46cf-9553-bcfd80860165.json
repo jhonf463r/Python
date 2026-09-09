@@ -1,0 +1,21 @@
+{
+  "status_id": "dbfbed98-b4d6-46cf-9553-bcfd80860165",
+  "created_at_utc": "2026-09-08T18:53:37.154690Z",
+  "updated_at_utc": "2026-09-08T18:53:37.154690Z",
+  "summary": "Detecte 0 senal(es) de descubrimiento: 0 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).",
+  "signals": [],
+  "unresolved_fields": [
+    "UNRESOLVED:tool_discovery_subjects",
+    "UNRESOLVED:tool_discovery_catalog"
+  ],
+  "package_path": "",
+  "markdown_path": "",
+  "metadata": {
+    "subject_keys": [],
+    "active_signals": [],
+    "in_validation_signals": [],
+    "promoted_signals": [],
+    "discarded_signals": [],
+    "unresolved_signals": []
+  }
+}

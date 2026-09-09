@@ -1,0 +1,114 @@
+{
+  "status_id": "d30c7996-f2fa-4f4c-ad94-6fbb433d7999",
+  "created_at_utc": "2026-09-08T18:58:38.389122Z",
+  "updated_at_utc": "2026-09-08T18:58:38.389122Z",
+  "summary": "Detecte 1 senal(es) de descubrimiento: 1 activa(s), 0 en evaluacion, 0 promovida(s), 0 descartada(s).",
+  "signals": [
+    {
+      "signal_id": "da494588-2e61-495b-8ebe-1ae7f0439947",
+      "proposal_key": "chatgpt_web_assisted|validate_discovery|fallback|||language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "source": "tool_registry",
+      "source_refs": [
+        "ToolRegistry",
+        "ExperimentLab",
+        "WorldModelSnapshot"
+      ],
+      "domain": "language",
+      "scope": "chatgpt_web_assisted",
+      "title": "Probar ChatGPT web asistido para chatgpt_web_assisted",
+      "summary": "ChatGPT web asistido aparece disponible y compatible con chatgpt_web_assisted. Conviene validarlo frente a fallback.",
+      "tool_id": "chatgpt_web_assisted",
+      "tool_title": "ChatGPT web asistido",
+      "assistant_kind": "chatgpt",
+      "route": "language_understanding",
+      "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "status": "detected",
+      "confidence": 0.8852,
+      "compatibility_score": 0.95,
+      "impact_score": 0.64,
+      "cost_score": 0.46,
+      "evidence_refs": [
+        "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+      ],
+      "metadata": {
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "fallback",
+        "current_assistant_kind": "",
+        "current_config_signature": "",
+        "baseline_weighted_score": 0.0,
+        "estimated_candidate_score": 0.065,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    }
+  ],
+  "unresolved_fields": [],
+  "package_path": "",
+  "markdown_path": "",
+  "metadata": {
+    "subject_keys": [
+      "chatgpt_web_assisted"
+    ],
+    "active_signals": [
+      {
+        "signal_id": "da494588-2e61-495b-8ebe-1ae7f0439947",
+        "proposal_key": "chatgpt_web_assisted|validate_discovery|fallback|||language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "source": "tool_registry",
+        "source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "domain": "language",
+        "scope": "chatgpt_web_assisted",
+        "title": "Probar ChatGPT web asistido para chatgpt_web_assisted",
+        "summary": "ChatGPT web asistido aparece disponible y compatible con chatgpt_web_assisted. Conviene validarlo frente a fallback.",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_title": "ChatGPT web asistido",
+        "assistant_kind": "chatgpt",
+        "route": "language_understanding",
+        "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "status": "detected",
+        "confidence": 0.8852,
+        "compatibility_score": 0.95,
+        "impact_score": 0.64,
+        "cost_score": 0.46,
+        "evidence_refs": [
+          "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+        ],
+        "metadata": {
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "fallback",
+          "current_assistant_kind": "",
+          "current_config_signature": "",
+          "baseline_weighted_score": 0.0,
+          "estimated_candidate_score": 0.065,
+          "estimated_gain": 0.065,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      }
+    ],
+    "in_validation_signals": [],
+    "promoted_signals": [],
+    "discarded_signals": [],
+    "unresolved_signals": []
+  }
+}

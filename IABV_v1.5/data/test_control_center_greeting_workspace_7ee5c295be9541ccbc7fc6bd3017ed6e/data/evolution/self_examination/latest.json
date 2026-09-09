@@ -1,0 +1,644 @@
+{
+  "review_id": "17efda03-bbcf-457c-9b73-f41ea96352cd",
+  "created_at_utc": "2026-09-08T18:45:49.595216Z",
+  "updated_at_utc": "2026-09-08T18:45:49.595216Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion watch: 12 hallazgos activos. Lo mas fuerte ahora es 4 cloud providers not configured. Mejoras validadas: 0 | issues recurrentes: 5.",
+  "status": "watch",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-09-08T18:45:49.595216+00:00\nResumen: Autoexaminacion watch: 12 hallazgos activos. Lo mas fuerte ahora es 4 cloud providers not configured. Mejoras validadas: 0 | issues recurrentes: 5.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- 4 cloud providers not configured: Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up. | recomendacion: Run auto_provision_missing_secrets() | confianza 0.90\n- 1 capacidades Windows nativas faltantes: El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows. | recomendacion: Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario. | confianza 0.90\n- Gemini Web necesita re-login: La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente. | recomendacion: Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente. | confianza 0.85\n- 5 platforms need learning: Low confidence platforms: Groq Console, Google AI Studio, OpenRouter, GitHub, Ollama Local API. Consider learning sessions. | recomendacion: Run learn_platform() for low-confidence platforms | confianza 0.70\n- iabv_window_missing: No se detecta ninguna ventana IABV entre las 11 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse. | recomendacion: Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar. | confianza 0.50\n- Loop introspectivo abierto: 4 mecanismo(s) inactivo(s):  | recomendacion: sin ajuste concreto | confianza 0.00\n\n## Ajustes recomendados\n- 4 cloud providers not configured: Run auto_provision_missing_secrets() | fuente n/d\n- 1 capacidades Windows nativas faltantes: Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario. | fuente iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities, data/evolution/platform_pending/\n- Gemini Web necesita re-login: Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente. | fuente check_web_session_health, AccountResourceScanner\n- 5 platforms need learning: Run learn_platform() for low-confidence platforms | fuente n/d\n- iabv_window_missing: Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar. | fuente WorldModelSnapshot.active_windows\n- UniversalAutonomyIndex: datos insuficientes: Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia. | fuente OperationalSelfExaminationService._universal_autonomy_index_findings\n\n## Mejoras validadas\n- Sin mejoras validadas fuertes todavia.\n\n## Retroalimentacion de ajustes\n- 4 cloud providers not configured: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- 1 capacidades Windows nativas faltantes: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Gemini Web necesita re-login: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- 5 platforms need learning: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n\nUNRESOLVED: UNRESOLVED:codex_thread_tracking, autonomy_score, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+  "findings": [
+    {
+      "finding_id": "0a54daa0-d56b-452b-b210-f37ea3a431b3",
+      "category": "metacognition_evolution",
+      "title": "4 cloud providers not configured",
+      "summary": "Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Run auto_provision_missing_secrets()",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "missing_providers": [
+          "openai",
+          "gemini",
+          "openrouter",
+          "together"
+        ],
+        "actionable": true
+      }
+    },
+    {
+      "finding_id": "cbd9be83-911f-46c4-b003-ac6b1245e904",
+      "category": "windows_integration_gaps",
+      "title": "1 capacidades Windows nativas faltantes",
+      "summary": "El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario.",
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "phase": "windows_integration",
+        "missing_capability_ids": [
+          "platform.notifications"
+        ],
+        "missing_count": 1,
+        "total_platform_caps": 8,
+        "coverage_ratio": 0.88
+      }
+    },
+    {
+      "finding_id": "ca11fbc7-280f-46f2-a330-530e8af88771",
+      "category": "web_session_expired",
+      "title": "Gemini Web necesita re-login",
+      "summary": "La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "recommendation": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider"
+      }
+    },
+    {
+      "finding_id": "1c61abc2-e7e7-4234-89b0-52e96bb07228",
+      "category": "platform_learning",
+      "title": "5 platforms need learning",
+      "summary": "Low confidence platforms: Groq Console, Google AI Studio, OpenRouter, GitHub, Ollama Local API. Consider learning sessions.",
+      "severity": "medium",
+      "confidence": 0.7,
+      "recommendation": "Run learn_platform() for low-confidence platforms",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "platforms": [
+          "groq_console",
+          "gemini_studio",
+          "openrouter",
+          "github",
+          "ollama_api"
+        ]
+      }
+    },
+    {
+      "finding_id": "1b73de44-9598-4668-9a84-83c23049e11f",
+      "category": "ui_self_awareness",
+      "title": "iabv_window_missing",
+      "summary": "No se detecta ninguna ventana IABV entre las 11 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.",
+      "severity": "medium",
+      "confidence": 0.5,
+      "recommendation": "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar.",
+      "evidence_refs": [
+        "total_windows:11",
+        "early_startup:True"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "finding_id": "ebb20ea0-a34f-4e41-a753-d01f0c49a1bd",
+      "category": "loop_closure",
+      "title": "Loop introspectivo abierto: 4 mecanismo(s) inactivo(s)",
+      "summary": "",
+      "severity": "medium",
+      "confidence": 0.0,
+      "recommendation": "",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "checks": [
+          {
+            "mechanism": "G1_auto_execution",
+            "wired": true,
+            "active": false,
+            "detail": "orchestrator wired"
+          },
+          {
+            "mechanism": "G2_feedback_persistence",
+            "wired": true,
+            "active": false,
+            "detail": "history.jsonl not yet created (fires after first validation)"
+          },
+          {
+            "mechanism": "G3_weight_layer",
+            "wired": true,
+            "active": true,
+            "detail": "suggest() available"
+          },
+          {
+            "mechanism": "G4_metacognitive_feedback",
+            "wired": true,
+            "active": false,
+            "detail": "wired but no adjustments yet"
+          },
+          {
+            "mechanism": "cognitive_findings",
+            "wired": true,
+            "active": false,
+            "detail": "none active (need >= 5 experiment runs, have 0)"
+          }
+        ],
+        "wired": 5,
+        "active": 1,
+        "total": 5,
+        "closed": false,
+        "gap_mechanisms": [
+          "G1_auto_execution",
+          "G2_feedback_persistence",
+          "G4_metacognitive_feedback",
+          "cognitive_findings"
+        ]
+      }
+    },
+    {
+      "finding_id": "a49f2005-16b7-46e3-9b7b-c9e1de3ca20f",
+      "category": "discernment_frame_missing_in_task_context",
+      "title": "Discernment frame ausente en contexto",
+      "summary": "No se han generado frames de discernimiento. El TaskContextAssembler no puede incluir resumen.",
+      "severity": "medium",
+      "confidence": 0.0,
+      "recommendation": "",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "frame_count": 0
+      }
+    },
+    {
+      "finding_id": "a6a84bee-aafa-48e9-88de-755c9bd896e4",
+      "category": "autonomy_index_insufficient_data",
+      "title": "UniversalAutonomyIndex: datos insuficientes",
+      "summary": "Solo hay 0 runs, 0 experimentos y 0 sesiones adaptivas. Se necesitan al menos 3 en algun eje para calcular metricas confiables.",
+      "severity": "low",
+      "confidence": 0.95,
+      "recommendation": "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia.",
+      "evidence_refs": [],
+      "source_refs": [
+        "OperationalSelfExaminationService._universal_autonomy_index_findings"
+      ],
+      "linked_run_ids": [],
+      "status": "unresolved",
+      "unresolved_fields": [
+        "autonomy_score",
+        "resilience_score",
+        "calibration_error",
+        "blind_spot_ratio"
+      ],
+      "metadata": {
+        "total_runs": 0,
+        "total_experiments": 0,
+        "total_sessions": 0
+      }
+    }
+  ],
+  "recurring_issues": [
+    {
+      "title": "4 cloud providers not configured",
+      "category": "metacognition_evolution",
+      "summary": "Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "1 capacidades Windows nativas faltantes",
+      "category": "windows_integration_gaps",
+      "summary": "El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ]
+    },
+    {
+      "title": "Gemini Web necesita re-login",
+      "category": "web_session_expired",
+      "summary": "La sesion web de Gemini Web esta expirada o no existe. Razon: No active browser session found for this provider. El proveedor web no sera seleccionado hasta que el usuario re-autentique manualmente.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ]
+    },
+    {
+      "title": "5 platforms need learning",
+      "category": "platform_learning",
+      "summary": "Low confidence platforms: Groq Console, Google AI Studio, OpenRouter, GitHub, Ollama Local API. Consider learning sessions.",
+      "severity": "medium",
+      "confidence": 0.7,
+      "evidence_refs": [],
+      "source_refs": []
+    },
+    {
+      "title": "iabv_window_missing",
+      "category": "ui_self_awareness",
+      "summary": "No se detecta ninguna ventana IABV entre las 11 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. Nota: este hallazgo puede ser un falso positivo de timing — el MCP arranca antes de la UI y el primer scan de ventanas no la detecta. Deberia resolverse en el siguiente sync_pulse.",
+      "severity": "medium",
+      "confidence": 0.5,
+      "evidence_refs": [
+        "total_windows:11",
+        "early_startup:True"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ]
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "4 cloud providers not configured",
+      "recommended_change": "Run auto_provision_missing_secrets()",
+      "category": "metacognition_evolution",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "missing_providers": [
+          "openai",
+          "gemini",
+          "openrouter",
+          "together"
+        ],
+        "actionable": true,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Run auto_provision_missing_secrets()"
+        ]
+      },
+      "feedback_key": "metacognition_evolution:4 cloud providers not configured",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "1 capacidades Windows nativas faltantes",
+      "recommended_change": "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario.",
+      "category": "windows_integration_gaps",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ],
+      "metadata": {
+        "phase": "windows_integration",
+        "missing_capability_ids": [
+          "platform.notifications"
+        ],
+        "missing_count": 1,
+        "total_platform_caps": 8,
+        "coverage_ratio": 0.88,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario."
+        ]
+      },
+      "feedback_key": "windows_integration_gaps:1 capacidades windows nativas faltantes",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Gemini Web necesita re-login",
+      "recommended_change": "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente.",
+      "category": "web_session_expired",
+      "severity": "medium",
+      "confidence": 0.85,
+      "evidence_refs": [],
+      "source_refs": [
+        "check_web_session_health",
+        "AccountResourceScanner"
+      ],
+      "metadata": {
+        "provider": "gemini_web",
+        "session_status": "expired",
+        "needs_human": true,
+        "expires_hint": null,
+        "reason": "No active browser session found for this provider",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Abrir https://gemini.google.com/ en el navegador, hacer login manualmente (captcha/2FA si aplica), y IABV detectara la nueva sesion automaticamente."
+        ]
+      },
+      "feedback_key": "web_session_expired:gemini web necesita re-login",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "5 platforms need learning",
+      "recommended_change": "Run learn_platform() for low-confidence platforms",
+      "category": "platform_learning",
+      "severity": "medium",
+      "confidence": 0.7,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "platforms": [
+          "groq_console",
+          "gemini_studio",
+          "openrouter",
+          "github",
+          "ollama_api"
+        ],
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Run learn_platform() for low-confidence platforms"
+        ]
+      },
+      "feedback_key": "platform_learning:5 platforms need learning",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "iabv_window_missing",
+      "recommended_change": "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar.",
+      "category": "ui_self_awareness",
+      "severity": "medium",
+      "confidence": 0.5,
+      "evidence_refs": [
+        "total_windows:11",
+        "early_startup:True"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ],
+      "metadata": {
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar."
+        ]
+      },
+      "feedback_key": "ui_self_awareness:iabv_window_missing",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "UniversalAutonomyIndex: datos insuficientes",
+      "recommended_change": "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia.",
+      "category": "autonomy_index_insufficient_data",
+      "severity": "low",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [
+        "OperationalSelfExaminationService._universal_autonomy_index_findings"
+      ],
+      "metadata": {
+        "total_runs": 0,
+        "total_experiments": 0,
+        "total_sessions": 0,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Ejecutar mas tareas para acumular datos de rendimiento. Las metricas se calcularan automaticamente cuando haya suficiente evidencia."
+        ]
+      },
+      "feedback_key": "autonomy_index_insufficient_data:universalautonomyindex: datos insuficientes",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    }
+  ],
+  "validated_improvements": [],
+  "unresolved_risks": [
+    "UNRESOLVED:codex_thread_tracking",
+    "autonomy_score",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "package_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_greeting_workspace_7ee5c295be9541ccbc7fc6bd3017ed6e\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_greeting_workspace_7ee5c295be9541ccbc7fc6bd3017ed6e\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [
+      {
+        "title": "4 cloud providers not configured",
+        "category": "metacognition_evolution",
+        "feedback_key": "metacognition_evolution:4 cloud providers not configured",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:45:51.619170+00:00"
+      },
+      {
+        "title": "1 capacidades Windows nativas faltantes",
+        "category": "windows_integration_gaps",
+        "feedback_key": "windows_integration_gaps:1 capacidades windows nativas faltantes",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+          "data/evolution/platform_pending/",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:45:51.619189+00:00"
+      },
+      {
+        "title": "Gemini Web necesita re-login",
+        "category": "web_session_expired",
+        "feedback_key": "web_session_expired:gemini web necesita re-login",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "check_web_session_health",
+          "AccountResourceScanner",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:45:51.619199+00:00"
+      },
+      {
+        "title": "5 platforms need learning",
+        "category": "platform_learning",
+        "feedback_key": "platform_learning:5 platforms need learning",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:45:51.619208+00:00"
+      },
+      {
+        "title": "iabv_window_missing",
+        "category": "ui_self_awareness",
+        "feedback_key": "ui_self_awareness:iabv_window_missing",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "total_windows:11",
+          "early_startup:True"
+        ],
+        "source_refs": [
+          "WorldModelSnapshot.active_windows",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:45:51.619220+00:00"
+      },
+      {
+        "title": "UniversalAutonomyIndex: datos insuficientes",
+        "category": "autonomy_index_insufficient_data",
+        "feedback_key": "autonomy_index_insufficient_data:universalautonomyindex: datos insuficientes",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService._universal_autonomy_index_findings",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-08T18:45:51.619228+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 6,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 6
+    },
+    "solution_proposals": [],
+    "adaptive_threshold_nc": 3,
+    "workspace_root": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_greeting_workspace_7ee5c295be9541ccbc7fc6bd3017ed6e",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ],
+    "embodiment_violations": [],
+    "pending_auto_probes": [],
+    "archive_json_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_greeting_workspace_7ee5c295be9541ccbc7fc6bd3017ed6e\\data\\evolution\\self_examination\\history\\17efda03-bbcf-457c-9b73-f41ea96352cd.json",
+    "archive_markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_greeting_workspace_7ee5c295be9541ccbc7fc6bd3017ed6e\\data\\evolution\\self_examination\\history\\17efda03-bbcf-457c-9b73-f41ea96352cd.md"
+  }
+}

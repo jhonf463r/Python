@@ -30,7 +30,6 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.services.development.development_audit_engine import (
     DevelopmentAuditEngine,
-    DevelopmentAuditReceipt,
 )
 from iabv_v15.services.development.git_evidence_verifier import (
     GitEvidenceVerifier,
@@ -69,9 +68,9 @@ def _init_git_repo(root: Path) -> tuple[str, str]:
     return base, result
 
 
-# Test A — Fake PASS
+# Test A — Fake PASS (P0-B V2)
 def test_a_fake_pass_not_trusted():
-    """Test A: Caller-constructed PASS verdict is NOT trusted authority."""
+    """Test A: Caller-constructed PASS verdict is NOT trusted authority without verification."""
     # Caller can construct a DevelopmentAuditResult with PASS
     fake_result = DevelopmentAuditResult(
         execution_evidence_id="fake_evidence_id",
@@ -82,18 +81,14 @@ def test_a_fake_pass_not_trusted():
     assert fake_result.verdict == DevelopmentAuditVerdict.PASS
     assert fake_result.execution_evidence_id == "fake_evidence_id"
     
-    # BUT: This is NOT a trusted receipt
-    # There is no DevelopmentAuditReceipt associated with it
-    # It cannot be produced by the audit engine without verified evidence
-    assert not isinstance(fake_result, DevelopmentAuditReceipt)
-    
-    # The receipt is the only trusted authority
-    # A caller-constructed result is just a record, not authority
+    # P0-B V2: Authority is based on verifiable evidence chain, not object type
+    # A caller-constructed result is just a record, not authoritative
+    # It must be verified against Git evidence to be trusted
 
 
-# Test B — Valid trusted receipt
-def test_b_valid_trusted_receipt():
-    """Test B: Valid flow through engine produces trusted receipt."""
+# Test B — Valid trusted result (P0-B V2)
+def test_b_valid_trusted_result():
+    """Test B: Valid flow through engine produces verifiable result."""
     root = _workspace("test_b")
     base, result = _init_git_repo(root)
     
@@ -109,24 +104,24 @@ def test_b_valid_trusted_receipt():
     
     # Audit through engine
     engine = DevelopmentAuditEngine(repository_path=str(root))
-    receipt = engine.audit_execution(evidence, auditor_id="test_auditor")
+    result_obj = engine.audit_execution(evidence, auditor_id="test_auditor")
     
-    # Receipt is produced by engine
-    assert isinstance(receipt, DevelopmentAuditReceipt)
-    assert receipt.verdict in [DevelopmentAuditVerdict.PASS, DevelopmentAuditVerdict.FAIL, DevelopmentAuditVerdict.INCONCLUSIVE]
+    # Result is produced by engine
+    assert isinstance(result_obj, DevelopmentAuditResult)
+    assert result_obj.verdict in [DevelopmentAuditVerdict.PASS, DevelopmentAuditVerdict.FAIL, DevelopmentAuditVerdict.INCONCLUSIVE]
     
-    # Receipt can be converted to persistent record
-    audit_result = receipt.to_audit_result()
-    assert isinstance(audit_result, DevelopmentAuditResult)
-    assert audit_result.verdict == receipt.verdict
+    # P0-B V2: Result contains verifiable Git evidence metadata
+    assert result_obj.metadata is not None
+    assert "base_commit" in result_obj.metadata
+    assert "result_commit" in result_obj.metadata
     
-    # The receipt is the trusted authority
-    # The record is just the persistent representation
+    # Result can be verified against Git evidence
+    assert engine.verify_result(result_obj) is True
 
 
-# Test C — Deserialized fake PASS
+# Test C — Deserialized fake PASS (P0-B V2)
 def test_c_deserialized_fake_pass_not_trusted():
-    """Test C: Deserialized DAR with PASS is not trusted authority."""
+    """Test C: Deserialized DAR with PASS is not trusted authority without verification."""
     # Create a fake DAR
     fake_dar = DevelopmentAuditResult(
         execution_evidence_id="fake_id",
@@ -142,11 +137,12 @@ def test_c_deserialized_fake_pass_not_trusted():
     # It deserializes successfully
     assert deserialized.verdict == DevelopmentAuditVerdict.PASS
     
-    # BUT: It's still not a trusted receipt
-    assert not isinstance(deserialized, DevelopmentAuditReceipt)
-    
-    # Deserialization does NOT confer authority
-    # Only a receipt from the engine is trusted
+    # P0-B V2: Deserialized result is not authoritative without verification
+    # It cannot be verified against Git evidence (no real commits)
+    root = _workspace("test_c")
+    base, result = _init_git_repo(root)
+    engine = DevelopmentAuditEngine(repository_path=str(root))
+    assert engine.verify_result(deserialized) is False
 
 
 # Test D — Invalid Git object

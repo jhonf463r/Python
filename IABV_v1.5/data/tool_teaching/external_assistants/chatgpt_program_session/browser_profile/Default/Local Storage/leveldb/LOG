@@ -1,3 +1,2 @@
-2026/04/19-20:15:28.333 66a6 Reusing MANIFEST /home/ubuntu/repos/Python/IABV_v1.5/data/tool_teaching/external_assistants/chatgpt_program_session/browser_profile/Default/Local Storage/leveldb/MANIFEST-000001
-2026/04/19-20:15:28.333 66a6 Recovering log #3
-2026/04/19-20:15:28.333 66a6 Reusing old log /home/ubuntu/repos/Python/IABV_v1.5/data/tool_teaching/external_assistants/chatgpt_program_session/browser_profile/Default/Local Storage/leveldb/000003.log 
+2026/09/08-13:57:41.614 2ea8 Creating DB C:\w\iabv-main\IABV_v1.5\data\tool_teaching\external_assistants\chatgpt_program_session\browser_profile\Default\Local Storage\leveldb since it was missing.
+2026/09/08-13:57:41.664 2ea8 Reusing MANIFEST C:\w\iabv-main\IABV_v1.5\data\tool_teaching\external_assistants\chatgpt_program_session\browser_profile\Default\Local Storage\leveldb/MANIFEST-000001

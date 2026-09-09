@@ -1,0 +1,44 @@
+{
+  "accounts": {
+    "codex:jhonf463r@gmail.com": {
+      "tool": "codex",
+      "email": "jhonf463r@gmail.com",
+      "messages": [
+        1788893352.902914
+      ],
+      "total_sent": 1
+    },
+    "codex:proveedorjf@gmail.com": {
+      "tool": "codex",
+      "email": "proveedorjf@gmail.com",
+      "messages": [
+        1788893377.7119684
+      ],
+      "total_sent": 1
+    },
+    "codex:storeburve@gmail.com": {
+      "tool": "codex",
+      "email": "storeburve@gmail.com",
+      "messages": [
+        1788893391.0962262
+      ],
+      "total_sent": 1
+    },
+    "codex:hectorgeoruiz@gmail.com": {
+      "tool": "codex",
+      "email": "hectorgeoruiz@gmail.com",
+      "messages": [
+        1788893404.7447155
+      ],
+      "total_sent": 1
+    },
+    "chatgpt:jhonf463r@gmail.com": {
+      "tool": "chatgpt",
+      "email": "jhonf463r@gmail.com",
+      "messages": [
+        1788893604.3029482
+      ],
+      "total_sent": 1
+    }
+  }
+}

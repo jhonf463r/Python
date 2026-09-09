@@ -1,0 +1,415 @@
+{
+  "status_id": "4fc9d667-e7ae-4d77-8815-e2e55b9e8df3",
+  "created_at_utc": "2026-09-08T18:58:38.752345Z",
+  "updated_at_utc": "2026-09-08T18:58:38.752345Z",
+  "summary": "Superviso 1 contexto(s) con 2 propuesta(s) activa(s), 0 ya decidida(s) y 1 contexto(s) degradado(s). Mejor panorama actual: chatgpt_web_assisted favorece chatgpt web asistido con score -0.14 y propuesta collect_more_evidence Validacion autonoma: bootstrapping. Ciclo de validacion autonoma iniciando; a la espera del primer tick.",
+  "performance": [
+    {
+      "performance_id": "b89456cc-b551-4b22-9c87-d764e78af558",
+      "domain": "language",
+      "subject_key": "chatgpt_web_assisted",
+      "route": "ui",
+      "assistant_kind": "chatgpt web asistido",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_count": 1,
+      "success_count": 0,
+      "failure_count": 1,
+      "blocked_count": 0,
+      "fallback_count": 0,
+      "success_rate": 0.0,
+      "blocked_rate": 0.0,
+      "fallback_rate": 0.0,
+      "average_score": 0.238,
+      "average_latency_ms": 59745,
+      "adaptive_weight": -0.376,
+      "weighted_score": -0.138,
+      "trend_score": 0.0,
+      "degraded": true,
+      "degradation_reasons": [
+        "latencia alta 59745 ms"
+      ],
+      "evidence_refs": [
+        "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+      ],
+      "comparison_scope_keys": [
+        "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r"
+      ],
+      "created_at_utc": "2026-09-08T18:58:38.771631Z",
+      "metadata": {
+        "reasons": [
+          "latencia promedio 59745 ms"
+        ],
+        "top_environment_signatures": [],
+        "top_time_buckets": []
+      }
+    }
+  ],
+  "proposals": [
+    {
+      "proposal_id": "2fe465f9-84f3-4ca0-8865-fb04da28545d",
+      "proposal_key": "chatgpt_web_assisted|collect_more_evidence|ui|chatgpt web asistido|without_plan|without_files|normal|short|without_tools|without_browser|general|external|ui|chatgpt web asistido|without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "domain": "language",
+      "subject_key": "chatgpt_web_assisted",
+      "status": "pending",
+      "proposal_kind": "collect_more_evidence",
+      "title": "Recolectar mas evidencia para chatgpt_web_assisted",
+      "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+      "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+      "current_route": "ui",
+      "current_assistant_kind": "chatgpt web asistido",
+      "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "candidate_route": "ui",
+      "candidate_assistant_kind": "chatgpt web asistido",
+      "candidate_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "confidence": 0.58,
+      "evidence_refs": [
+        "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+      ],
+      "comparison_scope_keys": [
+        "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r"
+      ],
+      "created_at_utc": "2026-09-08T18:58:38.771676Z",
+      "metadata": {
+        "next_action": "collect_more_runs",
+        "degradation_reasons": [
+          "latencia alta 59745 ms"
+        ],
+        "baseline_profile": {
+          "sample_count": 1,
+          "success_rate": 0.0,
+          "failure_rate": 1.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "reuse_ratio": 0.0,
+          "average_score": 0.238,
+          "average_latency_ms": 59745,
+          "time_bucket_latency_cap": 0.14,
+          "recency_score": -0.7,
+          "trend_score": 0.0,
+          "adaptive_weight": -0.376,
+          "weighted_score": -0.138,
+          "top_environment_signatures": null,
+          "top_time_buckets": null,
+          "reasons": [
+            "latencia promedio 59745 ms"
+          ]
+        }
+      }
+    },
+    {
+      "proposal_id": "602de535-690d-4228-acd7-16311bf6064d",
+      "proposal_key": "chatgpt_web_assisted|validate_discovery|fallback|||language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "domain": "language",
+      "subject_key": "chatgpt_web_assisted",
+      "status": "pending",
+      "proposal_kind": "validate_discovery",
+      "title": "Probar ChatGPT web asistido para chatgpt_web_assisted",
+      "summary": "ChatGPT web asistido aparece disponible y compatible con chatgpt_web_assisted. Conviene validarlo frente a fallback.",
+      "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+      "current_route": "fallback",
+      "current_assistant_kind": "",
+      "current_config_signature": "",
+      "candidate_route": "language_understanding",
+      "candidate_assistant_kind": "chatgpt",
+      "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+      "confidence": 0.8852,
+      "evidence_refs": [
+        "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+      ],
+      "comparison_scope_keys": [
+        "chatgpt_web_assisted"
+      ],
+      "created_at_utc": "2026-09-08T18:58:38.771781Z",
+      "metadata": {
+        "next_action": "validate_in_sandbox",
+        "discovery_signal_id": "e3a3c9d5-bf0f-41e4-821d-83ff179063d9",
+        "discovery_source": "tool_registry",
+        "discovery_source_refs": [
+          "ToolRegistry",
+          "ExperimentLab",
+          "WorldModelSnapshot"
+        ],
+        "compatibility_score": 0.95,
+        "impact_score": 0.64,
+        "cost_score": 0.46,
+        "baseline_weighted_score": 0.0,
+        "alternative_weighted_score": 0.065,
+        "score_margin": 0.065,
+        "baseline_profile": {
+          "weighted_score": 0.0,
+          "sample_count": 1
+        },
+        "candidate_profile": {
+          "weighted_score": 0.065,
+          "compatibility_score": 0.95,
+          "impact_score": 0.64,
+          "cost_score": 0.46
+        },
+        "ranked_configurations": [
+          {
+            "route": "fallback",
+            "assistant_kind": "",
+            "config_signature": "",
+            "weighted_score": 0.0,
+            "score": 0.0,
+            "samples": 1
+          },
+          {
+            "route": "language_understanding",
+            "assistant_kind": "chatgpt",
+            "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+            "weighted_score": 0.065,
+            "score": 0.065,
+            "samples": 0
+          }
+        ],
+        "tool_type": "llm_web_ui",
+        "capabilities": [
+          "launch_app",
+          "llm_query",
+          "consult_external",
+          "web_assisted"
+        ],
+        "current_route": "fallback",
+        "current_assistant_kind": "",
+        "current_config_signature": "",
+        "estimated_candidate_score": 0.065,
+        "estimated_gain": 0.065,
+        "live_status": "listo",
+        "requires_human_approval": true,
+        "local_first": false,
+        "supports_sandbox": true
+      }
+    }
+  ],
+  "degraded_subjects": [
+    "chatgpt_web_assisted"
+  ],
+  "unresolved_fields": [],
+  "package_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_send_chat_external_access_denied_workspace_5e2562b1c9fc40c7a69d6925c0169009\\data\\evolution\\tool_evolution\\latest.json",
+  "markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_send_chat_external_access_denied_workspace_5e2562b1c9fc40c7a69d6925c0169009\\data\\evolution\\tool_evolution\\latest.md",
+  "metadata": {
+    "subject_keys": [
+      "chatgpt_web_assisted"
+    ],
+    "proposal_count": 2,
+    "active_proposal_count": 2,
+    "decided_proposal_count": 0,
+    "degraded_count": 1,
+    "validation_status": "bootstrapping",
+    "validation_summary": "Ciclo de validacion autonoma iniciando; a la espera del primer tick.",
+    "active_proposals": [
+      {
+        "proposal_id": "2fe465f9-84f3-4ca0-8865-fb04da28545d",
+        "proposal_key": "chatgpt_web_assisted|collect_more_evidence|ui|chatgpt web asistido|without_plan|without_files|normal|short|without_tools|without_browser|general|external|ui|chatgpt web asistido|without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "domain": "language",
+        "subject_key": "chatgpt_web_assisted",
+        "status": "pending",
+        "proposal_kind": "collect_more_evidence",
+        "title": "Recolectar mas evidencia para chatgpt_web_assisted",
+        "summary": "La ruta actual muestra degradacion, pero todavia no existe una alternativa con evidencia suficiente para competir.",
+        "rationale": "Conviene recolectar nuevas corridas comparables antes de seguir reforzando la preferencia actual.",
+        "current_route": "ui",
+        "current_assistant_kind": "chatgpt web asistido",
+        "current_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "candidate_route": "ui",
+        "candidate_assistant_kind": "chatgpt web asistido",
+        "candidate_config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+        "confidence": 0.58,
+        "evidence_refs": [
+          "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+        ],
+        "comparison_scope_keys": [
+          "general:consultar-chatgpt-sobre-necesito-una-consulta-externa-con-chatgpt-para-r"
+        ],
+        "created_at_utc": "2026-09-08T18:58:38.771676Z",
+        "metadata": {
+          "next_action": "collect_more_runs",
+          "degradation_reasons": [
+            "latencia alta 59745 ms"
+          ],
+          "baseline_profile": {
+            "sample_count": 1,
+            "success_rate": 0.0,
+            "failure_rate": 1.0,
+            "blocked_rate": 0.0,
+            "fallback_rate": 0.0,
+            "reuse_ratio": 0.0,
+            "average_score": 0.238,
+            "average_latency_ms": 59745,
+            "time_bucket_latency_cap": 0.14,
+            "recency_score": -0.7,
+            "trend_score": 0.0,
+            "adaptive_weight": -0.376,
+            "weighted_score": -0.138,
+            "top_environment_signatures": null,
+            "top_time_buckets": null,
+            "reasons": [
+              "latencia promedio 59745 ms"
+            ]
+          }
+        }
+      },
+      {
+        "proposal_id": "602de535-690d-4228-acd7-16311bf6064d",
+        "proposal_key": "chatgpt_web_assisted|validate_discovery|fallback|||language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "domain": "language",
+        "subject_key": "chatgpt_web_assisted",
+        "status": "pending",
+        "proposal_kind": "validate_discovery",
+        "title": "Probar ChatGPT web asistido para chatgpt_web_assisted",
+        "summary": "ChatGPT web asistido aparece disponible y compatible con chatgpt_web_assisted. Conviene validarlo frente a fallback.",
+        "rationale": "Descubierto via tool_registry con evidencia ToolRegistry, ExperimentLab.",
+        "current_route": "fallback",
+        "current_assistant_kind": "",
+        "current_config_signature": "",
+        "candidate_route": "language_understanding",
+        "candidate_assistant_kind": "chatgpt",
+        "candidate_config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+        "confidence": 0.8852,
+        "evidence_refs": [
+          "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+        ],
+        "comparison_scope_keys": [
+          "chatgpt_web_assisted"
+        ],
+        "created_at_utc": "2026-09-08T18:58:38.771781Z",
+        "metadata": {
+          "next_action": "validate_in_sandbox",
+          "discovery_signal_id": "e3a3c9d5-bf0f-41e4-821d-83ff179063d9",
+          "discovery_source": "tool_registry",
+          "discovery_source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "compatibility_score": 0.95,
+          "impact_score": 0.64,
+          "cost_score": 0.46,
+          "baseline_weighted_score": 0.0,
+          "alternative_weighted_score": 0.065,
+          "score_margin": 0.065,
+          "baseline_profile": {
+            "weighted_score": 0.0,
+            "sample_count": 1
+          },
+          "candidate_profile": {
+            "weighted_score": 0.065,
+            "compatibility_score": 0.95,
+            "impact_score": 0.64,
+            "cost_score": 0.46
+          },
+          "ranked_configurations": [
+            {
+              "route": "fallback",
+              "assistant_kind": "",
+              "config_signature": "",
+              "weighted_score": 0.0,
+              "score": 0.0,
+              "samples": 1
+            },
+            {
+              "route": "language_understanding",
+              "assistant_kind": "chatgpt",
+              "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+              "weighted_score": 0.065,
+              "score": 0.065,
+              "samples": 0
+            }
+          ],
+          "tool_type": "llm_web_ui",
+          "capabilities": [
+            "launch_app",
+            "llm_query",
+            "consult_external",
+            "web_assisted"
+          ],
+          "current_route": "fallback",
+          "current_assistant_kind": "",
+          "current_config_signature": "",
+          "estimated_candidate_score": 0.065,
+          "estimated_gain": 0.065,
+          "live_status": "listo",
+          "requires_human_approval": true,
+          "local_first": false,
+          "supports_sandbox": true
+        }
+      }
+    ],
+    "decided_proposals": [],
+    "decision_log_summary": {
+      "winning_by_problem": {},
+      "degraded_tools": [],
+      "in_validation": [],
+      "discarded_proposals": [],
+      "recent_decisions": [],
+      "last_decision": {},
+      "summary_by_tool": {},
+      "summary_by_problem": {},
+      "unresolved_fields": [],
+      "package_path": "",
+      "markdown_path": "",
+      "pending_auto_probes": []
+    },
+    "recent_decisions": [],
+    "discovery_summary": {
+      "subject_keys": [
+        "chatgpt_web_assisted"
+      ],
+      "active_signals": [
+        {
+          "signal_id": "e3a3c9d5-bf0f-41e4-821d-83ff179063d9",
+          "proposal_key": "chatgpt_web_assisted|validate_discovery|fallback|||language_understanding|chatgpt|web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "source": "tool_registry",
+          "source_refs": [
+            "ToolRegistry",
+            "ExperimentLab",
+            "WorldModelSnapshot"
+          ],
+          "domain": "language",
+          "scope": "chatgpt_web_assisted",
+          "title": "Probar ChatGPT web asistido para chatgpt_web_assisted",
+          "summary": "ChatGPT web asistido aparece disponible y compatible con chatgpt_web_assisted. Conviene validarlo frente a fallback.",
+          "tool_id": "chatgpt_web_assisted",
+          "tool_title": "ChatGPT web asistido",
+          "assistant_kind": "chatgpt",
+          "route": "language_understanding",
+          "config_signature": "web_assisted:chatgpt_web_consult_v1:external_assistant",
+          "status": "detected",
+          "confidence": 0.8852,
+          "compatibility_score": 0.95,
+          "impact_score": 0.64,
+          "cost_score": 0.46,
+          "evidence_refs": [
+            "e28deb4b-5d82-40f6-a2e1-d159aef025cf"
+          ],
+          "metadata": {
+            "tool_type": "llm_web_ui",
+            "capabilities": [
+              "launch_app",
+              "llm_query",
+              "consult_external",
+              "web_assisted"
+            ],
+            "current_route": "fallback",
+            "current_assistant_kind": "",
+            "current_config_signature": "",
+            "baseline_weighted_score": 0.0,
+            "estimated_candidate_score": 0.065,
+            "estimated_gain": 0.065,
+            "live_status": "listo",
+            "requires_human_approval": true,
+            "local_first": false,
+            "supports_sandbox": true
+          }
+        }
+      ],
+      "in_validation_signals": [],
+      "promoted_signals": [],
+      "discarded_signals": [],
+      "unresolved_signals": []
+    },
+    "archive_json_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_send_chat_external_access_denied_workspace_5e2562b1c9fc40c7a69d6925c0169009\\data\\evolution\\tool_evolution\\history\\4fc9d667-e7ae-4d77-8815-e2e55b9e8df3.json",
+    "archive_markdown_path": "C:\\w\\iabv-main\\IABV_v1.5\\data\\test_control_center_send_chat_external_access_denied_workspace_5e2562b1c9fc40c7a69d6925c0169009\\data\\evolution\\tool_evolution\\history\\4fc9d667-e7ae-4d77-8815-e2e55b9e8df3.md"
+  }
+}

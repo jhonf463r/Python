@@ -1,0 +1,15 @@
+{
+  "id": "win_dpi_awareness",
+  "title": "DPI awareness para pantallas HiDPI",
+  "description": "SetProcessDpiAwareness(2) llamado en bootstrap antes de QGuiApplication. Implementado en Fix 19c.",
+  "reason": "Implementado en Fix 19c",
+  "dependency_missing": "",
+  "priority": "medium",
+  "next_action": "",
+  "status": "COMPLETED",
+  "category": "windows_native",
+  "created_at": "2026-09-08T18:54:44.090093Z",
+  "updated_at": "2026-09-08T18:54:44.090100Z",
+  "resume_hint": "",
+  "metadata": {}
+}

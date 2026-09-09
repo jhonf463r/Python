@@ -1,0 +1,15 @@
+{
+  "id": "win_power_awareness",
+  "title": "Deteccion de plan de energia y estado de pantalla",
+  "description": "Detectar si la pantalla esta apagada, el equipo en modo sleep, o el plan de energia es de ahorro. Ajustar scans y workers en consecuencia.",
+  "reason": "No hay deteccion de power plan ni screen lock",
+  "dependency_missing": "powercfg o WMI query",
+  "priority": "low",
+  "next_action": "Agregar _power_plan_snapshot() en EnvironmentSelfAwarenessService",
+  "status": "PENDING",
+  "category": "windows_native",
+  "created_at": "2026-09-08T18:54:44.087997Z",
+  "updated_at": "2026-09-08T18:54:44.088002Z",
+  "resume_hint": "",
+  "metadata": {}
+}
