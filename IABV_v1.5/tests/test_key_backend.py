@@ -157,6 +157,7 @@ class TestTrustStore:
         """Load or create test provisioner keypair for signing trust stores.
         
         F5 V4-r6 FIX: Separate keypair for cryptographic signature.
+        F14 V4-r7 FIX: Support DPAPI-protected format, fallback to plaintext for tests.
         
         Returns:
             TestAuthorityKeyPair (reused as provisioner keypair for tests)
@@ -166,12 +167,34 @@ class TestTrustStore:
                 with open(self._provisioner_keypair_path, 'r', encoding='utf-8') as f:
                     key_data = json.load(f)
                 
-                private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
-                private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+                # F14 V4-r7 FIX: Support DPAPI-protected format
+                if "private_key_protected" in key_data:
+                    # Try DPAPI decrypt if available
+                    try:
+                        import win32crypt
+                        encrypted_bytes = bytes.fromhex(key_data["private_key_protected"])
+                        decrypted = win32crypt.CryptUnprotectData(encrypted_bytes, None, None, None)
+                        decrypted_bytes = decrypted[1] if isinstance(decrypted, tuple) else decrypted
+                        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(decrypted_bytes)
+                    except (ImportError, Exception):
+                        # Fallback: try loading legacy plaintext for test compatibility
+                        logger.warning("DPAPI decrypt failed or unavailable, trying legacy plaintext for test compatibility")
+                        if "private_key_hex" in key_data:
+                            private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
+                            private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+                        else:
+                            raise RuntimeError("Cannot load provisioner key: neither DPAPI nor plaintext available")
+                elif "private_key_hex" in key_data:
+                    # Legacy plaintext format (INSECURE - test only)
+                    logger.warning("Loading legacy plaintext provisioner key (INSECURE - test only)")
+                    private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
+                    private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+                else:
+                    raise RuntimeError("Provisioner key has no private key data")
                 
                 keypair = TestAuthorityKeyPair.__new__(TestAuthorityKeyPair)
                 keypair._private_key = private_key
-                keypair._public_key = private_key.public_key()
+                keypair._public_key = private_key.public()
                 keypair._public_key_id = key_data["public_key_id"]
                 
                 logger.info("Loaded test provisioner keypair from: %s", self._provisioner_keypair_path)
@@ -190,17 +213,20 @@ class TestTrustStore:
             NoEncryption()
         )
         
+        # F14 V4-r7 FIX: Store as plaintext for test compatibility (INSECURE)
+        # Production uses DPAPI, tests use plaintext for simplicity
         key_data = {
             "public_key_id": keypair.public_key_id,
             "public_key_hex": keypair.public_key.public_bytes(Encoding.Raw, PublicFormat.Raw).hex(),
             "private_key_hex": private_key_bytes.hex(),
+            "protection": "plaintext_test_only",
             "created_at_utc": datetime.now(timezone.utc).isoformat(),
         }
         
         with open(self._provisioner_keypair_path, 'w', encoding='utf-8') as f:
             json.dump(key_data, f, indent=2)
         
-        logger.warning("Created and stored test provisioner keypair: %s", self._provisioner_keypair_path)
+        logger.warning("Created and stored test provisioner keypair with INSECURE plaintext: %s", self._provisioner_keypair_path)
         return keypair
     
     def _sign_trust_store(self, trust_data: dict[str, Any]) -> str:

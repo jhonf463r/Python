@@ -53,6 +53,13 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, PublicFormat, NoEncryption
 from cryptography.hazmat.primitives import hashes
 
+# F14 V4-r7 FIX: DPAPI for private key protection
+try:
+    import win32crypt
+    DPAPI_AVAILABLE = True
+except ImportError:
+    DPAPI_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -555,26 +562,63 @@ class OSAuthorityProvisioner:
         """Load or create provisioner keypair for signing trust stores.
         
         F5 V4-r6 FIX: Separate keypair for cryptographic signature of trust stores.
+        F14 V4-r7 FIX: Protect provisioner private key with DPAPI (was plain text).
         
         The provisioner keypair is stored in the protected directory and is used
         to sign trust stores to establish cryptographic authenticity.
         
         Returns:
             ProvisionerKeyPair (existing or newly created)
+        
+        Raises:
+            OSProvisioningError: If DPAPI unavailable or key protection fails
         """
+        # F14 V4-r7 FIX: Fail closed if DPAPI unavailable
+        if not DPAPI_AVAILABLE:
+            raise OSProvisioningError(
+                "Provisioner private key protection requires Windows DPAPI (win32crypt). "
+                "This platform is not supported for production provisioning."
+            )
+        
         if self._provisioner_keypair_path.exists():
             try:
                 with open(self._provisioner_keypair_path, 'r', encoding='utf-8') as f:
                     key_data = json.load(f)
                 
-                # Reconstruct provisioner keypair
-                private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
-                private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
-                public_key = private_key.public_key()
-                
-                keypair = ProvisionerKeyPair(private_key, public_key)
-                logger.info("Loaded provisioner keypair from: %s", self._provisioner_keypair_path)
-                return keypair
+                # F14 V4-r7 FIX: Decrypt private key using DPAPI
+                if "private_key_protected" in key_data:
+                    encrypted_bytes = bytes.fromhex(key_data["private_key_protected"])
+                    logger.info("Attempting DPAPI unprotect of provisioner key")
+                    
+                    try:
+                        decrypted = win32crypt.CryptUnprotectData(encrypted_bytes, None, None, None)
+                        
+                        if isinstance(decrypted, tuple):
+                            decrypted_bytes = decrypted[1]
+                        else:
+                            decrypted_bytes = decrypted
+                        
+                        if len(decrypted_bytes) != 32:
+                            raise RuntimeError(
+                                f"Decrypted provisioner key has invalid length: {len(decrypted_bytes)} (expected 32)"
+                            )
+                        
+                        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(decrypted_bytes)
+                        public_key = private_key.public_key()
+                        
+                        keypair = ProvisionerKeyPair(private_key, public_key)
+                        logger.info("Loaded provisioner keypair with DPAPI protection from: %s", self._provisioner_keypair_path)
+                        return keypair
+                        
+                    except Exception as exc:
+                        logger.error("Failed to decrypt provisioner key: %s", exc)
+                        raise OSProvisioningError(f"Failed to decrypt provisioner key: {exc}")
+                else:
+                    # Legacy plain text key - error out for security
+                    raise OSProvisioningError(
+                        "Legacy plain-text provisioner key detected. "
+                        "Please delete and reprovision with DPAPI protection."
+                    )
                 
             except Exception as exc:
                 logger.error("Failed to load provisioner keypair: %s", exc)
@@ -583,24 +627,29 @@ class OSAuthorityProvisioner:
         # Create new provisioner keypair
         keypair = ProvisionerKeyPair.generate()
         
-        # Store provisioner keypair (private key needs protection in production)
+        # F14 V4-r7 FIX: Protect private key with DPAPI
         private_key_bytes = keypair._private_key.private_bytes(
             Encoding.Raw,
             PrivateFormat.Raw,
             NoEncryption()
         )
         
+        encrypted_result = win32crypt.CryptProtectData(private_key_bytes, None, None, None, None, 0)
+        encrypted_bytes = encrypted_result if not isinstance(encrypted_result, tuple) else encrypted_result[0]
+        protected_key_hex = encrypted_bytes.hex()
+        
         key_data = {
             "public_key_id": keypair.public_key_id,
             "public_key_hex": keypair.public_key_hex,
-            "private_key_hex": private_key_bytes.hex(),
+            "private_key_protected": protected_key_hex,
+            "protection": "DPAPI",
             "created_at_utc": self._get_current_timestamp(),
         }
         
         with open(self._provisioner_keypair_path, 'w', encoding='utf-8') as f:
             json.dump(key_data, f, indent=2)
         
-        logger.info("Created and stored provisioner keypair: %s", self._provisioner_keypair_path)
+        logger.info("Created and stored provisioner keypair with DPAPI protection: %s", self._provisioner_keypair_path)
         return keypair
     
     def _load_trust_store(self) -> dict[str, Any]:
