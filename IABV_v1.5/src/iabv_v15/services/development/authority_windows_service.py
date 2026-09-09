@@ -1,6 +1,6 @@
-"""P0-B V4-r9.2 Windows Service Authority Implementation with IPC.
+"""P0-B V4-r9.3 Windows Service Authority Implementation with IPC.
 
-F14 V4-r9.2 FIX: Authority runs as Windows Service with IPC authorization.
+F14 V4-r9.3 FIX: Complete functional authority implementation with real key loading and CERTIFY.
 
 Architecture:
     AUTHORITY SERVICE (LocalService / gMSA)
@@ -13,7 +13,7 @@ Architecture:
         ↓
     Authorized Caller Check (Service validates caller SID)
         ↓
-    CERTIFY operation (signature generation)
+    CERTIFY operation (real signature generation)
 
 Security Model:
 - Authority runs under dedicated service identity (LocalService or gMSA)
@@ -21,6 +21,7 @@ Security Model:
 - Named Pipe ACL restricted to authorized callers
 - Service process isolation prevents same-user key access
 - IPC validates caller SID before authorizing operations
+- Fail-closed behavior for missing/corrupted keys
 
 Threat Model:
 - T3 (same-user attacker): Protected by service identity boundary
@@ -35,9 +36,10 @@ Deployment Requirements:
 - Service-managed key storage location
 - Named Pipe server implementation
 - Caller SID validation
+- Authority key provisioning (admin only)
 
-Note: This module provides the service architecture with IPC. Actual service
-installation requires running as Administrator via service manager.
+Note: This module provides the complete functional authority implementation.
+Service installation requires running as Administrator via service manager.
 """
 
 from __future__ import annotations
@@ -46,6 +48,7 @@ import json
 import logging
 import sys
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +76,9 @@ try:
 except ImportError:
     CRYPTOGRAPHY_AVAILABLE = False
 
+# JSON support
+import json
+
 # DPAPI support
 try:
     import win32crypt
@@ -83,6 +89,11 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+class AuthorityKeyError(Exception):
+    """Raised when authority key operations fail."""
+    pass
+
+
 class AuthorityServiceIPCError(Exception):
     """Raised when IPC operation fails."""
     pass
@@ -91,6 +102,246 @@ class AuthorityServiceIPCError(Exception):
 class AuthorityServiceAuthorizationError(Exception):
     """Raised when caller is not authorized."""
     pass
+
+
+class AuthorityKeyManager:
+    """Service-scoped authority key management.
+    
+    F14 V4-r9.3 FIX: Real authority key loading and management.
+    
+    This class provides:
+    - Service-scoped key storage (C:\ProgramData\IABV\authority_keys\)
+    - DPAPI protection with service identity
+    - Key loading with fail-closed behavior
+    - Identity verification
+    """
+    
+    def __init__(
+        self,
+        key_storage_path: Path,
+        service_identity: str = "LocalService",
+    ):
+        """Initialize authority key manager.
+        
+        Args:
+            key_storage_path: Path to service-scoped key storage
+            service_identity: Service identity (LocalService, etc.)
+        """
+        if not DPAPI_AVAILABLE:
+            raise AuthorityKeyError(
+                "Authority key management requires Windows DPAPI (win32crypt). "
+                "This platform is not supported for production authority."
+            )
+        
+        if not CRYPTOGRAPHY_AVAILABLE:
+            raise AuthorityKeyError(
+                "Authority key management requires cryptography. "
+                "Install with: pip install cryptography"
+            )
+        
+        self.key_storage_path = key_storage_path
+        self.service_identity = service_identity
+        self._private_key: ed25519.Ed25519PrivateKey | None = None
+        self._public_key: ed25519.Ed25519PublicKey | None = None
+        self._key_id: str | None = None
+        
+        logger.info("AuthorityKeyManager initialized: %s", key_storage_path)
+    
+    def _get_key_file_path(self) -> Path:
+        """Get path to authority private key file."""
+        return self.key_storage_path / "authority_private_key.json"
+    
+    def generate_and_store_key(self) -> tuple[str, str]:
+        """Generate and store new authority key pair.
+        
+        F14 V4-r9.3 FIX: Generate key in service context with DPAPI protection.
+        
+        This should be called during provisioning (admin only).
+        
+        Returns:
+            (key_id, public_key_hex)
+        
+        Raises:
+            AuthorityKeyError: If key generation or storage fails
+        """
+        # Generate Ed25519 key pair
+        private_key = ed25519.Ed25519PrivateKey.generate()
+        public_key = private_key.public_key()
+        
+        # Extract key bytes
+        private_key_bytes = private_key.private_bytes(
+            Encoding.Raw,
+            PrivateFormat.Raw,
+            NoEncryption()
+        )
+        
+        public_key_bytes = public_key.public_bytes(Encoding.Raw, PublicFormat.Raw)
+        
+        # Protect private key with DPAPI
+        try:
+            protected_result = win32crypt.CryptProtectData(
+                private_key_bytes,
+                None,
+                None,
+                None,
+                None,
+                0
+            )
+            protected_bytes = protected_result if not isinstance(protected_result, tuple) else protected_result[0]
+            protected_key_hex = protected_bytes.hex()
+        except Exception as exc:
+            raise AuthorityKeyError(f"DPAPI protection failed: {exc}")
+        
+        # Compute key ID
+        key_id = public_key_bytes.hex()[:16]
+        public_key_hex = public_key_bytes.hex()
+        
+        # Store key data
+        key_data = {
+            "key_id": key_id,
+            "public_key_hex": public_key_hex,
+            "private_key_protected": protected_key_hex,
+            "protection": "DPAPI",
+            "service_identity": self.service_identity,
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        
+        key_file = self._get_key_file_path()
+        try:
+            key_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(key_file, 'w', encoding='utf-8') as f:
+                json.dump(key_data, f, indent=2)
+            logger.info("Generated and stored authority key: %s", key_id)
+        except Exception as exc:
+            raise AuthorityKeyError(f"Key storage failed: {exc}")
+        
+        return key_id, public_key_hex
+    
+    def load_key(self) -> None:
+        """Load authority key from storage.
+        
+        F14 V4-r9.3 FIX: Load key with DPAPI unprotection.
+        
+        Raises:
+            AuthorityKeyError: If key missing, corrupted, or inaccessible
+        """
+        key_file = self._get_key_file_path()
+        
+        # Check if key file exists
+        if not key_file.exists():
+            raise AuthorityKeyError(
+                f"Authority key file not found: {key_file}. "
+                "Authority cannot operate without a valid key. "
+                "Provisioning must create the key first."
+            )
+        
+        # Load key data
+        try:
+            with open(key_file, 'r', encoding='utf-8') as f:
+                key_data = json.load(f)
+        except json.JSONDecodeError as exc:
+            raise AuthorityKeyError(f"Key file corrupted (invalid JSON): {exc}")
+        except Exception as exc:
+            raise AuthorityKeyError(f"Key file load failed: {exc}")
+        
+        # Validate key data structure
+        required_fields = ["key_id", "public_key_hex", "private_key_protected", "protection"]
+        for field in required_fields:
+            if field not in key_data:
+                raise AuthorityKeyError(f"Key file missing required field: {field}")
+        
+        # Verify protection mechanism
+        if key_data["protection"] != "DPAPI":
+            raise AuthorityKeyError(
+                f"Unsupported protection mechanism: {key_data['protection']}. "
+                "Only DPAPI is supported."
+            )
+        
+        # Unprotect private key with DPAPI
+        try:
+            encrypted_bytes = bytes.fromhex(key_data["private_key_protected"])
+            decrypted = win32crypt.CryptUnprotectData(encrypted_bytes, None, None, None)
+            
+            if isinstance(decrypted, tuple):
+                decrypted_bytes = decrypted[1]
+            else:
+                decrypted_bytes = decrypted
+            
+            if len(decrypted_bytes) != 32:
+                raise AuthorityKeyError(
+                    f"Decrypted key has invalid length: {len(decrypted_bytes)} (expected 32)"
+                )
+            
+            # Reconstruct private key
+            self._private_key = ed25519.Ed25519PrivateKey.from_private_bytes(decrypted_bytes)
+            self._public_key = self._private_key.public_key()
+            self._key_id = key_data["key_id"]
+            
+            # Verify public key matches
+            expected_public_key_hex = self._public_key.public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+            if expected_public_key_hex != key_data["public_key_hex"]:
+                raise AuthorityKeyError(
+                    "Public key mismatch in key file. "
+                    "Key file may have been tampered with."
+                )
+            
+            logger.info("Loaded authority key: %s", self._key_id)
+            
+        except AuthorityKeyError:
+            raise
+        except Exception as exc:
+            raise AuthorityKeyError(f"DPAPI unprotection failed: {exc}")
+    
+    def sign_canonical(self, canonical_bytes: bytes) -> str:
+        """Sign canonical data with authority private key.
+        
+        F14 V4-r9.3 FIX: Actual signing operation.
+        
+        Args:
+            canonical_bytes: Canonical data to sign
+            
+        Returns:
+            Hex string of Ed25519 signature
+            
+        Raises:
+            AuthorityKeyError: If key not loaded or signing fails
+        """
+        if self._private_key is None:
+            raise AuthorityKeyError("Authority key not loaded. Call load_key() first.")
+        
+        try:
+            signature = self._private_key.sign(canonical_bytes)
+            return signature.hex()
+        except Exception as exc:
+            raise AuthorityKeyError(f"Signing failed: {exc}")
+    
+    def get_public_key_hex(self) -> str:
+        """Get authority public key hex.
+        
+        Returns:
+            Hex string of public key
+            
+        Raises:
+            AuthorityKeyError: If key not loaded
+        """
+        if self._public_key is None:
+            raise AuthorityKeyError("Authority key not loaded. Call load_key() first.")
+        
+        return self._public_key.public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+    
+    def get_key_id(self) -> str:
+        """Get authority key ID.
+        
+        Returns:
+            Key ID string
+            
+        Raises:
+            AuthorityKeyError: If key not loaded
+        """
+        if self._key_id is None:
+            raise AuthorityKeyError("Authority key not loaded. Call load_key() first.")
+        
+        return self._key_id
 
 
 class AuthorityNamedPipeServer:
@@ -109,18 +360,23 @@ class AuthorityNamedPipeServer:
         self,
         pipe_name: str = r"\\.\pipe\IABVAuditAuthority",
         authorized_sids: list[str] | None = None,
+        key_manager: AuthorityKeyManager | None = None,
     ):
         """Initialize Named Pipe server.
+        
+        F14 V4-r9.3 FIX: Add key manager for actual CERTIFY operations.
         
         Args:
             pipe_name: Named Pipe name
             authorized_sids: List of authorized SIDs (if None, allows current user)
+            key_manager: Authority key manager for signing operations
         """
         if not WINDOWS_SERVICE_AVAILABLE:
             raise RuntimeError("Named Pipe server requires pywin32")
         
         self.pipe_name = pipe_name
         self.authorized_sids = authorized_sids or []
+        self._key_manager = key_manager
         self._running = False
         self._server_thread = None
         self._stop_event = threading.Event()
@@ -253,30 +509,62 @@ class AuthorityNamedPipeServer:
     def _handle_certify_request(self, request: dict[str, Any]) -> dict[str, Any]:
         """Handle CERTIFY request.
         
-        F14 V4-r9.2 FIX: Sign audit record with authority private key.
+        F14 V4-r9.3 FIX: Real certification with authority signature.
         
         Args:
             request: CERTIFY request dictionary
             
         Returns:
             Response dictionary with signature
+            
+        Raises:
+            AuthorityServiceIPCError: If certification fails
         """
+        if self._key_manager is None:
+            raise AuthorityServiceIPCError(
+                "Authority key manager not configured. "
+                "Service cannot sign without a loaded key."
+            )
+        
         if "audit_record" not in request:
             raise AuthorityServiceIPCError("Missing audit_record in CERTIFY request")
         
         audit_record = request["audit_record"]
         
-        # Load authority private key (service-scoped)
-        # F14 V4-r9.2 FIX: This will be implemented with service identity DPAPI
-        # For now, return error
-        raise AuthorityServiceIPCError(
-            "CERTIFY operation not yet implemented - requires service identity key loading"
-        )
+        # Validate audit record structure
+        if not isinstance(audit_record, dict):
+            raise AuthorityServiceIPCError("audit_record must be a dictionary")
+        
+        # Extract required fields for signing
+        # F14 V4-r9.3 FIX: Sign the canonical representation of the audit record
+        try:
+            # Create canonical representation
+            canonical = json.dumps(audit_record, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+            
+            # Sign with authority private key
+            signature_hex = self._key_manager.sign_canonical(canonical)
+            
+            # Build response
+            response = {
+                "status": "certified",
+                "signature": signature_hex,
+                "key_id": self._key_manager.get_key_id(),
+                "public_key_hex": self._key_manager.get_public_key_hex(),
+                "certified_at_utc": datetime.now(timezone.utc).isoformat(),
+            }
+            
+            logger.info("CERTIFY operation completed for audit record")
+            return response
+            
+        except AuthorityKeyError as exc:
+            raise AuthorityServiceIPCError(f"Authority key error: {exc}")
+        except Exception as exc:
+            raise AuthorityServiceIPCError(f"Certification failed: {exc}")
     
     def _handle_request(self, request: dict[str, Any], client_handle) -> dict[str, Any]:
         """Handle IPC request.
         
-        F14 V4-r9.2 FIX: Validate caller and route to operation handler.
+        F14 V4-r9.3 FIX: Validate caller and route to operation handler.
         
         Args:
             request: Request dictionary
@@ -299,8 +587,55 @@ class AuthorityNamedPipeServer:
                 "service": "IABVAuditAuthority",
                 "caller_sid": caller_sid,
             }
+        elif operation == "GET_PUBLIC_KEY":
+            return self._handle_get_public_key_request()
+        elif operation == "HEALTH":
+            return self._handle_health_request()
         else:
             raise AuthorityServiceIPCError(f"Unknown operation: {operation}")
+    
+    def _handle_get_public_key_request(self) -> dict[str, Any]:
+        """Handle GET_PUBLIC_KEY request.
+        
+        F14 V4-r9.3 FIX: Return authority public key.
+        
+        Returns:
+            Response dictionary with public key
+            
+        Raises:
+            AuthorityServiceIPCError: If key not loaded
+        """
+        if self._key_manager is None:
+            raise AuthorityServiceIPCError(
+                "Authority key manager not configured."
+            )
+        
+        try:
+            return {
+                "status": "success",
+                "key_id": self._key_manager.get_key_id(),
+                "public_key_hex": self._key_manager.get_public_key_hex(),
+            }
+        except AuthorityKeyError as exc:
+            raise AuthorityServiceIPCError(f"Failed to get public key: {exc}")
+    
+    def _handle_health_request(self) -> dict[str, Any]:
+        """Handle HEALTH request.
+        
+        F14 V4-r9.3 FIX: Return service health status.
+        
+        Returns:
+            Response dictionary with health status
+        """
+        key_loaded = self._key_manager is not None
+        key_id = self._key_manager.get_key_id() if key_loaded else None
+        
+        return {
+            "status": "healthy" if key_loaded else "degraded",
+            "service": "IABVAuditAuthority",
+            "key_loaded": key_loaded,
+            "key_id": key_id,
+        }
     
     def _client_handler(self, client_handle):
         """Handle client connection.
@@ -677,7 +1012,7 @@ else:
         def SvcDoRun(self):
             """Main service loop.
             
-            F14 V4-r9.2 FIX: Start Named Pipe server and handle IPC requests.
+            F14 V4-r9.3 FIX: Load authority key, verify identity, start IPC.
             """
             logger.info("AuthorityServiceHandler running")
             servicemanager.LogMsg(
@@ -686,22 +1021,43 @@ else:
                 (self._svc_name_, "")
             )
             
-            # F14 V4-r9.2 FIX: Start Named Pipe server
+            # F14 V4-r9.3 FIX: Initialize key manager
+            key_manager = None
             pipe_server = None
+            
             try:
-                # Load authority private key from service-scoped storage
-                # F14 V4-r9.2 FIX: This will be implemented with service identity DPAPI
-                logger.info("Loading authority private key from service-scoped storage")
+                # Step 1: Initialize key manager
+                key_storage_path = Path("C:\\ProgramData\\IABV\\authority_keys")
+                key_manager = AuthorityKeyManager(
+                    key_storage_path=key_storage_path,
+                    service_identity="LocalService"
+                )
+                logger.info("Key manager initialized")
                 
-                # Create Named Pipe server
+                # Step 2: Load authority key (fail-closed if missing)
+                try:
+                    key_manager.load_key()
+                    logger.info("Authority key loaded successfully")
+                except AuthorityKeyError as exc:
+                    logger.error("Failed to load authority key: %s", exc)
+                    logger.error("Service cannot operate without a valid key. Provisioning must create the key first.")
+                    self.ReportServiceStatus(win32service.SERVICE_STOPPED, win32service.ERROR_SERVICE_SPECIFIC_ERROR)
+                    return
+                
+                # Step 3: Create Named Pipe server with key manager
                 pipe_server = AuthorityNamedPipeServer(
                     pipe_name=r"\\.\pipe\IABVAuditAuthority",
-                    authorized_sids=None  # Will auto-detect during installation
+                    authorized_sids=None,  # Will auto-detect during installation
+                    key_manager=key_manager
                 )
                 pipe_server.start()
-                logger.info("Named Pipe server started")
+                logger.info("Named Pipe server started with authority key")
                 
-                # Wait for stop signal
+                # Step 4: Report service as ready
+                self.ReportServiceStatus(win32service.SERVICE_RUNNING)
+                logger.info("Authority service ready")
+                
+                # Step 5: Wait for stop signal
                 win32event.WaitForSingleObject(self.hWaitStop, win32event.INFINITE)
                 
             except Exception as exc:

@@ -223,6 +223,62 @@ class AuthorityIPCClient:
                 except:
                     pass
     
+    def get_public_key(self) -> dict[str, Any]:
+        """Get authority public key.
+        
+        F14 V4-r9.3 FIX: GET_PUBLIC_KEY operation via IPC.
+        
+        Returns:
+            Dictionary with key_id and public_key_hex
+            
+        Raises:
+            AuthorityServiceUnavailableError: If service not available
+            AuthorityIPCClientError: If request fails
+        """
+        request = {
+            "operation": "GET_PUBLIC_KEY",
+        }
+        
+        pipe_handle = None
+        try:
+            pipe_handle = self._connect_to_service()
+            response = self._send_request(pipe_handle, request)
+            return response
+        finally:
+            if pipe_handle:
+                try:
+                    win32file.CloseHandle(pipe_handle)
+                except:
+                    pass
+    
+    def health_check(self) -> dict[str, Any]:
+        """Perform health check on authority service.
+        
+        F14 V4-r9.3 FIX: HEALTH operation via IPC.
+        
+        Returns:
+            Health status dictionary
+            
+        Raises:
+            AuthorityServiceUnavailableError: If service not available
+            AuthorityIPCClientError: If request fails
+        """
+        request = {
+            "operation": "HEALTH",
+        }
+        
+        pipe_handle = None
+        try:
+            pipe_handle = self._connect_to_service()
+            response = self._send_request(pipe_handle, request)
+            return response
+        finally:
+            if pipe_handle:
+                try:
+                    win32file.CloseHandle(pipe_handle)
+                except:
+                    pass
+    
     def is_service_available(self) -> bool:
         """Check if authority service is available.
         

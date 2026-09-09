@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from iabv_v15.services.development.authority_trust_config import AuthorityTrustConfig
 from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
 from iabv_v15.services.development.audit_authority_process import AuditAuthorityProcess
+from iabv_v15.services.development.authority_windows_service import AuthorityKeyManager
 
 
 def check_admin_privilege() -> tuple[bool, str]:
@@ -894,6 +895,153 @@ def test_12_f14_ipc_unauthorized():
     return result
 
 
+def test_13_f14_key_manager_generation():
+    """F14 V4-r9.3 Unit Test: Authority key generation and storage.
+    
+    Expected: Key manager can generate and store keys with DPAPI.
+    """
+    result = {
+        "test": "F14 V4-r9.3 Key Manager Generation",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    # Check if DPAPI is available
+    try:
+        import win32crypt
+        result["evidence"]["dpapi_available"] = True
+    except ImportError:
+        result["evidence"]["dpapi_available"] = False
+        result["status"] = "NOT_PROVEN"
+        result["evidence"]["explanation"] = "DPAPI not available"
+        return result
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        key_storage_path = Path(tmpdir) / "authority_keys"
+        
+        try:
+            # Create key manager
+            key_manager = AuthorityKeyManager(
+                key_storage_path=key_storage_path,
+                service_identity="LocalService"
+            )
+            result["evidence"]["key_manager_created"] = True
+            
+            # Generate and store key
+            key_id, public_key_hex = key_manager.generate_and_store_key()
+            result["evidence"]["key_generated"] = True
+            result["evidence"]["key_id"] = key_id
+            result["evidence"]["public_key_hex"] = public_key_hex
+            
+            # Verify key file exists
+            key_file = key_storage_path / "authority_private_key.json"
+            if key_file.exists():
+                result["evidence"]["key_file_exists"] = True
+            else:
+                result["evidence"]["key_file_exists"] = False
+                result["status"] = "FAILED"
+                return result
+            
+            # Load key
+            key_manager.load_key()
+            result["evidence"]["key_loaded"] = True
+            
+            # Verify key ID matches
+            loaded_key_id = key_manager.get_key_id()
+            if loaded_key_id == key_id:
+                result["evidence"]["key_id_matches"] = True
+            else:
+                result["evidence"]["key_id_matches"] = False
+                result["status"] = "FAILED"
+                return result
+            
+            # Verify public key matches
+            loaded_public_key_hex = key_manager.get_public_key_hex()
+            if loaded_public_key_hex == public_key_hex:
+                result["evidence"]["public_key_matches"] = True
+            else:
+                result["evidence"]["public_key_matches"] = False
+                result["status"] = "FAILED"
+                return result
+            
+            # Test signing
+            test_data = b"test canonical data"
+            signature = key_manager.sign_canonical(test_data)
+            result["evidence"]["signing_works"] = True
+            result["evidence"]["signature_length"] = len(signature)
+            
+            result["status"] = "PASS"
+            
+        except Exception as exc:
+            result["evidence"]["error"] = str(exc)
+            result["status"] = "ERROR"
+    
+    return result
+
+
+def test_14_f14_key_manager_fail_closed():
+    """F14 V4-r9.3 Unit Test: Key manager fail-closed behavior.
+    
+    Expected: Key manager fails closed when key missing or corrupted.
+    """
+    result = {
+        "test": "F14 V4-r9.3 Key Manager Fail-Closed",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        key_storage_path = Path(tmpdir) / "authority_keys"
+        
+        try:
+            # Create key manager
+            key_manager = AuthorityKeyManager(
+                key_storage_path=key_storage_path,
+                service_identity="LocalService"
+            )
+            result["evidence"]["key_manager_created"] = True
+            
+            # Attempt to load missing key
+            try:
+                key_manager.load_key()
+                result["evidence"]["missing_key_load"] = True
+                result["status"] = "FAILED"  # Should have raised AuthorityKeyError
+            except Exception as exc:
+                result["evidence"]["missing_key_load"] = False
+                result["evidence"]["missing_key_error"] = str(exc)
+                if "not found" in str(exc).lower():
+                    result["evidence"]["fail_closed_missing"] = True
+            
+            # Create corrupted key file
+            key_file = key_storage_path / "authority_private_key.json"
+            key_file.parent.mkdir(parents=True, exist_ok=True)
+            key_file.write_text("{invalid json", encoding='utf-8')
+            
+            # Attempt to load corrupted key
+            try:
+                key_manager.load_key()
+                result["evidence"]["corrupted_key_load"] = True
+                result["status"] = "FAILED"  # Should have raised AuthorityKeyError
+            except Exception as exc:
+                result["evidence"]["corrupted_key_load"] = False
+                result["evidence"]["corrupted_key_error"] = str(exc)
+                if "corrupted" in str(exc).lower() or "invalid json" in str(exc).lower():
+                    result["evidence"]["fail_closed_corrupted"] = True
+            
+            if result.get("fail_closed_missing") and result.get("fail_closed_corrupted"):
+                result["status"] = "PASS"
+            
+        except Exception as exc:
+            result["evidence"]["error"] = str(exc)
+            result["status"] = "ERROR"
+    
+    return result
+
+
 def main():
     """Execute all Windows runtime security tests."""
     print("=" * 80)
@@ -918,6 +1066,8 @@ def main():
         test_10_f5_combined_replacement_attack,
         test_11_f14_service_key_access,
         test_12_f14_ipc_unauthorized,
+        test_13_f14_key_manager_generation,
+        test_14_f14_key_manager_fail_closed,
     ]
     
     results = []

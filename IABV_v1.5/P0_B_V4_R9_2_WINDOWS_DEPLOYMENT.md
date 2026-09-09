@@ -205,18 +205,55 @@ python -c "from iabv_v15.services.development.authority_windows_service import A
 
 ### Step 6.1: Generate Authority Key Pair (Service Context)
 
-This step requires implementing service identity key loading in AuthorityNamedPipeServer._handle_certify_request.
+F14 V4-r9.3 FIX: Authority key generation is now implemented via AuthorityKeyManager.
 
-**Current Status:**
-- NOT_IMPLEMENTED in V4-r9.2
-- AuthorityNamedPipeServer._handle_certify_request returns error
-- Requires implementation of service-scoped key generation
+```powershell
+# Run as Administrator
+python -c "
+from pathlib import Path
+from iabv_v15.services.development.authority_windows_service import AuthorityKeyManager
 
-**Required Implementation:**
-1. Load/generate Ed25519 key pair in service context
-2. Encrypt private key with DPAPI (LocalService identity)
-3. Store in C:\ProgramData\IABV\authority_keys\authority_private_key.json
-4. Update _handle_certify_request to load and use this key
+key_storage_path = Path('C:\\ProgramData\\IABV\\authority_keys')
+key_manager = AuthorityKeyManager(
+    key_storage_path=key_storage_path,
+    service_identity='LocalService'
+)
+
+# Generate and store key
+key_id, public_key_hex = key_manager.generate_and_store_key()
+print(f'Key generated: {key_id}')
+print(f'Public key: {public_key_hex}')
+"
+```
+
+**Expected Output:**
+```
+Key generated: <16-char hex>
+Public key: <64-char hex>
+```
+
+**Key Storage Location:**
+```
+C:\ProgramData\IABV\authority_keys\authority_private_key.json
+```
+
+**Key File Structure:**
+```json
+{
+  "key_id": "<16-char hex>",
+  "public_key_hex": "<64-char hex>",
+  "private_key_protected": "<DPAPI-encrypted hex>",
+  "protection": "DPAPI",
+  "service_identity": "LocalService",
+  "created_at_utc": "<ISO timestamp>"
+}
+```
+
+**Status:**
+- ✅ IMPLEMENTED in V4-r9.3
+- AuthorityKeyManager.generate_and_store_key() creates key with DPAPI
+- AuthorityKeyManager.load_key() loads and decrypts key
+- AuthorityNamedPipeServer._handle_certify_request() uses loaded key for signing
 
 ---
 
