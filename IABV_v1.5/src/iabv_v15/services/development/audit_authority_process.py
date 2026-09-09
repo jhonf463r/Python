@@ -410,16 +410,45 @@ class AuditAuthorityProcess:
                 with open(self._keypair_file, 'r', encoding='utf-8') as f:
                     key_data = json.load(f)
                 
-                # F14 V4-r4 FIX: Decrypt private key using DPAPI (no plaintext fallback)
+                # F14 V4-r5 FIX: Decrypt private key using DPAPI (no plaintext fallback)
                 if "private_key_protected" in key_data:
                     encrypted_bytes = bytes.fromhex(key_data["private_key_protected"])
-                    decrypted = win32crypt.CryptUnprotectData(encrypted_bytes, None, None, None, 0)
-                    # CryptUnprotectData returns (data, description) tuple
-                    if isinstance(decrypted, tuple):
-                        decrypted_bytes = decrypted[0]
-                    else:
-                        decrypted_bytes = decrypted
-                    private_key = ed25519.Ed25519PrivateKey.from_private_bytes(decrypted_bytes)
+                    logger.info("Attempting DPAPI unprotect of %d bytes", len(encrypted_bytes))
+                    
+                    # CryptUnprotectData signature: CryptUnprotectData(pDataIn, pOptionalEntropy, pPromptStruct, dwFlags)
+                    # Returns: (str, pDataOut) tuple where first element is description, second is bytes
+                    try:
+                        decrypted = win32crypt.CryptUnprotectData(encrypted_bytes, None, None, None)
+                        logger.info("DPAPI unprotect result type: %s", type(decrypted))
+                        
+                        # According to win32crypt behavior, returns (description, data) tuple
+                        if isinstance(decrypted, tuple):
+                            logger.info("DPAPI returned tuple with %d elements", len(decrypted))
+                            # Second element is the actual data
+                            decrypted_bytes = decrypted[1]
+                            logger.info("Decrypted data type: %s", type(decrypted_bytes))
+                            logger.info("Decrypted data length: %d (expected 32 for Ed25519)", len(decrypted_bytes))
+                        else:
+                            logger.info("DPAPI returned non-tuple directly")
+                            decrypted_bytes = decrypted
+                            logger.info("Decrypted data length: %d", len(decrypted_bytes))
+                        
+                        # Ed25519 private key is exactly 32 bytes
+                        if len(decrypted_bytes) != 32:
+                            raise RuntimeError(
+                                f"DPAPI decrypted data has wrong length: {len(decrypted_bytes)} (expected 32 for Ed25519)"
+                            )
+                        
+                        # Convert string to bytes if needed
+                        if isinstance(decrypted_bytes, str):
+                            decrypted_bytes = decrypted_bytes.encode('utf-8')
+                            logger.info("Converted string to bytes, new length: %d", len(decrypted_bytes))
+                        
+                        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(decrypted_bytes)
+                        logger.info("DPAPI decryption successful")
+                    except Exception as exc:
+                        logger.error("DPAPI decryption failed: %s", exc)
+                        raise RuntimeError(f"DPAPI decryption failed: {exc}")
                 else:
                     # F14 V4-r4 FIX: No plaintext key allowed in production
                     raise RuntimeError(
@@ -443,19 +472,16 @@ class AuditAuthorityProcess:
         # Create new keypair
         keypair = AuthorityKeyPair()
         
-        # F14 V4-r4 FIX: Protect private key with DPAPI (no fallback)
+        # F14 V4-r5 FIX: Protect private key with DPAPI (no fallback)
         private_key_bytes = keypair._private_key.private_bytes(
             Encoding.Raw,
             PrivateFormat.Raw,
             NoEncryption()
         )
         
-        # F14 V4-r4 FIX: Fail closed if DPAPI unavailable
+        # F14 V4-r5 FIX: CryptProtectData returns bytes directly (not tuple)
         encrypted_result = win32crypt.CryptProtectData(private_key_bytes, None, None, None, None, 0)
-        if isinstance(encrypted_result, tuple):
-            encrypted_bytes = encrypted_result[0]
-        else:
-            encrypted_bytes = encrypted_result
+        encrypted_bytes = encrypted_result  # Direct bytes, not tuple
         protected_key_hex = encrypted_bytes.hex()
         key_data = {
             "public_key_id": keypair.public_key_id,

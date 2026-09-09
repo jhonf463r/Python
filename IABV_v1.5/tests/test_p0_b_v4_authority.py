@@ -252,10 +252,18 @@ class TestTrustAnchor:
             assert not any(k["key_id"] == attacker_keypair.public_key_id for k in trust_data["trusted_keys"])
     
     def test_attacker_cannot_add_trusted_key_via_config(self):
-        """F5 V4-r4: Attacker cannot add trusted key via normal config (NO WRITE API)."""
+        """F5 V4-r5: Attacker cannot add trusted key via normal config (NO WRITE API)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             protected_root = Path(tmpdir)
             protected_root.mkdir(parents=True, exist_ok=True)
+            
+            # Setup test trust store with TEST_PROVISIONER marker
+            trust_store = TestTrustStore(protected_root)
+            keypair = TestAuthorityKeyPair.generate()
+            trust_store.provision_authority_key(
+                key_id=keypair.public_key_id,
+                public_key=keypair.public_key,
+            )
             
             # Create trust config (should not have write API)
             config = AuthorityTrustConfig(protected_root)
@@ -283,7 +291,7 @@ class TestTrustAnchor:
                 AuthorityTrustConfig(protected_root)
     
     def test_trust_store_deletion_fail_closed(self):
-        """F5 V4-r4: Trust store deletion causes fail-closed (no automatic recreation)."""
+        """F5 V4-r5: Trust store deletion causes fail-closed (no automatic recreation)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_root = Path(tmpdir)
             protected_root = storage_root / "authority_protected"
@@ -304,9 +312,9 @@ class TestTrustAnchor:
             # Delete trust file
             trust_store._trust_store_path.unlink()
             
-            # Runtime should still initialize but trust should be missing
-            config = AuthorityTrustConfig(protected_root)
-            assert len(config.get_all_trusted_keys()) == 0
+            # F5 V4-r5 FIX: Runtime should fail to initialize (trust store missing)
+            with pytest.raises(ValueError, match="trust store not found"):
+                AuthorityTrustConfig(protected_root)
             
             # Delete directory
             import shutil

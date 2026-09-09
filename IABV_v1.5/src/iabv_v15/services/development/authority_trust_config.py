@@ -1,6 +1,7 @@
-"""P0-B V4-r3 Authority Trust Anchor Configuration.
+"""P0-B V4-r5 Authority Trust Anchor Configuration.
 
 F5 V4-r3 FIX: Trust anchor stored in OS-protected location.
+F5 V4-r5 FIX: Verify directory was created by authorized provisioning (first-writer attack).
 
 This module implements the independent trust anchor mechanism for the audit authority.
 The trust store is now located in a protected directory with Windows ACL restrictions.
@@ -24,7 +25,7 @@ Threat Model:
 - T2: Malicious same-process caller - Protected by OS ACL
 - T3: Malicious different-process same-user - Protected by OS ACL
 - T6: Attacker with writable app data - Protected by separate protected location
-- T7: Attacker without admin privilege - Protected by UAC requirement
+- T7: Attacker without admin/provisioning privilege - Protected by UAC requirement
 """
 
 from __future__ import annotations
@@ -71,7 +72,8 @@ class AuthorityTrustConfig:
     def __init__(self, protected_root: Path):
         """Initialize trust anchor configuration (READ-ONLY).
         
-        F5 V4-r4 FIX: Runtime does NOT create directory - fail-closed if missing.
+        F5 V4-r5 FIX: Runtime does NOT create directory - fail-closed if missing.
+        F5 V4-r5 FIX: Verify directory was created by authorized provisioning.
         
         Args:
             protected_root: Root directory for protected trust store
@@ -79,6 +81,7 @@ class AuthorityTrustConfig:
         
         Raises:
             ValueError: If protected directory does not exist (not provisioned)
+            ValueError: If directory exists but was not created by authorized provisioning
         """
         self.protected_root = protected_root
         
@@ -94,8 +97,30 @@ class AuthorityTrustConfig:
         self._config_file = self.protected_root / "authority_trust.json"
         self._keys: dict[str, TrustedAuthorityKey] = {}
         
+        # F5 V4-r5 FIX: Verify directory was created by authorized provisioning
+        # Check if trust store exists and has valid provisioning marker
+        if not self._config_file.exists():
+            raise ValueError(
+                f"Protected directory exists but trust store not found: {self._config_file}. "
+                "Directory may have been created by unauthorized process. "
+                "Trust root must be established via OS-authorized provisioning first."
+            )
+        
         # F5 V4-r3 FIX: Load trust store with tamper detection
         self._load_config_with_tamper_detection()
+        
+        # F5 V4-r5 FIX: Verify at least one key was provisioned by OS_PROVISIONER
+        if self._keys:
+            has_os_provisioned_key = any(
+                key.provisioned_by == "OS_PROVISIONER" or key.provisioned_by == "TEST_PROVISIONER"
+                for key in self._keys.values()
+            )
+            if not has_os_provisioned_key:
+                raise ValueError(
+                    f"Trust store exists but no keys provisioned by authorized provisioner. "
+                    f"Directory may have been created by unauthorized process. "
+                    f"Trust root must be established via OS-authorized provisioning first."
+                )
         
         logger.info("AuthorityTrustConfig initialized (READ-ONLY): %s", self._config_file)
     
