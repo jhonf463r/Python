@@ -131,6 +131,7 @@ class TestTrustStore:
     """Test-only trust store (INSECURE - for testing only).
     
     F14 V4-r4 FIX: Test adapter for unit tests.
+    F5 V4-r6 FIX: Added signature-based verification for tests.
     
     This provides a fake trust store for testing that does not require
     OS-level ACL protection. This is ONLY acceptable for unit tests.
@@ -145,8 +146,87 @@ class TestTrustStore:
         self.storage_root = storage_root
         self.storage_root.mkdir(parents=True, exist_ok=True)
         self._trust_store_path = self.storage_root / "authority_trust.json"  # Match production name
+        self._provisioner_keypair_path = self.storage_root / "provisioner_keypair.json"
+        
+        # F5 V4-r6 FIX: Create or load test provisioner keypair
+        self._provisioner_keypair = self._load_or_create_provisioner_keypair()
         
         logger.warning("TEST TRUST STORE: Using INSECURE filesystem storage for testing only")
+    
+    def _load_or_create_provisioner_keypair(self) -> TestAuthorityKeyPair:
+        """Load or create test provisioner keypair for signing trust stores.
+        
+        F5 V4-r6 FIX: Separate keypair for cryptographic signature.
+        
+        Returns:
+            TestAuthorityKeyPair (reused as provisioner keypair for tests)
+        """
+        if self._provisioner_keypair_path.exists():
+            try:
+                with open(self._provisioner_keypair_path, 'r', encoding='utf-8') as f:
+                    key_data = json.load(f)
+                
+                private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
+                private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+                
+                keypair = TestAuthorityKeyPair.__new__(TestAuthorityKeyPair)
+                keypair._private_key = private_key
+                keypair._public_key = private_key.public_key()
+                keypair._public_key_id = key_data["public_key_id"]
+                
+                logger.info("Loaded test provisioner keypair from: %s", self._provisioner_keypair_path)
+                return keypair
+                
+            except Exception as exc:
+                logger.error("Failed to load test provisioner keypair: %s", exc)
+                raise RuntimeError(f"Failed to load test provisioner keypair: {exc}")
+        
+        # Create new provisioner keypair
+        keypair = TestAuthorityKeyPair.generate()
+        
+        private_key_bytes = keypair._private_key.private_bytes(
+            Encoding.Raw,
+            PrivateFormat.Raw,
+            NoEncryption()
+        )
+        
+        key_data = {
+            "public_key_id": keypair.public_key_id,
+            "public_key_hex": keypair.public_key.public_bytes(Encoding.Raw, PublicFormat.Raw).hex(),
+            "private_key_hex": private_key_bytes.hex(),
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        
+        with open(self._provisioner_keypair_path, 'w', encoding='utf-8') as f:
+            json.dump(key_data, f, indent=2)
+        
+        logger.warning("Created and stored test provisioner keypair: %s", self._provisioner_keypair_path)
+        return keypair
+    
+    def _sign_trust_store(self, trust_data: dict[str, Any]) -> str:
+        """Sign trust store with provisioner keypair.
+        
+        F5 V4-r6 FIX: Cryptographic signature instead of declarative marker.
+        
+        Args:
+            trust_data: Trust store dictionary to sign
+        
+        Returns:
+            Hex string of Ed25519 signature
+        """
+        # Make a copy and remove signature field if present before signing
+        trust_copy = trust_data.copy()
+        trust_copy.pop("provisioner_signature", None)
+        
+        # Debug logging
+        canonical = json.dumps(trust_copy, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+        logger.debug(f"Signing trust store with canonical: {canonical}")
+        
+        signature = self._provisioner_keypair._private_key.sign(canonical)
+        signature_hex = signature.hex()
+        
+        logger.debug(f"Generated signature: {signature_hex}")
+        return signature_hex
     
     def provision_authority_key(
         self,
@@ -155,6 +235,8 @@ class TestTrustStore:
         description: str = "Test authority key",
     ) -> dict[str, Any]:
         """Provision authority key in test trust store (INSECURE).
+        
+        F5 V4-r6 FIX: Sign trust store with provisioner keypair.
         
         Args:
             key_id: Public key identifier
@@ -180,6 +262,13 @@ class TestTrustStore:
             "description": description,
         })
         
+        # F5 V4-r6 FIX: Add provisioner_public_key_id BEFORE signing (so it's included in signature)
+        trust_data["provisioner_public_key_id"] = self._provisioner_keypair.public_key_id
+        
+        # F5 V4-r6 FIX: Sign trust store (includes provisioner_public_key_id in signature)
+        signature_hex = self._sign_trust_store(trust_data)
+        trust_data["provisioner_signature"] = signature_hex
+        
         with open(self._trust_store_path, 'w', encoding='utf-8') as f:
             json.dump(trust_data, f, indent=2)
         
@@ -204,6 +293,11 @@ class TestTrustStore:
         
         with open(self._trust_store_path, 'r', encoding='utf-8') as f:
             return json.load(f)
+    
+    @property
+    def provisioner_public_key(self) -> ed25519.Ed25519PublicKey:
+        """Get provisioner public key for signature verification."""
+        return self._provisioner_keypair.public_key
 
 
 class TestAuditAuthorityProcess:

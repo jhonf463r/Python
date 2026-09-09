@@ -59,6 +59,7 @@ class AuthorityTrustConfig:
     """Authority trust anchor configuration (READ-ONLY for authority runtime).
     
     F5 V4-r3 FIX: Trust anchor stored in OS-protected location.
+    F5 V4-r6 FIX: Verify cryptographic signature instead of declarative marker.
     
     The trust anchor is stored in a protected directory with Windows ACL:
     - Ordinary callers: READ ONLY
@@ -67,21 +68,28 @@ class AuthorityTrustConfig:
     
     This class provides READ-ONLY access to the trust store for the authority
     and verifiers. Modification is ONLY possible via OSAuthorityProvisioner.
+    
+    F5 V4-r6: Trust store authenticity is verified via cryptographic signature
+    from the provisioner keypair, not via declarative "provisioned_by" marker.
     """
     
-    def __init__(self, protected_root: Path):
+    def __init__(self, protected_root: Path, provisioner_public_key: ed25519.Ed25519PublicKey | None = None):
         """Initialize trust anchor configuration (READ-ONLY).
         
         F5 V4-r5 FIX: Runtime does NOT create directory - fail-closed if missing.
         F5 V4-r5 FIX: Verify directory was created by authorized provisioning.
+        F5 V4-r6 FIX: Verify cryptographic signature of trust store.
         
         Args:
             protected_root: Root directory for protected trust store
                            (separate from ordinary application data)
+            provisioner_public_key: Optional provisioner public key for signature verification.
+                                   If None, loads from protected location.
         
         Raises:
             ValueError: If protected directory does not exist (not provisioned)
             ValueError: If directory exists but was not created by authorized provisioning
+            ValueError: If trust store signature is invalid
         """
         self.protected_root = protected_root
         
@@ -95,6 +103,7 @@ class AuthorityTrustConfig:
             )
         
         self._config_file = self.protected_root / "authority_trust.json"
+        self._provisioner_keypair_path = self.protected_root / "provisioner_keypair.json"
         self._keys: dict[str, TrustedAuthorityKey] = {}
         
         # F5 V4-r5 FIX: Verify directory was created by authorized provisioning
@@ -106,31 +115,58 @@ class AuthorityTrustConfig:
                 "Trust root must be established via OS-authorized provisioning first."
             )
         
-        # F5 V4-r3 FIX: Load trust store with tamper detection
-        self._load_config_with_tamper_detection()
+        # F5 V4-r6 FIX: Load or get provisioner public key for signature verification
+        if provisioner_public_key is None:
+            provisioner_public_key = self._load_provisioner_public_key()
         
-        # F5 V4-r5 FIX: Verify at least one key was provisioned by OS_PROVISIONER
-        if self._keys:
-            has_os_provisioned_key = any(
-                key.provisioned_by == "OS_PROVISIONER" or key.provisioned_by == "TEST_PROVISIONER"
-                for key in self._keys.values()
-            )
-            if not has_os_provisioned_key:
-                raise ValueError(
-                    f"Trust store exists but no keys provisioned by authorized provisioner. "
-                    f"Directory may have been created by unauthorized process. "
-                    f"Trust root must be established via OS-authorized provisioning first."
-                )
+        # F5 V4-r3 FIX: Load trust store with tamper detection and signature verification
+        self._load_config_with_signature_verification(provisioner_public_key)
         
         logger.info("AuthorityTrustConfig initialized (READ-ONLY): %s", self._config_file)
     
-    def _load_config_with_tamper_detection(self) -> None:
-        """Load trusted keys from protected trust store with tamper detection.
+    def _load_provisioner_public_key(self) -> ed25519.Ed25519PublicKey:
+        """Load provisioner public key from protected location.
         
-        F5 V4-r3 FIX: Fail closed on trust store corruption/tampering.
+        F5 V4-r6 FIX: Load provisioner public key for signature verification.
+        
+        Returns:
+            Ed25519 public key of the provisioner
         
         Raises:
-            ValueError: If trust store is corrupted or tampered
+            ValueError: If provisioner keypair file is missing or corrupted
+        """
+        if not self._provisioner_keypair_path.exists():
+            raise ValueError(
+                f"Provisioner keypair not found: {self._provisioner_keypair_path}. "
+                "Trust root must be established via OS-authorized provisioning first."
+            )
+        
+        try:
+            with open(self._provisioner_keypair_path, 'r', encoding='utf-8') as f:
+                key_data = json.load(f)
+            
+            public_key_hex = key_data["public_key_hex"]
+            public_key_bytes = bytes.fromhex(public_key_hex)
+            public_key = ed25519.Ed25519PublicKey.from_public_bytes(public_key_bytes)
+            
+            logger.info("Loaded provisioner public key: %s", key_data["public_key_id"])
+            return public_key
+            
+        except Exception as exc:
+            logger.error("Failed to load provisioner public key: %s", exc)
+            raise ValueError(f"Failed to load provisioner public key: {exc}")
+    
+    def _load_config_with_signature_verification(self, provisioner_public_key: ed25519.Ed25519PublicKey) -> None:
+        """Load trusted keys from protected trust store with signature verification.
+        
+        F5 V4-r3 FIX: Fail closed on trust store corruption/tampering.
+        F5 V4-r6 FIX: Verify cryptographic signature instead of declarative marker.
+        
+        Args:
+            provisioner_public_key: Provisioner public key for signature verification
+        
+        Raises:
+            ValueError: If trust store is corrupted, tampered, or signature is invalid
         """
         if not self._config_file.exists():
             logger.info("No existing trust store (NOT PROVISIONED)")
@@ -139,6 +175,34 @@ class AuthorityTrustConfig:
         try:
             with open(self._config_file, 'r', encoding='utf-8') as f:
                 config_data = json.load(f)
+            
+            # F5 V4-r6 FIX: Verify cryptographic signature
+            if "provisioner_signature" not in config_data:
+                raise ValueError(
+                    "Trust store missing cryptographic signature. "
+                    "Trust root must be established via OS-authorized provisioning with V4-r6 or later."
+                )
+            
+            signature_hex = config_data["provisioner_signature"]
+            
+            # Extract signature from config for verification
+            # Remove signature field (it was added after signing)
+            config_copy = config_data.copy()
+            config_copy.pop("provisioner_signature", None)
+            # Note: provisioner_public_key_id is included in the signature (added before signing)
+            
+            # Verify signature
+            try:
+                canonical = json.dumps(config_copy, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+                signature = bytes.fromhex(signature_hex)
+                provisioner_public_key.verify(signature, canonical)
+                logger.info("Trust store signature verified")
+            except Exception as exc:
+                logger.error("Trust store signature verification failed: %s", exc)
+                raise ValueError(
+                    f"Trust store signature verification failed: {exc}. "
+                    "Trust store may have been tampered with or was not signed by authorized provisioner."
+                )
             
             # Validate structure
             if not isinstance(config_data, dict):

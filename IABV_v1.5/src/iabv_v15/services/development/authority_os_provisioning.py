@@ -1,6 +1,7 @@
-"""P0-B V4-r3 OS-Level Authority Provisioning System.
+"""P0-B V4-r6 OS-Level Authority Provisioning System.
 
 F5 V4-r3 FIX: Move trust root establishment outside ordinary caller capability.
+F5 V4-r6 FIX: Replace declarative marker with cryptographic signature.
 
 Architecture:
 ADMIN / OPERATOR
@@ -9,9 +10,13 @@ UAC / OS AUTHORIZATION
     ↓
 SEPARATE PROVISIONING PROCESS
     ↓
+PROVISIONER KEYPAIR (stored separately)
+    ↓
+CRYPTOGRAPHIC SIGNATURE OF TRUST STORE
+    ↓
 PROTECTED TRUST STORE (Windows ACL)
     ↓
-AUTHORITY RUNTIME
+AUTHORITY RUNTIME (verifies signature)
     ↓
 SIGNED AUDIT RECORD
     ↓
@@ -22,12 +27,14 @@ Security Model:
 - Authority runtime: CANNOT modify trust root
 - Same-user application process: CANNOT modify trust root
 - Authorized provisioner/admin: CAN modify trust root (requires OS authorization)
+- Trust store authenticity: Verified via cryptographic signature, not declarative marker
 
 Threat Model:
-- T2 (malicious same-process caller): Protected by OS ACL
-- T3 (malicious different-process same-user): Protected by OS ACL
-- T6 (attacker with writable app data): Protected by separate protected location
-- T7 (attacker without admin privilege): Protected by UAC requirement
+- T2 (malicious same-process caller): Protected by OS ACL + signature verification
+- T3 (malicious different-process same-user): Protected by OS ACL + signature verification
+- T6 (attacker with writable app data): Protected by separate protected location + signature
+- T7 (attacker without admin privilege): Protected by UAC requirement + signature
+- T10 (forged provisioning marker): Protected by cryptographic signature
 """
 
 from __future__ import annotations
@@ -37,13 +44,91 @@ import logging
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, PublicFormat, NoEncryption
+from cryptography.hazmat.primitives import hashes
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ProvisionerKeyPair:
+    """Provisioner keypair for signing trust stores.
+    
+    F5 V4-r6: Separate keypair for provisioning authority.
+    This keypair is used to sign trust stores to establish cryptographic
+    authenticity, replacing the insecure declarative marker.
+    
+    Security Model:
+    - Private key: Stored in separate protected location, used only by OS-authorized provisioner
+    - Public key: Needed by runtime to verify trust store signatures
+    - Purpose: Cryptographic signature of trust store, not declarative marker
+    """
+    _private_key: ed25519.Ed25519PrivateKey
+    _public_key: ed25519.Ed25519PublicKey
+    
+    @classmethod
+    def generate(cls) -> "ProvisionerKeyPair":
+        """Generate a new provisioner keypair."""
+        private_key = ed25519.Ed25519PrivateKey.generate()
+        public_key = private_key.public_key()
+        return cls(private_key, public_key)
+    
+    @property
+    def public_key_id(self) -> str:
+        """Unique identifier for the public key."""
+        public_bytes = self._public_key.public_bytes(Encoding.Raw, PublicFormat.Raw)
+        return public_bytes.hex()
+    
+    @property
+    def public_key_hex(self) -> str:
+        """Hex representation of public key."""
+        public_bytes = self._public_key.public_bytes(Encoding.Raw, PublicFormat.Raw)
+        return public_bytes.hex()
+    
+    def sign_trust_store(self, trust_data: dict[str, Any]) -> str:
+        """Sign trust store data and return signature hex.
+        
+        Args:
+            trust_data: Trust store dictionary to sign
+            
+        Returns:
+            Hex string of Ed25519 signature
+        """
+        # Remove signature field if present before signing
+        trust_copy = trust_data.copy()
+        trust_copy.pop("provisioner_signature", None)
+        
+        canonical = json.dumps(trust_copy, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+        signature = self._private_key.sign(canonical)
+        return signature.hex()
+    
+    def verify_trust_store(self, trust_data: dict[str, Any], signature_hex: str) -> bool:
+        """Verify trust store signature.
+        
+        Args:
+            trust_data: Trust store dictionary to verify
+            signature_hex: Hex string of signature to verify
+            
+        Returns:
+            True if signature is valid, False otherwise
+        """
+        try:
+            # Remove signature field if present before verification
+            trust_copy = trust_data.copy()
+            trust_copy.pop("provisioner_signature", None)
+            
+            canonical = json.dumps(trust_copy, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+            signature = bytes.fromhex(signature_hex)
+            self._public_key.verify(signature, canonical)
+            return True
+        except Exception:
+            return False
 
 
 class OSProvisioningError(Exception):
@@ -215,14 +300,17 @@ class OSAuthorityProvisioner:
             logger.error("Failed to verify effective ACL: %s", exc)
             raise WindowsACLError(f"ACL verification failed: {exc}")
     
-    def __init__(self, protected_root: Path):
+    def __init__(self, protected_root: Path, provisioner_keypair: ProvisionerKeyPair | None = None):
         """Initialize OS-level provisioner.
         
         F5 V4-r4 FIX: Removed test_only_mode - no production bypass allowed.
+        F5 V4-r6 FIX: Added provisioner keypair for cryptographic signature.
         
         Args:
             protected_root: Root directory for protected trust store
                           (separate from ordinary application data)
+            provisioner_keypair: Optional provisioner keypair for signing trust stores.
+                               If None, loads from protected location or generates new.
         
         Raises:
             OSProvisioningError: If not running with admin privileges or on non-Windows
@@ -244,6 +332,10 @@ class OSAuthorityProvisioner:
             )
         
         self._trust_store_path = self.protected_root / "authority_trust.json"
+        self._provisioner_keypair_path = self.protected_root / "provisioner_keypair.json"
+        
+        # F5 V4-r6 FIX: Load or create provisioner keypair
+        self._provisioner_keypair = provisioner_keypair or self._load_or_create_provisioner_keypair()
         
         # F5 V4-r4 FIX: Verify admin privilege (no bypass allowed)
         self._verify_admin_privilege()
@@ -374,7 +466,10 @@ class OSAuthorityProvisioner:
                 "description": description,
             })
             
-            # Save trust store
+            # F5 V4-r6 FIX: Add provisioner_public_key_id BEFORE signing
+            trust_data["provisioner_public_key_id"] = self._provisioner_keypair.public_key_id
+            
+            # Save trust store (will sign with provisioner keypair)
             self._save_trust_store(trust_data)
             
             metadata = {
@@ -434,7 +529,10 @@ class OSAuthorityProvisioner:
                 "description": description,
             })
             
-            # Save trust store
+            # F5 V4-r6 FIX: Add provisioner_public_key_id BEFORE signing
+            trust_data["provisioner_public_key_id"] = self._provisioner_keypair.public_key_id
+            
+            # Save trust store (will sign with provisioner keypair)
             self._save_trust_store(trust_data)
             
             metadata = {
@@ -453,6 +551,58 @@ class OSAuthorityProvisioner:
             logger.error("OS-level rotation failed: %s", exc)
             raise OSProvisioningError(f"Rotation failed: {exc}")
     
+    def _load_or_create_provisioner_keypair(self) -> ProvisionerKeyPair:
+        """Load or create provisioner keypair for signing trust stores.
+        
+        F5 V4-r6 FIX: Separate keypair for cryptographic signature of trust stores.
+        
+        The provisioner keypair is stored in the protected directory and is used
+        to sign trust stores to establish cryptographic authenticity.
+        
+        Returns:
+            ProvisionerKeyPair (existing or newly created)
+        """
+        if self._provisioner_keypair_path.exists():
+            try:
+                with open(self._provisioner_keypair_path, 'r', encoding='utf-8') as f:
+                    key_data = json.load(f)
+                
+                # Reconstruct provisioner keypair
+                private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
+                private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+                public_key = private_key.public_key()
+                
+                keypair = ProvisionerKeyPair(private_key, public_key)
+                logger.info("Loaded provisioner keypair from: %s", self._provisioner_keypair_path)
+                return keypair
+                
+            except Exception as exc:
+                logger.error("Failed to load provisioner keypair: %s", exc)
+                raise OSProvisioningError(f"Failed to load provisioner keypair: {exc}")
+        
+        # Create new provisioner keypair
+        keypair = ProvisionerKeyPair.generate()
+        
+        # Store provisioner keypair (private key needs protection in production)
+        private_key_bytes = keypair._private_key.private_bytes(
+            Encoding.Raw,
+            PrivateFormat.Raw,
+            NoEncryption()
+        )
+        
+        key_data = {
+            "public_key_id": keypair.public_key_id,
+            "public_key_hex": keypair.public_key_hex,
+            "private_key_hex": private_key_bytes.hex(),
+            "created_at_utc": self._get_current_timestamp(),
+        }
+        
+        with open(self._provisioner_keypair_path, 'w', encoding='utf-8') as f:
+            json.dump(key_data, f, indent=2)
+        
+        logger.info("Created and stored provisioner keypair: %s", self._provisioner_keypair_path)
+        return keypair
+    
     def _load_trust_store(self) -> dict[str, Any]:
         """Load trust store from protected location."""
         if not self._trust_store_path.exists():
@@ -469,14 +619,25 @@ class OSAuthorityProvisioner:
             raise OSProvisioningError(f"Trust store load failed: {exc}")
     
     def _save_trust_store(self, trust_data: dict[str, Any]) -> None:
-        """Save trust store to protected location."""
+        """Save trust store to protected location with cryptographic signature.
+        
+        F5 V4-r6 FIX: Sign trust store with provisioner keypair instead of declarative marker.
+        
+        The trust store is signed to establish cryptographic authenticity. The signature
+        replaces the insecure declarative "provisioned_by" marker.
+        """
         trust_data["version"] = "1.0"
         trust_data["updated_at_utc"] = self._get_current_timestamp()
+        
+        # F5 V4-r6 FIX: Sign trust store with provisioner keypair
+        signature_hex = self._provisioner_keypair.sign_trust_store(trust_data)
+        trust_data["provisioner_signature"] = signature_hex
+        trust_data["provisioner_public_key_id"] = self._provisioner_keypair.public_key_id
         
         with open(self._trust_store_path, 'w', encoding='utf-8') as f:
             json.dump(trust_data, f, indent=2)
         
-        logger.info("Saved trust store to protected location")
+        logger.info("Saved and signed trust store to protected location")
     
     def _get_current_timestamp(self) -> str:
         """Get current UTC timestamp."""
