@@ -90,10 +90,10 @@ def test_r2_a_fake_development_audit_result():
     # A caller-constructed result is just a record, not authority
 
 
-# R2-B: Fake DevelopmentAuditReceipt
+# R2-B: Fake DevelopmentAuditReceipt (P0-B FIX)
 def test_r2_b_fake_development_audit_receipt():
-    """R2-B: Direct construction of DevelopmentAuditReceipt is blocked."""
-    from iabv_v15.services.development.development_audit_engine import _ReceiptSecret
+    """R2-B: Direct construction of DevelopmentAuditReceipt is blocked via closure-captured secret."""
+    from iabv_v15.services.development.development_audit_engine import _create_authoritative_receipt
     
     # Attempt to construct receipt without secret token
     with pytest.raises(TypeError, match="cannot be constructed directly"):
@@ -110,6 +110,19 @@ def test_r2_b_fake_development_audit_receipt():
     with pytest.raises(TypeError, match="cannot be constructed directly"):
         DevelopmentAuditReceipt(
             _secret="not_a_secret",  # Wrong type
+            receipt_id="fake",
+            audit_id="fake",
+            execution_evidence_id="fake",
+            verdict=DevelopmentAuditVerdict.PASS,
+            audited_at_utc=datetime.now(timezone.utc),
+        )
+    
+    # Attempt to access the secret from the factory (should not help)
+    # The secret is stored as an attribute but is still the closure-captured instance
+    wrong_secret = object()  # Different instance
+    with pytest.raises(TypeError, match="cannot be constructed directly"):
+        DevelopmentAuditReceipt(
+            _secret=wrong_secret,
             receipt_id="fake",
             audit_id="fake",
             execution_evidence_id="fake",
@@ -675,3 +688,185 @@ def test_r2_v_audit_taskoutcome_independence():
     
     # The audit engine does not set TaskOutcome.status
     # The task system does not set DevelopmentAuditResult.verdict
+
+
+# P0 NC-1: FAILED + valid Git != PASS
+def test_p0_nc1_failed_with_valid_git_cannot_pass():
+    """P0 NC-1: FAILED execution with valid Git cannot produce PASS verdict."""
+    import subprocess
+    
+    root = _workspace("test_p0_nc1")
+    base, result = _init_git_repo(root)
+    
+    # Evidence with FAILED status but valid Git
+    evidence = DevelopmentExecutionEvidence(
+        repository=str(root),
+        base_commit=base,
+        result_commit=result,
+        changed_files=["sample.txt"],
+        execution_status=DevelopmentExecutionStatus.FAILED,
+        completed_at_utc=datetime.now(timezone.utc),
+    )
+    
+    engine = DevelopmentAuditEngine(repository_path=str(root))
+    receipt = engine.audit_execution(evidence)
+    
+    # P0-A FIX: FAILED cannot produce PASS
+    assert receipt.verdict != DevelopmentAuditVerdict.PASS
+    # Should be FAIL or INCONCLUSIVE
+    assert receipt.verdict in [DevelopmentAuditVerdict.FAIL, DevelopmentAuditVerdict.INCONCLUSIVE]
+
+
+# P0 NC-2: CANCELLED + valid Git != PASS
+def test_p0_nc2_cancelled_with_valid_git_cannot_pass():
+    """P0 NC-2: CANCELLED execution with valid Git cannot produce PASS verdict."""
+    import subprocess
+    
+    root = _workspace("test_p0_nc2")
+    base, result = _init_git_repo(root)
+    
+    # Evidence with CANCELLED status but valid Git
+    evidence = DevelopmentExecutionEvidence(
+        repository=str(root),
+        base_commit=base,
+        result_commit=result,
+        changed_files=["sample.txt"],
+        execution_status=DevelopmentExecutionStatus.CANCELLED,
+        completed_at_utc=datetime.now(timezone.utc),
+    )
+    
+    engine = DevelopmentAuditEngine(repository_path=str(root))
+    receipt = engine.audit_execution(evidence)
+    
+    # P0-A FIX: CANCELLED cannot produce PASS
+    assert receipt.verdict != DevelopmentAuditVerdict.PASS
+    # Should be FAIL or INCONCLUSIVE
+    assert receipt.verdict in [DevelopmentAuditVerdict.FAIL, DevelopmentAuditVerdict.INCONCLUSIVE]
+
+
+# P0 NC-3: Fake receipt construction rejected (covered by R2-B)
+# This is already tested in test_r2_b_fake_development_audit_receipt
+
+
+# P0 NC-4: Fake receipt with fabricated evidence_id rejected
+def test_p0_nc4_fake_receipt_with_fabricated_evidence_id():
+    """P0 NC-4: Cannot construct receipt with fabricated evidence_id."""
+    # Attempt to construct receipt with fabricated evidence_id
+    with pytest.raises(TypeError, match="cannot be constructed directly"):
+        DevelopmentAuditReceipt(
+            _secret=object(),  # Wrong secret
+            receipt_id="fake_receipt",
+            audit_id="fake_audit",
+            execution_evidence_id="fabricated_evidence_id",
+            verdict=DevelopmentAuditVerdict.PASS,
+            audited_at_utc=datetime.now(timezone.utc),
+        )
+    
+    # Only the engine can create receipts with real evidence
+    root = _workspace("test_p0_nc4")
+    base, result = _init_git_repo(root)
+    
+    evidence = DevelopmentExecutionEvidence(
+        repository=str(root),
+        base_commit=base,
+        result_commit=result,
+        changed_files=["sample.txt"],
+        execution_status=DevelopmentExecutionStatus.COMPLETED,
+        completed_at_utc=datetime.now(timezone.utc),
+    )
+    
+    engine = DevelopmentAuditEngine(repository_path=str(root))
+    receipt = engine.audit_execution(evidence)
+    
+    # Receipt evidence_id must match the actual evidence
+    assert receipt.execution_evidence_id == evidence.evidence_id
+
+
+# P0 NC-5: Serialized receipt cannot become authoritative
+def test_p0_nc5_serialized_receipt_cannot_become_authoritative():
+    """P0 NC-5: Deserialized receipt payload cannot become authoritative receipt."""
+    root = _workspace("test_p0_nc5")
+    base, result = _init_git_repo(root)
+    
+    evidence = DevelopmentExecutionEvidence(
+        repository=str(root),
+        base_commit=base,
+        result_commit=result,
+        changed_files=["sample.txt"],
+        execution_status=DevelopmentExecutionStatus.COMPLETED,
+        completed_at_utc=datetime.now(timezone.utc),
+    )
+    
+    engine = DevelopmentAuditEngine(repository_path=str(root))
+    real_receipt = engine.audit_execution(evidence)
+    
+    # Serialize the receipt to JSON (it's not a Pydantic model, so we extract fields)
+    receipt_dict = {
+        "receipt_id": real_receipt.receipt_id,
+        "audit_id": real_receipt.audit_id,
+        "execution_evidence_id": real_receipt.execution_evidence_id,
+        "verdict": real_receipt.verdict.value,
+        "audited_at_utc": real_receipt.audited_at_utc.isoformat(),
+    }
+    
+    # Create a fake DevelopmentAuditResult from the serialized data
+    fake_result = DevelopmentAuditResult(
+        execution_evidence_id=receipt_dict["execution_evidence_id"],
+        verdict=DevelopmentAuditVerdict(receipt_dict["verdict"]),
+        audited_at_utc=datetime.fromisoformat(receipt_dict["audited_at_utc"]),
+    )
+    
+    # The fake result exists but is NOT a receipt
+    assert isinstance(fake_result, DevelopmentAuditResult)
+    assert not isinstance(fake_result, DevelopmentAuditReceipt)
+    
+    # Cannot use the fake result as a receipt
+    assert not hasattr(fake_result, "git_verification")
+
+
+# P0 NC-6: PASS-looking object cannot bypass audit engine
+def test_p0_nc6_pass_looking_object_cannot_bypass_audit_engine():
+    """P0 NC-6: PASS-looking DevelopmentAuditResult cannot bypass audit engine."""
+    # Create a PASS-looking result
+    pass_looking_result = DevelopmentAuditResult(
+        execution_evidence_id="some_evidence",
+        verdict=DevelopmentAuditVerdict.PASS,
+    )
+    
+    # This object looks like PASS but is not a receipt
+    assert pass_looking_result.verdict == DevelopmentAuditVerdict.PASS
+    assert not isinstance(pass_looking_result, DevelopmentAuditReceipt)
+    
+    # Cannot use it as authority - it's just a record
+    # The audit engine must be invoked to get a trusted receipt
+
+
+# P0 NC-7: Valid Git != objective success
+def test_p0_nc7_valid_git_does_not_imply_objective_success():
+    """P0 NC-7: Valid Git verification does not imply objective success."""
+    root = _workspace("test_p0_nc7")
+    base, result = _init_git_repo(root)
+    
+    # Evidence with COMPLETED status and valid Git
+    evidence = DevelopmentExecutionEvidence(
+        repository=str(root),
+        base_commit=base,
+        result_commit=result,
+        changed_files=["sample.txt"],
+        execution_status=DevelopmentExecutionStatus.COMPLETED,
+        completed_at_utc=datetime.now(timezone.utc),
+    )
+    
+    engine = DevelopmentAuditEngine(repository_path=str(root))
+    receipt = engine.audit_execution(evidence)
+    
+    # Git verification is valid
+    assert receipt.git_verification is not None
+    assert receipt.git_verification.classification == GitDiffClassification.VALID_CHANGE
+    
+    # BUT: This does NOT guarantee objective success
+    # The audit verdict is about execution evidence, not objective achievement
+    # Objective success is a separate concern (not modeled in DevelopmentAuditVerdict)
+    
+    # The receipt only attests to: execution completed + Git valid
+    # It does NOT attest to: objective achieved

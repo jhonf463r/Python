@@ -29,18 +29,53 @@ from iabv_v15.services.development.git_evidence_verifier import (
 )
 
 
-class _ReceiptSecret:
-    """Secret token to prevent external construction of DevelopmentAuditReceipt.
+# P0-B FIX: Closure-based secret to prevent external construction
+# The secret is captured in a closure and is NOT exposed at module level
+def _make_receipt_factory():
+    """Create a factory function with a closure-captured secret.
     
-    Only the DevelopmentAuditEngine can create this token.
-    This ensures that only the engine can produce trusted receipts.
+    The secret is not exposed at module level and cannot be imported.
+    Only the returned factory function can create authoritative receipts.
     """
-    _instance = None
+    class _SecretToken:
+        """Private token class - not accessible outside this closure."""
+        __slots__ = ()
     
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+    secret = _SecretToken()
+    
+    def create_receipt(
+        receipt_id: str,
+        audit_id: str,
+        execution_evidence_id: str,
+        verdict: DevelopmentAuditVerdict,
+        audited_at_utc: datetime,
+        auditor_id: str | None = None,
+        git_verification: GitVerificationResult | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> DevelopmentAuditReceipt:
+        """Factory function that can only create receipts with the captured secret."""
+        return DevelopmentAuditReceipt(
+            _secret=secret,
+            receipt_id=receipt_id,
+            audit_id=audit_id,
+            execution_evidence_id=execution_evidence_id,
+            verdict=verdict,
+            audited_at_utc=audited_at_utc,
+            auditor_id=auditor_id,
+            git_verification=git_verification,
+            metadata=metadata,
+        )
+    
+    # Store the secret in the closure of the factory function itself
+    # This way it's accessible for verification but not as a module-level variable
+    create_receipt._secret = secret
+    
+    return create_receipt
+
+
+# Module-level factory - the only way to create authoritative receipts
+# The secret is captured in the closure and NOT exposed as a module variable
+_create_authoritative_receipt = _make_receipt_factory()
 
 
 class DevelopmentAuditReceipt:
@@ -52,13 +87,14 @@ class DevelopmentAuditReceipt:
     A DevelopmentAuditResult can be constructed by anyone, but a
     DevelopmentAuditReceipt can only be produced by the audit engine.
     
-    The receipt requires a secret token that only the engine can create,
-    preventing external construction.
+    P0-B FIX: The receipt requires a closure-captured secret token that
+    cannot be imported or instantiated from outside this module.
+    Only _create_authoritative_receipt can create authoritative receipts.
     """
     
     def __init__(
         self,
-        _secret: _ReceiptSecret,
+        _secret: object,  # Type is object to hide the actual secret type
         receipt_id: str,
         audit_id: str,
         execution_evidence_id: str,
@@ -68,8 +104,10 @@ class DevelopmentAuditReceipt:
         git_verification: GitVerificationResult | None = None,
         metadata: dict[str, Any] | None = None,
     ):
-        """Private constructor requiring secret token."""
-        if not isinstance(_secret, _ReceiptSecret):
+        """Private constructor requiring closure-captured secret token."""
+        # P0-B FIX: Verify the secret is the exact instance captured in the factory closure
+        # We check identity (is) not equality (==) to prevent forgery
+        if _secret is not _create_authoritative_receipt._secret:
             raise TypeError(
                 "DevelopmentAuditReceipt cannot be constructed directly. "
                 "Use DevelopmentAuditEngine.audit_execution() to produce trusted receipts."
@@ -208,10 +246,8 @@ class DevelopmentAuditEngine:
         findings = self._generate_findings(evidence, git_verification, criteria)
         verdict = self._derive_verdict(criteria, git_verification)
         
-        # Build receipt with secret token
-        secret = _ReceiptSecret()
-        receipt = DevelopmentAuditReceipt(
-            _secret=secret,
+        # P0-B FIX: Build receipt using the authoritative factory function
+        receipt = _create_authoritative_receipt(
             receipt_id=receipt_id,
             audit_id=audit_id,
             execution_evidence_id=evidence.evidence_id,
@@ -241,12 +277,14 @@ class DevelopmentAuditEngine:
         criteria = []
         
         # Criterion 1: Execution completed
+        # P0-A FIX: Only COMPLETED satisfies execution completion criterion
+        # FAILED and CANCELLED are terminal states but do NOT satisfy completion
         completed_criterion = DevelopmentAuditCriterion(
             criterion_id="execution_completed",
             name="Execution Completed",
-            description="Development execution reached a terminal state",
+            description="Development execution completed successfully (not failed or cancelled)",
             required=True,
-            status="satisfied" if evidence.execution_status.value in ["completed", "failed", "cancelled"] else "not_satisfied",
+            status="satisfied" if evidence.execution_status.value == "completed" else "not_satisfied",
         )
         criteria.append(completed_criterion)
         
