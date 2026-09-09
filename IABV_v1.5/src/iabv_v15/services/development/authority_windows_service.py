@@ -1130,20 +1130,21 @@ else:
             logger.info("AuthorityServiceHandler stopped")
 
 
-def install_service(service_name: str = "IABVAuditAuthority") -> None:
+def install_service(service_name: str = "IABVAuditAuthority", exe_path: str | None = None) -> None:
     """Install the Windows Service (requires Administrator).
     
-    F14 V4-r9 FIX: Service installation for identity isolation.
+    F14 V4-r9.5 FIX: Support custom exe_path for machine-scoped runtime.
     
     Args:
         service_name: Service name to install
+        exe_path: Optional custom path to pythonservice.exe (e.g., for machine-scoped runtime)
     """
     if not WINDOWS_SERVICE_AVAILABLE:
         raise RuntimeError("pywin32 required for service installation")
     
     try:
         win32serviceutil.InstallService(
-            None,
+            exe_path,
             service_name,
             "IABV Audit Authority Service",
             startType=win32service.SERVICE_AUTO_START,
@@ -1151,7 +1152,7 @@ def install_service(service_name: str = "IABVAuditAuthority") -> None:
             password=None,
             description="Cryptographic audit authority for IABV provenance verification"
         )
-        logger.info("Service installed: %s (as LocalService)", service_name)
+        logger.info("Service installed: %s (as LocalService, exe=%s)", service_name, exe_path or "default")
     except Exception as exc:
         logger.error("Failed to install service: %s", exc)
         raise
@@ -1215,7 +1216,8 @@ if __name__ == "__main__":
         command = sys.argv[1].lower()
         
         if command == "install":
-            install_service()
+            exe_path = sys.argv[2] if len(sys.argv) > 2 else None
+            install_service(exe_path=exe_path)
         elif command == "remove":
             remove_service()
         elif command == "start":
@@ -1223,7 +1225,7 @@ if __name__ == "__main__":
         elif command == "stop":
             stop_service()
         else:
-            print("Usage: python authority_windows_service.py [install|remove|start|stop]")
+            print("Usage: python authority_windows_service.py [install|remove|start|stop] [exe_path]")
     else:
         # Run as service (when launched by Service Control Manager)
         if WINDOWS_SERVICE_AVAILABLE:
