@@ -1147,9 +1147,11 @@ def install_service(service_name: str = "IABVAuditAuthority") -> None:
             service_name,
             "IABV Audit Authority Service",
             startType=win32service.SERVICE_AUTO_START,
+            userName="NT AUTHORITY\\LocalService",
+            password=None,
             description="Cryptographic audit authority for IABV provenance verification"
         )
-        logger.info("Service installed: %s", service_name)
+        logger.info("Service installed: %s (as LocalService)", service_name)
     except Exception as exc:
         logger.error("Failed to install service: %s", exc)
         raise
