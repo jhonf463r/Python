@@ -133,15 +133,29 @@ class AuthorityTrustConfig:
         public_key: ed25519.Ed25519PublicKey,
         description: str = "",
         rotation_of: str | None = None,
+        _provisioning_only: bool = False,
     ) -> None:
-        """Add a trusted public key.
+        """Add a trusted public key (PROVISIONING ONLY).
+        
+        F5 V4-r2 FIX: This method requires explicit _provisioning_only flag.
         
         Args:
             key_id: Public key identifier
             public_key: Ed25519 public key
             description: Optional description
             rotation_of: If this key replaces another key, specify the old key_id
+            _provisioning_only: MUST be True for this operation to succeed
+        
+        Raises:
+            ValueError: If _provisioning_only is False (prevents caller self-bootstrap)
         """
+        if not _provisioning_only:
+            raise ValueError(
+                "add_trusted_key() requires _provisioning_only=True. "
+                "Trust anchor modification must go through authorized provisioning path. "
+                "Normal callers cannot modify trust root."
+            )
+        
         public_key_hex = public_key.public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
         
         if key_id in self._keys:
@@ -158,7 +172,11 @@ class AuthorityTrustConfig:
         self._keys[key_id] = key
         self._save_config()
         
-        logger.info("Added trusted key: %s", key_id)
+        logger.info("Provisioned trusted key: %s", key_id)
+    
+    def reload_config(self) -> None:
+        """Reload trust config from file (for testing/provisioning scenarios)."""
+        self._load_config()
     
     def get_all_trusted_keys(self) -> list[TrustedAuthorityKey]:
         """Get all trusted keys."""

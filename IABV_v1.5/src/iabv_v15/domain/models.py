@@ -3234,11 +3234,26 @@ class DevelopmentTestStatus(str, Enum):
 
 
 class DevelopmentExecutionStatus(str, Enum):
+    """F3 V4-r2 FIX: Extended execution status model to include all meaningful states.
+    
+    Semantic model:
+    - COMPLETED: Execution completed successfully (may PASS audit)
+    - FAILED: Execution failed (cannot PASS audit)
+    - CANCELLED: Execution cancelled (cannot PASS audit)
+    - ERROR: Execution encountered error (cannot PASS audit)
+    - TIMEOUT: Execution timed out (cannot PASS audit)
+    - NOT_RUN: Execution did not run (cannot PASS audit)
+    - PENDING: Execution pending (cannot PASS audit)
+    - RUNNING: Execution running (cannot PASS audit)
+    """
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    ERROR = "error"
+    TIMEOUT = "timeout"
+    NOT_RUN = "not_run"
 
 
 class DevelopmentAuditVerdict(str, Enum):
