@@ -20,7 +20,12 @@ from typing import Any
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    PrivateFormat,
+    PublicFormat,
+    NoEncryption,
+)
 
 
 @dataclass
@@ -37,34 +42,24 @@ class SignedAuditRecord:
     Caller process verifies with trusted public key.
     """
     
-    # Schema version for future compatibility
-    schema_version: str = "1.0"
-    
-    # Audit identification
+    # Required fields (no defaults)
     audit_id: str
     evidence_id: str
-    
-    # Repository and Git evidence
     repository_identity: str
     repository: str
     base_commit: str
     result_commit: str
     actual_changed_files: list[str]
-    
-    # Execution and audit semantics
     execution_status: str
     criteria: list[dict[str, Any]]
     verdict: str
-    
-    # Timing
     audited_at_utc: str
-    
-    # Producer authentication
     producer_public_key_id: str
     evidence_fingerprint: str
+    signature: bytes
     
-    # Cryptographic signature (authority-produced)
-    signature: bytes = field(repr=False)
+    # Optional field with default (after required fields)
+    schema_version: str = "1.0"
     
     def to_canonical_bytes(self) -> bytes:
         """Serialize record to canonical bytes for signing.

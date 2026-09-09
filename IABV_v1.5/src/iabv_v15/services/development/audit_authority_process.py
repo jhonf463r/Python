@@ -27,7 +27,258 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from iabv_v15.infra.ipc.ipc_channel import IpcMessage, WindowsNamedPipe
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    PrivateFormat,
+    PublicFormat,
+    NoEncryption,
+)
+
+# F1 FIX: Self-contained V4 IPC implementation (no cross-branch dependency)
+import json
+import logging
+import time
+from dataclasses import dataclass
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AuthorityIpcMessage:
+    """IPC message for audit authority communication."""
+    
+    message_type: str  # "CERTIFY", "GET_PUBLIC_KEY", "HEALTH"
+    payload: dict[str, Any]
+
+
+class AuthorityNamedPipe:
+    """Self-contained Windows named pipe for audit authority IPC.
+    
+    F1 FIX: Minimal implementation specific to V4 authority process.
+    No dependency on unrelated IPC infrastructure.
+    """
+    
+    def __init__(self, pipe_name: str, timeout_seconds: int = 30):
+        """Initialize authority named pipe.
+        
+        Args:
+            pipe_name: Windows named pipe name
+            timeout_seconds: Timeout for connection operations
+        """
+        self.pipe_name = pipe_name
+        self.timeout_seconds = timeout_seconds
+        self._handle = None
+    
+    def create_server(self) -> "_AuthorityNamedPipeServer":
+        """Create authority named pipe server."""
+        return _AuthorityNamedPipeServer(self.pipe_name, self.timeout_seconds)
+    
+    def create_client(self) -> "_AuthorityNamedPipeClient":
+        """Create authority named pipe client."""
+        return _AuthorityNamedPipeClient(self.pipe_name, self.timeout_seconds)
+
+
+class _AuthorityNamedPipeServer:
+    """Authority named pipe server."""
+    
+    def __init__(self, pipe_name: str, timeout_seconds: int):
+        self.pipe_name = pipe_name
+        self.timeout_seconds = timeout_seconds
+        self._handle = None
+    
+    def wait_for_connection(self) -> bool:
+        """Wait for client connection."""
+        try:
+            import win32pipe
+            import win32file
+            import win32security
+            
+            # Create security descriptor (restrict to local user)
+            security_descriptor = win32security.SECURITY_DESCRIPTOR()
+            security_descriptor.Initialize()
+            security_descriptor.SetSecurityDescriptorOwner(
+                win32security.GetUserNameEx(win32security.NameSamCompatible),
+                False
+            )
+            
+            dacl = win32security.ACL()
+            user_sid = win32security.LookupAccountName(None, win32security.GetUserNameEx(win32security.NameSamCompatible))[0]
+            dacl.AddAccessAllowedAce(
+                win32security.ACL_REVISION,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                user_sid
+            )
+            security_descriptor.SetSecurityDescriptorDacl(1, dacl, 0)
+            
+            # Create named pipe
+            self._handle = win32pipe.CreateNamedPipe(
+                self.pipe_name,
+                win32pipe.PIPE_ACCESS_DUPLEX,
+                win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
+                1,  # max instances
+                65536,  # output buffer
+                65536,  # input buffer
+                0,  # default timeout
+                security_descriptor,
+            )
+            
+            # Wait for client connection
+            win32pipe.ConnectNamedPipe(self._handle, None)
+            logger.info("Authority IPC server: client connected")
+            return True
+            
+        except Exception as exc:
+            logger.error("Authority IPC server: connection failed: %s", exc)
+            return False
+    
+    def send_message(self, message: AuthorityIpcMessage) -> bool:
+        """Send message to client."""
+        try:
+            import win32file
+            
+            message_dict = {
+                "message_type": message.message_type,
+                "payload": message.payload
+            }
+            message_json = json.dumps(message_dict).encode('utf-8')
+            win32file.WriteFile(self._handle, message_json)
+            logger.info("Authority IPC server: sent message")
+            return True
+            
+        except Exception as exc:
+            logger.error("Authority IPC server: send failed: %s", exc)
+            return False
+    
+    def receive_message(self) -> AuthorityIpcMessage | None:
+        """Receive message from client."""
+        try:
+            import win32file
+            
+            _, data = win32file.ReadFile(self._handle, 65536)
+            message_dict = json.loads(data.decode('utf-8'))
+            
+            message = AuthorityIpcMessage(
+                message_type=message_dict["message_type"],
+                payload=message_dict["payload"]
+            )
+            logger.info("Authority IPC server: received message")
+            return message
+            
+        except Exception as exc:
+            logger.error("Authority IPC server: receive failed: %s", exc)
+            return None
+    
+    def disconnect(self) -> None:
+        """Disconnect client."""
+        try:
+            import win32pipe
+            win32pipe.DisconnectNamedPipe(self._handle)
+            logger.info("Authority IPC server: disconnected")
+        except Exception:
+            pass
+    
+    def close(self) -> None:
+        """Close named pipe."""
+        if self._handle is not None:
+            try:
+                import win32file
+                win32file.CloseHandle(self._handle)
+            except Exception:
+                pass
+            self._handle = None
+
+
+class _AuthorityNamedPipeClient:
+    """Authority named pipe client."""
+    
+    def __init__(self, pipe_name: str, timeout_seconds: int):
+        self.pipe_name = pipe_name
+        self.timeout_seconds = timeout_seconds
+        self._handle = None
+    
+    def connect(self) -> bool:
+        """Connect to authority pipe."""
+        try:
+            import win32file
+            import pywintypes
+            
+            start_time = time.time()
+            while True:
+                try:
+                    self._handle = win32file.CreateFile(
+                        self.pipe_name,
+                        win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                        0,
+                        None,
+                        win32file.OPEN_EXISTING,
+                        0,
+                        None,
+                    )
+                    logger.info("Authority IPC client: connected")
+                    return True
+                except pywintypes.error as e:
+                    if e.winerror == 2:  # File not found (pipe not ready)
+                        if time.time() - start_time > self.timeout_seconds:
+                            logger.error("Authority IPC client: timeout waiting for pipe")
+                            return False
+                        time.sleep(0.1)
+                    else:
+                        raise
+            
+        except Exception as exc:
+            logger.error("Authority IPC client: connection failed: %s", exc)
+            return False
+    
+    def send_message(self, message: AuthorityIpcMessage) -> bool:
+        """Send message to authority."""
+        try:
+            import win32file
+            
+            message_dict = {
+                "message_type": message.message_type,
+                "payload": message.payload
+            }
+            message_json = json.dumps(message_dict).encode('utf-8')
+            win32file.WriteFile(self._handle, message_json)
+            logger.info("Authority IPC client: sent message")
+            return True
+            
+        except Exception as exc:
+            logger.error("Authority IPC client: send failed: %s", exc)
+            return False
+    
+    def receive_message(self) -> AuthorityIpcMessage | None:
+        """Receive message from authority."""
+        try:
+            import win32file
+            
+            _, data = win32file.ReadFile(self._handle, 65536)
+            message_dict = json.loads(data.decode('utf-8'))
+            
+            message = AuthorityIpcMessage(
+                message_type=message_dict["message_type"],
+                payload=message_dict["payload"]
+            )
+            logger.info("Authority IPC client: received message")
+            return message
+            
+        except Exception as exc:
+            logger.error("Authority IPC client: receive failed: %s", exc)
+            return None
+    
+    def close(self) -> None:
+        """Close named pipe."""
+        if self._handle is not None:
+            try:
+                import win32file
+                win32file.CloseHandle(self._handle)
+            except Exception:
+                pass
+            self._handle = None
+from iabv_v15.services.development.authority_trust_config import AuthorityTrustConfig
 from iabv_v15.services.development.git_evidence_verifier import GitEvidenceVerifier
 from iabv_v15.services.development.signed_audit_record import (
     AuthorityKeyPair,
@@ -77,7 +328,7 @@ class AuditAuthorityProcess:
         """Initialize audit authority process.
         
         Args:
-            storage_root: Root directory for authority storage (record cache, etc.)
+            storage_root: Root directory for authority storage (record cache, trust config)
             pipe_name: Windows named pipe name for IPC
             expected_repository_identity: Expected repository identity for Git verification
         """
@@ -87,8 +338,24 @@ class AuditAuthorityProcess:
         self.pipe_name = pipe_name
         self.expected_repository_identity = expected_repository_identity
         
-        # Initialize keypair (authority-only, never shared)
-        self._keypair = AuthorityKeyPair()
+        # F7 FIX: Durable authority identity via trust config
+        # Initialize trust config for durable key storage
+        self._trust_config = AuthorityTrustConfig(self.storage_root)
+        
+        # Initialize or load durable keypair
+        config_root = self.storage_root / "authority_keys"
+        config_root.mkdir(parents=True, exist_ok=True)
+        self._keypair_file = config_root / "authority_keypair.json"
+        
+        self._keypair = self._load_or_create_keypair()
+        
+        # F5 FIX: Register public key in trust config if not already present
+        if not self._trust_config.get_trusted_key(self._keypair.public_key_id):
+            self._trust_config.add_trusted_key(
+                key_id=self._keypair.public_key_id,
+                public_key=self._keypair.public_key,
+                description="Audit authority Ed25519 public key",
+            )
         
         # Initialize record storage (SQLite for replay prevention)
         self._db_path = self.storage_root / "authority_records.db"
@@ -96,6 +363,57 @@ class AuditAuthorityProcess:
         
         logger.info("AuditAuthorityProcess initialized")
         logger.info("Public key ID: %s", self._keypair.public_key_id)
+        logger.info("Durable identity: %s", self._keypair_file)
+    
+    def _load_or_create_keypair(self) -> AuthorityKeyPair:
+        """Load durable keypair from storage or create new one.
+        
+        F7 FIX: Authority identity survives restart via durable key storage.
+        
+        Returns:
+            AuthorityKeyPair (existing or newly created)
+        """
+        if self._keypair_file.exists():
+            try:
+                with open(self._keypair_file, 'r', encoding='utf-8') as f:
+                    key_data = json.load(f)
+                
+                # Reconstruct keypair from stored private key
+                private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
+                private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+                
+                # Reconstruct AuthorityKeyPair
+                keypair = AuthorityKeyPair.__new__(AuthorityKeyPair)
+                keypair._private_key = private_key
+                keypair._public_key = private_key.public_key()
+                keypair._public_key_id = key_data["public_key_id"]
+                
+                logger.info("Loaded durable keypair from: %s", self._keypair_file)
+                return keypair
+                
+            except Exception as exc:
+                logger.error("Failed to load keypair from storage: %s", exc)
+                logger.warning("Creating new keypair instead")
+        
+        # Create new keypair
+        keypair = AuthorityKeyPair()
+        
+        # Store keypair for durability
+        key_data = {
+            "public_key_id": keypair.public_key_id,
+            "private_key_hex": keypair._private_key.private_bytes(
+                Encoding.Raw,
+                PrivateFormat.Raw,
+                NoEncryption()
+            ).hex(),
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        
+        with open(self._keypair_file, 'w', encoding='utf-8') as f:
+            json.dump(key_data, f, indent=2)
+        
+        logger.info("Created and stored new durable keypair: %s", self._keypair_file)
+        return keypair
     
     def _init_database(self) -> None:
         """Initialize SQLite database for record storage (replay prevention)."""
@@ -122,12 +440,15 @@ class AuditAuthorityProcess:
         
         logger.info("Authority database initialized: %s", self._db_path)
     
-    def _store_record(self, record: SignedAuditRecord) -> None:
+    def _store_record(self, record: SignedAuditRecord) -> SignedAuditRecord:
         """Store signed record in database (replay prevention).
         
+        F4 FIX: Return authoritative record (new or existing) to caller.
+        
         P0-B V4 Policy:
-        - Same fingerprint → return existing record
+        - Same fingerprint → return previously stored authoritative record
         - Same audit_id + different fingerprint → reject
+        - New fingerprint → create/sign/store/return new record
         """
         conn = sqlite3.connect(str(self._db_path))
         cursor = conn.cursor()
@@ -143,8 +464,28 @@ class AuditAuthorityProcess:
             if existing:
                 existing_audit_id, existing_record_json = existing
                 logger.info("Replay prevention: returning existing record for fingerprint %s", record.evidence_fingerprint)
+                
+                # Deserialize existing record and return it
+                existing_dict = json.loads(existing_record_json)
+                existing_record = SignedAuditRecord(
+                    audit_id=existing_dict["audit_id"],
+                    evidence_id=existing_dict["evidence_id"],
+                    repository_identity=existing_dict["repository_identity"],
+                    repository=existing_dict["repository"],
+                    base_commit=existing_dict["base_commit"],
+                    result_commit=existing_dict["result_commit"],
+                    actual_changed_files=existing_dict["actual_changed_files"],
+                    execution_status=existing_dict["execution_status"],
+                    criteria=existing_dict["criteria"],
+                    verdict=existing_dict["verdict"],
+                    audited_at_utc=existing_dict["audited_at_utc"],
+                    producer_public_key_id=existing_dict["producer_public_key_id"],
+                    evidence_fingerprint=existing_dict["evidence_fingerprint"],
+                    signature=bytes.fromhex(existing_dict["signature"]),
+                    schema_version=existing_dict.get("schema_version", "1.0"),
+                )
                 conn.close()
-                return existing_record_json
+                return existing_record
             
             # Check if audit_id already exists with different fingerprint (tampering)
             cursor.execute(
@@ -189,6 +530,7 @@ class AuditAuthorityProcess:
             
             conn.commit()
             logger.info("Stored new audit record: %s", record.audit_id)
+            return record
             
         finally:
             conn.close()
@@ -204,13 +546,30 @@ class AuditAuthorityProcess:
     ) -> SignedAuditRecord:
         """Certify audit evidence and return signed record.
         
+        F9 FIX: Authority-derived semantics only. Caller inputs are hints only.
+        
+        FIELD ORIGIN DOCUMENTATION:
+        | Field                  | Origin          | Validation       | Signed? |
+        | ---------------------- | --------------- | ---------------- | ------- |
+        | repository_path        | caller          | authority        | yes     |
+        | base_commit            | caller          | Git authority    | yes     |
+        | result_commit          | caller          | Git authority    | yes     |
+        | claimed_changed_files  | caller          | NOT trusted      | no as fact |
+        | actual_changed_files   | Git authority   | authority        | yes     |
+        | execution_status       | caller/context  | authority/domain | yes     |
+        | criteria               | authority       | authority        | yes     |
+        | verdict                | authority       | authority        | yes     |
+        | evidence_fingerprint   | authority       | derived          | yes     |
+        | signature              | authority       | cryptographic    | yes     |
+        | producer_public_key_id | authority       | trust anchor     | yes     |
+        
         P0-B V4 Authority-Side Validation:
         1. Validate request
         2. Verify repository identity
         3. Verify base/result commits
         4. Verify object types
         5. Verify ancestry
-        6. Verify changed files
+        6. Verify changed files (Git-derived, NOT caller-claimed)
         7. Verify diff classification
         8. Evaluate execution criteria
         9. Derive verdict
@@ -237,22 +596,23 @@ class AuditAuthorityProcess:
             raise ValueError(f"Git verification failed: {git_verification.classification}")
         
         # Step 8: Evaluate execution criteria (P0-A preservation)
-        from iabv_v15.domain.models import GitDiffClassification, DevelopmentTestStatus
+        from iabv_v15.domain.models import GitDiffClassification, DevelopmentExecutionStatus
         
         try:
-            status = DevelopmentTestStatus(execution_status)
+            status = DevelopmentExecutionStatus(execution_status)
         except ValueError:
             raise ValueError(f"Invalid execution_status: {execution_status}")
         
         criteria = []
         
         # Criterion 1: Execution completed (P0-A)
+        # F3 FIX: Use correct domain enum for development execution lifecycle
         completed_criterion = {
             "criterion_id": "execution_completed",
             "name": "Execution Completed",
             "description": "Development execution completed successfully (not failed or cancelled)",
             "required": True,
-            "status": "satisfied" if status.value == "completed" else "not_satisfied",
+            "status": "satisfied" if status == DevelopmentExecutionStatus.COMPLETED else "not_satisfied",
         }
         criteria.append(completed_criterion)
         
@@ -287,6 +647,8 @@ class AuditAuthorityProcess:
         verdict = "FAIL" if any_not_satisfied else "PASS"
         
         # Step 10: Calculate evidence fingerprint
+        # F8 FIX: Use Git-derived actual_changed_files, NOT caller-supplied claimed_changed_files
+        # Caller may provide claimed_changed_files for hinting, but authority must use Git facts
         actual_changed_files = git_verification.actual_changed_files or []
         fingerprint = SignedAuditRecord.calculate_evidence_fingerprint(
             repository_identity=git_verification.repository_identity or "unknown",
@@ -324,11 +686,11 @@ class AuditAuthorityProcess:
         signature = self._keypair.sign(canonical_bytes)
         record.signature = signature
         
-        # Step 13: Store record (replay prevention)
-        self._store_record(record)
+        # Step 13: Store record (replay prevention) and return authoritative record
+        authoritative_record = self._store_record(record)
         
-        logger.info("Certified: %s -> %s", audit_id, verdict)
-        return record
+        logger.info("Certified: %s -> %s", authoritative_record.audit_id, authoritative_record.verdict)
+        return authoritative_record
     
     def get_public_key(self) -> str:
         """Get public key in hex format for distribution."""
