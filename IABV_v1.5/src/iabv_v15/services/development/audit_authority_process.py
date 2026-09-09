@@ -36,18 +36,18 @@ from cryptography.hazmat.primitives.serialization import (
     NoEncryption,
 )
 
-# F14 V4-r2 FIX: Windows DPAPI for private key protection
-# F14 V4-r2 LIMITATION: DPAPI temporarily disabled due to API compatibility issues
-# F14 V4-r2 TODO: Re-enable DPAPI after fixing CryptProtectData/CryptUnprotectData handling
+# F14 V4-r3 FIX: Windows DPAPI for private key protection
+# F14 V4-r3 FIX: NO plaintext fallback - fail closed if DPAPI unavailable
 try:
     import win32crypt
-    DPAPI_AVAILABLE = False  # Temporarily disabled
-    logger = logging.getLogger(__name__)
-    logger.warning("DPAPI temporarily disabled due to API compatibility issues")
+    DPAPI_AVAILABLE = True
 except ImportError:
     DPAPI_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning("win32crypt not available, private key protection limited")
+    logger.warning("win32crypt not available - private key protection not available on this platform")
+
+# F14 V4-r3 TEST MODE: Allow test-only mode that skips DPAPI for unit tests
+DPAPI_TEST_MODE = os.environ.get("IABV_DPAPI_TEST_MODE", "0") == "1"
 
 # F1 FIX: Self-contained V4 IPC implementation (no cross-branch dependency)
 import json
@@ -352,24 +352,37 @@ class AuditAuthorityProcess:
         self.expected_repository_identity = expected_repository_identity
         
         # F7 FIX: Durable authority identity via trust config
-        # Initialize trust config for durable key storage
-        self._trust_config = AuthorityTrustConfig(self.storage_root)
+        # F5 V4-r3 FIX: Use protected trust store location
+        # Protected location: separate from ordinary application data
+        protected_root = storage_root / "authority_protected"
+        self._trust_config = AuthorityTrustConfig(protected_root)
         
         # Initialize or load durable keypair
-        config_root = self.storage_root / "authority_keys"
+        # F5 V4-r3 FIX: Store keypair in protected location
+        config_root = storage_root / "authority_protected"
         config_root.mkdir(parents=True, exist_ok=True)
         self._keypair_file = config_root / "authority_keypair.json"
         
         self._keypair = self._load_or_create_keypair()
         
-        # F5 V4-r2 FIX: Authority MUST be provisioned before use
-        # Check if trust anchor exists
-        # Note: We don't fail here because we want to allow authority initialization
-        # The fail-closed happens during certify() operations
-        self._is_provisioned = len(self._trust_config.get_all_trusted_keys()) > 0
+        # F5 V4-r3 FIX: Authority MUST be provisioned and identity must match for certification
+        # Check if trust anchor exists and matches authority identity
+        self._is_provisioned = False
+        if self._trust_config.get_all_trusted_keys():
+            if self._trust_config.verify_authority_identity_match(
+                self._keypair.public_key_id,
+                self._keypair.public_key
+            ):
+                self._is_provisioned = True
+            else:
+                logger.warning(
+                    "Trust anchor exists but does not match authority identity. "
+                    "Authority will fail closed during certification."
+                )
         
         # Initialize record storage (SQLite for replay prevention)
-        self._db_path = self.storage_root / "authority_records.db"
+        # F5 V4-r3 FIX: Store DB in protected location
+        self._db_path = storage_root / "authority_protected" / "audit_records.db"
         self._init_database()
         
         logger.info("AuditAuthorityProcess initialized")
@@ -380,18 +393,28 @@ class AuditAuthorityProcess:
         """Load durable keypair from storage or create new one.
         
         F7 FIX: Authority identity survives restart via durable key storage.
-        F14 V4-r2 FIX: Private key protected with Windows DPAPI.
+        F14 V4-r3 FIX: Private key protected with Windows DPAPI (NO plaintext fallback).
         
         Returns:
             AuthorityKeyPair (existing or newly created)
+        
+        Raises:
+            RuntimeError: If private key protection unavailable or corrupted
         """
+        # F14 V4-r3 TEST MODE: Allow test-only mode that skips DPAPI for unit tests
+        if not DPAPI_AVAILABLE and not DPAPI_TEST_MODE:
+            raise RuntimeError(
+                "Private key protection requires Windows DPAPI (win32crypt). "
+                "This platform is not supported for production authority operation."
+            )
+        
         if self._keypair_file.exists():
             try:
                 with open(self._keypair_file, 'r', encoding='utf-8') as f:
                     key_data = json.load(f)
                 
-                # F14 V4-r2 FIX: Decrypt private key using DPAPI
-                if "private_key_protected" in key_data and DPAPI_AVAILABLE:
+                # F14 V4-r3 FIX: Decrypt private key using DPAPI
+                if "private_key_protected" in key_data and DPAPI_AVAILABLE and not DPAPI_TEST_MODE:
                     encrypted_bytes = bytes.fromhex(key_data["private_key_protected"])
                     decrypted = win32crypt.CryptUnprotectData(encrypted_bytes, None, None, None, 0)
                     # CryptUnprotectData returns (data, description) tuple
@@ -400,13 +423,16 @@ class AuditAuthorityProcess:
                     else:
                         decrypted_bytes = decrypted
                     private_key = ed25519.Ed25519PrivateKey.from_private_bytes(decrypted_bytes)
+                elif "private_key_hex" in key_data and DPAPI_TEST_MODE:
+                    # F14 V4-r3 TEST MODE: Allow plaintext for tests only
+                    private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
+                    private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
                 else:
-                    # Fallback for plaintext (should only happen on first migration)
-                    if "private_key_hex" in key_data:
-                        private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
-                        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
-                    else:
-                        raise ValueError("No valid private key data found")
+                    # F14 V4-r3 FIX: No plaintext key allowed in production
+                    raise RuntimeError(
+                        "Protected key data not found in keypair file. "
+                        "Plaintext key storage is not supported in V4-r3 production."
+                    )
                 
                 # Reconstruct AuthorityKeyPair
                 keypair = AuthorityKeyPair.__new__(AuthorityKeyPair)
@@ -419,20 +445,19 @@ class AuditAuthorityProcess:
                 
             except Exception as exc:
                 logger.error("Failed to load keypair from storage: %s", exc)
-                logger.warning("Creating new keypair instead")
+                raise RuntimeError(f"Failed to load authority keypair: {exc}")
         
         # Create new keypair
         keypair = AuthorityKeyPair()
         
-        # F14 V4-r2 FIX: Protect private key with DPAPI
+        # F14 V4-r3 FIX: Protect private key with DPAPI (no fallback in production)
         private_key_bytes = keypair._private_key.private_bytes(
             Encoding.Raw,
             PrivateFormat.Raw,
             NoEncryption()
         )
         
-        if DPAPI_AVAILABLE:
-            # CryptProtectData returns (data, description) or just data depending on version
+        if DPAPI_AVAILABLE and not DPAPI_TEST_MODE:
             encrypted_result = win32crypt.CryptProtectData(private_key_bytes, None, None, None, None, 0)
             if isinstance(encrypted_result, tuple):
                 encrypted_bytes = encrypted_result[0]
@@ -445,21 +470,26 @@ class AuditAuthorityProcess:
                 "protection": "DPAPI",
                 "created_at_utc": datetime.now(timezone.utc).isoformat(),
             }
-        else:
-            # Fallback: plaintext with warning
-            logger.warning("DPAPI not available, storing private key in plaintext")
+        elif DPAPI_TEST_MODE:
+            # F14 V4-r3 TEST MODE: Allow plaintext for tests only
+            logger.warning("TEST MODE: Storing private key in plaintext")
             key_data = {
                 "public_key_id": keypair.public_key_id,
                 "private_key_hex": private_key_bytes.hex(),
-                "protection": "plaintext",
+                "protection": "plaintext_test_mode",
                 "created_at_utc": datetime.now(timezone.utc).isoformat(),
             }
+        else:
+            raise RuntimeError(
+                "Private key protection requires Windows DPAPI (win32crypt). "
+                "This platform is not supported for production authority operation."
+            )
         
         with open(self._keypair_file, 'w', encoding='utf-8') as f:
             json.dump(key_data, f, indent=2)
         
-        logger.info("Created and stored durable keypair: %s (protection: %s)", 
-                   self._keypair_file, key_data["protection"])
+        logger.info("Created and stored durable keypair with %s protection: %s", 
+                   key_data["protection"], self._keypair_file)
         return keypair
     
     def _init_database(self) -> None:
@@ -641,6 +671,8 @@ class AuditAuthorityProcess:
     ) -> SignedAuditRecord:
         """Certify audit evidence and return signed record.
         
+        F5 V4-r3 FIX: Authority must be provisioned before certification.
+        
         F9 FIX: Authority-derived semantics only. Caller inputs are hints only.
         
         FIELD ORIGIN DOCUMENTATION:
@@ -674,6 +706,14 @@ class AuditAuthorityProcess:
         13. Return signed record
         """
         logger.info("Certifying evidence: %s", evidence_id)
+        
+        # F5 V4-r3 FIX: Authority must be provisioned before certification
+        if not self._is_provisioned:
+            raise RuntimeError(
+                "Authority not provisioned. "
+                "Trust anchor must be established via OS-authorized provisioning before authority can certify records. "
+                "Run OSAuthorityProvisioner with administrative privileges to establish trust anchor."
+            )
         
         # Step 1-6: Verify Git evidence (reusing existing GitEvidenceVerifier)
         verifier = GitEvidenceVerifier(repository_path, self.expected_repository_identity)

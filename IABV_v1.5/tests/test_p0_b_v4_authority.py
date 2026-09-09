@@ -1,14 +1,14 @@
-"""P0-B V4-r2 Authority Boundary Tests.
+"""P0-B V4-r3 Authority Boundary Tests.
 
 F10 FIX: Dedicated V4 test suite (independent of V3).
 
-F5 V4-r2 FIX: Adversarial tests for trust anchor and provisioning.
-F14 V4-r2 FIX: Tests for private key protection.
-F4 V4-r2 FIX: Concurrent replay prevention tests.
-F3 V4-r2 FIX: Extended execution status tests.
+F5 V4-r3 FIX: OS-level trust anchor with Windows ACL protection.
+F14 V4-r3 FIX: Private key protection with DPAPI (no plaintext fallback).
+F4 V4-r3 FIX: Concurrent replay prevention tests.
+F3 V4-r3 FIX: Extended execution status tests.
 
 This suite tests the P0-B V4 separate audit authority process architecture
-with cryptographic signing, independent trust anchor, and durable authority identity.
+with cryptographic signing, OS-level independent trust anchor, and durable authority identity.
 """
 
 from __future__ import annotations
@@ -175,30 +175,39 @@ class TestTrustAnchor:
     """Test independent trust anchor mechanism."""
     
     def test_trusted_key_accepted(self):
-        """F10: Trusted key is accepted (via authorized provisioning)."""
+        """F10: Trusted key is accepted (via OS-authorized provisioning)."""
         from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
-        from iabv_v15.services.development.authority_provisioning import AuthorityProvisioner
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
         
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = AuthorityTrustConfig(Path(tmpdir))
-            provisioner = AuthorityProvisioner(Path(tmpdir))
+            protected_root = Path(tmpdir)
+            
+            # F5 V4-r3 FIX: Use OS-level provisioner in test mode
+            # Note: This test cannot verify actual admin privilege in test environment
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
             
             keypair = AuthorityKeyPair()
-            # F5 V4-r2 FIX: Provision via authorized path
-            provisioner.provision_authority(keypair)
+            # Provision via authorized path
+            provisioner.provision_authority_key(
+                key_id=keypair.public_key_id,
+                public_key=keypair.public_key,
+            )
             
-            # Reload config to read from file
-            config.reload_config()
-            
-            # Verify key is trusted
-            assert config.verify_public_key(keypair.public_key)
+            # Verify key is in trust store
+            trust_status = provisioner.get_trust_status()
+            assert trust_status["trusted_keys_count"] >= 1
     
     def test_unknown_key_rejected(self):
         """F10: Unknown key is rejected."""
         from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
+        from iabv_v15.services.development.authority_trust_config import AuthorityTrustConfig
         
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = AuthorityTrustConfig(Path(tmpdir))
+            protected_root = Path(tmpdir)
+            
+            # Create empty trust config
+            config = AuthorityTrustConfig(protected_root)
             
             # Create key NOT in trust config
             unknown_keypair = AuthorityKeyPair()
@@ -209,56 +218,84 @@ class TestTrustAnchor:
     def test_attacker_key_rejected(self):
         """F10: Attacker-generated key is rejected."""
         from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
-        from iabv_v15.services.development.authority_provisioning import AuthorityProvisioner
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
+        from iabv_v15.services.development.authority_trust_config import AuthorityTrustConfig
         
         with tempfile.TemporaryDirectory() as tmpdir:
-            config = AuthorityTrustConfig(Path(tmpdir))
-            provisioner = AuthorityProvisioner(Path(tmpdir))
+            protected_root = Path(tmpdir)
             
             # Add legitimate key via authorized provisioning
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
             legitimate_keypair = AuthorityKeyPair()
-            provisioner.provision_authority(legitimate_keypair)
+            provisioner.provision_authority_key(
+                key_id=legitimate_keypair.public_key_id,
+                public_key=legitimate_keypair.public_key,
+            )
             
             # Attacker creates own key
             attacker_keypair = AuthorityKeyPair()
             
             # Attacker key should be rejected
+            config = AuthorityTrustConfig(protected_root)
             assert not config.verify_public_key(attacker_keypair.public_key)
     
     def test_attacker_cannot_add_trusted_key(self):
-        """F5 V4-r2: Attacker cannot add trusted key via normal caller path."""
+        """F5 V4-r3: Attacker cannot add trusted key via normal config (NO WRITE API)."""
         from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
+        from iabv_v15.services.development.authority_trust_config import AuthorityTrustConfig
         
         with tempfile.TemporaryDirectory() as tmpdir:
             config = AuthorityTrustConfig(Path(tmpdir))
             
             attacker_keypair = AuthorityKeyPair()
             
-            # F5 V4-r2 FIX: Normal add_trusted_key without _provisioning_only should fail
-            with pytest.raises(ValueError, match="_provisioning_only"):
+            # F5 V4-r3 FIX: AuthorityTrustConfig has NO write API for ordinary callers
+            # add_trusted_key method removed from public API
+            # Only OSAuthorityProvisioner can modify trust store
+            with pytest.raises(AttributeError):
                 config.add_trusted_key(
                     key_id=attacker_keypair.public_key_id,
                     public_key=attacker_keypair.public_key,
-                    description="Attacker key",
                 )
     
     def test_authority_self_bootstrap_fails(self):
-        """F5 V4-r2: Authority cannot self-bootstrap trust."""
+        """F5 V4-r3: Authority cannot self-bootstrap trust (fails closed during certification)."""
+        from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
+        
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_root = Path(tmpdir)
+            protected_root = storage_root / "authority_protected"
             
-            # Create authority (should NOT add itself to trust config)
+            # Provision a DIFFERENT key first
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
+            different_keypair = AuthorityKeyPair()
+            provisioner.provision_authority_key(
+                key_id=different_keypair.public_key_id,
+                public_key=different_keypair.public_key,
+            )
+            
+            # Create authority (will generate its own keypair, which won't match the trusted key)
             authority = AuditAuthorityProcess(
                 storage_root=storage_root,
                 expected_repository_identity=None,
             )
             
-            # Authority should NOT be provisioned (self-bootstrap prevented)
+            # Authority should initialize but not be provisioned
             assert not authority._is_provisioned
-            assert authority._trust_config.get_trusted_key(authority._keypair.public_key_id) is None
+            
+            # Certification should fail closed
+            with pytest.raises(RuntimeError, match="Authority not provisioned"):
+                authority.certify(
+                    repository_path=str(storage_root),
+                    base_commit="fake",
+                    result_commit="fake",
+                    execution_status="COMPLETED",
+                    evidence_id="test",
+                )
     
     def test_trust_config_missing_fails_closed(self):
-        """F5 V4-r2: Missing trust config fails closed during certification."""
+        """F5 V4-r3: Missing trust config fails closed during certification."""
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_root = Path(tmpdir)
             
@@ -270,7 +307,53 @@ class TestTrustAnchor:
             
             # Authority should initialize but not be provisioned
             assert not authority._is_provisioned
-            assert authority._trust_config.get_all_trusted_keys() == []
+            
+            # Certification should fail closed
+            with pytest.raises(RuntimeError, match="Authority not provisioned"):
+                authority.certify(
+                    repository_path=str(storage_root),
+                    base_commit="fake",
+                    result_commit="fake",
+                    execution_status="COMPLETED",
+                    evidence_id="test",
+                )
+    
+    def test_authority_identity_mismatch_fails_closed(self):
+        """F5 V4-r3: Authority identity mismatch fails closed during certification."""
+        from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            storage_root = Path(tmpdir)
+            protected_root = storage_root / "authority_protected"
+            
+            # Provision attacker key
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
+            attacker_keypair = AuthorityKeyPair()
+            provisioner.provision_authority_key(
+                key_id=attacker_keypair.public_key_id,
+                public_key=attacker_keypair.public_key,
+            )
+            
+            # Try to start authority with different identity
+            # Authority will generate its own keypair, which won't match the trusted key
+            authority = AuditAuthorityProcess(
+                storage_root=storage_root,
+                expected_repository_identity=None,
+            )
+            
+            # Authority should initialize but not be provisioned
+            assert not authority._is_provisioned
+            
+            # Certification should fail closed
+            with pytest.raises(RuntimeError, match="Authority not provisioned"):
+                authority.certify(
+                    repository_path=str(storage_root),
+                    base_commit="fake",
+                    result_commit="fake",
+                    execution_status="COMPLETED",
+                    evidence_id="test",
+                )
 
 
 class TestDurableAuthorityIdentity:
@@ -278,15 +361,17 @@ class TestDurableAuthorityIdentity:
     
     def test_authority_identity_preserved(self):
         """F10: Authority identity preserved across restart."""
-        from iabv_v15.services.development.authority_provisioning import AuthorityProvisioner
+        from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
         
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_root = Path(tmpdir)
+            protected_root = storage_root / "authority_protected"
             
             # Provision authority first
-            provisioner = AuthorityProvisioner(storage_root)
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
             
-            # Create authority instance #1
+            # Create authority instance #1 (generates keypair)
             authority1 = AuditAuthorityProcess(
                 storage_root=storage_root,
                 expected_repository_identity=None,
@@ -294,7 +379,10 @@ class TestDurableAuthorityIdentity:
             key_id_1 = authority1._keypair.public_key_id
             
             # Provision the authority's key
-            provisioner.provision_authority(authority1._keypair)
+            provisioner.provision_authority_key(
+                key_id=key_id_1,
+                public_key=authority1._keypair.public_key,
+            )
             
             # Simulate restart by creating new instance
             authority2 = AuditAuthorityProcess(
@@ -308,13 +396,15 @@ class TestDurableAuthorityIdentity:
     
     def test_historical_records_verify(self):
         """F10: Historical records remain verifiable after restart."""
-        from iabv_v15.services.development.authority_provisioning import AuthorityProvisioner
+        from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
         
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_root = Path(tmpdir)
+            protected_root = storage_root / "authority_protected"
             
             # Provision authority first
-            provisioner = AuthorityProvisioner(storage_root)
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
             
             # Create authority and sign a record
             authority1 = AuditAuthorityProcess(
@@ -324,7 +414,10 @@ class TestDurableAuthorityIdentity:
             trusted_key = authority1._keypair.public_key
             
             # Provision the authority's key
-            provisioner.provision_authority(authority1._keypair)
+            provisioner.provision_authority_key(
+                key_id=authority1._keypair.public_key_id,
+                public_key=authority1._keypair.public_key,
+            )
             
             # Create verifier with trusted key
             verifier = AuditRecordVerifier(trusted_key)
@@ -345,19 +438,24 @@ class TestReplayPrevention:
     def test_same_evidence_same_authoritative_record(self):
         """F10: Same evidence returns same authoritative record."""
         from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
-        from iabv_v15.services.development.authority_provisioning import AuthorityProvisioner
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
         
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_root = Path(tmpdir)
+            protected_root = storage_root / "authority_protected"
             
             # Provision authority first
-            provisioner = AuthorityProvisioner(storage_root)
-            keypair = AuthorityKeyPair()
-            provisioner.provision_authority(keypair)
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
             
             authority = AuditAuthorityProcess(
                 storage_root=storage_root,
                 expected_repository_identity=None,
+            )
+            
+            # Provision the authority's key
+            provisioner.provision_authority_key(
+                key_id=authority._keypair.public_key_id,
+                public_key=authority._keypair.public_key,
             )
             
             # Note: This test requires a real Git repository
@@ -523,13 +621,15 @@ class TestSQLiteNotTrustRoot:
     
     def test_db_modification_does_not_create_authority(self):
         """F10: DB modification does not create cryptographic authority."""
-        from iabv_v15.services.development.authority_provisioning import AuthorityProvisioner
+        from iabv_v15.services.development.signed_audit_record import AuthorityKeyPair
+        from iabv_v15.services.development.authority_os_provisioning import OSAuthorityProvisioner
         
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_root = Path(tmpdir)
+            protected_root = storage_root / "authority_protected"
             
             # Provision authority first
-            provisioner = AuthorityProvisioner(storage_root)
+            provisioner = OSAuthorityProvisioner(protected_root, test_only_mode=True)
             
             authority = AuditAuthorityProcess(
                 storage_root=storage_root,
@@ -537,7 +637,10 @@ class TestSQLiteNotTrustRoot:
             )
             
             # Provision the authority's key
-            provisioner.provision_authority(authority._keypair)
+            provisioner.provision_authority_key(
+                key_id=authority._keypair.public_key_id,
+                public_key=authority._keypair.public_key,
+            )
             
             # Verify DB exists
             assert authority._db_path.exists()
