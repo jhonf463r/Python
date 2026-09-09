@@ -1143,13 +1143,17 @@ def install_service(service_name: str = "IABVAuditAuthority", exe_path: str | No
         raise RuntimeError("pywin32 required for service installation")
     
     try:
+        # Python class string: module.ClassName
+        python_class_string = "iabv_v15.services.development.authority_windows_service.AuthorityServiceHandler"
+        
         win32serviceutil.InstallService(
-            exe_path,
+            python_class_string,  # First arg is pythonClassString, NOT exe_path
             service_name,
             "IABV Audit Authority Service",
             startType=win32service.SERVICE_AUTO_START,
             userName="NT AUTHORITY\\LocalService",
             password=None,
+            exeName=exe_path,  # exe_path goes here as named parameter
             description="Cryptographic audit authority for IABV provenance verification"
         )
         logger.info("Service installed: %s (as LocalService, exe=%s)", service_name, exe_path or "default")
