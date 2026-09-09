@@ -350,10 +350,12 @@ class OSAuthorityProvisioner:
         """Verify that effective ACL protection is applied to trust store directory.
         
         F5 V4-r4 FIX: Verify effective permissions instead of just applying ACL.
+        F5 V4-r9.2 FIX: More granular verification of specific permissions.
         
         Verifies that:
         - Ordinary caller cannot write
-        - Authority runtime cannot write
+        - Ordinary caller cannot delete
+        - Ordinary caller cannot replace
         - Admin/SYSTEM can write
         
         Args:
@@ -382,17 +384,38 @@ class OSAuthorityProvisioner:
             acl_output = result.stdout
             logger.info("Current ACL: %s", acl_output)
             
-            # F5 V4-r4 FIX: Verify that current user does not have Write permission
-            username = os.environ.get('USERNAME', '')
-            if username and ('W' in acl_output or 'WRITE' in acl_output.upper()):
-                # Check if current user has Write permission
-                user_acl_lines = [line for line in acl_output.split('\n') if username in line]
-                for line in user_acl_lines:
-                    if 'W' in line or 'WRITE' in line.upper():
-                        raise WindowsACLError(
-                            f"Current user {username} has Write permission on protected directory. "
-                            "ACL protection is not correctly applied."
-                        )
+            # F5 V4-r9.2 FIX: Verify that Users group has Read only (no Write/Delete/Modify)
+            users_acl_lines = [line for line in acl_output.split('\n') if 'Users' in line or 'BUILTIN\\Users' in line]
+            for line in users_acl_lines:
+                # Check for Write (W), Delete (D), Modify (M), Full Control (F)
+                permission_upper = line.upper()
+                if any(perm in permission_upper for perm in ['W', 'D', 'M', 'F']):
+                    raise WindowsACLError(
+                        f"Users group has unauthorized permission in ACL: {line}. "
+                        "ACL protection is not correctly applied. Users should have Read only."
+                    )
+            
+            # F5 V4-r9.2 FIX: Verify that Administrators and SYSTEM have Full Control
+            admin_acl_lines = [line for line in acl_output.split('\n') if 'Administrators' in line or 'SYSTEM' in line]
+            if not admin_acl_lines:
+                raise WindowsACLError(
+                    "No Administrators or SYSTEM ACL found. "
+                    "ACL protection is not correctly applied."
+                )
+            
+            # Verify admin has Full Control (F) or Write (W)
+            admin_has_write = False
+            for line in admin_acl_lines:
+                permission_upper = line.upper()
+                if 'F' in permission_upper or 'W' in permission_upper:
+                    admin_has_write = True
+                    break
+            
+            if not admin_has_write:
+                raise WindowsACLError(
+                    "Administrators/SYSTEM do not have Write permission. "
+                    "ACL protection is not correctly applied."
+                )
             
             logger.info("Verified effective ACL protection")
                 

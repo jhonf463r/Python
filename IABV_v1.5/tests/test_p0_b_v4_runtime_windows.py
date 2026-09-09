@@ -18,6 +18,15 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+# Windows API support
+try:
+    import win32file
+    import win32api
+    import win32pipe
+    WINDOWS_API_AVAILABLE = True
+except ImportError:
+    WINDOWS_API_AVAILABLE = False
+
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -614,6 +623,277 @@ def test_8_windows_acl_real_enforcement():
     return result
 
 
+def test_9_f5_machine_level_trust_anchor_write():
+    """F5 V4-r9.2 Runtime Test: Normal user cannot write to machine-level trust anchor.
+    
+    Expected: Normal user gets ACCESS_DENIED when attempting to write to C:\ProgramData.
+    """
+    result = {
+        "test": "F5 V4-r9.2 Machine-Level Trust Anchor Write",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    is_admin, integrity = check_admin_privilege()
+    result["evidence"]["is_admin"] = is_admin
+    result["evidence"]["integrity_level"] = integrity
+    
+    # Test machine-level directory write
+    machine_level_path = Path("C:\\ProgramData\\IABV_v4_r9_2_test")
+    
+    try:
+        # Attempt to create directory in ProgramData
+        machine_level_path.mkdir(parents=True, exist_ok=True)
+        result["evidence"]["directory_created"] = True
+        result["evidence"]["directory_path"] = str(machine_level_path)
+        
+        # Attempt to write file
+        test_file = machine_level_path / "test_anchor.json"
+        test_file.write_text('{"test": "data"}', encoding='utf-8')
+        result["evidence"]["file_written"] = True
+        
+        # If we got here, we have write access
+        if is_admin:
+            result["status"] = "EXPECTED"  # Admin should have write access
+            result["evidence"]["explanation"] = "Admin has write access to ProgramData (expected)"
+        else:
+            result["status"] = "FAILED"  # Non-admin should NOT have write access
+            result["evidence"]["explanation"] = "Non-admin has write access to ProgramData (unexpected)"
+            
+    except PermissionError as exc:
+        result["evidence"]["permission_denied"] = True
+        result["evidence"]["permission_error"] = str(exc)
+        if not is_admin:
+            result["status"] = "PASS"  # Non-admin correctly denied
+            result["evidence"]["explanation"] = "Non-admin correctly denied write access to ProgramData"
+        else:
+            result["status"] = "FAILED"  # Admin should not be denied
+            result["evidence"]["explanation"] = "Admin denied write access to ProgramData (unexpected)"
+    except Exception as exc:
+        result["evidence"]["error"] = str(exc)
+        result["status"] = "ERROR"
+    
+    # Cleanup
+    try:
+        if machine_level_path.exists():
+            import shutil
+            shutil.rmtree(machine_level_path)
+    except:
+        pass
+    
+    return result
+
+
+def test_10_f5_combined_replacement_attack():
+    """F5 V4-r9.2 Runtime Test: Combined replacement of trust anchor + trust store.
+    
+    Expected: Attacker cannot replace both simultaneously without admin.
+    """
+    result = {
+        "test": "F5 V4-r9.2 Combined Replacement Attack",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    is_admin, integrity = check_admin_privilege()
+    result["evidence"]["is_admin"] = is_admin
+    result["evidence"]["integrity_level"] = integrity
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Simulate separate trust anchor location
+        trust_anchor_path = Path(tmpdir) / "provisioner_trust"
+        trust_store_path = Path(tmpdir) / "authority_trust"
+        
+        # Create both directories
+        trust_anchor_path.mkdir(parents=True, exist_ok=True)
+        trust_store_path.mkdir(parents=True, exist_ok=True)
+        
+        # Attacker attempts to replace trust anchor
+        try:
+            attacker_public_key = {
+                "public_key_id": "attacker_key",
+                "public_key_hex": "attacker123",
+                "provisioned_at_utc": "2024-01-01T00:00:00Z",
+            }
+            anchor_file = trust_anchor_path / "provisioner_public_key.json"
+            anchor_file.write_text(json.dumps(attacker_public_key), encoding='utf-8')
+            result["evidence"]["anchor_replaced"] = True
+        except Exception as exc:
+            result["evidence"]["anchor_replaced"] = False
+            result["evidence"]["anchor_replace_error"] = str(exc)
+        
+        # Attacker attempts to replace trust store
+        try:
+            attacker_trust_store = {
+                "version": "1.0",
+                "trusted_keys": [{
+                    "key_id": "attacker_key",
+                    "public_key_hex": "attacker123",
+                }],
+                "provisioner_public_key_id": "attacker_key",
+            }
+            trust_file = trust_store_path / "authority_trust.json"
+            trust_file.write_text(json.dumps(attacker_trust_store), encoding='utf-8')
+            result["evidence"]["trust_store_replaced"] = True
+        except Exception as exc:
+            result["evidence"]["trust_store_replaced"] = False
+            result["evidence"]["trust_store_replace_error"] = str(exc)
+        
+        # Determine verdict
+        if is_admin:
+            result["status"] = "NOT_PROVEN"  # Admin can replace both (expected)
+            result["evidence"]["explanation"] = "Admin can replace both files (expected behavior)"
+        else:
+            # In temporary directory, ordinary user can write
+            # Real test would require actual C:\ProgramData with ACL
+            result["status"] = "NOT_PROVEN"  # Need actual machine-level ACL test
+            result["evidence"]["explanation"] = "Test in temp directory - need actual C:\\ProgramData with ACL"
+    
+    return result
+
+
+def test_11_f14_service_key_access():
+    """F14 V4-r9.2 Runtime Test: Normal user cannot access service-scoped key.
+    
+    Expected: Normal user gets ACCESS_DENIED when attempting to read service key.
+    """
+    result = {
+        "test": "F14 V4-r9.2 Service Key Access",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    is_admin, integrity = check_admin_privilege()
+    result["evidence"]["is_admin"] = is_admin
+    result["evidence"]["integrity_level"] = integrity
+    
+    # Test service-scoped directory access
+    service_key_path = Path("C:\\ProgramData\\IABV\\authority_keys")
+    
+    try:
+        # Attempt to read service key directory
+        if service_key_path.exists():
+            files = list(service_key_path.glob("*"))
+            result["evidence"]["directory_accessible"] = True
+            result["evidence"]["file_count"] = len(files)
+            
+            # Attempt to read key file
+            key_file = service_key_path / "authority_private_key.json"
+            if key_file.exists():
+                key_content = key_file.read_text(encoding='utf-8')
+                result["evidence"]["key_readable"] = True
+                result["evidence"]["key_length"] = len(key_content)
+        else:
+            result["evidence"]["directory_exists"] = False
+            result["evidence"]["explanation"] = "Service key directory does not exist (service not deployed)"
+            result["status"] = "NOT_PROVEN"
+            return result
+        
+        # Determine verdict
+        if is_admin:
+            result["status"] = "EXPECTED"  # Admin should have access
+            result["evidence"]["explanation"] = "Admin has access to service key (expected)"
+        else:
+            result["status"] = "FAILED"  # Non-admin should NOT have access
+            result["evidence"]["explanation"] = "Non-admin has access to service key (unexpected)"
+            
+    except PermissionError as exc:
+        result["evidence"]["permission_denied"] = True
+        result["evidence"]["permission_error"] = str(exc)
+        if not is_admin:
+            result["status"] = "PASS"  # Non-admin correctly denied
+            result["evidence"]["explanation"] = "Non-admin correctly denied access to service key"
+        else:
+            result["status"] = "FAILED"  # Admin should not be denied
+            result["evidence"]["explanation"] = "Admin denied access to service key (unexpected)"
+    except Exception as exc:
+        result["evidence"]["error"] = str(exc)
+        result["status"] = "ERROR"
+    
+    return result
+
+
+def test_12_f14_ipc_unauthorized():
+    """F14 V4-r9.2 Runtime Test: Unauthorized IPC request.
+    
+    Expected: Unauthorized caller gets denied by service.
+    SKIPPED: Service not deployed - requires Administrator installation.
+    """
+    result = {
+        "test": "F14 V4-r9.2 IPC Unauthorized",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    # Check if Windows API is available
+    if not WINDOWS_API_AVAILABLE:
+        result["evidence"]["windows_api_available"] = False
+        result["status"] = "NOT_PROVEN"
+        result["evidence"]["explanation"] = "Windows API (win32file) not available"
+        return result
+    
+    # Test Named Pipe connection
+    pipe_name = r"\\.\pipe\IABVAuditAuthority"
+    
+    try:
+        # Attempt to connect to Named Pipe
+        pipe_handle = win32file.CreateFile(
+            pipe_name,
+            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+            0,
+            None,
+            win32file.OPEN_EXISTING,
+            0,
+            None
+        )
+        result["evidence"]["pipe_connected"] = True
+        
+        # Attempt to send unauthorized request
+        request = {
+            "operation": "CERTIFY",
+            "audit_record": {"test": "data"},
+        }
+        request_data = json.dumps(request).encode('utf-8')
+        
+        win32file.WriteFile(pipe_handle, request_data, None)
+        result["evidence"]["request_sent"] = True
+        
+        # Try to read response
+        response_data = win32file.ReadFile(pipe_handle, 4096, None)
+        result["evidence"]["response_received"] = True
+        
+        result["status"] = "NOT_PROVEN"  # Service not deployed or authorization not tested
+        result["evidence"]["explanation"] = "Named Pipe connected but authorization not verified"
+        
+        win32file.CloseHandle(pipe_handle)
+        
+    except win32api.error as exc:
+        if exc.winerror == 2:  # File not found
+            result["evidence"]["pipe_not_found"] = True
+            result["status"] = "NOT_PROVEN"
+            result["evidence"]["explanation"] = "Named Pipe does not exist (service not deployed - requires Administrator installation)"
+        elif exc.winerror == 5:  # Access denied
+            result["evidence"]["access_denied"] = True
+            result["status"] = "PASS"
+            result["evidence"]["explanation"] = "Access denied to Named Pipe (expected)"
+        else:
+            result["evidence"]["pipe_error"] = str(exc)
+            result["status"] = "ERROR"
+    except Exception as exc:
+        result["evidence"]["error"] = str(exc)
+        result["status"] = "ERROR"
+    
+    return result
+
+
 def main():
     """Execute all Windows runtime security tests."""
     print("=" * 80)
@@ -634,6 +914,10 @@ def main():
         test_6_dpapi_runtime,
         test_7_dpapi_same_user_threat_model,
         test_8_windows_acl_real_enforcement,
+        test_9_f5_machine_level_trust_anchor_write,
+        test_10_f5_combined_replacement_attack,
+        test_11_f14_service_key_access,
+        test_12_f14_ipc_unauthorized,
     ]
     
     results = []
