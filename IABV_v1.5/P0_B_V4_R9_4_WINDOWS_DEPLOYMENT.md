@@ -214,18 +214,45 @@ generate_and_store_key() from Administrator PowerShell, the key will be
 protected under Administrator identity and the service (LocalService) will
 NOT be able to decrypt it.
 
+**PROVISIONING CONTROL:**
+Provisioning is controlled by a flag file `AUTHORITY_PROVISIONING_ENABLED` in
+`C:\ProgramData\IABV\`. Only Administrators can create/modify files in
+`C:\ProgramData\`, so normal users cannot enable provisioning. This prevents
+the following attack:
+```
+normal user
+   ↓
+cannot create flag in C:\ProgramData\
+   ↓
+cannot enable provisioning
+   ↓
+cannot generate new authority key
+   ↓
+cannot become trusted
+```
+
 The correct procedure is:
 1. Install and configure the service to run as LocalService
-2. Start the service in provisioning mode
-3. The service generates the key under its own identity
-4. Stop the service
-5. Restart in normal mode
+2. Create provisioning flag as Administrator
+3. Start the service (detects flag, enters provisioning mode)
+4. The service generates the key under its own identity
+5. Delete provisioning flag
+6. Restart the service (normal mode)
 
-### Step 6.2: Start Service in Provisioning Mode
+### Step 6.2: Create Provisioning Flag
 
 ```powershell
 # Run as Administrator
-$env:IABV_AUTHORITY_PROVISIONING="1"
+New-Item -Path "C:\ProgramData\IABV\AUTHORITY_PROVISIONING_ENABLED" -ItemType File -Force
+```
+
+This flag file can only be created by Administrators. Normal users cannot
+create it because they lack write permissions to C:\ProgramData\.
+
+### Step 6.3: Start Service (Detects Provisioning Flag)
+
+```powershell
+# Run as Administrator
 python -m iabv_v15.services.development.authority_windows_service start
 ```
 
@@ -235,13 +262,14 @@ Service started: IABVAuditAuthority
 ```
 
 The service will:
-- Start in provisioning mode (allow_provisioning=True)
+- Detect AUTHORITY_PROVISIONING_ENABLED flag in C:\ProgramData\IABV\
+- Enter provisioning mode
 - Detect missing authority key
 - Generate key under LocalService identity
 - Store key with DPAPI protection for LocalService
 - Enter READY state
 
-### Step 6.3: Verify Key Generation
+### Step 6.4: Verify Key Generation
 
 ```powershell
 # Run as Administrator
@@ -261,22 +289,26 @@ Get-Content "C:\ProgramData\IABV\authority_keys\authority_private_key.json"
 }
 ```
 
-### Step 6.4: Stop Service After Provisioning
+### Step 6.5: Delete Provisioning Flag
+
+```powershell
+# Run as Administrator
+Remove-Item -Path "C:\ProgramData\IABV\AUTHORITY_PROVISIONING_ENABLED" -Force
+```
+
+**CRITICAL:** This step disables provisioning. After this, the service will
+fail closed if the key is missing. Normal users cannot recreate this flag.
+
+### Step 6.6: Restart Service in Normal Mode
 
 ```powershell
 # Run as Administrator
 python -m iabv_v15.services.development.authority_windows_service stop
-```
-
-### Step 6.5: Restart Service in Normal Mode
-
-```powershell
-# Run as Administrator (no provisioning flag)
 python -m iabv_v15.services.development.authority_windows_service start
 ```
 
 The service will now:
-- Start in normal mode (allow_provisioning=False)
+- Start in normal mode (no provisioning flag)
 - Load the existing key (fail-closed if missing)
 - Verify DPAPI decryption works under LocalService
 - Enter READY state
@@ -285,8 +317,9 @@ The service will now:
 - ✅ IMPLEMENTED in V4-r9.4
 - AuthorityKeyManager.generate_and_store_key() creates key with DPAPI under current process identity
 - AuthorityKeyManager.load_key() loads and decrypts key with identity verification
-- Service supports provisioning mode via IABV_AUTHORITY_PROVISIONING=1
+- Provisioning controlled by flag file in C:\ProgramData\IABV\ (Administrator-only)
 - Normal runtime fails closed if key is missing
+- Normal users cannot enable provisioning
 
 ---
 

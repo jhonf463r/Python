@@ -1042,6 +1042,162 @@ def test_14_f14_key_manager_fail_closed():
     return result
 
 
+def test_15_f14_provisioning_control_normal_user():
+    """F14 V4-r9.4 Runtime Test: Normal user cannot enable provisioning.
+    
+    Expected: Normal user cannot create provisioning flag in C:\ProgramData\.
+    """
+    result = {
+        "test": "F14 V4-r9.4 Provisioning Control - Normal User",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    is_admin, integrity = check_admin_privilege()
+    result["evidence"]["is_admin"] = is_admin
+    result["evidence"]["integrity_level"] = integrity
+    
+    # Attempt to create provisioning flag
+    program_data_path = Path("C:\\ProgramData\\IABV")
+    provisioning_flag = program_data_path / "AUTHORITY_PROVISIONING_ENABLED"
+    
+    try:
+        provisioning_flag.parent.mkdir(parents=True, exist_ok=True)
+        provisioning_flag.write_text("1", encoding='utf-8')
+        result["evidence"]["flag_created"] = True
+        result["evidence"]["flag_path"] = str(provisioning_flag)
+        
+        # If flag was created, clean it up (only if admin)
+        if provisioning_flag.exists():
+            provisioning_flag.unlink()
+            result["evidence"]["flag_cleaned"] = True
+    except PermissionError as exc:
+        result["evidence"]["flag_created"] = False
+        result["evidence"]["flag_error"] = str(exc)
+        result["evidence"]["error_type"] = "PermissionError"
+    except Exception as exc:
+        result["evidence"]["flag_created"] = False
+        result["evidence"]["flag_error"] = str(exc)
+        result["evidence"]["error_type"] = type(exc).__name__
+    
+    # Determine verdict
+    if is_admin:
+        # Admin should be able to create flag (expected)
+        if result["evidence"].get("flag_created"):
+            result["status"] = "PASS"
+            result["evidence"]["verdict"] = "Admin can create flag (expected)"
+        else:
+            result["status"] = "FAILED"
+            result["evidence"]["verdict"] = "Admin failed to create flag (unexpected)"
+    else:
+        # Normal user should NOT be able to create flag
+        if not result["evidence"].get("flag_created"):
+            result["status"] = "PASS"
+            result["evidence"]["verdict"] = "Normal user cannot create flag (expected)"
+        else:
+            result["status"] = "FAILED"
+            result["evidence"]["verdict"] = "Normal user created flag (SECURITY FAILURE)"
+    
+    return result
+
+
+def test_16_f14_provisioning_flag_detection():
+    """F14 V4-r9.4 Unit Test: Provisioning flag detection works correctly.
+    
+    Expected: AuthorityKeyManager._is_provisioning_enabled() returns True when flag exists.
+    """
+    result = {
+        "test": "F14 V4-r9.4 Provisioning Flag Detection",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        program_data_path = Path(tmpdir)
+        key_storage_path = program_data_path / "authority_keys"
+        
+        # Test without flag
+        key_manager_no_flag = AuthorityKeyManager(
+            key_storage_path=key_storage_path,
+            service_identity="LocalService",
+            program_data_path=program_data_path
+        )
+        result["evidence"]["provisioning_without_flag"] = key_manager_no_flag._is_provisioning_enabled()
+        
+        # Create flag
+        provisioning_flag = program_data_path / "AUTHORITY_PROVISIONING_ENABLED"
+        provisioning_flag.write_text("1", encoding='utf-8')
+        result["evidence"]["flag_created"] = True
+        
+        # Test with flag
+        key_manager_with_flag = AuthorityKeyManager(
+            key_storage_path=key_storage_path,
+            service_identity="LocalService",
+            program_data_path=program_data_path
+        )
+        result["evidence"]["provisioning_with_flag"] = key_manager_with_flag._is_provisioning_enabled()
+        
+        # Verify behavior
+        if not result["evidence"]["provisioning_without_flag"] and result["evidence"]["provisioning_with_flag"]:
+            result["status"] = "PASS"
+            result["evidence"]["verdict"] = "Flag detection works correctly"
+        else:
+            result["status"] = "FAILED"
+            result["evidence"]["verdict"] = "Flag detection incorrect"
+    
+    return result
+
+
+def test_17_f14_key_missing_normal_startup_fail_closed():
+    """F14 V4-r9.4 Unit Test: Key missing during normal startup fails closed.
+    
+    Expected: load_key() raises AuthorityKeyError when key missing and no provisioning flag.
+    """
+    result = {
+        "test": "F14 V4-r9.4 Key Missing Normal Startup Fail-Closed",
+        "user_sid": get_user_sid(),
+        "process_integrity": check_admin_privilege()[1],
+        "status": "NOT_PROVEN",
+        "evidence": {},
+    }
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        program_data_path = Path(tmpdir)
+        key_storage_path = program_data_path / "authority_keys"
+        
+        # Do NOT create provisioning flag
+        # Do NOT create key file
+        
+        key_manager = AuthorityKeyManager(
+            key_storage_path=key_storage_path,
+            service_identity="LocalService",
+            program_data_path=program_data_path
+        )
+        
+        try:
+            key_manager.load_key()
+            result["evidence"]["load_key_raised"] = False
+            result["status"] = "FAILED"
+            result["evidence"]["verdict"] = "load_key() should have raised AuthorityKeyError"
+        except Exception as exc:
+            result["evidence"]["load_key_raised"] = True
+            result["evidence"]["exception_type"] = type(exc).__name__
+            result["evidence"]["exception_message"] = str(exc)
+            
+            if "AuthorityKeyError" in type(exc).__name__:
+                result["status"] = "PASS"
+                result["evidence"]["verdict"] = "load_key() raised AuthorityKeyError (expected)"
+            else:
+                result["status"] = "FAILED"
+                result["evidence"]["verdict"] = f"load_key() raised {type(exc).__name__} (expected AuthorityKeyError)"
+    
+    return result
+
+
 def main():
     """Execute all Windows runtime security tests."""
     print("=" * 80)
@@ -1068,6 +1224,9 @@ def main():
         test_12_f14_ipc_unauthorized,
         test_13_f14_key_manager_generation,
         test_14_f14_key_manager_fail_closed,
+        test_15_f14_provisioning_control_normal_user,
+        test_16_f14_provisioning_flag_detection,
+        test_17_f14_key_missing_normal_startup_fail_closed,
     ]
     
     results = []
