@@ -132,21 +132,37 @@ class TestTrustStore:
     
     F14 V4-r4 FIX: Test adapter for unit tests.
     F5 V4-r6 FIX: Added signature-based verification for tests.
+    F5 V4-r9 FIX: Use separate provisioner trust anchor location by default.
     
     This provides a fake trust store for testing that does not require
     OS-level ACL protection. This is ONLY acceptable for unit tests.
     """
     
-    def __init__(self, storage_root: Path):
+    def __init__(self, storage_root: Path, provisioner_trust_anchor_path: Path | None = None):
         """Initialize test trust store.
+        
+        F5 V4-r9 FIX: Use separate provisioner trust anchor location by default.
         
         Args:
             storage_root: Root directory for test trust storage
+            provisioner_trust_anchor_path: Separate path for provisioner public key
+                                         (simulates C:\ProgramData\IABV\provisioner_trust\)
+                                         If None, creates a subdirectory for separation
         """
         self.storage_root = storage_root
         self.storage_root.mkdir(parents=True, exist_ok=True)
         self._trust_store_path = self.storage_root / "authority_trust.json"  # Match production name
-        self._provisioner_keypair_path = self.storage_root / "provisioner_keypair.json"
+        
+        # F5 V4-r9 FIX: Always use separate location for provisioner trust anchor
+        if provisioner_trust_anchor_path is None:
+            # Create a subdirectory for provisioner trust anchor
+            self.provisioner_trust_anchor_path = self.storage_root / "provisioner_trust"
+        else:
+            self.provisioner_trust_anchor_path = provisioner_trust_anchor_path
+        
+        self.provisioner_trust_anchor_path.mkdir(parents=True, exist_ok=True)
+        self._provisioner_keypair_path = self.provisioner_trust_anchor_path / "provisioner_keypair.json"
+        self._provisioner_public_key_path = self.provisioner_trust_anchor_path / "provisioner_public_key.json"
         
         # F5 V4-r6 FIX: Create or load test provisioner keypair
         self._provisioner_keypair = self._load_or_create_provisioner_keypair()
@@ -225,6 +241,17 @@ class TestTrustStore:
         
         with open(self._provisioner_keypair_path, 'w', encoding='utf-8') as f:
             json.dump(key_data, f, indent=2)
+        
+        # F5 V4-r9 FIX: Always publish public key to separate location
+        public_key_only = {
+            "public_key_id": keypair.public_key_id,
+            "public_key_hex": keypair.public_key.public_bytes(Encoding.Raw, PublicFormat.Raw).hex(),
+            "provisioned_at_utc": datetime.now(timezone.utc).isoformat(),
+            "location": "test_machine_level_trust_anchor",
+        }
+        with open(self._provisioner_public_key_path, 'w', encoding='utf-8') as f:
+            json.dump(public_key_only, f, indent=2)
+        logger.warning("Published test provisioner public key to: %s", self._provisioner_public_key_path)
         
         logger.warning("Created and stored test provisioner keypair with INSECURE plaintext: %s", self._provisioner_keypair_path)
         return keypair

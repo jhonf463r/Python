@@ -10,6 +10,13 @@ P0-B V4 Authority Process:
 - Derives audit semantics
 - Signs and returns SignedAuditRecord
 - Stores audit records locally (replay prevention)
+
+F14 V4-r9 NOTE:
+The current implementation uses Windows DPAPI for private key protection.
+This provides protection at rest but does NOT establish a process identity boundary.
+For full F14 remediation (same-user isolation), the authority should run as a
+Windows Service with dedicated identity (LocalService or gMSA). See authority_windows_service.py
+for the service architecture. F14 remains NOT_PROVEN without service deployment.
 """
 
 from __future__ import annotations

@@ -152,6 +152,7 @@ class OSAuthorityProvisioner:
     """OS-level authority provisioning with Windows ACL protection.
     
     F5 V4-r4 FIX: Removed test_only_mode - no production bypass allowed.
+    F5 V4-r9 FIX: Separate provisioner public key location to break circular trust.
     
     This class provides the ONLY authorized path for trust root modification.
     It requires OS-level administrative privileges and protects the trust store
@@ -159,7 +160,99 @@ class OSAuthorityProvisioner:
     
     F5 V4-r4 CORRECTION: The runtime constructor does NOT create directories or apply ACL.
     That must be done by a separate OS-authorized provisioning operation.
+    
+    F5 V4-r9 ARCHITECTURE:
+    - Provisioner public key stored in C:\ProgramData\IABV\provisioner_trust\ (ADMIN ONLY WRITE)
+    - Authority trust store stored in protected_root (ADMIN ONLY WRITE)
+    - This breaks circular dependency between provisioner keypair and trust store
     """
+    
+    @staticmethod
+    def setup_provisioner_trust_anchor(program_data_root: Path) -> None:
+        """Setup machine-level provisioner trust anchor location (OS-authorized only).
+        
+        F5 V4-r9 FIX: Separate machine-level location for provisioner public key.
+        
+        This creates C:\ProgramData\IABV\provisioner_trust\ with admin-only write ACL.
+        The provisioner public key stored here is the independent trust anchor
+        used to verify authority_trust.json signatures.
+        
+        Args:
+            program_data_root: Path to C:\ProgramData\IABV\provisioner_trust\
+        
+        Raises:
+            OSProvisioningError: If setup fails
+            WindowsACLError: If ACL application fails
+        """
+        if sys.platform != "win32":
+            raise OSProvisioningError(
+                "Provisioner trust anchor setup requires Windows platform. "
+                "This security mechanism is Windows-specific."
+            )
+        
+        # Verify admin privilege
+        try:
+            import ctypes
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+            if not is_admin:
+                raise OSProvisioningError(
+                    "Provisioner trust anchor setup requires administrative privileges. "
+                    "Please run as administrator or with UAC elevation."
+                )
+        except ImportError:
+            raise OSProvisioningError("ctypes not available - cannot verify admin privilege")
+        
+        # Create directory
+        program_data_root.mkdir(parents=True, exist_ok=True)
+        
+        # Apply machine-level ACL protection (Admin/System only write, Users read)
+        OSAuthorityProvisioner._apply_machine_level_acl(program_data_root)
+        
+        # Verify effective ACL
+        OSAuthorityProvisioner._verify_effective_acl(program_data_root)
+        
+        logger.info("Provisioner trust anchor setup complete: %s", program_data_root)
+    
+    @staticmethod
+    def _apply_machine_level_acl(program_data_root: Path) -> None:
+        """Apply machine-level Windows ACL protection to provisioner trust anchor.
+        
+        F5 V4-r9 FIX: Restrict to Admin/System write only, Users read only.
+        
+        Args:
+            program_data_root: Directory to protect
+        
+        Raises:
+            WindowsACLError: If ACL application fails
+        """
+        try:
+            # Use icacls to restrict directory access
+            cmd = [
+                "icacls",
+                str(program_data_root),
+                "/inheritance:r",  # Remove inherited permissions
+                "/grant:r", "Administrators:(OI)(CI)F",
+                "/grant:r", "SYSTEM:(OI)(CI)F",
+                "/grant:r", "Users:(OI)(CI)R",  # Users: Read only (no Write)
+            ]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                shell=True
+            )
+            
+            if result.returncode != 0:
+                raise WindowsACLError(
+                    f"Machine-level ACL application failed: {result.stderr}"
+                )
+            
+            logger.info("Applied machine-level Windows ACL protection to: %s", program_data_root)
+                
+        except Exception as exc:
+            logger.error("Failed to apply machine-level ACL protection: %s", exc)
+            raise WindowsACLError(f"Machine-level ACL application failed: {exc}")
     
     @staticmethod
     def setup_protected_directory(protected_root: Path) -> None:
@@ -307,15 +400,25 @@ class OSAuthorityProvisioner:
             logger.error("Failed to verify effective ACL: %s", exc)
             raise WindowsACLError(f"ACL verification failed: {exc}")
     
-    def __init__(self, protected_root: Path, provisioner_keypair: ProvisionerKeyPair | None = None):
+    def __init__(
+        self,
+        protected_root: Path,
+        provisioner_trust_anchor_path_or_keypair: Path | ProvisionerKeyPair | None = None,
+        provisioner_keypair: ProvisionerKeyPair | None = None,
+    ):
         """Initialize OS-level provisioner.
         
         F5 V4-r4 FIX: Removed test_only_mode - no production bypass allowed.
         F5 V4-r6 FIX: Added provisioner keypair for cryptographic signature.
+        F5 V4-r9 FIX: Separate provisioner public key in machine-level location.
         
         Args:
             protected_root: Root directory for protected trust store
                           (separate from ordinary application data)
+            provisioner_trust_anchor_path_or_keypair: Machine-level path for provisioner public key
+                                         (C:\ProgramData\IABV\provisioner_trust\)
+                                         OR ProvisionerKeyPair for backward compatibility (legacy mode)
+                                         If None, uses legacy single-directory layout (for test compatibility)
             provisioner_keypair: Optional provisioner keypair for signing trust stores.
                                If None, loads from protected location or generates new.
         
@@ -330,6 +433,15 @@ class OSAuthorityProvisioner:
         
         self.protected_root = protected_root
         
+        # F5 V4-r9 FIX: Backward compatibility - detect if second arg is Path or ProvisionerKeyPair
+        if isinstance(provisioner_trust_anchor_path_or_keypair, ProvisionerKeyPair):
+            # Legacy mode: second arg is keypair
+            self.provisioner_trust_anchor_path = None
+            provisioner_keypair = provisioner_trust_anchor_path_or_keypair
+        else:
+            # V4-r9 mode: second arg is path (or None)
+            self.provisioner_trust_anchor_path = provisioner_trust_anchor_path_or_keypair
+        
         # F5 V4-r4 FIX: Runtime does NOT create directory - provisioning must pre-create
         if not self.protected_root.exists():
             raise OSProvisioningError(
@@ -338,8 +450,20 @@ class OSAuthorityProvisioner:
                 "the provisioner can initialize. Run OSAuthorityProvisioner.setup_protected_directory() first."
             )
         
+        # F5 V4-r9 FIX: Verify machine-level provisioner trust anchor exists if using V4-r9 architecture
+        if self.provisioner_trust_anchor_path:
+            if not self.provisioner_trust_anchor_path.exists():
+                raise OSProvisioningError(
+                    f"Provisioner trust anchor directory does not exist: {self.provisioner_trust_anchor_path}. "
+                    "Provisioning must create the machine-level trust anchor first. "
+                    "Run OSAuthorityProvisioner.setup_provisioner_trust_anchor() with admin privileges."
+                )
+            self._provisioner_keypair_path = self.provisioner_trust_anchor_path / "provisioner_keypair.json"
+        else:
+            # Legacy single-directory layout
+            self._provisioner_keypair_path = self.protected_root / "provisioner_keypair.json"
+        
         self._trust_store_path = self.protected_root / "authority_trust.json"
-        self._provisioner_keypair_path = self.protected_root / "provisioner_keypair.json"
         
         # F5 V4-r6 FIX: Load or create provisioner keypair
         self._provisioner_keypair = provisioner_keypair or self._load_or_create_provisioner_keypair()
@@ -349,6 +473,10 @@ class OSAuthorityProvisioner:
         
         # F5 V4-r4 FIX: Verify effective ACL (fail-closed if not verified)
         self._verify_effective_acl(protected_root)
+        
+        # F5 V4-r9 FIX: Verify machine-level ACL if using V4-r9 architecture
+        if self.provisioner_trust_anchor_path:
+            self._verify_effective_acl(provisioner_trust_anchor_path)
         
         logger.info("OSAuthorityProvisioner initialized: %s", self.protected_root)
     
@@ -563,8 +691,9 @@ class OSAuthorityProvisioner:
         
         F5 V4-r6 FIX: Separate keypair for cryptographic signature of trust stores.
         F14 V4-r7 FIX: Protect provisioner private key with DPAPI (was plain text).
+        F5 V4-r9 FIX: Store in machine-level location; also publish public key for runtime.
         
-        The provisioner keypair is stored in the protected directory and is used
+        The provisioner keypair is stored in the machine-level directory and is used
         to sign trust stores to establish cryptographic authenticity.
         
         Returns:
@@ -648,6 +777,19 @@ class OSAuthorityProvisioner:
         
         with open(self._provisioner_keypair_path, 'w', encoding='utf-8') as f:
             json.dump(key_data, f, indent=2)
+        
+        # F5 V4-r9 FIX: Publish public key to machine-level location for runtime (if using V4-r9 architecture)
+        if self.provisioner_trust_anchor_path:
+            public_key_only = {
+                "public_key_id": keypair.public_key_id,
+                "public_key_hex": keypair.public_key_hex,
+                "provisioned_at_utc": self._get_current_timestamp(),
+                "location": "machine_level_trust_anchor",
+            }
+            public_key_path = self.provisioner_trust_anchor_path / "provisioner_public_key.json"
+            with open(public_key_path, 'w', encoding='utf-8') as f:
+                json.dump(public_key_only, f, indent=2)
+            logger.info("Published provisioner public key to machine-level trust anchor: %s", public_key_path)
         
         logger.info("Created and stored provisioner keypair with DPAPI protection: %s", self._provisioner_keypair_path)
         return keypair

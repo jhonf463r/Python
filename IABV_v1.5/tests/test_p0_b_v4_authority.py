@@ -267,8 +267,8 @@ class TestTrustAnchor:
                 public_key=keypair.public_key,
             )
             
-            # Create trust config (should not have write API)
-            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_public_key)
+            # F5 V4-r9 FIX: Create trust config with separate provisioner trust anchor path
+            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_trust_anchor_path)
             
             attacker_keypair = TestAuthorityKeyPair.generate()
             
@@ -316,7 +316,7 @@ class TestTrustAnchor:
             
             # F5 V4-r5 FIX: Runtime should fail to initialize (trust store missing)
             with pytest.raises(ValueError, match="trust store not found"):
-                AuthorityTrustConfig(protected_root, trust_store.provisioner_public_key)
+                AuthorityTrustConfig(protected_root, trust_store.provisioner_trust_anchor_path)
             
             # Delete directory
             import shutil
@@ -324,7 +324,7 @@ class TestTrustAnchor:
             
             # Runtime should fail to initialize
             with pytest.raises(ValueError, match="Protected trust root directory does not exist"):
-                AuthorityTrustConfig(protected_root, trust_store.provisioner_public_key)
+                AuthorityTrustConfig(protected_root, trust_store.provisioner_trust_anchor_path)
     
     def test_trust_store_corruption_fail_closed(self):
         """F5 V4-r4: Trust store corruption causes fail-closed."""
@@ -361,7 +361,7 @@ class TestTrustAnchor:
             authority_keypair = key_storage.load_or_create_keypair()
             
             # Runtime should fail identity verification
-            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_public_key)
+            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_trust_anchor_path)
             assert not config.verify_authority_identity_match(
                 authority_keypair.public_key_id,
                 authority_keypair.public_key
@@ -679,7 +679,7 @@ class TestFirstWriterAttack:
             assert trust_store._trust_store_path == protected_root / "authority_trust.json"
             
             # Runtime can now initialize (with provisioner public key for signature verification)
-            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_public_key)
+            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_trust_anchor_path)
             assert len(config.get_all_trusted_keys()) >= 1
 
 
@@ -726,7 +726,7 @@ class TestKeyCorruption:
             key_storage.load_or_create_keypair()
             
             # Identity mismatch should be detected
-            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_public_key)
+            config = AuthorityTrustConfig(protected_root, trust_store.provisioner_trust_anchor_path)
             assert not config.verify_authority_identity_match(
                 attacker_keypair.public_key_id,
                 attacker_keypair.public_key
