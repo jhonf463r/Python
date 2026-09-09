@@ -1,23 +1,34 @@
-"""Shared test fixtures — isolate singleton state between test modules."""
-from __future__ import annotations
+"""Test configuration for P0-B V4-r4 authority tests.
+
+F14 V4-r4 FIX: Pytest fixtures for test-only backend.
+
+This provides test-only components that can be used in unit tests while
+keeping production code fail-closed on DPAPI unavailability.
+"""
 
 import pytest
+from pathlib import Path
+
+# Import from test_key_backend directly
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
+
+from test_key_backend import TestKeyStorage, TestTrustStore, TestAuditAuthorityProcess
 
 
-@pytest.fixture(autouse=True)
-def _isolate_intent_learning_layer():
-    """Reset the IntentLearningLayer singleton before each test.
+@pytest.fixture
+def test_authority_key_storage(tmp_path):
+    """Provide test-only key storage for unit tests."""
+    return TestKeyStorage(tmp_path / "authority_keys")
 
-    The singleton persists across tests and earlier classify() calls
-    record learned patterns that contaminate later tests.  We clear
-    all in-memory patterns before each test and restore the original
-    snapshot after so each test sees only the patterns loaded from
-    disk at import time.
-    """
-    from iabv_v15.services.adaptive.intent_understanding_service import (
-        _intent_learning_layer,
-    )
-    snapshot = dict(_intent_learning_layer._patterns)
-    _intent_learning_layer.clear()
-    yield
-    _intent_learning_layer._patterns = snapshot
+
+@pytest.fixture
+def test_trust_store(tmp_path):
+    """Provide test-only trust store for unit tests."""
+    return TestTrustStore(tmp_path / "authority_protected")
+
+
+@pytest.fixture
+def test_authority_process(tmp_path, test_authority_key_storage):
+    """Provide test-only authority process for unit tests."""
+    return TestAuditAuthorityProcess(tmp_path, test_authority_key_storage)

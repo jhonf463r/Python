@@ -59,102 +59,83 @@ class WindowsACLError(Exception):
 class OSAuthorityProvisioner:
     """OS-level authority provisioning with Windows ACL protection.
     
-    F5 V4-r3 FIX: Implements genuine OS-level authorization boundary.
+    F5 V4-r4 FIX: Removed test_only_mode - no production bypass allowed.
     
     This class provides the ONLY authorized path for trust root modification.
     It requires OS-level administrative privileges and protects the trust store
     using Windows ACLs.
+    
+    F5 V4-r4 CORRECTION: The runtime constructor does NOT create directories or apply ACL.
+    That must be done by a separate OS-authorized provisioning operation.
     """
     
-    def __init__(self, protected_root: Path, test_only_mode: bool = False):
-        """Initialize OS-level provisioner.
+    @staticmethod
+    def setup_protected_directory(protected_root: Path) -> None:
+        """Setup protected directory with ACL (OS-authorized only).
+        
+        F5 V4-r4 FIX: Separate ACL setup from runtime constructor.
+        
+        This is a one-time setup operation that must be run with admin privileges.
+        It creates the protected directory and applies restrictive ACL.
         
         Args:
             protected_root: Root directory for protected trust store
-                          (separate from ordinary application data)
-            test_only_mode: If True, skip admin privilege verification (FOR TESTING ONLY)
-                           This is explicitly marked and must never be used in production
         
         Raises:
-            OSProvisioningError: If not running with admin privileges (unless test_only_mode)
-        """
-        self.protected_root = protected_root
-        self.protected_root.mkdir(parents=True, exist_ok=True)
-        
-        self._trust_store_path = self.protected_root / "authority_trust.json"
-        self._test_only_mode = test_only_mode
-        
-        # F5 V4-r3 FIX: Check OS administrative privilege (unless test mode)
-        if not test_only_mode:
-            self._verify_admin_privilege()
-        else:
-            logger.warning("TEST ONLY MODE: Admin privilege verification skipped")
-        
-        # F5 V4-r3 FIX: Apply Windows ACL protection (unless test mode)
-        if not test_only_mode:
-            self._apply_acl_protection()
-        else:
-            logger.warning("TEST ONLY MODE: ACL protection skipped")
-        
-        logger.info("OSAuthorityProvisioner initialized: %s (test_only=%s)", 
-                   self.protected_root, test_only_mode)
-    
-    def _verify_admin_privilege(self) -> None:
-        """Verify that current process has administrative privileges.
-        
-        F5 V4-r3 FIX: OS-level authorization boundary.
-        
-        Raises:
-            OSProvisioningError: If not running with admin privileges
+            OSProvisioningError: If setup fails
+            WindowsACLError: If ACL application fails
         """
         if sys.platform != "win32":
-            logger.warning("OS provisioning only supported on Windows")
-            return
+            raise OSProvisioningError(
+                "Protected directory setup requires Windows platform. "
+                "This security mechanism is Windows-specific."
+            )
         
+        # Verify admin privilege
         try:
-            # Check if running as administrator on Windows
             import ctypes
             is_admin = ctypes.windll.shell32.IsUserAnAdmin()
-            
             if not is_admin:
                 raise OSProvisioningError(
-                    "OS provisioning requires administrative privileges. "
+                    "Protected directory setup requires administrative privileges. "
                     "Please run as administrator or with UAC elevation."
                 )
-            
-            logger.info("Verified administrative privileges")
-            
         except ImportError:
-            logger.warning("ctypes not available, cannot verify admin privilege")
-        except Exception as exc:
-            logger.error("Failed to verify admin privilege: %s", exc)
-            raise OSProvisioningError(f"Admin privilege verification failed: {exc}")
+            raise OSProvisioningError("ctypes not available - cannot verify admin privilege")
+        
+        # Create directory
+        protected_root.mkdir(parents=True, exist_ok=True)
+        
+        # Apply ACL protection
+        OSAuthorityProvisioner._apply_acl_protection(protected_root)
+        
+        # Verify effective ACL
+        OSAuthorityProvisioner._verify_effective_acl(protected_root)
+        
+        logger.info("Protected directory setup complete: %s", protected_root)
     
-    def _apply_acl_protection(self) -> None:
+    @staticmethod
+    def _apply_acl_protection(protected_root: Path) -> None:
         """Apply Windows ACL protection to trust store directory.
         
-        F5 V4-r3 FIX: OS-level boundary via Windows ACL.
+        F5 V4-r4 FIX: Fail-closed if ACL application fails.
         
         Restricts trust store modification to:
         - Administrators: Full Control
         - SYSTEM: Full Control
         - Current user: Read/Execute (no Write)
         
+        Args:
+            protected_root: Directory to protect
+        
         Raises:
             WindowsACLError: If ACL application fails
         """
-        if sys.platform != "win32":
-            logger.warning("ACL protection only supported on Windows")
-            return
-        
         try:
             # Use icacls to restrict directory access
-            # Administrators: Full Control
-            # SYSTEM: Full Control
-            # Current user: Read and Execute only
             cmd = [
                 "icacls",
-                str(self.protected_root),
+                str(protected_root),
                 "/inheritance:r",  # Remove inherited permissions
                 "/grant:r", "Administrators:(OI)(CI)F",
                 "/grant:r", "SYSTEM:(OI)(CI)F",
@@ -169,14 +150,189 @@ class OSAuthorityProvisioner:
             )
             
             if result.returncode != 0:
-                logger.warning("ACL application returned non-zero: %s", result.stderr)
-                # Don't fail if ACL application fails, but log it
-            else:
-                logger.info("Applied Windows ACL protection to trust store")
+                raise WindowsACLError(
+                    f"ACL application failed: {result.stderr}"
+                )
+            
+            logger.info("Applied Windows ACL protection to: %s", protected_root)
                 
         except Exception as exc:
             logger.error("Failed to apply ACL protection: %s", exc)
-            # Don't fail provisioning if ACL fails, but log it
+            raise WindowsACLError(f"ACL application failed: {exc}")
+    
+    @staticmethod
+    def _verify_effective_acl(protected_root: Path) -> None:
+        """Verify that effective ACL protection is applied to trust store directory.
+        
+        F5 V4-r4 FIX: Verify effective permissions instead of just applying ACL.
+        
+        Verifies that:
+        - Ordinary caller cannot write
+        - Authority runtime cannot write
+        - Admin/SYSTEM can write
+        
+        Args:
+            protected_root: Directory to verify
+        
+        Raises:
+            WindowsACLError: If ACL verification fails
+        """
+        try:
+            # Use icacls to check effective permissions
+            cmd = ["icacls", str(protected_root)]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                shell=True
+            )
+            
+            if result.returncode != 0:
+                raise WindowsACLError(
+                    f"Failed to query ACL: {result.stderr}"
+                )
+            
+            # Parse ACL output to verify protection
+            acl_output = result.stdout
+            logger.info("Current ACL: %s", acl_output)
+            
+            # F5 V4-r4 FIX: Verify that current user does not have Write permission
+            username = os.environ.get('USERNAME', '')
+            if username and ('W' in acl_output or 'WRITE' in acl_output.upper()):
+                # Check if current user has Write permission
+                user_acl_lines = [line for line in acl_output.split('\n') if username in line]
+                for line in user_acl_lines:
+                    if 'W' in line or 'WRITE' in line.upper():
+                        raise WindowsACLError(
+                            f"Current user {username} has Write permission on protected directory. "
+                            "ACL protection is not correctly applied."
+                        )
+            
+            logger.info("Verified effective ACL protection")
+                
+        except Exception as exc:
+            logger.error("Failed to verify effective ACL: %s", exc)
+            raise WindowsACLError(f"ACL verification failed: {exc}")
+    
+    def __init__(self, protected_root: Path):
+        """Initialize OS-level provisioner.
+        
+        F5 V4-r4 FIX: Removed test_only_mode - no production bypass allowed.
+        
+        Args:
+            protected_root: Root directory for protected trust store
+                          (separate from ordinary application data)
+        
+        Raises:
+            OSProvisioningError: If not running with admin privileges or on non-Windows
+        """
+        if sys.platform != "win32":
+            raise OSProvisioningError(
+                "OS-level provisioning requires Windows platform. "
+                "This security mechanism is Windows-specific and not supported on other platforms."
+            )
+        
+        self.protected_root = protected_root
+        
+        # F5 V4-r4 FIX: Runtime does NOT create directory - provisioning must pre-create
+        if not self.protected_root.exists():
+            raise OSProvisioningError(
+                f"Protected trust root directory does not exist: {self.protected_root}. "
+                "Provisioning must create the protected directory and apply ACL before "
+                "the provisioner can initialize. Run OSAuthorityProvisioner.setup_protected_directory() first."
+            )
+        
+        self._trust_store_path = self.protected_root / "authority_trust.json"
+        
+        # F5 V4-r4 FIX: Verify admin privilege (no bypass allowed)
+        self._verify_admin_privilege()
+        
+        # F5 V4-r4 FIX: Verify effective ACL (fail-closed if not verified)
+        self._verify_effective_acl(protected_root)
+        
+        logger.info("OSAuthorityProvisioner initialized: %s", self.protected_root)
+    
+    def _verify_admin_privilege(self) -> None:
+        """Verify that current process has administrative privileges.
+        
+        F5 V4-r4 FIX: OS-level authorization boundary - fail-closed on non-Windows or non-admin.
+        
+        Raises:
+            OSProvisioningError: If not running with admin privileges or on non-Windows
+        """
+        try:
+            # Check if running as administrator on Windows
+            import ctypes
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+            
+            if not is_admin:
+                raise OSProvisioningError(
+                    "OS provisioning requires administrative privileges. "
+                    "Please run as administrator or with UAC elevation."
+                )
+            
+            logger.info("Verified administrative privileges")
+            
+        except ImportError:
+            raise OSProvisioningError(
+                "ctypes not available - cannot verify admin privilege. "
+                "Admin privilege verification is required for OS-level provisioning."
+            )
+        except Exception as exc:
+            logger.error("Failed to verify admin privilege: %s", exc)
+            raise OSProvisioningError(f"Admin privilege verification failed: {exc}")
+    
+    def _verify_effective_acl(self) -> None:
+        """Verify that effective ACL protection is applied to trust store directory.
+        
+        F5 V4-r4 FIX: Verify effective permissions instead of just applying ACL.
+        
+        Verifies that:
+        - Ordinary caller cannot write
+        - Authority runtime cannot write
+        - Admin/SYSTEM can write
+        
+        Raises:
+            WindowsACLError: If ACL verification fails
+        """
+        try:
+            # Use icacls to check effective permissions
+            cmd = ["icacls", str(self.protected_root)]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                shell=True
+            )
+            
+            if result.returncode != 0:
+                raise WindowsACLError(
+                    f"Failed to query ACL: {result.stderr}"
+                )
+            
+            # Parse ACL output to verify protection
+            acl_output = result.stdout
+            logger.info("Current ACL: %s", acl_output)
+            
+            # F5 V4-r4 FIX: Verify that current user does not have Write permission
+            username = os.environ.get('USERNAME', '')
+            if username and ('W' in acl_output or 'WRITE' in acl_output.upper()):
+                # Check if current user has Write permission
+                user_acl_lines = [line for line in acl_output.split('\n') if username in line]
+                for line in user_acl_lines:
+                    if 'W' in line or 'WRITE' in line.upper():
+                        raise WindowsACLError(
+                            f"Current user {username} has Write permission on protected directory. "
+                            "ACL protection is not correctly applied."
+                        )
+            
+            logger.info("Verified effective ACL protection")
+                
+        except Exception as exc:
+            logger.error("Failed to verify effective ACL: %s", exc)
+            raise WindowsACLError(f"ACL verification failed: {exc}")
     
     def provision_authority_key(
         self,

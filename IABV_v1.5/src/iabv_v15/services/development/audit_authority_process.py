@@ -36,8 +36,8 @@ from cryptography.hazmat.primitives.serialization import (
     NoEncryption,
 )
 
-# F14 V4-r3 FIX: Windows DPAPI for private key protection
-# F14 V4-r3 FIX: NO plaintext fallback - fail closed if DPAPI unavailable
+# F14 V4-r4 FIX: Windows DPAPI for private key protection
+# F14 V4-r4 FIX: NO plaintext fallback - fail closed if DPAPI unavailable
 try:
     import win32crypt
     DPAPI_AVAILABLE = True
@@ -45,9 +45,6 @@ except ImportError:
     DPAPI_AVAILABLE = False
     logger = logging.getLogger(__name__)
     logger.warning("win32crypt not available - private key protection not available on this platform")
-
-# F14 V4-r3 TEST MODE: Allow test-only mode that skips DPAPI for unit tests
-DPAPI_TEST_MODE = os.environ.get("IABV_DPAPI_TEST_MODE", "0") == "1"
 
 # F1 FIX: Self-contained V4 IPC implementation (no cross-branch dependency)
 import json
@@ -393,7 +390,7 @@ class AuditAuthorityProcess:
         """Load durable keypair from storage or create new one.
         
         F7 FIX: Authority identity survives restart via durable key storage.
-        F14 V4-r3 FIX: Private key protected with Windows DPAPI (NO plaintext fallback).
+        F14 V4-r4 FIX: Private key protected with Windows DPAPI (NO plaintext fallback).
         
         Returns:
             AuthorityKeyPair (existing or newly created)
@@ -401,8 +398,8 @@ class AuditAuthorityProcess:
         Raises:
             RuntimeError: If private key protection unavailable or corrupted
         """
-        # F14 V4-r3 TEST MODE: Allow test-only mode that skips DPAPI for unit tests
-        if not DPAPI_AVAILABLE and not DPAPI_TEST_MODE:
+        # F14 V4-r4 FIX: Fail closed if DPAPI unavailable (no test bypass)
+        if not DPAPI_AVAILABLE:
             raise RuntimeError(
                 "Private key protection requires Windows DPAPI (win32crypt). "
                 "This platform is not supported for production authority operation."
@@ -413,8 +410,8 @@ class AuditAuthorityProcess:
                 with open(self._keypair_file, 'r', encoding='utf-8') as f:
                     key_data = json.load(f)
                 
-                # F14 V4-r3 FIX: Decrypt private key using DPAPI
-                if "private_key_protected" in key_data and DPAPI_AVAILABLE and not DPAPI_TEST_MODE:
+                # F14 V4-r4 FIX: Decrypt private key using DPAPI (no plaintext fallback)
+                if "private_key_protected" in key_data:
                     encrypted_bytes = bytes.fromhex(key_data["private_key_protected"])
                     decrypted = win32crypt.CryptUnprotectData(encrypted_bytes, None, None, None, 0)
                     # CryptUnprotectData returns (data, description) tuple
@@ -423,15 +420,11 @@ class AuditAuthorityProcess:
                     else:
                         decrypted_bytes = decrypted
                     private_key = ed25519.Ed25519PrivateKey.from_private_bytes(decrypted_bytes)
-                elif "private_key_hex" in key_data and DPAPI_TEST_MODE:
-                    # F14 V4-r3 TEST MODE: Allow plaintext for tests only
-                    private_key_bytes = bytes.fromhex(key_data["private_key_hex"])
-                    private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key_bytes)
                 else:
-                    # F14 V4-r3 FIX: No plaintext key allowed in production
+                    # F14 V4-r4 FIX: No plaintext key allowed in production
                     raise RuntimeError(
                         "Protected key data not found in keypair file. "
-                        "Plaintext key storage is not supported in V4-r3 production."
+                        "Plaintext key storage is not supported in V4-r4 production."
                     )
                 
                 # Reconstruct AuthorityKeyPair
@@ -450,46 +443,31 @@ class AuditAuthorityProcess:
         # Create new keypair
         keypair = AuthorityKeyPair()
         
-        # F14 V4-r3 FIX: Protect private key with DPAPI (no fallback in production)
+        # F14 V4-r4 FIX: Protect private key with DPAPI (no fallback)
         private_key_bytes = keypair._private_key.private_bytes(
             Encoding.Raw,
             PrivateFormat.Raw,
             NoEncryption()
         )
         
-        if DPAPI_AVAILABLE and not DPAPI_TEST_MODE:
-            encrypted_result = win32crypt.CryptProtectData(private_key_bytes, None, None, None, None, 0)
-            if isinstance(encrypted_result, tuple):
-                encrypted_bytes = encrypted_result[0]
-            else:
-                encrypted_bytes = encrypted_result
-            protected_key_hex = encrypted_bytes.hex()
-            key_data = {
-                "public_key_id": keypair.public_key_id,
-                "private_key_protected": protected_key_hex,
-                "protection": "DPAPI",
-                "created_at_utc": datetime.now(timezone.utc).isoformat(),
-            }
-        elif DPAPI_TEST_MODE:
-            # F14 V4-r3 TEST MODE: Allow plaintext for tests only
-            logger.warning("TEST MODE: Storing private key in plaintext")
-            key_data = {
-                "public_key_id": keypair.public_key_id,
-                "private_key_hex": private_key_bytes.hex(),
-                "protection": "plaintext_test_mode",
-                "created_at_utc": datetime.now(timezone.utc).isoformat(),
-            }
+        # F14 V4-r4 FIX: Fail closed if DPAPI unavailable
+        encrypted_result = win32crypt.CryptProtectData(private_key_bytes, None, None, None, None, 0)
+        if isinstance(encrypted_result, tuple):
+            encrypted_bytes = encrypted_result[0]
         else:
-            raise RuntimeError(
-                "Private key protection requires Windows DPAPI (win32crypt). "
-                "This platform is not supported for production authority operation."
-            )
+            encrypted_bytes = encrypted_result
+        protected_key_hex = encrypted_bytes.hex()
+        key_data = {
+            "public_key_id": keypair.public_key_id,
+            "private_key_protected": protected_key_hex,
+            "protection": "DPAPI",
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
         
         with open(self._keypair_file, 'w', encoding='utf-8') as f:
             json.dump(key_data, f, indent=2)
         
-        logger.info("Created and stored durable keypair with %s protection: %s", 
-                   key_data["protection"], self._keypair_file)
+        logger.info("Created and stored durable keypair with DPAPI protection: %s", self._keypair_file)
         return keypair
     
     def _init_database(self) -> None:

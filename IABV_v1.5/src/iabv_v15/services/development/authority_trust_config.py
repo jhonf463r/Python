@@ -71,12 +71,25 @@ class AuthorityTrustConfig:
     def __init__(self, protected_root: Path):
         """Initialize trust anchor configuration (READ-ONLY).
         
+        F5 V4-r4 FIX: Runtime does NOT create directory - fail-closed if missing.
+        
         Args:
             protected_root: Root directory for protected trust store
                            (separate from ordinary application data)
+        
+        Raises:
+            ValueError: If protected directory does not exist (not provisioned)
         """
         self.protected_root = protected_root
-        self.protected_root.mkdir(parents=True, exist_ok=True)
+        
+        # F5 V4-r4 FIX: Runtime does NOT create directory - must be pre-created by provisioning
+        if not self.protected_root.exists():
+            raise ValueError(
+                f"Protected trust root directory does not exist: {self.protected_root}. "
+                "Authority runtime cannot create the protected directory. "
+                "Trust root must be established via OS-authorized provisioning first. "
+                "Run OSAuthorityProvisioner.setup_protected_directory() with admin privileges."
+            )
         
         self._config_file = self.protected_root / "authority_trust.json"
         self._keys: dict[str, TrustedAuthorityKey] = {}
