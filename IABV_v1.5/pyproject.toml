@@ -18,6 +18,7 @@ dependencies = [
   "psutil>=5.9",
   "pyperclip>=1.8",
   "pywin32>=306; sys_platform == 'win32'",
+  "cryptography>=41.0",  # P0-B V4: Ed25519 signing for audit authority
 ]
 
 [project.optional-dependencies]
