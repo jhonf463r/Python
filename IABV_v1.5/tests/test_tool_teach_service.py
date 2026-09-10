@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -13,6 +14,7 @@ from iabv_v15.infra.persistence.tool_record_repository import ToolRecordReposito
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
+from iabv_v15.services.evolution.intent_scoped_briefing_service import IntentScopedBriefingService
 from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
 from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
@@ -67,7 +69,7 @@ def _workspace(name: str) -> Path:
     return root
 
 
-def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: ExternalAssistantToolAdapter | None = None) -> tuple[ToolTeachService, ToolRecordRepository]:
+def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: ExternalAssistantToolAdapter | None = None, intent_scoped_briefing_service: IntentScopedBriefingService | None = None) -> tuple[ToolTeachService, ToolRecordRepository]:
     db = AppDatabase(str(root / 'app.sqlite'))
     storage = ArtifactStorage(str(root / 'tool_teaching'))
     repository = ToolRecordRepository(db, storage)
@@ -106,6 +108,7 @@ def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: 
         mode_selector=mode_selector,
         experiment_lab=experiment_lab,
         live_audit_supervisor=LiveAuditSupervisor(tool_record_repository=repository, experiment_lab=experiment_lab),
+        intent_scoped_briefing_service=intent_scoped_briefing_service,
     )
     return service, repository
     return service, repository
@@ -1150,6 +1153,87 @@ def test_tool_teach_service_explicit_codex_request_overrides_cross_family_select
         assert task.metadata['comparison_scope_key']
         assert isinstance(task.metadata['source_trace_ids'], list)
         assert 'Codex' in task.metadata['proposal_summary']
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_teach_service_propagates_canonical_context_to_task_metadata() -> None:
+    """Test que el briefing canónico llega a ToolTask.metadata['context_pack'].
+
+    Este test verifica el wiring real:
+    IntentScopedBriefingService → ToolTeachService.build_task_from_request()
+    → ToolTask.metadata['context_pack']
+
+    Usa dos sentinels inequívocamente diferentes:
+    - CANONICAL_SENTINEL: producido por el bootstrap
+    - EXTERNAL_SENTINEL: pasado en goal_parameters['context_pack']
+
+    Cuando el bootstrap se ejecuta con éxito (IMPACT_HIGH), el valor
+    canónico debe llegar a task.metadata['context_pack'], no el valor
+    externo crudo. Este test fallaría con la implementación anterior a
+    a89d42e que usaba str(goal_parameters.get('context_pack') or '')
+    directamente en metadata.
+    """
+    root = _workspace('tool_teach_service_canonical_context')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+
+    CANONICAL_SENTINEL = "CANONICAL_BOOTSTRAP_SENTINEL_R3"
+    EXTERNAL_SENTINEL = "EXTERNAL_RAW_CONTEXT_SENTINEL_R3"
+
+    class CanonicalBriefing:
+        def build_briefing(self, task_context=None):
+            from iabv_v15.services.evolution.session_start_briefing_service import SessionBriefing
+            return SessionBriefing(
+                summary=CANONICAL_SENTINEL,
+                assistant_brief="Use canonical context",
+                lessons=(),
+                recommendations=(),
+                unresolved=(),
+                text=CANONICAL_SENTINEL,
+                generated_at_epoch=datetime.now(timezone.utc).timestamp(),
+                package_id="test",
+                truncated=False,
+            )
+
+    briefing_service = IntentScopedBriefingService(
+        session_start_briefing_service=CanonicalBriefing()
+    )
+
+    try:
+        service, repository = _service(root, intent_scoped_briefing_service=briefing_service)
+
+        request = InferenceRequest(
+            user_goal='Implementar feature con contexto canónico',
+            task_role=TaskRole.TOOL_USE,
+            goal_parameters={
+                'tool_id': 'codex_installed',
+                'execution_scope': 'read_only',
+                'context_pack': EXTERNAL_SENTINEL,  # Contexto externo deliberadamente diferente
+                'force_impact': 'high',  # Forzar IMPACT_HIGH para activar bootstrap
+            },
+            metadata={'force_impact': 'high'},
+        )
+
+        task = service.build_task_from_request(request)
+
+        # Verificar que el briefing canónico llegó a metadata['context_pack']
+        assert task.metadata['context_pack'] is not None
+        assert CANONICAL_SENTINEL in task.metadata['context_pack'], \
+            f"Canonical sentinel {CANONICAL_SENTINEL} not found in context_pack: {task.metadata['context_pack']}"
+
+        # Verificar que el sentinel externo NO sobrescribió el valor canónico
+        # (dependiendo de cómo el briefing compose el prompt, el externo podría
+        # estar presente si es "canonical_with_external_additive", pero el valor
+        # dominante debe ser el canónico)
+        assert task.metadata['context_pack'] != EXTERNAL_SENTINEL, \
+            "Context pack was overwritten by external context instead of canonical briefing"
+
+        # Verificar que el modo de resolución fue canonical
+        assert task.metadata['cognitive_bootstrap']['context_resolution_mode'] in ['canonical', 'canonical_with_external_additive']
+
+        # Verificar que no hubo error de bootstrap
+        assert task.metadata['cognitive_bootstrap']['bootstrap_error'] == ''
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

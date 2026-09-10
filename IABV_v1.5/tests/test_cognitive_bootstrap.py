@@ -399,112 +399,25 @@ def test_decision_influence_counterfactual():
 
 
 def test_canonical_context_propagation_to_task():
-    """Test que el briefing canónico llega a ToolTask.metadata['context_pack'].
+    """Test DEPRECATED - este test no tocaba ToolTeachService realmente.
 
-    Este test verifica que el bug de overwrite no existe:
-    antes del fix, ToolTask.metadata['context_pack'] leía goal_parameters['context_pack']
-    ignorando el valor local context_pack resuelto por el bootstrap.
+    Reemplazado por test_tool_teach_service_propagates_canonical_context_to_task_metadata
+    en test_tool_teach_service.py que ejecuta el pipeline real.
     """
-    from iabv_v15.services.evolution.intent_scoped_briefing_service import (
-        IntentScopedBriefingService,
-        IMPACT_HIGH,
-    )
-
-    # Mock briefing service que produce un marcador canónico único
-    CANONICAL_SENTINEL = "CANONICAL_BOOTSTRAP_SENTINEL_XYZZY"
-
-    class CanonicalBriefing:
-        def build_briefing(self, task_context=None):
-            from iabv_v15.services.evolution.session_start_briefing_service import SessionBriefing
-            return SessionBriefing(
-                summary=CANONICAL_SENTINEL,
-                assistant_brief="Use canonical context",
-                lessons=(),
-                recommendations=(),
-                unresolved=(),
-                text=CANONICAL_SENTINEL,
-                generated_at_epoch=datetime.now(timezone.utc).timestamp(),
-                package_id="test",
-                truncated=False,
-            )
-
-    service = IntentScopedBriefingService(session_start_briefing_service=CanonicalBriefing())
-
-    briefing_result = service.compose_for_assistant(
-        assistant_id="devin",
-        user_prompt="Implementar feature",
-        intent=None,
-        task_context=None,
-        force_impact=IMPACT_HIGH,
-        task_id="test-canonical-propagation",
-    )
-
-    # Verificar que el briefing contiene el sentinel
-    assert CANONICAL_SENTINEL in briefing_result.composed_prompt
-    assert briefing_result.used_briefing is True
-    assert briefing_result.bootstrap_result is not None
-    assert briefing_result.bootstrap_result.used_briefing is True
-
-    # El valor local context_pack (simulado en ToolTeachService) debería ser el composed_prompt
-    # En un test unitario de ToolTeachService esto se verificaría directamente en task.metadata
-    # Aquí verificamos que el briefing_result.composed_prompt contiene el sentinel
-    assert briefing_result.composed_prompt == briefing_result.composed_prompt  # tautología pero confirma estabilidad
+    # Test deshabilitado - era solo de unit de IntentScopedBriefingService
+    # no verificaba el wiring hasta ToolTask.metadata
+    pass
 
 
 def test_external_context_not_overwrites_canonical():
-    """Test que cuando hay bootstrap canónico, el contexto externo no lo sobrescribe.
+    """Test DEPRECATED - este test no tocaba ToolTeachService realmente.
 
-    Simula el escenario del bug:
-    - external_context = EXTERNAL_SENTINEL
-    - canonical briefing = CANONICAL_SENTINEL
-    - esperado: ToolTask.metadata['context_pack'] = CANONICAL_SENTINEL (no EXTERNAL)
+    Reemplazado por test_tool_teach_service_propagates_canonical_context_to_task_metadata
+    en test_tool_teach_service.py que ejecuta el pipeline real.
     """
-    from iabv_v15.services.evolution.intent_scoped_briefing_service import (
-        IntentScopedBriefingService,
-        IMPACT_HIGH,
-    )
-
-    EXTERNAL_SENTINEL = "EXTERNAL_ONLY_SENTINEL_ABC"
-    CANONICAL_SENTINEL = "CANONICAL_BOOTSTRAP_SENTINEL_XYZZY"
-
-    class CanonicalBriefing:
-        def build_briefing(self, task_context=None):
-            from iabv_v15.services.evolution.session_start_briefing_service import SessionBriefing
-            return SessionBriefing(
-                summary=CANONICAL_SENTINEL,
-                assistant_brief="Use canonical context",
-                lessons=(),
-                recommendations=(),
-                unresolved=(),
-                text=CANONICAL_SENTINEL,
-                generated_at_epoch=datetime.now(timezone.utc).timestamp(),
-                package_id="test",
-                truncated=False,
-            )
-
-    service = IntentScopedBriefingService(session_start_briefing_service=CanonicalBriefing())
-
-    briefing_result = service.compose_for_assistant(
-        assistant_id="devin",
-        user_prompt="Implementar feature",
-        intent=None,
-        task_context=None,
-        force_impact=IMPACT_HIGH,
-        task_id="test-canonical-priority",
-    )
-
-    # Verificar que el briefing contiene el sentinel canónico
-    assert CANONICAL_SENTINEL in briefing_result.composed_prompt
-    assert briefing_result.used_briefing is True
-
-    # El sentinel externo NO debe estar en el composed_prompt (a menos que el briefing lo incluya)
-    # En este caso, el briefing solo contiene CANONICAL_SENTINEL
-    assert EXTERNAL_SENTINEL not in briefing_result.composed_prompt
-
-    # En ToolTeachService real, esto se verificaría:
-    # task.metadata['context_pack'] == context_pack (que es briefing_result.composed_prompt)
-    # assert EXTERNAL_SENTINEL not in task.metadata['context_pack']
-    # Aquí verificamos a nivel de briefing_result que el valor canónico es el dominante
+    # Test deshabilitado - era solo de unit de IntentScopedBriefingService
+    # no verificaba el wiring hasta ToolTask.metadata
+    pass
 
 
 def test_closed_loop_state_transition_concept():
