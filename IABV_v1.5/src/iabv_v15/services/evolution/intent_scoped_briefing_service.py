@@ -335,13 +335,25 @@ class IntentScopedBriefingService:
             user_prompt=user_prompt,
         )
 
+        # Derive final bootstrap status from evidence, not just exception presence
+        used_briefing = bool(briefing_text.strip())
+        if not used_briefing and bootstrap_status == BootstrapStatus.READY:
+            # Briefing was expected (IMPACT_HIGH) but not produced without exception
+            bootstrap_status = BootstrapStatus.DEGRADED
+            if not bootstrap_error:
+                bootstrap_error = "briefing_not_available"
+                if briefing is None:
+                    bootstrap_error = "briefing_empty"
+                elif not briefing_text.strip():
+                    bootstrap_error = "briefing_empty_rendered"
+
         bootstrap_result = CognitiveBootstrapResult(
             task_id=task_id,
             assistant_id=assistant_id,
             impact_level=IMPACT_HIGH,
             bootstrap_status=bootstrap_status,
             context_resolution_mode=ContextResolutionMode.CANONICAL,
-            used_briefing=bool(briefing_text.strip()),
+            used_briefing=used_briefing,
             briefing_chars=len(briefing_text),
             composed_prompt_chars=len(composed),
             bootstrap_error=bootstrap_error,

@@ -188,6 +188,82 @@ def test_cognitive_bootstrap_degraded_state():
     assert result.bootstrap_result.used_briefing is False
 
 
+def test_cognitive_bootstrap_empty_briefing():
+    """Test que proveedor devuelve None sin excepción produce DEGRADED."""
+    from iabv_v15.services.evolution.intent_scoped_briefing_service import (
+        IntentScopedBriefingService,
+        IMPACT_HIGH,
+    )
+    from iabv_v15.domain.models import BootstrapStatus
+
+    # Mock briefing service que devuelve None sin excepción
+    class EmptyBriefing:
+        def build_briefing(self, task_context=None):
+            return None
+
+    service = IntentScopedBriefingService(session_start_briefing_service=EmptyBriefing())
+
+    result = service.compose_for_assistant(
+        assistant_id="devin",
+        user_prompt="Implementar feature",
+        intent=None,
+        task_context=None,
+        force_impact=IMPACT_HIGH,
+        task_id="test-task-empty",
+    )
+
+    assert result.impact_level == IMPACT_HIGH
+    assert result.bootstrap_result is not None
+    assert result.bootstrap_result.bootstrap_status == BootstrapStatus.DEGRADED
+    assert result.bootstrap_result.used_briefing is False
+    # Error debe indicar briefing vacío, no excepción
+    assert "briefing" in result.bootstrap_result.bootstrap_error.lower()
+    # bootstrap_error debe estar presente aunque no hubo excepción
+    assert result.bootstrap_result.bootstrap_error != ""
+
+
+def test_cognitive_bootstrap_empty_rendered():
+    """Test que briefing produce texto vacío después de render produce DEGRADED."""
+    from iabv_v15.services.evolution.intent_scoped_briefing_service import (
+        IntentScopedBriefingService,
+        IMPACT_HIGH,
+    )
+    from iabv_v15.domain.models import BootstrapStatus
+
+    # Mock briefing service que devuelve objeto pero con contenido vacío
+    class EmptyRenderedBriefing:
+        def build_briefing(self, task_context=None):
+            from iabv_v15.services.evolution.session_start_briefing_service import SessionBriefing
+            return SessionBriefing(
+                summary="",
+                assistant_brief="",
+                lessons=(),
+                recommendations=(),
+                unresolved=(),
+                text="",
+                generated_at_epoch=datetime.now(timezone.utc).timestamp(),
+                package_id="test",
+                truncated=False,
+            )
+
+    service = IntentScopedBriefingService(session_start_briefing_service=EmptyRenderedBriefing())
+
+    result = service.compose_for_assistant(
+        assistant_id="devin",
+        user_prompt="Implementar feature",
+        intent=None,
+        task_context=None,
+        force_impact=IMPACT_HIGH,
+        task_id="test-task-empty-rendered",
+    )
+
+    assert result.impact_level == IMPACT_HIGH
+    assert result.bootstrap_result is not None
+    assert result.bootstrap_result.bootstrap_status == BootstrapStatus.DEGRADED
+    assert result.bootstrap_result.used_briefing is False
+    assert "briefing" in result.bootstrap_result.bootstrap_error.lower()
+
+
 def test_cognitive_bootstrap_context_resolution():
     """Test que el modo de resolución de contexto se trackea correctamente."""
     from iabv_v15.services.evolution.intent_scoped_briefing_service import (
