@@ -665,7 +665,7 @@ class ToolTeachService:
                 'incident_kind': str(goal_parameters.get('incident_kind') or ''),
                 'dry_run_launch': bool(goal_parameters.get('dry_run_launch', False)),
                 'lab_recommendation': dict(goal_parameters.get('lab_recommendation') or {}),
-                'context_pack': str(goal_parameters.get('context_pack') or ''),
+                'context_pack': context_pack,
                 'comparison_scope_key': comparison_scope_key,
                 'source_trace_ids': source_trace_ids,
                 'proposal_summary': proposal_summary,
