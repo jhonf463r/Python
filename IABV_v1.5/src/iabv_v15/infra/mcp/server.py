@@ -3334,6 +3334,45 @@ def create_server(container: Any | None = None, *, name: str = DEFAULT_SERVER_NA
     return IABVMCPServer(container, name=name)
 
 
+def _load_mcp_local_config(workspace_root: str | None) -> None:
+    """Load environment variables from .devin/mcp_config.local.json if it exists.
+
+    This is a fallback for MCP launchers (like Devin) that don't pass the
+    env section from the config file to the child process. The config file
+    is expected to be at <workspace_root>/.devin/mcp_config.local.json.
+
+    Only variables that are not already set in os.environ are loaded to avoid
+    overriding environment variables that were explicitly passed by the launcher.
+    """
+    if workspace_root is None:
+        return
+
+    from pathlib import Path
+
+    config_path = Path(workspace_root) / ".devin" / "mcp_config.local.json"
+    if not config_path.exists():
+        return
+
+    try:
+        import json
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        mcp_servers = config.get("mcpServers", {})
+        for server_name, server_config in mcp_servers.items():
+            # Only load env for the current server if we can identify it
+            # For now, load all env vars from all servers since they should be the same
+            env_vars = server_config.get("env", {})
+            for key, value in env_vars.items():
+                # Only set if not already in environment (don't override explicit env vars)
+                if key not in os.environ:
+                    os.environ[key] = str(value)
+    except Exception:
+        # If config loading fails, silently continue (this is best-effort)
+        logger.warning("Failed to load MCP local config from %s", config_path)
+
+
 def main() -> None:
     """Entry point CLI: `python -m iabv_v15.infra.mcp.server`.
 
@@ -3341,6 +3380,8 @@ def main() -> None:
       - IABV_MCP_TRANSPORT: stdio (default) | sse | streamable-http
       - IABV_MCP_NAME: nombre visible del server
       - IABV_WORKSPACE_ROOT: raíz del workspace para AppBootstrap
+      - SYNAPTIC_ROUTING: enable SynapticRouter (true/false)
+      - IABV_SYNAPTIC_ROUTING_ENABLED: alias para SYNAPTIC_ROUTING
     """
     logging.basicConfig(
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
@@ -3357,6 +3398,9 @@ def main() -> None:
     transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")
+
+    # Load MCP-local config file if it exists (fallback for launchers that don't pass env vars)
+    _load_mcp_local_config(workspace_root)
 
     from iabv_v15.bootstrap import AppBootstrap
     container = AppBootstrap(workspace_root=workspace_root)

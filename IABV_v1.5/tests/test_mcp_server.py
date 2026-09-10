@@ -27,7 +27,7 @@ from iabv_v15.domain.models import (  # noqa: E402
     WorldModelSnapshot,
     IATraceEntry,
 )
-from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable  # noqa: E402
+from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable, _load_mcp_local_config  # noqa: E402
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
     SiteExplorationResult,
     SitePageSnapshot,
@@ -38,6 +38,7 @@ class _FakeWorldModelService:
     def __init__(self, snapshot: WorldModelSnapshot) -> None:
         self._snapshot = snapshot
         self.calls: list[tuple[str, bool]] = []
+        self.scan_stats = {"total": 0, "errors": 0}
 
     def current_model(self) -> WorldModelSnapshot:
         self.calls.append(("current", False))
@@ -1617,3 +1618,130 @@ def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
     payload = _call_tool(server, "self_auto_merge", pr_number=5)
     assert payload.get("governance_blocked") is True
     assert payload.get("reason") == "network_unavailable"
+
+# ----------------------------------------------------------------------
+# Tests for _load_mcp_local_config (SynapticRouting env fallback)
+# ----------------------------------------------------------------------
+
+def test_load_mcp_local_config_missing_file_no_op() -> None:
+    """Config file missing: function should silently continue."""
+    import os
+    from pathlib import Path
+
+    # Save and clear any existing env vars
+    saved = {}
+    for key in ["SYNAPTIC_ROUTING", "IABV_SYNAPTIC_ROUTING_ENABLED", "PYTHONPATH"]:
+        saved[key] = os.environ.get(key)
+        os.environ.pop(key, None)
+
+    try:
+        _load_mcp_local_config(None)
+        # Should not crash or set any env vars
+        assert os.environ.get("SYNAPTIC_ROUTING") is None
+        assert os.environ.get("IABV_SYNAPTIC_ROUTING_ENABLED") is None
+    finally:
+        # Restore
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+            else:
+                os.environ.pop(key, None)
+
+
+def test_load_mcp_local_config_sets_env_from_file(tmp_path: Path) -> None:
+    """Config file exists: should load env vars into os.environ."""
+    import json
+    import os
+
+    # Create a fake .devin directory structure
+    devin_dir = tmp_path / ".devin"
+    devin_dir.mkdir()
+    config_file = devin_dir / "mcp_config.local.json"
+
+    config_data = {
+        "mcpServers": {
+            "iabv-v15": {
+                "command": "python",
+                "args": ["-m", "iabv_v15.infra.mcp.server"],
+                "env": {
+                    "SYNAPTIC_ROUTING": "true",
+                    "IABV_SYNAPTIC_ROUTING_ENABLED": "true",
+                    "PYTHONPATH": "/custom/path",
+                }
+            }
+        }
+    }
+
+    config_file.write_text(json.dumps(config_data), encoding="utf-8")
+
+    # Save and clear any existing env vars
+    saved = {}
+    for key in ["SYNAPTIC_ROUTING", "IABV_SYNAPTIC_ROUTING_ENABLED", "PYTHONPATH"]:
+        saved[key] = os.environ.get(key)
+        os.environ.pop(key, None)
+
+    try:
+        _load_mcp_local_config(str(tmp_path))
+        # Should have loaded the env vars
+        assert os.environ.get("SYNAPTIC_ROUTING") == "true"
+        assert os.environ.get("IABV_SYNAPTIC_ROUTING_ENABLED") == "true"
+        assert os.environ.get("PYTHONPATH") == "/custom/path"
+    finally:
+        # Restore
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+            else:
+                os.environ.pop(key, None)
+        # Cleanup
+        config_file.unlink(missing_ok=True)
+        devin_dir.rmdir()
+
+
+def test_load_mcp_local_config_does_not_override_existing_env(tmp_path: Path) -> None:
+    """Config file exists but env vars already set: should not override."""
+    import json
+    import os
+
+    # Create a fake .devin directory structure
+    devin_dir = tmp_path / ".devin"
+    devin_dir.mkdir()
+    config_file = devin_dir / "mcp_config.local.json"
+
+    config_data = {
+        "mcpServers": {
+            "iabv-v15": {
+                "command": "python",
+                "args": ["-m", "iabv_v15.infra.mcp.server"],
+                "env": {
+                    "SYNAPTIC_ROUTING": "false",  # Config says false
+                    "PYTHONPATH": "/config/path",
+                }
+            }
+        }
+    }
+
+    config_file.write_text(json.dumps(config_data), encoding="utf-8")
+
+    # Set env vars first (explicit env should win)
+    saved = {}
+    for key in ["SYNAPTIC_ROUTING", "PYTHONPATH"]:
+        saved[key] = os.environ.get(key)
+        os.environ["SYNAPTIC_ROUTING"] = "true"  # Explicit env says true
+        os.environ["PYTHONPATH"] = "/explicit/path"
+
+    try:
+        _load_mcp_local_config(str(tmp_path))
+        # Should NOT have overridden the explicit env vars
+        assert os.environ.get("SYNAPTIC_ROUTING") == "true"  # Still true, not false
+        assert os.environ.get("PYTHONPATH") == "/explicit/path"  # Still explicit path
+    finally:
+        # Restore
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+            else:
+                os.environ.pop(key, None)
+        # Cleanup
+        config_file.unlink(missing_ok=True)
+        devin_dir.rmdir()
