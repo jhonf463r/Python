@@ -245,7 +245,42 @@ Copy-Item -Path "$iabvSource\iabv_v15" -Destination "$serviceRuntimePath\" -Recu
 Write-Output "IABV service modules copied to: $iabvTarget"
 Write-Output ""
 
-# PHASE 13: Configure ACLs for machine-scoped runtime
+# PHASE 13: Configure user-site isolation via sitecustomize.py
+Write-Output "=== PHASE 13: CONFIGURE USER-SITE ISOLATION ==="
+$sitecustomizePath = "$serviceRuntimePath\Lib\sitecustomize.py"
+$sitecustomizeContent = @"
+# P0-B V4-R9.7 User-Site Isolation
+# This file is executed early in Python initialization to disable user-site
+# and prevent imports from user profile directories.
+
+import sys
+import os
+
+# Remove user-site directories from sys.path BEFORE any IABV imports
+user_profile = os.environ.get('USERPROFILE', '')
+if user_profile:
+    sys.path = [p for p in sys.path if not p.startswith(user_profile)]
+
+# Disable user-site module to prevent future additions
+import site
+if hasattr(site, 'ENABLE_USER_SITE'):
+    site.ENABLE_USER_SITE = False
+
+# Log isolation for runtime verification
+import logging
+logging.basicConfig(
+    filename=os.path.join(os.environ.get('TEMP', 'C:\\Temp'), 'iabv_isolation.log'),
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
+logging.info("P0-B User-Site Isolation: ENABLED - user-site removed from sys.path at Python startup")
+"@
+
+Set-Content -Path $sitecustomizePath -Value $sitecustomizeContent -Force
+Write-Output "User-site isolation configured: $sitecustomizePath"
+Write-Output ""
+
+# PHASE 14: Configure ACLs for machine-scoped runtime
 Write-Output "=== PHASE 13: CONFIGURE MACHINE-SCOPED RUNTIME ACLS ==="
 Write-Output "Removing inheritance..."
 icacls $serviceRuntimePath /inheritance:r
