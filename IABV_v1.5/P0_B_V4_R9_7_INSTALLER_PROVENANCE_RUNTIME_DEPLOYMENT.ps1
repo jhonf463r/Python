@@ -10,8 +10,17 @@
 # - C:\Python314 must have pywin32 and cryptography pre-installed with specific versions
 # - This script does NOT perform dynamic pip install during deployment
 # - Dependency installation must be done separately as Administrator
+#
+# PARAMETERS:
+# -RepoPath: Path to IABV source checkout (default: C:\Python\IABV_v1.5)
+#   The script will verify Git provenance of this checkout before deployment
+
+param(
+    [string]$RepoPath = "C:\Python\IABV_v1.5"
+)
 
 Write-Output "=== P0-B V4-R9.7 INSTALLER PROVENANCE RUNTIME DEPLOYMENT ==="
+Write-Output "Source checkout: $RepoPath"
 Write-Output ""
 
 # PHASE 0: Verify Administrator elevation
@@ -124,12 +133,49 @@ Write-Output ""
 
 # PHASE 8: Verify repository state
 Write-Output "=== PHASE 8: VERIFY REPOSITORY STATE ==="
-$repoPath = "C:\Python\IABV_v1.5"
-if (-not (Test-Path "$repoPath\src\iabv_v15")) {
-    Write-Output "ERROR: IABV source modules not found: $repoPath\src\iabv_v15"
+Write-Output "Source path: $RepoPath"
+
+# Verify Git repository exists
+if (-not (Test-Path "$RepoPath\.git")) {
+    Write-Output "ERROR: Not a Git repository: $RepoPath"
     exit 1
 }
-Write-Output "IABV source modules verified: $repoPath\src\iabv_v15"
+
+# Verify HEAD matches required commit
+$head = & git -C $RepoPath rev-parse HEAD
+Write-Output "Repository HEAD: $head"
+$requiredCommit = "dd44c8440a0f8ad7591f10de16cbd9c831e816c0"
+if ($head -ne $requiredCommit) {
+    Write-Output "ERROR: HEAD does not match required commit"
+    Write-Output "Required: $requiredCommit"
+    Write-Output "Actual: $head"
+    exit 1
+}
+Write-Output "HEAD verification: PASS"
+
+# Verify clean working tree
+$status = & git -C $RepoPath status --porcelain
+if ($status) {
+    Write-Output "ERROR: Working tree is not clean"
+    Write-Output "Status: $status"
+    exit 1
+}
+Write-Output "Working tree: CLEAN"
+
+# Verify no staged changes
+$diff = & git -C $RepoPath diff --cached --exit-code
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Staged changes detected"
+    exit 1
+}
+Write-Output "Staged changes: NONE"
+
+# Verify IABV source modules exist
+if (-not (Test-Path "$RepoPath\src\iabv_v15")) {
+    Write-Output "ERROR: IABV source modules not found: $RepoPath\src\iabv_v15"
+    exit 1
+}
+Write-Output "IABV source modules verified: $RepoPath\src\iabv_v15"
 Write-Output ""
 
 # PHASE 9: Remove existing service
