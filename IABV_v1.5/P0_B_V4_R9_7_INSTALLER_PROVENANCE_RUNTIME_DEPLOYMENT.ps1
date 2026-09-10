@@ -419,7 +419,7 @@ $criticalPaths = @(
 
 foreach ($path in $criticalPaths) {
     if (Test-Path $path) {
-        Write-Output "ACL for $path:"
+        Write-Output "ACL for ${path}:"
         icacls $path
     }
 }
