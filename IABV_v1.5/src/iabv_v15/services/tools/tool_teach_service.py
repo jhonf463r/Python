@@ -81,6 +81,10 @@ class ToolTeachService:
         self.synaptic_router = synaptic_router
         self.intent_scoped_briefing_service = intent_scoped_briefing_service
 
+    def set_intent_scoped_briefing_service(self, service: Any | None) -> None:
+        """Bind the cognitive bootstrap collaborator after construction."""
+        self.intent_scoped_briefing_service = service
+
     def _assistant_configuration_snapshot(
         self,
         *,

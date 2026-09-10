@@ -795,7 +795,6 @@ class AppBootstrap:
             experiment_lab=self.experiment_lab,
             live_audit_supervisor=self.live_audit_supervisor,
             synaptic_router=self.synaptic_router,
-            intent_scoped_briefing_service=self.intent_scoped_briefing_service,
         )
         self.embedding_service = EmbeddingIndexService(
             base_url=self.config.ollama_base_url,
@@ -1116,6 +1115,9 @@ class AppBootstrap:
         )
         self.intent_scoped_briefing_service = IntentScopedBriefingService(
             session_start_briefing_service=self.session_start_briefing_service,
+        )
+        self.tool_teach_service.set_intent_scoped_briefing_service(
+            self.intent_scoped_briefing_service
         )
         self.consensus_interpretation_service = ConsensusInterpretationService(
             interpreters={},
