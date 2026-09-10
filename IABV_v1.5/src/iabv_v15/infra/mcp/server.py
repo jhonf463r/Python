@@ -253,6 +253,13 @@ class IABVMCPServer:
             raise RuntimeError("code_audit_trail no está disponible en el container")
         return svc
 
+    def _intent_scoped_briefing_service(self) -> Any:
+        """Devuelve el IntentScopedBriefingService del container."""
+        svc = getattr(self.container, "intent_scoped_briefing_service", None)
+        if svc is None:
+            raise RuntimeError("intent_scoped_briefing_service no está disponible en el container")
+        return svc
+
     def _workspace_root(self) -> str:
         """Resuelve el `workspace_root` que usan las audit tools.
 
@@ -762,6 +769,56 @@ class IABVMCPServer:
                     if loaded_chars > total_chars:
                         result = loaded_dump
             return result
+
+        @mcp.tool()
+        def external_session_briefing(
+            assistant_id: str,
+            user_prompt: str,
+            force_impact: str = '',
+        ) -> dict[str, Any]:
+            """Retorna el briefing formateado para un asistente externo con contexto IABV.
+
+            Args:
+                assistant_id: ID del asistente (devin, claude, chatgpt, codex, windsurf, ollama)
+                user_prompt: Prompt del usuario
+                force_impact: 'high' o 'low' para forzar el nivel de impacto
+
+            Returns:
+                Dict con:
+                - assistant_id
+                - impact_level (high/low)
+                - impact_reasons
+                - composed_prompt (prompt final con briefing + style guide)
+                - briefing_chars
+                - prompt_chars
+                - used_briefing
+                - briefing_truncated
+                - generated_at_epoch
+            """
+            svc = self._intent_scoped_briefing_service()
+            if svc is None:
+                return {
+                    'error': 'IntentScopedBriefingService not configured',
+                    'assistant_id': assistant_id,
+                    'composed_prompt': user_prompt,
+                    'used_briefing': False,
+                }
+            try:
+                result = svc.compose_for_assistant(
+                    assistant_id=assistant_id,
+                    user_prompt=user_prompt,
+                    intent=None,
+                    task_context=None,
+                    force_impact=force_impact if force_impact in ('high', 'low') else None,
+                )
+                return _to_jsonable(result) or {}
+            except Exception as exc:
+                return {
+                    'error': str(exc),
+                    'assistant_id': assistant_id,
+                    'composed_prompt': user_prompt,
+                    'used_briefing': False,
+                }
 
         @mcp.tool()
         def self_examination_current(refresh: bool = False) -> dict[str, Any]:

@@ -64,6 +64,7 @@ class ToolTeachService:
         experiment_lab: ExperimentLab | None = None,
         live_audit_supervisor: LiveAuditSupervisor | None = None,
         synaptic_router: Any | None = None,
+        intent_scoped_briefing_service: Any | None = None,
     ) -> None:
         self.registry = registry
         self.memory = memory
@@ -78,6 +79,7 @@ class ToolTeachService:
         self.experiment_lab = experiment_lab
         self.live_audit_supervisor = live_audit_supervisor
         self.synaptic_router = synaptic_router
+        self.intent_scoped_briefing_service = intent_scoped_briefing_service
 
     def _assistant_configuration_snapshot(
         self,
@@ -559,13 +561,32 @@ class ToolTeachService:
         tool_id = str(selection.selected_tool_id or suggested_tool_id)
         reusable_pattern = self._pattern_from_selection(selection)
         actions = self._build_actions(request, tool_id, reusable_pattern)
+
+        # Cognitive bootstrap: apply IABV context via IntentScopedBriefingService
+        context_pack = str(goal_parameters.get('context_pack') or '')
+        if self.intent_scoped_briefing_service is not None and not context_pack:
+            try:
+                assistant_id = self._assistant_family_for_tool_id(tool_id)
+                force_impact = str(request.metadata.get('force_impact') or goal_parameters.get('force_impact') or '')
+                briefing_result = self.intent_scoped_briefing_service.compose_for_assistant(
+                    assistant_id=assistant_id,
+                    user_prompt=request.user_goal,
+                    intent=None,
+                    task_context=None,
+                    force_impact=force_impact if force_impact in ('high', 'low') else None,
+                )
+                if briefing_result.used_briefing:
+                    context_pack = briefing_result.composed_prompt
+            except Exception:
+                context_pack = str(goal_parameters.get('context_pack') or '')
+
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
             request=request,
             tool_id=tool_id,
             assistant_kind=str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or self._assistant_family_for_tool_id(tool_id)),
             metadata={'diagnostic_category': str(goal_parameters.get('diagnostic_category') or ''), 'launch_mode': str(goal_parameters.get('launch_mode') or '')},
-            context_pack=str(goal_parameters.get('context_pack') or ''),
+            context_pack=context_pack,
         )
         config_signature = self._config_signature(assistant_configuration)
         comparison_scope_key = self._comparison_scope_key(
@@ -579,7 +600,7 @@ class ToolTeachService:
         proposal_summary = self._proposal_summary(
             user_goal=request.user_goal,
             title=title,
-            context_pack=str(goal_parameters.get('context_pack') or ''),
+            context_pack=context_pack,
             metadata={**dict(request.metadata or {}), **dict(goal_parameters)},
         )
         task = ToolTask(
