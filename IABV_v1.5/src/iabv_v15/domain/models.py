@@ -57,6 +57,23 @@ class IssueSeverity(str, Enum):
     CRITICAL = "critical"
 
 
+class BootstrapStatus(str, Enum):
+    """Estado del cognitive bootstrap."""
+    READY = "ready"
+    DEGRADED = "degraded"
+    BLOCKED = "blocked"
+    STALE = "stale"
+    CONFLICT = "conflict"
+
+
+class ContextResolutionMode(str, Enum):
+    """Cómo se resolvió el contexto canónico vs externo."""
+    CANONICAL = "canonical"
+    EXTERNAL_ADDITIVE = "external_additive"
+    CONFLICT = "conflict"
+    BYPASSED = "bypassed"
+
+
 class DossierScope(str, Enum):
     CHAT = "chat"
     TEACHING = "teaching"
@@ -2399,6 +2416,26 @@ class TaskOutcome(BaseModel):
     summary: str = ""
     next_actions: list[str] = Field(default_factory=list)
     evidence_refs: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CognitiveBootstrapResult(BaseModel):
+    """Resultado del cognitive bootstrap para una tarea."""
+    bootstrap_id: str = Field(default_factory=lambda: str(uuid4()))
+    task_id: str = ""
+    assistant_id: str = ""
+    impact_level: str = ""
+    bootstrap_status: BootstrapStatus = BootstrapStatus.READY
+    context_resolution_mode: ContextResolutionMode = ContextResolutionMode.CANONICAL
+    used_briefing: bool = False
+    briefing_chars: int = 0
+    composed_prompt_chars: int = 0
+    bootstrap_error: str = ""
+    degraded_reason: str = ""
+    external_context_supplied: bool = False
+    context_source_id: str = ""
+    context_version: str = ""
+    generated_at_utc: datetime = Field(default_factory=utc_now)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

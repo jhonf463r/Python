@@ -21,7 +21,14 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Optional
+
+from iabv_v15.domain.models import (
+    BootstrapStatus,
+    CognitiveBootstrapResult,
+    ContextResolutionMode,
+)
 
 
 IMPACT_LOW = "low"
@@ -94,6 +101,7 @@ class ScopedBriefingResult:
     used_briefing: bool
     briefing_truncated: bool
     generated_at_epoch: float
+    bootstrap_result: CognitiveBootstrapResult | None = None
 
 
 DEFAULT_STYLES: dict[str, AssistantBriefingStyle] = {
@@ -262,6 +270,7 @@ class IntentScopedBriefingService:
         intent: Any = None,
         task_context: Any = None,
         force_impact: Optional[str] = None,
+        task_id: str = "",
     ) -> ScopedBriefingResult:
         """Compone el prompt final para el asistente destino."""
         user_prompt = (user_prompt or "").strip()
@@ -273,6 +282,17 @@ class IntentScopedBriefingService:
         now = self._clock()
         style = self.style_for(assistant_id)
         if impact.level == IMPACT_LOW:
+            bootstrap_result = CognitiveBootstrapResult(
+                task_id=task_id,
+                assistant_id=assistant_id,
+                impact_level=IMPACT_LOW,
+                bootstrap_status=BootstrapStatus.READY,
+                context_resolution_mode=ContextResolutionMode.CANONICAL,
+                used_briefing=False,
+                briefing_chars=0,
+                composed_prompt_chars=len(user_prompt),
+                generated_at_utc=datetime.now(timezone.utc),
+            )
             return ScopedBriefingResult(
                 assistant_id=style.assistant_id,
                 impact_level=IMPACT_LOW,
@@ -283,19 +303,29 @@ class IntentScopedBriefingService:
                 used_briefing=False,
                 briefing_truncated=False,
                 generated_at_epoch=now,
+                bootstrap_result=bootstrap_result,
             )
 
         briefing = None
+        bootstrap_error = ""
+        bootstrap_status = BootstrapStatus.READY
         if self._briefing is not None:
             try:
                 briefing = self._briefing.build_briefing(task_context=task_context)
             except TypeError:
                 try:
                     briefing = self._briefing.build_briefing()
-                except Exception:
+                except Exception as e:
                     briefing = None
-            except Exception:
+                    bootstrap_error = f"TypeError fallback failed: {e}"
+                    bootstrap_status = BootstrapStatus.DEGRADED
+            except Exception as e:
                 briefing = None
+                bootstrap_error = f"Briefing construction failed: {e}"
+                bootstrap_status = BootstrapStatus.DEGRADED
+        else:
+            bootstrap_error = "SessionStartBriefingService not configured"
+            bootstrap_status = BootstrapStatus.DEGRADED
 
         briefing_text, truncated = self._render_briefing_for_style(briefing, style)
         composed = self._compose_prompt(
@@ -304,6 +334,21 @@ class IntentScopedBriefingService:
             briefing_text=briefing_text,
             user_prompt=user_prompt,
         )
+
+        bootstrap_result = CognitiveBootstrapResult(
+            task_id=task_id,
+            assistant_id=assistant_id,
+            impact_level=IMPACT_HIGH,
+            bootstrap_status=bootstrap_status,
+            context_resolution_mode=ContextResolutionMode.CANONICAL,
+            used_briefing=bool(briefing_text.strip()),
+            briefing_chars=len(briefing_text),
+            composed_prompt_chars=len(composed),
+            bootstrap_error=bootstrap_error,
+            degraded_reason=bootstrap_error if bootstrap_status == BootstrapStatus.DEGRADED else "",
+            generated_at_utc=datetime.now(timezone.utc),
+        )
+
         return ScopedBriefingResult(
             assistant_id=style.assistant_id,
             impact_level=IMPACT_HIGH,
@@ -314,6 +359,7 @@ class IntentScopedBriefingService:
             used_briefing=bool(briefing_text.strip()),
             briefing_truncated=truncated,
             generated_at_epoch=now,
+            bootstrap_result=bootstrap_result,
         )
 
     # ---- internals -------------------------------------------------------

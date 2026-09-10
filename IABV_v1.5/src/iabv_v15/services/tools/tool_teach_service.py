@@ -563,8 +563,12 @@ class ToolTeachService:
         actions = self._build_actions(request, tool_id, reusable_pattern)
 
         # Cognitive bootstrap: apply IABV context via IntentScopedBriefingService
-        context_pack = str(goal_parameters.get('context_pack') or '')
-        if self.intent_scoped_briefing_service is not None and not context_pack:
+        external_context = str(goal_parameters.get('context_pack') or '')
+        context_pack = external_context
+        context_resolution_mode = "external_only"
+        bootstrap_error = ""
+
+        if self.intent_scoped_briefing_service is not None:
             try:
                 assistant_id = self._assistant_family_for_tool_id(tool_id)
                 force_impact = str(request.metadata.get('force_impact') or goal_parameters.get('force_impact') or '')
@@ -574,11 +578,25 @@ class ToolTeachService:
                     intent=None,
                     task_context=None,
                     force_impact=force_impact if force_impact in ('high', 'low') else None,
+                    task_id=title,
                 )
+
                 if briefing_result.used_briefing:
                     context_pack = briefing_result.composed_prompt
-            except Exception:
-                context_pack = str(goal_parameters.get('context_pack') or '')
+                    context_resolution_mode = "canonical"
+                    if external_context:
+                        context_resolution_mode = "canonical_with_external_additive"
+                elif briefing_result.bootstrap_result and briefing_result.bootstrap_result.bootstrap_status != "ready":
+                    bootstrap_error = briefing_result.bootstrap_result.bootstrap_error or "Bootstrap failed"
+                    context_resolution_mode = "degraded"
+            except Exception as e:
+                bootstrap_error = f"Cognitive bootstrap exception: {e}"
+                context_resolution_mode = "failed"
+                if not external_context:
+                    context_pack = ""
+        else:
+            bootstrap_error = "IntentScopedBriefingService not configured"
+            context_resolution_mode = "unavailable"
 
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
@@ -633,6 +651,11 @@ class ToolTeachService:
                 'requested_tool_id': suggested_tool_id,
                 'reused_actions_from_pattern': bool(reusable_pattern is not None and actions and all(item.metadata.get('reused_from_pattern') for item in actions)),
                 'requested_assistant_kind': str(goal_parameters.get('assistant_preference') or goal_parameters.get('assistant_kind') or ''),
+                'cognitive_bootstrap': {
+                    'context_resolution_mode': context_resolution_mode,
+                    'bootstrap_error': bootstrap_error,
+                    'external_context_supplied': bool(external_context),
+                },
                 'assistant_kind': str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or ''),
                 'actual_assistant_kind': self._assistant_family_for_tool_id(tool_id),
                 'consultation_scope': str(goal_parameters.get('consultation_scope') or ''),
