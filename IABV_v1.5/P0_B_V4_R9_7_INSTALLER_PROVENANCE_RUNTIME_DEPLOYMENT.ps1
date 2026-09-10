@@ -236,8 +236,31 @@ Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography-*.dist-info" -Des
 Write-Output "Python runtime copied from trusted source successfully"
 Write-Output ""
 
-# PHASE 12: Copy IABV service modules
-Write-Output "=== PHASE 12: COPY IABV SERVICE MODULES ==="
+# PHASE 12: Configure python314._pth for complete isolation
+Write-Output "=== PHASE 12: CONFIGURE PYTHON314._PTH ISOLATION ==="
+$pthPath = "$serviceRuntimePath\python314._pth"
+$pthContent = @"
+# P0-B V4-R9.7 Complete Python Runtime Isolation
+# This _pth file completely overrides sys.path initialization
+# All registry and environment variables are ignored
+# Site module is NOT imported unless explicitly enabled
+# This provides the strongest startup isolation guarantee
+
+# Core Python runtime paths (machine-scoped only)
+.
+Lib\site-packages
+
+# Explicitly enable site module for pywin32/cryptography availability
+# WITHOUT enabling user-site (isolated mode prevents this automatically)
+import site
+"@
+
+Set-Content -Path $pthPath -Value $pthContent -Force
+Write-Output "python314._pth configured for isolated runtime: $pthPath"
+Write-Output ""
+
+# PHASE 13: Copy IABV service modules
+Write-Output "=== PHASE 13: COPY IABV SERVICE MODULES ==="
 $iabvSource = "$RepoPath\src"
 $iabvTarget = "$serviceRuntimePath\iabv_v15"
 New-Item -Path $iabvTarget -ItemType Directory -Force
@@ -245,23 +268,23 @@ Copy-Item -Path "$iabvSource\iabv_v15" -Destination "$serviceRuntimePath\" -Recu
 Write-Output "IABV service modules copied to: $iabvTarget"
 Write-Output ""
 
-# PHASE 13: Configure user-site isolation via sitecustomize.py
-Write-Output "=== PHASE 13: CONFIGURE USER-SITE ISOLATION ==="
+# PHASE 14: Configure user-site isolation via sitecustomize.py (defense-in-depth)
+Write-Output "=== PHASE 14: CONFIGURE USER-SITE ISOLATION (DEFENSE-IN-DEPTH) ==="
 $sitecustomizePath = "$serviceRuntimePath\Lib\sitecustomize.py"
 $sitecustomizeContent = @"
-# P0-B V4-R9.7 User-Site Isolation
-# This file is executed early in Python initialization to disable user-site
-# and prevent imports from user profile directories.
+# P0-B V4-R9.7 User-Site Isolation (Defense-in-Depth)
+# This is a secondary defense; primary isolation is via python314._pth
+# This file executes during site module initialization
 
 import sys
 import os
 
-# Remove user-site directories from sys.path BEFORE any IABV imports
+# Remove user-site directories from sys.path as secondary defense
 user_profile = os.environ.get('USERPROFILE', '')
 if user_profile:
     sys.path = [p for p in sys.path if not p.startswith(user_profile)]
 
-# Disable user-site module to prevent future additions
+# Disable user-site module (secondary defense)
 import site
 if hasattr(site, 'ENABLE_USER_SITE'):
     site.ENABLE_USER_SITE = False
@@ -273,15 +296,27 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(message)s'
 )
-logging.info("P0-B User-Site Isolation: ENABLED - user-site removed from sys.path at Python startup")
+logging.info("P0-B User-Site Isolation: ENABLED - secondary defense via sitecustomize.py")
+import site
+if hasattr(site, 'ENABLE_USER_SITE'):
+    site.ENABLE_USER_SITE = False
+
+# Log isolation for runtime verification
+import logging
+logging.basicConfig(
+    filename=os.path.join(os.environ.get('TEMP', 'C:\\Temp'), 'iabv_isolation.log'),
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
+
 "@
 
 Set-Content -Path $sitecustomizePath -Value $sitecustomizeContent -Force
-Write-Output "User-site isolation configured: $sitecustomizePath"
+Write-Output "User-site isolation configured (defense-in-depth): $sitecustomizePath"
 Write-Output ""
 
-# PHASE 14: Configure ACLs for machine-scoped runtime
-Write-Output "=== PHASE 13: CONFIGURE MACHINE-SCOPED RUNTIME ACLS ==="
+# PHASE 15: Configure ACLs for machine-scoped runtime
+Write-Output "=== PHASE 15: CONFIGURE MACHINE-SCOPED RUNTIME ACLS ==="
 Write-Output "Removing inheritance..."
 icacls $serviceRuntimePath /inheritance:r
 
@@ -300,25 +335,29 @@ icacls $serviceRuntimePath /deny "Users:(OI)(CI)F"
 Write-Output "Machine-scoped runtime ACLs configured"
 Write-Output ""
 
-# PHASE 15: Verify user-site isolation in deployed runtime
-Write-Output "=== PHASE 15: VERIFY USER-SITE ISOLATION ==="
+# PHASE 16: Verify python314._pth isolation in deployed runtime
+Write-Output "=== PHASE 16: VERIFY PYTHON314._PTH ISOLATION ==="
 Write-Output "Testing isolation with deployed runtime..."
-$isolationTest = & "$serviceRuntimePath\python.exe" -c "import site,sys,os; user_profile = os.environ.get('USERPROFILE', ''); has_user_path = any(p.startswith(user_profile) for p in sys.path if user_profile); print('USER_PROFILE_IN_PATH:', has_user_path); print('ENABLE_USER_SITE:', site.ENABLE_USER_SITE)"
+$isolationTest = & "$serviceRuntimePath\python.exe" -c "import sys,os; user_profile = os.environ.get('USERPROFILE', ''); has_user_path = any(p.startswith(user_profile) for p in sys.path if user_profile); print('USER_PROFILE_IN_PATH:', has_user_path); print('SYS_PATH_COUNT:', len(sys.path)); print('SYS_PATH:', sys.path); import site; print('ENABLE_USER_SITE:', site.ENABLE_USER_SITE)"
 Write-Output "Isolation test result: $isolationTest"
 if ($isolationTest -like "*USER_PROFILE_IN_PATH: True*") {
     Write-Output "ERROR: User profile path still in sys.path of deployed runtime"
     exit 1
 }
-Write-Output "User-site isolation verified: PASS"
+if ($isolationTest -like "*ENABLE_USER_SITE: True*") {
+    Write-Output "ERROR: User site still enabled in deployed runtime"
+    exit 1
+}
+Write-Output "python314._pth isolation verified: PASS"
 Write-Output ""
 
-# PHASE 16: Verify ACLs
-Write-Output "=== PHASE 16: VERIFY ACLS ==="
+# PHASE 17: Verify ACLs
+Write-Output "=== PHASE 17: VERIFY ACLS ==="
 icacls $serviceRuntimePath
 Write-Output ""
 
-# PHASE 17: Determine pythonservice.exe path
-Write-Output "=== PHASE 17: DETERMINE PYTHONSERVICE.EXE PATH ==="
+# PHASE 18: Determine pythonservice.exe path
+Write-Output "=== PHASE 18: DETERMINE PYTHONSERVICE.EXE PATH ==="
 if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
     $pythonservicePath = "$serviceRuntimePath\Scripts\pythonservice.exe"
     Write-Output "Using pythonservice.exe from Scripts: $pythonservicePath"
@@ -331,8 +370,8 @@ if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
 }
 Write-Output ""
 
-# PHASE 18: Verify critical runtime components exist
-Write-Output "=== PHASE 18: VERIFY CRITICAL RUNTIME COMPONENTS ==="
+# PHASE 19: Verify critical runtime components exist
+Write-Output "=== PHASE 19: VERIFY CRITICAL RUNTIME COMPONENTS ==="
 $requiredFiles = @(
     "$serviceRuntimePath\python.exe",
     "$serviceRuntimePath\python314.dll",
@@ -360,8 +399,8 @@ if (-not $allFilesExist) {
 }
 Write-Output ""
 
-# PHASE 19: Verify no wrong version DLLs in deployed runtime
-Write-Output "=== PHASE 19: VERIFY NO WRONG VERSION DLLS ==="
+# PHASE 20: Verify no wrong version DLLs in deployed runtime
+Write-Output "=== PHASE 20: VERIFY NO WRONG VERSION DLLS ==="
 $wrongDllInRuntime = Test-Path "$serviceRuntimePath\$wrongDll"
 if ($wrongDllInRuntime) {
     Write-Output "ERROR: Wrong version pywintypes DLL in deployed runtime: $wrongDll"
@@ -370,8 +409,8 @@ if ($wrongDllInRuntime) {
 Write-Output "No wrong version DLLs in deployed runtime: PASS"
 Write-Output ""
 
-# PHASE 20: Verify ACLs on critical components
-Write-Output "=== PHASE 20: VERIFY CRITICAL COMPONENT ACLS ==="
+# PHASE 21: Verify ACLs on critical components
+Write-Output "=== PHASE 21: VERIFY CRITICAL COMPONENT ACLS ==="
 $criticalPaths = @(
     "$serviceRuntimePath\python.exe",
     "$pythonservicePath",
@@ -386,14 +425,14 @@ foreach ($path in $criticalPaths) {
 }
 Write-Output ""
 
-# PHASE 21: Install service with machine-scoped PathName
-Write-Output "=== PHASE 21: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
+# PHASE 22: Install service with machine-scoped PathName
+Write-Output "=== PHASE 22: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
 $env:PYTHONPATH="$serviceRuntimePath"
 & "$serviceRuntimePath\python.exe" -m iabv_v15.services.development.authority_windows_service install $pythonservicePath
 Write-Output ""
 
-# PHASE 21: Verify service installation
-Write-Output "=== PHASE 21: VERIFY SERVICE INSTALLATION ==="
+# PHASE 23: Verify service installation
+Write-Output "=== PHASE 23: VERIFY SERVICE INSTALLATION ==="
 $service = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'"
 Write-Output "Service Name: $($service.Name)"
 Write-Output "Service State: $($service.State)"
@@ -401,8 +440,8 @@ Write-Output "Service StartName: $($service.StartName)"
 Write-Output "Service PathName: $($service.PathName)"
 Write-Output ""
 
-# PHASE 22: Verify StartName is LocalService
-Write-Output "=== PHASE 22: VERIFY SERVICE IDENTITY ==="
+# PHASE 24: Verify StartName is LocalService
+Write-Output "=== PHASE 24: VERIFY SERVICE IDENTITY ==="
 if ($service.StartName -ne "NT AUTHORITY\LocalService") {
     Write-Output "ERROR: Service StartName is not LocalService"
     Write-Output "Current StartName: $($service.StartName)"
@@ -411,8 +450,8 @@ if ($service.StartName -ne "NT AUTHORITY\LocalService") {
 Write-Output "SUCCESS: Service StartName is NT AUTHORITY\LocalService"
 Write-Output ""
 
-# PHASE 23: Verify PathName points to machine-scoped runtime
-Write-Output "=== PHASE 23: VERIFY EXECUTION BOUNDARY ==="
+# PHASE 25: Verify PathName points to machine-scoped runtime
+Write-Output "=== PHASE 25: VERIFY EXECUTION BOUNDARY ==="
 if ($service.PathName -like "*C:\Users\faber\miniconda3*") {
     Write-Output "ERROR: Service PathName still points to user-profile runtime"
     Write-Output "Current PathName: $($service.PathName)"
@@ -427,8 +466,8 @@ if ($service.PathName -notlike "*service_runtime*") {
 Write-Output "SUCCESS: Service PathName points to machine-scoped runtime"
 Write-Output ""
 
-# PHASE 24: Verify PathName does NOT point to user profile
-Write-Output "=== PHASE 24: VERIFY NO USER-PROFILE DEPENDENCY ==="
+# PHASE 26: Verify PathName does NOT point to user profile
+Write-Output "=== PHASE 26: VERIFY NO USER-PROFILE DEPENDENCY ==="
 if ($service.PathName -like "*C:\Users\faber*") {
     Write-Output "ERROR: Service PathName contains user profile path"
     Write-Output "Current PathName: $($service.PathName)"
@@ -437,7 +476,7 @@ if ($service.PathName -like "*C:\Users\faber*") {
 Write-Output "SUCCESS: Service PathName does not depend on user profile"
 Write-Output ""
 
-# PHASE 25: Final summary
+# PHASE 27: Final summary
 Write-Output "=== INSTALLER PROVENANCE RUNTIME DEPLOYMENT COMPLETE ==="
 Write-Output ""
 Write-Output "DEPLOYMENT SUMMARY:"
