@@ -457,7 +457,28 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 12: Configure ACLs for machine-scoped runtime (EXPLICIT ALLOWLIST)
+# PHASE 12: Determine pythonservice.exe path in deployed runtime
+# ============================================================================
+Write-Output "=== PHASE 12: DETERMINE PYTHONSERVICE.EXE PATH ==="
+try {
+    if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
+        $pythonservicePath = "$serviceRuntimePath\Scripts\pythonservice.exe"
+        Write-Output "Using pythonservice.exe from Scripts: $pythonservicePath"
+    } elseif (Test-Path "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe") {
+        $pythonservicePath = "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe"
+        Write-Output "Using pythonservice.exe from site-packages: $pythonservicePath"
+    } else {
+        Write-Output "ERROR: pythonservice.exe not found in deployed runtime"
+        exit 1
+    }
+} catch {
+    Write-Output "ERROR: Exception during pythonservice.exe path determination: $_"
+    exit 1
+}
+Write-Output ""
+
+# ============================================================================
+# PHASE 13: Configure ACLs for machine-scoped runtime (EXPLICIT ALLOWLIST)
 # ============================================================================
 Write-Output "=== PHASE 12: CONFIGURE MACHINE-SCOPED RUNTIME ACLS ==="
 try {
@@ -505,18 +526,22 @@ function Test-AclPolicy {
     param([string]$Path)
 
     $acl = Get-Acl $Path
+    # GetAccessRules($true, $true, ...) includes inherited rules
     $accessRules = $acl.GetAccessRules($true, $true, [System.Security.Principal.NTAccount])
 
     $hasSystemFull = $false
     $hasAdminsFull = $false
     $hasLocalServiceRX = $false
-    $hasDangerousWrite = $false
     $localServiceHasWrite = $false
+    $hasUnauthorizedWrite = $false
+    $unauthorizedWriteIdentity = ""
 
     # Well-known SIDs for precise identity matching
     $sidSystem = "S-1-5-18"
     $sidAdministrators = "S-1-5-32-544"
     $sidLocalService = "S-1-5-19"
+    
+    # SIDs for accounts that must NOT have write (redundant checks for clarity)
     $sidUsers = "S-1-5-32-545"
     $sidAuthenticatedUsers = "S-1-5-11"
     $sidEveryone = "S-1-1-0"
@@ -534,42 +559,39 @@ function Test-AclPolicy {
             $sidValue = $null
         }
 
-        # Check for expected permissions using correct enumeration type
+        # Deny rules do not compensate for dangerous Allow rules
         if ($type -eq "Allow") {
-            # SYSTEM FullControl
-            if ($sidValue -eq $sidSystem -or $identity.Value -like "*SYSTEM*") {
-                if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
-                    $hasSystemFull = $true
+            # Check for write/modify/fullcontrol permissions
+            $hasWritePerms = ($rights -band [System.Security.AccessControl.FileSystemRights]::Write -or
+                               $rights -band [System.Security.AccessControl.FileSystemRights]::Modify -or
+                               $rights -band [System.Security.AccessControl.FileSystemRights]::FullControl)
+
+            # Allowlist: Only SYSTEM and Administrators can have write permissions
+            if ($hasWritePerms) {
+                if ($sidValue -eq $sidSystem -or $identity.Value -like "*SYSTEM*") {
+                    if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
+                        $hasSystemFull = $true
+                    }
+                } elseif ($sidValue -eq $sidAdministrators -or $identity.Value -like "*Administrators*") {
+                    if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
+                        $hasAdminsFull = $true
+                    }
+                } else {
+                    # Any other principal with write permissions is unauthorized
+                    $hasUnauthorizedWrite = $true
+                    $unauthorizedWriteIdentity = "$identity ($sidValue)"
                 }
             }
-            
-            # Administrators FullControl
-            if ($sidValue -eq $sidAdministrators -or $identity.Value -like "*Administrators*") {
-                if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
-                    $hasAdminsFull = $true
-                }
-            }
-            
-            # LocalService Read/Execute
+
+            # LocalService must have ReadAndExecute and NOT have write
             if ($sidValue -eq $sidLocalService -or $identity.Value -like "*LocalService*") {
                 if ($rights -band [System.Security.AccessControl.FileSystemRights]::ReadAndExecute) {
                     $hasLocalServiceRX = $true
                 }
-                # Check if LocalService has dangerous write permissions
                 if ($rights -band [System.Security.AccessControl.FileSystemRights]::Write -or
                     $rights -band [System.Security.AccessControl.FileSystemRights]::Modify -or
                     $rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
                     $localServiceHasWrite = $true
-                }
-            }
-
-            # Check for dangerous write permissions on unprivileged accounts
-            if ($sidValue -eq $sidUsers -or $sidValue -eq $sidAuthenticatedUsers -or $sidValue -eq $sidEveryone -or
-                $identity.Value -like "*Users*" -or $identity.Value -like "*Authenticated Users*" -or $identity.Value -like "*Everyone*") {
-                if ($rights -band [System.Security.AccessControl.FileSystemRights]::Write -or
-                    $rights -band [System.Security.AccessControl.FileSystemRights]::Modify -or
-                    $rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
-                    $hasDangerousWrite = $true
                 }
             }
         }
@@ -579,8 +601,9 @@ function Test-AclPolicy {
         HasSystemFull = $hasSystemFull
         HasAdminsFull = $hasAdminsFull
         HasLocalServiceRX = $hasLocalServiceRX
-        HasDangerousWrite = $hasDangerousWrite
         LocalServiceHasWrite = $localServiceHasWrite
+        HasUnauthorizedWrite = $hasUnauthorizedWrite
+        UnauthorizedWriteIdentity = $unauthorizedWriteIdentity
     }
 }
 
@@ -589,6 +612,7 @@ try {
         "$serviceRuntimePath",
         "$serviceRuntimePath\python.exe",
         "$serviceRuntimePath\python314.dll",
+        "$pythonservicePath",
         "$serviceRuntimePath\Lib",
         "$serviceRuntimePath\Lib\site-packages",
         "$serviceRuntimePath\iabv_v15"
@@ -603,7 +627,10 @@ try {
             Write-Output "  Administrators FullControl: $($policyResult.HasAdminsFull)"
             Write-Output "  LocalService Read/Execute: $($policyResult.HasLocalServiceRX)"
             Write-Output "  LocalService Has Write: $($policyResult.LocalServiceHasWrite)"
-            Write-Output "  Dangerous Write Permissions: $($policyResult.HasDangerousWrite)"
+            Write-Output "  Unauthorized Write: $($policyResult.HasUnauthorizedWrite)"
+            if ($policyResult.HasUnauthorizedWrite) {
+                Write-Output "  Unauthorized Write Identity: $($policyResult.UnauthorizedWriteIdentity)"
+            }
 
             # All required conditions must be true
             if (-not $policyResult.HasSystemFull) {
@@ -622,8 +649,8 @@ try {
                 Write-Output "ERROR: LocalService has dangerous write permissions on $path"
                 $allPathsValid = $false
             }
-            if ($policyResult.HasDangerousWrite) {
-                Write-Output "ERROR: Dangerous write permissions found on unprivileged accounts on $path"
+            if ($policyResult.HasUnauthorizedWrite) {
+                Write-Output "ERROR: Unauthorized principal has write permissions on $path: $($policyResult.UnauthorizedWriteIdentity)"
                 $allPathsValid = $false
             }
         }
@@ -642,30 +669,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 14: Determine pythonservice.exe path in deployed runtime
+# PHASE 14: Verify critical runtime components exist
 # ============================================================================
-Write-Output "=== PHASE 14: DETERMINE PYTHONSERVICE.EXE PATH ==="
-try {
-    if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
-        $pythonservicePath = "$serviceRuntimePath\Scripts\pythonservice.exe"
-        Write-Output "Using pythonservice.exe from Scripts: $pythonservicePath"
-    } elseif (Test-Path "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe") {
-        $pythonservicePath = "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe"
-        Write-Output "Using pythonservice.exe from site-packages: $pythonservicePath"
-    } else {
-        Write-Output "ERROR: pythonservice.exe not found in deployed runtime"
-        exit 1
-    }
-} catch {
-    Write-Output "ERROR: Exception during pythonservice.exe path determination: $_"
-    exit 1
-}
-Write-Output ""
-
-# ============================================================================
-# PHASE 15: Verify critical runtime components exist
-# ============================================================================
-Write-Output "=== PHASE 15: VERIFY CRITICAL RUNTIME COMPONENTS ==="
+Write-Output "=== PHASE 14: VERIFY CRITICAL RUNTIME COMPONENTS ==="
 try {
     $expectedDll = "pywintypes314.dll"
     $requiredFiles = @(
@@ -700,9 +706,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 16: Verify no wrong version DLLs in deployed runtime
+# PHASE 15: Verify no wrong version DLLs in deployed runtime
 # ============================================================================
-Write-Output "=== PHASE 16: VERIFY NO WRONG VERSION DLLS ==="
+Write-Output "=== PHASE 15: VERIFY NO WRONG VERSION DLLS ==="
 try {
     $wrongDllInRuntime = Test-Path "$serviceRuntimePath\$wrongDll"
     if ($wrongDllInRuntime) {
@@ -717,9 +723,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 17: Verify user profile runtime rejection
+# PHASE 16: Verify user profile runtime rejection
 # ============================================================================
-Write-Output "=== PHASE 17: VERIFY USER PROFILE RUNTIME REJECTION ==="
+Write-Output "=== PHASE 16: VERIFY USER PROFILE RUNTIME REJECTION ==="
 try {
     $userProfilePaths = @(
         "C:\Users\faber\miniconda3",
@@ -757,9 +763,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 18: Install service with machine-scoped PathName
+# PHASE 17: Install service with machine-scoped PathName
 # ============================================================================
-Write-Output "=== PHASE 18: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
+Write-Output "=== PHASE 17: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
 try {
     $env:PYTHONPATH="$serviceRuntimePath"
     & "$serviceRuntimePath\python.exe" -m iabv_v15.services.development.authority_windows_service install $pythonservicePath
@@ -774,9 +780,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 19: Verify service installation
+# PHASE 18: Verify service installation
 # ============================================================================
-Write-Output "=== PHASE 19: VERIFY SERVICE INSTALLATION ==="
+Write-Output "=== PHASE 18: VERIFY SERVICE INSTALLATION ==="
 try {
     $service = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'"
     if (-not $service) {
@@ -795,9 +801,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 20: Verify StartName is LocalService
+# PHASE 19: Verify StartName is LocalService
 # ============================================================================
-Write-Output "=== PHASE 20: VERIFY SERVICE IDENTITY ==="
+Write-Output "=== PHASE 19: VERIFY SERVICE IDENTITY ==="
 try {
     if ($service.StartName -ne "NT AUTHORITY\LocalService") {
         Write-Output "ERROR: Service StartName is not LocalService"
@@ -812,9 +818,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 21: Verify PathName points to machine-scoped runtime
+# PHASE 20: Verify PathName points to machine-scoped runtime
 # ============================================================================
-Write-Output "=== PHASE 21: VERIFY EXECUTION BOUNDARY ==="
+Write-Output "=== PHASE 20: VERIFY EXECUTION BOUNDARY ==="
 try {
     if ($service.PathName -like "*C:\Users\faber\miniconda3*") {
         Write-Output "ERROR: Service PathName still points to user-profile runtime"
@@ -835,9 +841,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 22: Verify PathName does NOT point to user profile
+# PHASE 21: Verify PathName does NOT point to user profile
 # ============================================================================
-Write-Output "=== PHASE 22: VERIFY NO USER-PROFILE DEPENDENCY ==="
+Write-Output "=== PHASE 21: VERIFY NO USER-PROFILE DEPENDENCY ==="
 try {
     if ($service.PathName -like "*C:\Users\faber*") {
         Write-Output "ERROR: Service PathName contains user profile path"
@@ -852,9 +858,9 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 23: Verify InstallService semantics (source-level check)
+# PHASE 22: Verify InstallService semantics (source-level check)
 # ============================================================================
-Write-Output "=== PHASE 23: VERIFY INSTALLSERVICE SEMANTICS ==="
+Write-Output "=== PHASE 22: VERIFY INSTALLSERVICE SEMANTICS ==="
 try {
     $installServiceFile = "$serviceRuntimePath\iabv_v15\services\development\authority_windows_service.py"
     $installServiceContent = Get-Content $installServiceFile -Raw -ErrorAction Stop
@@ -885,7 +891,7 @@ try {
 Write-Output ""
 
 # ============================================================================
-# PHASE 24: Final summary
+# PHASE 23: Final summary
 # ============================================================================
 Write-Output "=== INSTALLER HARDENED RUNTIME DEPLOYMENT COMPLETE ==="
 Write-Output ""
@@ -906,6 +912,10 @@ Write-Output "  DEPENDENCY_LOCATION_VERIFICATION=PASS"
 Write-Output "  USER_SITE_REJECTION=PASS"
 Write-Output "  NO_USER_PROFILE_SYSPATH=PASS"
 Write-Output "  USER_PROFILE_RUNTIME_REJECTION=PASS"
+Write-Output "  PYTHONSERVICE_ACL_VALIDATION=PASS"
+Write-Output "  ACL_ALLOWLIST_ENFORCEMENT=PASS"
+Write-Output "  INHERITED_WRITE_REJECTION=PASS"
+Write-Output "  LOCAL_SERVICE_WRITE_REJECTION=PASS"
 Write-Output "  DESTINATION_ACL_POLICY=PASS"
 Write-Output "  INSTALLSERVICE_SEMANTICS=PASS"
 Write-Output "  SERVICE_IDENTITY=PASS"
