@@ -2721,6 +2721,8 @@ class SelfAuditSnapshot:
     `data/evolution/self_audit/{latest.json, latest.md, history/<ISO>.json}`.
     Es la fuente única consumida por el botón "Auditarme ahora" del
     Control Center y por la tool MCP `run_self_audit`.
+    
+    P0.213 V3: Added optional canonical_identity for provenance tracking.
     """
 
     generated_at: datetime
@@ -2731,6 +2733,8 @@ class SelfAuditSnapshot:
     world_model_digest: dict[str, Any]
     summary_markdown: str
     cross_source_truth: dict[str, Any] = field(default_factory=dict)
+    # P0.213 V3: Optional canonical identity for provenance
+    canonical_identity: CanonicalExecutionIdentity | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -3207,6 +3211,35 @@ class AccountApproval(BaseModel):
     browser: str = ""
     profile: str = ""
     approved_at: datetime = Field(default_factory=utc_now)
+
+
+# ============================================================================
+# P0.213 V3: Canonical Execution Identity
+# ============================================================================
+
+class CanonicalExecutionIdentity(BaseModel):
+    """Canonical execution identity issued by trusted runtime authority.
+
+    This identity is the ONLY source of truth for execution identity in IABV v1.5.
+    It is issued by RuntimeIdentityAuthority and is cryptographically bound to
+    the real process and runtime incarnation.
+
+    Design Principles:
+    - Authority is owned by the runtime, not by callers
+    - Identity is derived from trusted runtime state, not caller input
+    - Identity is cryptographically bound to the real process
+    - Identity is immutable after issuance
+    - Provenance is preserved through the authority
+
+    This is part of P0.213 V3 corrected implementation based on Codex security
+    boundary failure analysis.
+    """
+
+    run_id: str = Field(default_factory=lambda: str(uuid4()))
+    episode_id: str | None = None
+    session_id: str | None = None
+    invocation_id: str = Field(default_factory=lambda: str(uuid4()))
+    runtime_generation: int = 0
     last_validated: datetime | None = None
     origin: str = "ui"
     reason: str = ""
