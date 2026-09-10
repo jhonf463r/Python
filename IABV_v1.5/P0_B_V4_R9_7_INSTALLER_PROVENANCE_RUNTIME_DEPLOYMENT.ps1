@@ -265,13 +265,25 @@ icacls $serviceRuntimePath /deny "Users:(OI)(CI)F"
 Write-Output "Machine-scoped runtime ACLs configured"
 Write-Output ""
 
-# PHASE 14: Verify ACLs
-Write-Output "=== PHASE 14: VERIFY ACLS ==="
+# PHASE 15: Verify user-site isolation in deployed runtime
+Write-Output "=== PHASE 15: VERIFY USER-SITE ISOLATION ==="
+Write-Output "Testing isolation with deployed runtime..."
+$isolationTest = & "$serviceRuntimePath\python.exe" -c "import site,sys,os; user_profile = os.environ.get('USERPROFILE', ''); has_user_path = any(p.startswith(user_profile) for p in sys.path if user_profile); print('USER_PROFILE_IN_PATH:', has_user_path); print('ENABLE_USER_SITE:', site.ENABLE_USER_SITE)"
+Write-Output "Isolation test result: $isolationTest"
+if ($isolationTest -like "*USER_PROFILE_IN_PATH: True*") {
+    Write-Output "ERROR: User profile path still in sys.path of deployed runtime"
+    exit 1
+}
+Write-Output "User-site isolation verified: PASS"
+Write-Output ""
+
+# PHASE 16: Verify ACLs
+Write-Output "=== PHASE 16: VERIFY ACLS ==="
 icacls $serviceRuntimePath
 Write-Output ""
 
-# PHASE 15: Determine pythonservice.exe path
-Write-Output "=== PHASE 15: DETERMINE PYTHONSERVICE.EXE PATH ==="
+# PHASE 17: Determine pythonservice.exe path
+Write-Output "=== PHASE 17: DETERMINE PYTHONSERVICE.EXE PATH ==="
 if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
     $pythonservicePath = "$serviceRuntimePath\Scripts\pythonservice.exe"
     Write-Output "Using pythonservice.exe from Scripts: $pythonservicePath"
@@ -284,8 +296,8 @@ if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
 }
 Write-Output ""
 
-# PHASE 16: Verify critical runtime components exist
-Write-Output "=== PHASE 16: VERIFY CRITICAL RUNTIME COMPONENTS ==="
+# PHASE 18: Verify critical runtime components exist
+Write-Output "=== PHASE 18: VERIFY CRITICAL RUNTIME COMPONENTS ==="
 $requiredFiles = @(
     "$serviceRuntimePath\python.exe",
     "$serviceRuntimePath\python314.dll",
@@ -313,8 +325,8 @@ if (-not $allFilesExist) {
 }
 Write-Output ""
 
-# PHASE 17: Verify no wrong version DLLs in deployed runtime
-Write-Output "=== PHASE 17: VERIFY NO WRONG VERSION DLLS ==="
+# PHASE 19: Verify no wrong version DLLs in deployed runtime
+Write-Output "=== PHASE 19: VERIFY NO WRONG VERSION DLLS ==="
 $wrongDllInRuntime = Test-Path "$serviceRuntimePath\$wrongDll"
 if ($wrongDllInRuntime) {
     Write-Output "ERROR: Wrong version pywintypes DLL in deployed runtime: $wrongDll"
@@ -323,8 +335,8 @@ if ($wrongDllInRuntime) {
 Write-Output "No wrong version DLLs in deployed runtime: PASS"
 Write-Output ""
 
-# PHASE 18: Verify ACLs on critical components
-Write-Output "=== PHASE 18: VERIFY CRITICAL COMPONENT ACLS ==="
+# PHASE 20: Verify ACLs on critical components
+Write-Output "=== PHASE 20: VERIFY CRITICAL COMPONENT ACLS ==="
 $criticalPaths = @(
     "$serviceRuntimePath\python.exe",
     "$pythonservicePath",
@@ -339,14 +351,14 @@ foreach ($path in $criticalPaths) {
 }
 Write-Output ""
 
-# PHASE 19: Install service with machine-scoped PathName
-Write-Output "=== PHASE 19: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
+# PHASE 21: Install service with machine-scoped PathName
+Write-Output "=== PHASE 21: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
 $env:PYTHONPATH="$serviceRuntimePath"
 & "$serviceRuntimePath\python.exe" -m iabv_v15.services.development.authority_windows_service install $pythonservicePath
 Write-Output ""
 
-# PHASE 20: Verify service installation
-Write-Output "=== PHASE 20: VERIFY SERVICE INSTALLATION ==="
+# PHASE 21: Verify service installation
+Write-Output "=== PHASE 21: VERIFY SERVICE INSTALLATION ==="
 $service = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'"
 Write-Output "Service Name: $($service.Name)"
 Write-Output "Service State: $($service.State)"
@@ -354,8 +366,8 @@ Write-Output "Service StartName: $($service.StartName)"
 Write-Output "Service PathName: $($service.PathName)"
 Write-Output ""
 
-# PHASE 21: Verify StartName is LocalService
-Write-Output "=== PHASE 21: VERIFY SERVICE IDENTITY ==="
+# PHASE 22: Verify StartName is LocalService
+Write-Output "=== PHASE 22: VERIFY SERVICE IDENTITY ==="
 if ($service.StartName -ne "NT AUTHORITY\LocalService") {
     Write-Output "ERROR: Service StartName is not LocalService"
     Write-Output "Current StartName: $($service.StartName)"
@@ -364,8 +376,8 @@ if ($service.StartName -ne "NT AUTHORITY\LocalService") {
 Write-Output "SUCCESS: Service StartName is NT AUTHORITY\LocalService"
 Write-Output ""
 
-# PHASE 22: Verify PathName points to machine-scoped runtime
-Write-Output "=== PHASE 22: VERIFY EXECUTION BOUNDARY ==="
+# PHASE 23: Verify PathName points to machine-scoped runtime
+Write-Output "=== PHASE 23: VERIFY EXECUTION BOUNDARY ==="
 if ($service.PathName -like "*C:\Users\faber\miniconda3*") {
     Write-Output "ERROR: Service PathName still points to user-profile runtime"
     Write-Output "Current PathName: $($service.PathName)"
@@ -380,8 +392,8 @@ if ($service.PathName -notlike "*service_runtime*") {
 Write-Output "SUCCESS: Service PathName points to machine-scoped runtime"
 Write-Output ""
 
-# PHASE 23: Verify PathName does NOT point to user profile
-Write-Output "=== PHASE 23: VERIFY NO USER-PROFILE DEPENDENCY ==="
+# PHASE 24: Verify PathName does NOT point to user profile
+Write-Output "=== PHASE 24: VERIFY NO USER-PROFILE DEPENDENCY ==="
 if ($service.PathName -like "*C:\Users\faber*") {
     Write-Output "ERROR: Service PathName contains user profile path"
     Write-Output "Current PathName: $($service.PathName)"
@@ -390,7 +402,7 @@ if ($service.PathName -like "*C:\Users\faber*") {
 Write-Output "SUCCESS: Service PathName does not depend on user profile"
 Write-Output ""
 
-# PHASE 24: Final summary
+# PHASE 25: Final summary
 Write-Output "=== INSTALLER PROVENANCE RUNTIME DEPLOYMENT COMPLETE ==="
 Write-Output ""
 Write-Output "DEPLOYMENT SUMMARY:"
