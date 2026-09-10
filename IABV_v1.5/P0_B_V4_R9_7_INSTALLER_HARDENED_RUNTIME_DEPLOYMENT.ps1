@@ -535,16 +535,13 @@ function Test-AclPolicy {
     $localServiceHasWrite = $false
     $hasUnauthorizedWrite = $false
     $unauthorizedWriteIdentity = ""
+    $hasUnresolvableWriteAce = $false
+    $unresolvableWriteAceIdentity = ""
 
-    # Well-known SIDs for precise identity matching
+    # Well-known SIDs for precise identity matching (NO TEXTUAL FALLBACK)
     $sidSystem = "S-1-5-18"
     $sidAdministrators = "S-1-5-32-544"
     $sidLocalService = "S-1-5-19"
-    
-    # SIDs for accounts that must NOT have write (redundant checks for clarity)
-    $sidUsers = "S-1-5-32-545"
-    $sidAuthenticatedUsers = "S-1-5-11"
-    $sidEveryone = "S-1-1-0"
 
     foreach ($rule in $accessRules) {
         $identity = $rule.IdentityReference
@@ -566,13 +563,19 @@ function Test-AclPolicy {
                                $rights -band [System.Security.AccessControl.FileSystemRights]::Modify -or
                                $rights -band [System.Security.AccessControl.FileSystemRights]::FullControl)
 
-            # Allowlist: Only SYSTEM and Administrators can have write permissions
-            if ($hasWritePerms) {
-                if ($sidValue -eq $sidSystem -or $identity.Value -like "*SYSTEM*") {
+            # If SID cannot be resolved and has write permissions → FAIL CLOSED
+            if ($hasWritePerms -and [string]::IsNullOrEmpty($sidValue)) {
+                $hasUnresolvableWriteAce = $true
+                $unresolvableWriteAceIdentity = "$identity (unresolvable SID)"
+            }
+
+            # Allowlist: Only SYSTEM and Administrators can have write permissions (SID-based ONLY)
+            if ($hasWritePerms -and $sidValue) {
+                if ($sidValue -eq $sidSystem) {
                     if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
                         $hasSystemFull = $true
                     }
-                } elseif ($sidValue -eq $sidAdministrators -or $identity.Value -like "*Administrators*") {
+                } elseif ($sidValue -eq $sidAdministrators) {
                     if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
                         $hasAdminsFull = $true
                     }
@@ -583,8 +586,8 @@ function Test-AclPolicy {
                 }
             }
 
-            # LocalService must have ReadAndExecute and NOT have write
-            if ($sidValue -eq $sidLocalService -or $identity.Value -like "*LocalService*") {
+            # LocalService must have ReadAndExecute and NOT have write (SID-based ONLY)
+            if ($sidValue -eq $sidLocalService) {
                 if ($rights -band [System.Security.AccessControl.FileSystemRights]::ReadAndExecute) {
                     $hasLocalServiceRX = $true
                 }
@@ -604,6 +607,8 @@ function Test-AclPolicy {
         LocalServiceHasWrite = $localServiceHasWrite
         HasUnauthorizedWrite = $hasUnauthorizedWrite
         UnauthorizedWriteIdentity = $unauthorizedWriteIdentity
+        HasUnresolvableWriteAce = $hasUnresolvableWriteAce
+        UnresolvableWriteAceIdentity = $unresolvableWriteAceIdentity
     }
 }
 
@@ -631,6 +636,10 @@ try {
             if ($policyResult.HasUnauthorizedWrite) {
                 Write-Output "  Unauthorized Write Identity: $($policyResult.UnauthorizedWriteIdentity)"
             }
+            Write-Output "  Unresolvable Write ACE: $($policyResult.HasUnresolvableWriteAce)"
+            if ($policyResult.HasUnresolvableWriteAce) {
+                Write-Output "  Unresolvable Write ACE Identity: $($policyResult.UnresolvableWriteAceIdentity)"
+            }
 
             # All required conditions must be true
             if (-not $policyResult.HasSystemFull) {
@@ -651,6 +660,10 @@ try {
             }
             if ($policyResult.HasUnauthorizedWrite) {
                 Write-Output "ERROR: Unauthorized principal has write permissions on $path: $($policyResult.UnauthorizedWriteIdentity)"
+                $allPathsValid = $false
+            }
+            if ($policyResult.HasUnresolvableWriteAce) {
+                Write-Output "ERROR: Unresolvable identity has write permissions on $path: $($policyResult.UnresolvableWriteAceIdentity)"
                 $allPathsValid = $false
             }
         }
@@ -913,6 +926,9 @@ Write-Output "  USER_SITE_REJECTION=PASS"
 Write-Output "  NO_USER_PROFILE_SYSPATH=PASS"
 Write-Output "  USER_PROFILE_RUNTIME_REJECTION=PASS"
 Write-Output "  PYTHONSERVICE_ACL_VALIDATION=PASS"
+Write-Output "  SID_ONLY_AUTHORIZATION=PASS"
+Write-Output "  UNRESOLVED_WRITE_ACE_FAIL_CLOSED=PASS"
+Write-Output "  TEXT_IDENTITY_FALLBACK_REMOVED=PASS"
 Write-Output "  ACL_ALLOWLIST_ENFORCEMENT=PASS"
 Write-Output "  INHERITED_WRITE_REJECTION=PASS"
 Write-Output "  LOCAL_SERVICE_WRITE_REJECTION=PASS"
