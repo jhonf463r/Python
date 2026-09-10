@@ -511,35 +511,64 @@ function Test-AclPolicy {
     $hasAdminsFull = $false
     $hasLocalServiceRX = $false
     $hasDangerousWrite = $false
+    $localServiceHasWrite = $false
+
+    # Well-known SIDs for precise identity matching
+    $sidSystem = "S-1-5-18"
+    $sidAdministrators = "S-1-5-32-544"
+    $sidLocalService = "S-1-5-19"
+    $sidUsers = "S-1-5-32-545"
+    $sidAuthenticatedUsers = "S-1-5-11"
+    $sidEveryone = "S-1-1-0"
 
     foreach ($rule in $accessRules) {
-        $identity = $rule.IdentityReference.Value
+        $identity = $rule.IdentityReference
         $rights = $rule.FileSystemRights
         $type = $rule.AccessControlType
 
-        # Check for expected permissions
-        if ($identity -like "*SYSTEM*" -and $type -eq "Allow") {
-            if ($rights -band [System.Security.Principal.NTAccount]::FullControl) {
-                $hasSystemFull = $true
-            }
-        }
-        if ($identity -like "*Administrators*" -and $type -eq "Allow") {
-            if ($rights -band [System.Security.Principal.NTAccount]::FullControl) {
-                $hasAdminsFull = $true
-            }
-        }
-        if ($identity -like "*LocalService*" -and $type -eq "Allow") {
-            if ($rights -band [System.Security.Principal.NTAccount]::ReadAndExecute) {
-                $hasLocalServiceRX = $true
-            }
+        # Try to get SID for precise matching
+        try {
+            $sidObj = $identity.Translate([System.Security.Principal.SecurityIdentifier])
+            $sidValue = $sidObj.Value
+        } catch {
+            $sidValue = $null
         }
 
-        # Check for dangerous write permissions
+        # Check for expected permissions using correct enumeration type
         if ($type -eq "Allow") {
-            if ($identity -like "*Users*" -or $identity -like "*Authenticated Users*" -or $identity -like "*Everyone*") {
-                if ($rights -band [System.Security.Principal.NTAccount]::Write -or 
-                    $rights -band [System.Security.Principal.NTAccount]::Modify -or
-                    $rights -band [System.Security.Principal.NTAccount]::FullControl) {
+            # SYSTEM FullControl
+            if ($sidValue -eq $sidSystem -or $identity.Value -like "*SYSTEM*") {
+                if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
+                    $hasSystemFull = $true
+                }
+            }
+            
+            # Administrators FullControl
+            if ($sidValue -eq $sidAdministrators -or $identity.Value -like "*Administrators*") {
+                if ($rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
+                    $hasAdminsFull = $true
+                }
+            }
+            
+            # LocalService Read/Execute
+            if ($sidValue -eq $sidLocalService -or $identity.Value -like "*LocalService*") {
+                if ($rights -band [System.Security.AccessControl.FileSystemRights]::ReadAndExecute) {
+                    $hasLocalServiceRX = $true
+                }
+                # Check if LocalService has dangerous write permissions
+                if ($rights -band [System.Security.AccessControl.FileSystemRights]::Write -or
+                    $rights -band [System.Security.AccessControl.FileSystemRights]::Modify -or
+                    $rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
+                    $localServiceHasWrite = $true
+                }
+            }
+
+            # Check for dangerous write permissions on unprivileged accounts
+            if ($sidValue -eq $sidUsers -or $sidValue -eq $sidAuthenticatedUsers -or $sidValue -eq $sidEveryone -or
+                $identity.Value -like "*Users*" -or $identity.Value -like "*Authenticated Users*" -or $identity.Value -like "*Everyone*") {
+                if ($rights -band [System.Security.AccessControl.FileSystemRights]::Write -or
+                    $rights -band [System.Security.AccessControl.FileSystemRights]::Modify -or
+                    $rights -band [System.Security.AccessControl.FileSystemRights]::FullControl) {
                     $hasDangerousWrite = $true
                 }
             }
@@ -551,6 +580,7 @@ function Test-AclPolicy {
         HasAdminsFull = $hasAdminsFull
         HasLocalServiceRX = $hasLocalServiceRX
         HasDangerousWrite = $hasDangerousWrite
+        LocalServiceHasWrite = $localServiceHasWrite
     }
 }
 
@@ -572,14 +602,28 @@ try {
             Write-Output "  SYSTEM FullControl: $($policyResult.HasSystemFull)"
             Write-Output "  Administrators FullControl: $($policyResult.HasAdminsFull)"
             Write-Output "  LocalService Read/Execute: $($policyResult.HasLocalServiceRX)"
+            Write-Output "  LocalService Has Write: $($policyResult.LocalServiceHasWrite)"
             Write-Output "  Dangerous Write Permissions: $($policyResult.HasDangerousWrite)"
 
-            if (-not $policyResult.HasSystemFull -or -not $policyResult.HasAdminsFull) {
-                Write-Output "ERROR: Missing required FullControl permissions on $path"
+            # All required conditions must be true
+            if (-not $policyResult.HasSystemFull) {
+                Write-Output "ERROR: SYSTEM lacks FullControl on $path"
+                $allPathsValid = $false
+            }
+            if (-not $policyResult.HasAdminsFull) {
+                Write-Output "ERROR: Administrators lack FullControl on $path"
+                $allPathsValid = $false
+            }
+            if (-not $policyResult.HasLocalServiceRX) {
+                Write-Output "ERROR: LocalService lacks required Read/Execute permissions on $path"
+                $allPathsValid = $false
+            }
+            if ($policyResult.LocalServiceHasWrite) {
+                Write-Output "ERROR: LocalService has dangerous write permissions on $path"
                 $allPathsValid = $false
             }
             if ($policyResult.HasDangerousWrite) {
-                Write-Output "ERROR: Dangerous write permissions found on $path"
+                Write-Output "ERROR: Dangerous write permissions found on unprivileged accounts on $path"
                 $allPathsValid = $false
             }
         }
