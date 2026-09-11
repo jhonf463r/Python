@@ -1,103 +1,144 @@
 # IABV v1.5 — CHAT-ARCH: Canonical Historical Knowledge Entry Point
 
-## PURPOSE
+This directory is the canonical historical-memory layer for IABV. It preserves knowledge from ChatGPT / Claude / Devin / Codex and related engineering conversations without requiring future chats to retain the original transcript.
 
-This directory is the canonical entry point for durable knowledge recovered from ChatGPT / Claude / Devin / Codex and related engineering conversations.
+## OPERATIONAL MEMORY
 
-The purpose is **not** to reproduce chats. The purpose is to preserve enough structured knowledge that a future AI can reconstruct the relevant state of IABV for a new objective without depending on the deleted chat transcript.
+The archive is not a flat collection of summaries. It functions as an objective-driven operational memory.
 
-The repository is the durable source of truth for historical observations, evidence, claims and epistemic status, false positives and refuted interpretations, negative knowledge and anti-patterns, experiments and their limits, decisions and rejected alternatives, ideas that never became tasks or code, architectural deductions and latent knowledge, cross-IA interactions and learning transfer, provenance and branch/commit relationships, current gates and blockers, and the evolution of the engineering method.
+Primary protocol:
 
-## CRITICAL RULE
+`MEMORY-OPERATING-PROTOCOL.md`
 
-**Do not read every archive on every new task.**
+Core retrieval:
 
-A future chat must first identify its current objective, then use the objective-routing index to discover relevant historical records, reconcile those records against current repository/runtime evidence, and activate only the context that can materially change the current decision.
+`new objective → discover relevant memory → reconcile current reality → activate context → select capabilities/roles → act → verify → learn → write back`
 
-The complete archive remains available for deep reconstruction, but selective activation is the default.
+## ENTRY ORDER FOR A NEW CHAT
 
-## CANONICAL NAVIGATION LAYER
+1. `README.md` — continuity contract and evidence rules.
+2. `CONTEXT-INDEX.md` — objective-driven routing.
+3. `CURRENT-STATE.md` — current project state and active gates.
+4. `SYMBIOSIS-MAP.md` — cross-IA capability and knowledge transfer.
+5. `UNRESOLVED-KNOWLEDGE.md` — ideas, deductions and unresolved boundaries.
+6. `ARCHIVE-REGISTRY.md` — source-history locations and identities.
+7. Relevant historical source records selected by the objective.
 
-Read these files first when continuity is required:
+Do **not** read every historical record by default.
 
-1. `CONTEXT-INDEX.md` — objective → historical knowledge routing map.
-2. `CURRENT-STATE.md` — reconciled current project state and active frontiers.
-3. `SYMBIOSIS-MAP.md` — cross-IA learning, role evolution, and collaboration dynamics.
-4. `ARCHIVE-REGISTRY.md` — registry of historical records, including legacy records outside this directory.
+## OBJECTIVE-CONDITIONED ACTIVATION
+
+The objective determines which history is active. Historical context is retrieved because it can change the present decision, not because it exists.
+
+Activate a record when it contains relevant evidence, prior failure, contradiction, prerequisite/invariant, discriminating experiment, unimplemented idea, cross-IA correction, or current gate for the objective.
+
+Use progressive retrieval from orientation → objective context → evidence → contradiction reconstruction → full forensic reconstruction only when needed.
 
 ## TWO-LAYER HISTORY MODEL
 
-### Layer A — Canonical navigation / synthesis
+### Layer A — Operational memory / navigation
 
-The files above are maintained as navigation and reconciliation artifacts. They do not replace source history. They answer: where to look for a given objective, which history matters, what is proven/disproven/unresolved, which ideas remain unimplemented, which failures must not be repeated, what was learned across AIs, and which current branch/commit/runtime is authoritative.
+- `MEMORY-OPERATING-PROTOCOL.md`
+- `CONTEXT-INDEX.md`
+- `CURRENT-STATE.md`
+- `SYMBIOSIS-MAP.md`
+- `UNRESOLVED-KNOWLEDGE.md`
+- `ARCHIVE-REGISTRY.md`
 
-### Layer B — Source historical records
+These synthesize and route knowledge. They do not replace source history.
 
-Existing `CHAT-ARCH-*` files under all of these locations remain historical source records unless explicitly superseded by evidence:
+### Layer B — Historical source records
+
+Existing `CHAT-ARCH-*` files under:
 
 - `IABV_v1.5/docs/history/CHAT-ARCH/`
 - `IABV_v1.5/docs/history/`
 - `IABV_v1.5/docs/CHAT-ARCH-*.md`
 
-They are not silently rewritten merely to normalize names or IDs.
+remain historical source records unless explicitly superseded by evidence.
 
-## SOURCE-HIERARCHY RULE
+## CROSS-IA CONTINUITY
 
-For current technical truth, current source/contracts/runtime evidence outranks historical conversation claims.
+Roles are historical capability observations, not permanent assignments.
 
-For historical reasoning and project evolution, archive records preserve what was believed, discovered, rejected, and learned at the time.
+For each objective, select the strongest available capabilities for architecture synthesis, adversarial review, implementation, runtime observation, experimentation, provenance adjudication and verification.
 
-When sources disagree, record the reconciliation. Never silently erase the disagreement.
+The reusable object is the **knowledge transfer**:
 
-## EPISTEMIC LADDER
+`initial interpretation → challenge → experiment/implementation → observation → reconciliation → changed model → new method`
+
+The implementing AI is not the sole verifier of a critical claim when independent verification is available.
+
+## EPISTEMIC RULES
 
 Always distinguish:
 
-`idea → design → code exists → wired → test passes → production path exercised → runtime observed → adversarially verified → causal effect demonstrated → independently reproduced`
+`idea → design → code → wired → tests → production path → runtime → adversarial verification → causal effect → independent reproduction`
 
-A historical claim never upgrades itself merely because later prose repeats it.
+Historical repetition never upgrades evidence.
 
-## CROSS-CHAT CONTINUITY CONTRACT
+Current source/contracts/runtime evidence outrank historical claims for current technical truth. Historical records remain authoritative for what was believed, discovered, rejected and learned at the time.
 
-A new chat should be able to reconstruct from GitHub alone, for its active objective:
+Do not confuse:
 
-1. the relevant historical records;
-2. the important experiments and their limits;
-3. current source/branch/commit state;
-4. relevant false positives and negative knowledge;
-5. relevant unimplemented ideas and deductions;
-6. applicable cross-IA collaboration lessons;
-7. the active gate/blocker and its last independently verified state;
-8. the smallest unresolved uncertainty driving the next action.
+- test pass with runtime proof;
+- runtime execution with cognition;
+- receipt with cognition;
+- persistence with learning;
+- cryptographic validity with legitimate authority;
+- field existence with canonicality;
+- repository state with runtime state;
+- archive existence with deletion safety.
 
-It should **not** need the previous chat to know these things.
+## KNOWLEDGE PRESERVATION
 
-## MEMORY WRITEBACK RULE
+Durable history must include more than completed tasks:
 
-A chat creates durable history when it produces materially new knowledge: a verified observation, correction, experiment, failure mode, architectural deduction, decision, rejected option, cross-IA learning, or other knowledge that changes future work.
+- observations and evidence;
+- claims and epistemic status;
+- failures and false positives;
+- negative knowledge;
+- experiments and limits;
+- decisions and rejected alternatives;
+- ideas left in the air;
+- ideas without tickets or commits;
+- architectural deductions;
+- lost links and conceptual breakthroughs;
+- unresolved questions;
+- cross-IA disagreements/corrections;
+- methodology changes;
+- provenance and runtime identity;
+- current gates and blockers.
 
-Routine repetition does not require a new archive record.
+## MEMORY WRITEBACK
 
-When new knowledge changes the active model, update the relevant synthesis layer and preserve the source evidence supporting the change.
+Create/update durable memory when a session produces materially new knowledge or changes the operational model. Routine repetition does not require another archive.
+
+When the operational model changes:
+
+1. preserve the source historical record;
+2. update `CURRENT-STATE.md` if current truth changed;
+3. update `CONTEXT-INDEX.md` if routing changed;
+4. update `SYMBIOSIS-MAP.md` if collaboration/capability learning changed;
+5. update `UNRESOLVED-KNOWLEDGE.md` if latent knowledge changes status;
+6. register new source records in `ARCHIVE-REGISTRY.md`.
+
+Never silently erase contradictions from source history.
 
 ## DELETION SAFETY
 
-An archived chat is not safely deletable merely because an archive file exists.
+`DELETE_SAFE=YES` requires durable remote preservation, provenance, remote read-back, and enough knowledge to reconstruct the material contents of the chat without the transcript.
 
-Deletion is safe only when the durable repository state contains enough provenance and knowledge to reconstruct the material content of the chat and the remote copy has been independently read back.
-
-`DELETE_SAFE=YES` must never be inferred from local file existence alone.
+A local archive file alone is never sufficient.
 
 ## CURRENT REPOSITORY FACT
 
-At creation time, GitHub `main` pointed to:
+The navigation layer was initialized against main at commit `4597e3323d397c57f6759fcc03402ebe5a80d6c9`; the memory protocol was subsequently added on main at `cd16ecbf6977cfea40c194a632b419c369533dd8`.
 
-`4597e3323d397c57f6759fcc03402ebe5a80d6c9`
-
-The latest recorded P0-B validation target is **not** main. The relevant branch target is:
+The latest recorded P0-B validation target remains outside main:
 
 `origin/audit/p0-b-repopath-on-hardened-base`
 
 `c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3`
 
-This distinction is intentional and must be preserved by future continuity work.
+This distinction must be preserved.
