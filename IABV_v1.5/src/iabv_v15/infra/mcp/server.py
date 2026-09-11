@@ -649,6 +649,54 @@ class IABVMCPServer:
             return get_runtime_tracer().export_boot_report()
 
         @mcp.tool()
+        def diagnose_synaptic_routing() -> dict[str, Any]:
+            """Diagnóstico del estado efectivo de SynapticRouting.
+
+            Devuelve el estado de configuración de SynapticRouting en el runtime:
+            - Variables de entorno (SYNAPTIC_ROUTING, IABV_SYNAPTIC_ROUTING_ENABLED)
+            - AppConfig.synaptic_routing_enabled
+            - enabled_override pasado a SynapticRouter
+            - Valor efectivo de routing
+
+            Esta herramienta es de solo lectura y no modifica ningún estado.
+            """
+            import os
+
+            result: dict[str, Any] = {}
+
+            # Environment variables
+            result["synaptic_routing_env"] = os.environ.get("SYNAPTIC_ROUTING")
+            result["iabv_synaptic_routing_enabled_env"] = os.environ.get("IABV_SYNAPTIC_ROUTING_ENABLED")
+
+            # AppConfig value
+            config = getattr(self.container, "config", None)
+            if config is not None:
+                result["appconfig_synaptic_routing_enabled"] = getattr(config, "synaptic_routing_enabled", None)
+            else:
+                result["appconfig_synaptic_routing_enabled"] = None
+
+            # SynapticRouter enabled_override
+            synaptic_router = getattr(self.container, "synaptic_router", None)
+            if synaptic_router is not None:
+                result["synaptic_router_enabled_override"] = getattr(synaptic_router, "_enabled_override", None)
+                result["synaptic_router_effective_enabled"] = synaptic_router._routing_enabled()
+            else:
+                result["synaptic_router_enabled_override"] = None
+                result["synaptic_router_effective_enabled"] = None
+
+            # Config source inference
+            config_source = "default"
+            if result["synaptic_router_enabled_override"] is not None:
+                config_source = "explicit_override"
+            elif result["appconfig_synaptic_routing_enabled"] is not None:
+                config_source = "appconfig"
+            elif result["synaptic_routing_env"] is not None or result["iabv_synaptic_routing_enabled_env"] is not None:
+                config_source = "environment"
+            result["config_source"] = config_source
+
+            return result
+
+        @mcp.tool()
         def orchestrator_preview(
             user_goal: str,
             goal_parameters: dict[str, Any] | None = None,
