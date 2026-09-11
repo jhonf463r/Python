@@ -8,9 +8,9 @@ This document is the compact current-state bridge between historical knowledge a
 
 Repository: `jhonf463r/Python`
 Default branch: `main`
-Current main HEAD after continuity-layer publication: `f1894054a7dc6fe1a918159b76f4158d44e4d0a8`
+Current main HEAD after the operational-memory publication sequence: `7be01fb78b9494d7ac23e9cb5b871a4eccba7049`
 
-The continuity/navigation layer is now part of the repository on main.
+The continuity/navigation and operational-memory layer is now part of the repository on main.
 
 Do not assume `main` is the active validation target for every subsystem.
 
