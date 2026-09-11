@@ -21,8 +21,9 @@ Core retrieval:
 3. `CURRENT-STATE.md` — current project state and active gates.
 4. `SYMBIOSIS-MAP.md` — cross-IA capability and knowledge transfer.
 5. `UNRESOLVED-KNOWLEDGE.md` — ideas, deductions and unresolved boundaries.
-6. `ARCHIVE-REGISTRY.md` — source-history locations and identities.
-7. Relevant historical source records selected by the objective.
+6. `CANONICAL-ABSORPTION-2026-09-11.md` — source reachability, absorption and deletion-readiness audit.
+7. `ARCHIVE-REGISTRY.md` — source-history locations and identities.
+8. Relevant historical source records selected by the objective.
 
 Do **not** read every historical record by default.
 
@@ -43,9 +44,10 @@ Use progressive retrieval from orientation → objective context → evidence �
 - `CURRENT-STATE.md`
 - `SYMBIOSIS-MAP.md`
 - `UNRESOLVED-KNOWLEDGE.md`
+- `CANONICAL-ABSORPTION-2026-09-11.md`
 - `ARCHIVE-REGISTRY.md`
 
-These synthesize and route knowledge. They do not replace source history.
+These synthesize, route and reconcile knowledge. They do not replace source history.
 
 ### Layer B — Historical source records
 
@@ -54,6 +56,7 @@ Existing `CHAT-ARCH-*` files under:
 - `IABV_v1.5/docs/history/CHAT-ARCH/`
 - `IABV_v1.5/docs/history/`
 - `IABV_v1.5/docs/CHAT-ARCH-*.md`
+- historical working branches when provenance requires them
 
 remain historical source records unless explicitly superseded by evidence.
 
@@ -121,21 +124,32 @@ When the operational model changes:
 3. update `CONTEXT-INDEX.md` if routing changed;
 4. update `SYMBIOSIS-MAP.md` if collaboration/capability learning changed;
 5. update `UNRESOLVED-KNOWLEDGE.md` if latent knowledge changes status;
-6. register new source records in `ARCHIVE-REGISTRY.md`.
+6. update `CANONICAL-ABSORPTION-2026-09-11.md` if source reachability or absorption status changes;
+7. register new source records in `ARCHIVE-REGISTRY.md`.
 
 Never silently erase contradictions from source history.
 
 ## DELETION SAFETY
 
-`DELETE_SAFE=YES` requires durable remote preservation, provenance, remote read-back, and enough knowledge to reconstruct the material contents of the chat without the transcript.
+`DELETE_SAFE=YES` is a **knowledge-preservation decision**, not a statement that the underlying engineering objective is closed.
 
-A local archive file alone is never sufficient.
+The minimum condition is:
+
+`DIRECT_CANONICAL_SOURCE=YES`
+OR
+`CANONICAL_KNOWLEDGE_ABSORPTION=YES`
+
+plus provenance to the source, remote read-back, `KNOWLEDGE_LOSS_TEST=PASS`, `BLIND_RECONSTRUCTION=PASS`, and `NO_MATERIAL_KNOWLEDGE_ONLY_IN_CHAT=YES`.
+
+A branch-only source archive may remain outside `main` when its material knowledge has been canonically absorbed and its source provenance remains recoverable. Do not merge an unrelated implementation branch only to relocate historical documents.
+
+An open technical task does not by itself block historical-chat deletion. Unpreserved knowledge does.
 
 ## CURRENT REPOSITORY FACT
 
-The navigation layer was initialized against main at commit `4597e3323d397c57f6759fcc03402ebe5a80d6c9`; the memory protocol was subsequently added on main at `cd16ecbf6977cfea40c194a632b419c369533dd8`.
+The operational-memory layer is on `main`. The exact current `main` HEAD must be checked from GitHub at use time; this file deliberately does not become the authority for a mutable branch tip.
 
-The latest recorded P0-B validation target remains outside main:
+The latest recorded P0-B validation target remains outside `main`:
 
 `origin/audit/p0-b-repopath-on-hardened-base`
 
