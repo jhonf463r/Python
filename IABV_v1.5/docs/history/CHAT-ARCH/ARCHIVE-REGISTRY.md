@@ -4,17 +4,18 @@
 
 This registry prevents the historical archive from becoming a flat pile of Markdown files.
 
-The registry is a **pointer layer**, not a replacement for source records. It records where historical knowledge lives and how it should be reached.
+The registry is a **pointer layer**, not a replacement for source records. It records where historical knowledge lives, how it should be reached, and whether it is directly canonical or canonically absorbed.
 
 ## IMPORTANT REPOSITORY REALITY
 
-Historical `CHAT-ARCH-*` records currently exist in more than one path. This is intentional legacy state and must be reconciled by navigation, not by silently moving or renaming records.
+Historical `CHAT-ARCH-*` records exist in more than one path and branch. This is intentional legacy state and must be reconciled by navigation, not by silently moving or renaming records.
 
 Known locations:
 
 - `IABV_v1.5/docs/history/CHAT-ARCH/`
 - `IABV_v1.5/docs/history/`
 - `IABV_v1.5/docs/CHAT-ARCH-*.md`
+- historical working branches such as `foundation/reconstruction`
 
 ## CANONICAL OPERATIONAL MEMORY FILES
 
@@ -26,17 +27,19 @@ Known locations:
 | `CURRENT-STATE.md` | Reconciled active project state |
 | `SYMBIOSIS-MAP.md` | Cross-IA capability and learning transfer |
 | `UNRESOLVED-KNOWLEDGE.md` | Latent/unimplemented knowledge |
+| `CANONICAL-ABSORPTION-2026-09-11.md` | Audit of source records, canonical absorption and deletion readiness |
 | `ARCHIVE-REGISTRY.md` | Historical source registry |
 
 ## HIGH-VALUE SOURCE RECORDS
 
 ### Cognitive control / symbiosis / continuity
 
-- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-001-cognitive-symbiosis.md`
-- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-001-cognitive-control-plane-p0b-symbiosis.md`
-- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-002-context-activation-architecture.md`
-- `IABV_v1.5/docs/history/2026-09-03_conversation_cognitive_continuity_self_development.md`
-- `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-006_iabv-continuity-directed-evolution.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-001-cognitive-symbiosis.md` — DIRECT_CANONICAL_SOURCE=YES / ABSORBED
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-002-context-activation-architecture.md` — DIRECT_CANONICAL_SOURCE=YES / ABSORBED
+- `IABV_v1.5/docs/history/2026-09-03_conversation_cognitive_continuity_self_development.md` — DIRECT_CANONICAL_SOURCE=YES / legacy source
+- `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-006_iabv-continuity-directed-evolution.md` — DIRECT_CANONICAL_SOURCE=YES / legacy source
+
+The previously cited `CHAT-ARCH-2026-09-11-001-cognitive-control-plane-p0b-symbiosis.md` is not currently readable at its expected main path and must not be treated as canonical solely from a registry entry.
 
 ### Scientific / metacognitive evolution
 
@@ -52,9 +55,11 @@ Known locations:
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-012_iabv-runtime-integration-and-stabilization.md`
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-012_persistence-verification.md`
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-011_github-persistence-deletion-gate.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
 
 ### Authority / trust / P0.213 / P0-B
 
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-002-p0b-v4-r2-authority-symbiosis.md` — DIRECT_CANONICAL_SOURCE=YES / ABSORBED
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-004_p0213-trust-boundary-evolution.md`
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-005_p0213-c2-authority-chokepoint-evolution.md`
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-012_p0213-phase2-phase3-authority-authorization.md`
@@ -64,43 +69,57 @@ Known locations:
 - `IABV_v1.5/docs/CHAT-ARCH-2026-09-03-CLAUDE-P0-213-RECONCILIATION.md`
 - `IABV_v1.5/docs/CHAT-ARCH-2026-09-03-CLAUDE-P0-213-RECONCILIATION-v2.md`
 
-### Architecture → runtime construction
+### Objective evidence / verifier continuity
 
-- `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-0903-002_iabv-architecture-to-runtime-construction.md`
-- `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-0903-001_p0213-phase3-windows-runtime-forensic.md`
+Source records for `CHAT-ARCH-2026-09-11-018` are remotely preserved on `foundation/reconstruction`:
 
-### Decision / broader forensic records
+- `...018-objective-verifier-continuity.md`
+- `...018-r1-provenance-objective-verifier-correction.md`
+- `...018-r2-cacp-v4-delete-gate.md`
+- `...018-r3-cacp-v4-provenance-final.md`
 
-- `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-005_p0213-r3-r10-decision-expert.md`
-- `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-006_adaptive-meta-orchestrator-forensic.md`
-- `IABV_v1.5/docs/history/2026-09-03_conversation_knowledge_sync.md`
-- additional `CHAT-ARCH-*` records under `IABV_v1.5/docs/history/` should be added to the registry when discovered as relevant to a new domain.
+Their material knowledge is now also represented in the canonical absorption audit. The branch must not be merged wholesale because it contains a separate implementation/test history in addition to archive records.
+
+### D0 / P0-B / R3 historical records
+
+The previously cited `CHAT-ARCH-2026-09-11-013-d0-p0b-r3-symbiosis.md` was not found at the expected main path during current read-back. It is `SOURCE_NOT_FOUND_ON_MAIN` until another remote source or canonical absorption establishes its provenance.
+
+### CHAT-ARCH-2026-09-11-014
+
+The previously reported `014` archive was not found on current `main` during current read-back. It remains `ABSORPTION_REQUIRED` unless its source or material knowledge is independently recovered and registered.
 
 ## DUPLICATE / COLLIDING IDS
 
 Several historical files use the same numeric `CHAT-ARCH-YYYY-MM-DD-NNN` identifier for different subjects. Therefore:
 
-- **file path + exact filename is the durable identity**;
-- the numeric CHAT-ARCH ID alone is not a unique identifier;
-- do not merge records solely because their numeric ID matches;
-- preserve all source records unless an evidence-backed supersession is recorded.
-
-Examples already observed include multiple `CHAT-ARCH-2026-09-11-001` records with different subject suffixes and multiple `CHAT-ARCH-2026-09-03-012` / `011` subject variants.
+- **file path + exact filename + source branch/ref is the durable source identity**;
+- the numeric CHAT-ARCH ID alone is not unique;
+- canonical absorption is a synthesis identity, not a replacement for source identity;
+- do not merge records solely because numeric IDs match.
 
 ## RECORD STATUS MODEL
 
-For routing, every historical source should conceptually be classifiable as:
+For routing, every historical source should be classifiable as:
 
-`SOURCE_RECORD | SYNTHESIS | ADDENDUM | CORRECTION | RECONCILIATION | PERSISTENCE_PROOF`
+`SOURCE_RECORD | SYNTHESIS | ADDENDUM | CORRECTION | RECONCILIATION | PERSISTENCE_PROOF | CANONICAL_ABSORPTION`
 
-The classification does not alter the source content.
+Additionally, each source can carry a continuity state:
 
-## DISCOVERY RULE
+`DIRECT_CANONICAL_SOURCE | REMOTE_BRANCH_SOURCE | ABSORBED | ABSORPTION_REQUIRED | SOURCE_NOT_FOUND | SUPERSEDED`
 
-The registry is not expected to be perfectly exhaustive forever. When a new chat discovers another historical record that materially affects a domain, the new record should be added here and to `CONTEXT-INDEX.md` as appropriate.
+## DELETION MODEL
 
-The goal is a **self-expanding navigable knowledge graph**, not a frozen table of contents.
+A historical chat can be deletion-safe when its materially decision-relevant knowledge is preserved in canonical memory, even when the exact source archive remains on a non-canonical branch, provided that provenance to the remote source is preserved and the canonical absorption passes the knowledge-loss and blind-reconstruction gates.
+
+Open engineering work does **not** by itself block deletion. Unpreserved knowledge does.
 
 ## REMOTE-READBACK RULE
 
-A record is considered durable only when its GitHub path and commit provenance can be independently read back. Local existence, a user report, or a prior chat assertion is insufficient.
+Durability requires GitHub evidence, not a chat assertion. Either the source record itself or the canonical absorption record must be remotely readable and provenance-linked.
+
+## CURRENT ABSORPTION AUDIT
+
+Canonical synthesis:
+`IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
+
+This file is the current adjudication layer for the older chat reports audited on 2026-09-11.
