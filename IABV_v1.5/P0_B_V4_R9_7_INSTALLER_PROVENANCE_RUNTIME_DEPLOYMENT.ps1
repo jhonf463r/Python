@@ -64,26 +64,24 @@ Write-Output ""
 
 # PHASE 4: Verify pywin32 is pre-installed in trusted source
 Write-Output "=== PHASE 4: VERIFY PYWIN32 PRE-INSTALLED ==="
-try {
-    & "$trustedSource\python.exe" -c "import win32service" 2>&1 | Out-Null
-    Write-Output "pywin32 installed: YES"
-} catch {
+& "$trustedSource\python.exe" -c "import win32service" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
     Write-Output "ERROR: pywin32 not installed in trusted source"
     Write-Output "Run as Administrator: C:\Python314\python.exe -m pip install pywin32"
     exit 1
 }
+Write-Output "pywin32 installed: YES"
 Write-Output ""
 
 # PHASE 5: Verify cryptography is pre-installed in trusted source
 Write-Output "=== PHASE 5: VERIFY CRYPTOGRAPHY PRE-INSTALLED ==="
-try {
-    & "$trustedSource\python.exe" -c "import cryptography" 2>&1 | Out-Null
-    Write-Output "cryptography installed: YES"
-} catch {
+& "$trustedSource\python.exe" -c "import cryptography" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
     Write-Output "ERROR: cryptography not installed in trusted source"
     Write-Output "Run as Administrator: C:\Python314\python.exe -m pip install cryptography"
     exit 1
 }
+Write-Output "cryptography installed: YES"
 Write-Output ""
 
 # PHASE 6: Verify pythonservice.exe exists
@@ -145,7 +143,7 @@ Write-Output "Git repository verified: $RepoPath"
 # Verify HEAD matches required commit
 $head = & git -C $RepoPath rev-parse HEAD
 Write-Output "Repository HEAD: $head"
-$requiredCommit = "dd44c8440a0f8ad7591f10de16cbd9c831e816c0"
+$requiredCommit = "c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3"
 if ($head -ne $requiredCommit) {
     Write-Output "ERROR: HEAD does not match required commit"
     Write-Output "Required: $requiredCommit"
@@ -182,12 +180,12 @@ Write-Output ""
 
 # PHASE 9: Remove existing service
 Write-Output "=== PHASE 9: REMOVE EXISTING SERVICE ==="
-try {
-    $env:PYTHONPATH="$RepoPath\src"
-    & "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
+$env:PYTHONPATH="$RepoPath\src"
+& "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "Service may not have existed or removal failed, continuing..."
+} else {
     Write-Output "Existing service removed"
-} catch {
-    Write-Output "Service may not have existed, continuing..."
 }
 Write-Output ""
 
