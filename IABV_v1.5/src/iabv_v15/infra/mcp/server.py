@@ -234,6 +234,12 @@ class IABVMCPServer:
     def _oses(self) -> Any:
         return getattr(self.container, "operational_self_examination_service", None)
 
+    def _tool_teach_service(self) -> Any:
+        svc = getattr(self.container, "tool_teach_service", None)
+        if svc is None:
+            raise RuntimeError("tool_teach_service no está disponible en el container")
+        return svc
+
     def _ui_execution_runner(self) -> Any:
         svc = getattr(self.container, "ui_execution_runner", None)
         if svc is None:
@@ -693,6 +699,141 @@ class IABVMCPServer:
             elif result["synaptic_routing_env"] is not None or result["iabv_synaptic_routing_enabled_env"] is not None:
                 config_source = "environment"
             result["config_source"] = config_source
+
+            return result
+
+        @mcp.tool()
+        def probe_synaptic_live_decision(
+            user_goal: str = "analizar el estado del sistema y generar un reporte de diagnóstico"
+        ) -> dict[str, Any]:
+            """Probe del camino productivo real de decisión Synaptic dentro del proceso MCP.
+
+            Ejecuta la cadena productiva REAL sin ejecutar el adapter externo:
+            - ToolTeachService.build_task_from_request()
+            - _synaptic_decision_for_request()
+            - SynapticRouter.decide()
+            - selected_assistant_kind
+            - ToolTask construction
+            - adapter resolution
+
+            NO ejecuta el adapter externo ni realiza experimentos causales.
+
+            Args:
+                user_goal: solicitud neutral external-worthy para testing.
+
+            Returns:
+                Evidencia completa de la cadena de decisión Synaptic.
+            """
+            from iabv_v15.domain.models import InferenceRequest, TaskRole
+
+            result: dict[str, Any] = {
+                "synaptic_router_called": "NOT_OBSERVED",
+                "synaptic_decision_observed": "NO",
+                "historical_runs_retrieved": "NOT_OBSERVED",
+                "historical_run_count": 0,
+                "adaptive_weights_consumed": "NOT_OBSERVED",
+                "selected_assistant_kind": None,
+                "synaptic_score_components": None,
+                "tool_teach_service_executed": "NO",
+                "tool_task_created": "NO",
+                "tool_task_tool_id": None,
+                "adapter_resolution": "NOT_OBSERVED",
+                "adapter_kind": None,
+                "adapter_executed": "NO",
+                "request": user_goal,
+                "intent": None,
+                "task_kind": None,
+                "caller_forcing_used": "NO",
+                "caller_tool_force": None,
+                "caller_assistant_force": None,
+                "force_impact_present": "NO",
+                "provider_hint_present": "NO",
+                "hint_bonus_active": "NOT_OBSERVED",
+                "hint_bonus_value": None,
+                "other_routing_confounder": None,
+            }
+
+            try:
+                # 1. Build request without forcing parameters
+                request = InferenceRequest(
+                    user_goal=user_goal,
+                    task_role=TaskRole.TOOL_USE,
+                    goal_parameters={},  # Empty to avoid forcing
+                    metadata={},  # Empty to avoid forcing
+                )
+
+                result["request"] = user_goal
+                result["task_kind"] = request.task_role.value
+
+                # 2. Get ToolTeachService
+                tool_teach = self._tool_teach_service()
+                result["tool_teach_service_executed"] = "YES"
+
+                # 3. Build task from request (this triggers _synaptic_decision_for_request)
+                task = tool_teach.build_task_from_request(request)
+                result["tool_task_created"] = "YES"
+                result["tool_task_tool_id"] = task.tool_id
+
+                # 4. Extract synaptic decision from task metadata
+                synaptic_decision = dict(task.metadata.get("synaptic_routing_decision") or {})
+                if synaptic_decision:
+                    result["synaptic_decision_observed"] = "YES"
+                    result["synaptic_router_called"] = "YES"
+                    result["selected_assistant_kind"] = synaptic_decision.get("selected_assistant_kind")
+                    result["synaptic_score_components"] = synaptic_decision.get("score_components")
+
+                    # Extract historical retrieval info if available
+                    if "historical_runs_retrieved" in synaptic_decision:
+                        result["historical_runs_retrieved"] = "YES"
+                        result["historical_run_count"] = synaptic_decision.get("historical_run_count", 0)
+                    if "adaptive_weights_consumed" in synaptic_decision:
+                        result["adaptive_weights_consumed"] = "YES"
+
+                # 5. Extract intent classification if available
+                if "intent_key" in synaptic_decision:
+                    result["intent"] = synaptic_decision.get("intent_key")
+
+                # 6. Resolve adapter (without executing)
+                if task.tool_id:
+                    from iabv_v15.services.tools.tool_registry import ToolRegistry
+                    registry = tool_teach.registry
+                    card = registry.pick_card_for_task(task)
+                    if card is not None:
+                        adapter_key = card.adapter_key
+                        result["adapter_resolution"] = "YES"
+                        result["adapter_kind"] = adapter_key
+                        # Check if adapter exists but do NOT execute
+                        adapter = tool_teach.adapters.get(adapter_key)
+                        if adapter is not None:
+                            result["adapter_kind"] = adapter_key
+                        else:
+                            result["adapter_resolution"] = "NO_ADAPTER"
+
+                # 7. Check for caller forcing in original request
+                goal_parameters = dict(request.goal_parameters or {})
+                metadata = dict(request.metadata or {})
+
+                if goal_parameters.get("tool_id"):
+                    result["caller_tool_force"] = goal_parameters.get("tool_id")
+                    result["caller_forcing_used"] = "YES"
+                if goal_parameters.get("assistant_kind") or goal_parameters.get("assistant_preference"):
+                    result["caller_assistant_force"] = goal_parameters.get("assistant_kind") or goal_parameters.get("assistant_preference")
+                    result["caller_forcing_used"] = "YES"
+                if metadata.get("force_impact"):
+                    result["force_impact_present"] = "YES"
+                if goal_parameters.get("provider_hint"):
+                    result["provider_hint_present"] = "YES"
+
+                # 8. Check for hint_bonus in synaptic decision
+                if synaptic_decision.get("hint_bonus"):
+                    result["hint_bonus_active"] = "YES"
+                    result["hint_bonus_value"] = synaptic_decision.get("hint_bonus")
+
+            except Exception as exc:
+                import traceback
+                result["error"] = str(exc)
+                result["error_type"] = type(exc).__name__
+                result["error_traceback"] = traceback.format_exc()
 
             return result
 
