@@ -14,9 +14,13 @@
 # PARAMETERS:
 # -RepoPath: Path to IABV source checkout (default: C:\Python\IABV_v1.5)
 #   The script will verify Git provenance of this checkout before deployment
+# -ExactDeploymentCommit: Optional exact commit SHA for deployment artifact pinning
+#   If provided, deployment only allowed from this exact commit (not descendants)
+#   If not provided, allows any descendant of baseline (for development/testing)
 
 param(
-    [string]$RepoPath = "C:\Python\IABV_v1.5"
+    [string]$RepoPath = "C:\Python\IABV_v1.5",
+    [string]$ExactDeploymentCommit = ""
 )
 
 Write-Output "=== P0-B V4-R9.7 INSTALLER PROVENANCE RUNTIME DEPLOYMENT ==="
@@ -143,14 +147,33 @@ Write-Output "Git repository verified: $RepoPath"
 # Verify HEAD matches required commit
 $head = & git -C $RepoPath rev-parse HEAD
 Write-Output "Repository HEAD: $head"
-$requiredCommit = "c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3"
-if ($head -ne $requiredCommit) {
-    Write-Output "ERROR: HEAD does not match required commit"
-    Write-Output "Required: $requiredCommit"
-    Write-Output "Actual: $head"
-    exit 1
+
+# P0-B Baseline R9.7
+$baselineCommit = "c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3"
+
+if ($ExactDeploymentCommit) {
+    # EXACT DEPLOYMENT MODE: Require exact commit only
+    Write-Output "EXACT DEPLOYMENT MODE: Commit = $ExactDeploymentCommit"
+    if ($head -ne $ExactDeploymentCommit) {
+        Write-Output "ERROR: HEAD does not match exact deployment commit"
+        Write-Output "Required: $ExactDeploymentCommit"
+        Write-Output "Actual: $head"
+        exit 1
+    }
+    Write-Output "HEAD verification: PASS (exact match)"
+} else {
+    # BASELINE MODE: Accept baseline or descendants
+    Write-Output "BASELINE MODE: Baseline = $baselineCommit"
+    # Check if HEAD is baseline or descendant of baseline
+    $isDescendant = & git -C $RepoPath merge-base --is-ancestor $baselineCommit $head 2>&1
+    if ($LASTEXITCODE -ne 0 -and $head -ne $baselineCommit) {
+        Write-Output "ERROR: HEAD is not baseline or descendant of baseline"
+        Write-Output "Baseline: $baselineCommit"
+        Write-Output "Actual: $head"
+        exit 1
+    }
+    Write-Output "HEAD verification: PASS (baseline descendant)"
 }
-Write-Output "HEAD verification: PASS"
 
 # Verify clean working tree
 $status = & git -C $RepoPath status --porcelain

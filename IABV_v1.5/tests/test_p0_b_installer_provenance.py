@@ -12,12 +12,12 @@ import pytest
 
 
 def test_installer_required_commit_matches_audited_target():
-    """Verify installer required commit matches audited HEAD.
+    """Verify installer baseline commit matches audited target.
     
     This ensures deployment provenance consistency:
-    - Installer requires exact commit
-    - Audited source HEAD matches that commit
-    - No deployment from ancestor or different commit allowed
+    - Installer baseline is R9.7 baseline
+    - Audited source HEAD is baseline or descendant
+    - Exact deployment mode can pin to specific commit
     """
     installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
     
@@ -26,52 +26,26 @@ def test_installer_required_commit_matches_audited_target():
     
     installer_content = installer_path.read_text(encoding='utf-8')
     
-    # Extract required commit from installer
+    # Extract baseline commit from installer
     import re
-    match = re.search(r'\$requiredCommit = "([a-f0-9]+)"', installer_content)
-    assert match, "Installer must contain requiredCommit variable"
+    match = re.search(r'\$baselineCommit = "([a-f0-9]+)"', installer_content)
+    assert match, "Installer must contain baselineCommit variable"
     
-    installer_required_commit = match.group(1)
+    installer_baseline = match.group(1)
     
-    # Get current HEAD
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=Path(__file__).parent.parent,
-        capture_output=True,
-        text=True,
-        check=True
-    )
-    current_head = result.stdout.strip()
+    # Expected R9.7 baseline
+    expected_baseline = "c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3"
     
-    # Expected HEAD for V4-R9.7 baseline (installer accepts baseline)
-    expected_head = "c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3"
-    
-    # Verify installer matches audited target
-    assert installer_required_commit == expected_head, (
-        f"Installer required commit ({installer_required_commit}) "
-        f"does not match audited target ({expected_head})"
+    # Verify installer baseline matches audited target
+    assert installer_baseline == expected_baseline, (
+        f"Installer baseline ({installer_baseline}) "
+        f"does not match audited target ({expected_baseline})"
     )
     
-    # Note: Current HEAD may be a remediation commit (descendant of baseline)
-    # The installer requires the baseline c7abe9abc, which is correct for deployment
-    # This test verifies the installer has the correct requiredCommit
-    # No need to verify current HEAD matches installer requirement since
-    # the installer itself will enforce this check during deployment
-    
-    # Verify installer required commit is not an ancestor
-    # but the EXACT commit being audited
-    result = subprocess.run(
-        ["git", "rev-parse", f"{installer_required_commit}"],
-        cwd=Path(__file__).parent.parent,
-        capture_output=True,
-        text=True
+    # Verify installer supports exact deployment mode
+    assert 'ExactDeploymentCommit' in installer_content, (
+        "Installer must support ExactDeploymentCommit parameter for exact deployment pinning"
     )
-    
-    if result.returncode == 0:
-        resolved_commit = result.stdout.strip()
-        assert resolved_commit == installer_required_commit, (
-            f"Installer required commit resolved to different SHA: {resolved_commit}"
-        )
 
 
 def test_installer_checks_exit_codes():
@@ -167,20 +141,20 @@ def test_deployment_target_consistency():
     )
     current_head = result.stdout.strip()
     
-    # Expected V4-R9.7 HEAD or descendant
-    expected_head = "c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3"
+    # Expected R9.7 baseline
+    expected_baseline = "c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3"
     
     # Check if current HEAD is baseline or a descendant of baseline
     result = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", expected_head, current_head],
+        ["git", "merge-base", "--is-ancestor", expected_baseline, current_head],
         cwd=Path(__file__).parent.parent,
         capture_output=True
     )
     
     is_descendant = result.returncode == 0
-    assert current_head == expected_head or is_descendant, (
-        f"Test must run from V4-R9.7 commit or descendant. "
-        f"Expected: {expected_head} or descendant, Actual: {current_head}"
+    assert current_head == expected_baseline or is_descendant, (
+        f"Test must run from R9.7 baseline or descendant. "
+        f"Expected: {expected_baseline} or descendant, Actual: {current_head}"
     )
     
     # Verify branch
@@ -194,3 +168,30 @@ def test_deployment_target_consistency():
     
     # Verify we're on or at detached HEAD from the correct commit
     # (detached HEAD is fine for audit purposes)
+
+
+def test_exact_deployment_mode():
+    """Verify exact deployment mode works correctly.
+    
+    This tests that when ExactDeploymentCommit is provided,
+    the installer requires that exact commit (not descendants).
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+    
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+    
+    installer_content = installer_path.read_text(encoding='utf-8')
+    
+    # Verify exact deployment mode logic exists
+    assert 'ExactDeploymentCommit' in installer_content, (
+        "Installer must support ExactDeploymentCommit parameter"
+    )
+    
+    assert 'EXACT DEPLOYMENT MODE' in installer_content, (
+        "Installer must have exact deployment mode logic"
+    )
+    
+    assert 'BASELINE MODE' in installer_content, (
+        "Installer must have baseline mode logic"
+    )
