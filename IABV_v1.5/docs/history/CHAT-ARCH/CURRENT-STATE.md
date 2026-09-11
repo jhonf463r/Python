@@ -8,9 +8,29 @@ This document is the compact current-state bridge between historical knowledge a
 
 Repository: `jhonf463r/Python`
 Default branch: `main`
-Observed `main` HEAD while creating this layer: `4597e3323d397c57f6759fcc03402ebe5a80d6c9`
+Current main HEAD after continuity-layer publication: `f1894054a7dc6fe1a918159b76f4158d44e4d0a8`
+
+The continuity/navigation layer is now part of the repository on main.
 
 Do not assume `main` is the active validation target for every subsystem.
+
+## OPERATIONAL MEMORY STATE
+
+GitHub now contains a canonical objective-driven historical-memory layer:
+
+- `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/SYMBIOSIS-MAP.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/UNRESOLVED-KNOWLEDGE.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/ARCHIVE-REGISTRY.md`
+
+The intended cross-chat property is:
+
+`current objective → relevant memory discovery → selective activation → current reconciliation → dynamic capability/role selection → work → verification → knowledge delta → writeback`
+
+The archive is not intended to be loaded in full for every task.
 
 ## ACTIVE TECHNICAL FRONTIERS
 
@@ -98,11 +118,10 @@ Current records do not prove this full closure.
 - signature/cryptography != legitimate authority;
 - repository state != runtime state;
 - typed field existence != canonical behavioral ownership;
-- context delivery != causal cognitive influence.
+- context delivery != causal cognitive influence;
+- historical archive existence != deletion safety.
 
 ## HIGH-VALUE FAILURE MEMORY
-
-Preserve and activate these when relevant:
 
 1. **Test-boundary substitution:** mocked/direct invocation was mistaken for production integration.
 2. **Provenance drift:** an ancestor/old runtime was used as if it were the exact target runtime.
@@ -111,19 +130,30 @@ Preserve and activate these when relevant:
 5. **Signature-as-authority:** cryptographic validity was treated as proof of legitimate trust-root authority.
 6. **Canonicality illusion:** a new typed field existed but legacy metadata still controlled behavior.
 7. **Archive-existence fallacy:** an archive file was treated as sufficient for chat deletion safety.
+8. **Fixed-symbiosis fallacy:** every objective was forced through the same AI role order rather than selecting capabilities from evidence.
 
 ## CURRENT SYMBIOSIS METHOD
 
-The working collaboration model is evidence-driven and dynamic rather than role-locked:
+The collaboration model is now explicitly dynamic:
 
-- use the strongest available independent source for each boundary;
-- have one AI challenge the interpretation of another when the boundary is critical;
-- use implementation agents for scoped changes and runtime agents for actual observation;
-- use GitHub to reconcile provenance;
-- keep ChatGPT-level synthesis as adjudication rather than accepting any single agent's authority;
-- preserve the interaction itself when it creates reusable methodological knowledge.
+`objective → uncertainty/boundary → required capabilities → evidence of strongest available AI role → independent challenge if critical → execution/observation → reconciliation → update capability/method model`
 
-Historical role patterns are evidence about capabilities, not permanent assignments.
+Historical role patterns are evidence about capabilities, not permanent identities.
+
+## META-CONTINUITY FRONTIER
+
+The GitHub operational-memory architecture is prepared but its final validation remains empirical.
+
+Required proof:
+
+1. open a genuinely new chat;
+2. provide only a new objective and repository access/context;
+3. verify that it discovers the relevant memory layer itself;
+4. verify that it activates the correct historical records and not the entire archive;
+5. verify that it reconstructs the active gate/provenance/negative knowledge/unimplemented ideas;
+6. verify that it dynamically selects useful AI roles/capabilities;
+7. verify that the work avoids redundant historical rediscovery;
+8. write the resulting knowledge delta back into the memory layer.
 
 ## NEXT-ACTION PRINCIPLE
 
@@ -142,4 +172,5 @@ Whenever a new chat materially changes any of the following, update this file an
 - high-value negative knowledge;
 - unimplemented idea that becomes strategically relevant;
 - cross-IA learning that changes future work;
-- causal learning/continuity state.
+- causal learning/continuity state;
+- memory-routing or role-selection behavior.
