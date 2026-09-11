@@ -24,7 +24,7 @@ The same objective may activate different historical knowledge at different time
 
 `README.md`
 
-Defines the continuity rules and epistemic boundaries.
+Defines continuity rules and epistemic boundaries.
 
 ### M1 — Objective router
 
@@ -42,7 +42,7 @@ Provides the compact reconciled bridge between historical knowledge and current 
 
 `SYMBIOSIS-MAP.md`
 
-Records which AI capabilities have historically been useful, how one AI changed another's model, and which collaboration patterns should be reused or rejected.
+Records useful AI capabilities, knowledge transfers, corrections and collaboration patterns.
 
 ### M4 — Latent/unresolved knowledge
 
@@ -85,14 +85,31 @@ M3 SYMBIOSIS / ROLE EVIDENCE
   ↓
 M4 UNRESOLVED / LATENT KNOWLEDGE
   ↓
-M5 RELEVANT SOURCE RECORDS
+M5 RELEVANT SOURCE RECORDS OR CANONICAL ABSORPTION
   ↓
 M6 CURRENT REPOSITORY / RUNTIME RECONCILIATION
   ↓
 ACTIVE CONTEXT PACKET
 ```
 
-The retrieval result is **not** "all history". It is the minimum context set whose omission could materially alter the current decision.
+The retrieval result is **not** `all history`. It is the minimum context set whose omission could materially alter the current decision.
+
+## CANONICAL ABSORPTION
+
+A source archive does not have to be directly reachable from `main` to contribute to canonical operational memory.
+
+A branch-only or legacy source may be canonically absorbed when:
+
+1. the source branch/ref and source record are identified;
+2. the source was remotely verified or otherwise independently recovered;
+3. materially decision-relevant knowledge is explicitly transferred into the canonical memory layer;
+4. the transfer preserves the source provenance and does not rewrite the historical source silently;
+5. contradictions and unresolved status are preserved;
+6. the absorption record itself is remotely readable from canonical `main`.
+
+This allows archival provenance to remain faithful without merging unrelated implementation branches merely to place a historical Markdown file on `main`.
+
+Canonical absorption is therefore an alternative to direct canonical source reachability for the purpose of cross-chat continuity and deletion safety.
 
 ## ACTIVE CONTEXT PACKET
 
@@ -130,7 +147,8 @@ A record has high activation priority when it:
 5. contains an experiment that discriminates between today's competing hypotheses;
 6. contains unimplemented knowledge directly applicable now;
 7. records a cross-IA correction that changes the proper method;
-8. establishes the latest independently verified gate for the same subsystem.
+8. establishes the latest independently verified gate for the same subsystem;
+9. changes which AI capability should be selected.
 
 ## TEMPORAL RECONCILIATION
 
@@ -191,14 +209,6 @@ result verification
 
 Then select available AIs according to demonstrated capability for that boundary.
 
-Possible configuration examples:
-
-- one AI may be enough for a low-risk implementation;
-- two independent AIs may be required for a critical claim;
-- runtime work may favor the agent with real environment access;
-- adversarial review may favor the historically strongest challenger;
-- broad synthesis may favor the best cross-record reconciler.
-
 Never force every objective through a fixed `ChatGPT → Devin → Claude → Codex` sequence.
 
 ## INDEPENDENCE RULE
@@ -223,7 +233,7 @@ Activate M3 + M4 entries directly relevant to the objective.
 
 ### Depth 2 — Evidence
 
-Read the most relevant M5 records and current source/commit evidence.
+Read the most relevant M5 records **or their canonical absorption record**, then current source/commit evidence.
 
 ### Depth 3 — Contradiction reconstruction
 
@@ -235,7 +245,7 @@ Read broad chronology only when the objective genuinely requires it or when lowe
 
 ## NEGATIVE KNOWLEDGE HAS PRIORITY
 
-When historical evidence says an experiment did **not** prove a tempting claim, activate that limitation before repeating the experiment.
+When historical evidence says an experiment did not prove a tempting claim, activate that limitation before repeating the experiment.
 
 Examples:
 
@@ -309,7 +319,8 @@ A new historical update is warranted when the session creates or changes:
 - a current gate;
 - a strategically relevant unresolved idea;
 - a cross-IA learning transfer;
-- the collaboration strategy itself.
+- the collaboration strategy itself;
+- the canonical absorption/routing state.
 
 Routine repetition should not generate redundant history.
 
@@ -321,8 +332,9 @@ When new knowledge changes the operational model:
 2. update `CURRENT-STATE.md` when current truth changed;
 3. update `CONTEXT-INDEX.md` when routing changed;
 4. update `SYMBIOSIS-MAP.md` when a capability/interaction lesson changed;
-5. update `UNRESOLVED-KNOWLEDGE.md` when an idea becomes newly relevant, resolved, superseded or refuted;
-6. register any new source record in `ARCHIVE-REGISTRY.md`.
+5. update `UNRESOLVED-KNOWLEDGE.md` when latent knowledge changes status;
+6. update `CANONICAL-ABSORPTION-2026-09-11.md` when source reachability/absorption status changes;
+7. register new source records in `ARCHIVE-REGISTRY.md`.
 
 Do not silently rewrite historical records to make contradictions disappear.
 
@@ -335,6 +347,34 @@ A historical item may become:
 Status changes require evidence.
 
 A superseded item remains historically accessible because it may explain why the current design exists.
+
+## DELETION SAFETY
+
+Deletion safety is a **knowledge-preservation gate**, not a technical-task-closure gate.
+
+A chat can be deleted while an engineering task remains OPEN if the open state, failures, evidence boundaries, decisions, provenance, pending experiments and next actions are durably preserved.
+
+For a historical chat, the canonical preservation condition is:
+
+```text
+DIRECT_CANONICAL_SOURCE
+OR
+CANONICAL_KNOWLEDGE_ABSORPTION
+```
+
+plus:
+
+```text
+PROVENANCE_TO_SOURCE
+REMOTE_READBACK
+KNOWLEDGE_LOSS_TEST=PASS
+BLIND_RECONSTRUCTION=PASS
+NO_MATERIAL_KNOWLEDGE_ONLY_IN_CHAT=YES
+```
+
+An exact source archive remaining on a non-canonical branch is not, by itself, a deletion blocker when the material knowledge has been canonically absorbed and the source provenance remains recoverable.
+
+Conversely, a technical task being closed does not make a chat deletable if material historical knowledge is still only in the transcript.
 
 ## CHAT-TO-CHAT CONTRACT
 
