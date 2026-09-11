@@ -25,6 +25,7 @@ GitHub contains a canonical objective-driven historical-memory layer:
 - `IABV_v1.5/docs/history/CHAT-ARCH/SYMBIOSIS-MAP.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/UNRESOLVED-KNOWLEDGE.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/DELETION-READINESS-2026-09-11.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/ARCHIVE-REGISTRY.md`
 
 The intended cross-chat property is:
@@ -33,30 +34,27 @@ The intended cross-chat property is:
 
 The archive is not intended to be loaded in full for every task.
 
-## CANONICAL ABSORPTION STATUS
+## CANONICAL ABSORPTION / DELETION STATE
 
-The historical-chat continuity audit established an important distinction:
+The historical-chat audit established that direct source reachability from `main` is **not the only valid form of canonical continuity**.
 
-`DIRECT_CANONICAL_SOURCE`
-OR
-`CANONICAL_KNOWLEDGE_ABSORPTION`
+A historical source may remain on a remote working branch while its material knowledge is absorbed into canonical memory on `main`, provided provenance remains recoverable and the absorption passes read-back and reconstruction gates.
 
-can satisfy the historical-memory requirement, provided source provenance and remote read-back are preserved.
+This is intentionally separate from technical task closure.
 
-This prevents unrelated implementation branches from being merged into `main` merely to relocate historical Markdown files.
+Current adjudication files:
 
-Current adjudication is maintained in:
+- `CANONICAL-ABSORPTION-2026-09-11.md`
+- `DELETION-READINESS-2026-09-11.md`
 
-`IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
+Current historical-chat results:
 
-Key status:
-
-- `CHAT-ARCH-2026-09-11-001-cognitive-symbiosis` = DIRECT_CANONICAL_SOURCE / ABSORBED
-- `CHAT-ARCH-2026-09-11-002-context-activation-architecture` = DIRECT_CANONICAL_SOURCE / ABSORBED
-- `CHAT-ARCH-2026-09-11-002-p0b-v4-r2-authority-symbiosis` = DIRECT_CANONICAL_SOURCE / ABSORBED
-- `CHAT-ARCH-2026-09-11-018-objective-verifier-continuity` = REMOTE_BRANCH_SOURCE on `foundation/reconstruction`; material knowledge requires canonical absorption; do not merge the branch wholesale because it also contains objective-evidence implementation/test changes
-- `CHAT-ARCH-2026-09-11-013-d0-p0b-r3-symbiosis` = source not found at expected `main` path during current read-back; remains unresolved until another source/provenance is established
-- `CHAT-ARCH-2026-09-11-014` = source not found on current `main`; absorption/recovery required
+- `CHAT-ARCH-2026-09-11-001-cognitive-symbiosis` = direct canonical source; deletion-safe for project continuity
+- `CHAT-ARCH-2026-09-11-002-p0b-v4-r2-authority-symbiosis` = direct canonical source; deletion-safe for project continuity
+- `CHAT-ARCH-2026-09-11-002-context-activation-architecture` = direct canonical source; deletion-safe for project continuity
+- `CHAT-ARCH-2026-09-11-018-objective-verifier-continuity` = source preserved on `foundation/reconstruction`; material knowledge canonically absorbed; deletion-safe for project continuity without merging the divergent implementation branch
+- `CHAT-ARCH-2026-09-11-013-d0-p0b-r3-symbiosis` = provenance conflict: search index returned a candidate at `d9737e...` but direct remote read-back returned `404`; do not declare deletion-safe until directly verified or canonically absorbed
+- `CHAT-ARCH-2026-09-11-014` = no matching canonical source found; absorption/recovery required before deletion
 
 ## ACTIVE TECHNICAL FRONTIERS
 
@@ -114,15 +112,13 @@ Required direction: typed provenance becomes canonical; legacy metadata remains 
 
 ### Objective evidence / verifier adequacy
 
-Historical evidence records preserve the distinction:
+Historical objective-evidence work establishes the distinction:
 
 `mechanical file/content change != declared objective achieved`
 
-The earlier objective-evidence work established that a verifier can become technically stronger while still measuring the wrong proposition. The important canonical lesson is alignment of:
+The 018 source records contain the detailed chain from `49c8a87...` to `93a52b4...` and later CACP corrections. Canonical absorption preserves the important lesson: a verifier may become technically stronger while still measuring a narrower proposition than the natural-language objective.
 
-`declared goal + verifier proposition + observation + evidence`
-
-The 018 source records on `foundation/reconstruction` contain the detailed verifier chain and must be absorbed canonically before that knowledge is considered fully integrated into operational memory.
+Required future negative controls include production-path comment-only, wrong-target and goal-mismatch cases, followed by independent audit before Experience promotion.
 
 ### Cognitive control plane / real closed loop
 
@@ -170,6 +166,7 @@ Current records do not prove this full closure.
 8. **Fixed-symbiosis fallacy:** every objective was forced through the same AI role order rather than selecting capabilities from evidence.
 9. **Source-location fallacy:** a historical source being absent from `main` was treated as equivalent to loss of its knowledge, even when canonical absorption can preserve the material knowledge with provenance.
 10. **Open-task/delete confusion:** unfinished engineering work was treated as proof that the historical chat must remain; deletion safety is instead a knowledge-preservation property.
+11. **Search-index-as-readback fallacy:** a code-search result or stale indexed URL is not equivalent to a successful direct file read-back.
 
 ## CURRENT SYMBIOSIS METHOD
 
@@ -181,7 +178,7 @@ Historical role patterns are evidence about capabilities, not permanent identiti
 
 ## META-CONTINUITY FRONTIER
 
-The operational-memory architecture is now defined and populated, but its final validation remains empirical.
+The operational-memory architecture is defined and populated, and the canonical absorption/deletion-readiness audit now exists. Its final system-level validation remains empirical.
 
 Required proof:
 
@@ -202,7 +199,7 @@ Before execution, identify the exact claim being tested and the evidence that wo
 
 ## DELETE-GATE PRINCIPLE
 
-For historical chats, use the canonical absorption audit before declaring deletion safety.
+Use `DELETION-READINESS-2026-09-11.md` as the adjudication point for historical chat deletion.
 
 An engineering objective can remain OPEN while a historical chat becomes deletion-safe, provided the material knowledge needed for future work is preserved and provenance-linked.
 
