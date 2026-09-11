@@ -16,14 +16,16 @@ Known locations:
 - `IABV_v1.5/docs/history/`
 - `IABV_v1.5/docs/CHAT-ARCH-*.md`
 
-## CANONICAL NAVIGATION FILES
+## CANONICAL OPERATIONAL MEMORY FILES
 
 | File | Function |
 |---|---|
 | `README.md` | Entry rules and continuity contract |
+| `MEMORY-OPERATING-PROTOCOL.md` | Objective-conditioned memory retrieval, activation depth, dynamic role selection and knowledge writeback |
 | `CONTEXT-INDEX.md` | Objective-driven historical routing |
 | `CURRENT-STATE.md` | Reconciled active project state |
-| `SYMBIOSIS-MAP.md` | Cross-IA capability/learning transfer |
+| `SYMBIOSIS-MAP.md` | Cross-IA capability and learning transfer |
+| `UNRESOLVED-KNOWLEDGE.md` | Latent/unimplemented knowledge |
 | `ARCHIVE-REGISTRY.md` | Historical source registry |
 
 ## HIGH-VALUE SOURCE RECORDS
@@ -31,8 +33,8 @@ Known locations:
 ### Cognitive control / symbiosis / continuity
 
 - `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-001-cognitive-symbiosis.md`
-- `IABV_v1.5/docs/history/CHAT-ARCH-2026-09-11-001-cognitive-control-plane-p0b-symbiosis.md`
-- `IABV_v1.5/docs/history/CHAT-ARCH-2026-09-11-001-cognitive-symbiosis.md` is the detailed R5/MCP/exact-runtime record.
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-001-cognitive-control-plane-p0b-symbiosis.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-11-002-context-activation-architecture.md`
 - `IABV_v1.5/docs/history/2026-09-03_conversation_cognitive_continuity_self_development.md`
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-006_iabv-continuity-directed-evolution.md`
 
