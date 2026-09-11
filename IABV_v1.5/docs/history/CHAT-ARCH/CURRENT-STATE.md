@@ -8,15 +8,15 @@ This document is the compact current-state bridge between historical knowledge a
 
 Repository: `jhonf463r/Python`
 Default branch: `main`
-Current main HEAD after the operational-memory publication sequence: `7be01fb78b9494d7ac23e9cb5b871a4eccba7049`
+The exact `main` HEAD must be checked directly from GitHub at use time because this branch is mutable.
 
-The continuity/navigation and operational-memory layer is now part of the repository on main.
+The continuity/navigation, operational-memory and canonical-absorption layers are part of `main`.
 
 Do not assume `main` is the active validation target for every subsystem.
 
 ## OPERATIONAL MEMORY STATE
 
-GitHub now contains a canonical objective-driven historical-memory layer:
+GitHub contains a canonical objective-driven historical-memory layer:
 
 - `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
@@ -24,6 +24,7 @@ GitHub now contains a canonical objective-driven historical-memory layer:
 - `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/SYMBIOSIS-MAP.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/UNRESOLVED-KNOWLEDGE.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/ARCHIVE-REGISTRY.md`
 
 The intended cross-chat property is:
@@ -31,6 +32,31 @@ The intended cross-chat property is:
 `current objective → relevant memory discovery → selective activation → current reconciliation → dynamic capability/role selection → work → verification → knowledge delta → writeback`
 
 The archive is not intended to be loaded in full for every task.
+
+## CANONICAL ABSORPTION STATUS
+
+The historical-chat continuity audit established an important distinction:
+
+`DIRECT_CANONICAL_SOURCE`
+OR
+`CANONICAL_KNOWLEDGE_ABSORPTION`
+
+can satisfy the historical-memory requirement, provided source provenance and remote read-back are preserved.
+
+This prevents unrelated implementation branches from being merged into `main` merely to relocate historical Markdown files.
+
+Current adjudication is maintained in:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
+
+Key status:
+
+- `CHAT-ARCH-2026-09-11-001-cognitive-symbiosis` = DIRECT_CANONICAL_SOURCE / ABSORBED
+- `CHAT-ARCH-2026-09-11-002-context-activation-architecture` = DIRECT_CANONICAL_SOURCE / ABSORBED
+- `CHAT-ARCH-2026-09-11-002-p0b-v4-r2-authority-symbiosis` = DIRECT_CANONICAL_SOURCE / ABSORBED
+- `CHAT-ARCH-2026-09-11-018-objective-verifier-continuity` = REMOTE_BRANCH_SOURCE on `foundation/reconstruction`; material knowledge requires canonical absorption; do not merge the branch wholesale because it also contains objective-evidence implementation/test changes
+- `CHAT-ARCH-2026-09-11-013-d0-p0b-r3-symbiosis` = source not found at expected `main` path during current read-back; remains unresolved until another source/provenance is established
+- `CHAT-ARCH-2026-09-11-014` = source not found on current `main`; absorption/recovery required
 
 ## ACTIVE TECHNICAL FRONTIERS
 
@@ -61,8 +87,6 @@ Last independently verified P0-B failure remains the earlier V4-R3 attack in whi
 
 Current status in the available history: **P0-B OPEN / runtime-adversarial validation pending.**
 
-Required validation includes trust-root ownership, provisioner ownership, key ownership, DPAPI identity binding, service identity/integrity, runtime isolation, RepoPath integrity, IPC, CERTIFY, request registration, parent-child identity, invocation binding, replay and concurrent single-consume, RunRecord binding, SelfAudit authenticity, DB trust boundary, fail-closed behavior, and historical V4-R3 attack reproduction.
-
 ### AdaptiveSession provenance
 
 Commit `aa3ff2c2bade7ba3a9c916f9def8da072ce057ed` introduced typed provenance fields:
@@ -87,6 +111,18 @@ Independent audit found typed fields present but causally inert because runtime 
 Status: **EXISTS_BUT_CAUSALLY_INERT / SINGLE_SOURCE_OF_TRUTH=FAIL**.
 
 Required direction: typed provenance becomes canonical; legacy metadata remains compatibility mirror/fallback only; historical sessions require migration/reconstruction where needed.
+
+### Objective evidence / verifier adequacy
+
+Historical evidence records preserve the distinction:
+
+`mechanical file/content change != declared objective achieved`
+
+The earlier objective-evidence work established that a verifier can become technically stronger while still measuring the wrong proposition. The important canonical lesson is alignment of:
+
+`declared goal + verifier proposition + observation + evidence`
+
+The 018 source records on `foundation/reconstruction` contain the detailed verifier chain and must be absorbed canonically before that knowledge is considered fully integrated into operational memory.
 
 ### Cognitive control plane / real closed loop
 
@@ -119,7 +155,8 @@ Current records do not prove this full closure.
 - repository state != runtime state;
 - typed field existence != canonical behavioral ownership;
 - context delivery != causal cognitive influence;
-- historical archive existence != deletion safety.
+- historical archive existence != deletion safety;
+- direct source reachability != the only valid form of canonical historical memory.
 
 ## HIGH-VALUE FAILURE MEMORY
 
@@ -131,10 +168,12 @@ Current records do not prove this full closure.
 6. **Canonicality illusion:** a new typed field existed but legacy metadata still controlled behavior.
 7. **Archive-existence fallacy:** an archive file was treated as sufficient for chat deletion safety.
 8. **Fixed-symbiosis fallacy:** every objective was forced through the same AI role order rather than selecting capabilities from evidence.
+9. **Source-location fallacy:** a historical source being absent from `main` was treated as equivalent to loss of its knowledge, even when canonical absorption can preserve the material knowledge with provenance.
+10. **Open-task/delete confusion:** unfinished engineering work was treated as proof that the historical chat must remain; deletion safety is instead a knowledge-preservation property.
 
 ## CURRENT SYMBIOSIS METHOD
 
-The collaboration model is now explicitly dynamic:
+The collaboration model is explicitly dynamic:
 
 `objective → uncertainty/boundary → required capabilities → evidence of strongest available AI role → independent challenge if critical → execution/observation → reconciliation → update capability/method model`
 
@@ -142,17 +181,17 @@ Historical role patterns are evidence about capabilities, not permanent identiti
 
 ## META-CONTINUITY FRONTIER
 
-The GitHub operational-memory architecture is prepared but its final validation remains empirical.
+The operational-memory architecture is now defined and populated, but its final validation remains empirical.
 
 Required proof:
 
 1. open a genuinely new chat;
 2. provide only a new objective and repository access/context;
-3. verify that it discovers the relevant memory layer itself;
-4. verify that it activates the correct historical records and not the entire archive;
-5. verify that it reconstructs the active gate/provenance/negative knowledge/unimplemented ideas;
-6. verify that it dynamically selects useful AI roles/capabilities;
-7. verify that the work avoids redundant historical rediscovery;
+3. verify discovery of the operational-memory layer;
+4. verify correct historical activation without universal archive loading;
+5. verify reconstruction of active gate, provenance, negative knowledge and unimplemented ideas;
+6. verify dynamic capability/role selection;
+7. verify reduced redundant rediscovery;
 8. write the resulting knowledge delta back into the memory layer.
 
 ## NEXT-ACTION PRINCIPLE
@@ -160,6 +199,14 @@ Required proof:
 For any future objective, select the smallest discriminating action that most reduces the current uncertainty instead of repeating broad architecture review.
 
 Before execution, identify the exact claim being tested and the evidence that would distinguish PASS from a false positive.
+
+## DELETE-GATE PRINCIPLE
+
+For historical chats, use the canonical absorption audit before declaring deletion safety.
+
+An engineering objective can remain OPEN while a historical chat becomes deletion-safe, provided the material knowledge needed for future work is preserved and provenance-linked.
+
+A source archive on a non-main branch is not a deletion blocker when canonical absorption passes all required knowledge-preservation gates.
 
 ## UPDATE POLICY
 
@@ -173,4 +220,5 @@ Whenever a new chat materially changes any of the following, update this file an
 - unimplemented idea that becomes strategically relevant;
 - cross-IA learning that changes future work;
 - causal learning/continuity state;
-- memory-routing or role-selection behavior.
+- memory-routing or role-selection behavior;
+- canonical absorption or deletion-readiness status.
