@@ -486,11 +486,94 @@ def test_installer_service_removal_checks_exit_code():
     phase_22_match = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
     assert phase_22_match != -1, "Installer must have PHASE 22 for service removal"
 
-    phase_22_section = installer_content[phase_22_match:phase_22_match + 500]
+    phase_22_section = installer_content[phase_22_match:phase_22_match + 1000]
 
     # Verify exit code check for service removal
     assert '$LASTEXITCODE' in phase_22_section, (
         "PHASE 22 must check $LASTEXITCODE for service removal"
+    )
+
+    # Verify NO generic "continue" after removal failure
+    assert 'continuing' not in phase_22_section.lower(), (
+        "PHASE 22 must not have generic 'continuing' after removal failure"
+    )
+
+    # Verify explicit exit 1 on removal failure
+    assert 'exit 1' in phase_22_section, (
+        "PHASE 22 must exit with error code on removal failure"
+    )
+
+
+def test_installer_service_removal_postcondition_check():
+    """Verify installer checks service actually removed after removal command.
+
+    This tests that installer verifies POSTCONDITION: service does not exist.
+
+    STATIC GUARD TEST: Verifies installer source code has postcondition check.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find service removal section
+    phase_22_match = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    assert phase_22_match != -1, "Installer must have PHASE 22 for service removal"
+
+    phase_22_section = installer_content[phase_22_match:phase_22_match + 1500]
+
+    # Verify postcondition check: service verified as removed
+    assert 'verified as removed' in phase_22_section.lower() or 'POSTCONDITION' in phase_22_section, (
+        "PHASE 22 must verify service is removed after removal command"
+    )
+
+    # Verify Get-CimInstance check after removal
+    assert 'Get-CimInstance' in phase_22_section, (
+        "PHASE 22 must query service after removal to verify postcondition"
+    )
+
+    # Verify exit 1 if service still exists after removal
+    assert 'still exists after removal' in phase_22_section.lower(), (
+        "PHASE 22 must fail if service still exists after removal"
+    )
+
+
+def test_installer_service_removal_accepts_missing_service():
+    """Verify installer accepts missing service as valid precondition.
+
+    This tests that when service does not exist, installer continues
+    without attempting removal.
+
+    STATIC GUARD TEST: Verifies installer source code handles missing service.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find service removal section
+    phase_22_match = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    assert phase_22_match != -1, "Installer must have PHASE 22 for service removal"
+
+    phase_22_section = installer_content[phase_22_match:phase_22_match + 1000]
+
+    # Verify check for service existence before removal
+    assert 'serviceExists' in phase_22_section or 'service exists' in phase_22_section.lower(), (
+        "PHASE 22 must check if service exists before removal"
+    )
+
+    # Verify ACCEPTED_PRECONDITION for missing service
+    assert 'ACCEPTED_PRECONDITION' in phase_22_section, (
+        "PHASE 22 must explicitly accept missing service as valid precondition"
+    )
+
+    # Verify skip removal when service does not exist
+    assert 'Skipping service removal' in phase_22_section, (
+        "PHASE 22 must skip removal when service does not exist"
     )
 
 
@@ -527,7 +610,7 @@ def test_installer_has_preflight_permission_check():
     )
 
     # Verify pre-flight tests creation, write, deletion
-    preflight_section = installer_content[preflight_index:preflight_index + 1000]
+    preflight_section = installer_content[preflight_index:preflight_index + 2000]
     assert 'New-Item' in preflight_section, (
         "Pre-flight must test directory creation"
     )
@@ -588,4 +671,208 @@ def test_installer_transactional_order():
     assert service_removal_idx < service_install_idx, (
         "Service removal must occur before service installation"
     )
+
+
+def test_installer_preflight_fresh_deployment():
+    """Verify installer pre-flight handles fresh deployment (runtime does not exist).
+
+    This tests that pre-flight can create parent directory, create runtime,
+    write, delete, and clean up test artifacts.
+
+    STATIC GUARD TEST: Verifies installer source code has fresh deployment logic.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find pre-flight section
+    preflight_match = installer_content.find('PHASE 9: PRE-FLIGHT PERMISSION CHECK')
+    assert preflight_match != -1, "Installer must have pre-flight check"
+
+    preflight_section = installer_content[preflight_match:preflight_match + 2000]
+
+    # Verify check for runtime existence
+    assert 'runtimeExists' in preflight_section or 'runtime exists' in preflight_section.lower(), (
+        "Pre-flight must check if runtime directory exists"
+    )
+
+    # Verify fresh deployment scenario handling
+    assert 'Fresh deployment' in preflight_section or 'does not exist' in preflight_section.lower(), (
+        "Pre-flight must handle fresh deployment scenario"
+    )
+
+    # Verify parent directory creation test
+    assert 'New-Item' in preflight_section, (
+        "Pre-flight must test directory creation for fresh deployment"
+    )
+
+    # Verify write test
+    assert 'Set-Content' in preflight_section, (
+        "Pre-flight must test file write"
+    )
+
+    # Verify delete test
+    assert 'Remove-Item' in preflight_section, (
+        "Pre-flight must test file/directory deletion"
+    )
+
+
+def test_installer_preflight_existing_runtime():
+    """Verify installer pre-flight handles existing runtime scenario.
+
+    This tests that pre-flight can write and delete in existing runtime
+    without destroying the real runtime.
+
+    STATIC GUARD TEST: Verifies installer source code has existing runtime logic.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find pre-flight section
+    preflight_match = installer_content.find('PHASE 9: PRE-FLIGHT PERMISSION CHECK')
+    assert preflight_match != -1, "Installer must have pre-flight check"
+
+    preflight_section = installer_content[preflight_match:preflight_match + 2000]
+
+    # Verify existing runtime scenario handling
+    assert 'Existing runtime' in preflight_section or 'already exists' in preflight_section.lower(), (
+        "Pre-flight must handle existing runtime scenario"
+    )
+
+    # Verify that existing runtime test does NOT destroy real runtime
+    # Should use test file with __preflight_test__ pattern, not Remove-Item -Recurse on runtime
+    assert '__preflight_test__' in preflight_section, (
+        "Pre-flight should use test file pattern for existing runtime test"
+    )
+
+    # Verify no destructive Remove-Item on runtime itself in pre-flight
+    lines = preflight_section.split('\n')
+    for i, line in enumerate(lines):
+        if 'Remove-Item' in line and 'service_runtime' in line:
+            # Check if this is removing the test file, not the runtime itself
+            if '__preflight_test__' not in line and i + 1 < len(lines):
+                next_line = lines[i + 1]
+                if '__preflight_test__' not in next_line:
+                    assert False, (
+                        "Pre-flight should not remove runtime directory itself, only test files"
+                    )
+
+
+def test_installer_no_destructive_action_before_preflight():
+    """Verify installer does not perform destructive actions before pre-flight success.
+
+    This tests that service removal and runtime destruction occur only after
+    pre-flight permission check passes.
+
+    STATIC GUARD TEST: Verifies installer source code order.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find key phases
+    preflight_idx = installer_content.find('PHASE 9: PRE-FLIGHT PERMISSION CHECK')
+    service_removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    runtime_remove_idx = installer_content.find('Removing existing runtime directory')
+
+    # Verify pre-flight exists
+    assert preflight_idx != -1, "Installer must have pre-flight check"
+
+    # Verify service removal comes after pre-flight
+    if service_removal_idx != -1:
+        assert preflight_idx < service_removal_idx, (
+            "Pre-flight must occur before service removal"
+        )
+
+    # Verify runtime directory removal comes after pre-flight
+    if runtime_remove_idx != -1:
+        assert preflight_idx < runtime_remove_idx, (
+            "Pre-flight must occur before runtime directory removal"
+        )
+
+
+def test_installer_no_service_install_after_removal_failure():
+    """Verify installer does not attempt service installation after removal failure.
+
+    This tests that if service removal fails, deployment aborts before
+    attempting installation.
+
+    STATIC GUARD TEST: Verifies installer source code has abort logic.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find service removal and installation sections
+    removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+
+    assert removal_idx != -1, "Installer must have service removal phase"
+    assert install_idx != -1, "Installer must have service installation phase"
+
+    removal_section = installer_content[removal_idx:install_idx]
+
+    # Verify exit 1 on removal failure
+    assert 'exit 1' in removal_section, (
+        "Service removal phase must exit with error code on failure"
+    )
+
+    # Verify that installation phase is separate and only reached if removal succeeds
+    # (implicit by the exit 1 in removal phase)
+
+
+def test_installer_negative_control_causality():
+    """Verify installer has causal relationship between removal failure and abort.
+
+    This test documents the requirement for runtime negative testing:
+    - When service removal command returns non-zero
+    - Installer must exit non-zero
+    - Service installation must NOT be attempted
+
+    STATIC GUARD TEST: Verifies installer source code has the structure.
+    RUNTIME TEST REQUIRED: To prove actual causality, need to execute installer
+    with a failing service removal and verify it aborts before installation.
+
+    Current status: NOT_PROVEN (requires Administrator execution on real Windows)
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find service removal section
+    removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+
+    assert removal_idx != -1, "Installer must have service removal phase"
+    assert install_idx != -1, "Installer must have service installation phase"
+
+    removal_section = installer_content[removal_idx:install_idx]
+
+    # Verify structure: exit code check → exit 1 → no installation
+    assert '$LASTEXITCODE' in removal_section, (
+        "Service removal must check exit code"
+    )
+    assert 'exit 1' in removal_section, (
+        "Service removal must exit on failure"
+    )
+
+    # This is a static guard - actual causality requires runtime test
+    # Documented as NOT_PROVEN until runtime test is executed
+    pass  # Static guard test - structure verified
 

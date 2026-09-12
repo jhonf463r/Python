@@ -222,33 +222,78 @@ Write-Output ""
 
 # PHASE 9: Pre-flight permission check
 Write-Output "=== PHASE 9: PRE-FLIGHT PERMISSION CHECK ==="
-Write-Output "Testing if installer can create/write/delete in runtime directory..."
 
 $serviceRuntimePath = "C:\ProgramData\IABV\service_runtime"
-$testPath = "$serviceRuntimePath\__installer_test__"
+$runtimeParent = "C:\ProgramData\IABV"
 
-# Test creation
-try {
-    New-Item -Path $testPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
-} catch {
-    Write-Output "ERROR: Pre-flight check failed - cannot create directory: $_"
-    exit 1
-}
+# Check if runtime directory exists
+$runtimeExists = Test-Path $serviceRuntimePath
 
-# Test write
-try {
-    Set-Content -Path "$testPath\test.txt" -Value "test" -Force -ErrorAction Stop
-} catch {
-    Write-Output "ERROR: Pre-flight check failed - cannot write file: $_"
-    exit 1
-}
+if (-not $runtimeExists) {
+    Write-Output "Fresh deployment scenario: runtime directory does not exist"
+    Write-Output "Testing if installer can create parent directory and runtime..."
 
-# Test deletion
-try {
-    Remove-Item -Path $testPath -Recurse -Force -ErrorAction Stop
-} catch {
-    Write-Output "ERROR: Pre-flight check failed - cannot delete directory: $_"
-    exit 1
+    # Test parent directory creation (fresh deployment)
+    try {
+        New-Item -Path $runtimeParent -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Output "ERROR: Pre-flight check failed - cannot create parent directory: $_"
+        exit 1
+    }
+
+    # Test runtime directory creation (fresh deployment)
+    try {
+        New-Item -Path $serviceRuntimePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Output "ERROR: Pre-flight check failed - cannot create runtime directory: $_"
+        exit 1
+    }
+
+    # Test write in runtime directory
+    try {
+        Set-Content -Path "$serviceRuntimePath\__preflight_test__.txt" -Value "test" -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Pre-flight check failed - cannot write to runtime directory: $_"
+        exit 1
+    }
+
+    # Test deletion in runtime directory
+    try {
+        Remove-Item -Path "$serviceRuntimePath\__preflight_test__.txt" -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Pre-flight check failed - cannot delete from runtime directory: $_"
+        exit 1
+    }
+
+    # Clean up the empty runtime directory we just created for testing
+    try {
+        Remove-Item -Path $serviceRuntimePath -Force -ErrorAction Stop
+    } catch {
+        Write-Output "WARNING: Could not clean up test runtime directory, continuing..."
+    }
+
+    Write-Output "Fresh deployment pre-flight: PASS"
+} else {
+    Write-Output "Existing runtime scenario: runtime directory already exists"
+    Write-Output "Testing if installer can write/delete in existing runtime..."
+
+    # Test write in existing runtime directory
+    try {
+        Set-Content -Path "$serviceRuntimePath\__preflight_test__.txt" -Value "test" -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Pre-flight check failed - cannot write to existing runtime directory: $_"
+        exit 1
+    }
+
+    # Test deletion in existing runtime directory
+    try {
+        Remove-Item -Path "$serviceRuntimePath\__preflight_test__.txt" -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Pre-flight check failed - cannot delete from existing runtime directory: $_"
+        exit 1
+    }
+
+    Write-Output "Existing runtime pre-flight: PASS"
 }
 
 Write-Output "Pre-flight permission check: PASS"
@@ -598,14 +643,45 @@ Write-Output ""
 
 # PHASE 22: Remove existing service (only after runtime is verified ready)
 Write-Output "=== PHASE 22: REMOVE EXISTING SERVICE ==="
-Write-Output "Removing existing service before installation..."
-$env:PYTHONPATH="$iabvProjectRoot\src"
-& "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
-if ($LASTEXITCODE -ne 0) {
-    Write-Output "Service may not have existed or removal failed, continuing..."
-} else {
-    Write-Output "Existing service removed"
+
+# First check if service exists
+try {
+    $existingService = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'" -ErrorAction Stop
+    $serviceExists = $true
+} catch {
+    $serviceExists = $false
 }
+
+if (-not $serviceExists) {
+    Write-Output "Service does not exist (ACCEPTED_PRECONDITION)"
+    Write-Output "Skipping service removal"
+} else {
+    Write-Output "Service exists, attempting removal..."
+    Write-Output "Current service state: $($existingService.State)"
+    Write-Output "Current service PathName: $($existingService.PathName)"
+
+    $env:PYTHONPATH="$iabvProjectRoot\src"
+    & "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "ERROR: Service removal failed with exit code $LASTEXITCODE"
+        exit 1
+    }
+
+    Write-Output "Service removal command executed successfully"
+
+    # Verify service actually does not exist after removal
+    try {
+        $serviceAfterRemoval = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'" -ErrorAction Stop
+        Write-Output "ERROR: Service still exists after removal attempt"
+        Write-Output "Current state: $($serviceAfterRemoval.State)"
+        exit 1
+    } catch {
+        # Service not found is expected after successful removal
+        Write-Output "Service verified as removed (POSTCONDITION: PASS)"
+    }
+}
+
 Write-Output ""
 
 # PHASE 23: Install service with machine-scoped PathName
