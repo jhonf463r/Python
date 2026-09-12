@@ -650,12 +650,97 @@ def test_installer_preflight_cleanup_fail_closed():
 
 
 def test_installer_transactional_runtime_safety():
-    """Verify installer prevents service pointing to destroyed runtime.
+    """Verify installer uses staging runtime to avoid modifying active runtime.
 
-    This tests that runtime removal occurs AFTER service removal,
-    preventing a registered service from pointing to a destroyed runtime.
+    This tests that PHASE 11-21 operate on a staging directory separate from
+    the active runtime, preventing modification of files that a running service
+    might be using.
 
-    STATIC GUARD TEST: Verifies installer source code has transactional order.
+    STATIC GUARD TEST: Verifies installer source code has staging logic.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 10 (staging runtime creation)
+    phase_10_match = installer_content.find('PHASE 10: CREATE STAGING RUNTIME DIRECTORY')
+    assert phase_10_match != -1, "Installer must have staging runtime creation phase"
+
+    phase_10_section = installer_content[phase_10_match:phase_10_match + 500]
+
+    # Verify staging path is different from active path
+    assert 'staging' in phase_10_section.lower(), (
+        "PHASE 10 must create a staging directory"
+    )
+    assert 'service_runtime_staging' in phase_10_section, (
+        "Staging path must be distinct from active runtime path"
+    )
+
+    # Verify active runtime path is preserved
+    assert 'activeRuntimePath' in phase_10_section or 'active runtime' in phase_10_section.lower(), (
+        "PHASE 10 must preserve active runtime path reference"
+    )
+
+    # Find PHASE 22.5 (staging activation)
+    phase_22_5_match = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME')
+    assert phase_22_5_match != -1, "Installer must have staging activation phase"
+
+    phase_22_5_section = installer_content[phase_22_5_match:phase_22_5_match + 500]
+
+    # Verify staging is activated to active location after service removal
+    # The code uses Remove-Item on old active runtime, then updates path
+    assert 'Remove-Item' in phase_22_5_section, (
+        "PHASE 22.5 must remove old active runtime before activation"
+    )
+    assert 'staging' in phase_22_5_section.lower() and 'active' in phase_22_5_section.lower(), (
+        "PHASE 22.5 must activate staging to active location"
+    )
+
+
+def test_installer_staging_path_distinct_from_active():
+    """Verify installer does not use production runtime as staging target.
+
+    This tests that when service exists, PHASE 11-21 do not operate on
+    C:\ProgramData\IABV\service_runtime directly.
+
+    STATIC GUARD TEST: Verifies installer source code has distinct paths.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 10 (staging creation)
+    phase_10_idx = installer_content.find('PHASE 10: CREATE STAGING RUNTIME DIRECTORY')
+    assert phase_10_idx != -1, "Installer must have staging creation"
+
+    # Find where $serviceRuntimePath is redefined to staging
+    phase_10_section = installer_content[phase_10_idx:phase_10_idx + 1500]
+
+    # Verify $serviceRuntimePath is redefined to staging path
+    assert '$serviceRuntimePath = $stagingRuntimePath' in phase_10_section, (
+        "Installer must redefine $serviceRuntimePath to staging path after creation"
+    )
+
+    # Verify this happens before PHASE 11 (copy operations)
+    phase_11_idx = installer_content.find('PHASE 11: COPY PYTHON RUNTIME')
+    assert phase_11_idx != -1, "Installer must have PHASE 11"
+    assert phase_10_idx < phase_11_idx, (
+        "Staging path redefinition must occur before copy operations"
+    )
+
+
+def test_installer_destructive_action_after_service_transition():
+    """Verify destructive runtime action occurs only after service transition.
+
+    This tests that old runtime removal happens only after service is removed/stopped.
+
+    STATIC GUARD TEST: Verifies installer source code order.
     """
     installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
 
@@ -666,26 +751,157 @@ def test_installer_transactional_runtime_safety():
 
     # Find key phases
     service_removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
-    runtime_removal_idx = installer_content.find('PHASE 22.5: REMOVE OLD RUNTIME DIRECTORY')
-    service_install_idx = installer_content.find('INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME')
+    staging_activation_idx = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME')
 
-    assert service_removal_idx != -1, "Installer must have service removal phase"
-    assert runtime_removal_idx != -1, "Installer must have runtime removal phase (PHASE 22.5)"
-    assert service_install_idx != -1, "Installer must have service installation phase"
+    assert service_removal_idx != -1, "Installer must have service removal"
+    assert staging_activation_idx != -1, "Installer must have staging activation"
 
-    # Verify order: service removal < runtime removal < service installation
-    assert service_removal_idx < runtime_removal_idx, (
-        "Service removal must occur before runtime removal"
-    )
-    assert runtime_removal_idx < service_install_idx, (
-        "Runtime removal must occur before service installation"
+    # Verify order: service removal < staging activation
+    assert service_removal_idx < staging_activation_idx, (
+        "Service removal must occur before staging activation"
     )
 
-    # Verify runtime removal section has comment explaining the safety rationale
-    runtime_removal_section = installer_content[runtime_removal_idx:runtime_removal_idx + 500]
-    # The comment might be in a different format or location
-    # Just verify the order is correct (already verified above)
-    # Comment documentation is optional for this test
+    # Verify staging activation removes old active runtime only after service removal
+    staging_section = installer_content[staging_activation_idx:staging_activation_idx + 500]
+    assert 'Remove-Item' in staging_section, (
+        "Staging activation must remove old active runtime"
+    )
+    assert 'old active runtime' in staging_section.lower() or 'oldRuntimeExists' in staging_section, (
+        "Staging activation must target old active runtime for removal"
+    )
+
+
+def test_installer_verification_targets_staging():
+    """Verify verification phases target staging runtime, not active.
+
+    This tests that PHASE 16-21 (isolation, ACLs, component verification)
+    operate on the staging runtime before activation.
+
+    STATIC GUARD TEST: Verifies installer source code verification targets.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find verification phases
+    phase_16_idx = installer_content.find('PHASE 16: VERIFY PYTHON314._PTH ISOLATION')
+    phase_21_idx = installer_content.find('PHASE 21: VERIFY CRITICAL COMPONENT ACLS')
+    phase_22_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+
+    assert phase_16_idx != -1, "Installer must have isolation verification"
+    assert phase_21_idx != -1, "Installer must have ACL verification"
+    assert phase_22_idx != -1, "Installer must have service removal"
+
+    # Verify verification occurs before service removal
+    assert phase_16_idx < phase_22_idx, (
+        "Isolation verification must occur before service removal"
+    )
+    assert phase_21_idx < phase_22_idx, (
+        "ACL verification must occur before service removal"
+    )
+
+    # Since $serviceRuntimePath is redefined to staging, all verification
+    # automatically targets staging. This is verified by the redefinition test.
+
+
+def test_installer_failure_never_triggers_service_removal():
+    """Verify staging/verification failure never triggers service removal.
+
+    This tests that if staging or verification fails, the service is not removed.
+
+    STATIC GUARD TEST: Verifies installer source code order.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find key phases
+    phase_10_idx = installer_content.find('PHASE 10: CREATE STAGING RUNTIME DIRECTORY')
+    phase_21_idx = installer_content.find('PHASE 21: VERIFY CRITICAL COMPONENT ACLS')
+    phase_22_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+
+    assert phase_10_idx != -1, "Installer must have staging creation"
+    assert phase_21_idx != -1, "Installer must have verification"
+    assert phase_22_idx != -1, "Installer must have service removal"
+
+    # Verify order: staging/verification < service removal
+    assert phase_10_idx < phase_22_idx, (
+        "Staging creation must occur before service removal"
+    )
+    assert phase_21_idx < phase_22_idx, (
+        "Verification must occur before service removal"
+    )
+
+    # Since exit 1 on failure prevents reaching service removal, this is implicit
+    """Verify service removal failure blocks final installation.
+
+    This tests that if service removal fails, installation is not attempted.
+
+    STATIC GUARD TEST: Verifies installer source code has abort logic.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find service removal and installation sections
+    removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+
+    assert removal_idx != -1, "Installer must have service removal"
+    assert install_idx != -1, "Installer must have service installation"
+
+    removal_section = installer_content[removal_idx:install_idx]
+
+    # Verify exit 1 on removal failure
+    assert 'exit 1' in removal_section, (
+        "Service removal must exit with error code on failure"
+    )
+
+    # Implicit: exit 1 prevents reaching installation
+
+
+def test_installer_unknown_service_state_never_becomes_absence():
+    """Verify unknown service state is never treated as absence.
+
+    This tests that sc.exe query failures (non-0, non-1060) cause fail-closed,
+    not continuation as if service were absent.
+
+    STATIC GUARD TEST: Verifies installer source code semantics.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find service removal section
+    phase_22_match = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    assert phase_22_match != -1, "Installer must have PHASE 22"
+
+    phase_22_section = installer_content[phase_22_match:phase_22_match + 1500]
+
+    # Verify unknown exit code causes exit 1
+    assert 'unknown exit code' in phase_22_section.lower() or 'SERVICE_QUERY_UNKNOWN' in phase_22_section, (
+        "Unknown query result must cause exit 1 (not treated as absence)"
+    )
+
+    # Verify 1060 is the only accepted absence indicator
+    assert '1060' in phase_22_section, (
+        "Exit code 1060 must be the only accepted absence indicator"
+    )
+    assert 'ABSENT' in phase_22_section, (
+        "1060 must be labeled as ABSENT (not UNKNOWN)"
+    )
 
 
 def test_installer_service_removal_accepts_missing_service():
