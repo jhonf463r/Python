@@ -266,10 +266,12 @@ if (-not $runtimeExists) {
     }
 
     # Clean up the empty runtime directory we just created for testing
+    # Cleanup must succeed for pre-flight to PASS
     try {
         Remove-Item -Path $serviceRuntimePath -Force -ErrorAction Stop
     } catch {
-        Write-Output "WARNING: Could not clean up test runtime directory, continuing..."
+        Write-Output "ERROR: Pre-flight check failed - cannot clean up test runtime directory: $_"
+        exit 1
     }
 
     Write-Output "Fresh deployment pre-flight: PASS"
@@ -302,15 +304,11 @@ Write-Output ""
 # PHASE 10: Create machine-scoped runtime directory
 Write-Output "=== PHASE 10: CREATE MACHINE-SCOPED RUNTIME DIRECTORY ==="
 $serviceRuntimePath = "C:\ProgramData\IABV\service_runtime"
-if (Test-Path $serviceRuntimePath) {
-    Write-Output "Removing existing runtime directory: $serviceRuntimePath"
-    try {
-        Remove-Item -Path $serviceRuntimePath -Recurse -Force -ErrorAction Stop
-    } catch {
-        Write-Output "ERROR: Failed to remove existing runtime directory: $_"
-        exit 1
-    }
-}
+
+# NOTE: Runtime removal deferred to PHASE 22.5 (after service removal)
+# This prevents leaving a registered service pointing to a destroyed runtime.
+# Order: Pre-flight → Prepare NEW runtime → Verify NEW runtime → Remove OLD service → Remove OLD runtime → Install NEW service
+
 try {
     New-Item -Path $serviceRuntimePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
 } catch {
@@ -644,22 +642,21 @@ Write-Output ""
 # PHASE 22: Remove existing service (only after runtime is verified ready)
 Write-Output "=== PHASE 22: REMOVE EXISTING SERVICE ==="
 
-# First check if service exists
-try {
-    $existingService = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'" -ErrorAction Stop
-    $serviceExists = $true
-} catch {
-    $serviceExists = $false
-}
+# Use sc.exe query for deterministic exit codes
+# Exit code 0 = SERVICE_EXISTS
+# Exit code 1060 = SERVICE_ABSENT
+# Other exit code = SERVICE_QUERY_UNKNOWN (fail-closed)
+Write-Output "Querying service state before removal..."
+$serviceQueryBefore = & sc.exe query IABVAuditAuthority
+$serviceQueryExitCode = $LASTEXITCODE
 
-if (-not $serviceExists) {
-    Write-Output "Service does not exist (ACCEPTED_PRECONDITION)"
-    Write-Output "Skipping service removal"
-} else {
-    Write-Output "Service exists, attempting removal..."
-    Write-Output "Current service state: $($existingService.State)"
-    Write-Output "Current service PathName: $($existingService.PathName)"
+if ($serviceQueryExitCode -eq 0) {
+    Write-Output "Service state: EXISTS (exit code 0)"
+    Write-Output "Query output:"
+    Write-Output $serviceQueryBefore
 
+    # Service exists, attempt removal
+    Write-Output "Attempting service removal..."
     $env:PYTHONPATH="$iabvProjectRoot\src"
     & "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
 
@@ -670,21 +667,396 @@ if (-not $serviceExists) {
 
     Write-Output "Service removal command executed successfully"
 
-    # Verify service actually does not exist after removal
-    try {
-        $serviceAfterRemoval = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'" -ErrorAction Stop
-        Write-Output "ERROR: Service still exists after removal attempt"
-        Write-Output "Current state: $($serviceAfterRemoval.State)"
+    # Verify POSTCONDITION: service actually removed
+    # Exit code 1060 = SERVICE_REMOVED (PASS)
+    # Exit code 0 = SERVICE_STILL_EXISTS (FAIL)
+    # Other exit code = POSTCONDITION_UNKNOWN (FAIL)
+    Write-Output "Verifying service removal POSTCONDITION..."
+    $serviceQueryAfter = & sc.exe query IABVAuditAuthority
+    $serviceQueryAfterExitCode = $LASTEXITCODE
+
+    if ($serviceQueryAfterExitCode -eq 1060) {
+        Write-Output "Service verified as removed (POSTCONDITION: PASS, exit code 1060)"
+    } elseif ($serviceQueryAfterExitCode -eq 0) {
+        Write-Output "ERROR: Service still exists after removal (exit code 0)"
+        Write-Output "Query output:"
+        Write-Output $serviceQueryAfter
         exit 1
-    } catch {
-        # Service not found is expected after successful removal
-        Write-Output "Service verified as removed (POSTCONDITION: PASS)"
+    } else {
+        Write-Output "ERROR: Service POSTCONDITION query failed with unknown exit code $serviceQueryAfterExitCode"
+        Write-Output "Query output:"
+        Write-Output $serviceQueryAfter
+        exit 1
     }
+
+} elseif ($serviceQueryExitCode -eq 1060) {
+    Write-Output "Service state: ABSENT (exit code 1060)"
+    Write-Output "Service does not exist (ACCEPTED_PRECONDITION)"
+    Write-Output "Skipping service removal"
+} else {
+    Write-Output "ERROR: Service query failed with unknown exit code $serviceQueryExitCode"
+    Write-Output "Query output:"
+    Write-Output $serviceQueryBefore
+    Write-Output "Cannot determine service state - FAIL-CLOSED"
+    exit 1
 }
 
 Write-Output ""
 
-# PHASE 23: Install service with machine-scoped PathName
+# PHASE 22.5: Remove old runtime directory (only after service is removed)
+# This prevents leaving a registered service pointing to a destroyed runtime.
+# If the old runtime exists, it is now safe to remove since the service is gone.
+Write-Output "=== PHASE 22.5: REMOVE OLD RUNTIME DIRECTORY ==="
+$oldRuntimeExists = Test-Path $serviceRuntimePath
+if ($oldRuntimeExists) {
+    Write-Output "Removing old runtime directory: $serviceRuntimePath"
+    try {
+        Remove-Item -Path $serviceRuntimePath -Recurse -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Failed to remove old runtime directory: $_"
+        exit 1
+    }
+    Write-Output "Old runtime directory removed"
+} else {
+    Write-Output "Old runtime directory does not exist (fresh deployment)"
+}
+
+# Re-create runtime directory after old removal
+try {
+    New-Item -Path $serviceRuntimePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+} catch {
+    Write-Output "ERROR: Failed to recreate runtime directory: $_"
+    exit 1
+}
+Write-Output "Runtime directory ready for new deployment"
+Write-Output ""
+
+# PHASE 23: Copy runtime components (re-run after old runtime removal)
+# NOTE: This is a workaround to ensure the new runtime is fully prepared
+# after the old runtime is removed. A better architectural solution would be
+# side-by-side staged runtime with atomic switch, but that requires
+# more significant changes to the architecture.
+Write-Output "=== PHASE 23: COPY RUNTIME COMPONENTS TO CLEAN RUNTIME ==="
+Write-Output "Copying Python core executables..."
+try {
+    Copy-Item -Path "$trustedSource\python.exe" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\pythonw.exe" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\python314.dll" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy Python core executables: $_"
+    exit 1
+}
+
+Write-Output "Copying python314.zip (standard library)..."
+if (Test-Path "$trustedSource\python314.zip") {
+    try {
+        Copy-Item -Path "$trustedSource\python314.zip" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Failed to copy python314.zip: $_"
+        exit 1
+    }
+}
+
+Write-Output "Copying DLLs directory..."
+try {
+    New-Item -Path "$serviceRuntimePath\DLLs" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\DLLs\*" -Destination "$serviceRuntimePath\DLLs\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy DLLs directory: $_"
+    exit 1
+}
+
+Write-Output "Copying Lib (standard library)..."
+try {
+    New-Item -Path "$serviceRuntimePath\Lib" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\Lib\*" -Destination "$serviceRuntimePath\Lib\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy Lib directory: $_"
+    exit 1
+}
+
+Write-Output "Copying Scripts..."
+try {
+    New-Item -Path "$serviceRuntimePath\Scripts" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\Scripts\*" -Destination "$serviceRuntimePath\Scripts\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy Scripts directory: $_"
+    exit 1
+}
+
+Write-Output "Copying site-packages (pywin32, cryptography)..."
+try {
+    New-Item -Path "$serviceRuntimePath\Lib\site-packages" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\Lib\site-packages\win32" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\Lib\site-packages\pywin32*" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography-*.dist-info" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy site-packages: $_"
+    exit 1
+}
+
+Write-Output "Python runtime copied to clean runtime successfully"
+Write-Output ""
+
+# PHASE 24: Configure python314._pth for complete isolation
+Write-Output "=== PHASE 24: CONFIGURE PYTHON314._PTH ISOLATION ==="
+$pthPath = "$serviceRuntimePath\python314._pth"
+$pthContent = @"
+# P0-B V4-R9.7 Complete Python Runtime Isolation
+# This _pth file completely overrides sys.path initialization
+# All registry and environment variables are ignored
+# Site module is NOT imported unless explicitly enabled
+# This provides the strongest startup isolation guarantee
+
+# Core Python runtime paths (machine-scoped only)
+.
+Lib\site-packages
+
+# Explicitly enable site module for pywin32/cryptography availability
+# WITHOUT enabling user-site (isolated mode prevents this automatically)
+import site
+"@
+
+try {
+    Set-Content -Path $pthPath -Value $pthContent -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to configure python314._pth: $_"
+    exit 1
+}
+Write-Output "python314._pth configured for isolated runtime: $pthPath"
+Write-Output ""
+
+# PHASE 25: Copy IABV service modules
+Write-Output "=== PHASE 25: COPY IABV SERVICE MODULES ==="
+$iabvSource = "$iabvProjectRoot\src"
+$iabvTarget = "$serviceRuntimePath\iabv_v15"
+try {
+    New-Item -Path $iabvTarget -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$iabvSource\iabv_v15" -Destination "$serviceRuntimePath\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy IABV service modules: $_"
+    exit 1
+}
+Write-Output "IABV service modules copied to: $iabvTarget"
+Write-Output ""
+
+# PHASE 26: Configure user-site isolation via sitecustomize.py (defense-in-depth)
+Write-Output "=== PHASE 26: CONFIGURE USER-SITE ISOLATION (DEFENSE-IN-DEPTH) ==="
+$sitecustomizePath = "$serviceRuntimePath\Lib\sitecustomize.py"
+$sitecustomizeContent = @"
+# P0-B V4-R9.7 User-Site Isolation (Defense-in-Depth)
+# This is a secondary defense; primary isolation is via python314._pth
+# This file executes during site module initialization
+
+import sys
+import os
+
+# Remove user-site directories from sys.path as secondary defense
+user_profile = os.environ.get('USERPROFILE', '')
+if user_profile:
+    sys.path = [p for p in sys.path if not p.startswith(user_profile)]
+
+# Disable user-site module (secondary defense)
+import site
+if hasattr(site, 'ENABLE_USER_SITE'):
+    site.ENABLE_USER_SITE = False
+
+# Log isolation for runtime verification
+import logging
+logging.basicConfig(
+    filename=os.path.join(os.environ.get('TEMP', 'C:\\Temp'), 'iabv_isolation.log'),
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
+logging.info("P0-B User-Site Isolation: ENABLED - secondary defense via sitecustomize.py")
+import site
+if hasattr(site, 'ENABLE_USER_SITE'):
+    site.ENABLE_USER_SITE = False
+
+# Log isolation for runtime verification
+import logging
+logging.basicConfig(
+    filename=os.path.join(os.environ.get('TEMP', 'C:\\Temp'), 'iabv_isolation.log'),
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
+
+"@
+
+try {
+    Set-Content -Path $sitecustomizePath -Value $sitecustomizeContent -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to configure sitecustomize.py: $_"
+    exit 1
+}
+Write-Output "User-site isolation configured (defense-in-depth): $sitecustomizePath"
+Write-Output ""
+
+# PHASE 27: Configure ACLs for machine-scoped runtime
+Write-Output "=== PHASE 27: CONFIGURE MACHINE-SCOPED RUNTIME ACLS ==="
+
+# Use well-known SIDs for internationalization robustness
+# S-1-5-32-544 = BUILTIN\Administrators
+# S-1-5-18 = SYSTEM
+# S-1-5-19 = LocalService
+# S-1-5-32-545 = BUILTIN\Users
+#
+# ACL Policy (NO DENY):
+# - SYSTEM: FullControl (can modify for recovery/deployment)
+# - Administrators: FullControl (can recover/redeploy)
+# - LocalService: Read/Execute (can execute but not modify)
+# - Users: NO permissions (no ACE added, inheritance removed)
+#
+# Rationale for NO DENY:
+# - DENY rules can affect Administrators who also have Users SID in their token
+# - With inheritance removed, Users has no permissions by default
+# - Explicit Allow for SYSTEM/Administrators/LocalService is sufficient
+# - Avoids complex DENY/Allow interaction in Windows token evaluation
+
+Write-Output "Removing inheritance..."
+icacls $serviceRuntimePath /inheritance:r
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to remove inheritance"
+    exit 1
+}
+
+Write-Output "Granting SYSTEM FullControl (S-1-5-18)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-18:(OI)(CI)F"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to grant SYSTEM permissions"
+    exit 1
+}
+
+Write-Output "Granting Administrators FullControl (S-1-5-32-544)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-32-544:(OI)(CI)F"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to grant Administrators permissions"
+    exit 1
+}
+
+Write-Output "Granting LocalService Read/Execute (S-1-5-19)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-19:(OI)(CI)RX"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to grant LocalService permissions"
+    exit 1
+}
+
+# No explicit DENY for Users - with inheritance removed, Users has no permissions
+# This achieves the same security goal without DENY/Allow complexity
+
+Write-Output "Machine-scoped runtime ACLs configured (NO DENY policy)"
+Write-Output ""
+
+# PHASE 28: Verify python314._pth isolation in deployed runtime
+Write-Output "=== PHASE 28: VERIFY PYTHON314._PTH ISOLATION ==="
+Write-Output "Testing isolation with deployed runtime..."
+
+# First verify python.exe exists and is executable
+if (-not (Test-Path "$serviceRuntimePath\python.exe")) {
+    Write-Output "ERROR: python.exe not found in deployed runtime: $serviceRuntimePath\python.exe"
+    exit 1
+}
+
+try {
+    $isolationTest = & "$serviceRuntimePath\python.exe" -c "import sys,os; user_profile = os.environ.get('USERPROFILE', ''); has_user_path = any(p.startswith(user_profile) for p in sys.path if user_profile); print('USER_PROFILE_IN_PATH:', has_user_path); print('SYS_PATH_COUNT:', len(sys.path)); print('SYS_PATH:', sys.path); import site; print('ENABLE_USER_SITE:', site.ENABLE_USER_SITE)" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "ERROR: python.exe execution failed with exit code $LASTEXITCODE"
+        Write-Output "Output: $isolationTest"
+        exit 1
+    }
+} catch {
+    Write-Output "ERROR: Failed to execute python.exe for isolation test: $_"
+    exit 1
+}
+
+Write-Output "Isolation test result: $isolationTest"
+if ($isolationTest -like "*USER_PROFILE_IN_PATH: True*") {
+    Write-Output "ERROR: User profile path still in sys.path of deployed runtime"
+    exit 1
+}
+if ($isolationTest -like "*ENABLE_USER_SITE: True*") {
+    Write-Output "ERROR: User site still enabled in deployed runtime"
+    exit 1
+}
+Write-Output "python314._pth isolation verified: PASS"
+Write-Output ""
+
+# PHASE 29: Verify ACLs
+Write-Output "=== PHASE 29: VERIFY ACLS ==="
+icacls $serviceRuntimePath
+Write-Output ""
+
+# PHASE 30: Determine pythonservice.exe path
+Write-Output "=== PHASE 30: DETERMINE PYTHONSERVICE.EXE PATH ==="
+if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
+    $pythonservicePath = "$serviceRuntimePath\Scripts\pythonservice.exe"
+    Write-Output "Using pythonservice.exe from Scripts: $pythonservicePath"
+} elseif (Test-Path "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe") {
+    $pythonservicePath = "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe"
+    Write-Output "Using pythonservice.exe from site-packages: $pythonservicePath"
+} else {
+    Write-Output "ERROR: pythonservice.exe not found in deployed runtime"
+    exit 1
+}
+Write-Output ""
+
+# PHASE 31: Verify critical runtime components exist
+Write-Output "=== PHASE 31: VERIFY CRITICAL RUNTIME COMPONENTS ==="
+$requiredFiles = @(
+    "$serviceRuntimePath\python.exe",
+    "$serviceRuntimePath\python314.dll",
+    "$pythonservicePath",
+    "$serviceRuntimePath\$expectedDll",
+    "$serviceRuntimePath\Lib\site-packages\win32\__init__.py",
+    "$serviceRuntimePath\Lib\site-packages\cryptography\__init__.py",
+    "$serviceRuntimePath\Lib\site-packages\cryptography\hazmat\bindings\_rust.pyd",
+    "$serviceRuntimePath\iabv_v15\services\development\authority_windows_service.py"
+)
+
+$allFilesExist = $true
+foreach ($file in $requiredFiles) {
+    if (Test-Path $file) {
+        Write-Output "  [OK] $file"
+    } else {
+        Write-Output "  [MISSING] $file"
+        $allFilesExist = $false
+    }
+}
+
+if (-not $allFilesExist) {
+    Write-Output "ERROR: Missing critical runtime components"
+    exit 1
+}
+Write-Output ""
+
+# PHASE 32: Verify no wrong version DLLs in deployed runtime
+Write-Output "=== PHASE 32: VERIFY NO WRONG VERSION DLLS ==="
+$wrongDllInRuntime = Test-Path "$serviceRuntimePath\$wrongDll"
+if ($wrongDllInRuntime) {
+    Write-Output "ERROR: Wrong version pywintypes DLL in deployed runtime: $wrongDll"
+    exit 1
+}
+Write-Output "No wrong version DLLs in deployed runtime: PASS"
+Write-Output ""
+
+# PHASE 33: Verify ACLs on critical components
+Write-Output "=== PHASE 33: VERIFY CRITICAL COMPONENT ACLS ==="
+$criticalPaths = @(
+    "$serviceRuntimePath\python.exe",
+    "$pythonservicePath",
+    "$serviceRuntimePath\Lib\site-packages\cryptography"
+)
+
+foreach ($path in $criticalPaths) {
+    if (Test-Path $path) {
+        Write-Output "ACL for ${path}:"
+        icacls $path
+    }
+}
+Write-Output ""
+
+# PHASE 34: Install service with machine-scoped PathName
 Write-Output "=== PHASE 23: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
 $env:PYTHONPATH="$serviceRuntimePath"
 & "$serviceRuntimePath\python.exe" -m iabv_v15.services.development.authority_windows_service install $pythonservicePath
