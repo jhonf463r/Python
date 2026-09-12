@@ -30,6 +30,8 @@ ACTIVATE RELEVANT FAILURES + NEGATIVE KNOWLEDGE + UNIMPLEMENTED IDEAS
   ↓
 ACTIVATE RELEVANT CROSS-IA TRANSFERS / CAPABILITY EVIDENCE
   ↓
+ACTIVATE SYSTEMIC-INTEGRITY-AND-CONNECTIVITY WHEN OBJECTIVE TOUCHES CROSS-ORGAN COHERENCE
+  ↓
 IDENTIFY CURRENT GATE + LAST VERIFIED STATE
   ↓
 SELECT MINIMAL DISCRIMINATING NEXT ACTION
@@ -41,6 +43,7 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 |---|---|---|---|
 | Cognitive control plane / external-agent cognition | `CURRENT-STATE.md`, `SYMBIOSIS-MAP.md`, `UNRESOLVED-KNOWLEDGE.md` | R5 cognitive records, multi-tool/metacognition records | Does IABV context causally change a real agent decision? Is the loop closed? |
 | Temporal-causal metacognition / expanded synthesis | `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | P040 incident records, OSES, organism snapshot, temporal-awareness records, scientific metacognition | Can IABV reconstruct state-before/state-after, identify the broken causal edge, choose the highest-information intervention, and feed the result back into future decisions? |
+| **Systemic integrity / cross-organ connectivity / contract drift** | `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | OSES, SelfCodeAnalysis, SystemKnowledgeRegistry, SystemIdentityRegistry, OrganismStateSnapshot, RuntimeAuditTracer, DecisionAuditTrail, PerceptionCrossValidator, historical UniversalMetacognitiveScanner records | Which integrity mechanisms already exist? Are producer/consumer contracts, timing, semantics, duplication and drift actually verified, or only observed locally? |
 | IABV-directed external-agent execution | `CURRENT-STATE.md`, `SYMBIOSIS-MAP.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | Devin adapter, ToolTeachService, agent handoff/briefing records, R3 cognitive wiring records | Can IABV autonomously prepare, delegate and verify work through an external agent without turning the UI or human into a manual transport layer? |
 | Comparative reasoning / metacognitive benchmark | `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | Evolution Control Room benchmark guidance, prior agent capability comparisons, learning-gate records, external-agent evidence | Is IABV improving at observation, uncertainty, contradictions, causal tracing, minimal action, verification, escalation, stop discipline and reuse? Is avoidable external work decreasing? |
 | Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CANONICAL-ABSORPTION-2026-09-11.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records | Can a new chat reconstruct only the relevant state from GitHub? Is material knowledge absorbed even when a source remains branch-only? |
@@ -87,6 +90,10 @@ Do not assume ticketed work is the complete knowledge boundary.
 
 Retrieve prior disagreements and corrections when the new objective touches the same boundary. Inherit the **method learned**, not an AI's conclusion by reputation.
 
+### Systemic coherence
+
+When an objective touches a failure between organs, retrieve `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` and treat it as a routing aid, not as unquestionable truth. Reconcile its current findings against source/runtime evidence before implementation.
+
 ## RELEVANCE TEST
 
 A historical record is relevant when at least one of the following can materially change today's work:
@@ -100,7 +107,8 @@ A historical record is relevant when at least one of the following can materiall
 7. it establishes the last known gate/blocker for the same subsystem;
 8. it changes which AI capability should be used for the objective;
 9. it contains a canonical absorption that preserves otherwise branch-only historical knowledge relevant to the objective;
-10. it contains benchmark evidence that can establish whether IABV has improved or regressed.
+10. it contains benchmark evidence that can establish whether IABV has improved or regressed;
+11. it identifies an existing organ that may already own the capability, preventing unnecessary architecture creation.
 
 Otherwise do not activate it by default.
 
@@ -115,6 +123,8 @@ Otherwise do not activate it by default.
 `Depth 3: neighboring domains + contradictions + failed experiments`
 
 `Depth 4: broad chronology / full forensic reconstruction only when needed`
+
+For systemic-integrity objectives, activate `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` at Depth 1 and inspect the referenced existing algorithms before proposing any new subsystem.
 
 ## DEEP-RECONSTRUCTION MODE
 
