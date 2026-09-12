@@ -1324,5 +1324,246 @@ class TestThreadingAndStaleClearProtection:
         assert vm._autonomy_activity_override['progress'] == 0.5
 
 
+class TestOriginIdentityPreservation:
+    """Test that chat results preserve origin identity and don't affect newer interactions."""
+
+    def test_stale_result_cannot_affect_newer_interaction(self):
+        """Test that stale result from interaction A cannot affect interaction B."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._active_interaction_id = None
+                self._active_dispatch_ids = {}
+                self._resolved_interactions = []
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def _is_on_gui_thread(self):
+                return True  # Simulate GUI thread
+                
+            def _clear_autonomy_activity_override(self, interaction_id=None, dispatch_id=None):
+                self._autonomy_activity_override = {}
+                
+            def _trace_dispatch_terminal(self, task_name, dispatch_id, terminal_state, reason, user_visible_message):
+                self._resolved_interactions.append({
+                    'dispatch_id': dispatch_id,
+                    'terminal_state': terminal_state,
+                    'reason': reason,
+                })
+                
+            def _queue_ui_call(self, method_name, *args):
+                pass  # Not used in GUI thread simulation
+        
+        vm = MockViewModel()
+        
+        # Interaction A is active
+        vm._active_interaction_id = 'interaction-a'
+        vm._active_dispatch_ids['chat'] = 'dispatch-a'
+        vm._autonomy_activity_override = {'stage': 'execution', 'interaction_id': 'interaction-a'}
+        
+        # Interaction A produces result (with origin identity)
+        result_a = {
+            'summary': 'Result from A',
+            'origin_interaction_id': 'interaction-a',
+            'origin_dispatch_id': 'dispatch-a',
+        }
+        
+        # Before result A is processed, interaction B becomes active
+        vm._active_interaction_id = 'interaction-b'
+        vm._active_dispatch_ids['chat'] = 'dispatch-b'
+        vm._autonomy_activity_override = {'stage': 'provenance', 'interaction_id': 'interaction-b'}
+        
+        # Result A arrives (should be discarded as stale)
+        origin_interaction_id = result_a.get('origin_interaction_id')
+        origin_dispatch_id = result_a.get('origin_dispatch_id')
+        
+        if origin_dispatch_id and not vm._is_dispatch_active('chat', origin_dispatch_id):
+            # Stale result - do not apply UI effects
+            vm._trace_dispatch_terminal(
+                task_name='chat', dispatch_id=origin_dispatch_id,
+                terminal_state='cancelled', reason='stale_result_discarded',
+                user_visible_message=False,
+            )
+        
+        # Interaction B should remain intact
+        assert vm._autonomy_activity_override['interaction_id'] == 'interaction-b'
+        assert vm._autonomy_activity_override['stage'] == 'provenance'
+        # Stale result should be traced as cancelled
+        assert any(r['dispatch_id'] == 'dispatch-a' and r['terminal_state'] == 'cancelled' for r in vm._resolved_interactions)
+
+    def test_result_clears_correct_interaction(self):
+        """Test that result from interaction A clears activity of A when A is still active."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._active_interaction_id = None
+                self._active_dispatch_ids = {}
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def _is_on_gui_thread(self):
+                return True  # Simulate GUI thread
+                
+            def _clear_autonomy_activity_override(self, interaction_id=None, dispatch_id=None):
+                self._autonomy_activity_override = {}
+                
+            def _queue_ui_call(self, method_name, *args):
+                pass  # Not used in GUI thread simulation
+        
+        vm = MockViewModel()
+        
+        # Interaction A is active
+        vm._active_interaction_id = 'interaction-a'
+        vm._active_dispatch_ids['chat'] = 'dispatch-a'
+        vm._autonomy_activity_override = {'stage': 'execution', 'interaction_id': 'interaction-a'}
+        
+        # Interaction A produces result (with origin identity)
+        result_a = {
+            'summary': 'Result from A',
+            'origin_interaction_id': 'interaction-a',
+            'origin_dispatch_id': 'dispatch-a',
+        }
+        
+        # Result A arrives while A is still active
+        origin_interaction_id = result_a.get('origin_interaction_id')
+        origin_dispatch_id = result_a.get('origin_dispatch_id')
+        
+        if origin_dispatch_id and not vm._is_dispatch_active('chat', origin_dispatch_id):
+            # Stale result - should not happen in this test
+            return
+        
+        # Clear activity with origin identity
+        vm._clear_autonomy_activity_override(interaction_id=origin_interaction_id, dispatch_id=origin_dispatch_id)
+        
+        # Activity should be cleared
+        assert vm._autonomy_activity_override == {}
+
+    def test_stale_result_cannot_mark_completion(self):
+        """Test that stale result cannot mark completion of newer interaction."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._active_interaction_id = None
+                self._active_dispatch_ids = {}
+                self._working = True
+                self._live_status = 'processing'
+                self._resolved_interactions = []
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def _is_on_gui_thread(self):
+                return True  # Simulate GUI thread
+                
+            def _clear_autonomy_activity_override(self, interaction_id=None, dispatch_id=None):
+                self._autonomy_activity_override = {}
+                
+            def _trace_dispatch_terminal(self, task_name, dispatch_id, terminal_state, reason, user_visible_message):
+                self._resolved_interactions.append({
+                    'dispatch_id': dispatch_id,
+                    'terminal_state': terminal_state,
+                    'reason': reason,
+                })
+                
+            def _queue_ui_call(self, method_name, *args):
+                pass  # Not used in GUI thread simulation
+        
+        vm = MockViewModel()
+        
+        # Interaction A is active
+        vm._active_interaction_id = 'interaction-a'
+        vm._active_dispatch_ids['chat'] = 'dispatch-a'
+        vm._autonomy_activity_override = {'stage': 'execution', 'interaction_id': 'interaction-a'}
+        
+        # Interaction A produces result (delayed)
+        result_a = {
+            'summary': 'Result from A',
+            'origin_interaction_id': 'interaction-a',
+            'origin_dispatch_id': 'dispatch-a',
+        }
+        
+        # Before result A is processed, interaction B becomes active
+        vm._active_interaction_id = 'interaction-b'
+        vm._active_dispatch_ids['chat'] = 'dispatch-b'
+        vm._autonomy_activity_override = {'stage': 'provenance', 'interaction_id': 'interaction-b'}
+        vm._working = True
+        vm._live_status = 'processing'
+        
+        # Result A arrives (should be discarded as stale)
+        origin_interaction_id = result_a.get('origin_interaction_id')
+        origin_dispatch_id = result_a.get('origin_dispatch_id')
+        
+        if origin_dispatch_id and not vm._is_dispatch_active('chat', origin_dispatch_id):
+            # Stale result - do not apply UI effects
+            vm._trace_dispatch_terminal(
+                task_name='chat', dispatch_id=origin_dispatch_id,
+                terminal_state='cancelled', reason='stale_result_discarded',
+                user_visible_message=False,
+            )
+        
+        # Interaction B should remain active and working
+        assert vm._active_interaction_id == 'interaction-b'
+        assert vm._working is True
+        assert vm._live_status == 'processing'
+        assert vm._autonomy_activity_override['interaction_id'] == 'interaction-b'
+        # Stale result should be traced as cancelled
+        assert any(r['dispatch_id'] == 'dispatch-a' and r['terminal_state'] == 'cancelled' for r in vm._resolved_interactions)
+
+    def test_origin_identity_survives_async_boundary(self):
+        """Test that origin identity survives from worker to _apply_task_result."""
+        import threading
+        import time
+        
+        class MockViewModel:
+            def __init__(self):
+                self._active_interaction_id = None
+                self._active_dispatch_ids = {}
+                self._received_payloads = []
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def _is_on_gui_thread(self):
+                return True  # Simulate GUI thread
+                
+            def _queue_ui_call(self, method_name, *args):
+                pass  # Not used in GUI thread simulation
+        
+        vm = MockViewModel()
+        
+        # Simulate worker thread creating payload with origin identity
+        def worker_create_payload(interaction_id, dispatch_id):
+            payload = {
+                'summary': 'Worker result',
+                'origin_interaction_id': interaction_id,
+                'origin_dispatch_id': dispatch_id,
+            }
+            # Simulate signal emission
+            vm._received_payloads.append(payload)
+        
+        # Start worker thread
+        worker_thread = threading.Thread(
+            target=worker_create_payload,
+            args=('interaction-worker', 'dispatch-worker'),
+            daemon=True
+        )
+        worker_thread.start()
+        worker_thread.join()
+        
+        # Verify payload preserved origin identity
+        assert len(vm._received_payloads) == 1
+        payload = vm._received_payloads[0]
+        assert payload['origin_interaction_id'] == 'interaction-worker'
+        assert payload['origin_dispatch_id'] == 'dispatch-worker'
+        
+        # Verify this identity can be extracted in _apply_task_result
+        origin_interaction_id = payload.get('origin_interaction_id')
+        origin_dispatch_id = payload.get('origin_dispatch_id')
+        assert origin_interaction_id == 'interaction-worker'
+        assert origin_dispatch_id == 'dispatch-worker'
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

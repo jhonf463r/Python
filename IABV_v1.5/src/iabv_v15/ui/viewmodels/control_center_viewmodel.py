@@ -14540,6 +14540,9 @@ class ControlCenterViewModel(QObject):
                         'adaptive_session': adaptive_session,
                         'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
                         'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
+                        # Origin identity - preserve the interaction_id and dispatch_id that produced this result
+                        'origin_interaction_id': interaction_id,
+                        'origin_dispatch_id': _dispatch_id,
                     },
                 )
             except Exception as exc:
@@ -14850,15 +14853,33 @@ class ControlCenterViewModel(QObject):
             self._diagnostic_text = self._build_provider_diagnostic(nonblocking=True)
             self._diagnostic_truth_state = 'observed'
         elif task_name == 'chat':
-            # Clear activity with identity correlation
-            _iid = getattr(self, '_active_interaction_id', None)
-            _did = getattr(self, '_active_dispatch_ids', {}).get('chat')
-            self._clear_autonomy_activity_override(interaction_id=_iid, dispatch_id=_did)
-            # Mark lifecycle phase: first_useful_response
+            # Extract origin identity from payload - use the IDs that produced this result
+            origin_interaction_id = payload.get('origin_interaction_id')
+            origin_dispatch_id = payload.get('origin_dispatch_id')
+            
+            # Validate that this result still corresponds to the active dispatch
+            if origin_dispatch_id and not self._is_dispatch_active('chat', origin_dispatch_id):
+                # Stale result - do not apply UI effects to current interaction
+                import logging
+                logging.getLogger(__name__).warning(
+                    'Discarding stale chat result from dispatch %s (no longer active)',
+                    origin_dispatch_id[:8] if origin_dispatch_id else 'unknown'
+                )
+                self._trace_dispatch_terminal(
+                    task_name='chat', dispatch_id=origin_dispatch_id,
+                    terminal_state='cancelled', reason='stale_result_discarded: result arrived after dispatch invalidated',
+                    user_visible_message=False,
+                )
+                return
+            
+            # Clear activity with origin identity correlation
+            self._clear_autonomy_activity_override(interaction_id=origin_interaction_id, dispatch_id=origin_dispatch_id)
+            
+            # Mark lifecycle phase: first_useful_response using origin identity
             _lc = getattr(self, '_chat_interaction_lifecycle', None)
-            if _iid and _lc is not None:
+            if origin_interaction_id and _lc is not None:
                 try:
-                    _lc.mark_phase(_iid, 'first_useful_response')
+                    _lc.mark_phase(origin_interaction_id, 'first_useful_response')
                 except Exception:
                     pass
             sources = ', '.join(payload.get('sources') or []) or 'sin fuentes explicitas'
