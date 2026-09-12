@@ -176,6 +176,45 @@ The experiment must report the first causally broken edge using `DEFINED | WIRED
 SUCCESS CONDITION:
 A real development objective can be supplied once by the human; IABV assembles relevant context and evidence, invokes its existing decision machinery, delegates through the existing Devin path when governance allows, captures the result, verifies the outcome, and returns to the same decision machinery with a materially different next state/decision — reducing routine manual prompt transport without weakening provenance or independent verification.
 
+### UK-14 — Comparative metacognitive benchmark / external-agent capability baseline
+
+QUESTION: Can IABV establish a reproducible baseline of its reasoning/metacognitive capabilities against external agents such as Claude, Devin and ChatGPT, then demonstrate measurable improvement after verified learning — while reducing unnecessary Codex interventions?
+
+CURRENT STATUS: STRATEGICALLY RELEVANT / BENCHMARK DESIGN REGISTERED / RUNTIME BASELINE NOT YET EXECUTED.
+
+WHY IMPORTANT:
+The project should not spend Codex effort rediscovering obvious reasoning or architecture errors that IABV could learn to detect itself. A benchmark provides an empirical guardrail for the desired development acceleration and makes "IABV is improving" testable rather than aspirational.
+
+TARGET CAPABILITIES:
+
+- observation accuracy;
+- uncertainty calibration;
+- contradiction detection;
+- causal-trace reconstruction;
+- minimal discriminating action;
+- stop discipline;
+- governance awareness;
+- self-audit;
+- verification discipline;
+- learning/reuse;
+- external-agent escalation quality;
+- development efficiency / avoidable external work.
+
+TARGET IMPROVEMENT LOOP:
+
+`baseline IABV → external comparison → verified correction → canonical knowledge → repeat case → improved IABV decision/action → less avoidable external intervention`
+
+IMPORTANT BOUNDARY:
+A later Codex PASS is evidence about the audited implementation or hypothesis, not by itself proof that IABV's internal reasoning was correct. The meaningful metacognitive claim requires measured improvement and changed downstream behavior.
+
+BENCHMARK GUIDANCE:
+`IABV_v1.5/docs/history/CHAT-ARCH/AGENT-REASONING-BENCHMARK-2026-09-12.md`
+
+The benchmark should prefer fixed/reproducible cases, dimension-level evidence, negative controls, provenance and before/after learning comparisons. It must not become a new parallel reasoning engine.
+
+NEXT DISCRIMINATING ACTION:
+Before another Codex implementation/audit cycle, inspect existing evaluation infrastructure and build/run the smallest reproducible comparative benchmark using the existing IABV evaluation mechanisms where possible. If live provider access is unavailable, use fixed recorded external outputs so benchmark design is not blocked by API connectivity.
+
 ## DEFERRED BUT IMPORTANT DESIGN IDEAS
 
 These are intentionally recorded without forcing implementation:
@@ -193,7 +232,8 @@ These are intentionally recorded without forcing implementation:
 - executive synthesis that minimizes routine human coordination by delegating context assembly, prompt construction, evidence capture and post-action verification to existing IABV organs;
 - explicit intervention thresholds so the human is surfaced only when a real decision, permission, contradiction or unresolved evidence gap exists;
 - state-before/state-after experiment packets as the standard unit for proving causal improvement in development workflow;
-- objective-conditioned work queues generated from active uncertainty rather than fixed phase lists.
+- objective-conditioned work queues generated from active uncertainty rather than fixed phase lists;
+- a frozen comparative agent benchmark used as a longitudinal measure of IABV's metacognitive progress.
 
 ## REJECTED / DO-NOT-REPEAT IDEAS
 
@@ -204,7 +244,8 @@ These are intentionally recorded without forcing implementation:
 - treat a valid signature as proof of legitimate authority;
 - treat a new field as canonical while legacy fields still control behavior;
 - treat a local archive as sufficient for deletion safety;
-- force every objective through the same fixed AI role sequence.
+- force every objective through the same fixed AI role sequence;
+- use Codex as the first detector of errors that a validated IABV benchmark can detect itself.
 
 ## USE OF THIS REGISTER
 
@@ -213,5 +254,7 @@ A future chat should retrieve this file when its objective overlaps an unresolve
 For UK-11 / UK-12 work, the future chat should prefer an **acceleration experiment** over another general architecture review: identify one real delegated workflow, capture state-before, let IABV prepare and delegate the work, capture state-after, independently verify the effect, and determine whether the resulting experience changes the next routing decision.
 
 For UK-13, the first implementation question is **ownership and activation**, not creation of another decision service: trace `AutonomyCycleService → AdaptiveTaskOrchestrator → existing external-consultation path → Devin → verification → outcome/replan` and implement only the smallest missing edge that prevents the causal loop from closing.
+
+For UK-14, the benchmark becomes a gate before expensive external audit cycles: first measure IABV, compare against relevant agent capabilities, identify the smallest learning opportunity, verify the correction independently, and remeasure before spending Codex effort on implementation/audit that the benchmark indicates IABV should already be able to reason about.
 
 Resolution requires evidence, not a status edit based only on a later claim.
