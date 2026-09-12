@@ -939,45 +939,107 @@ class TestRuntimeProgressObservability:
         assert 'cleared' in states[-1]
 
     def test_concurrent_interactions_dont_overwrite(self):
-        """Test that interaction B cannot overwrite interaction A's visible state."""
+        """Test that interaction B cannot overwrite interaction A's visible state.
+        
+        This test simulates the real scenario where:
+        1. Interaction A is active
+        2. Interaction B becomes active (user starts new interaction)
+        3. A late update from interaction A arrives
+        4. The late update should be discarded because dispatch A is no longer active
+        """
+        import threading
+        
         class MockViewModel:
             def __init__(self):
                 self._autonomy_activity_override = {}
                 self._active_interaction_id = None
+                self._active_dispatch_ids = {}
+                self._queue = []
+                self._lock = threading.Lock()
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                with self._lock:
+                    return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def set_active_dispatch(self, dispatch_id, interaction_id):
+                """Simulate changing the active dispatch (user starts new interaction)."""
+                with self._lock:
+                    self._active_dispatch_ids['chat'] = dispatch_id
+                    self._active_interaction_id = interaction_id
                 
             def _set_autonomy_activity_override(self, **payload):
-                self._autonomy_activity_override = payload
-                if 'interaction_id' in payload:
-                    self._active_interaction_id = payload['interaction_id']
+                """Thread-safe update that validates dispatch."""
+                dispatch_id = payload.get('dispatch_id')
+                interaction_id = payload.get('interaction_id')
                 
+                # Validate if this update is still current
+                if dispatch_id and not self._is_dispatch_active('chat', dispatch_id):
+                    # Discard stale update
+                    return
+                if interaction_id:
+                    current_interaction_id = self._active_interaction_id
+                    if current_interaction_id and interaction_id != current_interaction_id:
+                        # Discard stale interaction update
+                        return
+                
+                with self._lock:
+                    self._autonomy_activity_override = payload
+                    self._queue.append(('update', payload))
+                    
             def _activity_payload(self, **kwargs):
                 return kwargs
         
         vm = MockViewModel()
         
-        # Interaction A
+        # Interaction A is active
+        vm.set_active_dispatch('dispatch-a', 'interaction-a')
+        
+        # Interaction A sets state
         vm._set_autonomy_activity_override(
             visible=True,
             status='active',
             stage='execution',
             progress=0.80,
             interaction_id='interaction-a',
+            dispatch_id='dispatch-a',
         )
         
         assert vm._active_interaction_id == 'interaction-a'
+        assert vm._active_dispatch_ids['chat'] == 'dispatch-a'
+        assert vm._autonomy_activity_override['stage'] == 'execution'
         
-        # Interaction B tries to set state
+        # User starts new interaction B (simulates new sendChat)
+        vm.set_active_dispatch('dispatch-b', 'interaction-b')
+        
+        # Interaction B sets state
         vm._set_autonomy_activity_override(
             visible=True,
             status='active',
             stage='provenance',
             progress=0.10,
             interaction_id='interaction-b',
+            dispatch_id='dispatch-b',
         )
         
-        # Interaction B overwrites (this is current behavior)
-        # In real implementation, should check if interaction_id matches
         assert vm._active_interaction_id == 'interaction-b'
+        assert vm._active_dispatch_ids['chat'] == 'dispatch-b'
+        assert vm._autonomy_activity_override['stage'] == 'provenance'
+        
+        # Late update from interaction A (should be discarded because dispatch-a is no longer active)
+        vm._set_autonomy_activity_override(
+            visible=True,
+            status='active',
+            stage='verification',
+            progress=0.90,
+            interaction_id='interaction-a',
+            dispatch_id='dispatch-a',
+        )
+        
+        # Interaction B should still be active - A's late update discarded
+        assert vm._active_interaction_id == 'interaction-b'
+        assert vm._active_dispatch_ids['chat'] == 'dispatch-b'
+        assert vm._autonomy_activity_override['interaction_id'] == 'interaction-b'
+        assert vm._autonomy_activity_override['stage'] == 'provenance'  # Not overwritten by A's late update
 
     def test_stale_state_detection(self):
         """Test that stale state can be detected when no update for extended time."""

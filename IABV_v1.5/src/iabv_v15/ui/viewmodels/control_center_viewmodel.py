@@ -8090,12 +8090,66 @@ class ControlCenterViewModel(QObject):
         }
 
     def _set_autonomy_activity_override(self, **payload: Any) -> None:
+        """Thread-safe UI update for autonomy activity.
+        
+        Queues the update to execute on GUI thread via _queue_ui_call.
+        Worker threads should call this method; it ensures mutation happens safely.
+        """
+        self._queue_ui_call('_update_autonomy_activity_override_slot', **payload)
+
+    @Slot(object)
+    def _update_autonomy_activity_override_slot(self, payload: dict) -> None:
+        """Qt main-thread slot: updates autonomy activity override safely.
+        
+        This method runs on the GUI thread and actually mutates the state.
+        Validates that the update belongs to an active dispatch to prevent
+        stale updates from overwriting newer interactions.
+        """
+        # Validate dispatch if present in payload
+        dispatch_id = payload.get('dispatch_id')
+        if dispatch_id and not self._is_dispatch_active('chat', dispatch_id):
+            # Discard stale update - this dispatch is no longer active
+            import logging
+            logging.getLogger(__name__).debug(
+                'Discarding stale autonomy activity update for dispatch %s',
+                dispatch_id[:8] if dispatch_id else 'unknown'
+            )
+            return
+        
+        # Validate interaction_id if present
+        interaction_id = payload.get('interaction_id')
+        if interaction_id:
+            current_interaction_id = getattr(self, '_active_interaction_id', None)
+            if current_interaction_id and interaction_id != current_interaction_id:
+                # Discard update from stale interaction
+                import logging
+                logging.getLogger(__name__).debug(
+                    'Discarding autonomy activity update from stale interaction %s (current: %s)',
+                    interaction_id[:8] if interaction_id else 'unknown',
+                    current_interaction_id[:8] if current_interaction_id else 'unknown'
+                )
+                return
+        
+        # Update payload with timestamp
+        from iabv_v15.infra.clock import utc_now
+        payload['updated_at'] = utc_now()
+        
+        # Safe mutation on GUI thread
         self._autonomy_activity_override = self._activity_payload(**payload)
-        # Emit dataChanged to notify UI of activity state change
         self.dataChanged.emit()
 
     def _clear_autonomy_activity_override(self) -> None:
+        """Thread-safe clear of autonomy activity override.
+        
+        Queues the clear to execute on GUI thread via _queue_ui_call.
+        """
+        self._queue_ui_call('_clear_autonomy_activity_override_slot')
+
+    @Slot()
+    def _clear_autonomy_activity_override_slot(self) -> None:
+        """Qt main-thread slot: clears autonomy activity override safely."""
         self._autonomy_activity_override = {}
+        self.dataChanged.emit()
 
     def get_autonomy_activity(self) -> dict[str, Any]:
         if self._autonomy_activity_override:
@@ -13300,10 +13354,26 @@ class ControlCenterViewModel(QObject):
     _HEAVY_RESULT_THRESHOLD_S: float = 10.0
 
     def _set_live_status(self, status: str) -> None:
+        """Set live status with protection against false finalization.
+        
+        If transitioning to 'idle' while a dispatch is still active, this
+        defers the idle transition to prevent UI from showing completion
+        while work is still in progress.
+        """
         with self._ui_state_lock:
             previous = self._live_status
             if previous == status:
                 return
+            
+            # Protect against false finalization: do not go idle if dispatch is active
+            if status == 'idle' and self._working:
+                # A dispatch is still active - keep status as processing
+                import logging
+                logging.getLogger(__name__).warning(
+                    'Attempted to set status to idle while _working=True - deferring idle transition'
+                )
+                return
+            
             self._live_status = status
         self.liveStatusChanged.emit(status)
         # P0.23 Task F: if we are transitioning to idle right after a heavy
@@ -13621,6 +13691,7 @@ class ControlCenterViewModel(QObject):
                 workspace = str(getattr(self.config, 'workspace_root', '') or 'unknown')
 
             interaction_id = getattr(self, '_active_interaction_id', 'unknown')
+            dispatch_id = getattr(self, '_active_dispatch_ids', {}).get('chat')
 
             # Update UI with PROVENANCE stage
             try:
@@ -13634,6 +13705,8 @@ class ControlCenterViewModel(QObject):
                     tool='RuntimeAuditTracer',
                     next_step='Orquestador cognitivo',
                     mode='local',
+                    interaction_id=interaction_id,
+                    dispatch_id=dispatch_id,
                 )
             except Exception:
                 pass
@@ -14015,12 +14088,38 @@ class ControlCenterViewModel(QObject):
             self._working = False
             self._set_live_status('idle')
             self._clear_autonomy_activity_override()
+        
+        # Create dispatch_id and interaction_id immediately for correlation
+        _dispatch_id = self._generate_dispatch_id('chat')
+        interaction_id = self._generate_interaction_id()
+        self._active_interaction_id = interaction_id
+        self._active_dispatch_ids['chat'] = _dispatch_id
+        
+        # IMMEDIATE visible state: user message received
+        # This must appear BEFORE any synchronous work (git, analysis, inference)
+        self._set_live_status('processing')
+        try:
+            self._set_autonomy_activity_override(
+                visible=True,
+                title='Mensaje recibido',
+                status='active',
+                stage='received',
+                progress=0.0,
+                detail='Mensaje recibido, iniciando procesamiento',
+                tool='ControlCenterViewModel',
+                next_step='Análisis de intención',
+                mode='local',
+                interaction_id=interaction_id,
+                dispatch_id=_dispatch_id,
+            )
+        except Exception:
+            pass
+        
         user_attachments = list(self._attached_files) if self._attached_files else None
         self._append_message('user', 'Tu', message, self._routing_mode_label(),
                             attachments=user_attachments)
         if self._attached_files:
             self._attached_files.clear()
-        self._set_live_status('processing')
         # P0.40 Task C: Deep Internal Audit Guard - MUST be BEFORE ALL shortcut handlers
         # This prevents complex audit missions from being resolved by any shortcut path
         if self._try_handle_deep_internal_audit(message):
@@ -14278,6 +14377,8 @@ class ControlCenterViewModel(QObject):
                         tool='TaskContextAssembler',
                         next_step='Percepción y World Model',
                         mode='local',
+                        interaction_id=interaction_id,
+                        dispatch_id=_dispatch_id,
                     )
                 except Exception:
                     pass
@@ -14302,6 +14403,8 @@ class ControlCenterViewModel(QObject):
                         tool='AdaptiveTaskOrchestrator',
                         next_step='Selección de actor',
                         mode='local',
+                        interaction_id=interaction_id,
+                        dispatch_id=_dispatch_id,
                     )
                 except Exception:
                     pass
@@ -14321,6 +14424,8 @@ class ControlCenterViewModel(QObject):
                         tool=self._role_title_from_task(record.result.detected_role or record.route.task_role),
                         next_step='Verificación',
                         mode='local',
+                        interaction_id=interaction_id,
+                        dispatch_id=_dispatch_id,
                     )
                 except Exception:
                     pass
@@ -14347,6 +14452,8 @@ class ControlCenterViewModel(QObject):
                         tool='AutonomyGovernancePolicy',
                         next_step='Completado',
                         mode='local',
+                        interaction_id=interaction_id,
+                        dispatch_id=_dispatch_id,
                     )
                 except Exception:
                     pass

@@ -599,6 +599,8 @@ Item {
                                     spacing: 6
 
                                     Label { text: autonomyActivityModel.title || "Actividad autonoma"; color: textPrimary; font.pixelSize: 14; font.family: "Segoe UI" }
+                                    Label { visible: Boolean(autonomyActivityModel.stage); width: parent.width; text: "Etapa: " + (autonomyActivityModel.stage || ""); color: "#7dd3fc"; wrapMode: Label.WordWrap; font.pixelSize: 12; font.family: "Segoe UI" }
+                                    Label { visible: Boolean(autonomyActivityModel.progress !== undefined); width: parent.width; text: "Progreso: " + (autonomyActivityModel.progress !== undefined ? (autonomyActivityModel.progress * 100).toFixed(0) + "%" : ""); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
                                     Label { width: parent.width; text: autonomyActivityModel.detail || "Sin detalle."; color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 12; font.family: "Segoe UI" }
                                     Label { visible: Boolean(autonomyActivityModel.next_step); width: parent.width; text: "Siguiente paso: " + (autonomyActivityModel.next_step || ""); color: textPrimary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
                                     Label { visible: Boolean(autonomyActivityModel.learning_note); width: parent.width; text: "Aprendizaje: " + (autonomyActivityModel.learning_note || ""); color: textSecondary; wrapMode: Label.WordWrap; font.pixelSize: 11; font.family: "Segoe UI" }
