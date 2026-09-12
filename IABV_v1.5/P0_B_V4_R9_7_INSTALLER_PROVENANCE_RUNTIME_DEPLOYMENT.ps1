@@ -12,8 +12,9 @@
 # - Dependency installation must be done separately as Administrator
 #
 # PARAMETERS:
-# -RepoPath: Path to IABV source checkout (default: C:\Python\IABV_v1.5)
-#   The script will verify Git provenance of this checkout before deployment
+# -RepoPath: Path to Git repository/worktree root (default: C:\Python\IABV_v1.5)
+#   The script will derive the IABV project root from this Git root
+#   Expected layout: RepoPath/IABV_v1.5 is the project root
 # -ExactDeploymentCommit: Optional exact commit SHA for deployment artifact pinning
 #   If provided, deployment only allowed from this exact commit (not descendants)
 #   If not provided, allows any descendant of baseline (for development/testing)
@@ -137,15 +138,32 @@ Write-Output ""
 Write-Output "=== PHASE 8: VERIFY REPOSITORY STATE ==="
 Write-Output "Source path: $RepoPath"
 
-# Verify Git repository exists
-if (-not (Test-Path "$RepoPath\.git")) {
-    Write-Output "ERROR: Not a Git repository: $RepoPath"
+# Derive Git root explicitly (in case RepoPath is a subdirectory)
+$gitRoot = & git -C $RepoPath rev-parse --show-toplevel
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Could not determine Git root"
     exit 1
 }
-Write-Output "Git repository verified: $RepoPath"
+Write-Output "Git root: $gitRoot"
+
+# Verify Git repository exists at derived root
+if (-not (Test-Path "$gitRoot\.git")) {
+    Write-Output "ERROR: Not a Git repository: $gitRoot"
+    exit 1
+}
+Write-Output "Git repository verified: $gitRoot"
+
+# Derive IABV project root (Git root/IABV_v1.5)
+$iabvProjectRoot = Join-Path $gitRoot "IABV_v1.5"
+if (-not (Test-Path $iabvProjectRoot)) {
+    Write-Output "ERROR: IABV project root not found: $iabvProjectRoot"
+    Write-Output "Expected layout: GitRoot/IABV_v1.5/"
+    exit 1
+}
+Write-Output "IABV project root: $iabvProjectRoot"
 
 # Verify HEAD matches required commit
-$head = & git -C $RepoPath rev-parse HEAD
+$head = & git -C $gitRoot rev-parse HEAD
 Write-Output "Repository HEAD: $head"
 
 # P0-B Baseline R9.7
@@ -165,7 +183,7 @@ if ($ExactDeploymentCommit) {
     # BASELINE MODE: Accept baseline or descendants
     Write-Output "BASELINE MODE: Baseline = $baselineCommit"
     # Check if HEAD is baseline or descendant of baseline
-    $isDescendant = & git -C $RepoPath merge-base --is-ancestor $baselineCommit $head 2>&1
+    $isDescendant = & git -C $gitRoot merge-base --is-ancestor $baselineCommit $head 2>&1
     if ($LASTEXITCODE -ne 0 -and $head -ne $baselineCommit) {
         Write-Output "ERROR: HEAD is not baseline or descendant of baseline"
         Write-Output "Baseline: $baselineCommit"
@@ -176,7 +194,7 @@ if ($ExactDeploymentCommit) {
 }
 
 # Verify clean working tree
-$status = & git -C $RepoPath status --porcelain
+$status = & git -C $gitRoot status --porcelain
 if ($status) {
     Write-Output "ERROR: Working tree is not clean"
     Write-Output "Uncommitted changes:"
@@ -184,26 +202,27 @@ if ($status) {
     exit 1
 }
 Write-Output "Working tree clean: PASS"
+Write-Output ""
 
 # Verify no staged changes
-$diff = & git -C $RepoPath diff --cached --exit-code
+$diff = & git -C $gitRoot diff --cached --exit-code
 if ($LASTEXITCODE -ne 0) {
     Write-Output "ERROR: Staged changes detected"
     exit 1
 }
 Write-Output "No staged changes: PASS"
-
+Write-Output ""
 # Verify IABV source modules exist
-if (-not (Test-Path "$RepoPath\src\iabv_v15")) {
-    Write-Output "ERROR: IABV source modules not found: $RepoPath\src\iabv_v15"
+if (-not (Test-Path "$iabvProjectRoot\src\iabv_v15")) {
+    Write-Output "ERROR: IABV source modules not found: $iabvProjectRoot\src\iabv_v15"
     exit 1
 }
-Write-Output "IABV source modules verified: $RepoPath\src\iabv_v15"
+Write-Output "IABV source modules verified: $iabvProjectRoot\src\iabv_v15"
 Write-Output ""
 
 # PHASE 9: Remove existing service
 Write-Output "=== PHASE 9: REMOVE EXISTING SERVICE ==="
-$env:PYTHONPATH="$RepoPath\src"
+$env:PYTHONPATH="$iabvProjectRoot\src"
 & "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
 if ($LASTEXITCODE -ne 0) {
     Write-Output "Service may not have existed or removal failed, continuing..."
@@ -282,7 +301,7 @@ Write-Output ""
 
 # PHASE 13: Copy IABV service modules
 Write-Output "=== PHASE 13: COPY IABV SERVICE MODULES ==="
-$iabvSource = "$RepoPath\src"
+$iabvSource = "$iabvProjectRoot\src"
 $iabvTarget = "$serviceRuntimePath\iabv_v15"
 New-Item -Path $iabvTarget -ItemType Directory -Force
 Copy-Item -Path "$iabvSource\iabv_v15" -Destination "$serviceRuntimePath\" -Recurse -Force

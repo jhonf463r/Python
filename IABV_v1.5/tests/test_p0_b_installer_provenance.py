@@ -195,3 +195,81 @@ def test_exact_deployment_mode():
     assert 'BASELINE MODE' in installer_content, (
         "Installer must have baseline mode logic"
     )
+
+
+def test_git_root_vs_project_root_semantics():
+    """Verify installer separates Git root from project root.
+    
+    This tests that the installer correctly handles the repository layout:
+    - Git root is the worktree root
+    - Project root is Git root/IABV_v1.5
+    - Source is at project root/src
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+    
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+    
+    installer_content = installer_path.read_text(encoding='utf-8')
+    
+    # Verify installer derives Git root
+    assert 'git -C $RepoPath rev-parse --show-toplevel' in installer_content, (
+        "Installer must derive Git root from RepoPath"
+    )
+    
+    assert '$gitRoot' in installer_content, (
+        "Installer must use $gitRoot variable"
+    )
+    
+    # Verify installer derives project root
+    assert 'Join-Path $gitRoot "IABV_v1.5"' in installer_content, (
+        "Installer must derive project root as GitRoot/IABV_v1.5"
+    )
+    
+    assert '$iabvProjectRoot' in installer_content, (
+        "Installer must use $iabvProjectRoot variable"
+    )
+    
+    # Verify installer uses project root for source paths
+    assert r'$iabvProjectRoot\src' in installer_content or r'$iabvProjectRoot\src' in installer_content, (
+        "Installer must use project root for source paths, not RepoPath/src"
+    )
+    
+    # Verify PYTHONPATH uses project root
+    assert r'$env:PYTHONPATH="$iabvProjectRoot\src"' in installer_content or r'$env:PYTHONPATH="$iabvProjectRoot\src"' in installer_content, (
+        "Installer must set PYTHONPATH from project root, not RepoPath"
+    )
+
+
+def test_installer_accepts_git_root_as_repopath():
+    """Verify installer works when RepoPath is Git root.
+    
+    This tests the correct semantics for the actual repository layout.
+    """
+    # Verify actual repository layout
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=Path(__file__).parent.parent.parent,  # Git root
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    git_root = result.stdout.strip()
+    
+    # Verify IABV project exists at Git root/IABV_v1.5
+    iabv_project = Path(git_root) / "IABV_v1.5"
+    assert iabv_project.exists(), (
+        f"IABV project root must exist at {iabv_project}"
+    )
+    
+    # Verify source exists at project root/src
+    iabv_source = iabv_project / "src" / "iabv_v15"
+    assert iabv_source.exists(), (
+        f"IABV source must exist at {iabv_source}"
+    )
+    
+    # Verify installer exists at project root
+    installer_path = iabv_project / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+    assert installer_path.exists(), (
+        f"Installer must exist at {installer_path}"
+    )
