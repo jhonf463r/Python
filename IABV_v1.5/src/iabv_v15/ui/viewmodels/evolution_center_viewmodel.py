@@ -21,7 +21,7 @@ from iabv_v15.ui.qt import QObject, Property, QGuiApplication, QTimer, Signal, S
 class EvolutionCenterViewModel(QObject):
     dataChanged = Signal()
     taskResolved = Signal(str, object)
-    taskFailed = Signal(str, str)
+    taskFailed = Signal(str, str, str, str)  # task_name, error_message, origin_interaction_id='', origin_dispatch_id=''
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -611,7 +611,7 @@ class EvolutionCenterViewModel(QObject):
                 snapshot = self.self_check_orchestrator.run_deep_suite()
                 self.taskResolved.emit('deep_suite', snapshot.model_dump(mode='json'))
             except Exception as exc:
-                self.taskFailed.emit('deep_suite', str(exc))
+                self.taskFailed.emit('deep_suite', str(exc), '', '')
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -670,12 +670,12 @@ class EvolutionCenterViewModel(QObject):
                     except Exception as exc:
                         sections.append(f'Herramienta {tool_id}: error — {exc}')
                 if audited == 0:
-                    self.taskFailed.emit('audit_base_tools', 'No encontre herramientas base para auditar en esta sesion.')
+                    self.taskFailed.emit('audit_base_tools', 'No encontre herramientas base para auditar en esta sesion.', '', '')
                     return
                 header = f'Auditoria base completada. Herramientas auditadas: {audited}.'
                 self.taskResolved.emit('audit_base_tools', {'status': header, 'sections': sections})
             except Exception as exc:
-                self.taskFailed.emit('audit_base_tools', str(exc))
+                self.taskFailed.emit('audit_base_tools', str(exc), '', '')
 
         threading.Thread(target=worker, daemon=True).start()
 

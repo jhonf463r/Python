@@ -10776,7 +10776,7 @@ class ControlCenterViewModel(QObject):
                     provider_cards.append(payload)
                 self.taskResolved.emit('provider_health', provider_cards)
             except Exception as exc:
-                self.taskFailed.emit('provider_health', f'No pude consultar el stack local: {exc}')
+                self.taskFailed.emit('provider_health', f'No pude consultar el stack local: {exc}', '', '')
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -12158,7 +12158,7 @@ class ControlCenterViewModel(QObject):
                     }
                     self.taskResolved.emit('external_consultation', security_result)
                 else:
-                    self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
+                    self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}', '', _dispatch_id)
             finally:
                 _ext_done.set()
 
@@ -14655,7 +14655,7 @@ class ControlCenterViewModel(QObject):
                         user_visible_message=False,
                     )
                     return
-                self.taskFailed.emit('adaptive_action', f'No pude completar la accion adaptativa: {exc}')
+                self.taskFailed.emit('adaptive_action', f'No pude completar la accion adaptativa: {exc}', '', _dispatch_id)
             finally:
                 _aa_done.set()
 
@@ -14722,7 +14722,7 @@ class ControlCenterViewModel(QObject):
                 payload['run_summary'] = record.result.summary
                 self.taskResolved.emit('self_teach', payload)
             except Exception as exc:
-                self.taskFailed.emit('self_teach', f'No pude completar el autotest interno: {exc}')
+                self.taskFailed.emit('self_teach', f'No pude completar el autotest interno: {exc}', '', '')
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -14739,7 +14739,7 @@ class ControlCenterViewModel(QObject):
                 payload, saved_path = self.training_orchestrator.prepare_and_archive()
                 self.taskResolved.emit('payload', {'episodes': len(payload.episodes), 'artifacts': len(payload.artifacts), 'knowledge': len(payload.knowledge_items), 'path': saved_path})
             except Exception as exc:
-                self.taskFailed.emit('payload', f'No pude generar el payload: {exc}')
+                self.taskFailed.emit('payload', f'No pude generar el payload: {exc}', '', '')
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -14756,7 +14756,7 @@ class ControlCenterViewModel(QObject):
                 state = self.pbt_service.run_cycle(self._collect_metrics())
                 self.taskResolved.emit('pbt', state)
             except Exception as exc:
-                self.taskFailed.emit('pbt', f'No pude ejecutar el ciclo PBT: {exc}')
+                self.taskFailed.emit('pbt', f'No pude ejecutar el ciclo PBT: {exc}', '', '')
 
         threading.Thread(target=worker, daemon=True).start()
 
