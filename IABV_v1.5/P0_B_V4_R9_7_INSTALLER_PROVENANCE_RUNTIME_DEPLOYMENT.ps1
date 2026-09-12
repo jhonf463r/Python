@@ -236,42 +236,82 @@ Write-Output "=== PHASE 10: CREATE MACHINE-SCOPED RUNTIME DIRECTORY ==="
 $serviceRuntimePath = "C:\ProgramData\IABV\service_runtime"
 if (Test-Path $serviceRuntimePath) {
     Write-Output "Removing existing runtime directory: $serviceRuntimePath"
-    Remove-Item -Path $serviceRuntimePath -Recurse -Force
+    try {
+        Remove-Item -Path $serviceRuntimePath -Recurse -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Failed to remove existing runtime directory: $_"
+        exit 1
+    }
 }
-New-Item -Path $serviceRuntimePath -ItemType Directory -Force
+try {
+    New-Item -Path $serviceRuntimePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+} catch {
+    Write-Output "ERROR: Failed to create runtime directory: $_"
+    exit 1
+}
 Write-Output "Machine-scoped runtime directory created: $serviceRuntimePath"
 Write-Output ""
 
 # PHASE 11: Copy Python runtime components from trusted source
 Write-Output "=== PHASE 11: COPY PYTHON RUNTIME COMPONENTS FROM TRUSTED SOURCE ==="
 Write-Output "Copying Python core executables..."
-Copy-Item -Path "$trustedSource\python.exe" -Destination "$serviceRuntimePath\" -Force
-Copy-Item -Path "$trustedSource\pythonw.exe" -Destination "$serviceRuntimePath\" -Force
-Copy-Item -Path "$trustedSource\python314.dll" -Destination "$serviceRuntimePath\" -Force
+try {
+    Copy-Item -Path "$trustedSource\python.exe" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\pythonw.exe" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\python314.dll" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy Python core executables: $_"
+    exit 1
+}
 
 Write-Output "Copying python314.zip (standard library)..."
 if (Test-Path "$trustedSource\python314.zip") {
-    Copy-Item -Path "$trustedSource\python314.zip" -Destination "$serviceRuntimePath\" -Force
+    try {
+        Copy-Item -Path "$trustedSource\python314.zip" -Destination "$serviceRuntimePath\" -Force -ErrorAction Stop
+    } catch {
+        Write-Output "ERROR: Failed to copy python314.zip: $_"
+        exit 1
+    }
 }
 
 Write-Output "Copying DLLs directory..."
-New-Item -Path "$serviceRuntimePath\DLLs" -ItemType Directory -Force
-Copy-Item -Path "$trustedSource\DLLs\*" -Destination "$serviceRuntimePath\DLLs\" -Recurse -Force
+try {
+    New-Item -Path "$serviceRuntimePath\DLLs" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\DLLs\*" -Destination "$serviceRuntimePath\DLLs\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy DLLs directory: $_"
+    exit 1
+}
 
 Write-Output "Copying Lib (standard library)..."
-New-Item -Path "$serviceRuntimePath\Lib" -ItemType Directory -Force
-Copy-Item -Path "$trustedSource\Lib\*" -Destination "$serviceRuntimePath\Lib\" -Recurse -Force
+try {
+    New-Item -Path "$serviceRuntimePath\Lib" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\Lib\*" -Destination "$serviceRuntimePath\Lib\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy Lib directory: $_"
+    exit 1
+}
 
 Write-Output "Copying Scripts..."
-New-Item -Path "$serviceRuntimePath\Scripts" -ItemType Directory -Force
-Copy-Item -Path "$trustedSource\Scripts\*" -Destination "$serviceRuntimePath\Scripts\" -Recurse -Force
+try {
+    New-Item -Path "$serviceRuntimePath\Scripts" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\Scripts\*" -Destination "$serviceRuntimePath\Scripts\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy Scripts directory: $_"
+    exit 1
+}
 
 Write-Output "Copying site-packages (pywin32, cryptography)..."
-New-Item -Path "$serviceRuntimePath\Lib\site-packages" -ItemType Directory -Force
-Copy-Item -Path "$trustedSource\Lib\site-packages\win32" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force
-Copy-Item -Path "$trustedSource\Lib\site-packages\pywin32*" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force
-Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force
-Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography-*.dist-info" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force
+try {
+    New-Item -Path "$serviceRuntimePath\Lib\site-packages" -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$trustedSource\Lib\site-packages\win32" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\Lib\site-packages\pywin32*" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography-*.dist-info" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy site-packages: $_"
+    exit 1
+}
 
 Write-Output "Python runtime copied from trusted source successfully"
 Write-Output ""
@@ -295,7 +335,12 @@ Lib\site-packages
 import site
 "@
 
-Set-Content -Path $pthPath -Value $pthContent -Force
+try {
+    Set-Content -Path $pthPath -Value $pthContent -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to configure python314._pth: $_"
+    exit 1
+}
 Write-Output "python314._pth configured for isolated runtime: $pthPath"
 Write-Output ""
 
@@ -303,8 +348,13 @@ Write-Output ""
 Write-Output "=== PHASE 13: COPY IABV SERVICE MODULES ==="
 $iabvSource = "$iabvProjectRoot\src"
 $iabvTarget = "$serviceRuntimePath\iabv_v15"
-New-Item -Path $iabvTarget -ItemType Directory -Force
-Copy-Item -Path "$iabvSource\iabv_v15" -Destination "$serviceRuntimePath\" -Recurse -Force
+try {
+    New-Item -Path $iabvTarget -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    Copy-Item -Path "$iabvSource\iabv_v15" -Destination "$serviceRuntimePath\" -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to copy IABV service modules: $_"
+    exit 1
+}
 Write-Output "IABV service modules copied to: $iabvTarget"
 Write-Output ""
 
@@ -351,26 +401,58 @@ logging.basicConfig(
 
 "@
 
-Set-Content -Path $sitecustomizePath -Value $sitecustomizeContent -Force
+try {
+    Set-Content -Path $sitecustomizePath -Value $sitecustomizeContent -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Failed to configure sitecustomize.py: $_"
+    exit 1
+}
 Write-Output "User-site isolation configured (defense-in-depth): $sitecustomizePath"
 Write-Output ""
 
 # PHASE 15: Configure ACLs for machine-scoped runtime
 Write-Output "=== PHASE 15: CONFIGURE MACHINE-SCOPED RUNTIME ACLS ==="
+
+# Use well-known SIDs for internationalization robustness
+# S-1-5-32-544 = Administrators
+# S-1-5-18 = SYSTEM
+# S-1-5-19 = LocalService
+# S-1-5-32-545 = Users
+
 Write-Output "Removing inheritance..."
 icacls $serviceRuntimePath /inheritance:r
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to remove inheritance"
+    exit 1
+}
 
-Write-Output "Granting LocalService Read/Execute..."
-icacls $serviceRuntimePath /grant:r "LocalService:(OI)(CI)RX"
+Write-Output "Granting LocalService Read/Execute (S-1-5-19)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-19:(OI)(CI)RX"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to grant LocalService permissions"
+    exit 1
+}
 
-Write-Output "Granting Administrators FullControl..."
-icacls $serviceRuntimePath /grant:r "Administrators:(OI)(CI)F"
+Write-Output "Granting Administrators FullControl (S-1-5-32-544)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-32-544:(OI)(CI)F"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to grant Administrators permissions"
+    exit 1
+}
 
-Write-Output "Granting SYSTEM FullControl..."
-icacls $serviceRuntimePath /grant:r "SYSTEM:(OI)(CI)F"
+Write-Output "Granting SYSTEM FullControl (S-1-5-18)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-18:(OI)(CI)F"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to grant SYSTEM permissions"
+    exit 1
+}
 
-Write-Output "Denying Users Write/Delete/Replace..."
-icacls $serviceRuntimePath /deny "Users:(OI)(CI)F"
+Write-Output "Denying Users Write/Delete/Replace (S-1-5-32-545)..."
+icacls $serviceRuntimePath /deny "*S-1-5-32-545:(OI)(CI)F"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to deny Users permissions"
+    exit 1
+}
 
 Write-Output "Machine-scoped runtime ACLs configured"
 Write-Output ""
@@ -378,7 +460,25 @@ Write-Output ""
 # PHASE 16: Verify python314._pth isolation in deployed runtime
 Write-Output "=== PHASE 16: VERIFY PYTHON314._PTH ISOLATION ==="
 Write-Output "Testing isolation with deployed runtime..."
-$isolationTest = & "$serviceRuntimePath\python.exe" -c "import sys,os; user_profile = os.environ.get('USERPROFILE', ''); has_user_path = any(p.startswith(user_profile) for p in sys.path if user_profile); print('USER_PROFILE_IN_PATH:', has_user_path); print('SYS_PATH_COUNT:', len(sys.path)); print('SYS_PATH:', sys.path); import site; print('ENABLE_USER_SITE:', site.ENABLE_USER_SITE)"
+
+# First verify python.exe exists and is executable
+if (-not (Test-Path "$serviceRuntimePath\python.exe")) {
+    Write-Output "ERROR: python.exe not found in deployed runtime: $serviceRuntimePath\python.exe"
+    exit 1
+}
+
+try {
+    $isolationTest = & "$serviceRuntimePath\python.exe" -c "import sys,os; user_profile = os.environ.get('USERPROFILE', ''); has_user_path = any(p.startswith(user_profile) for p in sys.path if user_profile); print('USER_PROFILE_IN_PATH:', has_user_path); print('SYS_PATH_COUNT:', len(sys.path)); print('SYS_PATH:', sys.path); import site; print('ENABLE_USER_SITE:', site.ENABLE_USER_SITE)" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "ERROR: python.exe execution failed with exit code $LASTEXITCODE"
+        Write-Output "Output: $isolationTest"
+        exit 1
+    }
+} catch {
+    Write-Output "ERROR: Failed to execute python.exe for isolation test: $_"
+    exit 1
+}
+
 Write-Output "Isolation test result: $isolationTest"
 if ($isolationTest -like "*USER_PROFILE_IN_PATH: True*") {
     Write-Output "ERROR: User profile path still in sys.path of deployed runtime"

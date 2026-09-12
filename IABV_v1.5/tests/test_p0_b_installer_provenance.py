@@ -243,7 +243,7 @@ def test_git_root_vs_project_root_semantics():
 
 def test_installer_accepts_git_root_as_repopath():
     """Verify installer works when RepoPath is Git root.
-    
+
     This tests the correct semantics for the actual repository layout.
     """
     # Verify actual repository layout
@@ -255,21 +255,228 @@ def test_installer_accepts_git_root_as_repopath():
         check=True
     )
     git_root = result.stdout.strip()
-    
+
     # Verify IABV project exists at Git root/IABV_v1.5
     iabv_project = Path(git_root) / "IABV_v1.5"
     assert iabv_project.exists(), (
         f"IABV project root must exist at {iabv_project}"
     )
-    
+
     # Verify source exists at project root/src
     iabv_source = iabv_project / "src" / "iabv_v15"
     assert iabv_source.exists(), (
         f"IABV source must exist at {iabv_source}"
     )
-    
+
     # Verify installer exists at project root
     installer_path = iabv_project / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
     assert installer_path.exists(), (
         f"Installer must exist at {installer_path}"
     )
+
+
+def test_installer_fail_closed_filesystem_operations():
+    """Verify installer is fail-closed for filesystem operations.
+
+    This tests that Copy-Item, Remove-Item, New-Item, Set-Content
+    use -ErrorAction Stop and abort deployment on failure.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Check for -ErrorAction Stop on critical filesystem operations
+    critical_patterns = [
+        ('Copy-Item', 'Copy-Item.*-ErrorAction Stop'),
+        ('Remove-Item', 'Remove-Item.*-ErrorAction Stop'),
+        ('New-Item', 'New-Item.*-ErrorAction Stop'),
+        ('Set-Content', 'Set-Content.*-ErrorAction Stop'),
+    ]
+
+    for operation, pattern in critical_patterns:
+        import re
+        if not re.search(pattern, installer_content, re.IGNORECASE):
+            # Some operations might be in try/catch blocks
+            # Verify there's at least a try/catch structure for error handling
+            assert 'try {' in installer_content.lower(), (
+                f"Installer must have error handling for {operation}"
+            )
+            assert 'catch' in installer_content.lower(), (
+                f"Installer must have error handling for {operation}"
+            )
+            assert 'exit 1' in installer_content, (
+                f"Installer must exit on {operation} failure"
+            )
+
+
+def test_installer_fail_closed_native_commands():
+    """Verify installer checks exit codes for native commands.
+
+    This tests that icacls, python.exe, git, and other native commands
+    have $LASTEXITCODE validation.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Count $LASTEXITCODE checks
+    lastexitcode_count = installer_content.count('$LASTEXITCODE')
+    assert lastexitcode_count >= 5, (
+        f"Installer must check $LASTEXITCODE for native commands. "
+        f"Found {lastexitcode_count} checks, expected at least 5"
+    )
+
+    # Verify icacls calls are followed by exit code checks
+    icacls_lines = [line for line in installer_content.split('\n') if 'icacls' in line]
+    assert len(icacls_lines) > 0, "Installer must use icacls for ACL configuration"
+
+    # Verify at least one icacls is followed by exit code check
+    found_icacls_with_check = False
+    lines = installer_content.split('\n')
+    for i, line in enumerate(lines):
+        if 'icacls' in line and i + 1 < len(lines):
+            # Check next few lines for exit code check
+            for j in range(i + 1, min(i + 3, len(lines))):
+                if '$LASTEXITCODE' in lines[j]:
+                    found_icacls_with_check = True
+                    break
+
+    assert found_icacls_with_check, (
+        "Installer must check $LASTEXITCODE after icacls commands"
+    )
+
+
+def test_installer_acl_identity_handling():
+    """Verify installer uses well-known SIDs for ACL identities.
+
+    This tests that ACL configuration uses SIDs instead of localized
+    account names (e.g., "Administrators" vs "S-1-5-32-544").
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Verify well-known SIDs are used
+    well_known_sids = [
+        'S-1-5-32-544',  # Administrators
+        'S-1-5-18',      # SYSTEM
+        'S-1-5-19',      # LocalService
+        'S-1-5-32-545',  # Users
+    ]
+
+    sid_count = sum(1 for sid in well_known_sids if sid in installer_content)
+    assert sid_count >= 3, (
+        f"Installer should use well-known SIDs for ACL identities. "
+        f"Found {sid_count} SIDs, expected at least 3"
+    )
+
+    # Verify SID format is used with icacls
+    assert '*S-1-5' in installer_content, (
+        "Installer must use SID format with icacls (e.g., *S-1-5-32-544)"
+    )
+
+
+def test_installer_phase_16_python_executable_check():
+    """Verify PHASE 16 checks python.exe existence before execution.
+
+    This tests that the isolation test doesn't declare PASS if python.exe
+    doesn't exist or fails to execute.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 16 section
+    phase_16_match = installer_content.find('PHASE 16')
+    assert phase_16_match != -1, "Installer must have PHASE 16"
+
+    phase_16_section = installer_content[phase_16_match:phase_16_match + 1000]
+
+    # Verify python.exe existence check before execution
+    assert 'Test-Path' in phase_16_section, (
+        "PHASE 16 must check python.exe existence before execution"
+    )
+
+    # Verify exit code check after python.exe execution
+    assert '$LASTEXITCODE' in phase_16_section, (
+        "PHASE 16 must check $LASTEXITCODE after python.exe execution"
+    )
+
+    # Verify try/catch for python.exe execution
+    assert 'try {' in phase_16_section.lower(), (
+        "PHASE 16 must have error handling for python.exe execution"
+    )
+
+
+def test_no_false_success_after_critical_failure():
+    """Verify installer does not print success messages after failures.
+
+    This tests the NO_FALSE_SUCCESS_AFTER_CRITICAL_FAILURE property:
+    - Critical operation fails
+    - Deployment aborts immediately
+    - No success message printed
+    - Non-zero exit code
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find patterns where ERROR is followed by success message
+    lines = installer_content.split('\n')
+    for i, line in enumerate(lines):
+        if 'ERROR:' in line:
+            # Check next few lines - should not have success message
+            # before exit 1
+            for j in range(i + 1, min(i + 5, len(lines))):
+                next_line = lines[j].lower()
+                if 'successfully' in next_line or 'pass' in next_line:
+                    # Ensure there's an exit 1 between error and success
+                    found_exit = False
+                    for k in range(i, j):
+                        if 'exit 1' in lines[k]:
+                            found_exit = True
+                            break
+                    assert found_exit, (
+                        f"Success message found after ERROR without exit 1. "
+                        f"Line {i}: {line.strip()}, Line {j}: {lines[j].strip()}"
+                    )
+
+
+def test_installer_service_removal_checks_exit_code():
+    """Verify installer checks exit code for service removal.
+
+    This tests that service removal failures abort deployment.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find service removal section (PHASE 9)
+    phase_9_match = installer_content.find('PHASE 9')
+    assert phase_9_match != -1, "Installer must have PHASE 9"
+
+    phase_9_section = installer_content[phase_9_match:phase_9_match + 500]
+
+    # Verify exit code check for service removal
+    assert '$LASTEXITCODE' in phase_9_section, (
+        "PHASE 9 must check $LASTEXITCODE for service removal"
+    )
+
