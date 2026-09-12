@@ -42,19 +42,20 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 | Cognitive control plane / external-agent cognition | `CURRENT-STATE.md`, `SYMBIOSIS-MAP.md`, `UNRESOLVED-KNOWLEDGE.md` | R5 cognitive records, multi-tool/metacognition records | Does IABV context causally change a real agent decision? Is the loop closed? |
 | Temporal-causal metacognition / expanded synthesis | `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | P040 incident records, OSES, organism snapshot, temporal-awareness records, scientific metacognition | Can IABV reconstruct state-before/state-after, identify the broken causal edge, choose the highest-information intervention, and feed the result back into future decisions? |
 | IABV-directed external-agent execution | `CURRENT-STATE.md`, `SYMBIOSIS-MAP.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | Devin adapter, ToolTeachService, agent handoff/briefing records, R3 cognitive wiring records | Can IABV autonomously prepare, delegate and verify work through an external agent without turning the UI or human into a manual transport layer? |
+| Comparative reasoning / metacognitive benchmark | `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | Evolution Control Room benchmark guidance, prior agent capability comparisons, learning-gate records, external-agent evidence | Is IABV improving at observation, uncertainty, contradictions, causal tracing, minimal action, verification, escalation, stop discipline and reuse? Is avoidable external work decreasing? |
 | Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CANONICAL-ABSORPTION-2026-09-11.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records | Can a new chat reconstruct only the relevant state from GitHub? Is material knowledge absorbed even when a source remains branch-only? |
 | P0-B authority / provenance / security | `CURRENT-STATE.md` | P0.213 authority/trust records, P0-B records, current P0-B branch evidence, canonical absorption | Is legitimate authority independently bound to trust root, identity, runtime and invocation? |
 | AdaptiveSession provenance / replan lineage | `CURRENT-STATE.md` | provenance records and `aa3ff2c2` history | Are typed fields actually canonical in runtime decisions, or only persisted mirrors? |
 | R3 / Devin adapter / tool execution | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | R5/R3 loopback records, Devin adapter, ToolTeachService, current test evidence | Does the production path select and invoke the adapter rather than bypassing it, and can IABV select/verify the route dynamically? |
 | Runtime/bootstrap/provenance | `CURRENT-STATE.md` | runtime-integration, Windows forensic, cognitive symbiosis records | Is the exact intended commit actually running? Is package origin/workspace/runtime aligned? |
-| Evidence adequacy / verification | `CURRENT-STATE.md`, `CANONICAL-ABSORPTION-2026-09-11.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | adaptive-evidence, objective-verifier records, persistence and deletion records | What does evidence actually prove, and what remains merely asserted? |
+| Evidence adequacy / verification | `CURRENT-STATE.md`, `CANONICAL-ABSORPTION-2026-09-11.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md` | adaptive-evidence, objective-verifier records, persistence and deletion records | What does evidence actually prove, and what remains merely asserted? |
 | Objective verifier / goal-evidence alignment | `CANONICAL-ABSORPTION-2026-09-11.md`, `CURRENT-STATE.md` | `CHAT-ARCH-2026-09-11-018` source records on `foundation/reconstruction`, adaptive-evidence history | Does the verifier prove the declared objective, or only a narrower mechanical property? |
-| Scientific metacognition / prediction / calibration | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md` | multi-tool/scientific-metacognition records, prediction/calibration records | Are expectations established before execution and compared against later reality? |
+| Scientific metacognition / prediction / calibration | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md` | multi-tool/scientific-metacognition records, prediction/calibration records | Are expectations established before execution and compared against later reality? |
 | Self-development / autoevolution | `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md` | cognitive metabolism, self-operation, lifecycle/autoevolution, authority records | Is self-observation actually changing strategy/behavior, or only producing reports? |
 | Architecture-to-runtime construction | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md` | architecture-to-runtime construction history | Which architectural claims are actually implemented and runtime proven? |
 | Windows runtime / hardening | `CURRENT-STATE.md` | Windows forensic and P0-B records | What security claims survive adversarial Windows execution? |
 | Historical deletion safety | `CANONICAL-ABSORPTION-2026-09-11.md`, `README.md`, `ARCHIVE-REGISTRY.md` | source records and deletion-gate records | Is knowledge preserved directly or through canonical absorption with provenance? |
-| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, and who must independently challenge the result? |
+| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, and is IABV learning this capability map from evidence? |
 
 ## CROSS-CUTTING ACTIVATION — ALWAYS CONSIDER WHEN MATERIAL
 
@@ -98,7 +99,8 @@ A historical record is relevant when at least one of the following can materiall
 6. it records how another AI's observation corrected the working model;
 7. it establishes the last known gate/blocker for the same subsystem;
 8. it changes which AI capability should be used for the objective;
-9. it contains a canonical absorption that preserves otherwise branch-only historical knowledge relevant to the objective.
+9. it contains a canonical absorption that preserves otherwise branch-only historical knowledge relevant to the objective;
+10. it contains benchmark evidence that can establish whether IABV has improved or regressed.
 
 Otherwise do not activate it by default.
 
@@ -120,7 +122,7 @@ When the new objective is broad, expand retrieval in layers rather than dumping 
 
 `current state → domain syntheses → canonical absorption → domain source archives → neighboring domains → historical contradictions → unresolved ideas → raw chronology only if needed`.
 
-For temporal-causal or system-self-observation objectives, use the same layered approach but include `METACOGNITIVE-DEDUCTION-2026-09-12.md` at Depth 1 because it defines the current synthesis hypothesis and the incident-derived causal method. For executive-loop / IABV→Devin objectives, also activate `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` because it preserves the latest causal-chain cut, target-branch provenance reconciliation, and open ownership question.
+For temporal-causal or system-self-observation objectives, use the same layered approach but include `METACOGNITIVE-DEDUCTION-2026-09-12.md` at Depth 1 because it defines the current synthesis hypothesis and the incident-derived causal method. For executive-loop / IABV→Devin objectives, also activate `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` because it preserves the latest causal-chain cut, target-branch provenance reconciliation, and open ownership question. For comparative reasoning objectives, include `AGENT-REASONING-BENCHMARK-2026-09-12.md` at Depth 1 and prefer a frozen/reproducible case set over ad-hoc subjective comparisons.
 
 ## DELETE-GATE ROUTING
 
