@@ -27,6 +27,7 @@ GitHub contains a canonical objective-driven historical-memory layer:
 - `IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/DELETION-READINESS-2026-09-11.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/ARCHIVE-REGISTRY.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`
 
 The intended cross-chat property is:
 
@@ -139,6 +140,39 @@ True inflection point requires observable causal closure:
 
 Current records do not prove this full closure.
 
+## SYSTEMIC INTEGRITY / ORGAN CONNECTIVITY FRONTIER
+
+The P040 runtime investigation and UK-15 prediction trace revealed a broader class of failures that should not be handled as isolated bugs.
+
+A canonical synthesis now exists at:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`
+
+Key conclusion:
+
+**IABV already contains substantial integrity organs; what remains unresolved is system-wide cross-organ reconciliation.**
+
+Existing relevant organs include perception/cross-validation, OSES, self-code analysis, signal reconciliation, anomaly reasoning, runtime audit, decision audit, organism state, discernment, task-context assembly, universal perception, responsibility inference, system registries and canonical-source verification.
+
+Do not describe the system as having zero integrity capability. The unresolved gap is whether these organs can jointly detect and explain:
+
+- stale producer/consumer contracts;
+- temporal contract violations;
+- semantic mismatches;
+- responsibility/architecture duplication;
+- post-refactor drift;
+- loss of data between organs;
+- runtime vs declared contract divergence;
+- and causal discontinuity.
+
+Historical `UniversalMetacognitiveScanner` responsibilities must be traced to current organs before any new subsystem is considered.
+
+P040 is now PROVEN as a live UI → sendChat → interaction → dispatch → worker → terminal → ExperimentRun/Recommendation path after two concrete runtime fixes.
+
+UK-15 remains open because the contemporary ExperimentRun lacked `metacognitive_evaluation`; the current forensic explanation is that TaskOutcomeRecorder looked for a previous recommendation while the contemporary Recommendation was generated later. The semantic contract between Recommendation and Prediction remains unresolved.
+
+The active next investigation is therefore **existing systemic integrity algorithms and their composition**, not a new architecture by default.
+
 ## MAJOR EPISTEMIC BOUNDARIES
 
 - code exists != capability proven;
@@ -152,7 +186,12 @@ Current records do not prove this full closure.
 - typed field existence != canonical behavioral ownership;
 - context delivery != causal cognitive influence;
 - historical archive existence != deletion safety;
-- direct source reachability != the only valid form of canonical historical memory.
+- direct source reachability != the only valid form of canonical historical memory;
+- event recorded != connection validated;
+- timestamp available != temporal contract validated;
+- recommendation exists != prediction exists;
+- prediction persists != prediction influences a later decision;
+- duplicate finding detection != architecture/responsibility deduplication.
 
 ## HIGH-VALUE FAILURE MEMORY
 
@@ -167,6 +206,8 @@ Current records do not prove this full closure.
 9. **Source-location fallacy:** a historical source being absent from `main` was treated as equivalent to loss of its knowledge, even when canonical absorption can preserve the material knowledge with provenance.
 10. **Open-task/delete confusion:** unfinished engineering work was treated as proof that the historical chat must remain; deletion safety is instead a knowledge-preservation property.
 11. **Search-index-as-readback fallacy:** a code-search result or stale indexed URL is not equivalent to a successful direct file read-back.
+12. **Runtime-repair closure fallacy:** source/test repair was treated as enough until an actual UI path exposed a second stale import/contract.
+13. **Cross-organ fragmentation:** multiple organs can each observe a correct local fact while no organ verifies that the end-to-end relationship remains coherent.
 
 ## CURRENT SYMBIOSIS METHOD
 
@@ -218,4 +259,6 @@ Whenever a new chat materially changes any of the following, update this file an
 - cross-IA learning that changes future work;
 - causal learning/continuity state;
 - memory-routing or role-selection behavior;
-- canonical absorption or deletion-readiness status.
+- canonical absorption or deletion-readiness status;
+- systemic connectivity / contract-drift findings;
+- discovered duplication, stale-reference or cross-organ integration failures.
