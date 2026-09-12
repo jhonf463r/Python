@@ -6,6 +6,8 @@ This file exists for ideas, deductions, questions and strategically important ga
 
 A future chat must consult this register when the active objective overlaps a listed topic. An item is not an implementation commitment merely because it is recorded here.
 
+A future system-level objective should also distinguish **missing implementation** from **missing integration of already-existing organs**. The latter is often the higher-value frontier because it can increase development velocity without adding architectural mass.
+
 ## ACTIVE HIGH-VALUE UNRESOLVED ITEMS
 
 ### UK-01 — Real causal external-agent cognition
@@ -104,6 +106,46 @@ QUESTION: Can IABV demonstrate real authenticated external communication and the
 
 CURRENT STATUS: Infrastructure and selectors have existed historically, but real authenticated browser/shared-CDP communication was not proven in the available evidence.
 
+### UK-11 — Accelerated metacognitive orchestration / executive synthesis
+
+QUESTION: Can the existing IABV organs be composed into a low-friction executive loop that continuously determines what matters now, what evidence is sufficient, which actor should be delegated, what must be verified, and what knowledge must be written back — without requiring the human to manually repackage every prompt?
+
+CURRENT STATUS: ARCHITECTURALLY PLAUSIBLE / CAUSAL LOOP NOT PROVEN.
+
+IMPORTANT DISTINCTION:
+This is not a proposal for another monolithic brain. It is a hypothesis that IABV's existing perception, world-model, self-examination, governance, routing, adaptive-weight, outcome, memory and external-agent adapters can already support a higher-order control loop if their outputs become causally connected at the right boundaries.
+
+TARGET LOOP:
+
+`objective → active context → current reality → uncertainty map → information-gain ranking → actor/action selection → delegated execution → observation → independent verification → knowledge delta → next objective state`
+
+KEY ACCELERATION HYPOTHESIS:
+
+The human should ideally specify the objective and intervene at real decision boundaries. IABV should handle routine context retrieval, prompt packaging, evidence collection, delegation, status correlation, verification routing and memory writeback when the required capabilities and permissions are available.
+
+NON-CLAIM:
+This does not prove autonomous control of Devin or any other external agent. The capability remains unresolved until a real end-to-end experiment demonstrates that IABV state determines a delegated action and the resulting feedback changes a subsequent decision.
+
+### UK-12 — Devin delegation as an executive control path
+
+QUESTION: Can IABV's existing Devin adapter, briefing/context path and routing/governance layers safely act as a delegated execution path so the human provides the objective while IABV prepares, sends, monitors and verifies the implementation work?
+
+CURRENT STATUS: INFRASTRUCTURE EXISTS / FULL EXECUTIVE LOOP NOT PROVEN.
+
+CURRENT EVIDENCE:
+- `DevinApiToolAdapter` exists as a REST integration;
+- bootstrap wires a Devin message sender;
+- `SessionStartBriefingService` accepts a `message_sender(session_id, content)` abstraction that can be supplied by the Devin adapter;
+- historical R3 work established the importance of production-path context propagation;
+- `SynapticRouter` currently ranks candidates from fit, adaptive history and live World Model availability but explicitly does not execute the route;
+- `AdaptiveTaskOrchestrator` uses the synaptic ranking as informative while `LocalRoleRouter` remains the operational route decision authority.
+
+REQUIRED DISCRIMINATING EXPERIMENT:
+
+`IABV objective → canonical context → approved Devin task packet → Devin session/message → observable Devin action/result → independent verification → writeback → next decision influenced by result`
+
+Success must be proven at the causal boundary, not inferred from adapter availability or successful HTTP receipt.
+
 ## DEFERRED BUT IMPORTANT DESIGN IDEAS
 
 These are intentionally recorded without forcing implementation:
@@ -117,7 +159,11 @@ These are intentionally recorded without forcing implementation:
 - blind reconstruction as a deletion-safety test;
 - historical migration of legacy provenance records into typed canonical provenance;
 - runtime provenance as a first-class evidence object across tool execution;
-- learned collaboration policy: which AI should challenge, implement, observe or adjudicate for a given class of uncertainty.
+- learned collaboration policy: which AI should challenge, implement, observe or adjudicate for a given class of uncertainty;
+- executive synthesis that minimizes routine human coordination by delegating context assembly, prompt construction, evidence capture and post-action verification to existing IABV organs;
+- explicit intervention thresholds so the human is surfaced only when a real decision, permission, contradiction or unresolved evidence gap exists;
+- state-before/state-after experiment packets as the standard unit for proving causal improvement in development workflow;
+- objective-conditioned work queues generated from active uncertainty rather than fixed phase lists.
 
 ## REJECTED / DO-NOT-REPEAT IDEAS
 
@@ -133,5 +179,7 @@ These are intentionally recorded without forcing implementation:
 ## USE OF THIS REGISTER
 
 A future chat should retrieve this file when its objective overlaps an unresolved item. It should then determine whether the current repository has since resolved, refuted, superseded or still preserves that item.
+
+For UK-11 / UK-12 work, the future chat should prefer an **acceleration experiment** over another general architecture review: identify one real delegated workflow, capture state-before, let IABV prepare and delegate the work, capture state-after, independently verify the effect, and determine whether the resulting experience changes the next routing decision.
 
 Resolution requires evidence, not a status edit based only on a later claim.
