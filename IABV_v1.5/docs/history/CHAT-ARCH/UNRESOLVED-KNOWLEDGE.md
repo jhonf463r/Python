@@ -2,7 +2,7 @@
 
 ## PURPOSE
 
-This file exists for ideas, deductions, questions and strategically important gaps that may never have become tickets or commits.
+This file exists for ideas, deductions, questions and strategically important gaps that may never have become tickets or formal decisions.
 
 A future chat must consult this register when the active objective overlaps a listed topic. An item is not an implementation commitment merely because it is recorded here.
 
@@ -96,7 +96,7 @@ SUCCESS CONDITION: Objective → domain routing → relevant source archives →
 
 QUESTION: Can the archive reliably preserve knowledge that never became code, a ticket or a formal decision?
 
-REQUIRED CONTENT: ideas left in the air, rejected paths, latent deductions, false positives, cross-IA corrections, methodological changes, conceptual breakthroughs and unresolved questions.
+REQUIRED CONTENT: ideas left in the air, rejected paths, false positives, cross-IA corrections, methodological changes, conceptual breakthroughs and unresolved questions.
 
 CURRENT STATUS: Dedicated register and routing layer now exist; completeness still requires repeated comparison against source conversations when deletion is at stake.
 
@@ -146,6 +146,36 @@ REQUIRED DISCRIMINATING EXPERIMENT:
 
 Success must be proven at the causal boundary, not inferred from adapter availability or successful HTTP receipt.
 
+### UK-13 — Existing-orchestrator ownership of the executive loop
+
+QUESTION: Is the remaining acceleration gap a missing decision algorithm, or a missing autonomous trigger/feedback connection around decision machinery that already exists?
+
+CURRENT STATUS: INITIAL RECONCILIATION INDICATES **EXISTING DECISION ORG / MISSING CLOSED ACTIVATION PATH**, not a proven need for a new delegation service.
+
+CURRENT EVIDENCE:
+- `AdaptiveTaskOrchestrator` already owns operational task orchestration, intent/context assembly, governance, worker gating, task execution and outcome application;
+- `AutonomyCycleService` already consolidates perception-derived findings into pending work, resume hints and actionable startup summary, while explicitly leaving autonomous decisions to `AdaptiveTaskOrchestrator`;
+- `AdaptiveTaskOrchestrator` is already wired to `AutonomyCycleService`, `GoalEngine`, `CapabilityReadinessService`, `AutonomyGovernancePolicy`, `TaskContextAssembler`, `TaskOutcomeRecorder` and optional `SynapticRouter`;
+- `AutonomousEvolutionService.plan_or_execute()` already contains the external-consultation decision/execution boundary and can invoke `ToolTeachService.execute_external_consultation()`;
+- `SessionStartBriefingService` already converts `PortableContextService` state into an external-agent briefing and can deliver/create sessions through injected callables;
+- current code still treats `SynapticRouter` as descriptive and does not prove that canonical world/self/history state automatically causes a Devin delegation;
+- current evidence does not prove a runtime trigger that consumes the actionable autonomy queue and closes the chain through Devin → observed result → verified post-state → changed next decision.
+
+IMPORTANT DEDUCTION:
+Do **not** create `DevinDelegationDecisionService` merely because the first forensic report named it. That would risk duplicating `AdaptiveTaskOrchestrator` and fragmenting decision authority. First trace and test whether the smallest missing edge is an activation/feedback connection into the existing orchestrator and external-consultation path.
+
+ACCELERATION HYPOTHESIS:
+The highest-value intervention is likely to make the existing orchestration stack consume the autonomous work queue and produce a traceable executive task packet, while preserving `AutonomyCycleService` as state substrate, `AdaptiveTaskOrchestrator` as decision authority, `SessionStartBriefingService` as briefing/transport bridge, and `TaskOutcomeRecorder` as outcome persistence. Only create a new component if code-level evidence proves no existing contract can own the missing edge without duplication.
+
+DISCRIMINATING EXPERIMENT:
+
+`human objective → current canonical state/context → active uncertainty/gate → existing orchestrator decision → Devin selection/packet → existing external-consultation path → observable Devin action/result → independent verification → post-state → next orchestrator decision`
+
+The experiment must report the first causally broken edge using `DEFINED | WIRED | INVOKED | OBSERVED | CAUSED`, plus the smallest implementation needed to close that edge. It must not expand into a general architecture rewrite.
+
+SUCCESS CONDITION:
+A real development objective can be supplied once by the human; IABV assembles relevant context and evidence, invokes its existing decision machinery, delegates through the existing Devin path when governance allows, captures the result, verifies the outcome, and returns to the same decision machinery with a materially different next state/decision — reducing routine manual prompt transport without weakening provenance or independent verification.
+
 ## DEFERRED BUT IMPORTANT DESIGN IDEAS
 
 These are intentionally recorded without forcing implementation:
@@ -181,5 +211,7 @@ These are intentionally recorded without forcing implementation:
 A future chat should retrieve this file when its objective overlaps an unresolved item. It should then determine whether the current repository has since resolved, refuted, superseded or still preserves that item.
 
 For UK-11 / UK-12 work, the future chat should prefer an **acceleration experiment** over another general architecture review: identify one real delegated workflow, capture state-before, let IABV prepare and delegate the work, capture state-after, independently verify the effect, and determine whether the resulting experience changes the next routing decision.
+
+For UK-13, the first implementation question is **ownership and activation**, not creation of another decision service: trace `AutonomyCycleService → AdaptiveTaskOrchestrator → existing external-consultation path → Devin → verification → outcome/replan` and implement only the smallest missing edge that prevents the causal loop from closing.
 
 Resolution requires evidence, not a status edit based only on a later claim.
