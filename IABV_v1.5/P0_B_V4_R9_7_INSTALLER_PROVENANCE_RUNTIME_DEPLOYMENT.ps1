@@ -421,6 +421,7 @@ try {
     New-Item -Path "$serviceRuntimePath\Lib\site-packages" -ItemType Directory -Force -ErrorAction Stop | Out-Null
     Copy-Item -Path "$trustedSource\Lib\site-packages\win32" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
     Copy-Item -Path "$trustedSource\Lib\site-packages\pywin32*" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
+    Copy-Item -Path "$trustedSource\Lib\site-packages\pywin32_system32" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
     Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
     Copy-Item -Path "$trustedSource\Lib\site-packages\cryptography-*.dist-info" -Destination "$serviceRuntimePath\Lib\site-packages\" -Recurse -Force -ErrorAction Stop
 } catch {
@@ -668,8 +669,7 @@ $requiredFiles = @(
     "$serviceRuntimePath\python.exe",
     "$serviceRuntimePath\python314.dll",
     "$pythonservicePath",
-    "$serviceRuntimePath\$expectedDll",
-    "$serviceRuntimePath\Lib\site-packages\win32\__init__.py",
+    "$serviceRuntimePath\Lib\site-packages\pywin32_system32\$expectedDll",
     "$serviceRuntimePath\Lib\site-packages\cryptography\__init__.py",
     "$serviceRuntimePath\Lib\site-packages\cryptography\hazmat\bindings\_rust.pyd",
     "$serviceRuntimePath\iabv_v15\services\development\authority_windows_service.py"

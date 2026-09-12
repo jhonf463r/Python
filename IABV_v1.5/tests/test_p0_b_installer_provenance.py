@@ -1796,3 +1796,180 @@ def test_installer_phase_16_false_positive_prevention():
     # The pattern should require the exact marker, not just "OK" or "ENCODINGS"
     # This is enforced by the specific marker format
 
+
+def test_installer_phase_7_pywintypes_source_layout():
+    """Verify PHASE 7 recognizes the actual supported location of pywintypes314.dll.
+
+    The trusted source layout is:
+    - C:\Python314\Lib\site-packages\pywin32_system32\pywintypes314.dll (exists)
+    - C:\Python314\pywintypes314.dll (does not exist in this installation)
+
+    The installer must recognize the pywin32_system32 location.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 7 section
+    phase_7_match = installer_content.find('PHASE 7: VERIFY PYWINTYPES DLL VERSION CONSISTENCY')
+    assert phase_7_match != -1, "Installer must have PHASE 7"
+
+    phase_7_section = installer_content[phase_7_match:phase_7_match + 1000]
+
+    # Verify installer checks pywin32_system32 location
+    assert 'pywin32_system32' in phase_7_section, (
+        "PHASE 7 must check pywin32_system32 location for pywintypes314.dll"
+    )
+
+    # Verify installer allows pywin32_system32 as valid location
+    assert 'pywin32_system32' in phase_7_section, (
+        "PHASE 7 must accept pywin32_system32 as valid pywintypes location"
+    )
+
+
+def test_installer_phase_11_copies_pywin32_system32():
+    """Verify PHASE 11 copies pywin32_system32 directory.
+
+    Regression guard for missing pywintypes314.dll in staging:
+    Phase 11 must copy pywin32_system32 from trusted source.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 11 section
+    phase_11_match = installer_content.find('Copying site-packages')
+    assert phase_11_match != -1, "Installer must have site-packages copy phase"
+
+    phase_11_section = installer_content[phase_11_match:phase_11_match + 1000]
+
+    # Verify pywin32_system32 is copied
+    assert 'pywin32_system32' in phase_11_section, (
+        "PHASE 11 must copy pywin32_system32 directory"
+    )
+
+    # Verify Copy-Item is used for pywin32_system32
+    assert 'Copy-Item' in phase_11_section, (
+        "PHASE 11 must use Copy-Item for pywin32_system32"
+    )
+
+
+def test_installer_phase_19_verifies_pywin32_system32_dll():
+    """Verify PHASE 19 checks pywintypes314.dll in pywin32_system32.
+
+    Regression guard for verification mismatch:
+    Phase 19 must check the same location that Phase 11 produces.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 19 section
+    phase_19_match = installer_content.find('PHASE 19: VERIFY CRITICAL RUNTIME COMPONENTS')
+    assert phase_19_match != -1, "Installer must have PHASE 19"
+
+    phase_19_section = installer_content[phase_19_match:phase_19_match + 1000]
+
+    # Verify Phase 19 checks pywin32_system32 location
+    assert 'pywin32_system32' in phase_19_section, (
+        "PHASE 19 must check pywintypes314.dll in pywin32_system32"
+    )
+
+    # Verify Phase 19 does NOT check root location (which doesn't exist in source)
+    # The check should use $expectedDll with pywin32_system32 path
+
+
+def test_installer_phase_19_no_win32_init_py_check():
+    """Verify PHASE 19 does NOT require win32/__init__.py.
+
+    Regression guard for incorrect expectation:
+    The trusted source does NOT have win32/__init__.py (it's a namespace package).
+    Phase 19 should not require this file.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 19 section
+    phase_19_match = installer_content.find('PHASE 19: VERIFY CRITICAL RUNTIME COMPONENTS')
+    assert phase_19_match != -1, "Installer must have PHASE 19"
+
+    phase_19_section = installer_content[phase_19_match:phase_19_match + 1000]
+
+    # Verify win32/__init__.py is NOT in required files
+    assert 'win32\\__init__.py' not in phase_19_section, (
+        "PHASE 19 must not require win32/__init__.py (namespace package)"
+    )
+
+
+def test_installer_phase_7_rejects_wrong_dll_version():
+    """Verify PHASE 7 rejects wrong version pywintypes DLL.
+
+    Regression guard for version consistency:
+    Installer must reject pywintypes313.dll when pywintypes314.dll is expected.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 7 section
+    phase_7_match = installer_content.find('PHASE 7: VERIFY PYWINTYPES DLL VERSION CONSISTENCY')
+    assert phase_7_match != -1, "Installer must have PHASE 7"
+
+    phase_7_section = installer_content[phase_7_match:phase_7_match + 1500]
+
+    # Verify installer checks for wrong version DLL
+    assert 'pywintypes313.dll' in phase_7_section, (
+        "PHASE 7 must check for wrong version pywintypes313.dll"
+    )
+
+    # Verify installer exits on wrong version
+    assert 'exit 1' in phase_7_section, (
+        "PHASE 7 must exit 1 if wrong version DLL is found"
+    )
+
+
+def test_installer_phase_19_missing_artifact_fail_closed():
+    """Verify PHASE 19 fails closed when required artifact is missing.
+
+    Regression guard for fail-closed behavior:
+    If pywintypes314.dll is missing in staging, Phase 19 must exit 1.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 19 section
+    phase_19_match = installer_content.find('PHASE 19: VERIFY CRITICAL RUNTIME COMPONENTS')
+    assert phase_19_match != -1, "Installer must have PHASE 19"
+
+    phase_19_section = installer_content[phase_19_match:phase_19_match + 1000]
+
+    # Verify exit 1 when files are missing
+    assert 'exit 1' in phase_19_section, (
+        "PHASE 19 must exit 1 when critical components are missing"
+    )
+
+    # Verify check uses Test-Path
+    assert 'Test-Path' in phase_19_section, (
+        "PHASE 19 must use Test-Path to verify file existence"
+    )
+
