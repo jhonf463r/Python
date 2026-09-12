@@ -1,275 +1,418 @@
-# IABV v1.5 — Systemic Integrity & Connectivity Synthesis
+# IABV v1.5 — Systemic Integrity & Connectivity
 
-## PURPOSE
+## CANONICAL STATUS
 
-This document is the canonical synthesis for the emerging **systemic integrity / organ connectivity** problem discovered during the P040 and UK-15 investigations.
+**State:** RECONCILED AGAINST CURRENT CODE
+**Date:** 2026-09-12
+**Purpose:** preserve the current architectural understanding of IABV's systemic-integrity / organ-connectivity capability so future chats and AIs can retrieve the same context, reconcile it against current code/runtime, and avoid restarting the investigation.
 
-Its purpose is to prevent future chats, IABV self-analysis, and external AIs from restarting the same investigation from zero.
+This document is a living knowledge artifact. Later evidence may supersede, refute or refine individual claims. Historical findings must not be silently erased.
 
-It must be treated as a living knowledge artifact. New evidence may mark parts obsolete, refuted, superseded, or more strongly proven. A later state must never silently erase the historical state that produced the finding.
+---
 
-## CURRENT HIGH-LEVEL MODEL
+## 1. CURRENT RECONCILIATION
 
-IABV does **not** start from an empty architecture-integrity layer.
+A direct reconciliation of the prior canonical model against the real current code established:
 
-Existing organs already perform substantial pieces of:
+- **13 of 17 previously listed integrity organs are present in the current codebase.**
+- **4 previously listed organs are not present in the current codebase:**
+  - `SystemKnowledgeRegistry`
+  - `SystemHealthRegistry`
+  - `ProjectSteeringRegistry`
+  - `CanonicalSourceRegistry`
+- The historical P040 runtime incidents and UK-15 timing investigation still support the documented cross-organ contract-drift pattern.
 
-- perception and cross-validation;
+The four absent names must therefore be treated as **historical/documentary references, not current architectural capabilities** unless new source evidence proves otherwise.
+
+### Current real integrity organs / algorithms
+
+1. `SystemIdentityRegistry`
+2. `PerceptionCrossValidator`
+3. `OperationalSelfExaminationService (OSES)`
+4. `SelfCodeAnalysis`
+5. `ToolDiscoveryService._reconcile_signals()`
+6. `CommonSenseEngine`
+7. `RuntimeAuditTracer`
+8. `DecisionAuditTrail`
+9. `OrganismStateSnapshot`
+10. `DiscernmentFrameService`
+11. `TaskContextAssembler`
+12. `UniversalPerceptionService`
+13. `CodeResponsibilityInferencer` — currently identified as active only in the construction tooling path
+
+---
+
+## 2. WHAT THE CURRENT ARCHITECTURE CAN ALREADY DO
+
+The current codebase is not an empty integrity layer. It contains substantial pieces of:
+
+- environment perception and cross-validation;
 - operational self-examination;
-- source-of-truth and identity registration;
-- state aggregation;
-- responsibility inference;
+- anomaly and expected-vs-real comparison;
 - signal reconciliation;
-- anomaly detection and correction;
-- runtime audit;
-- decision recording;
-- context assembly;
-- discernment and contradiction handling.
+- runtime event/timeline recording;
+- decision/outcome recording;
+- organism-state aggregation;
+- task-context aggregation;
+- code-level inspection;
+- responsibility inference;
+- contradiction/discernment framing;
+- findings deduplication;
+- tool-availability and terminal-state validation.
 
-The unresolved architectural question is therefore **not** simply "does IABV need a system nervous system?".
+However, these functions are distributed among several organs. The important missing property is not merely more sensing; it is **reconciliation of the relationships between the sensors, producers, consumers, contracts, timestamps, semantics and outcomes**.
 
-The active question is:
+---
 
-> Which parts of systemic integrity already exist, where are they connected, what responsibilities became fragmented during historical evolution, and what minimal missing connection prevents IABV from detecting cross-organ contract drift by itself?
+## 3. RESPONSIBILITY GRAPH — CURRENT RESULT
 
-## KNOWN EXISTING ORGANS / ALGORITHMS
+The audit identified a repeated fragmentation pattern:
 
-The following mechanisms have been identified in prior source/runtime audits:
+- **A knows producer/subsystem identity:** `SystemIdentityRegistry`
+- **B knows contextual/consumer-side information:** `TaskContextAssembler`
+- **C reasons about contradictions/contracts at a discernment level:** `DiscernmentFrameService`
+- **D knows execution timestamps and runtime sequence:** `RuntimeAuditTracer` and `DecisionAuditTrail`
+- **E inspects source-level references:** `SelfCodeAnalysis`
 
-1. `SystemIdentityRegistry` — subsystem identity/status and dependency-oriented state.
-2. `PerceptionCrossValidator` — cross-validates environment observations and reconciles availability inconsistencies.
-3. `OperationalSelfExaminationService (OSES)` — recurring operational findings, temporal/anomaly observations, finding deduplication and self-examination.
-4. `SelfCodeAnalysis` — source-level analysis such as Python syntax/threading/slot/intent-related checks.
-5. `ToolDiscoveryService.reconcile_signals()` — reconciles tool signals with decision history.
-6. `CommonSenseEngine` — expected-vs-real anomaly reasoning and corrective actions.
-7. `RuntimeAuditTracer` — runtime event/timeline and terminal-state observability.
-8. `DecisionAuditTrail` — decision/outcome history with provenance/timestamps.
-9. `OrganismStateSnapshot` — unified read-only organism state view.
-10. `DiscernmentFrameService` — evidence/sensor/attractor/bias/contradiction framing.
-11. `TaskContextAssembler` — contextual aggregation for task execution.
-12. `UniversalPerceptionService` — normalization of perception signals.
-13. `CodeResponsibilityInferencer` — responsibility inference from code, currently identified mainly in construction tooling.
-14. `SystemKnowledgeRegistry` — canonical system-relationship/knowledge registry.
-15. `SystemHealthRegistry` — canonical operational-health registry.
-16. `ProjectSteeringRegistry` — canonical project-steering state.
-17. `CanonicalSourceRegistry` plus claim-verification tooling — source-of-truth and claim verification infrastructure.
+But no currently verified component was found that simultaneously combines **producer + consumer + source reference + contract semantics + temporal ordering + runtime outcome** into one verified cross-organ contract judgment.
 
-## HISTORICAL INTEGRATOR
+This is the core reason the system can possess many relevant facts while still missing a demonstrated capability to infer:
 
-A historical `UniversalMetacognitiveScanner` existed in an earlier code lineage and was described as a central integrator of metacognitive organs (World Model, environment self-awareness, OSES, ToolRegistry, DecisionAuditTrail and metacognitive evolution).
+> "These two organs are connected, but their relationship has drifted in name, location, signature, timing, semantics, lifecycle ordering, provenance or causality."
 
-The active codebase later removed/commented its import, construction and wiring because that module was no longer present in the active tree.
+---
 
-This fact is important but must not be interpreted as an instruction to restore it.
+## 4. DUPLICATION CAPABILITY
 
-The correct question is what responsibilities were:
+The following are **audit coverage judgments**, not mathematically measured percentages. `0.00` means "not demonstrated by the audit", not proof that the capability can never exist elsewhere.
 
-- absorbed by existing organs;
-- distributed among several organs;
-- lost;
-- or left only as historical/documentary intent.
+| Capability | Current assessment |
+|---|---:|
+| Textual duplication detection | 0.00 |
+| Structural duplication detection | 0.00 |
+| Behavioral duplication detection | 0.00 |
+| Semantic duplication detection | 0.00 |
+| Responsibility duplication | 0.25 |
+| Architectural duplication | 0.00 |
+| Finding deduplication | 1.00 within the audited OSES finding path |
+| Signal deduplication/reconciliation | 0.50 |
 
-## P040 RUNTIME EVIDENCE
+The distinction is important: **finding deduplication is not the same capability as architectural or semantic duplicate detection**.
 
-A real runtime episode exposed two previously hidden caller/implementation mismatches in the UI chat path.
+---
 
-First failure:
+## 5. DRIFT CAPABILITY
 
-`sendChat()` called `_generate_dispatch_id('chat')` while the active implementation exposed `_new_dispatch_id('chat')`.
+General cross-organ drift detection remains unproven for:
 
-After that was corrected, a second runtime failure appeared because `_set_autonomy_activity_override()` imported `utc_now` from `iabv_v15.infra.clock` while the actual function was located in `iabv_v15.domain.models`.
+- renamed methods;
+- moved modules/import locations;
+- signature changes;
+- field changes;
+- enum changes;
+- lifecycle-order changes;
+- semantic contract changes;
+- stale consumer assumptions after producer evolution.
 
-Only after both fixes did the live UI path complete sufficiently to produce an interaction, dispatch, worker activity, terminal cleanup and a contemporary ExperimentRun/Recommendation.
+Existing operational monitoring can detect some strategy decay and latency regression, but those are narrower forms of drift and must not be conflated with general contract-drift detection.
 
-This is direct evidence for the invariant:
+| Capability | Current assessment |
+|---|---:|
+| Method rename drift | 0.00 |
+| Module/import-location drift | 0.00 |
+| Signature drift | 0.00–0.25, limited partial contract checking only |
+| Field drift | 0.00 |
+| Enum drift | 0.00 |
+| Lifecycle-order drift | 0.00 |
+| Semantic drift | 0.00 |
+| Strategy decay | 0.50 |
+| Latency regression | 0.50 |
+
+---
+
+## 6. CONTRACT CAPABILITY
+
+Current evidence shows stronger coverage for operational contracts than for cross-organ code/semantic contracts.
+
+| Contract | Current assessment |
+|---|---:|
+| Method-name compatibility | 0.00 demonstrated |
+| Import-location compatibility | 0.00 demonstrated |
+| Producer→consumer temporal contract | 0.00 demonstrated |
+| Signature contract | 0.25 limited/partial |
+| Intent/routing contract | 0.25 limited/partial |
+| Tool availability contract | 1.00 on audited path |
+| Terminal-state contract | 1.00 on audited path |
+| Expected-vs-real-state contract | 1.00 on audited path |
+
+This produces an important architectural distinction:
+
+```text
+operational contract validation
+        !=
+source/API/semantic/temporal cross-organ contract validation
+```
+
+---
+
+## 7. TEMPORAL COHERENCE
+
+Verified existing capabilities include:
+
+- latency outlier detection;
+- latency regression monitoring;
+- stalled-operation detection;
+- timestamped runtime events;
+- timestamped decision history.
+
+Not yet demonstrated as a general cross-organ capability:
+
+- producer emits before consumer requires the signal;
+- explicit event-order invariants across organ boundaries;
+- signal-before/after lifecycle boundaries;
+- causal lineage from producer → consumer → decision → outcome.
+
+| Capability | Current assessment |
+|---|---:|
+| Latency outlier detection | 1.00 |
+| Latency regression | 1.00 |
+| Stalled operation detection | 1.00 |
+| Producer-before-consumer verification | 0.00 |
+| Lifecycle signal-order verification | 0.00 |
+| Event ordering | 0.25 |
+| Causality | 0.00 |
+| Event lineage | 0.00 |
+
+---
+
+## 8. SEMANTIC COHERENCE
+
+Existing capabilities include:
+
+- discernment/contradiction framing;
+- semantic normalization;
+- perception cross-validation.
+
+Not demonstrated as a general producer/consumer semantic verifier:
+
+- `Recommendation != Prediction` contract validation;
+- `AccountInventoryEntry != ToolLiveStatus` contract validation;
+- resource availability vs resource suitability;
+- semantic equivalence of differently named methods/services;
+- responsibility-equivalent implementations under different names.
+
+| Capability | Current assessment |
+|---|---:|
+| Recommendation vs Prediction semantic check | 0.00 |
+| AccountInventoryEntry vs ToolLiveStatus check | 0.00 |
+| Availability vs suitability check | 0.00 |
+| Contradictions in discernment frame | 0.25 |
+| Semantic normalization | 0.50 |
+| Perception cross-validation | 1.00 |
+
+---
+
+## 9. CROSS-ORGAN VERIFICATION
+
+The audit identified several relationships that are already operationally connected on known paths, including:
+
+- tool availability;
+- audit-trail production;
+- activity/window state;
+- signal reconciliation;
+- findings deduplication;
+- decision outcomes;
+- expected-vs-real state comparison.
+
+It also identified important relationships that are **not currently demonstrated as systematically verified**, including:
+
+- dispatch-id producer/consumer agreement;
+- import-location agreement;
+- Recommendation timing vs prediction consumption;
+- method-name agreement;
+- import/reference agreement;
+- temporal ordering across producer/consumer boundaries.
+
+The correct distinction is therefore:
+
+```text
+connection exists
+        !=
+connection is continuously integrity-verified
+```
+
+---
+
+## 10. HISTORICAL UNIVERSALMETACOGNITIVESCANNER
+
+A historical `UniversalMetacognitiveScanner` existed in an earlier lineage and acted as a central integration concept for several metacognitive/operational organs.
+
+Its absence from the active code must **not** trigger automatic restoration.
+
+The useful architectural question is instead:
+
+1. which responsibilities survived;
+2. which became distributed;
+3. which were lost;
+4. which survive only as historical/documentary intent.
+
+Current reconciliation:
+
+| Historical responsibility | Current status |
+|---|---|
+| Central coordination | Not demonstrated |
+| Contradiction detection | Partially represented by `DiscernmentFrameService` |
+| Architecture/responsibility dedup | Partial via `CodeResponsibilityInferencer` |
+| Findings dedup | Covered in OSES audited path |
+| Forensic/runtime recovery | Partially represented by `RuntimeAuditTracer` |
+| Contract verification | Not demonstrated as a general cross-organ capability |
+| Observation integration | Partially represented by `OrganismStateSnapshot` |
+
+This does **not** prove that every responsibility of the historical scanner is absent; it establishes only that no current equivalent was demonstrated for the central coordination/contract-verification role examined here.
+
+---
+
+## 11. P040 — RUNTIME PROBE
+
+P040 is a strong architectural probe because the runtime revealed mismatches that a pre-runtime repair claim did not expose.
+
+Observed sequence:
+
+1. `sendChat()` referenced `_generate_dispatch_id('chat')` while the active implementation exposed `_new_dispatch_id('chat')`.
+2. After that fix, runtime exposed a second mismatch: `utc_now` was imported from `iabv_v15.infra.clock` while the active implementation lived in `iabv_v15.domain.models`.
+3. Only after both corrections did the real UI path complete sufficiently to produce interaction, dispatch, worker activity, terminal cleanup and an ExperimentRun/Recommendation.
+
+This remains strong direct evidence for:
 
 `DECLARED REPAIR != EFFECTIVE RUNTIME REPAIR`
 
-and a strong example of contract drift being discovered only after a real path traverses multiple organs.
+and for the recurring failure family:
 
-## UK-15 RUNTIME EVIDENCE
+```text
+producer/implementation evolves
+        ↓
+consumer retains stale assumption
+        ↓
+partial evidence passes
+        ↓
+real execution crosses the boundary
+        ↓
+contract mismatch becomes visible
+```
 
-A contemporary ExperimentRun and Recommendation were observed for the real UI request:
+---
 
-- ExperimentRun: `9cf6efb2-f210-41fb-b768-8d0bfaeb2515`
-- Recommendation: `d6281ca5-d07c-4ef2-a680-0ca91d85798a`
+## 12. UK-15 — TEMPORAL/SEMANTIC PROBE
 
-The reported timestamps show the Recommendation occurring about 28 ms after the ExperimentRun record.
+The live P040 episode produced a contemporary ExperimentRun and Recommendation. The observed timing showed the Recommendation record appearing about 28 ms after the ExperimentRun.
 
-The current forensic conclusion is that `TaskOutcomeRecorder` attempts to use a previous recommendation as a prediction source, but the recommendation generated for the current episode is created later.
+The current forensic interpretation is that `TaskOutcomeRecorder` expects a previous recommendation as prediction source while the current episode's recommendation is generated later.
 
-This proves a temporal/data-contract mismatch at the currently observed boundary, but it does **not** by itself establish whether the correct long-term contract is:
+This proves a **temporal/data-contract mismatch at the observed boundary**.
+
+It does **not** yet establish which long-term contract is correct:
 
 - pre-execution prediction;
 - post-execution recommendation update;
-- distinct Recommendation and Prediction contracts;
-- or preservation of a genuinely previous recommendation from an earlier episode.
+- distinct Recommendation and Prediction objects;
+- or previous-episode recommendation reuse.
 
-Therefore do not fix UK-15 by simply manufacturing a prediction field.
+Therefore UK-15 must not be "fixed" merely by adding or manufacturing a prediction field.
 
-## REPEATED DRIFT PATTERN
+---
 
-Historical and current evidence contains several examples of a common failure family:
+## 13. CURRENT SYSTEMIC INTERPRETATION
 
-```text
-architecture evolves / refactor occurs
-        ↓
-producer or implementation contract changes
-        ↓
-consumer retains older assumption
-        ↓
-partial tests or documentation still pass
-        ↓
-real path exposes the mismatch
-```
-
-Known examples include:
-
-- `_generate_dispatch_id` vs `_new_dispatch_id`;
-- `iabv_v15.infra.clock.utc_now` vs `iabv_v15.domain.models.utc_now`;
-- `StrategySelector` Recommendation timing vs `TaskOutcomeRecorder` previous-recommendation expectation;
-- historical `AssistantCapabilityRegistry.get_profile()` consumer assumption vs actual `all_profiles` interface;
-- historical `AccountInventoryEntry.success_count` consumer assumption where that field was absent.
-
-These examples are not automatically one root cause, but together justify investigating **cross-organ contract drift as a first-class systemic phenomenon**.
-
-## CURRENT CAPABILITY MATRIX
-
-This matrix is a working audit result, not a permanently valid score. Scores must be updated when direct source/runtime evidence changes them.
-
-Scoring guideline:
-
-- `0.00` = absent;
-- `0.25` = documented/conceptual or very limited;
-- `0.50` = implemented;
-- `0.75` = implemented and executed/proven on a relevant path;
-- `1.00` = runtime-proven and effective for the target claim.
-
-### Duplication
-
-- textual duplication detection: currently not demonstrated;
-- structural duplication detection: currently not demonstrated;
-- behavioral duplication detection: currently not demonstrated;
-- semantic duplication detection: currently not demonstrated;
-- responsibility duplication: partial;
-- architecture duplication: currently not demonstrated;
-- finding deduplication: proven within OSES findings;
-- signal reconciliation/deduplication: partial.
-
-### Drift
-
-Currently not demonstrated as a general cross-organ capability:
-
-- stale method names;
-- moved-module imports;
-- signature drift;
-- field/enum drift;
-- lifecycle-order drift;
-- semantic contract drift.
-
-Existing monitoring can detect some operational strategy/latency degradation, but those are not equivalent to general contract-drift detection.
-
-### Temporal coherence
-
-Existing infrastructure demonstrates:
-
-- latency/outlier monitoring;
-- stalled-operation monitoring;
-- timestamped audit trails;
-- runtime event timelines.
-
-What is not yet demonstrated:
-
-- producer-before-consumer contract checks;
-- explicit event-order invariants across organ boundaries;
-- causal lineage across producer → consumer → decision → outcome.
-
-### Semantic coherence
-
-Existing capabilities include discernment framing, semantic normalization and perception cross-validation.
-
-Not yet demonstrated:
-
-- general Recommendation-vs-Prediction semantic contract checking;
-- general producer/consumer meaning equivalence;
-- responsibility equivalence detection for differently named methods/services.
-
-### Provenance/causal continuity
-
-IABV has substantial provenance, audit and state-tracing infrastructure, but the end-to-end claim remains open whenever the question is whether a signal actually changed a downstream decision.
-
-## WHAT THIS MEANS ARCHITECTURALLY
-
-The system is better described as:
+The most accurate architecture description is:
 
 ```text
 many partially connected integrity organs
-        ↓
-shared observations / registries / audits
-        ↓
-no demonstrated universal cross-organ contract authority
+              ↓
+shared observations / audits / state
+              ↓
+no demonstrated universal authority for
+cross-organ contract + temporal + semantic reconciliation
 ```
 
-This is stronger and more precise than saying "multiple isolated organs".
+This is more precise than saying the organs are simply isolated. Many connections are real and useful; the missing property is **system-wide verification of the relationships themselves**.
 
-Some organs are demonstrably connected; the missing property is **system-wide reconciliation of the relationships themselves**.
+---
 
-## CURRENT SELF-PERCEPTION GAP
+## 14. LEADING SYSTEMIC GAP — NOT YET AN IMPLEMENTATION TASK
 
-IABV can already observe many facts about itself:
+The current audit identifies the **leading systemic gap** as:
 
-- current environment;
-- process/window/file state;
-- organism state;
-- operational findings;
-- decision history;
-- timestamps;
-- task context;
-- code-level properties;
-- tool signals.
+> Central coordination of verification across producer, consumer, source-reference, contract, temporal and runtime evidence.
 
-The unresolved question is whether IABV can combine those facts to infer:
+This is a **leading gap**, not a mathematical proof that no other systemic gap exists.
 
-> "these two organs are connected, but their contract, timing, semantics or causal relationship is no longer coherent."
+The first design question is therefore not "what new subsystem should be built?". It is:
 
-That is the target capability to measure before creating any new subsystem.
+> Can the existing organs, when their outputs are composed, already perform enough of this cross-organ verification that the apparent gap is only a missing activation/composition path?
 
-## CRITICAL METHODOLOGICAL RULE
+This question must be answered before implementing any new coordinator.
 
-Do not replace this question with static typing alone.
+---
 
-Static type checking may catch some stale names/signatures, but it does not prove:
+## 15. METHODOLOGICAL INVARIANTS
 
-- temporal correctness;
-- semantic equivalence;
-- producer/consumer causality;
-- runtime/source alignment;
-- learning continuity.
+The following invariants remain active:
 
-Likewise, do not treat observability as contract validation:
+- `DECLARED STATE != EFFECTIVE STATE`
+- `TEST PASS != RUNTIME PROOF`
+- `PERSISTENCE != LEARNING`
+- `CONTEXT AVAILABLE != CONTEXT INFLUENCED DECISION`
+- `VISIBLE ACTIVITY != COGNITION`
+- `EXTERNAL AGENT CLAIM != TRUTH`
+- `WORLD MODEL existence != WORLD MODEL influence`
+- `ADAPTIVE WEIGHT existence != ADAPTIVE LEARNING`
+- `event recorded != connection validated`
 
-`event recorded != connection validated`
+Static typing alone must not be substituted for temporal, semantic, causal or runtime-integrity validation.
 
-## REQUIRED SYMBIOTIC RETRIEVAL BEHAVIOR
+---
 
-When a future objective touches architecture integrity, runtime drift, self-audit, metacognition, duplication, routing, context continuity, or cross-organ failures, retrieve this document together with:
+## 16. REQUIRED SYMBIOTIC RETRIEVAL
+
+For any future objective involving architecture integrity, runtime drift, self-audit, duplication, routing, cross-organ failures, metacognition, context continuity or system coherence, retrieve this document together with:
 
 - `CURRENT-STATE.md`
 - `CONTEXT-INDEX.md`
 - `SYMBIOSIS-MAP.md`
 - `UNRESOLVED-KNOWLEDGE.md`
-- relevant P040 / UK-15 source records
+- relevant P040 and UK-15 records
 
-Then reconcile them against the current repository branch/commit and, when runtime claims matter, the exact runtime fingerprint.
+Then reconcile all claims against the **current repository branch/commit** and, where relevant, the exact runtime fingerprint.
 
-Do not assume this document's current assessment remains valid after subsequent refactors.
+Do not treat this document as a frozen truth; it is the current synthesized model pending stronger evidence.
 
-## CURRENT NEXT GATE
+---
 
-Before implementing a new contract-coordination mechanism, determine whether an existing organ or combination of organs can already perform the required cross-organ comparison when their outputs are composed.
+## 17. CURRENT NEXT GATE
 
-The next investigation must therefore inspect the actual algorithms and execution boundaries, not merely search for class names.
+**Do not implement a new contract coordinator yet.**
 
-## UPDATE RULE
+The next investigation is to inspect the actual execution boundaries and compose existing outputs to determine whether current IABV organs can already perform:
 
-Whenever a new audit proves, refutes, supersedes or materially changes any part of this model, update this document and then update the routing/current-state records that point to it.
+`DISCOVER → CONNECT → IDENTIFY CONTRACT → CHECK TEMPORALITY → CHECK SEMANTICS → DETECT DUPLICATION/DRIFT → RECONCILE → VERIFY EFFECT`
+
+The investigation must distinguish:
+
+- OBSERVABILITY
+- DETECTION
+- DIAGNOSIS
+- RECONCILIATION
+- CORRECTION
+
+and must report evidence separately for source, executed tests, and real runtime.
+
+---
+
+## 18. UPDATE RULE
+
+When a future audit proves, refutes, supersedes or materially changes any part of this model:
+
+1. update this canonical document;
+2. update routing/current-state records that reference it;
+3. preserve the historical claim and provenance rather than silently replacing history;
+4. prefer direct source/runtime evidence over prior AI assertions.
