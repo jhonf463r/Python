@@ -83,7 +83,7 @@ class ControlCenterViewModel(QObject):
 
     dataChanged = Signal()
     taskResolved = Signal(str, object)
-    taskFailed = Signal(str, str)
+    taskFailed = Signal(str, str, str, str)  # task_name, error_message, origin_interaction_id='', origin_dispatch_id=''
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -5797,7 +5797,7 @@ class ControlCenterViewModel(QObject):
                     pass
                 self.taskResolved.emit('security_retest', result_payload)
             except Exception as exc:
-                self.taskFailed.emit('security_retest', str(exc))
+                self.taskFailed.emit('security_retest', str(exc), '', '')
 
         self._bg_pool.submit(_retest_worker)
         return True
@@ -8070,6 +8070,9 @@ class ControlCenterViewModel(QObject):
         learning_note: str = '',
         mode: str = 'local',
         waiting: bool = False,
+        interaction_id: str = '',
+        dispatch_id: str = '',
+        updated_at: str = '',
     ) -> dict[str, Any]:
         progress_value = max(0.0, min(1.0, float(progress or 0.0)))
         normalized_status = status if status in {'idle', 'active', 'warning', 'blocked'} else 'idle'
@@ -8087,6 +8090,10 @@ class ControlCenterViewModel(QObject):
             'learning_note': str(learning_note or '').strip(),
             'mode': str(mode or 'local').strip() or 'local',
             'waiting': bool(waiting),
+            # Causal metadata - preserve origin identity for correlation
+            'interaction_id': str(interaction_id or '').strip(),
+            'dispatch_id': str(dispatch_id or '').strip(),
+            'updated_at': str(updated_at or '').strip(),
         }
 
     def _set_autonomy_activity_override(self, **payload: Any) -> None:
@@ -8709,6 +8716,7 @@ class ControlCenterViewModel(QObject):
                 task_name,
                 f'La operacion ({task_name}) supero el tiempo maximo de {int(timeout_s)}s. '
                 'Puedes intentar de nuevo o verificar que las herramientas esten accesibles.',
+                '', ''  # No origin identity for timeout
             )
 
         threading.Thread(target=_watchdog, daemon=True, name=f'{task_name}-timeout').start()
@@ -14154,8 +14162,14 @@ class ControlCenterViewModel(QObject):
         
         # Create dispatch_id and interaction_id immediately for correlation
         _dispatch_id = self._generate_dispatch_id('chat')
-        interaction_id = self._generate_interaction_id()
-        self._active_interaction_id = interaction_id
+        
+        # Use lifecycle interaction_id if available, otherwise generate one
+        # DO NOT overwrite the canonical interaction_id from lifecycle.open_interaction()
+        if not interaction_id:  # Only generate if lifecycle didn't provide one
+            interaction_id = self._generate_interaction_id()
+            self._active_interaction_id = interaction_id
+        # If lifecycle provided interaction_id, it's already set to _active_interaction_id above
+        
         self._active_dispatch_ids['chat'] = _dispatch_id
         
         # IMMEDIATE visible state: user message received
@@ -14174,6 +14188,7 @@ class ControlCenterViewModel(QObject):
                 mode='local',
                 interaction_id=interaction_id,
                 dispatch_id=_dispatch_id,
+                updated_at='',  # Will be set by _update_autonomy_activity_override_impl
             )
         except Exception:
             pass
@@ -14185,11 +14200,11 @@ class ControlCenterViewModel(QObject):
             self._attached_files.clear()
         # P0.40 Task C: Deep Internal Audit Guard - MUST be BEFORE ALL shortcut handlers
         # This prevents complex audit missions from being resolved by any shortcut path
+        # The guard traces detection and snapshot provenance, then continues to full cognitive pipeline
         if self._try_handle_deep_internal_audit(message):
-            # Deep audit detected - do NOT resolve locally
-            # The guard already traced detection and snapshot provenance
-            # Return to proceed to full cognitive pipeline
-            return
+            # Deep audit detected - guard has traced detection and provenance
+            # Continue to full cognitive pipeline (do NOT return here)
+            pass
         if self._try_handle_chat_command(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
@@ -14555,9 +14570,28 @@ class ControlCenterViewModel(QObject):
                         user_visible_message=False,
                     )
                     return
-                self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+                # Emit taskFailed with origin identity for consistency with taskResolved
+                self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}', interaction_id, _dispatch_id)
             finally:
                 _worker_done.set()
+                # Robust terminal cleanup: if dispatch is still active but worker ended without emitting result/failure,
+                # ensure terminal state to prevent _working=True stuck
+                if self._is_dispatch_active('chat', _dispatch_id):
+                    # This should not happen if taskResolved/taskFailed were emitted, but as safety:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        'Chat worker %s ended without emitting result/failure - forcing terminal cleanup',
+                        _dispatch_id[:8]
+                    )
+                    self._trace_dispatch_terminal(
+                        task_name='chat', dispatch_id=_dispatch_id,
+                        terminal_state='errored', reason='worker_ended_without_signal',
+                        user_visible_message=True,
+                    )
+                    # Force cleanup using origin identity
+                    self._clear_autonomy_activity_override(interaction_id=interaction_id, dispatch_id=_dispatch_id)
+                    self._working = False
+                    self._set_live_status('idle')
 
         threading.Thread(target=worker, daemon=True).start()
         self._schedule_worker_timeout(
@@ -15239,8 +15273,30 @@ class ControlCenterViewModel(QObject):
             self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
-    @Slot(str, str)
-    def _apply_task_failure(self, task_name: str, message: str) -> None:
+    @Slot(str, str, str, str)
+    def _apply_task_failure(self, task_name: str, message: str, origin_interaction_id: str = '', origin_dispatch_id: str = '') -> None:
+        if task_name == 'chat':
+            # Validate origin identity for chat failures
+            if origin_dispatch_id and not self._is_dispatch_active('chat', origin_dispatch_id):
+                # Stale failure - do not apply UI effects to current interaction
+                import logging
+                logging.getLogger(__name__).warning(
+                    'Discarding stale chat failure from dispatch %s (no longer active)',
+                    origin_dispatch_id[:8] if origin_dispatch_id else 'unknown'
+                )
+                self._trace_dispatch_terminal(
+                    task_name='chat', dispatch_id=origin_dispatch_id,
+                    terminal_state='cancelled', reason='stale_failure_discarded: failure arrived after dispatch invalidated',
+                    user_visible_message=False,
+                )
+                return
+            # Clear activity with origin identity correlation
+            self._clear_autonomy_activity_override(interaction_id=origin_interaction_id, dispatch_id=origin_dispatch_id)
+            self._append_message('assistant', 'IABV', f'Error: {message}', 'chat_error')
+            self._working = False
+            self._set_live_status('idle')
+            self.dataChanged.emit()
+            return
         if task_name == 'security_retest':
             self._append_message(
                 'assistant', 'IABV',

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import threading
 import time
+import uuid
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -440,6 +441,9 @@ def _make_apply_result_stub():
     stub.taskFailed = MagicMock()
     stub._FINAL_INTERACTION_OUTCOMES = ControlCenterViewModel._FINAL_INTERACTION_OUTCOMES
     stub._TERMINAL_DISPATCH_STATES = ControlCenterViewModel._TERMINAL_DISPATCH_STATES
+    stub._generate_dispatch_id = lambda task_name: f'dispatch-{task_name}-{uuid.uuid4().hex[:8]}'
+    stub._generate_interaction_id = lambda: f'interaction-{uuid.uuid4().hex[:8]}'
+    stub._should_refresh_heavy_post_result = lambda task_name, payload: False
     return stub
 
 
