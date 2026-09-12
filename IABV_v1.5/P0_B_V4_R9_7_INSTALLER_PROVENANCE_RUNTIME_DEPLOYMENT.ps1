@@ -598,6 +598,8 @@ try {
         Write-Output "Output: $isolationTest"
         exit 1
     }
+    # Normalize multi-line output to single string for reliable pattern matching
+    $isolationTestText = ($isolationTest | Out-String)
 } catch {
     Write-Output "ERROR: Failed to execute python.exe for isolation test: $_"
     exit 1
@@ -611,28 +613,30 @@ try {
         Write-Output "Output: $stdlibTest"
         exit 1
     }
+    # Normalize multi-line output to single string for reliable pattern matching
+    $stdlibTestText = ($stdlibTest | Out-String)
 } catch {
     Write-Output "ERROR: Failed to execute python.exe for stdlib test: $_"
     exit 1
 }
 
-Write-Output "Isolation test result: $isolationTest"
-if ($isolationTest -like "*USER_PROFILE_IN_PATH: True*") {
+Write-Output "Isolation test result: $isolationTestText"
+if ($isolationTestText -like "*USER_PROFILE_IN_PATH: True*") {
     Write-Output "ERROR: User profile path still in sys.path of deployed runtime"
     exit 1
 }
-if ($isolationTest -like "*ENABLE_USER_SITE: True*") {
+if ($isolationTestText -like "*ENABLE_USER_SITE: True*") {
     Write-Output "ERROR: User site still enabled in deployed runtime"
     exit 1
 }
 Write-Output "python314._pth isolation verified: PASS"
 
-Write-Output "Stdlib test result: $stdlibTest"
-if ($stdlibTest -notlike "*ENCODINGS_IMPORTED: OK*") {
+Write-Output "Stdlib test result: $stdlibTestText"
+if ($stdlibTestText -notlike "*ENCODINGS_IMPORTED: OK*") {
     Write-Output "ERROR: encodings module not importable (stdlib not accessible via _pth)"
     exit 1
 }
-if ($stdlibTest -notlike "*STDLIB_IN_PATH: True*") {
+if ($stdlibTestText -notlike "*STDLIB_IN_PATH: True*") {
     Write-Output "ERROR: Lib directory not in sys.path (stdlib not accessible)"
     exit 1
 }

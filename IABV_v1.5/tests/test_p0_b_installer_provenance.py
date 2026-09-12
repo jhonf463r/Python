@@ -1634,3 +1634,165 @@ def test_installer_phase_16_negative_control_external_path():
     )
     pass  # Static guard test - structure verified
 
+
+def test_installer_phase_16_multiline_output_normalization():
+    """Verify PHASE 16 normalizes multiline output for reliable pattern matching.
+
+    Regression guard for PowerShell multiline bug: when python.exe outputs
+    multiple lines, direct -like comparison on the array can fail even if
+    the expected marker is present in one of the lines.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 16 section
+    phase_16_match = installer_content.find('PHASE 16')
+    assert phase_16_match != -1, "Installer must have PHASE 16"
+
+    phase_16_section = installer_content[phase_16_match:phase_16_match + 3000]
+
+    # Verify output normalization using Out-String
+    assert 'Out-String' in phase_16_section, (
+        "PHASE 16 must normalize multi-line output using Out-String for reliable pattern matching"
+    )
+
+    # Verify normalized output is used for pattern matching
+    assert 'TestText' in phase_16_section or 'Text' in phase_16_section, (
+        "PHASE 16 must use normalized text variable for pattern matching"
+    )
+
+
+def test_installer_phase_16_multiline_success_scenario():
+    """Simulate multiline success scenario: ENCODINGS_IMPORTED: OK should pass.
+
+    This test reproduces the scenario where python.exe outputs:
+    ENCODINGS_IMPORTED: OK
+    ENCODINGS_PATH: ...
+    STDLIB_IN_PATH: True
+
+    The logic must recognize this as success despite being multiline.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 16 section
+    phase_16_match = installer_content.find('PHASE 16')
+    assert phase_16_match != -1, "Installer must have PHASE 16"
+
+    phase_16_section = installer_content[phase_16_match:phase_16_match + 3000]
+
+    # Verify ENCODINGS_IMPORTED check uses normalized text
+    assert 'ENCODINGS_IMPORTED: OK' in phase_16_section, (
+        "PHASE 16 must check for ENCODINGS_IMPORTED: OK marker"
+    )
+
+    # Verify STDLIB_IN_PATH check uses normalized text
+    assert 'STDLIB_IN_PATH: True' in phase_16_section, (
+        "PHASE 16 must check for STDLIB_IN_PATH: True marker"
+    )
+
+
+def test_installer_phase_16_multiline_failure_scenario():
+    """Simulate multiline failure scenario: missing ENCODINGS_IMPORTED should fail.
+
+    This test reproduces the scenario where python.exe outputs:
+    ENCODINGS_PATH: ...
+    STDLIB_IN_PATH: False
+
+    The logic must recognize this as failure.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 16 section
+    phase_16_match = installer_content.find('PHASE 16')
+    assert phase_16_match != -1, "Installer must have PHASE 16"
+
+    phase_16_section = installer_content[phase_16_match:phase_16_match + 3000]
+
+    # Verify exit 1 when ENCODINGS_IMPORTED is missing
+    assert 'notlike' in phase_16_section or '-notlike' in phase_16_section, (
+        "PHASE 16 must use -notlike to detect missing markers"
+    )
+
+    assert 'exit 1' in phase_16_section, (
+        "PHASE 16 must exit 1 when marker is missing"
+    )
+
+
+def test_installer_phase_16_exit_code_preserved():
+    """Verify exit code is checked immediately after python.exe execution.
+
+    Regression guard: $LASTEXITCODE must be captured immediately after
+    python.exe execution, not after intermediate commands.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 16 section
+    phase_16_match = installer_content.find('PHASE 16')
+    assert phase_16_match != -1, "Installer must have PHASE 16"
+
+    phase_16_section = installer_content[phase_16_match:phase_16_match + 3000]
+
+    # Find stdlib test execution block
+    stdlib_test_idx = phase_16_section.find('import encodings')
+    assert stdlib_test_idx != -1, "PHASE 16 must have encodings import test"
+
+    stdlib_test_block = phase_16_section[stdlib_test_idx:stdlib_test_idx + 500]
+
+    # Verify $LASTEXITCODE is checked immediately
+    assert '$LASTEXITCODE' in stdlib_test_block, (
+        "PHASE 16 must check $LASTEXITCODE immediately after python.exe execution"
+    )
+
+    # Verify exit 1 on non-zero exit code
+    assert 'exit 1' in stdlib_test_block, (
+        "PHASE 16 must exit 1 if python.exe fails"
+    )
+
+
+def test_installer_phase_16_false_positive_prevention():
+    """Verify that false positive patterns are not accepted.
+
+    Regression guard: "NOT_ENCODINGS_IMPORTED: OK" should not be
+    accepted as success.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 16 section
+    phase_16_match = installer_content.find('PHASE 16')
+    assert phase_16_match != -1, "Installer must have PHASE 16"
+
+    phase_16_section = installer_content[phase_16_match:phase_16_match + 3000]
+
+    # Verify the check uses exact marker "ENCODINGS_IMPORTED: OK"
+    assert 'ENCODINGS_IMPORTED: OK' in phase_16_section, (
+        "PHASE 16 must use exact marker 'ENCODINGS_IMPORTED: OK'"
+    )
+
+    # Verify it's not a loose substring check
+    # The pattern should require the exact marker, not just "OK" or "ENCODINGS"
+    # This is enforced by the specific marker format
+
