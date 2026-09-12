@@ -266,80 +266,68 @@ Write-Output "Orphan cleanup completed: $cleanupCount directories removed"
 Write-Output ""
 
 # PHASE 9: Pre-flight permission check
+# Verify deployment has required permissions WITHOUT modifying protected active runtime
+# Active runtime ACL intentionally does not grant Administrators write access
+# Deployment uses separate staging directory for all write operations
 Write-Output "=== PHASE 9: PRE-FLIGHT PERMISSION CHECK ==="
 
-$serviceRuntimePath = "C:\ProgramData\IABV\service_runtime"
 $runtimeParent = "C:\ProgramData\IABV"
+$activeRuntimePath = "C:\ProgramData\IABV\service_runtime"
 
-# Check if runtime directory exists
-$runtimeExists = Test-Path $serviceRuntimePath
+# A. Test parent directory capability (required for staging/backup/activation)
+Write-Output "Testing parent directory capability ($runtimeParent)..."
+try {
+    New-Item -Path $runtimeParent -ItemType Directory -Force -ErrorAction Stop | Out-Null
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot create parent directory: $_"
+    exit 1
+}
 
-if (-not $runtimeExists) {
-    Write-Output "Fresh deployment scenario: runtime directory does not exist"
-    Write-Output "Testing if installer can create parent directory and runtime..."
+# B. Test staging directory capability (required for deployment)
+# Create a temporary staging directory to verify we can prepare deployment workspace
+$preflightStagingPath = "$runtimeParent\service_runtime_preflight_test_$PID"
+Write-Output "Testing staging directory capability ($preflightStagingPath)..."
+try {
+    New-Item -Path $preflightStagingPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot create staging directory: $_"
+    exit 1
+}
 
-    # Test parent directory creation (fresh deployment)
-    try {
-        New-Item -Path $runtimeParent -ItemType Directory -Force -ErrorAction Stop | Out-Null
-    } catch {
-        Write-Output "ERROR: Pre-flight check failed - cannot create parent directory: $_"
-        exit 1
-    }
+# Test write in staging directory (required for deployment preparation)
+try {
+    Set-Content -Path "$preflightStagingPath\__preflight_test__.txt" -Value "test" -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot write to staging directory: $_"
+    exit 1
+}
 
-    # Test runtime directory creation (fresh deployment)
-    try {
-        New-Item -Path $serviceRuntimePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
-    } catch {
-        Write-Output "ERROR: Pre-flight check failed - cannot create runtime directory: $_"
-        exit 1
-    }
+# Test deletion in staging directory (required for cleanup)
+try {
+    Remove-Item -Path "$preflightStagingPath\__preflight_test__.txt" -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot delete from staging directory: $_"
+    exit 1
+}
 
-    # Test write in runtime directory
-    try {
-        Set-Content -Path "$serviceRuntimePath\__preflight_test__.txt" -Value "test" -Force -ErrorAction Stop
-    } catch {
-        Write-Output "ERROR: Pre-flight check failed - cannot write to runtime directory: $_"
-        exit 1
-    }
+# Clean up preflight staging directory
+try {
+    Remove-Item -Path $preflightStagingPath -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot clean up preflight staging directory: $_"
+    exit 1
+}
 
-    # Test deletion in runtime directory
-    try {
-        Remove-Item -Path "$serviceRuntimePath\__preflight_test__.txt" -Force -ErrorAction Stop
-    } catch {
-        Write-Output "ERROR: Pre-flight check failed - cannot delete from runtime directory: $_"
-        exit 1
-    }
+Write-Output "Parent and staging directory capability: PASS"
 
-    # Clean up the empty runtime directory we just created for testing
-    # Cleanup must succeed for pre-flight to PASS
-    try {
-        Remove-Item -Path $serviceRuntimePath -Force -ErrorAction Stop
-    } catch {
-        Write-Output "ERROR: Pre-flight check failed - cannot clean up test runtime directory: $_"
-        exit 1
-    }
-
+# C. Check active runtime state (DO NOT test write/delete inside protected runtime)
+# Deployment uses staging for all write operations; active runtime only needs rename/move later
+if (-not (Test-Path $activeRuntimePath)) {
+    Write-Output "Active runtime does not exist (fresh deployment scenario)"
     Write-Output "Fresh deployment pre-flight: PASS"
 } else {
-    Write-Output "Existing runtime scenario: runtime directory already exists"
-    Write-Output "Testing if installer can write/delete in existing runtime..."
-
-    # Test write in existing runtime directory
-    try {
-        Set-Content -Path "$serviceRuntimePath\__preflight_test__.txt" -Value "test" -Force -ErrorAction Stop
-    } catch {
-        Write-Output "ERROR: Pre-flight check failed - cannot write to existing runtime directory: $_"
-        exit 1
-    }
-
-    # Test deletion in existing runtime directory
-    try {
-        Remove-Item -Path "$serviceRuntimePath\__preflight_test__.txt" -Force -ErrorAction Stop
-    } catch {
-        Write-Output "ERROR: Pre-flight check failed - cannot delete from existing runtime directory: $_"
-        exit 1
-    }
-
+    Write-Output "Active runtime exists (upgrade scenario)"
+    Write-Output "Active runtime is protected - deployment will use staging, not direct modification"
     Write-Output "Existing runtime pre-flight: PASS"
 }
 
