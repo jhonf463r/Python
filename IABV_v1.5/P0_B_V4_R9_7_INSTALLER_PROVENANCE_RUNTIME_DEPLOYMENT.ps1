@@ -443,6 +443,7 @@ $pthContent = @"
 
 # Core Python runtime paths (machine-scoped only)
 .
+Lib
 Lib\site-packages
 
 # Explicitly enable site module for pywin32/cryptography availability
@@ -602,6 +603,19 @@ try {
     exit 1
 }
 
+# Critical: Verify stdlib import (encodings module is required for Python startup)
+try {
+    $stdlibTest = & "$serviceRuntimePath\python.exe" -c "import encodings; import sys; print('ENCODINGS_IMPORTED: OK'); print('ENCODINGS_PATH:', encodings.__file__); print('STDLIB_IN_PATH:', any('Lib' in p for p in sys.path))" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "ERROR: Python cannot import encodings module (stdlib not accessible)"
+        Write-Output "Output: $stdlibTest"
+        exit 1
+    }
+} catch {
+    Write-Output "ERROR: Failed to execute python.exe for stdlib test: $_"
+    exit 1
+}
+
 Write-Output "Isolation test result: $isolationTest"
 if ($isolationTest -like "*USER_PROFILE_IN_PATH: True*") {
     Write-Output "ERROR: User profile path still in sys.path of deployed runtime"
@@ -612,6 +626,17 @@ if ($isolationTest -like "*ENABLE_USER_SITE: True*") {
     exit 1
 }
 Write-Output "python314._pth isolation verified: PASS"
+
+Write-Output "Stdlib test result: $stdlibTest"
+if ($stdlibTest -notlike "*ENCODINGS_IMPORTED: OK*") {
+    Write-Output "ERROR: encodings module not importable (stdlib not accessible via _pth)"
+    exit 1
+}
+if ($stdlibTest -notlike "*STDLIB_IN_PATH: True*") {
+    Write-Output "ERROR: Lib directory not in sys.path (stdlib not accessible)"
+    exit 1
+}
+Write-Output "Python stdlib import verified: PASS"
 Write-Output ""
 
 # PHASE 17: Verify ACLs

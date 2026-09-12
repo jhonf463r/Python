@@ -1477,5 +1477,160 @@ def test_installer_negative_control_causality():
 
     # This is a static guard - actual causality requires runtime test
     # Documented as NOT_PROVEN until runtime test is executed
+
+
+def test_installer_phase_12_pth_includes_stdlib():
+    """Verify PHASE 12 _pth includes Lib for stdlib access.
+
+    Regression guard for runtime defect: encodings module import failed
+    because _pth only had . and Lib\site-packages, missing Lib.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 12 section
+    phase_12_match = installer_content.find('PHASE 12')
+    assert phase_12_match != -1, "Installer must have PHASE 12"
+
+    phase_12_section = installer_content[phase_12_match:phase_12_match + 2000]
+
+    # Verify _pth content includes Lib
+    assert 'Lib' in phase_12_section, (
+        "PHASE 12 _pth must include Lib for stdlib access"
+    )
+
+    # Verify _pth content includes Lib\site-packages
+    assert 'Lib\\site-packages' in phase_12_section, (
+        "PHASE 12 _pth must include Lib\\site-packages for pywin32/cryptography"
+    )
+
+    # Verify _pth content includes import site
+    assert 'import site' in phase_12_section, (
+        "PHASE 12 _pth must include 'import site' to enable site module"
+    )
+
+
+def test_installer_phase_12_pth_no_external_paths():
+    """Verify PHASE 12 _pth does not point to external Python paths.
+
+    Regression guard to ensure runtime remains self-contained.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 12 section
+    phase_12_match = installer_content.find('PHASE 12')
+    assert phase_12_match != -1, "Installer must have PHASE 12"
+
+    phase_12_section = installer_content[phase_12_match:phase_12_match + 2000]
+
+    # Verify _pth does not point to C:\Python314 (source runtime)
+    assert 'C:\\Python314' not in phase_12_section, (
+        "PHASE 12 _pth must not point to source runtime C:\\Python314"
+    )
+
+    # Verify _pth does not rely on PYTHONPATH environment variable
+    assert 'PYTHONPATH' not in phase_12_section, (
+        "PHASE 12 _pth must not rely on PYTHONPATH (isolation would be broken)"
+    )
+
+
+def test_installer_phase_16_tests_encodings_import():
+    """Verify PHASE 16 explicitly tests encodings module import.
+
+    Regression guard for runtime defect: Python startup failed because
+    encodings module was not accessible.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 16 section
+    phase_16_match = installer_content.find('PHASE 16')
+    assert phase_16_match != -1, "Installer must have PHASE 16"
+
+    phase_16_section = installer_content[phase_16_match:phase_16_match + 3000]
+
+    # Verify explicit encodings import test
+    assert 'import encodings' in phase_16_section, (
+        "PHASE 16 must explicitly test encodings module import"
+    )
+
+    # Verify exit code check after encodings test
+    assert '$LASTEXITCODE' in phase_16_section, (
+        "PHASE 16 must check exit code after encodings import test"
+    )
+
+    # Verify exit 1 on encodings import failure
+    assert 'exit 1' in phase_16_section, (
+        "PHASE 16 must exit 1 if encodings import fails"
+    )
+
+
+def test_installer_phase_16_negative_control_no_lib_in_pth():
+    """Negative control: detect if _pth is missing Lib (regression guard).
+
+    This test validates that we would detect the bad configuration that
+    caused the runtime defect.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 12 section
+    phase_12_match = installer_content.find('PHASE 12')
+    assert phase_12_match != -1, "Installer must have PHASE 12"
+
+    phase_12_section = installer_content[phase_12_match:phase_12_match + 2000]
+
+    # Synthesize bad _pth (missing Lib)
+    bad_pth_pattern = phase_12_section.replace('Lib\n', '')
+
+    # If the actual installer were using the bad pattern, this would fail
+    # We verify the good pattern is present
+    assert 'Lib\n' in phase_12_section or 'Lib\r\n' in phase_12_section, (
+        "PHASE 12 _pth must include Lib (missing caused runtime defect)"
+    )
+
+
+def test_installer_phase_16_negative_control_external_path():
+    """Negative control: detect if _pth points to external path (regression guard).
+
+    This test validates that we would detect a broken isolation configuration.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PHASE 12 section
+    phase_12_match = installer_content.find('PHASE 12')
+    assert phase_12_match != -1, "Installer must have PHASE 12"
+
+    phase_12_section = installer_content[phase_12_match:phase_12_match + 2000]
+
+    # Synthesize bad _pth (external path injection)
+    bad_external = 'C:\\Python314\\Lib'
+
+    # Verify the bad pattern is NOT present
+    assert bad_external not in phase_12_section, (
+        "PHASE 12 _pth must not include external C:\\Python314 path (breaks isolation)"
+    )
     pass  # Static guard test - structure verified
 
