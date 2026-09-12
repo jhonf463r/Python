@@ -27,6 +27,7 @@ Known locations:
 | `CURRENT-STATE.md` | Reconciled active project state |
 | `SYMBIOSIS-MAP.md` | Cross-IA capability and learning transfer |
 | `UNRESOLVED-KNOWLEDGE.md` | Latent/unimplemented knowledge |
+| `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` | Canonical synthesis of systemic integrity, cross-organ connectivity, contract drift and maintenance-algorithm frontier |
 | `CANONICAL-ABSORPTION-2026-09-11.md` | Audit of source records, canonical absorption and deletion readiness |
 | `ARCHIVE-REGISTRY.md` | Historical source registry |
 
@@ -56,6 +57,7 @@ The previously cited `CHAT-ARCH-2026-09-11-001-cognitive-control-plane-p0b-symbi
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-012_persistence-verification.md`
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-011_github-persistence-deletion-gate.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`
 
 ### Authority / trust / P0.213 / P0-B
 
