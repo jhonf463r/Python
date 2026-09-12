@@ -3667,6 +3667,9 @@ class AppBootstrap:
 
         **Coalescing:** If a refresh thread is already in-flight, this
         method returns immediately without spawning another thread.
+
+        **Starvation detection:** Consecutive failures are logged to detect
+        if the snapshot refresh is stuck in a failure loop.
         """
         self._init_prebuild_snapshot_cache()
         if self._prebuild_snapshot_refresh_in_flight:
@@ -3685,9 +3688,30 @@ class AppBootstrap:
                 with self._prebuild_resource_snapshot_lock:
                     self._prebuild_resource_snapshot = snap
                     self._prebuild_resource_snapshot_at = _t.time()
+                # Reset consecutive failure counter on success
+                self._prebuild_snapshot_consecutive_failures = 0
             except Exception:
                 logger.debug('prebuild: background snapshot refresh failed',
                              exc_info=True)
+                # Track consecutive failures for starvation detection
+                self._prebuild_snapshot_consecutive_failures = getattr(
+                    self, '_prebuild_snapshot_consecutive_failures', 0
+                ) + 1
+                # Log warning if failures accumulate
+                if self._prebuild_snapshot_consecutive_failures >= 3:
+                    logger.warning(
+                        f'prebuild: snapshot refresh failed {self._prebuild_snapshot_consecutive_failures} times consecutively - possible starvation condition'
+                    )
+                    # Trace the starvation condition
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        get_runtime_tracer().trace(
+                            'snapshot_refresh_starvation_detected',
+                            consecutive_failures=self._prebuild_snapshot_consecutive_failures,
+                            in_flight_flag=self._prebuild_snapshot_refresh_in_flight,
+                        )
+                    except Exception:
+                        pass
             finally:
                 self._prebuild_snapshot_refresh_in_flight = False
                 self._push_bootstrap_flags_to_watchdog()

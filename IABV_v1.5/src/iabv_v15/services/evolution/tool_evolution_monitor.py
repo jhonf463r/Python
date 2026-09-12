@@ -35,6 +35,13 @@ class ToolEvolutionMonitor:
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.tool_discovery_service = tool_discovery_service
         self._current_status: ToolEvolutionStatus | None = None
+        # Coalescing guard to prevent excessive history file generation
+        self._status_build_in_flight: bool = False
+        self._last_status_build_time: float = 0.0
+        self._STATUS_BUILD_COOLDOWN_S: float = 10.0  # Minimum 10 seconds between builds
+        # Lock to prevent race condition in coalescing check
+        import threading as _threading
+        self._status_build_lock = _threading.Lock()
 
     def current_status(
         self,
@@ -43,6 +50,9 @@ class ToolEvolutionMonitor:
         max_age_seconds: int = 300,
         subject_key: str | None = None,
     ) -> ToolEvolutionStatus:
+        import time as _time
+        now = _time.time()
+
         cached = self._current_status
         if cached is None:
             cached = self._load_latest_status()
@@ -54,9 +64,26 @@ class ToolEvolutionMonitor:
             and (not subject_key or subject_key in list((cached.metadata or {}).get('subject_keys') or []))
         ):
             return cached
-        status = self.build_status(subject_key=subject_key)
-        self._current_status = status
-        return status
+
+        # Coalescing guard: if a build is already in flight and within cooldown, return cached
+        # Use lock to prevent race condition between check and set
+        with self._status_build_lock:
+            if self._status_build_in_flight and (now - self._last_status_build_time) < self._STATUS_BUILD_COOLDOWN_S:
+                # Build in progress, return cached even if stale
+                return cached if cached is not None else self._load_latest_status()
+
+            # Set in-flight flag while holding lock
+            self._status_build_in_flight = True
+            self._last_status_build_time = now
+
+        try:
+            status = self.build_status(subject_key=subject_key)
+            self._current_status = status
+            return status
+        finally:
+            # Always reset in-flight flag
+            with self._status_build_lock:
+                self._status_build_in_flight = False
 
     def build_status(self, *, subject_key: str | None = None, recommendation_limit: int = 8, run_limit: int = 18) -> ToolEvolutionStatus:
         now = utc_now()

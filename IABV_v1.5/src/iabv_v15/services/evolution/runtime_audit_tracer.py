@@ -450,6 +450,77 @@ class RuntimeAuditTracer:
             missing_markers=missing_markers or [],
         )
 
+    def trace_snapshot_provenance_mismatch(
+        self,
+        *,
+        target_commit: str = '',
+        runtime_commit: str = '',
+        workspace: str = '',
+        message_excerpt: str = '',
+    ) -> dict[str, Any]:
+        """Record a mismatch between mission target snapshot and runtime build fingerprint.
+
+        This event is critical for governance: a mission requesting audit of a specific
+        commit/branch cannot be truthfully executed if the runtime build is different.
+        The mismatch is traced but does NOT block execution by default - it is up to
+        the governance policy to decide whether to proceed or reject.
+
+        Args:
+            target_commit: The commit/branch specified in the mission
+            runtime_commit: The actual HEAD commit of the running build
+            workspace: The workspace path where the mismatch was detected
+            message_excerpt: The user message that triggered the mismatch check
+        """
+        return self.trace(
+            'snapshot_provenance_mismatch',
+            target_commit=target_commit,
+            runtime_commit=runtime_commit,
+            workspace=workspace,
+            message_excerpt=message_excerpt[:200],
+            match_status='MISMATCH',
+        )
+
+    def trace_causal_event(
+        self,
+        *,
+        event_type: str,
+        interaction_id: str = '',
+        phase: str = '',
+        runtime_head: str = '',
+        workspace: str = '',
+        branch: str = '',
+        duration_ms: float = 0.0,
+        outcome: str = '',
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Record a causal event in the mission execution pipeline.
+
+        This provides structured causal tracing for deep audit missions, allowing
+        reconstruction of the exact execution path from mission receipt to completion.
+
+        Args:
+            event_type: The type of causal event (e.g., MISSION_RECEIVED, ORCHESTRATOR_ENTERED)
+            interaction_id: The interaction ID for correlation
+            phase: The execution phase (e.g., CONTEXT_ASSEMBLY, EXECUTION)
+            runtime_head: The current git HEAD at the time of the event
+            workspace: The workspace path
+            branch: The current git branch
+            duration_ms: Duration of the phase if applicable
+            outcome: Outcome of the phase if applicable
+            metadata: Additional metadata for the event
+        """
+        return self.trace(
+            f'causal_{event_type}',
+            interaction_id=interaction_id,
+            phase=phase,
+            runtime_head=runtime_head,
+            workspace=workspace,
+            branch=branch,
+            duration_ms=duration_ms,
+            outcome=outcome,
+            **(metadata or {}),
+        )
+
     def trace_live_proof_started(
         self,
         *,

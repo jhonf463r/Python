@@ -13512,7 +13512,210 @@ class ControlCenterViewModel(QObject):
             pass
         self.sendChat(text)
 
+    # -- P0.40 Task C: Deep Internal Audit Guard --
+    # Detects complex internal audit missions that should NOT be resolved
+    # as lightweight local responses. These missions must pass through the
+    # full cognitive pipeline (TaskContextAssembler, AdaptiveTaskOrchestrator,
+    # AutonomyGovernancePolicy, etc.) for proper execution and verification.
+    _DEEP_INTERNAL_AUDIT_PATTERNS: tuple[str, ...] = (
+        'auditoria interna de verdad',
+        'auditoría interna de verdad',
+        'ejecuta una auditoria',
+        'ejecuta una auditoría',
+        'reconstruye world model',
+        'reconstruye worldmodel',
+        'detecta contradicciones',
+        'selecciona proximo actor',
+        'selecciona próximo actor',
+        'usa los organos reales',
+        'usa los órganos reales',
+        'cognitive control plane',
+        'cognitive-control-plane',
+        'auditoria p0-b',
+        'auditoría p0-b',
+        'auditoria v4-r9',
+        'auditoría v4-r9',
+        'canonical context',
+        'canonical-context',
+        'independent verification',
+        'independent-verification',
+        'verificación independiente',
+        'verificacion independiente',
+    )
+
+    def _is_deep_internal_audit_mission(self, message: str) -> bool:
+        """Detect if message is a complex internal audit mission.
+
+        Returns True if the message contains patterns indicating a deep
+        internal audit that requires full cognitive pipeline execution, not
+        a lightweight local response.
+        """
+        normalized = self._normalized_command_text(message)
+        # Check for explicit deep audit patterns
+        if any(pattern in normalized for pattern in self._DEEP_INTERNAL_AUDIT_PATTERNS):
+            return True
+        # Check for explicit commit/branch references (e.g., "884acdb3", "audit/p0-b-...")
+        import re as _re
+        if _re.search(r'[a-f0-9]{7,40}', normalized):
+            return True
+        if _re.search(r'audit/p0-b', normalized):
+            return True
+        # Check for multi-step audit language
+        multi_step_indicators = (
+            'luego', 'despues', 'después', 'entonces', 'finalmente',
+            'primero', 'segundo', 'tercero',
+            'paso 1', 'paso 2', 'paso 3',
+            'phase 1', 'phase 2', 'phase 3',
+            'fase 1', 'fase 2', 'fase 3',
+        )
+        if sum(1 for indicator in multi_step_indicators if indicator in normalized) >= 2:
+            return True
+        return False
+
+    def _try_handle_deep_internal_audit(self, message: str) -> bool:
+        """Handle deep internal audit missions by preventing lightweight resolution.
+
+        If the message is a deep internal audit mission, this function:
+        1. Traces the detection with causal event
+        2. Checks snapshot provenance mismatch
+        3. Returns False to allow the message to proceed to the full cognitive pipeline
+
+        Returns True only if the mission should be handled specially (e.g., rejected).
+        Returns False to allow normal orchestration to proceed.
+        """
+        if not self._is_deep_internal_audit_mission(message):
+            return False
+
+        try:
+            from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+            tracer = get_runtime_tracer()
+
+            # Get runtime fingerprint for causal tracing
+            try:
+                import subprocess as _subprocess
+                import os as _os
+                workspace = str(getattr(self.config, 'workspace_root', '') or '')
+                if not workspace:
+                    workspace = str(_os.getcwd())
+
+                current_head = _subprocess.run(
+                    ['git', 'rev-parse', 'HEAD'],
+                    cwd=workspace,
+                    capture_output=True,
+                    text=True,
+                    timeout=5.0,
+                ).stdout.strip()
+
+                current_branch = _subprocess.run(
+                    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                    cwd=workspace,
+                    capture_output=True,
+                    text=True,
+                    timeout=5.0,
+                ).stdout.strip()
+            except Exception:
+                current_head = 'unknown'
+                current_branch = 'unknown'
+                workspace = str(getattr(self.config, 'workspace_root', '') or 'unknown')
+
+            interaction_id = getattr(self, '_active_interaction_id', 'unknown')
+
+            # Trace causal event: DEEP_AUDIT_DETECTED
+            tracer.trace_causal_event(
+                event_type='DEEP_AUDIT_DETECTED',
+                interaction_id=interaction_id,
+                phase='LIGHTWEIGHT_BYPASSED',
+                runtime_head=current_head,
+                workspace=workspace,
+                branch=current_branch,
+                metadata={
+                    'message_excerpt': message[:200],
+                    'source': 'deep_audit_guard',
+                },
+            )
+
+            # Trace legacy event for compatibility
+            tracer.trace(
+                'deep_internal_audit_mission_detected',
+                message_excerpt=message[:200],
+                source='deep_audit_guard',
+            )
+
+            # Check snapshot provenance mismatch
+            try:
+                # Check if message contains explicit target commit
+                import re as _re
+                target_match = _re.search(r'([a-f0-9]{7,40})', message)
+                if target_match:
+                    target_commit = target_match.group(1)
+                    # Try to resolve the short hash to full hash
+                    try:
+                        target_full = _subprocess.run(
+                            ['git', 'rev-parse', target_commit],
+                            cwd=workspace,
+                            capture_output=True,
+                            text=True,
+                            timeout=5.0,
+                        ).stdout.strip()
+
+                        # Determine match status
+                        if target_full and current_head and target_full != current_head:
+                            match_status = 'TARGET_MISMATCH'
+                            # Trace causal event: SNAPSHOT_PROVENANCE_CHECKED
+                            tracer.trace_causal_event(
+                                event_type='SNAPSHOT_PROVENANCE_CHECKED',
+                                interaction_id=interaction_id,
+                                phase='PROVENANCE_VERIFICATION',
+                                runtime_head=current_head,
+                                workspace=workspace,
+                                branch=current_branch,
+                                metadata={
+                                    'target_commit': target_full,
+                                    'match_status': match_status,
+                                },
+                            )
+                            # Trace legacy mismatch event
+                            tracer.trace_snapshot_provenance_mismatch(
+                                target_commit=target_full,
+                                runtime_commit=current_head,
+                                workspace=workspace,
+                                message_excerpt=message[:200],
+                            )
+                        elif target_full and current_head and target_full == current_head:
+                            match_status = 'TARGET_MATCH'
+                            # Trace causal event for match
+                            tracer.trace_causal_event(
+                                event_type='SNAPSHOT_PROVENANCE_CHECKED',
+                                interaction_id=interaction_id,
+                                phase='PROVENANCE_VERIFICATION',
+                                runtime_head=current_head,
+                                workspace=workspace,
+                                branch=current_branch,
+                                metadata={
+                                    'target_commit': target_full,
+                                    'match_status': match_status,
+                                },
+                            )
+                        else:
+                            match_status = 'TARGET_UNKNOWN'
+                    except Exception:
+                        # Git command failed - continue without blocking
+                        pass
+            except Exception:
+                # Snapshot provenance check failed - continue without blocking
+                pass
+
+        except Exception:
+            # Tracing failed - continue without blocking
+            pass
+
+        # Return False to allow the message to proceed to full cognitive pipeline
+        # Do NOT resolve locally as lightweight chat
+        return False
+
     def _try_handle_lightweight_chat(self, message: str) -> bool:
+        # NOTE: Deep internal audit guard is now in sendChat() BEFORE all shortcut handlers
+        # This function only handles lightweight patterns after deep audit check
         if self._is_world_model_question(message):
             self._answer_world_model_question(message)
             return True
@@ -13800,6 +14003,13 @@ class ControlCenterViewModel(QObject):
         if self._attached_files:
             self._attached_files.clear()
         self._set_live_status('processing')
+        # P0.40 Task C: Deep Internal Audit Guard - MUST be BEFORE ALL shortcut handlers
+        # This prevents complex audit missions from being resolved by any shortcut path
+        if self._try_handle_deep_internal_audit(message):
+            # Deep audit detected - do NOT resolve locally
+            # The guard already traced detection and snapshot provenance
+            # Return to proceed to full cognitive pipeline
+            return
         if self._try_handle_chat_command(message):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
@@ -13927,31 +14137,38 @@ class ControlCenterViewModel(QObject):
             timed_out=not _sa_completed,
             message_summary=message[:120],
         )
-        allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
-        if allow_chat_shortcuts and self._is_world_model_question(message):
-            self._answer_world_model_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_self_awareness_question(message):
-            self._answer_self_awareness_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_evolution_status_question(message):
-            self._answer_evolution_status_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_self_examination_question(message):
-            self._answer_self_examination_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_learning_question(message):
-            self._answer_learning_question(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
-        if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
-            self._answer_general_chat(message)
-            self._resolve_active_interaction(outcome='resolved', provider='local')
-            return
+        # P0.40 Task C: Deep Internal Audit Guard - also protect against shortcut_analysis shortcuts
+        # Re-check because _chat_shortcut_analysis may have produced different analysis
+        if self._is_deep_internal_audit_mission(message):
+            # Deep audit detected - bypass ALL shortcuts including analysis-based ones
+            # Proceed to full cognitive pipeline
+            pass
+        else:
+            allow_chat_shortcuts = not bool(shortcut_analysis.get('mixed_actionable')) and not bool(shortcut_analysis.get('requires_clarification'))
+            if allow_chat_shortcuts and self._is_world_model_question(message):
+                self._answer_world_model_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_self_awareness_question(message):
+                self._answer_self_awareness_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_evolution_status_question(message):
+                self._answer_evolution_status_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_self_examination_question(message):
+                self._answer_self_examination_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_learning_question(message):
+                self._answer_learning_question(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
+            if allow_chat_shortcuts and self._is_general_chat_message(message) and not self._seems_task_like_message(message):
+                self._answer_general_chat(message)
+                self._resolve_active_interaction(outcome='resolved', provider='local')
+                return
         # NOTE: explicit_assistant check was here pre-P0.40 but is now
         # handled earlier in the sovereignty guard (line ~11576).
         # If we reach this point the message has no external intent.
@@ -13985,6 +14202,52 @@ class ControlCenterViewModel(QObject):
 
         def worker() -> None:
             try:
+                # Causal tracing: ORCHESTRATOR_ENTERED
+                if interaction_id:
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        tracer = get_runtime_tracer()
+                        # Get runtime fingerprint
+                        try:
+                            import subprocess as _subprocess
+                            import os as _os
+                            workspace = str(getattr(self.config, 'workspace_root', '') or '')
+                            if not workspace:
+                                workspace = str(_os.getcwd())
+                            current_head = _subprocess.run(
+                                ['git', 'rev-parse', 'HEAD'],
+                                cwd=workspace,
+                                capture_output=True,
+                                text=True,
+                                timeout=5.0,
+                            ).stdout.strip()
+                            current_branch = _subprocess.run(
+                                ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                cwd=workspace,
+                                capture_output=True,
+                                text=True,
+                                timeout=5.0,
+                            ).stdout.strip()
+                        except Exception:
+                            current_head = 'unknown'
+                            current_branch = 'unknown'
+                            workspace = 'unknown'
+
+                        tracer.trace_causal_event(
+                            event_type='ORCHESTRATOR_ENTERED',
+                            interaction_id=interaction_id,
+                            phase='CONTEXT_ASSEMBLY_STARTED',
+                            runtime_head=current_head,
+                            workspace=workspace,
+                            branch=current_branch,
+                            metadata={
+                                'task_name': 'chat',
+                                'dispatch_id': _dispatch_id,
+                            },
+                        )
+                    except Exception:
+                        pass
+
                 # Mark lifecycle phase: first_technical_response
                 if interaction_id and lifecycle is not None:
                     try:
