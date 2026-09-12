@@ -357,6 +357,8 @@ def test_installer_acl_identity_handling():
 
     This tests that ACL configuration uses SIDs instead of localized
     account names (e.g., "Administrators" vs "S-1-5-32-544").
+
+    STATIC GUARD TEST: Verifies installer source code uses SIDs.
     """
     installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
 
@@ -370,7 +372,6 @@ def test_installer_acl_identity_handling():
         'S-1-5-32-544',  # Administrators
         'S-1-5-18',      # SYSTEM
         'S-1-5-19',      # LocalService
-        'S-1-5-32-545',  # Users
     ]
 
     sid_count = sum(1 for sid in well_known_sids if sid in installer_content)
@@ -382,6 +383,16 @@ def test_installer_acl_identity_handling():
     # Verify SID format is used with icacls
     assert '*S-1-5' in installer_content, (
         "Installer must use SID format with icacls (e.g., *S-1-5-32-544)"
+    )
+
+    # Verify NO DENY policy (no explicit deny for Users)
+    assert '/deny' not in installer_content.lower(), (
+        "Installer should not use DENY ACLs - use explicit Allow only"
+    )
+
+    # Verify policy documentation in comments
+    assert 'NO DENY' in installer_content, (
+        "Installer should document NO DENY policy in comments"
     )
 
 
@@ -461,6 +472,8 @@ def test_installer_service_removal_checks_exit_code():
     """Verify installer checks exit code for service removal.
 
     This tests that service removal failures abort deployment.
+
+    STATIC GUARD TEST: Verifies installer source code has exit code checks.
     """
     installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
 
@@ -469,14 +482,110 @@ def test_installer_service_removal_checks_exit_code():
 
     installer_content = installer_path.read_text(encoding='utf-8')
 
-    # Find service removal section (PHASE 9)
-    phase_9_match = installer_content.find('PHASE 9')
-    assert phase_9_match != -1, "Installer must have PHASE 9"
+    # Find service removal section (PHASE 22 after reordering)
+    phase_22_match = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    assert phase_22_match != -1, "Installer must have PHASE 22 for service removal"
 
-    phase_9_section = installer_content[phase_9_match:phase_9_match + 500]
+    phase_22_section = installer_content[phase_22_match:phase_22_match + 500]
 
     # Verify exit code check for service removal
-    assert '$LASTEXITCODE' in phase_9_section, (
-        "PHASE 9 must check $LASTEXITCODE for service removal"
+    assert '$LASTEXITCODE' in phase_22_section, (
+        "PHASE 22 must check $LASTEXITCODE for service removal"
+    )
+
+
+def test_installer_has_preflight_permission_check():
+    """Verify installer has pre-flight permission check before destructive actions.
+
+    This tests that deployment verifies permissions before removing service
+    or modifying runtime, preventing degraded state.
+
+    STATIC GUARD TEST: Verifies installer source code has pre-check phase.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Verify pre-flight check phase exists
+    assert 'PHASE 9: PRE-FLIGHT PERMISSION CHECK' in installer_content, (
+        "Installer must have pre-flight permission check phase"
+    )
+
+    # Verify pre-flight comes before service removal
+    preflight_index = installer_content.find('PHASE 9: PRE-FLIGHT PERMISSION CHECK')
+    service_removal_index = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+
+    assert preflight_index != -1 and service_removal_index != -1, (
+        "Installer must have both pre-flight and service removal phases"
+    )
+
+    assert preflight_index < service_removal_index, (
+        "Pre-flight check must occur before service removal"
+    )
+
+    # Verify pre-flight tests creation, write, deletion
+    preflight_section = installer_content[preflight_index:preflight_index + 1000]
+    assert 'New-Item' in preflight_section, (
+        "Pre-flight must test directory creation"
+    )
+    assert 'Set-Content' in preflight_section, (
+        "Pre-flight must test file write"
+    )
+    assert 'Remove-Item' in preflight_section, (
+        "Pre-flight must test directory deletion"
+    )
+
+
+def test_installer_transactional_order():
+    """Verify installer follows transactional deployment order.
+
+    This tests that deployment follows:
+    PRECHECK -> PREPARE -> VERIFY -> ACTIVATE
+
+    Order should be:
+    1. Pre-flight permission check
+    2. Runtime preparation (copy files, configure)
+    3. Runtime verification (isolation test, ACL verification)
+    4. Service removal (destructive)
+    5. Service installation (activate)
+
+    STATIC GUARD TEST: Verifies installer source code has correct order.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find key phases
+    preflight_idx = installer_content.find('PHASE 9: PRE-FLIGHT PERMISSION CHECK')
+    runtime_copy_idx = installer_content.find('PHASE 11: COPY PYTHON RUNTIME')
+    isolation_verify_idx = installer_content.find('PHASE 16: VERIFY PYTHON314._PTH ISOLATION')
+    service_removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    service_install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+
+    # Verify all phases exist
+    assert preflight_idx != -1, "Installer must have pre-flight check"
+    assert runtime_copy_idx != -1, "Installer must have runtime copy phase"
+    assert isolation_verify_idx != -1, "Installer must have isolation verification"
+    assert service_removal_idx != -1, "Installer must have service removal"
+    assert service_install_idx != -1, "Installer must have service installation"
+
+    # Verify order: pre-check < prepare < verify < remove < install
+    assert preflight_idx < runtime_copy_idx, (
+        "Pre-flight must occur before runtime copy"
+    )
+    assert runtime_copy_idx < isolation_verify_idx, (
+        "Runtime copy must occur before isolation verification"
+    )
+    assert isolation_verify_idx < service_removal_idx, (
+        "Isolation verification must occur before service removal"
+    )
+    assert service_removal_idx < service_install_idx, (
+        "Service removal must occur before service installation"
     )
 

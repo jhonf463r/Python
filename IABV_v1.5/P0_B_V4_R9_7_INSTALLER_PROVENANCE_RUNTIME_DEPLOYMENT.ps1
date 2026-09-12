@@ -220,15 +220,38 @@ if (-not (Test-Path "$iabvProjectRoot\src\iabv_v15")) {
 Write-Output "IABV source modules verified: $iabvProjectRoot\src\iabv_v15"
 Write-Output ""
 
-# PHASE 9: Remove existing service
-Write-Output "=== PHASE 9: REMOVE EXISTING SERVICE ==="
-$env:PYTHONPATH="$iabvProjectRoot\src"
-& "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
-if ($LASTEXITCODE -ne 0) {
-    Write-Output "Service may not have existed or removal failed, continuing..."
-} else {
-    Write-Output "Existing service removed"
+# PHASE 9: Pre-flight permission check
+Write-Output "=== PHASE 9: PRE-FLIGHT PERMISSION CHECK ==="
+Write-Output "Testing if installer can create/write/delete in runtime directory..."
+
+$serviceRuntimePath = "C:\ProgramData\IABV\service_runtime"
+$testPath = "$serviceRuntimePath\__installer_test__"
+
+# Test creation
+try {
+    New-Item -Path $testPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot create directory: $_"
+    exit 1
 }
+
+# Test write
+try {
+    Set-Content -Path "$testPath\test.txt" -Value "test" -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot write file: $_"
+    exit 1
+}
+
+# Test deletion
+try {
+    Remove-Item -Path $testPath -Recurse -Force -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Pre-flight check failed - cannot delete directory: $_"
+    exit 1
+}
+
+Write-Output "Pre-flight permission check: PASS"
 Write-Output ""
 
 # PHASE 10: Create machine-scoped runtime directory
@@ -414,29 +437,27 @@ Write-Output ""
 Write-Output "=== PHASE 15: CONFIGURE MACHINE-SCOPED RUNTIME ACLS ==="
 
 # Use well-known SIDs for internationalization robustness
-# S-1-5-32-544 = Administrators
+# S-1-5-32-544 = BUILTIN\Administrators
 # S-1-5-18 = SYSTEM
 # S-1-5-19 = LocalService
-# S-1-5-32-545 = Users
+# S-1-5-32-545 = BUILTIN\Users
+#
+# ACL Policy (NO DENY):
+# - SYSTEM: FullControl (can modify for recovery/deployment)
+# - Administrators: FullControl (can recover/redeploy)
+# - LocalService: Read/Execute (can execute but not modify)
+# - Users: NO permissions (no ACE added, inheritance removed)
+#
+# Rationale for NO DENY:
+# - DENY rules can affect Administrators who also have Users SID in their token
+# - With inheritance removed, Users has no permissions by default
+# - Explicit Allow for SYSTEM/Administrators/LocalService is sufficient
+# - Avoids complex DENY/Allow interaction in Windows token evaluation
 
 Write-Output "Removing inheritance..."
 icacls $serviceRuntimePath /inheritance:r
 if ($LASTEXITCODE -ne 0) {
     Write-Output "ERROR: Failed to remove inheritance"
-    exit 1
-}
-
-Write-Output "Granting LocalService Read/Execute (S-1-5-19)..."
-icacls $serviceRuntimePath /grant:r "*S-1-5-19:(OI)(CI)RX"
-if ($LASTEXITCODE -ne 0) {
-    Write-Output "ERROR: Failed to grant LocalService permissions"
-    exit 1
-}
-
-Write-Output "Granting Administrators FullControl (S-1-5-32-544)..."
-icacls $serviceRuntimePath /grant:r "*S-1-5-32-544:(OI)(CI)F"
-if ($LASTEXITCODE -ne 0) {
-    Write-Output "ERROR: Failed to grant Administrators permissions"
     exit 1
 }
 
@@ -447,14 +468,24 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Output "Denying Users Write/Delete/Replace (S-1-5-32-545)..."
-icacls $serviceRuntimePath /deny "*S-1-5-32-545:(OI)(CI)F"
+Write-Output "Granting Administrators FullControl (S-1-5-32-544)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-32-544:(OI)(CI)F"
 if ($LASTEXITCODE -ne 0) {
-    Write-Output "ERROR: Failed to deny Users permissions"
+    Write-Output "ERROR: Failed to grant Administrators permissions"
     exit 1
 }
 
-Write-Output "Machine-scoped runtime ACLs configured"
+Write-Output "Granting LocalService Read/Execute (S-1-5-19)..."
+icacls $serviceRuntimePath /grant:r "*S-1-5-19:(OI)(CI)RX"
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Failed to grant LocalService permissions"
+    exit 1
+}
+
+# No explicit DENY for Users - with inheritance removed, Users has no permissions
+# This achieves the same security goal without DENY/Allow complexity
+
+Write-Output "Machine-scoped runtime ACLs configured (NO DENY policy)"
 Write-Output ""
 
 # PHASE 16: Verify python314._pth isolation in deployed runtime
@@ -565,8 +596,20 @@ foreach ($path in $criticalPaths) {
 }
 Write-Output ""
 
-# PHASE 22: Install service with machine-scoped PathName
-Write-Output "=== PHASE 22: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
+# PHASE 22: Remove existing service (only after runtime is verified ready)
+Write-Output "=== PHASE 22: REMOVE EXISTING SERVICE ==="
+Write-Output "Removing existing service before installation..."
+$env:PYTHONPATH="$iabvProjectRoot\src"
+& "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "Service may not have existed or removal failed, continuing..."
+} else {
+    Write-Output "Existing service removed"
+}
+Write-Output ""
+
+# PHASE 23: Install service with machine-scoped PathName
+Write-Output "=== PHASE 23: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
 $env:PYTHONPATH="$serviceRuntimePath"
 & "$serviceRuntimePath\python.exe" -m iabv_v15.services.development.authority_windows_service install $pythonservicePath
 Write-Output ""
