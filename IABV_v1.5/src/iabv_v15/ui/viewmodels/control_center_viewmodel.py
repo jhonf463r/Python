@@ -8091,6 +8091,8 @@ class ControlCenterViewModel(QObject):
 
     def _set_autonomy_activity_override(self, **payload: Any) -> None:
         self._autonomy_activity_override = self._activity_payload(**payload)
+        # Emit dataChanged to notify UI of activity state change
+        self.dataChanged.emit()
 
     def _clear_autonomy_activity_override(self) -> None:
         self._autonomy_activity_override = {}
@@ -13620,6 +13622,22 @@ class ControlCenterViewModel(QObject):
 
             interaction_id = getattr(self, '_active_interaction_id', 'unknown')
 
+            # Update UI with PROVENANCE stage
+            try:
+                self._set_autonomy_activity_override(
+                    visible=True,
+                    title='Auditoría interna',
+                    status='active',
+                    stage='verificación de provenance',
+                    progress=0.10,
+                    detail='Verificando que el runtime coincide con el snapshot objetivo',
+                    tool='RuntimeAuditTracer',
+                    next_step='Orquestador cognitivo',
+                    mode='local',
+                )
+            except Exception:
+                pass
+
             # Trace causal event: DEEP_AUDIT_DETECTED
             tracer.trace_causal_event(
                 event_type='DEEP_AUDIT_DETECTED',
@@ -14248,6 +14266,22 @@ class ControlCenterViewModel(QObject):
                     except Exception:
                         pass
 
+                # Update UI with CONTEXT_ASSEMBLY stage
+                try:
+                    self._set_autonomy_activity_override(
+                        visible=True,
+                        title='Analizando consulta',
+                        status='active',
+                        stage='ensamblando contexto',
+                        progress=0.25,
+                        detail='Construyendo contexto de la tarea',
+                        tool='TaskContextAssembler',
+                        next_step='Percepción y World Model',
+                        mode='local',
+                    )
+                except Exception:
+                    pass
+
                 # Mark lifecycle phase: first_technical_response
                 if interaction_id and lifecycle is not None:
                     try:
@@ -14255,8 +14289,42 @@ class ControlCenterViewModel(QObject):
                     except Exception:
                         pass
                 request = self._build_request(message)
+                
+                # Update UI with INFERENCE stage
+                try:
+                    self._set_autonomy_activity_override(
+                        visible=True,
+                        title='Analizando consulta',
+                        status='active',
+                        stage='inferencia y gobernanza',
+                        progress=0.50,
+                        detail='Evaluando intención y estrategia',
+                        tool='AdaptiveTaskOrchestrator',
+                        next_step='Selección de actor',
+                        mode='local',
+                    )
+                except Exception:
+                    pass
+                
                 record = self.inference_service.infer_task(request)
                 adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
+                
+                # Update UI with ACTOR_SELECTION stage
+                try:
+                    self._set_autonomy_activity_override(
+                        visible=True,
+                        title='Analizando consulta',
+                        status='active',
+                        stage='selección de actor',
+                        progress=0.70,
+                        detail='Actor seleccionado, ejecutando tarea',
+                        tool=self._role_title_from_task(record.result.detected_role or record.route.task_role),
+                        next_step='Verificación',
+                        mode='local',
+                    )
+                except Exception:
+                    pass
+                
                 if not self._is_dispatch_active('chat', _dispatch_id):
                     import logging
                     logging.getLogger(__name__).debug('chat worker %s discarded (stale)', _dispatch_id[:8])
@@ -14266,6 +14334,23 @@ class ControlCenterViewModel(QObject):
                         user_visible_message=False,
                     )
                     return
+                
+                # Update UI with VERIFICATION stage before final
+                try:
+                    self._set_autonomy_activity_override(
+                        visible=True,
+                        title='Analizando consulta',
+                        status='active',
+                        stage='verificación',
+                        progress=0.90,
+                        detail='Validando resultado y finalizando',
+                        tool='AutonomyGovernancePolicy',
+                        next_step='Completado',
+                        mode='local',
+                    )
+                except Exception:
+                    pass
+                
                 self.taskResolved.emit(
                     'chat',
                     {
