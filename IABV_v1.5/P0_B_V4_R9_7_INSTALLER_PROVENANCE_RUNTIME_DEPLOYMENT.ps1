@@ -716,7 +716,73 @@ if ($serviceQueryExitCode -eq 0) {
     Write-Output "Query output:"
     Write-Output $serviceQueryBefore
 
-    # Service exists, attempt removal
+    # Check if service is RUNNING and needs to be stopped
+    $serviceState = "UNKNOWN"
+    if ($serviceQueryBefore -match "STATE\s*:\s*(\d+)\s*(\w+)") {
+        $serviceState = $matches[2]
+        Write-Output "Service state detected: $serviceState"
+    }
+
+    # If service is RUNNING, stop it explicitly before removal
+    if ($serviceState -eq "RUNNING") {
+        Write-Output "Service is RUNNING, attempting explicit stop..."
+        try {
+            Stop-Service -Name IABVAuditAuthority -Force -ErrorAction Stop
+            Write-Output "Service stop command executed"
+
+            # Wait for service to reach STOPPED state
+            $stopAttempts = 0
+            $maxStopAttempts = 10
+            $serviceStopped = $false
+
+            while ($stopAttempts -lt $maxStopAttempts -and -not $serviceStopped) {
+                Start-Sleep -Seconds 1
+                $stopAttempts++
+                Write-Output "Checking service state (attempt $stopAttempts/$maxStopAttempts)..."
+
+                $stopCheck = & sc.exe query IABVAuditAuthority
+                if ($LASTEXITCODE -eq 1060) {
+                    # Service already removed
+                    $serviceStopped = $true
+                    Write-Output "Service already removed during stop"
+                } elseif ($LASTEXITCODE -eq 0) {
+                    if ($stopCheck -match "STATE\s*:\s*(\d+)\s*(\w+)") {
+                        $currentState = $matches[2]
+                        Write-Output "Current state: $currentState"
+                        if ($currentState -eq "STOPPED") {
+                            $serviceStopped = $true
+                            Write-Output "Service reached STOPPED state"
+                        } elseif ($currentState -eq "STOP_PENDING") {
+                            Write-Output "Service still STOP_PENDING, waiting..."
+                        } else {
+                            Write-Output "WARNING: Unexpected state: $currentState"
+                        }
+                    }
+                } else {
+                    Write-Output "WARNING: Unknown query exit code: $LASTEXITCODE"
+                }
+            }
+
+            if (-not $serviceStopped) {
+                Write-Output "ERROR: Service did not reach STOPPED state after $maxStopAttempts attempts"
+                exit 1
+            }
+
+            Write-Output "Service successfully stopped"
+        } catch {
+            Write-Output "ERROR: Failed to stop service: $_"
+            exit 1
+        }
+    } elseif ($serviceState -eq "STOPPED") {
+        Write-Output "Service is already STOPPED, proceeding to removal"
+    } elseif ($serviceState -eq "STOP_PENDING") {
+        Write-Output "ERROR: Service is in STOP_PENDING state, cannot proceed safely"
+        exit 1
+    } else {
+        Write-Output "WARNING: Unknown service state: $serviceState, proceeding with caution"
+    }
+
+    # Service exists (and now stopped if it was running), attempt removal
     Write-Output "Attempting service removal..."
     $env:PYTHONPATH="$iabvProjectRoot\src"
     & "$trustedSource\python.exe" -m iabv_v15.services.development.authority_windows_service remove
@@ -845,6 +911,38 @@ Write-Output "Active runtime location: $activeRuntimePath"
 # Update $serviceRuntimePath to point to active runtime for service installation
 $serviceRuntimePath = $activeRuntimePath
 Write-Output "Runtime path updated to active location: $serviceRuntimePath"
+
+# Recalculate $pythonservicePath from active runtime (stale fix)
+# Previous calculation used staging path; must recalculate after activation
+Write-Output "Recalculating pythonservicePath from active runtime..."
+if (Test-Path "$serviceRuntimePath\Scripts\pythonservice.exe") {
+    $pythonservicePath = "$serviceRuntimePath\Scripts\pythonservice.exe"
+    Write-Output "Using pythonservice.exe from Scripts: $pythonservicePath"
+} elseif (Test-Path "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe") {
+    $pythonservicePath = "$serviceRuntimePath\Lib\site-packages\win32\pythonservice.exe"
+    Write-Output "Using pythonservice.exe from site-packages: $pythonservicePath"
+} else {
+    Write-Output "ERROR: pythonservice.exe not found in active runtime: $serviceRuntimePath"
+    exit 1
+}
+
+# Verify pythonservicePath exists and is within active runtime
+if (-not (Test-Path $pythonservicePath)) {
+    Write-Output "ERROR: Recalculated pythonservicePath does not exist: $pythonservicePath"
+    exit 1
+}
+
+# Verify pythonservicePath is NOT in staging or backup
+if ($pythonservicePath -like "*service_runtime_staging*") {
+    Write-Output "ERROR: pythonservicePath points to staging directory: $pythonservicePath"
+    exit 1
+}
+if ($pythonservicePath -like "*service_runtime_backup*") {
+    Write-Output "ERROR: pythonservicePath points to backup directory: $pythonservicePath"
+    exit 1
+}
+
+Write-Output "pythonservicePath verified in active runtime: $pythonservicePath"
 Write-Output ""
 
 # PHASE 22.6: Cleanup old backup (deferred, non-critical)
@@ -862,11 +960,26 @@ Write-Output ""
 Write-Output "=== PHASE 24: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
 $env:PYTHONPATH="$serviceRuntimePath"
 & "$serviceRuntimePath\python.exe" -m iabv_v15.services.development.authority_windows_service install $pythonservicePath
+
+# Immediately check installation exit code (fail-closed)
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "ERROR: Service installation failed with exit code $LASTEXITCODE"
+    exit 1
+}
+Write-Output "Service installation command succeeded (exit code 0)"
 Write-Output ""
 
-# PHASE 25: Verify service installation
-Write-Output "=== PHASE 24: VERIFY SERVICE INSTALLATION ==="
-$service = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'"
+# PHASE 25: Verify service installation postconditions
+Write-Output "=== PHASE 25: VERIFY SERVICE INSTALLATION POSTCONDITIONS ==="
+
+# Verify service exists
+try {
+    $service = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'" -ErrorAction Stop
+} catch {
+    Write-Output "ERROR: Service not found after installation: $_"
+    exit 1
+}
+
 Write-Output "Service Name: $($service.Name)"
 Write-Output "Service State: $($service.State)"
 Write-Output "Service StartName: $($service.StartName)"
@@ -874,7 +987,7 @@ Write-Output "Service PathName: $($service.PathName)"
 Write-Output ""
 
 # PHASE 26: Verify StartName is LocalService
-Write-Output "=== PHASE 25: VERIFY SERVICE IDENTITY ==="
+Write-Output "=== PHASE 26: VERIFY SERVICE IDENTITY ==="
 if ($service.StartName -ne "NT AUTHORITY\LocalService") {
     Write-Output "ERROR: Service StartName is not LocalService"
     Write-Output "Current StartName: $($service.StartName)"
@@ -883,24 +996,51 @@ if ($service.StartName -ne "NT AUTHORITY\LocalService") {
 Write-Output "SUCCESS: Service StartName is NT AUTHORITY\LocalService"
 Write-Output ""
 
-# PHASE 27: Verify PathName points to machine-scoped runtime
-Write-Output "=== PHASE 26: VERIFY EXECUTION BOUNDARY ==="
-if ($service.PathName -like "*C:\Users\faber\miniconda3*") {
-    Write-Output "ERROR: Service PathName still points to user-profile runtime"
-    Write-Output "Current PathName: $($service.PathName)"
+# PHASE 27: Verify PathName exact correspondence with active runtime
+Write-Output "=== PHASE 27: VERIFY EXACT PATHNAME CORRESPONDENCE ==="
+
+# Normalize paths for comparison (Windows case-insensitive, handle quotes)
+$expectedPath = $pythonservicePath
+$actualPathName = $service.PathName
+
+# Remove quotes from PathName if present
+if ($actualPathName -match '^"(.+)"$') {
+    $actualPathName = $matches[1]
+}
+
+# Normalize slashes
+$expectedPath = $expectedPath -replace '\\', '/'
+$actualPathName = $actualPathName -replace '\\', '/'
+
+# Case-insensitive comparison
+if ($actualPathName -ne $expectedPath) {
+    Write-Output "ERROR: Service PathName does not exactly match expected executable"
+    Write-Output "Expected: $expectedPath"
+    Write-Output "Actual: $actualPathName"
     exit 1
 }
 
-if ($service.PathName -notlike "*service_runtime*") {
-    Write-Output "ERROR: Service PathName does NOT point to machine-scoped runtime"
-    Write-Output "Current PathName: $($service.PathName)"
-    exit 1
-}
-Write-Output "SUCCESS: Service PathName points to machine-scoped runtime"
+Write-Output "SUCCESS: Service PathName exactly matches expected executable"
+Write-Output "PathName: $($service.PathName)"
 Write-Output ""
 
-# PHASE 28: Verify PathName does NOT point to user profile
-Write-Output "=== PHASE 27: VERIFY NO USER-PROFILE DEPENDENCY ==="
+# PHASE 28: Verify PathName does NOT point to staging or backup
+Write-Output "=== PHASE 28: VERIFY NO STAGING/BACKUP PATHNAME ==="
+if ($service.PathName -like "*service_runtime_staging*") {
+    Write-Output "ERROR: Service PathName points to staging directory"
+    Write-Output "Current PathName: $($service.PathName)"
+    exit 1
+}
+if ($service.PathName -like "*service_runtime_backup*") {
+    Write-Output "ERROR: Service PathName points to backup directory"
+    Write-Output "Current PathName: $($service.PathName)"
+    exit 1
+}
+Write-Output "SUCCESS: Service PathName does not point to staging or backup"
+Write-Output ""
+
+# PHASE 29: Verify PathName does NOT point to user profile
+Write-Output "=== PHASE 29: VERIFY NO USER-PROFILE DEPENDENCY ==="
 if ($service.PathName -like "*C:\Users\faber*") {
     Write-Output "ERROR: Service PathName contains user profile path"
     Write-Output "Current PathName: $($service.PathName)"
