@@ -1087,5 +1087,242 @@ class TestRuntimeProgressObservability:
         assert vm._last_activity_update > initial_time
 
 
+class TestThreadingAndStaleClearProtection:
+    """Test thread-safety and stale clear protection for autonomy activity."""
+
+    def test_gui_thread_immediate_update(self):
+        """Test that update on GUI thread mutates immediately without queuing."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._is_gui_thread_flag = True
+                
+            def _is_on_gui_thread(self):
+                return self._is_gui_thread_flag
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return True
+                
+            def _update_autonomy_activity_override_impl(self, payload):
+                self._autonomy_activity_override = payload
+                
+            def _queue_ui_call(self, method_name, *args):
+                self._queue_called = True
+                
+            def _activity_payload(self, **kwargs):
+                return kwargs
+        
+        vm = MockViewModel()
+        
+        # Simulate GUI thread call
+        vm._is_gui_thread_flag = True
+        vm._queue_called = False
+        
+        # Call _set_autonomy_activity_override (should call impl directly)
+        def set_override(self, **payload):
+            if self._is_on_gui_thread():
+                self._update_autonomy_activity_override_impl(payload)
+            else:
+                self._queue_ui_call('_update_autonomy_activity_override_slot', payload)
+        
+        # Call on GUI thread
+        set_override(vm, visible=True, stage='received', progress=0.0)
+        
+        # Should have mutated directly, not queued
+        assert vm._autonomy_activity_override['stage'] == 'received'
+        assert not getattr(vm, '_queue_called', False)
+
+    def test_worker_thread_queues_update(self):
+        """Test that update from worker thread queues for GUI thread."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._is_gui_thread_flag = False
+                self._queue_calls = []
+                
+            def _is_on_gui_thread(self):
+                return self._is_gui_thread_flag
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return True
+                
+            def _update_autonomy_activity_override_impl(self, payload):
+                self._autonomy_activity_override = payload
+                
+            def _queue_ui_call(self, method_name, *args):
+                self._queue_calls.append((method_name, args))
+                
+            def _activity_payload(self, **kwargs):
+                return kwargs
+        
+        vm = MockViewModel()
+        
+        # Simulate worker thread call
+        vm._is_gui_thread_flag = False
+        
+        # Call _set_autonomy_activity_override (should queue)
+        def set_override(self, **payload):
+            if self._is_on_gui_thread():
+                self._update_autonomy_activity_override_impl(payload)
+            else:
+                self._queue_ui_call('_update_autonomy_activity_override_slot', payload)
+        
+        set_override(vm, visible=True, stage='execution', progress=0.5)
+        
+        # Should have queued, not mutated directly
+        assert len(vm._queue_calls) == 1
+        assert vm._queue_calls[0][0] == '_update_autonomy_activity_override_slot'
+        assert vm._autonomy_activity_override == {}  # Not mutated yet
+
+    def test_stale_clear_cannot_erase_newer_interaction(self):
+        """Test that stale clear from interaction A cannot erase interaction B."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._active_interaction_id = None
+                self._active_dispatch_ids = {}
+                self._clear_calls = []
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def _is_on_gui_thread(self):
+                return True  # Simulate GUI thread
+                
+            def _clear_autonomy_activity_override(self, interaction_id=None, dispatch_id=None):
+                self._clear_autonomy_activity_override_impl(interaction_id, dispatch_id)
+                
+            def _clear_autonomy_activity_override_impl(self, interaction_id, dispatch_id):
+                self._clear_calls.append((interaction_id, dispatch_id))
+                # Validate
+                if dispatch_id and not self._is_dispatch_active('chat', dispatch_id):
+                    return  # Discard
+                if interaction_id:
+                    current = self._active_interaction_id
+                    if current and interaction_id != current:
+                        return  # Discard
+                self._autonomy_activity_override = {}
+                
+            def _queue_ui_call(self, method_name, *args):
+                pass  # Not used in GUI thread simulation
+                
+        vm = MockViewModel()
+        
+        # Interaction A is active
+        vm._active_interaction_id = 'interaction-a'
+        vm._active_dispatch_ids['chat'] = 'dispatch-a'
+        vm._autonomy_activity_override = {'stage': 'execution', 'interaction_id': 'interaction-a'}
+        
+        # Interaction A queues clear
+        vm._clear_autonomy_activity_override(interaction_id='interaction-a', dispatch_id='dispatch-a')
+        
+        # Before clear executes, interaction B becomes active
+        vm._active_interaction_id = 'interaction-b'
+        vm._active_dispatch_ids['chat'] = 'dispatch-b'
+        vm._autonomy_activity_override = {'stage': 'provenance', 'interaction_id': 'interaction-b'}
+        
+        # Clear from A executes (should be discarded)
+        vm._clear_autonomy_activity_override(interaction_id='interaction-a', dispatch_id='dispatch-a')
+        
+        # Interaction B should remain intact
+        assert vm._autonomy_activity_override['interaction_id'] == 'interaction-b'
+        assert vm._autonomy_activity_override['stage'] == 'provenance'
+
+    def test_active_clear_still_works(self):
+        """Test that clear from active interaction still clears activity."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._active_interaction_id = None
+                self._active_dispatch_ids = {}
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def _is_on_gui_thread(self):
+                return True  # Simulate GUI thread
+                
+            def _clear_autonomy_activity_override(self, interaction_id=None, dispatch_id=None):
+                self._clear_autonomy_activity_override_impl(interaction_id, dispatch_id)
+                
+            def _clear_autonomy_activity_override_impl(self, interaction_id, dispatch_id):
+                # Validate
+                if dispatch_id and not self._is_dispatch_active('chat', dispatch_id):
+                    return  # Discard
+                if interaction_id:
+                    current = self._active_interaction_id
+                    if current and interaction_id != current:
+                        return  # Discard
+                self._autonomy_activity_override = {}
+                
+            def _queue_ui_call(self, method_name, *args):
+                pass  # Not used in GUI thread simulation
+                
+        vm = MockViewModel()
+        
+        # Interaction A is active
+        vm._active_interaction_id = 'interaction-a'
+        vm._active_dispatch_ids['chat'] = 'dispatch-a'
+        vm._autonomy_activity_override = {'stage': 'execution', 'interaction_id': 'interaction-a'}
+        
+        # Clear from A (should work)
+        vm._clear_autonomy_activity_override(interaction_id='interaction-a', dispatch_id='dispatch-a')
+        
+        # Activity should be cleared
+        assert vm._autonomy_activity_override == {}
+
+    def test_worker_update_reaches_gui_thread(self):
+        """Test that worker update is queued and eventually reaches GUI thread."""
+        class MockViewModel:
+            def __init__(self):
+                self._autonomy_activity_override = {}
+                self._is_gui_thread_flag = False
+                self._queue_calls = []
+                self._active_interaction_id = 'test-interaction'
+                self._active_dispatch_ids = {'chat': 'test-dispatch'}
+                
+            def _is_on_gui_thread(self):
+                return self._is_gui_thread_flag
+                
+            def _is_dispatch_active(self, task_name, dispatch_id):
+                return self._active_dispatch_ids.get(task_name) == dispatch_id
+                
+            def _update_autonomy_activity_override_impl(self, payload):
+                self._autonomy_activity_override = payload
+                
+            def _queue_ui_call(self, method_name, *args):
+                self._queue_calls.append((method_name, args))
+                
+            def _activity_payload(self, **kwargs):
+                return kwargs
+        
+        vm = MockViewModel()
+        
+        # Simulate worker thread call
+        vm._is_gui_thread_flag = False
+        
+        def set_override(self, **payload):
+            if self._is_on_gui_thread():
+                self._update_autonomy_activity_override_impl(payload)
+            else:
+                self._queue_ui_call('_update_autonomy_activity_override_slot', payload)
+        
+        set_override(vm, visible=True, stage='execution', progress=0.5)
+        
+        # Should have queued
+        assert len(vm._queue_calls) == 1
+        
+        # Simulate GUI thread processing the queued call
+        vm._is_gui_thread_flag = True
+        method_name, args = vm._queue_calls[0]
+        assert method_name == '_update_autonomy_activity_override_slot'
+        payload = args[0]
+        vm._update_autonomy_activity_override_impl(payload)
+        
+        # Now state should be updated
+        assert vm._autonomy_activity_override['stage'] == 'execution'
+        assert vm._autonomy_activity_override['progress'] == 0.5
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

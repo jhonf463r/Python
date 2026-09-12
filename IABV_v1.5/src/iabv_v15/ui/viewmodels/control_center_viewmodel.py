@@ -8092,23 +8092,37 @@ class ControlCenterViewModel(QObject):
     def _set_autonomy_activity_override(self, **payload: Any) -> None:
         """Thread-safe UI update for autonomy activity.
         
-        Queues the update to execute on GUI thread via _queue_ui_call.
-        Worker threads should call this method; it ensures mutation happens safely.
+        If called from GUI thread: mutate directly and emit dataChanged immediately.
+        If called from worker thread: queue to execute on GUI thread via _queue_ui_call.
+        This ensures first-visible-state can be applied immediately when already on GUI thread.
         """
-        self._queue_ui_call('_update_autonomy_activity_override_slot', **payload)
+        if self._is_on_gui_thread():
+            # Already on GUI thread - mutate directly for immediate visible feedback
+            self._update_autonomy_activity_override_impl(payload)
+        else:
+            # Worker thread - queue for GUI thread execution
+            self._queue_ui_call('_update_autonomy_activity_override_slot', payload)
 
-    @Slot(object)
-    def _update_autonomy_activity_override_slot(self, payload: dict) -> None:
-        """Qt main-thread slot: updates autonomy activity override safely.
+    def _is_on_gui_thread(self) -> bool:
+        """Check if current thread is the GUI thread (QObject thread)."""
+        try:
+            from PySide6.QtCore import QObject, QThread
+            is_qobject = isinstance(self, QObject)
+            if not is_qobject:
+                return True  # Test stub - assume direct call is safe
+            return QThread.currentThread() == self.thread()
+        except ImportError:
+            return True  # Qt not available - assume direct call is safe
+
+    def _update_autonomy_activity_override_impl(self, payload: dict) -> None:
+        """Implementation of autonomy activity update (must be called on GUI thread).
         
-        This method runs on the GUI thread and actually mutates the state.
-        Validates that the update belongs to an active dispatch to prevent
-        stale updates from overwriting newer interactions.
+        Validates dispatch/interaction and mutates state safely.
         """
         # Validate dispatch if present in payload
         dispatch_id = payload.get('dispatch_id')
         if dispatch_id and not self._is_dispatch_active('chat', dispatch_id):
-            # Discard stale update - this dispatch is no longer active
+            # Discard stale update
             import logging
             logging.getLogger(__name__).debug(
                 'Discarding stale autonomy activity update for dispatch %s',
@@ -8134,22 +8148,71 @@ class ControlCenterViewModel(QObject):
         from iabv_v15.infra.clock import utc_now
         payload['updated_at'] = utc_now()
         
-        # Safe mutation on GUI thread
+        # Safe mutation
         self._autonomy_activity_override = self._activity_payload(**payload)
         self.dataChanged.emit()
 
-    def _clear_autonomy_activity_override(self) -> None:
-        """Thread-safe clear of autonomy activity override.
+    @Slot(object)
+    def _update_autonomy_activity_override_slot(self, payload: dict) -> None:
+        """Qt main-thread slot: updates autonomy activity override safely.
         
-        Queues the clear to execute on GUI thread via _queue_ui_call.
+        This method runs on the GUI thread and delegates to the implementation.
         """
-        self._queue_ui_call('_clear_autonomy_activity_override_slot')
+        self._update_autonomy_activity_override_impl(payload)
 
-    @Slot()
-    def _clear_autonomy_activity_override_slot(self) -> None:
-        """Qt main-thread slot: clears autonomy activity override safely."""
+    def _clear_autonomy_activity_override(self, interaction_id: str | None = None, dispatch_id: str | None = None) -> None:
+        """Thread-safe clear of autonomy activity override with identity correlation.
+        
+        If called from GUI thread: clear directly if identity matches.
+        If called from worker thread: queue for GUI thread execution.
+        Validates that the clear corresponds to the active dispatch/interaction.
+        """
+        if self._is_on_gui_thread():
+            self._clear_autonomy_activity_override_impl(interaction_id, dispatch_id)
+        else:
+            self._queue_ui_call('_clear_autonomy_activity_override_slot', interaction_id, dispatch_id)
+
+    def _clear_autonomy_activity_override_impl(self, interaction_id: str | None, dispatch_id: str | None) -> None:
+        """Implementation of autonomy activity clear (must be called on GUI thread).
+        
+        Validates that the clear corresponds to the active dispatch/interaction.
+        Only clears if the provided identity matches the current active state.
+        """
+        # Validate dispatch if provided
+        if dispatch_id:
+            if not self._is_dispatch_active('chat', dispatch_id):
+                # Discard stale clear - this dispatch is no longer active
+                import logging
+                logging.getLogger(__name__).debug(
+                    'Discarding stale autonomy activity clear for dispatch %s (no longer active)',
+                    dispatch_id[:8] if dispatch_id else 'unknown'
+                )
+                return
+        
+        # Validate interaction_id if provided
+        if interaction_id:
+            current_interaction_id = getattr(self, '_active_interaction_id', None)
+            if current_interaction_id and interaction_id != current_interaction_id:
+                # Discard stale clear - this interaction is no longer active
+                import logging
+                logging.getLogger(__name__).debug(
+                    'Discarding stale autonomy activity clear for interaction %s (current: %s)',
+                    interaction_id[:8] if interaction_id else 'unknown',
+                    current_interaction_id[:8] if current_interaction_id else 'unknown'
+                )
+                return
+        
+        # Safe clear - identity matches or no identity provided
         self._autonomy_activity_override = {}
         self.dataChanged.emit()
+
+    @Slot(str, str)
+    def _clear_autonomy_activity_override_slot(self, interaction_id: str | None, dispatch_id: str | None) -> None:
+        """Qt main-thread slot: clears autonomy activity override safely.
+        
+        This method runs on the GUI thread and delegates to the implementation.
+        """
+        self._clear_autonomy_activity_override_impl(interaction_id, dispatch_id)
 
     def get_autonomy_activity(self) -> dict[str, Any]:
         if self._autonomy_activity_override:
@@ -14787,9 +14850,11 @@ class ControlCenterViewModel(QObject):
             self._diagnostic_text = self._build_provider_diagnostic(nonblocking=True)
             self._diagnostic_truth_state = 'observed'
         elif task_name == 'chat':
-            self._clear_autonomy_activity_override()
-            # Mark lifecycle phase: first_useful_response
+            # Clear activity with identity correlation
             _iid = getattr(self, '_active_interaction_id', None)
+            _did = getattr(self, '_active_dispatch_ids', {}).get('chat')
+            self._clear_autonomy_activity_override(interaction_id=_iid, dispatch_id=_did)
+            # Mark lifecycle phase: first_useful_response
             _lc = getattr(self, '_chat_interaction_lifecycle', None)
             if _iid and _lc is not None:
                 try:
