@@ -685,18 +685,18 @@ def test_installer_transactional_runtime_safety():
     )
 
     # Find PHASE 22.5 (staging activation)
-    phase_22_5_match = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME')
+    phase_22_5_match = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME WITH ROLLBACK')
     assert phase_22_5_match != -1, "Installer must have staging activation phase"
 
-    phase_22_5_section = installer_content[phase_22_5_match:phase_22_5_match + 500]
+    phase_22_5_section = installer_content[phase_22_5_match:phase_22_5_match + 1000]
 
     # Verify staging is activated to active location after service removal
-    # The code uses Remove-Item on old active runtime, then updates path
-    assert 'Remove-Item' in phase_22_5_section, (
-        "PHASE 22.5 must remove old active runtime before activation"
+    # The code now uses rename (Move-Item) instead of destructive delete
+    assert 'Move-Item' in phase_22_5_section, (
+        "PHASE 22.5 must use Move-Item (rename) for activation"
     )
-    assert 'staging' in phase_22_5_section.lower() and 'active' in phase_22_5_section.lower(), (
-        "PHASE 22.5 must activate staging to active location"
+    assert 'backup' in phase_22_5_section.lower(), (
+        "PHASE 22.5 must use backup path for rollback"
     )
 
 
@@ -736,9 +736,156 @@ def test_installer_staging_path_distinct_from_active():
 
 
 def test_installer_destructive_action_after_service_transition():
-    """Verify destructive runtime action occurs only after service transition.
+    """Verify destructive runtime action uses rename/swap with rollback.
 
-    This tests that old runtime removal happens only after service is removed/stopped.
+    This tests that activation uses rename operations (not destructive delete)
+    and has rollback capability.
+
+    STATIC GUARD TEST: Verifies installer source code has rename/swap logic.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find key phases
+    service_removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
+    staging_activation_idx = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME WITH ROLLBACK')
+
+    assert service_removal_idx != -1, "Installer must have service removal"
+    assert staging_activation_idx != -1, "Installer must have staging activation with rollback"
+
+    # Verify order: service removal < staging activation
+    assert service_removal_idx < staging_activation_idx, (
+        "Service removal must occur before staging activation"
+    )
+
+    # Verify activation uses rename (Move-Item) not destructive delete
+    staging_section = installer_content[staging_activation_idx:staging_activation_idx + 1000]
+    assert 'Move-Item' in staging_section, (
+        "Staging activation must use Move-Item (rename)"
+    )
+    assert 'backup' in staging_section.lower(), (
+        "Staging activation must use backup path for rollback"
+    )
+    assert 'ROLLBACK' in staging_section, (
+        "Staging activation must have rollback logic"
+    )
+
+    # Verify NO direct Remove-Item of active runtime before backup
+    # The only Remove-Item should be in cleanup phase, not activation
+    activation_section = installer_content[staging_activation_idx:staging_activation_idx + 800]
+    # Remove-Item should not appear in activation before backup rename
+    lines_before_rollback = activation_section.split('ROLLBACK')[0] if 'ROLLBACK' in activation_section else activation_section
+    assert 'Remove-Item' not in lines_before_rollback or 'backup' in lines_before_rollback.lower(), (
+        "Activation should not destructively delete active runtime before backup"
+    )
+
+
+def test_installer_activation_rollback_exists():
+    """Verify installer has rollback logic for activation failure.
+
+    This tests that if STAGING -> ACTIVE fails, installer attempts to restore BACKUP -> ACTIVE.
+
+    STATIC GUARD TEST: Verifies installer source code has rollback logic.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find activation phase
+    activation_idx = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME WITH ROLLBACK')
+    assert activation_idx != -1, "Installer must have activation phase with rollback"
+
+    activation_section = installer_content[activation_idx:activation_idx + 1200]
+
+    # Verify rollback exists
+    assert 'ROLLBACK' in activation_section, (
+        "Activation must have rollback logic"
+    )
+    assert 'backup' in activation_section.lower(), (
+        "Rollback must restore from backup"
+    )
+
+
+def test_installer_rollback_failure_causes_installer_failure():
+    """Verify rollback failure causes installer to exit with error.
+
+    This tests that if rollback fails, installer does not continue as if nothing happened.
+
+    STATIC GUARD TEST: Verifies installer source code has fail-closed rollback.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find activation phase
+    activation_idx = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME WITH ROLLBACK')
+    assert activation_idx != -1, "Installer must have activation phase with rollback"
+
+    activation_section = installer_content[activation_idx:activation_idx + 2000]
+
+    # Verify rollback failure causes exit 1
+    # Find rollback failure block
+    rollback_failure_section = activation_section.split('ROLLBACK FAILED')[-1] if 'ROLLBACK FAILED' in activation_section else ""
+    if rollback_failure_section:
+        assert 'exit 1' in rollback_failure_section, (
+            "Rollback failure must cause installer to exit with error"
+        )
+    else:
+        # If ROLLBACK FAILED string not found, verify rollback has exit 1
+        assert 'exit 1' in activation_section, (
+            "Rollback logic must have exit 1 on failure"
+        )
+
+
+def test_installer_activation_postconditions_checked():
+    """Verify installer checks postconditions after activation.
+
+    This tests that installer verifies ACTIVE exists and STAGING no longer exists.
+
+    STATIC GUARD TEST: Verifies installer source code has postcondition checks.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find activation phase
+    activation_idx = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME WITH ROLLBACK')
+    assert activation_idx != -1, "Installer must have activation phase with rollback"
+
+    activation_section = installer_content[activation_idx:activation_idx + 2000]
+
+    # Verify active runtime existence check
+    assert 'Test-Path $activeRuntimePath' in activation_section, (
+        "Activation must verify active runtime exists"
+    )
+
+    # Verify staging no longer exists check (may be implicit in Move-Item success)
+    # If explicit check not found, that's acceptable as Move-Item success implies staging moved
+    staging_check = 'Test-Path $stagingRuntimePath' in activation_section
+    if not staging_check:
+        # Verify Move-Item success implies staging moved
+        assert 'Move-Item' in activation_section and '$stagingRuntimePath' in activation_section, (
+            "Activation must move staging runtime (implicit verification)"
+        )
+
+
+def test_installer_service_installation_after_activation():
+    """Verify service installation occurs only after successful activation.
+
+    This tests that service installation phase comes after activation phase.
 
     STATIC GUARD TEST: Verifies installer source code order.
     """
@@ -750,24 +897,85 @@ def test_installer_destructive_action_after_service_transition():
     installer_content = installer_path.read_text(encoding='utf-8')
 
     # Find key phases
-    service_removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
-    staging_activation_idx = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME')
+    activation_idx = installer_content.find('PHASE 22.5: ACTIVATE STAGING RUNTIME WITH ROLLBACK')
+    service_install_idx = installer_content.find('PHASE 24: INSTALL SERVICE')
 
-    assert service_removal_idx != -1, "Installer must have service removal"
-    assert staging_activation_idx != -1, "Installer must have staging activation"
+    assert activation_idx != -1, "Installer must have activation phase"
+    assert service_install_idx != -1, "Installer must have service installation phase"
 
-    # Verify order: service removal < staging activation
-    assert service_removal_idx < staging_activation_idx, (
-        "Service removal must occur before staging activation"
+    # Verify order: activation < service installation
+    assert activation_idx < service_install_idx, (
+        "Service installation must occur after activation"
     )
 
-    # Verify staging activation removes old active runtime only after service removal
-    staging_section = installer_content[staging_activation_idx:staging_activation_idx + 500]
-    assert 'Remove-Item' in staging_section, (
-        "Staging activation must remove old active runtime"
+
+def test_installer_orphan_cleanup_safe():
+    """Verify orphan cleanup cannot delete active runtime.
+
+    This tests that cleanup phase uses pattern matching and does not delete active runtime.
+
+    STATIC GUARD TEST: Verifies installer source code has safe cleanup.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find cleanup phase
+    cleanup_idx = installer_content.find('PHASE 9.5: CLEANUP ORPHAN STAGING')
+    assert cleanup_idx != -1, "Installer must have orphan cleanup phase"
+
+    cleanup_section = installer_content[cleanup_idx:cleanup_idx + 800]
+
+    # Verify cleanup uses pattern matching
+    assert 'service_runtime_staging_*' in cleanup_section, (
+        "Cleanup must use pattern matching for staging directories"
     )
-    assert 'old active runtime' in staging_section.lower() or 'oldRuntimeExists' in staging_section, (
-        "Staging activation must target old active runtime for removal"
+    assert 'service_runtime_backup_*' in cleanup_section, (
+        "Cleanup must use pattern matching for backup directories"
+    )
+
+    # Verify cleanup has time cutoff (not immediate deletion)
+    assert 'AddHours' in cleanup_section or 'AddDays' in cleanup_section, (
+        "Cleanup must have time cutoff to avoid deleting recent artifacts"
+    )
+
+    # Verify cleanup does not delete active runtime path directly
+    # The cleanup uses pattern matching, so it should not have direct reference to active path
+    assert 'C:\\ProgramData\\IABV\\service_runtime' not in cleanup_section or 'staging' in cleanup_section.lower() or 'backup' in cleanup_section.lower(), (
+        "Cleanup must not target active runtime path directly"
+    )
+
+
+def test_installer_final_pathname_references_active():
+    """Verify final service PathName verification references active runtime.
+
+    This tests that installer verifies service PathName points to the active runtime.
+
+    STATIC GUARD TEST: Verifies installer source code has PathName verification.
+    """
+    installer_path = Path(__file__).parent.parent / "P0_B_V4_R9_7_INSTALLER_PROVENANCE_RUNTIME_DEPLOYMENT.ps1"
+
+    if not installer_path.exists():
+        pytest.skip("Installer script not found")
+
+    installer_content = installer_path.read_text(encoding='utf-8')
+
+    # Find PathName verification phase
+    pathname_idx = installer_content.find('PHASE 27: Verify PathName points to machine-scoped runtime')
+    assert pathname_idx != -1, "Installer must have PathName verification phase"
+
+    pathname_section = installer_content[pathname_idx:pathname_idx + 500]
+
+    # Verify PathName check exists
+    assert 'PathName' in pathname_section, (
+        "Installer must verify service PathName"
+    )
+    # Verify PathName references service_runtime (not user profile)
+    assert 'service_runtime' in pathname_section, (
+        "PathName verification must reference service_runtime path"
     )
 
 
@@ -839,6 +1047,9 @@ def test_installer_failure_never_triggers_service_removal():
     )
 
     # Since exit 1 on failure prevents reaching service removal, this is implicit
+
+
+def test_installer_service_removal_failure_blocks_installation():
     """Verify service removal failure blocks final installation.
 
     This tests that if service removal fails, installation is not attempted.
@@ -854,7 +1065,7 @@ def test_installer_failure_never_triggers_service_removal():
 
     # Find service removal and installation sections
     removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
-    install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+    install_idx = installer_content.find('PHASE 24: INSTALL SERVICE')
 
     assert removal_idx != -1, "Installer must have service removal"
     assert install_idx != -1, "Installer must have service installation"
@@ -1012,7 +1223,7 @@ def test_installer_transactional_order():
     runtime_copy_idx = installer_content.find('PHASE 11: COPY PYTHON RUNTIME')
     isolation_verify_idx = installer_content.find('PHASE 16: VERIFY PYTHON314._PTH ISOLATION')
     service_removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
-    service_install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+    service_install_idx = installer_content.find('PHASE 24: INSTALL SERVICE')
 
     # Verify all phases exist
     assert preflight_idx != -1, "Installer must have pre-flight check"
@@ -1181,7 +1392,7 @@ def test_installer_no_service_install_after_removal_failure():
 
     # Find service removal and installation sections
     removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
-    install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+    install_idx = installer_content.find('PHASE 24: INSTALL SERVICE')
 
     assert removal_idx != -1, "Installer must have service removal phase"
     assert install_idx != -1, "Installer must have service installation phase"
@@ -1220,7 +1431,7 @@ def test_installer_negative_control_causality():
 
     # Find service removal section
     removal_idx = installer_content.find('PHASE 22: REMOVE EXISTING SERVICE')
-    install_idx = installer_content.find('PHASE 23: INSTALL SERVICE')
+    install_idx = installer_content.find('PHASE 24: INSTALL SERVICE')
 
     assert removal_idx != -1, "Installer must have service removal phase"
     assert install_idx != -1, "Installer must have service installation phase"

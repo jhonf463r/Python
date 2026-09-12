@@ -220,6 +220,51 @@ if (-not (Test-Path "$iabvProjectRoot\src\iabv_v15")) {
 Write-Output "IABV source modules verified: $iabvProjectRoot\src\iabv_v15"
 Write-Output ""
 
+# PHASE 9.5: Cleanup orphan staging directories (non-critical)
+# Safe cleanup of stale staging directories from failed previous runs
+# Only removes directories matching pattern and older than 24 hours
+Write-Output "=== PHASE 9.5: CLEANUP ORPHAN STAGING ==="
+$stagingPattern = "C:\ProgramData\IABV\service_runtime_staging_*"
+$backupPattern = "C:\ProgramData\IABV\service_runtime_backup_*"
+$activeRuntimePath = "C:\ProgramData\IABV\service_runtime"
+
+$cutoffTime = (Get-Date).AddHours(-24)
+$cleanupCount = 0
+
+# Clean up orphan staging directories
+if (Test-Path "C:\ProgramData\IABV") {
+    Get-ChildItem "C:\ProgramData\IABV" -Directory | Where-Object {
+        $_.Name -like "service_runtime_staging_*" -and $_.LastWriteTime -lt $cutoffTime
+    } | ForEach-Object {
+        Write-Output "Removing orphan staging directory: $($_.FullName)"
+        try {
+            Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction Stop
+            $cleanupCount++
+        } catch {
+            Write-Output "WARNING: Failed to remove orphan staging: $_"
+            # Non-critical, continue
+        }
+    }
+}
+
+# Clean up orphan backup directories (older than 7 days, retain for recovery)
+$backupCutoffTime = (Get-Date).AddDays(-7)
+Get-ChildItem "C:\ProgramData\IABV" -Directory | Where-Object {
+    $_.Name -like "service_runtime_backup_*" -and $_.LastWriteTime -lt $backupCutoffTime
+} | ForEach-Object {
+    Write-Output "Removing old backup directory: $($_.FullName)"
+    try {
+        Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction Stop
+        $cleanupCount++
+    } catch {
+        Write-Output "WARNING: Failed to remove old backup: $_"
+        # Non-critical, continue
+    }
+}
+
+Write-Output "Orphan cleanup completed: $cleanupCount directories removed"
+Write-Output ""
+
 # PHASE 9: Pre-flight permission check
 Write-Output "=== PHASE 9: PRE-FLIGHT PERMISSION CHECK ==="
 
@@ -719,50 +764,107 @@ if ($serviceQueryExitCode -eq 0) {
 
 Write-Output ""
 
-# PHASE 22.5: Activate staging runtime by moving to active location
-# This is the atomic switch: verified staging runtime becomes active runtime
+# PHASE 22.5: Activate staging runtime with controlled rename/swap and rollback
+# This reduces risk of partial deletion and permanent loss of old runtime
 # Service must be removed/stopped before this point to avoid file locks
-Write-Output "=== PHASE 22.5: ACTIVATE STAGING RUNTIME ==="
-Write-Output "Moving verified staging runtime to active location: $activeRuntimePath"
+Write-Output "=== PHASE 22.5: ACTIVATE STAGING RUNTIME WITH ROLLBACK ==="
+Write-Output "Staging runtime verified, proceeding to controlled activation"
 
-# Remove old active runtime if it exists
+# Generate backup path with timestamp
+$backupTimestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$backupRuntimePath = "C:\ProgramData\IABV\service_runtime_backup_$backupTimestamp"
+Write-Output "Backup path: $backupRuntimePath"
+
+# Step 1: Rename ACTIVE -> BACKUP (if active runtime exists)
 $oldActiveRuntimeExists = Test-Path $activeRuntimePath
 if ($oldActiveRuntimeExists) {
-    Write-Output "Removing old active runtime directory: $activeRuntimePath"
+    Write-Output "Renaming active runtime to backup: $activeRuntimePath -> $backupRuntimePath"
     try {
-        Remove-Item -Path $activeRuntimePath -Recurse -Force -ErrorAction Stop
+        Move-Item -Path $activeRuntimePath -Destination $backupRuntimePath -ErrorAction Stop
     } catch {
-        Write-Output "ERROR: Failed to remove old active runtime directory: $_"
+        Write-Output "ERROR: Failed to rename active runtime to backup: $_"
         exit 1
     }
-    Write-Output "Old active runtime directory removed"
+    Write-Output "Active runtime renamed to backup successfully"
 } else {
-    Write-Output "Old active runtime directory does not exist (fresh deployment)"
+    Write-Output "Active runtime does not exist (fresh deployment), skipping backup"
 }
 
-# Move staging runtime to active location
+# Step 2: Rename STAGING -> ACTIVE
+Write-Output "Renaming staging runtime to active: $stagingRuntimePath -> $activeRuntimePath"
 try {
-    Move-Item -Path $stagingRuntimePath -Destination $activeRuntimePath -Force -ErrorAction Stop
+    Move-Item -Path $stagingRuntimePath -Destination $activeRuntimePath -ErrorAction Stop
 } catch {
-    Write-Output "ERROR: Failed to move staging runtime to active location: $_"
+    Write-Output "ERROR: Failed to rename staging runtime to active: $_"
+
+    # ROLLBACK: Restore backup if we had one
+    if ($oldActiveRuntimeExists) {
+        Write-Output "ROLLBACK: Attempting to restore backup: $backupRuntimePath -> $activeRuntimePath"
+        try {
+            Move-Item -Path $backupRuntimePath -Destination $activeRuntimePath -ErrorAction Stop
+            Write-Output "ROLLBACK SUCCESS: Backup restored to active location"
+        } catch {
+            Write-Output "ROLLBACK FAILED: Cannot restore backup: $_"
+            Write-Output "CRITICAL STATE: Active runtime absent, backup at $backupRuntimePath"
+            exit 1
+        }
+    }
     exit 1
 }
-Write-Output "Staging runtime activated: $activeRuntimePath"
+Write-Output "Staging runtime renamed to active successfully"
+
+# Step 3: Verify activation postconditions
+Write-Output "Verifying activation postconditions..."
+
+# Verify active runtime exists
+if (-not (Test-Path $activeRuntimePath)) {
+    Write-Output "ERROR: Active runtime does not exist after activation"
+    # ROLLBACK: Restore backup if we had one
+    if ($oldActiveRuntimeExists) {
+        Write-Output "ROLLBACK: Attempting to restore backup: $backupRuntimePath -> $activeRuntimePath"
+        try {
+            Move-Item -Path $backupRuntimePath -Destination $activeRuntimePath -ErrorAction Stop
+            Write-Output "ROLLBACK SUCCESS: Backup restored to active location"
+        } catch {
+            Write-Output "ROLLBACK FAILED: Cannot restore backup: $_"
+            exit 1
+        }
+    }
+    exit 1
+}
+
+# Verify staging no longer exists
+if (Test-Path $stagingRuntimePath) {
+    Write-Output "ERROR: Staging runtime still exists after activation (expected to be moved)"
+    exit 1
+}
+
+Write-Output "Activation postconditions verified: PASS"
+Write-Output "Active runtime location: $activeRuntimePath"
 
 # Update $serviceRuntimePath to point to active runtime for service installation
 $serviceRuntimePath = $activeRuntimePath
 Write-Output "Runtime path updated to active location: $serviceRuntimePath"
 Write-Output ""
 
-# PHASE 23: Install service with machine-scoped PathName
+# PHASE 22.6: Cleanup old backup (deferred, non-critical)
+# Only attempt cleanup after successful activation and service installation
+# This reduces risk of permanent loss; backup can be cleaned manually if needed
+Write-Output "=== PHASE 22.6: DEFERRED BACKUP CLEANUP ==="
+Write-Output "Backup retained at: $backupRuntimePath"
+Write-Output "Backup cleanup deferred to reduce risk. Manual cleanup required if disk space is critical."
+Write-Output "Backup can be removed after confirming successful service operation."
+Write-Output ""
+
+# PHASE 24: Install service with machine-scoped PathName
 # Staging runtime is now verified and activated at active location
 # Service installation can proceed with confidence that runtime is complete
-Write-Output "=== PHASE 23: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
+Write-Output "=== PHASE 24: INSTALL SERVICE WITH MACHINE-SCOPED PATHNAME ==="
 $env:PYTHONPATH="$serviceRuntimePath"
 & "$serviceRuntimePath\python.exe" -m iabv_v15.services.development.authority_windows_service install $pythonservicePath
 Write-Output ""
 
-# PHASE 24: Verify service installation
+# PHASE 25: Verify service installation
 Write-Output "=== PHASE 24: VERIFY SERVICE INSTALLATION ==="
 $service = Get-CimInstance Win32_Service -Filter "Name='IABVAuditAuthority'"
 Write-Output "Service Name: $($service.Name)"
@@ -771,7 +873,7 @@ Write-Output "Service StartName: $($service.StartName)"
 Write-Output "Service PathName: $($service.PathName)"
 Write-Output ""
 
-# PHASE 25: Verify StartName is LocalService
+# PHASE 26: Verify StartName is LocalService
 Write-Output "=== PHASE 25: VERIFY SERVICE IDENTITY ==="
 if ($service.StartName -ne "NT AUTHORITY\LocalService") {
     Write-Output "ERROR: Service StartName is not LocalService"
@@ -781,7 +883,7 @@ if ($service.StartName -ne "NT AUTHORITY\LocalService") {
 Write-Output "SUCCESS: Service StartName is NT AUTHORITY\LocalService"
 Write-Output ""
 
-# PHASE 26: Verify PathName points to machine-scoped runtime
+# PHASE 27: Verify PathName points to machine-scoped runtime
 Write-Output "=== PHASE 26: VERIFY EXECUTION BOUNDARY ==="
 if ($service.PathName -like "*C:\Users\faber\miniconda3*") {
     Write-Output "ERROR: Service PathName still points to user-profile runtime"
@@ -797,7 +899,7 @@ if ($service.PathName -notlike "*service_runtime*") {
 Write-Output "SUCCESS: Service PathName points to machine-scoped runtime"
 Write-Output ""
 
-# PHASE 27: Verify PathName does NOT point to user profile
+# PHASE 28: Verify PathName does NOT point to user profile
 Write-Output "=== PHASE 27: VERIFY NO USER-PROFILE DEPENDENCY ==="
 if ($service.PathName -like "*C:\Users\faber*") {
     Write-Output "ERROR: Service PathName contains user profile path"
@@ -807,7 +909,7 @@ if ($service.PathName -like "*C:\Users\faber*") {
 Write-Output "SUCCESS: Service PathName does not depend on user profile"
 Write-Output ""
 
-# PHASE 28: Final summary
+# PHASE 29: Final summary
 Write-Output "=== INSTALLER PROVENANCE RUNTIME DEPLOYMENT COMPLETE ==="
 Write-Output ""
 Write-Output "DEPLOYMENT SUMMARY:"
