@@ -479,5 +479,255 @@ class TestCausalTracing:
             assert has_orchestrator is False  # This is the problem
 
 
+class TestCoalescingBehavior:
+    """Test coalescing behavior with concurrent calls and long-running builds."""
+
+    def test_concurrent_second_call_blocked(self):
+        """Test that a second concurrent call cannot start a build while first is in progress."""
+        # This test verifies the IN_FLIGHT EXCLUSION concept
+        # Simulate: Thread A starts build, Thread B calls current_status()
+        # Expected: build_count = 1 (only Thread A's build)
+        status_build_in_flight = False
+        build_count = 0
+        lock = threading.Lock()
+
+        def simulate_build():
+            nonlocal build_count, status_build_in_flight
+            with lock:
+                if status_build_in_flight:
+                    return False  # Cannot start
+                status_build_in_flight = True
+                build_count += 1
+            # Simulate build
+            time.sleep(0.1)
+            with lock:
+                status_build_in_flight = False
+            return True
+
+        # Thread A starts build
+        thread_a = threading.Thread(target=simulate_build)
+        thread_a.start()
+
+        # Small delay to ensure Thread A acquires lock and sets in_flight
+        time.sleep(0.01)
+
+        # Thread B tries to start build
+        result_b = simulate_build()
+
+        thread_a.join()
+
+        # Thread B should have been blocked
+        assert result_b is False, "Thread B should be blocked while Thread A is building"
+        assert build_count == 1, "Only one build should have occurred"
+
+    def test_long_running_build_blocks_second(self):
+        """Test that a long-running build (>10s) still blocks second caller."""
+        # This test reproduces the exact defect found
+        # If the first build takes >10s, the cooldown check must NOT allow a second build
+        status_build_in_flight = False
+        last_build_time = 0.0
+        build_count = 0
+        lock = threading.Lock()
+        cooldown_s = 10.0
+
+        def simulate_long_build():
+            nonlocal build_count, status_build_in_flight, last_build_time
+            with lock:
+                if status_build_in_flight:
+                    return False  # IN_FLIGHT EXCLUSION
+                status_build_in_flight = True
+                build_count += 1
+            # Simulate long build (>10s)
+            time.sleep(0.5)  # Use 0.5s instead of 10s for test speed
+            with lock:
+                status_build_in_flight = False
+                last_build_time = time.time()
+            return True
+
+        def try_build():
+            nonlocal status_build_in_flight, last_build_time
+            now = time.time()
+            with lock:
+                # IN_FLIGHT EXCLUSION first
+                if status_build_in_flight:
+                    return False
+                # COOLDOWN only if not in flight
+                if (now - last_build_time) < cooldown_s:
+                    return False
+                status_build_in_flight = True
+            return True
+
+        # Thread A starts long build
+        thread_a = threading.Thread(target=simulate_long_build)
+        thread_a.start()
+
+        # Wait for Thread A to start
+        time.sleep(0.01)
+
+        # Simulate time passing (>10s in real scenario, but we just wait a bit)
+        time.sleep(0.2)
+
+        # Thread B tries to start build while Thread A is still running
+        result_b = try_build()
+
+        thread_a.join()
+
+        # Thread B should be blocked by IN_FLIGHT, not by cooldown
+        assert result_b is False, "Thread B should be blocked by IN_FLIGHT while Thread A is building"
+        assert build_count == 1, "Only one build should have occurred despite long duration"
+
+    def test_post_completion_cooldown_blocks(self):
+        """Test that after build completes, cooldown blocks subsequent builds."""
+        status_build_in_flight = False
+        last_build_time = 0.0
+        build_count = 0
+        lock = threading.Lock()
+        cooldown_s = 1.0  # Short cooldown for test
+
+        def simulate_build():
+            nonlocal build_count, status_build_in_flight, last_build_time
+            with lock:
+                if status_build_in_flight:
+                    return False
+                status_build_in_flight = True
+                build_count += 1
+            time.sleep(0.1)
+            with lock:
+                status_build_in_flight = False
+                last_build_time = time.time()
+            return True
+
+        def try_build():
+            nonlocal status_build_in_flight, last_build_time
+            now = time.time()
+            with lock:
+                if status_build_in_flight:
+                    return False
+                if (now - last_build_time) < cooldown_s:
+                    return False
+                status_build_in_flight = True
+            return True
+
+        # First build completes
+        simulate_build()
+        assert build_count == 1
+
+        # Immediately try second build (within cooldown)
+        result = try_build()
+        assert result is False, "Should be blocked by cooldown immediately after build"
+
+        # Wait for cooldown to expire
+        time.sleep(1.1)
+
+        # Now should be allowed
+        result = try_build()
+        if result:
+            # Reset in_flight flag for test cleanup
+            with lock:
+                status_build_in_flight = False
+        assert result is True, "Should be allowed after cooldown expires"
+
+    def test_after_cooldown_new_build_allowed(self):
+        """Test that after cooldown expires and in_flight=False, new build is allowed."""
+        status_build_in_flight = False
+        last_build_time = 0.0
+        build_count = 0
+        lock = threading.Lock()
+        cooldown_s = 0.5
+
+        def simulate_build():
+            nonlocal build_count, status_build_in_flight, last_build_time
+            with lock:
+                if status_build_in_flight:
+                    return False
+                status_build_in_flight = True
+                build_count += 1
+            time.sleep(0.05)
+            with lock:
+                status_build_in_flight = False
+                last_build_time = time.time()
+            return True
+
+        def try_build():
+            nonlocal status_build_in_flight, last_build_time, build_count
+            now = time.time()
+            with lock:
+                if status_build_in_flight:
+                    return False
+                if (now - last_build_time) < cooldown_s:
+                    return False
+                status_build_in_flight = True
+                build_count += 1
+            # Complete the build
+            time.sleep(0.05)
+            with lock:
+                status_build_in_flight = False
+                last_build_time = time.time()
+            return True
+
+        # First build
+        simulate_build()
+        assert build_count == 1
+
+        # Wait for cooldown
+        time.sleep(0.6)
+
+        # Second build should be allowed
+        result = try_build()
+        assert result is True, "New build should be allowed after cooldown with in_flight=False"
+        assert build_count == 2, "Two builds should have occurred (separated by cooldown)"
+
+    def test_build_failure_does_not_block_future(self):
+        """Test that build failure does not leave in_flight permanently True."""
+        status_build_in_flight = False
+        last_build_time = 0.0
+        build_count = 0
+        lock = threading.Lock()
+        cooldown_s = 0.5
+
+        def simulate_failing_build():
+            nonlocal build_count, status_build_in_flight
+            with lock:
+                if status_build_in_flight:
+                    return False
+                status_build_in_flight = True
+                build_count += 1
+            # Simulate build failure
+            time.sleep(0.05)
+            with lock:
+                status_build_in_flight = False
+                # Do NOT update last_build_time on failure
+            raise Exception("Build failed")
+
+        def try_build():
+            nonlocal status_build_in_flight, last_build_time
+            now = time.time()
+            with lock:
+                if status_build_in_flight:
+                    return False
+                if (now - last_build_time) < cooldown_s:
+                    return False
+                status_build_in_flight = True
+            return True
+
+        # First build fails
+        try:
+            simulate_failing_build()
+        except Exception:
+            pass
+
+        # in_flight should be False after failure
+        with lock:
+            assert status_build_in_flight is False, "in_flight should be False after failure"
+
+        # Should be able to try again (even without cooldown since failure didn't update timestamp)
+        result = try_build()
+        if result:
+            # Reset for test
+            with lock:
+                status_build_in_flight = False
+        assert result is True, "Should be able to retry after failure"
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

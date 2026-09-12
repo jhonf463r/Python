@@ -65,23 +65,34 @@ class ToolEvolutionMonitor:
         ):
             return cached
 
-        # Coalescing guard: if a build is already in flight and within cooldown, return cached
+        # Coalescing guard: two separate concepts
+        # 1. IN_FLIGHT EXCLUSION: while a build is in progress, no second build can start
+        # 2. COOLDOWN: after a build completes, wait before allowing another build
         # Use lock to prevent race condition between check and set
         with self._status_build_lock:
-            if self._status_build_in_flight and (now - self._last_status_build_time) < self._STATUS_BUILD_COOLDOWN_S:
+            # IN_FLIGHT EXCLUSION: if a build is already in progress, always block
+            if self._status_build_in_flight:
                 # Build in progress, return cached even if stale
                 return cached if cached is not None else self._load_latest_status()
 
-            # Set in-flight flag while holding lock
+            # COOLDOWN: only apply if no build is in flight
+            if (now - self._last_status_build_time) < self._STATUS_BUILD_COOLDOWN_S:
+                # Too soon since last build completed, return cached
+                return cached if cached is not None else self._load_latest_status()
+
+            # Safe to start new build
             self._status_build_in_flight = True
-            self._last_status_build_time = now
+            # Note: _last_status_build_time will be updated on successful completion
 
         try:
             status = self.build_status(subject_key=subject_key)
             self._current_status = status
+            # Update timestamp only on successful completion
+            with self._status_build_lock:
+                self._last_status_build_time = utc_now()
             return status
         finally:
-            # Always reset in-flight flag
+            # Always reset in-flight flag, even on failure
             with self._status_build_lock:
                 self._status_build_in_flight = False
 
