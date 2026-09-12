@@ -721,6 +721,11 @@ if ($serviceQueryExitCode -eq 0) {
     if ($serviceQueryBefore -match "STATE\s*:\s*(\d+)\s*(\w+)") {
         $serviceState = $matches[2]
         Write-Output "Service state detected: $serviceState"
+    } else {
+        Write-Output "ERROR: Failed to parse service state from sc.exe query output"
+        Write-Output "Query output:"
+        Write-Output $serviceQueryBefore
+        exit 1
     }
 
     # If service is RUNNING, stop it explicitly before removal
@@ -755,11 +760,16 @@ if ($serviceQueryExitCode -eq 0) {
                         } elseif ($currentState -eq "STOP_PENDING") {
                             Write-Output "Service still STOP_PENDING, waiting..."
                         } else {
-                            Write-Output "WARNING: Unexpected state: $currentState"
+                            Write-Output "ERROR: Unexpected service state during stop polling: $currentState (FAIL-CLOSED)"
+                            exit 1
                         }
+                    } else {
+                        Write-Output "ERROR: Failed to parse service state during stop polling (FAIL-CLOSED)"
+                        exit 1
                     }
                 } else {
-                    Write-Output "WARNING: Unknown query exit code: $LASTEXITCODE"
+                    Write-Output "ERROR: Unknown query exit code during stop polling: $LASTEXITCODE (FAIL-CLOSED)"
+                    exit 1
                 }
             }
 
@@ -779,7 +789,9 @@ if ($serviceQueryExitCode -eq 0) {
         Write-Output "ERROR: Service is in STOP_PENDING state, cannot proceed safely"
         exit 1
     } else {
-        Write-Output "WARNING: Unknown service state: $serviceState, proceeding with caution"
+        Write-Output "ERROR: Unknown service state: $serviceState (FAIL-CLOSED)"
+        Write-Output "Service state must be STOPPED, RUNNING, or STOP_PENDING for safe removal"
+        exit 1
     }
 
     # Service exists (and now stopped if it was running), attempt removal
