@@ -37,7 +37,8 @@ Strong historical function:
 - epistemic boundary setting;
 - reconciliation of conflicting AI reports;
 - architecture-level reframing;
-- identification of latent/unimplemented knowledge.
+- identification of latent/unimplemented knowledge;
+- recognizing when an apparently local bug is evidence of a broader systemic contract problem.
 
 Constraint learned: synthesis must not be treated as runtime evidence.
 
@@ -61,7 +62,8 @@ Strong historical function:
 - MCP/environment observation;
 - exact-runtime startup checks;
 - practical integration evidence;
-- implementation of scoped fixes.
+- implementation of scoped fixes;
+- tracing concrete producer→consumer paths when supplied with a forensic objective.
 
 Representative learning: static wiring was insufficient; exact-runtime startup exposed a bootstrap regression that unit tests had not caught.
 
@@ -83,7 +85,8 @@ Function:
 - external provenance anchor;
 - branch/commit/file-history adjudication;
 - durable publication layer for historical knowledge;
-- independent read-back surface.
+- independent read-back surface;
+- canonical memory surface when knowledge is intentionally absorbed into `main`.
 
 GitHub is evidence infrastructure, not an oracle for runtime behavior.
 
@@ -154,6 +157,30 @@ New invariant:
 
 `durable continuity requires knowledge reconstruction, not transcript storage alone`
 
+### Transfer 8 — Runtime repair must be closed through the real path
+
+P040 demonstrated that a source-level repair can expose a second latent contract/import break only after the UI traverses the actual path.
+
+New invariant:
+
+`first visible fix != full path integrity until the path runs and terminal state is reconciled`
+
+### Transfer 9 — Cross-organ observations are not system-wide coherence
+
+The systemic-integrity audit found that IABV has many local integrity mechanisms, but it has not yet demonstrated a universal comparison of producer, consumer, contract, timing and causal effect.
+
+New invariant:
+
+`local observability != cross-organ coherence`
+
+### Transfer 10 — Preserve the current synthesis in canonical memory
+
+A chat-specific discovery should not remain only in the conversational context. When it can affect future routing, verification, architecture interpretation or AI role selection, it should be written to the canonical `CHAT-ARCH` layer and routed by `CONTEXT-INDEX.md`.
+
+New invariant:
+
+`important discovery in chat != durable project knowledge until canonically written and routable`
+
 ## SYMBIOSIS DYNAMICS TO PRESERVE
 
 ### Dynamic role assignment
@@ -194,7 +221,21 @@ A cross-IA interaction is significant when it changes any of:
 - a test boundary;
 - a role assignment strategy;
 - a future experiment;
-- an epistemic boundary.
+- an epistemic boundary;
+- a system-integrity/connectivity interpretation.
+
+## CURRENT SYSTEMIC-INTEGRITY ACTIVATION RULE
+
+When an objective touches runtime drift, broken UI/integration paths, duplicate responsibilities, producer/consumer contracts, temporal ordering, stale references, cross-organ contradictions, or architecture maintenance:
+
+1. activate `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`;
+2. activate `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, and `UNRESOLVED-KNOWLEDGE.md`;
+3. identify existing integrity algorithms before proposing new architecture;
+4. use IABV's own organs as evidence sources where possible;
+5. preserve distinctions between observation, diagnosis, reconciliation and correction;
+6. reconcile the canonical memory against the current branch/commit/runtime before implementation.
+
+The objective is to discover and reuse existing integrity capacity, not to manufacture a new central brain automatically.
 
 ## FUTURE OBJECTIVE ACTIVATION
 
@@ -205,6 +246,5 @@ Example:
 - security objective → activate authority/provenance transfers;
 - runtime integration objective → activate exact-runtime and test-boundary transfers;
 - cognitive objective → activate receipt-vs-cognition and persistence-vs-learning transfers;
-- continuity objective → activate archive/deletion and dynamic-context transfers.
-
-The objective determines which lessons become active constraints.
+- continuity objective → activate archive/deletion and dynamic-context transfers;
+- systemic-integrity objective → activate cross-organ coherence, runtime-repair and durable-memory transfer rules.
