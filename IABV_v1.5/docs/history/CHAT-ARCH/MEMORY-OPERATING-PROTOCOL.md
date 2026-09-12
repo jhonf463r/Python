@@ -62,6 +62,14 @@ Current code, tests, branches, commits, runtime fingerprints and independently o
 
 M6 outranks historical claims when answering what is true **now**.
 
+### M7 — Systemic integrity / connectivity synthesis
+
+`SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`
+
+This layer is the routed synthesis for cross-organ contract integrity, temporal/semantic coherence, duplication/drift detection and the history of which maintenance responsibilities are already present versus fragmented or missing.
+
+M7 is not an authority replacing M6. It is a high-value reasoning aid that tells the next investigation **which existing organs to inspect before creating new architecture**.
+
 ## OBJECTIVE-CONDITIONED MEMORY RETRIEVAL
 
 A new chat must perform retrieval in this order:
@@ -86,6 +94,8 @@ M3 SYMBIOSIS / ROLE EVIDENCE
 M4 UNRESOLVED / LATENT KNOWLEDGE
   ↓
 M5 RELEVANT SOURCE RECORDS OR CANONICAL ABSORPTION
+  ↓
+M7 SYSTEMIC INTEGRITY SYNTHESIS WHEN MATERIAL
   ↓
 M6 CURRENT REPOSITORY / RUNTIME RECONCILIATION
   ↓
@@ -129,6 +139,7 @@ CURRENT_GATE
 LAST_INDEPENDENTLY_VERIFIED_STATE
 RELEVANT_CROSS_IA_LESSONS
 AVAILABLE_CAPABILITY_EVIDENCE
+RELEVANT_SYSTEMIC_INTEGRITY_ORGAN_MAP
 SMALLEST_DISCRIMINATING_NEXT_ACTION
 ```
 
@@ -148,7 +159,8 @@ A record has high activation priority when it:
 6. contains unimplemented knowledge directly applicable now;
 7. records a cross-IA correction that changes the proper method;
 8. establishes the latest independently verified gate for the same subsystem;
-9. changes which AI capability should be selected.
+9. changes which AI capability should be selected;
+10. identifies an existing organ that may already own the capability, reducing unnecessary architecture creation.
 
 ## TEMPORAL RECONCILIATION
 
@@ -205,6 +217,7 @@ runtime observation
 controlled experimentation
 provenance adjudication
 result verification
+systemic connectivity analysis
 ```
 
 Then select available AIs according to demonstrated capability for that boundary.
@@ -230,6 +243,8 @@ Read M0 + M1 + M2.
 ### Depth 1 — Objective context
 
 Activate M3 + M4 entries directly relevant to the objective.
+
+When the objective touches cross-organ integrity, add M7 here.
 
 ### Depth 2 — Evidence
 
@@ -262,6 +277,12 @@ Examples:
 `repository target != runtime target until proven`
 
 `archive exists != deletion safe`
+
+`event recorded != connection validated`
+
+`local observation != cross-organ coherence`
+
+`recommendation exists != prediction exists`
 
 ## UNIMPLEMENTED KNOWLEDGE MUST STAY VISIBLE
 
@@ -320,7 +341,9 @@ A new historical update is warranted when the session creates or changes:
 - a strategically relevant unresolved idea;
 - a cross-IA learning transfer;
 - the collaboration strategy itself;
-- the canonical absorption/routing state.
+- the canonical absorption/routing state;
+- a cross-organ integrity/contract/temporal/semantic finding;
+- the identification of an existing organ that can replace a proposed new component.
 
 Routine repetition should not generate redundant history.
 
@@ -334,7 +357,8 @@ When new knowledge changes the operational model:
 4. update `SYMBIOSIS-MAP.md` when a capability/interaction lesson changed;
 5. update `UNRESOLVED-KNOWLEDGE.md` when latent knowledge changes status;
 6. update `CANONICAL-ABSORPTION-2026-09-11.md` when source reachability/absorption status changes;
-7. register new source records in `ARCHIVE-REGISTRY.md`.
+7. update `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` when a systemic-integrity finding changes;
+8. register new source records in `ARCHIVE-REGISTRY.md`.
 
 Do not silently rewrite historical records to make contradictions disappear.
 
@@ -347,6 +371,10 @@ A historical item may become:
 Status changes require evidence.
 
 A superseded item remains historically accessible because it may explain why the current design exists.
+
+When current code or runtime contradicts an older memory item, do not delete the older item. Mark the older item SUPERSEDED/REFUTED and update the current synthesis, routing and unresolved register as appropriate.
+
+This is the mechanism by which a new architecture state can **replace the active interpretation without losing the lineage that explains the change**.
 
 ## DELETION SAFETY
 
@@ -399,7 +427,8 @@ This memory architecture is successful only when a genuinely new chat:
 5. inherits prior negative knowledge and unimplemented ideas;
 6. selects roles/capabilities according to the current uncertainty;
 7. avoids repeating obsolete work;
-8. produces a new knowledge delta;
-9. writes that delta back into the appropriate durable layer.
+8. identifies existing organs before proposing new architecture;
+9. produces a new knowledge delta;
+10. writes that delta back into the appropriate durable layer.
 
 That is the operational definition of **cross-chat continuity** for IABV.
