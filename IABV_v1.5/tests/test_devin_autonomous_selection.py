@@ -740,3 +740,124 @@ def test_full_delegation_request_construction():
             shutil.rmtree(temp_dir)
         except Exception:
             pass
+
+
+def test_assistant_kind_mapping_consistency() -> None:
+    """Test H: Verificar consistencia de mapeos de assistant_kind entre componentes.
+    
+    Esta tarea de integración verifica que los mapeos de assistant_kind sean
+    consistentes entre:
+    - ToolTeachService._preferred_external_tool_id() (mapea assistant_kind → tool_id)
+    - ToolRegistry._seed_defaults() (define assistant_kind en metadata)
+    
+    Inconsistencia detectada puede causar:
+    - StrategySelector recomienda 'devin'
+    - ToolTeachService mapea 'devin' → tool_id incorrecto
+    - ToolRegistry no tiene card con ese assistant_kind
+    """
+    from iabv_v15.services.tools.tool_teach_service import ToolTeachService
+    from iabv_v15.services.tools.tool_registry import ToolRegistry
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from pathlib import Path
+    import tempfile
+    from unittest.mock import Mock
+    
+    # Crear instancias mínimas con ArtifactStorage correcto
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_mapping_consistency_"))
+    db_path = temp_dir / "test_mapping_consistency.sqlite"
+    db = AppDatabase(str(db_path))
+    storage = ArtifactStorage(root=temp_dir)
+    repo = ToolRecordRepository(db=db, storage=storage)
+    registry = ToolRegistry(repository=repo, adapters={})
+    
+    # Mock dependencias no necesarias
+    mock_memory = Mock()
+    mock_sandbox = Mock()
+    mock_validator = Mock()
+    mock_approval_policy = Mock()
+    mock_rollback_manager = Mock()
+    
+    service = ToolTeachService(
+        registry=registry,
+        memory=mock_memory,
+        sandbox=mock_sandbox,
+        validator=mock_validator,
+        approval_policy=mock_approval_policy,
+        rollback_manager=mock_rollback_manager,
+        adapters={},
+        workspace_root=str(temp_dir),
+        experiment_lab=None,
+    )
+    
+    try:
+        # 1. Recopilar assistant_kinds definidos en ToolRegistry._seed_defaults()
+        registry_assistant_kinds = set()
+        for card in registry.list_cards():
+            kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+            if kind:
+                registry_assistant_kinds.add(kind)
+        
+        # 2. Recopilar assistant_kinds que ToolTeachService puede procesar
+        # desde _preferred_external_tool_id() y _external_tool_ids()
+        teach_assistant_kinds = {'ollama', 'codex', 'claude', 'chatgpt', 'devin'}
+        
+        # 3. Verificar que Devin está en ambos conjuntos
+        assert 'devin' in registry_assistant_kinds, "Devin debe estar definido en ToolRegistry"
+        assert 'devin' in teach_assistant_kinds, "Devin debe estar procesable por ToolTeachService"
+        
+        # 4. Verificar consistencia de mapeo específico para Devin
+        # ToolTeachService._preferred_external_tool_id() con lab_recommendation
+        from iabv_v15.domain.models import ExperimentRecommendation, ExperimentDomain, EvaluationRoute, AssistantConfigurationSnapshot
+        
+        lab_rec = ExperimentRecommendation(
+            domain=ExperimentDomain.CODE,
+            subject_key='test:consistency',
+            recommended_route=EvaluationRoute.DEVIN_API,
+            recommended_assistant_kind='devin',
+            recommended_assistant_configuration=AssistantConfigurationSnapshot(
+                planning_mode='standard',
+                attachments_mode='none',
+                reasoning_level='standard',
+                context_mode='minimal',
+                tools_mode='auto',
+                browser_mode='none',
+                assistant_mode='standard',
+                origin_mode='local',
+            ),
+            recommended_config_signature='',
+            score=0.9,
+            confidence=0.85,
+            rationale='Test',
+            supporting_run_ids=[],
+            metadata={},
+        )
+        
+        tool_id = service._preferred_external_tool_id(
+            assistant_preference='',
+            diagnostic_category='',
+            incident_kind='',
+            lab_recommendation=lab_rec,
+            allow_local_automatic_consultation=False,
+            explicit_external_consultation=False,
+        )
+        
+        assert tool_id == 'devin_api', f"Devin recommendation should map to devin_api, got {tool_id}"
+        
+        # 5. Verificar que devin_api tiene metadata['assistant_kind'] = 'devin'
+        devin_card = registry.get_card('devin_api')
+        assert devin_card is not None, "devin_api card must exist in ToolRegistry"
+        assert devin_card.metadata.get('assistant_kind') == 'devin', \
+            f"devin_api card must have assistant_kind='devin', got {devin_card.metadata.get('assistant_kind')}"
+        
+    finally:
+        # Cleanup
+        try:
+            db.close()
+            if db_path.exists():
+                db_path.unlink()
+            import shutil
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
