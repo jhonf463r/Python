@@ -10,10 +10,12 @@ This embodies the principle: never trust a single source of truth.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -448,3 +450,98 @@ class PerceptionCrossValidator:
             })
 
         return inconsistencies
+
+
+def run_cross_validation_with_claim(
+    *,
+    world_model_service: Any = None,
+    tool_registry: Any = None,
+    workspace: str | None = None,
+) -> dict[str, Any]:
+    """Wrapper que convierte PerceptionCrossValidator en Claim + VerificationEvent.
+    
+    Esta función demuestra que un detector de familia semántica distinta
+    (perception cross-validation) puede utilizar el mismo modelo mínimo
+    Claim + VerificationEvent sin modificar el detector original.
+    
+    Mapping:
+    - Claim identity: estable por tipo de check (perception_cross_validation)
+    - Claim subject: descripción del check
+    - Claim invariant: código estable para perception consistency
+    - Claim origin: PerceptionCrossValidator
+    - VerificationEvent status: derivado de inconsistencies
+    - VerificationEvent evidence: checked_at timestamp
+    """
+    from iabv_v15.domain.models import IntegrityClaim, VerificationEvent
+    from iabv_v15.infra.persistence.integrity_claim_repository import IntegrityClaimRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    
+    # Ejecutar el detector original sin modificarlo
+    validator = PerceptionCrossValidator(
+        world_model_service=world_model_service,
+        tool_registry=tool_registry,
+    )
+    result = validator.run_cross_validation()
+    
+    # Determinar workspace para la base de datos
+    ws = workspace or str(Path(__file__).parent.parent.parent.parent)
+    
+    # Crear Claim identity estable basada en tipo de check
+    # Esto asegura que la misma afirmación de perception consistency
+    # produce la misma Claim identity entre ejecuciones
+    claim_subject = "Perception sources are consistent across processes, windows, and WorldModel"
+    claim_identity_input = "perception_cross_validation"
+    claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
+    
+    # Intentar obtener o crear la Claim
+    try:
+        # Usar la ruta de datos del proyecto para la base de datos
+        data_dir = Path(ws) / 'data' / 'evolution'
+        data_dir.mkdir(parents=True, exist_ok=True)
+        db_path = data_dir / 'integrity_claims.sqlite'
+        
+        db = AppDatabase(str(db_path))
+        repo = IntegrityClaimRepository(db)
+        
+        # Intentar recuperar Claim existente
+        existing_claim = repo.retrieve(claim_id)
+        
+        if not existing_claim:
+            # Crear Claim nueva (solo si no existe)
+            claim = IntegrityClaim(
+                claim_id=claim_id,
+                subject=claim_subject,
+                invariant="PERCEPTION_CONSISTENCY",
+                origin="PerceptionCrossValidator.run_cross_validation",
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+            repo.create(claim)
+        else:
+            claim = existing_claim
+        
+        # Crear VerificationEvent para esta ejecución
+        # PASS = no inconsistencies, FAIL = inconsistencies found
+        status = "PASS" if result['total_inconsistencies'] == 0 else "FAIL"
+        verification_evidence = f"checked_at:{result['checked_at']}"
+        
+        event = VerificationEvent(
+            event_id=hashlib.sha256(f"{claim_id}:{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()[:32],
+            claim_id=claim_id,
+            checked_at=datetime.now(timezone.utc).isoformat(),
+            status=status,
+            verification_evidence=verification_evidence,
+        )
+        repo.append_verification(event)
+        
+        # Enriquecer resultado con Claim/VerificationEvent metadata
+        result['claim_id'] = claim_id
+        result['verification_event_id'] = event.event_id
+        result['claim_subject'] = claim.subject
+        result['verification_status'] = status
+        
+    except Exception as e:
+        logger.warning(f"Failed to persist Claim/VerificationEvent for perception cross-validation: {e}")
+        # El detector original sigue funcionando aunque la persistencia falle
+        result['claim_persistence_error'] = str(e)
+    
+    return result
