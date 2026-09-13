@@ -192,36 +192,71 @@ class TestDevinApiAdapterRun:
 # ---------------------------------------------------------------------------
 
 class TestToolTeachServiceDevinIntegration:
+    def _make_minimal_service(self) -> Any:
+        """Create ToolTeachService with minimal mocks for testing static methods."""
+        from iabv_v15.services.tools.tool_teach_service import ToolTeachService
+        from iabv_v15.services.tools.tool_registry import ToolRegistry
+        from iabv_v15.services.tools.tool_memory import ToolMemory
+        from iabv_v15.services.tools.tool_sandbox import ToolSandbox
+        from iabv_v15.services.tools.tool_validator import ToolValidator
+        from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
+        from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
+        from unittest.mock import MagicMock
+        from pathlib import Path
+        import tempfile
+
+        # Create minimal mocks for required dependencies
+        temp_dir = Path(tempfile.mkdtemp(prefix="test_tool_teach_devin_"))
+        mock_registry = MagicMock(spec=ToolRegistry)
+        mock_memory = MagicMock(spec=ToolMemory)
+        mock_sandbox = MagicMock(spec=ToolSandbox)
+        mock_validator = MagicMock(spec=ToolValidator)
+        mock_approval_policy = MagicMock(spec=ToolApprovalPolicy)
+        mock_rollback_manager = MagicMock(spec=ToolRollbackManager)
+
+        # Create service with minimal dependencies
+        svc = ToolTeachService(
+            registry=mock_registry,
+            memory=mock_memory,
+            sandbox=mock_sandbox,
+            validator=mock_validator,
+            approval_policy=mock_approval_policy,
+            rollback_manager=mock_rollback_manager,
+            adapters={},
+            workspace_root=str(temp_dir),
+        )
+        return svc
+
     def test_assistant_family_for_devin_api(self) -> None:
         from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
-        svc = ToolTeachService.__new__(ToolTeachService)
+        svc = self._make_minimal_service()
         assert svc._assistant_family_for_tool_id('devin_api') == 'devin'
 
     def test_assistant_family_for_devin_variant(self) -> None:
         from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
-        svc = ToolTeachService.__new__(ToolTeachService)
+        svc = self._make_minimal_service()
         assert svc._assistant_family_for_tool_id('devin_web_v2') == 'devin'
 
     def test_external_tool_ids_includes_devin_for_devin_preference(self) -> None:
         from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
-        svc = ToolTeachService.__new__(ToolTeachService)
+        svc = self._make_minimal_service()
         ids = svc._external_tool_ids(assistant_preference='devin')
         assert ids == ['devin_api']
 
     def test_external_tool_ids_default_includes_devin(self) -> None:
         from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
-        svc = ToolTeachService.__new__(ToolTeachService)
+        svc = self._make_minimal_service()
         ids = svc._external_tool_ids(assistant_preference='')
         assert 'devin_api' in ids
 
     def test_preferred_external_tool_id_for_devin(self) -> None:
         from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
-        svc = ToolTeachService.__new__(ToolTeachService)
+        svc = self._make_minimal_service()
         tool_id = svc._preferred_external_tool_id(
             assistant_preference='devin',
             diagnostic_category='',
