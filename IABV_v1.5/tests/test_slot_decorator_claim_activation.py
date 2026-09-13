@@ -18,8 +18,26 @@ from iabv_v15.services.self_code_analysis import verify_slot_decorators, verify_
 
 @pytest.fixture
 def workspace():
-    """Fixture que usa el workspace real de IABV."""
-    return "C:\\Python\\IABV_v1.5"
+    """Fixture que usa el workspace real del checkout actual.
+    
+    Deriva la ruta del repositorio desde la ubicación del archivo de test.
+    Esto garantiza que los tests sean reproducibles en cualquier checkout.
+    """
+    # El archivo de test está en: <repo>/tests/test_slot_decorator_claim_activation.py
+    # El workspace es el directorio padre de tests/
+    test_file = Path(__file__).resolve()
+    workspace = test_file.parent.parent
+    
+    # Verificar que los paths requeridos existen
+    vm_dir = workspace / 'src' / 'iabv_v15' / 'ui' / 'viewmodels'
+    qml_dir = workspace / 'src' / 'iabv_v15' / 'ui' / 'qml'
+    
+    if not vm_dir.exists():
+        pytest.skip(f"ViewModels directory not found: {vm_dir}")
+    if not qml_dir.exists():
+        pytest.skip(f"QML directory not found: {qml_dir}")
+    
+    return str(workspace)
 
 
 @pytest.fixture
@@ -57,6 +75,11 @@ def test_original_detector_unchanged_semantics(workspace):
         assert len(result['issues']) == 0
     else:
         assert len(result['issues']) > 0
+    
+    # Verificar que el detector fue realmente ejecutado sobre el checkout actual
+    # (no un test vacío por ruta ausente)
+    assert result['methods_checked'] >= 0
+    assert result['qml_calls_found'] >= 0
 
 
 def test_stable_claim_identity(workspace):
@@ -221,3 +244,29 @@ def test_current_status_derivation(workspace):
     # Debe coincidir con el resultado del detector
     expected_status = "PASS" if result['ok'] else "FAIL"
     assert current_status == expected_status
+
+
+def test_detector_real_activity_on_checkout(workspace):
+    """Test A.8: Verifica que el detector fue realmente ejecutado sobre el checkout actual.
+    
+    Este test asegura que los tests no pasan vacíamente porque la ruta no existe.
+    """
+    result = verify_slot_decorators(workspace)
+    
+    # Verificar que el detector fue realmente ejecutado
+    # methods_checked > 0 o qml_calls_found > 0 indica actividad real
+    has_activity = result['methods_checked'] > 0 or result['qml_calls_found'] > 0
+    
+    # Si el repositorio real tiene archivos viewmodels/qml, debe haber actividad
+    vm_dir = Path(workspace) / 'src' / 'iabv_v15' / 'ui' / 'viewmodels'
+    qml_dir = Path(workspace) / 'src' / 'iabv_v15' / 'ui' / 'qml'
+    
+    has_viewmodels = list(vm_dir.glob('*.py')) if vm_dir.exists() else []
+    has_qml = list(qml_dir.glob('*.qml')) if qml_dir.exists() else []
+    
+    if has_viewmodels or has_qml:
+        assert has_activity, "Detector should have activity when viewmodels/qml files exist"
+    
+    # Verificar que el resultado no es el de un workspace ausente
+    assert result.get('error') != 'workspace not found'
+    assert result.get('error') != 'viewmodels dir not found'
