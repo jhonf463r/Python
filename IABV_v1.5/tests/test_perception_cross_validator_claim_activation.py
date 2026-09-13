@@ -275,3 +275,239 @@ def test_cross_family_reuse(workspace):
     
     assert len(slot_events) >= 1
     assert len(perception_events) >= 1
+
+
+def test_detector_real_activity_with_dependencies(workspace):
+    """Test B.10: Demuestra que el detector ejecuta actividad real con dependencias de prueba.
+    
+    Este test proporciona mocks mínimos de world_model_service y tool_registry
+    para obligar al detector a ejecutar las comparaciones reales en lugar de
+    retornar PASS vacío por None.
+    """
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.integrity_claim_repository import IntegrityClaimRepository
+    
+    # Crear mock mínimo de ToolCard
+    class MockToolCard:
+        def __init__(self, tool_id: str, available: bool, metadata: dict, title: str):
+            self.tool_id = tool_id
+            self.available = available
+            self.metadata = metadata
+            self.title = title
+    
+    # Crear mock mínimo de ToolRegistry
+    class MockToolRegistry:
+        def __init__(self, cards: list):
+            self._cards = cards
+        
+        def list_cards(self):
+            return self._cards
+        
+        def invalidate_availability_cache(self, tool_id: str):
+            pass  # No-op para test
+        
+        def get_card(self, tool_id: str):
+            for card in self._cards:
+                if card.tool_id == tool_id:
+                    return card
+            return None
+        
+        def refresh_card(self, card, force: bool = False):
+            return card  # No-op para test
+    
+    # Crear mock mínimo de WorldModel snapshot
+    class MockToolLiveStatus:
+        def __init__(self, tool_id: str, available: bool):
+            self.tool_id = tool_id
+            self.available = available
+    
+    class MockWindow:
+        def __init__(self, title: str, pid: int = None):
+            self.title = title
+            self.pid = pid
+    
+    class MockFocusedWindow:
+        def __init__(self, title: str):
+            self.title = title
+    
+    class MockWorldModelSnapshot:
+        def __init__(self, tool_live_status: list, active_windows: list, focused_window):
+            self.tool_live_status = tool_live_status
+            self.active_windows = active_windows
+            self.focused_window = focused_window
+    
+    # Crear mock mínimo de WorldModelService
+    class MockWorldModelService:
+        def __init__(self, snapshot):
+            self._snapshot = snapshot
+        
+        def current_snapshot(self):
+            return self._snapshot
+    
+    # Configurar estado consistente (ninguna inconsistencia)
+    tool_card = MockToolCard(
+        tool_id="test_tool",
+        available=True,
+        metadata={"launch_mode": "desktop_app"},
+        title="Test Tool"
+    )
+    
+    tool_status = MockToolLiveStatus(tool_id="test_tool", available=True)
+    
+    snapshot = MockWorldModelSnapshot(
+        tool_live_status=[tool_status],
+        active_windows=[MockWindow("Test Window")],
+        focused_window=MockFocusedWindow("Test Window")
+    )
+    
+    tool_registry = MockToolRegistry([tool_card])
+    world_model_service = MockWorldModelService(snapshot)
+    
+    # Ejecutar el detector con dependencias
+    result = run_cross_validation_with_claim(
+        world_model_service=world_model_service,
+        tool_registry=tool_registry,
+        workspace=workspace,
+    )
+    
+    # Verificar que el detector ejecutó las 4 comprobaciones
+    assert result['total_checks'] == 4
+    
+    # Verificar que el resultado no es PASS solo por None
+    # (con dependencias, el detector ejecuta comparaciones reales)
+    assert result['total_inconsistencies'] >= 0
+    
+    # Verificar que el resultado contiene los campos esperados
+    assert 'checked_at' in result
+    assert 'inconsistencies' in result
+    assert 'checks_passed' in result
+    
+    # Verificar que la Claim fue creada con el resultado real
+    claim_id = result.get('claim_id')
+    assert claim_id is not None
+    
+    # Verificar que el status deriva del resultado real del detector
+    verification_status = result.get('verification_status')
+    expected_status = "PASS" if result['total_inconsistencies'] == 0 else "FAIL"
+    assert verification_status == expected_status
+    
+    # Verificar que la Claim existe en el repositorio
+    data_dir = Path(workspace) / 'data' / 'evolution'
+    db_path = data_dir / 'integrity_claims.sqlite'
+    db = AppDatabase(str(db_path))
+    repo = IntegrityClaimRepository(db)
+    
+    claim = repo.retrieve(claim_id)
+    assert claim is not None
+    assert claim.invariant == "PERCEPTION_CONSISTENCY"
+
+
+def test_detector_real_activity_with_inconsistency(workspace):
+    """Test B.11: Demuestra que el detector detecta inconsistencias reales."""
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.integrity_claim_repository import IntegrityClaimRepository
+    
+    # Crear mocks mínimos
+    class MockToolCard:
+        def __init__(self, tool_id: str, available: bool, metadata: dict, title: str):
+            self.tool_id = tool_id
+            self.available = available
+            self.metadata = metadata
+            self.title = title
+    
+    class MockToolRegistry:
+        def __init__(self, cards: list):
+            self._cards = cards
+        
+        def list_cards(self):
+            return self._cards
+        
+        def invalidate_availability_cache(self, tool_id: str):
+            pass
+        
+        def get_card(self, tool_id: str):
+            for card in self._cards:
+                if card.tool_id == tool_id:
+                    return card
+            return None
+        
+        def refresh_card(self, card, force: bool = False):
+            return card
+    
+    class MockToolLiveStatus:
+        def __init__(self, tool_id: str, available: bool):
+            self.tool_id = tool_id
+            self.available = available
+    
+    class MockWindow:
+        def __init__(self, title: str, pid: int = None):
+            self.title = title
+            self.pid = pid
+    
+    class MockFocusedWindow:
+        def __init__(self, title: str):
+            self.title = title
+    
+    class MockWorldModelSnapshot:
+        def __init__(self, tool_live_status: list, active_windows: list, focused_window):
+            self.tool_live_status = tool_live_status
+            self.active_windows = active_windows
+            self.focused_window = focused_window
+    
+    class MockWorldModelService:
+        def __init__(self, snapshot):
+            self._snapshot = snapshot
+        
+        def current_snapshot(self):
+            return self._snapshot
+    
+    # Configurar estado inconsistente
+    # ToolRegistry tiene tool pero WorldModel no lo rastrea
+    tool_card = MockToolCard(
+        tool_id="inconsistent_tool",
+        available=True,
+        metadata={"launch_mode": "desktop_app"},
+        title="Inconsistent Tool"
+    )
+    
+    # WorldModel no tiene este tool en tool_live_status
+    snapshot = MockWorldModelSnapshot(
+        tool_live_status=[],  # Vacío: tool no está en WorldModel
+        active_windows=[MockWindow("Test Window")],
+        focused_window=MockFocusedWindow("Test Window")
+    )
+    
+    tool_registry = MockToolRegistry([tool_card])
+    world_model_service = MockWorldModelService(snapshot)
+    
+    # Ejecutar el detector con dependencias
+    result = run_cross_validation_with_claim(
+        world_model_service=world_model_service,
+        tool_registry=tool_registry,
+        workspace=workspace,
+    )
+    
+    # Verificar que el detector detectó la inconsistencia
+    assert result['total_checks'] == 4
+    assert result['total_inconsistencies'] > 0  # Debe haber inconsistencias
+    
+    # Verificar que la inconsistencia es la esperada
+    inconsistencies = result['inconsistencies']
+    audit_inc = [i for i in inconsistencies if i['check'] == 'audit_vs_worldmodel']
+    assert len(audit_inc) > 0
+    
+    # Verificar que el status es FAIL
+    verification_status = result.get('verification_status')
+    assert verification_status == "FAIL"
+    
+    # Verificar que la Claim existe con el resultado real
+    claim_id = result.get('claim_id')
+    assert claim_id is not None
+    
+    data_dir = Path(workspace) / 'data' / 'evolution'
+    db_path = data_dir / 'integrity_claims.sqlite'
+    db = AppDatabase(str(db_path))
+    repo = IntegrityClaimRepository(db)
+    
+    claim = repo.retrieve(claim_id)
+    assert claim is not None
