@@ -174,9 +174,14 @@ class AutonomyGovernancePolicy:
         
         # Verificación de integridad QML→Python binding (QML_PYTHON_BINDING Claim)
         # Solo aplica cuando el PR toca rutas UI relevantes
+        # Normalizar paths como el bucle de sensibilidad existente (Windows backslash compatible)
+        normalized_paths = [
+            str(raw_path or '').strip().lstrip('/').replace('\\', '/')
+            for raw_path in changed_paths
+        ]
         touches_ui = any(
             'src/iabv_v15/ui/viewmodels/' in path or 'src/iabv_v15/ui/qml/' in path
-            for path in changed_paths
+            for path in normalized_paths
         )
         if touches_ui:
             qml_binding_status = pr_metadata.get('qml_python_binding_status')

@@ -1,15 +1,17 @@
 """Tests para experimento de influencia causal Claim → AutonomyGovernancePolicy.
 
-Experimento C: ¿Puede una Claim verificada influir causalmente en una decisión de governance?
+Experimento C (v2): ¿Puede una señal generada por un detector real atravesar
+Claim + VerificationEvent + SQLite y cambiar causalmente la decisión de governance?
 
 Estrategia:
-- Baseline: PR con UI path + QML_PYTHON_BINDING PASS → ALLOW
-- Intervención: PR con UI path + QML_PYTHON_BINDING FAIL → BLOCK
-- Control: PR sin UI path + QML_PYTHON_BINDING FAIL → Claim ignorada
+- Baseline: detector real → PASS → SQLite → governance → ALLOW
+- Intervención: detector real → FAIL → SQLite → governance → BLOCK
+- Control: detector real → FAIL en PR sin UI → Claim ignorada
 """
 
 from datetime import datetime, timezone
 from pathlib import Path
+import tempfile
 import uuid
 
 import pytest
@@ -18,6 +20,7 @@ from iabv_v15.domain.models import IntegrityClaim, VerificationEvent
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.integrity_claim_repository import IntegrityClaimRepository
 from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+from iabv_v15.services.self_code_analysis import verify_slot_decorators
 
 
 @pytest.fixture
@@ -35,65 +38,173 @@ def governance_policy():
 
 
 @pytest.fixture
-def repo(workspace):
+def repo():
     """Fixture que usa base de datos separada para evitar colisiones con otros tests."""
-    import tempfile
-    
-    # Usar base de datos separada para evitar colisiones
     temp_dir = Path(tempfile.gettempdir())
     db_path = temp_dir / f"test_governance_{uuid.uuid4().hex[:8]}.sqlite"
     db = AppDatabase(str(db_path))
     repo = IntegrityClaimRepository(db)
     yield repo
-    # Cleanup automático (si no está bloqueado)
+    # Cleanup
     try:
+        db.close()
         if db_path.exists():
             db_path.unlink()
     except Exception:
-        pass  # Ignorar errores de cleanup en Windows
+        pass
 
 
-def test_claim_influence_baseline_pass_to_allow(workspace, governance_policy, repo):
-    """Test C.1: Baseline - PR con UI path + QML_PYTHON_BINDING PASS → ALLOW.
+@pytest.fixture
+def pass_workspace():
+    """Fixture que crea un workspace temporal donde el detector retorna PASS.
+    
+    Estructura:
+    - src/iabv_v15/ui/viewmodels/test_viewmodel.py con método decorado con @Slot
+    - src/iabv_v15/ui/qml/Test.qml que llama a ese método
+    """
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_pass_workspace_"))
+    
+    # Crear estructura de directorios
+    vm_dir = temp_dir / "src" / "iabv_v15" / "ui" / "viewmodels"
+    qml_dir = temp_dir / "src" / "iabv_v15" / "ui" / "qml"
+    vm_dir.mkdir(parents=True)
+    qml_dir.mkdir(parents=True)
+    
+    # Crear ViewModel con @Slot decorator (PASS case)
+    vm_content = """
+from PySide6.QtCore import Slot, QObject
+
+class TestViewModel(QObject):
+    @Slot()
+    def test_method(self):
+        pass
+"""
+    (vm_dir / "test_viewmodel.py").write_text(vm_content, encoding="utf-8")
+    
+    # Crear QML que llama al método (patrón debe coincidir con regex del detector)
+    qml_content = """
+import QtQuick 2.15
+import TestViewModel 1.0
+
+Item {
+    TestViewModel {
+        id: vm
+    }
+    Button {
+        onClicked: TestViewModel.test_method()
+    }
+"""
+    (qml_dir / "Test.qml").write_text(qml_content, encoding="utf-8")
+    
+    yield str(temp_dir)
+    
+    # Cleanup
+    try:
+        import shutil
+        shutil.rmtree(temp_dir)
+    except Exception:
+        pass
+
+
+@pytest.fixture
+def fail_workspace():
+    """Fixture que crea un workspace temporal donde el detector retorna FAIL.
+    
+    Estructura:
+    - src/iabv_v15/ui/viewmodels/test_viewmodel.py con método SIN @Slot
+    - src/iabv_v15/ui/qml/Test.qml que llama a ese método
+    """
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_fail_workspace_"))
+    
+    # Crear estructura de directorios
+    vm_dir = temp_dir / "src" / "iabv_v15" / "ui" / "viewmodels"
+    qml_dir = temp_dir / "src" / "iabv_v15" / "ui" / "qml"
+    vm_dir.mkdir(parents=True)
+    qml_dir.mkdir(parents=True)
+    
+    # Crear ViewModel SIN @Slot decorator (FAIL case)
+    vm_content = """
+from PySide6.QtCore import QObject
+
+class TestViewModel(QObject):
+    def test_method(self):
+        pass
+"""
+    (vm_dir / "test_viewmodel.py").write_text(vm_content, encoding="utf-8")
+    
+    # Crear QML que llama al método (patrón debe coincidir con regex del detector)
+    qml_content = """
+import QtQuick 2.15
+import TestViewModel 1.0
+
+Item {
+    TestViewModel {
+        id: vm
+    }
+    Button {
+        onClicked: TestViewModel.test_method()
+    }
+"""
+    (qml_dir / "Test.qml").write_text(qml_content, encoding="utf-8")
+    
+    yield str(temp_dir)
+    
+    # Cleanup
+    try:
+        import shutil
+        shutil.rmtree(temp_dir)
+    except Exception:
+        pass
+
+
+def test_detector_real_pass_to_claim_to_governance_allow(pass_workspace, governance_policy, repo):
+    """Test C.1: Detector real → PASS → Claim → SQLite → governance → ALLOW.
     
     CONTROL A:
-    - PR toca UI path relevante
-    - QML_PYTHON_BINDING status = PASS
+    - Ejecutar detector real en workspace PASS
+    - Persistir Claim + VerificationEvent desde resultado real
+    - Recuperar status desde SQLite
+    - PR con UI path
     - Expected: allow_github_merge → (True, None)
     """
-    # Crear Claim directamente para tener control total
     import hashlib
-    from iabv_v15.services.self_code_analysis import verify_slot_decorators
     
-    # Calcular claim_id con suffix único para este test
-    claim_identity_input = f"slot_decorators:{workspace}:governance_test_baseline"
+    # Ejecutar detector real
+    detector_result = verify_slot_decorators(pass_workspace)
+    assert detector_result['ok'] is True, "Detector should return PASS for this workspace"
+    
+    # Crear Claim identity estable
+    claim_identity_input = f"slot_decorators:{pass_workspace}:detector_real_pass"
     claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
     
     # Crear Claim
     claim = IntegrityClaim(
         claim_id=claim_id,
-        subject=f"QML-callable methods in ViewModels have @Slot decorators ({workspace})",
+        subject=f"QML-callable methods in ViewModels have @Slot decorators ({pass_workspace})",
         invariant="QML_PYTHON_BINDING",
         origin="SelfCodeAnalysis.verify_slot_decorators",
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     repo.create(claim)
     
-    # Crear VerificationEvent PASS explícito
-    event_pass = VerificationEvent(
-        event_id=hashlib.sha256(f"{claim_id}:pass_control:baseline".encode()).hexdigest()[:32],
+    # Crear VerificationEvent desde resultado real del detector
+    status = "PASS" if detector_result['ok'] else "FAIL"
+    verification_evidence = f"source_path:{pass_workspace}/src/iabv_v15/ui/viewmodels"
+    
+    event = VerificationEvent(
+        event_id=hashlib.sha256(f"{claim_id}:{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()[:32],
         claim_id=claim_id,
         checked_at=datetime.now(timezone.utc).isoformat(),
-        status="PASS",
-        verification_evidence="test_id:baseline_pass_control",
+        status=status,
+        verification_evidence=verification_evidence,
     )
-    repo.append_verification(event_pass)
+    repo.append_verification(event)
     
-    # Recuperar status actual (debe ser PASS)
+    # Recuperar status desde SQLite
     current_status = repo.get_current_status(claim_id)
     assert current_status == "PASS"
     
-    # Construir pr_metadata que pasa todas las condiciones existentes
+    # Construir pr_metadata con UI path
     pr_metadata = {
         'pull_number': 123,
         'ci_status': 'success',
@@ -103,12 +214,12 @@ def test_claim_influence_baseline_pass_to_allow(workspace, governance_policy, re
         'deletions': 30,
         'changed_files': 3,
         'changed_paths': [
-            'src/iabv_v15/ui/viewmodels/control_center_viewmodel.py',
-            'src/iabv_v15/ui/qml/ControlCenter.qml',
+            'src/iabv_v15/ui/viewmodels/test_viewmodel.py',
+            'src/iabv_v15/ui/qml/Test.qml',
         ],
     }
     
-    # Añadir status de Claim recuperado desde SQLite
+    # Añadir status recuperado desde SQLite
     pr_metadata['qml_python_binding_status'] = current_status
     
     # Ejecutar allow_github_merge
@@ -119,41 +230,50 @@ def test_claim_influence_baseline_pass_to_allow(workspace, governance_policy, re
     assert reason is None
 
 
-def test_claim_influence_intervention_fail_to_block(workspace, governance_policy, repo):
-    """Test C.2: Intervención - PR con UI path + QML_PYTHON_BINDING FAIL → BLOCK.
+def test_detector_real_fail_to_claim_to_governance_block(fail_workspace, governance_policy, repo):
+    """Test C.2: Detector real → FAIL → Claim → SQLite → governance → BLOCK.
     
     CONTROL A:
-    - Mismo pr_metadata que baseline
-    - Solo cambia: QML_PYTHON_BINDING status = FAIL
+    - Ejecutar detector real en workspace FAIL
+    - Persistir Claim + VerificationEvent desde resultado real
+    - Recuperar status desde SQLite
+    - Mismo pr_metadata que baseline salvo status derivado
     - Expected: allow_github_merge → (False, reason identificando QML_PYTHON_BINDING)
     """
     import hashlib
     
-    # Calcular claim_id con suffix único para este test
-    claim_identity_input = f"slot_decorators:{workspace}:governance_test_intervention"
+    # Ejecutar detector real
+    detector_result = verify_slot_decorators(fail_workspace)
+    assert detector_result['ok'] is False, "Detector should return FAIL for this workspace"
+    
+    # Crear Claim identity estable
+    claim_identity_input = f"slot_decorators:{fail_workspace}:detector_real_fail"
     claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
     
     # Crear Claim
     claim = IntegrityClaim(
         claim_id=claim_id,
-        subject=f"QML-callable methods in ViewModels have @Slot decorators ({workspace})",
+        subject=f"QML-callable methods in ViewModels have @Slot decorators ({fail_workspace})",
         invariant="QML_PYTHON_BINDING",
         origin="SelfCodeAnalysis.verify_slot_decorators",
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     repo.create(claim)
     
-    # Crear VerificationEvent FAIL explícito
-    event_fail = VerificationEvent(
-        event_id=hashlib.sha256(f"{claim_id}:fail_control:intervention".encode()).hexdigest()[:32],
+    # Crear VerificationEvent desde resultado real del detector
+    status = "PASS" if detector_result['ok'] else "FAIL"
+    verification_evidence = f"source_path:{fail_workspace}/src/iabv_v15/ui/viewmodels"
+    
+    event = VerificationEvent(
+        event_id=hashlib.sha256(f"{claim_id}:{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()[:32],
         claim_id=claim_id,
         checked_at=datetime.now(timezone.utc).isoformat(),
-        status="FAIL",
-        verification_evidence="test_id:intervention_fail_control",
+        status=status,
+        verification_evidence=verification_evidence,
     )
-    repo.append_verification(event_fail)
+    repo.append_verification(event)
     
-    # Recuperar status actual (debe ser FAIL)
+    # Recuperar status desde SQLite
     current_status = repo.get_current_status(claim_id)
     assert current_status == "FAIL"
     
@@ -167,12 +287,12 @@ def test_claim_influence_intervention_fail_to_block(workspace, governance_policy
         'deletions': 30,
         'changed_files': 3,
         'changed_paths': [
-            'src/iabv_v15/ui/viewmodels/control_center_viewmodel.py',
-            'src/iabv_v15/ui/qml/ControlCenter.qml',
+            'src/iabv_v15/ui/viewmodels/test_viewmodel.py',
+            'src/iabv_v15/ui/qml/Test.qml',
         ],
     }
     
-    # Añadir status de Claim recuperado desde SQLite
+    # Añadir status recuperado desde SQLite
     pr_metadata['qml_python_binding_status'] = current_status
     
     # Ejecutar allow_github_merge
@@ -184,38 +304,44 @@ def test_claim_influence_intervention_fail_to_block(workspace, governance_policy
     assert 'QML_PYTHON_BINDING' in reason
 
 
-def test_claim_influence_control_no_ui_path_ignore_fail(workspace, governance_policy, repo):
-    """Test C.3: Control B - PR sin UI path + QML_PYTHON_BINDING FAIL → Claim ignorada.
+def test_detector_real_fail_ignored_for_non_ui_pr(fail_workspace, governance_policy, repo):
+    """Test C.3: Control B - Detector real → FAIL pero PR sin UI path → Claim ignorada.
     
     CONTROL B:
+    - Ejecutar detector real en workspace FAIL
     - PR NO toca UI path
-    - QML_PYTHON_BINDING status = FAIL
     - Expected: Claim ignorada, comportamiento de reglas existentes
     """
     import hashlib
     
-    # Calcular claim_id con suffix único para este test
-    claim_identity_input = f"slot_decorators:{workspace}:governance_test_no_ui"
+    # Ejecutar detector real
+    detector_result = verify_slot_decorators(fail_workspace)
+    assert detector_result['ok'] is False
+    
+    # Crear Claim identity estable
+    claim_identity_input = f"slot_decorators:{fail_workspace}:detector_real_no_ui"
     claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
     
     # Crear Claim
     claim = IntegrityClaim(
         claim_id=claim_id,
-        subject=f"QML-callable methods in ViewModels have @Slot decorators ({workspace})",
+        subject=f"QML-callable methods in ViewModels have @Slot decorators ({fail_workspace})",
         invariant="QML_PYTHON_BINDING",
         origin="SelfCodeAnalysis.verify_slot_decorators",
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     repo.create(claim)
     
-    event_fail = VerificationEvent(
-        event_id=hashlib.sha256(f"{claim_id}:control_no_ui_fail".encode()).hexdigest()[:32],
+    # Crear VerificationEvent desde resultado real
+    status = "PASS" if detector_result['ok'] else "FAIL"
+    event = VerificationEvent(
+        event_id=hashlib.sha256(f"{claim_id}:{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()[:32],
         claim_id=claim_id,
         checked_at=datetime.now(timezone.utc).isoformat(),
-        status="FAIL",
-        verification_evidence="test_id:control_no_ui",
+        status=status,
+        verification_evidence=f"source_path:{fail_workspace}/src/iabv_v15/ui/viewmodels",
     )
-    repo.append_verification(event_fail)
+    repo.append_verification(event)
     
     current_status = repo.get_current_status(claim_id)
     assert current_status == "FAIL"
@@ -241,20 +367,22 @@ def test_claim_influence_control_no_ui_path_ignore_fail(workspace, governance_po
     allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_metadata)
     
     # Verificar: Claim ignorada, comportamiento de reglas existentes
-    assert allowed is True  # Debe ALLOW porque no toca UI path
+    assert allowed is True
     assert reason is None
 
 
-def test_claim_influence_control_metadata_identical(workspace, governance_policy, repo):
-    """Test C.4: Control C - Verificar que pr_metadata es idéntico salvo qml_python_binding_status.
-    
-    CONTROL C:
-    - Repetir baseline/intervención con mismo pr_metadata
-    - Solo cambia: qml_python_binding_status
-    - Confirmar que metadata es idéntica salvo esa clave
+def test_path_normalization_windows_backslash(governance_policy):
+    r"""Test C.4: Control E - Windows backslash UI path -> normalizado correctamente.
+
+    CONTROL E:
+    - Path con backslash Windows: src\iabv_v15\ui\viewmodels\foo.py
+    - Debe comportarse igual que: src/iabv_v15/ui/viewmodels/foo.py
+    - Expected: touches_ui = True
     """
-    # Crear PR metadata base
-    base_metadata = {
+    import hashlib
+    
+    # PR con Windows backslash path
+    pr_metadata = {
         'pull_number': 125,
         'ci_status': 'success',
         'reviews': [{'state': 'APPROVED'}],
@@ -263,19 +391,166 @@ def test_claim_influence_control_metadata_identical(workspace, governance_policy
         'deletions': 30,
         'changed_files': 3,
         'changed_paths': [
-            'src/iabv_v15/ui/viewmodels/control_center_viewmodel.py',
+            'src\\iabv_v15\\ui\\viewmodels\\test_viewmodel.py',
+            'src/iabv_v15/ui/qml/Test.qml',
+        ],
+        'qml_python_binding_status': 'FAIL',
+    }
+    
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_metadata)
+    
+    # Debe bloquear porque el path con backslash debe normalizarse
+    assert allowed is False
+    assert reason is not None
+    assert 'QML_PYTHON_BINDING' in reason
+
+
+def test_path_normalization_non_ui_windows_backslash(governance_policy):
+    r"""Test C.5: Control F - Non-UI Windows backslash path -> no activa regla.
+
+    CONTROL F:
+    - Path con backslash Windows pero no UI: src\iabv_v15\services\foo.py
+    - Expected: touches_ui = False, Claim ignorada
+    """
+    # PR con Windows backslash path no-UI
+    pr_metadata = {
+        'pull_number': 126,
+        'ci_status': 'success',
+        'reviews': [{'state': 'APPROVED'}],
+        'draft': False,
+        'additions': 20,
+        'deletions': 10,
+        'changed_files': 2,
+        'changed_paths': [
+            'src\\iabv_v15\\services\\some_service.py',
+        ],
+        'qml_python_binding_status': 'FAIL',
+    }
+    
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_metadata)
+    
+    # Debe ALLOW porque no toca UI path
+    assert allowed is True
+    assert reason is None
+
+
+def test_path_normalization_leading_slash(governance_policy):
+    r"""Test C.6: Path con leading slash -> normalizado correctamente.
+
+    Verificar que /src/iabv_v15/ui/viewmodels/... se normaliza igual que src/iabv_v15/ui/viewmodels/...
+    """
+    # PR con leading slash
+    pr_metadata = {
+        'pull_number': 127,
+        'ci_status': 'success',
+        'reviews': [{'state': 'APPROVED'}],
+        'draft': False,
+        'additions': 50,
+        'deletions': 30,
+        'changed_files': 3,
+        'changed_paths': [
+            '/src/iabv_v15/ui/viewmodels/test_viewmodel.py',
+        ],
+        'qml_python_binding_status': 'FAIL',
+    }
+    
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_metadata)
+    
+    # Debe bloquear
+    assert allowed is False
+    assert 'QML_PYTHON_BINDING' in reason
+
+
+def test_causal_chain_detector_to_governance(pass_workspace, fail_workspace, governance_policy, repo):
+    """Test C.7: Cadena causal completa detector → Claim → SQLite → governance.
+    
+    CONTROL C:
+    - Detector real PASS → governance ALLOW
+    - Detector real FAIL → governance BLOCK
+    - Mismo pr_metadata salvo status derivado
+    - Confirmar causalidad
+    """
+    import hashlib
+    
+    # PR metadata base (idéntico para ambos casos)
+    pr_metadata_base = {
+        'pull_number': 128,
+        'ci_status': 'success',
+        'reviews': [{'state': 'APPROVED'}],
+        'draft': False,
+        'additions': 50,
+        'deletions': 30,
+        'changed_files': 3,
+        'changed_paths': [
+            'src/iabv_v15/ui/viewmodels/test_viewmodel.py',
+            'src/iabv_v15/ui/qml/Test.qml',
         ],
     }
     
-    # Baseline: metadata con PASS
-    metadata_pass = base_metadata.copy()
-    metadata_pass['qml_python_binding_status'] = 'PASS'
+    # Caso PASS
+    detector_result_pass = verify_slot_decorators(pass_workspace)
+    assert detector_result_pass['ok'] is True
     
-    # Intervención: metadata con FAIL
-    metadata_fail = base_metadata.copy()
-    metadata_fail['qml_python_binding_status'] = 'FAIL'
+    claim_id_pass = hashlib.sha256(f"slot_decorators:{pass_workspace}:causal_pass".encode()).hexdigest()[:32]
+    claim_pass = IntegrityClaim(
+        claim_id=claim_id_pass,
+        subject=f"QML-callable methods in ViewModels have @Slot decorators ({pass_workspace})",
+        invariant="QML_PYTHON_BINDING",
+        origin="SelfCodeAnalysis.verify_slot_decorators",
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    repo.create(claim_pass)
     
-    # Verificar que son idénticos salvo esa clave
+    event_pass = VerificationEvent(
+        event_id=hashlib.sha256(f"{claim_id_pass}:{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()[:32],
+        claim_id=claim_id_pass,
+        checked_at=datetime.now(timezone.utc).isoformat(),
+        status="PASS",
+        verification_evidence=f"source_path:{pass_workspace}/src/iabv_v15/ui/viewmodels",
+    )
+    repo.append_verification(event_pass)
+    
+    metadata_pass = pr_metadata_base.copy()
+    metadata_pass['qml_python_binding_status'] = repo.get_current_status(claim_id_pass)
+    
+    allowed_pass, reason_pass = governance_policy.allow_github_merge(pr_metadata=metadata_pass)
+    
+    # Caso FAIL
+    detector_result_fail = verify_slot_decorators(fail_workspace)
+    assert detector_result_fail['ok'] is False
+    
+    claim_id_fail = hashlib.sha256(f"slot_decorators:{fail_workspace}:causal_fail".encode()).hexdigest()[:32]
+    claim_fail = IntegrityClaim(
+        claim_id=claim_id_fail,
+        subject=f"QML-callable methods in ViewModels have @Slot decorators ({fail_workspace})",
+        invariant="QML_PYTHON_BINDING",
+        origin="SelfCodeAnalysis.verify_slot_decorators",
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    repo.create(claim_fail)
+    
+    event_fail = VerificationEvent(
+        event_id=hashlib.sha256(f"{claim_id_fail}:{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()[:32],
+        claim_id=claim_id_fail,
+        checked_at=datetime.now(timezone.utc).isoformat(),
+        status="FAIL",
+        verification_evidence=f"source_path:{fail_workspace}/src/iabv_v15/ui/viewmodels",
+    )
+    repo.append_verification(event_fail)
+    
+    metadata_fail = pr_metadata_base.copy()
+    metadata_fail['qml_python_binding_status'] = repo.get_current_status(claim_id_fail)
+    
+    allowed_fail, reason_fail = governance_policy.allow_github_merge(pr_metadata=metadata_fail)
+    
+    # Verificar causalidad
+    assert allowed_pass is True
+    assert allowed_fail is False
+    assert reason_pass is None
+    assert reason_fail is not None
+    assert 'QML_PYTHON_BINDING' in reason_fail
+    
+    # Verificar que metadata es idéntico salvo status derivado
     keys_pass = set(metadata_pass.keys())
     keys_fail = set(metadata_fail.keys())
     assert keys_pass == keys_fail
@@ -287,140 +562,10 @@ def test_claim_influence_control_metadata_identical(workspace, governance_policy
             assert metadata_pass[key] == metadata_fail[key]
 
 
-def test_claim_influence_control_status_from_sqlite(workspace, governance_policy, repo):
-    """Test C.5: Control D - Confirmar que status vino de SQLite, no generado por test.
+def test_preservation_existing_rules(governance_policy):
+    """Test C.8: Preservación de reglas existentes de allow_github_merge.
     
-    CONTROL D:
-    - Confirmar round-trip: detector → Claim → SQLite → get_current_status()
-    - Confirmar que status no fue generado directamente por test
-    """
-    import hashlib
-    
-    # Calcular claim_id con suffix único para este test
-    claim_identity_input = f"slot_decorators:{workspace}:governance_test_sqlite:{uuid.uuid4().hex[:8]}"
-    claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
-    
-    # Crear Claim
-    claim = IntegrityClaim(
-        claim_id=claim_id,
-        subject=f"QML-callable methods in ViewModels have @Slot decorators ({workspace})",
-        invariant="QML_PYTHON_BINDING",
-        origin="SelfCodeAnalysis.verify_slot_decorators",
-        created_at=datetime.now(timezone.utc).isoformat(),
-    )
-    repo.create(claim)
-    
-    # Crear VerificationEvent con timestamp específico
-    specific_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-    event = VerificationEvent(
-        event_id=hashlib.sha256(f"{claim_id}:control_sqlite_verification".encode()).hexdigest()[:32],
-        claim_id=claim_id,
-        checked_at=specific_time.isoformat(),
-        status="FAIL",
-        verification_evidence="test_id:control_sqlite",
-    )
-    repo.append_verification(event)
-    
-    # Recuperar status desde SQLite
-    current_status = repo.get_current_status(claim_id)
-    
-    # Verificar que el status existe en SQLite
-    events = repo.retrieve_verifications_by_claim(claim_id, limit=10)
-    assert len(events) >= 1
-    
-    # Verificar que el status recuperado coincide con el evento
-    latest_event = repo.retrieve_latest_verification(claim_id)
-    assert latest_event.status == current_status
-    
-    # Confirmar que el status no fue generado directamente por test
-    # (fue recuperado de SQLite vía get_current_status)
-
-
-def test_claim_influence_causal_flip_verification(workspace, governance_policy, repo):
-    """Test C.6: Evidencia causal - Verificar flip de decisión causado por Claim status.
-    
-    EVIDENCIA CAUSAL:
-    - Same pr_metadata salvo qml_python_binding_status
-    - Decision baseline != decision intervención
-    - Reason identifica QML_PYTHON_BINDING
-    """
-    import hashlib
-    
-    # Calcular claim_id con suffix único para este test
-    claim_identity_input = f"slot_decorators:{workspace}:governance_test_causal:{uuid.uuid4().hex[:8]}"
-    claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
-    
-    # Crear Claim
-    claim = IntegrityClaim(
-        claim_id=claim_id,
-        subject=f"QML-callable methods in ViewModels have @Slot decorators ({workspace})",
-        invariant="QML_PYTHON_BINDING",
-        origin="SelfCodeAnalysis.verify_slot_decorators",
-        created_at=datetime.now(timezone.utc).isoformat(),
-    )
-    repo.create(claim)
-    
-    # PR metadata que pasa todas las condiciones existentes
-    pr_metadata = {
-        'pull_number': 126,
-        'ci_status': 'success',
-        'reviews': [{'state': 'APPROVED'}],
-        'draft': False,
-        'additions': 50,
-        'deletions': 30,
-        'changed_files': 3,
-        'changed_paths': [
-            'src/iabv_v15/ui/viewmodels/control_center_viewmodel.py',
-        ],
-    }
-    
-    # Baseline: PASS
-    event_pass = VerificationEvent(
-        event_id=hashlib.sha256(f"{claim_id}:causal_pass".encode()).hexdigest()[:32],
-        claim_id=claim_id,
-        checked_at=datetime.now(timezone.utc).isoformat(),
-        status="PASS",
-        verification_evidence="test_id:causal",
-    )
-    repo.append_verification(event_pass)
-    
-    metadata_pass = pr_metadata.copy()
-    metadata_pass['qml_python_binding_status'] = repo.get_current_status(claim_id)
-    
-    allowed_pass, reason_pass = governance_policy.allow_github_merge(pr_metadata=metadata_pass)
-    
-    # Intervención: FAIL
-    event_fail = VerificationEvent(
-        event_id=hashlib.sha256(f"{claim_id}:causal_fail".encode()).hexdigest()[:32],
-        claim_id=claim_id,
-        checked_at=datetime.now(timezone.utc).isoformat(),
-        status="FAIL",
-        verification_evidence="test_id:causal",
-    )
-    repo.append_verification(event_fail)
-    
-    metadata_fail = pr_metadata.copy()
-    metadata_fail['qml_python_binding_status'] = repo.get_current_status(claim_id)
-    
-    allowed_fail, reason_fail = governance_policy.allow_github_merge(pr_metadata=metadata_fail)
-    
-    # Verificar flip causal
-    assert allowed_pass is True
-    assert allowed_fail is False
-    assert reason_pass is None
-    assert reason_fail is not None
-    assert 'QML_PYTHON_BINDING' in reason_fail
-    
-    # Verificar que pr_metadata es idéntico salvo esa clave
-    keys_pass = set(metadata_pass.keys())
-    keys_fail = set(metadata_fail.keys())
-    assert keys_pass == keys_fail
-
-
-def test_claim_influence_preservation_existing_rules(workspace, governance_policy):
-    """Test C.7: Preservación de reglas existentes.
-    
-    Verificar que las reglas existentes de allow_github_merge siguen funcionando:
+    Verificar que las reglas existentes siguen funcionando:
     - draft blocking
     - CI failure blocking
     - changes_requested blocking
@@ -428,11 +573,9 @@ def test_claim_influence_preservation_existing_rules(workspace, governance_polic
     - file count blocking
     - sensitive path blocking
     """
-    policy = AutonomyGovernancePolicy()
-    
     # Test 1: draft blocking
     pr_draft = {
-        'pull_number': 127,
+        'pull_number': 129,
         'ci_status': 'success',
         'reviews': [{'state': 'APPROVED'}],
         'draft': True,
@@ -441,13 +584,13 @@ def test_claim_influence_preservation_existing_rules(workspace, governance_polic
         'changed_files': 1,
         'changed_paths': ['src/iabv_v15/ui/viewmodels/test.py'],
     }
-    allowed, reason = policy.allow_github_merge(pr_metadata=pr_draft)
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_draft)
     assert allowed is False
     assert 'draft' in reason.lower()
     
     # Test 2: CI failure blocking
     pr_ci_fail = {
-        'pull_number': 128,
+        'pull_number': 130,
         'ci_status': 'failure',
         'reviews': [{'state': 'APPROVED'}],
         'draft': False,
@@ -456,13 +599,13 @@ def test_claim_influence_preservation_existing_rules(workspace, governance_polic
         'changed_files': 1,
         'changed_paths': ['src/iabv_v15/ui/viewmodels/test.py'],
     }
-    allowed, reason = policy.allow_github_merge(pr_metadata=pr_ci_fail)
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_ci_fail)
     assert allowed is False
     assert 'ci' in reason.lower()
     
     # Test 3: changes_requested blocking
     pr_cr = {
-        'pull_number': 129,
+        'pull_number': 131,
         'ci_status': 'success',
         'reviews': [{'state': 'CHANGES_REQUESTED'}],
         'draft': False,
@@ -471,13 +614,13 @@ def test_claim_influence_preservation_existing_rules(workspace, governance_polic
         'changed_files': 1,
         'changed_paths': ['src/iabv_v15/ui/viewmodels/test.py'],
     }
-    allowed, reason = policy.allow_github_merge(pr_metadata=pr_cr)
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_cr)
     assert allowed is False
     assert 'changes_requested' in reason.lower()
     
     # Test 4: diff size blocking
     pr_large_diff = {
-        'pull_number': 130,
+        'pull_number': 132,
         'ci_status': 'success',
         'reviews': [{'state': 'APPROVED'}],
         'draft': False,
@@ -486,13 +629,13 @@ def test_claim_influence_preservation_existing_rules(workspace, governance_polic
         'changed_files': 2,
         'changed_paths': ['src/iabv_v15/ui/viewmodels/test.py'],
     }
-    allowed, reason = policy.allow_github_merge(pr_metadata=pr_large_diff)
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_large_diff)
     assert allowed is False
     assert 'diff' in reason.lower()
     
     # Test 5: sensitive path blocking
     pr_sensitive = {
-        'pull_number': 131,
+        'pull_number': 133,
         'ci_status': 'success',
         'reviews': [{'state': 'APPROVED'}],
         'draft': False,
@@ -501,61 +644,6 @@ def test_claim_influence_preservation_existing_rules(workspace, governance_polic
         'changed_files': 1,
         'changed_paths': ['src/iabv_v15/bootstrap.py'],
     }
-    allowed, reason = policy.allow_github_merge(pr_metadata=pr_sensitive)
+    allowed, reason = governance_policy.allow_github_merge(pr_metadata=pr_sensitive)
     assert allowed is False
     assert 'sensible' in reason.lower() or 'bootstrap' in reason.lower()
-
-
-def test_claim_influence_round_trip_claim_event(workspace, repo):
-    """Test C.8: Round-trip completo Claim → Event → SQLite → get_current_status().
-    
-    Verificar que el flujo completo funciona:
-    - Detector real ejecutado
-    - Claim persistida
-    - VerificationEvent persistido
-    - Status recuperado desde SQLite
-    - Status usado en governance
-    """
-    import hashlib
-    
-    # Calcular claim_id con suffix único para este test
-    claim_identity_input = f"slot_decorators:{workspace}:governance_test_round_trip:{uuid.uuid4().hex[:8]}"
-    claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
-    
-    # Crear Claim
-    claim = IntegrityClaim(
-        claim_id=claim_id,
-        subject=f"QML-callable methods in ViewModels have @Slot decorators ({workspace})",
-        invariant="QML_PYTHON_BINDING",
-        origin="SelfCodeAnalysis.verify_slot_decorators",
-        created_at=datetime.now(timezone.utc).isoformat(),
-    )
-    repo.create(claim)
-    
-    # Verificar Claim persistida
-    claim_retrieved = repo.retrieve(claim_id)
-    assert claim_retrieved is not None
-    assert claim_retrieved.invariant == "QML_PYTHON_BINDING"
-    
-    # Crear VerificationEvent
-    event = VerificationEvent(
-        event_id=hashlib.sha256(f"{claim_id}:round_trip_test".encode()).hexdigest()[:32],
-        claim_id=claim_id,
-        checked_at=datetime.now(timezone.utc).isoformat(),
-        status="PASS",
-        verification_evidence="test_id:round_trip",
-    )
-    repo.append_verification(event)
-    
-    # Verificar VerificationEvent persistido
-    events = repo.retrieve_verifications_by_claim(claim_id, limit=10)
-    assert len(events) >= 1
-    
-    # Verificar get_current_status
-    current_status = repo.get_current_status(claim_id)
-    assert current_status is not None
-    assert current_status in ["PASS", "FAIL"]
-    
-    # Verificar que el status coincide con el VerificationEvent más reciente
-    latest_event = repo.retrieve_latest_verification(claim_id)
-    assert latest_event.status == current_status
