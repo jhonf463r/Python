@@ -171,6 +171,19 @@ class AutonomyGovernancePolicy:
             for prefix in self._GITHUB_MERGE_SENSITIVE_PATH_PREFIXES:
                 if path.startswith(prefix):
                     return False, f'Toca ruta sensible ({path}): requiere aprobacion humana.'
+        
+        # Verificación de integridad QML→Python binding (QML_PYTHON_BINDING Claim)
+        # Solo aplica cuando el PR toca rutas UI relevantes
+        touches_ui = any(
+            'src/iabv_v15/ui/viewmodels/' in path or 'src/iabv_v15/ui/qml/' in path
+            for path in changed_paths
+        )
+        if touches_ui:
+            qml_binding_status = pr_metadata.get('qml_python_binding_status')
+            if qml_binding_status is not None:
+                status = str(qml_binding_status).strip().upper()
+                if status == 'FAIL':
+                    return False, 'QML_PYTHON_BINDING verification failed: @Slot decorators missing or inconsistent. Merge bloqueado por riesgo de fallos silenciosos en runtime.'
 
         return True, None
 
