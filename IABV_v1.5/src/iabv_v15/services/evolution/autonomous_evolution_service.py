@@ -25,6 +25,7 @@ from iabv_v15.domain.models import (
 from iabv_v15.infra.persistence.pending_issue_repository import PendingIssueRepository
 from iabv_v15.services.evolution.incident_packet_service import IncidentPacketService
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
+from iabv_v15.services.adaptive.adaptive_task_orchestrator import _synaptic_task_kind_from_intent
 
 
 _LIVE_AUDIT_SUMMARY_PATTERN = re.compile(
@@ -1743,6 +1744,20 @@ class AutonomousEvolutionService:
             metadata.get('reingest_existing_response')
             or consultation_retry.get('reingest_only')
         )
+        
+        # Derivar task_kind de la intención existente en el payload para consulta de dominio
+        # Reutiliza el órgano existente _synaptic_task_kind_from_intent sin duplicar clasificación
+        intent_raw = payload.get('intent')
+        task_kind = ''
+        if intent_raw is not None:
+            # Si intent_raw es un dict, construir TaskIntent; si ya es TaskIntent, usarlo directamente
+            from iabv_v15.domain.models import TaskIntent
+            if isinstance(intent_raw, dict):
+                intent_obj = TaskIntent(**intent_raw)
+            else:
+                intent_obj = intent_raw
+            task_kind = _synaptic_task_kind_from_intent(intent_obj)
+        
         return {
             'objective_id': str(objective.get('objective_id') or ''),
             'objective_title': str(objective.get('title') or ''),
@@ -1758,6 +1773,7 @@ class AutonomousEvolutionService:
             'assistant_kind': assistant_kind,
             'explicit_external_consultation': str(governance.get('diagnostic_category') or '').strip().lower() == 'explicit_external_consultation',
             'reingest_existing_response': reingest_existing_response,
+            'task_kind': task_kind,
         }
 
 

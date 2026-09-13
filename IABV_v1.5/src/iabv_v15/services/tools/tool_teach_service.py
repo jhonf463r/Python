@@ -1459,7 +1459,9 @@ class ToolTeachService:
         allow_local_automatic_consultation: bool,
         goal_parameters: dict[str, Any] | None = None,
     ) -> InferenceRequest:
-        assistant = (assistant_preference or '').strip().lower() or 'codex'
+        # Jerarquía de autoridad: preferencia explícita > recomendación autónoma > fallback
+        # Ausencia de preferencia significa autonomía, NO conversión a default
+        assistant = (assistant_preference or '').strip().lower()
         goal_payload = dict(goal_parameters or {})
         lab_recommendation = self._external_lab_recommendation(
             assistant_preference=assistant,
@@ -1499,6 +1501,10 @@ class ToolTeachService:
                 assistant_title = 'Claude'
                 assistant_kind = 'claude'
                 prompt_template_id = 'claude_consult_v1' if preferred_tool_id == 'claude_installed' else 'claude_web_consult_v1'
+            elif preferred_tool_id == 'devin_api':
+                assistant_title = 'Devin'
+                assistant_kind = 'devin'
+                prompt_template_id = 'devin_consult_v1'
             else:
                 assistant_title = 'ChatGPT'
                 assistant_kind = 'chatgpt'
@@ -1715,7 +1721,6 @@ class ToolTeachService:
         return tool_ids
 
     def _preferred_external_tool_id(
-
         self,
         *,
         assistant_preference: str,
@@ -1725,63 +1730,89 @@ class ToolTeachService:
         allow_local_automatic_consultation: bool,
         explicit_external_consultation: bool,
     ) -> str:
+        """
+        Jerarquía de autoridad:
+        1. Preferencia explícita del usuario (autoridad superior)
+        2. Recomendación autónoma del laboratorio (solo si no hay preferencia explícita)
+        3. Fallback existente (solo si no hay preferencia ni recomendación)
+        """
         technical_incidents = {'bridge_lag', 'navigation_stall', 'session_restore_weak', 'visual_alignment_weak', 'critical_object_missing'}
         technical_categories = {'need_codex_fix', 'need_adapter'}
         assistant = str(assistant_preference or '').strip().lower()
 
-        explicit_family = {
-            'ollama': 'ollama_llm',
-            'local': 'ollama_llm',
-            'local_first': 'ollama_llm',
-            'codex': 'codex_installed',
-            'claude': 'claude_web_assisted',
-            'chatgpt': 'chatgpt_web_assisted',
-            'devin': 'devin_api',
-        }.get(assistant, '')
-        if explicit_family:
-            preferred_tool_id = explicit_family
-        elif diagnostic_category in technical_categories or incident_kind in technical_incidents:
-            preferred_tool_id = 'codex_installed'
-        else:
-            preferred_tool_id = 'chatgpt_installed'
+        # CASO A: Preferencia explícita del usuario
+        # El usuario especificó una intención; respetarla como autoridad superior
+        # ExperimentLab NO debe cambiar silenciosamente la familia solicitada
+        if assistant:
+            explicit_family = {
+                'ollama': 'ollama_llm',
+                'local': 'ollama_llm',
+                'local_first': 'ollama_llm',
+                'codex': 'codex_installed',
+                'claude': 'claude_web_assisted',
+                'chatgpt': 'chatgpt_web_assisted',
+                'devin': 'devin_api',
+            }.get(assistant, '')
+            
+            if explicit_family:
+                # Permitir que recomendaciones LAB para LOCAL/Ollama cambien origen
+                # Esta es una excepción de disponibilidad existente, no cambio de familia
+                if lab_recommendation is not None:
+                    recommended_assistant = str(getattr(lab_recommendation, 'recommended_assistant_kind', '') or '').strip().lower()
+                    recommended_config = getattr(lab_recommendation, 'recommended_assistant_configuration', None)
+                    
+                    # Recomendación explícita LOCAL/Ollama tiene prioridad sobre preferencia de origen
+                    if allow_local_automatic_consultation and lab_recommendation.recommended_route == EvaluationRoute.LOCAL and not explicit_external_consultation:
+                        return 'ollama_llm'
+                    if recommended_assistant == 'ollama' and not explicit_external_consultation:
+                        return 'ollama_llm'
+                    if recommended_config is not None:
+                        origin_mode = str(getattr(recommended_config, 'origin_mode', '') or '').strip().lower()
+                        if origin_mode == 'local' and allow_local_automatic_consultation and not explicit_external_consultation:
+                            return 'ollama_llm'
+                
+                # Respetar preferencia explícita del usuario
+                return explicit_family
 
+        # CASO B: Sin preferencia explícita → autonomía del laboratorio
+        # Ausencia de preferencia significa que ExperimentLab/StrategySelector debe decidir
         if lab_recommendation is not None:
             recommended_assistant = str(getattr(lab_recommendation, 'recommended_assistant_kind', '') or '').strip().lower()
             recommended_config = getattr(lab_recommendation, 'recommended_assistant_configuration', None)
-            if allow_local_automatic_consultation and lab_recommendation.recommended_route == EvaluationRoute.LOCAL and not explicit_external_consultation:
-                return 'ollama_llm'
-            if recommended_assistant == 'ollama' and not explicit_external_consultation:
-                preferred_tool_id = 'ollama_llm'
-            elif recommended_assistant == 'codex':
-                preferred_tool_id = 'codex_installed'
-            elif recommended_assistant == 'claude':
-                preferred_tool_id = 'claude_web_assisted'
-            elif recommended_assistant == 'chatgpt':
-                preferred_tool_id = 'chatgpt_web_assisted'
+            
+            # Mapeo de recomendación a tool_id
+            lab_assistant_map = {
+                'ollama': 'ollama_llm',
+                'codex': 'codex_installed',
+                'claude': 'claude_web_assisted',
+                'chatgpt': 'chatgpt_web_assisted',
+                'devin': 'devin_api',
+            }
+            
+            preferred_tool_id = lab_assistant_map.get(recommended_assistant, '')
+            
+            # Ajustes por configuración
             if recommended_config is not None:
                 browser_mode = str(getattr(recommended_config, 'browser_mode', '') or '').strip().lower()
                 origin_mode = str(getattr(recommended_config, 'origin_mode', '') or '').strip().lower()
-                if browser_mode == 'with_browser' and preferred_tool_id.startswith('chatgpt'):
-                    preferred_tool_id = 'chatgpt_web_assisted'
-                elif browser_mode == 'with_browser' and preferred_tool_id.startswith('claude'):
-                    preferred_tool_id = 'claude_web_assisted'
+                
+                if browser_mode == 'with_browser':
+                    if preferred_tool_id.startswith('chatgpt'):
+                        preferred_tool_id = 'chatgpt_web_assisted'
+                    elif preferred_tool_id.startswith('claude'):
+                        preferred_tool_id = 'claude_web_assisted'
+                
                 if origin_mode == 'local' and allow_local_automatic_consultation and not explicit_external_consultation:
                     preferred_tool_id = 'ollama_llm'
-            if explicit_family:
-                if preferred_tool_id == 'ollama_llm':
-                    return preferred_tool_id
-                if preferred_tool_id.startswith('claude'):
-                    return 'claude_web_assisted' if lab_recommendation.recommended_route in {EvaluationRoute.UI, EvaluationRoute.LANGUAGE_UNDERSTANDING, EvaluationRoute.FALLBACK} else preferred_tool_id
-                if preferred_tool_id.startswith('chatgpt'):
-                    return 'chatgpt_web_assisted' if lab_recommendation.recommended_route in {EvaluationRoute.UI, EvaluationRoute.LANGUAGE_UNDERSTANDING, EvaluationRoute.FALLBACK} else preferred_tool_id
+            
+            if preferred_tool_id:
                 return preferred_tool_id
-            if lab_recommendation.recommended_route == EvaluationRoute.CODE_AGENT:
-                preferred_tool_id = 'codex_installed'
-            elif lab_recommendation.recommended_route == EvaluationRoute.UI:
-                preferred_tool_id = 'chatgpt_web_assisted'
-            elif lab_recommendation.recommended_route == EvaluationRoute.LANGUAGE_UNDERSTANDING:
-                preferred_tool_id = 'chatgpt_web_assisted'
-        return preferred_tool_id
+
+        # CASO C: Sin preferencia ni recomendación → fallback existente
+        # No hay evidencia para selección autónoma; usar fallback existente
+        if diagnostic_category in technical_categories or incident_kind in technical_incidents:
+            return 'codex_installed'
+        return 'chatgpt_installed'
 
 
     def _external_lab_subject_keys(
@@ -1818,7 +1849,20 @@ class ToolTeachService:
             return None
         technical_incidents = {'bridge_lag', 'navigation_stall', 'session_restore_weak', 'visual_alignment_weak', 'critical_object_missing'}
         technical_categories = {'need_codex_fix', 'need_adapter'}
-        domain = ExperimentDomain.CODE if assistant_preference == 'codex' or diagnostic_category in technical_categories or incident_kind in technical_incidents else ExperimentDomain.LANGUAGE
+        
+        # Dominio se deriva de la naturaleza de la tarea, no de la identidad del agente
+        # Prioridad: task_kind existente > categoría/incidente técnico > assistant_preference > default
+        code_task_kinds = {'code_generation', 'code_review', 'refactoring', 'debugging', 'testing'}
+        task_kind = str(goal_parameters.get('task_kind') or '').strip().lower() if goal_parameters else ''
+        
+        if task_kind in code_task_kinds:
+            domain = ExperimentDomain.CODE
+        elif diagnostic_category in technical_categories or incident_kind in technical_incidents:
+            domain = ExperimentDomain.CODE
+        elif assistant_preference == 'codex':
+            domain = ExperimentDomain.CODE
+        else:
+            domain = ExperimentDomain.LANGUAGE
         for subject_key in self._external_lab_subject_keys(
             goal_parameters=goal_parameters,
             site_id=site_id,
