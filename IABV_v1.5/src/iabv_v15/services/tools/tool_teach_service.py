@@ -1501,6 +1501,10 @@ class ToolTeachService:
                 assistant_title = 'Claude'
                 assistant_kind = 'claude'
                 prompt_template_id = 'claude_consult_v1' if preferred_tool_id == 'claude_installed' else 'claude_web_consult_v1'
+            elif preferred_tool_id == 'devin_api':
+                assistant_title = 'Devin'
+                assistant_kind = 'devin'
+                prompt_template_id = 'devin_consult_v1'
             else:
                 assistant_title = 'ChatGPT'
                 assistant_kind = 'chatgpt'

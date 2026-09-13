@@ -68,61 +68,10 @@ class TestExplicitPreferenceAuthority:
 class TestDomainIndependenceFromAgentIdentity:
     """
     TEST 4: El dominio debe representar la naturaleza de la tarea, no cambiar por identidad del agente.
+    Eliminado porque experiment_lab=None no permite verificar el flujo real.
+    La funcionalidad se prueba en otros tests que atraviesan producción.
     """
-    
-    def test_domain_derives_from_task_kind_not_agent_identity(self):
-        """
-        Misma tarea con task_kind='code_review':
-        - assistant_preference='' → CODE (por task_kind)
-        - assistant_preference='devin' → CODE (por task_kind, no por assistant)
-        - assistant_preference='codex' → CODE (por task_kind, no por assistant)
-        
-        El dominio NO debe cambiar artificialmente solo por identidad del agente.
-        """
-        service = ToolTeachService(
-            workspace_root=Path('C:/Python/IABV_v1.5'),
-            registry=Mock(),
-            experiment_lab=None,
-            memory=Mock(),
-            sandbox=Mock(),
-            validator=Mock(),
-            approval_policy=Mock(),
-            rollback_manager=Mock(),
-            adapters={},
-        )
-        
-        goal_parameters_code = {'task_kind': 'code_review'}
-        
-        # Sin preferencia: dominio por task_kind
-        domain_empty = service._external_lab_recommendation(
-            assistant_preference='',
-            site_id=None,
-            diagnostic_category='',
-            incident_kind='',
-            goal_parameters=goal_parameters_code,
-        )
-        
-        # Preferencia 'devin': dominio debe seguir siendo CODE por task_kind
-        domain_devin = service._external_lab_recommendation(
-            assistant_preference='devin',
-            site_id=None,
-            diagnostic_category='',
-            incident_kind='',
-            goal_parameters=goal_parameters_code,
-        )
-        
-        # Preferencia 'codex': dominio debe seguir siendo CODE por task_kind
-        domain_codex = service._external_lab_recommendation(
-            assistant_preference='codex',
-            site_id=None,
-            diagnostic_category='',
-            incident_kind='',
-            goal_parameters=goal_parameters_code,
-        )
-        
-        # En todos los casos el dominio debe ser CODE por task_kind
-        # Nota: experiment_lab=None hace que retornen None, pero verificamos que
-        # la lógica de dominio interna no dependa de assistant_preference para code_generation
+    pass
 
 
 class TestNoPreferenceAutonomousSelection:
@@ -170,38 +119,6 @@ class TestNoPreferenceAutonomousSelection:
         )
         
         assert tool_id == 'devin_api', "Sin preferencia, debe usar recommendation del laboratorio (devin)"
-    
-    def test_no_preference_domain_from_task_kind(self):
-        """
-        task_kind='code_generation' debe forzar dominio CODE
-        incluso sin assistant_preference.
-        """
-        service = ToolTeachService(
-            workspace_root=Path('C:/Python/IABV_v1.5'),
-            registry=Mock(),
-            experiment_lab=None,
-            memory=Mock(),
-            sandbox=Mock(),
-            validator=Mock(),
-            approval_policy=Mock(),
-            rollback_manager=Mock(),
-            adapters={},
-        )
-        
-        goal_parameters = {'task_kind': 'code_generation'}
-        
-        # Sin preferencia, con task_kind code_generation
-        # La lógica interna debe seleccionar CODE
-        # (experiment_lab=None hace que retorne None, pero verificamos lógica de dominio)
-        result = service._external_lab_recommendation(
-            assistant_preference='',
-            site_id=None,
-            diagnostic_category='',
-            incident_kind='',
-            goal_parameters=goal_parameters,
-        )
-        
-        # Result es None por experiment_lab=None, pero la lógica de dominio debe considerar task_kind
 
 
 class TestNoEvidenceFallback:
@@ -333,6 +250,58 @@ class TestExistingRoutesRegression:
             explicit_external_consultation=True,
         )
         assert ollama_id == 'ollama_llm', "Ollama debe resolver a ollama_llm"
+
+
+class TestDevinRequestMetadata:
+    """Verifica que devin_api produce metadata coherente con Devin."""
+    
+    def test_devin_api_request_construction(self):
+        """
+        preferred_tool_id='devin_api'
+        debe producir en _build_external_consultation_request:
+        assistant_kind='devin'
+        assistant_title='Devin'
+        prompt_template_id='devin_consult_v1'
+        
+        NO debe producir metadata de ChatGPT.
+        """
+        service = ToolTeachService(
+            workspace_root=Path('C:/Python/IABV_v1.5'),
+            registry=Mock(),
+            experiment_lab=None,
+            memory=Mock(),
+            sandbox=Mock(),
+            validator=Mock(),
+            approval_policy=Mock(),
+            rollback_manager=Mock(),
+            adapters={},
+        )
+        
+        # Crear un mock de ToolCard para devin_api
+        mock_card = Mock()
+        mock_card.metadata = {
+            'response_capture_mode': 'manual_pasteback',
+            'session_scope': 'external_app',
+            'isolated_session_required': False,
+        }
+        service.registry.get_card = Mock(return_value=mock_card)
+        
+        # Llamar al método que construye el request completo
+        request = service._build_external_consultation_request(
+            user_goal='test goal',
+            assistant_preference='devin',
+            context_pack='',
+            site_id=None,
+            diagnostic_category='',
+            incident_kind='',
+            launch_dry_run=True,
+            allow_local_automatic_consultation=False,
+            goal_parameters={'task_kind': 'code_review'},
+        )
+        
+        # Verificar que el request tiene metadata correcta de Devin
+        assert request.goal_parameters['assistant_kind'] == 'devin', "Request debe tener assistant_kind='devin'"
+        assert request.goal_parameters['prompt_template_id'] == 'devin_consult_v1', "Request debe tener prompt_template_id='devin_consult_v1'"
 
 
 class TestBuildExternalConsultationRequest:
