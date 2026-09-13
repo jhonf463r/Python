@@ -2000,6 +2000,7 @@ class EvaluationRoute(str, Enum):
     CLOUD = "cloud"
     FALLBACK = "fallback"
     CODE_AUDIT = "code_audit"
+    DEVIN_API = "devin_api"
 
 
 class ExperimentMetric(BaseModel):

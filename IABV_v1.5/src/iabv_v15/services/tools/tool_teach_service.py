@@ -279,6 +279,8 @@ class ToolTeachService:
             return EvaluationRoute.LOCAL.value
         if resolved_assistant in {'chatgpt', 'claude'}:
             return EvaluationRoute.LANGUAGE_UNDERSTANDING.value
+        if resolved_assistant == 'devin' or resolved_tool_id == 'devin_api':
+            return EvaluationRoute.DEVIN_API.value
         return EvaluationRoute.FALLBACK.value
 
     def _external_state_flags_for_trace(
@@ -1758,6 +1760,8 @@ class ToolTeachService:
                 preferred_tool_id = 'claude_web_assisted'
             elif recommended_assistant == 'chatgpt':
                 preferred_tool_id = 'chatgpt_web_assisted'
+            elif recommended_assistant == 'devin':
+                preferred_tool_id = 'devin_api'
             if recommended_config is not None:
                 browser_mode = str(getattr(recommended_config, 'browser_mode', '') or '').strip().lower()
                 origin_mode = str(getattr(recommended_config, 'origin_mode', '') or '').strip().lower()
