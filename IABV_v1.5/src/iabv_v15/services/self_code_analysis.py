@@ -14,6 +14,7 @@ Capabilities:
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 import logging
@@ -22,6 +23,7 @@ import py_compile
 import re
 import subprocess
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -325,6 +327,91 @@ def verify_slot_decorators(workspace: str | None = None) -> dict[str, Any]:
         'issues': issues,
         'summary': f'{checked} QML-callable methods checked, {len(issues)} missing @Slot' if issues else f'{checked} QML-callable methods checked, all have @Slot',
     }
+
+
+def verify_slot_decorators_with_claim(workspace: str | None = None) -> dict[str, Any]:
+    """Wrapper que convierte verify_slot_decorators() en Claim + VerificationEvent.
+    
+    Esta función demuestra que un detector existente puede producir una Claim
+    persistente y VerificationEvents históricos sin modificar su lógica original.
+    
+    Mapping:
+    - Claim identity: estable por workspace + tipo de check
+    - Claim subject: descripción del check
+    - Claim invariant: código estable para QML→Python binding
+    - Claim origin: SelfCodeAnalysis
+    - VerificationEvent status: derivado de result['ok']
+    - VerificationEvent evidence: source_path del workspace
+    """
+    from iabv_v15.domain.models import IntegrityClaim, VerificationEvent
+    from iabv_v15.infra.persistence.integrity_claim_repository import IntegrityClaimRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    
+    ws = workspace or _default_workspace()
+    if not ws:
+        return {'ok': False, 'error': 'workspace not found'}
+    
+    # Ejecutar el detector original sin modificarlo
+    result = verify_slot_decorators(ws)
+    
+    # Crear Claim identity estable basada en workspace + tipo de check
+    # Esto asegura que la misma relación QML→Python en el mismo workspace
+    # produce la misma Claim identity entre ejecuciones
+    claim_subject = f"QML-callable methods in ViewModels have @Slot decorators ({ws})"
+    claim_identity_input = f"slot_decorators:{ws}"
+    claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
+    
+    # Intentar obtener o crear la Claim
+    try:
+        # Usar la ruta de datos del proyecto para la base de datos
+        data_dir = Path(ws) / 'data' / 'evolution'
+        data_dir.mkdir(parents=True, exist_ok=True)
+        db_path = data_dir / 'integrity_claims.sqlite'
+        
+        db = AppDatabase(str(db_path))
+        repo = IntegrityClaimRepository(db)
+        
+        # Intentar recuperar Claim existente
+        existing_claim = repo.retrieve(claim_id)
+        
+        if not existing_claim:
+            # Crear Claim nueva (solo si no existe)
+            claim = IntegrityClaim(
+                claim_id=claim_id,
+                subject=claim_subject,
+                invariant="QML_PYTHON_BINDING",
+                origin="SelfCodeAnalysis.verify_slot_decorators",
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+            repo.create(claim)
+        else:
+            claim = existing_claim
+        
+        # Crear VerificationEvent para esta ejecución
+        status = "PASS" if result['ok'] else "FAIL"
+        verification_evidence = f"source_path:{ws}/src/iabv_v15/ui/viewmodels"
+        
+        event = VerificationEvent(
+            event_id=hashlib.sha256(f"{claim_id}:{datetime.now(timezone.utc).isoformat()}".encode()).hexdigest()[:32],
+            claim_id=claim_id,
+            checked_at=datetime.now(timezone.utc).isoformat(),
+            status=status,
+            verification_evidence=verification_evidence,
+        )
+        repo.append_verification(event)
+        
+        # Enriquecer resultado con Claim/VerificationEvent metadata
+        result['claim_id'] = claim_id
+        result['verification_event_id'] = event.event_id
+        result['claim_subject'] = claim.subject
+        result['verification_status'] = status
+        
+    except Exception as e:
+        logger.warning(f"Failed to persist Claim/VerificationEvent for slot decorators: {e}")
+        # El detector original sigue funcionando aunque la persistencia falle
+        result['claim_persistence_error'] = str(e)
+    
+    return result
 
 
 def verify_intent_routing(workspace: str | None = None) -> dict[str, Any]:
