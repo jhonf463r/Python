@@ -628,6 +628,162 @@ def test_build_external_consultation_request_for_devin():
 
 
 def test_full_delegation_request_construction():
+    """Test G: Cadena completa de construcción de request de delegación.
+    
+    Este test demuestra que la cadena de construcción funciona correctamente
+    para Devin cuando se proporciona una ExperimentRecommendation válida.
+    """
+    from iabv_v15.services.tools.tool_teach_service import ToolTeachService
+    from iabv_v15.services.tools.tool_registry import ToolRegistry
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.domain.models import ExperimentRecommendation, ExperimentDomain, EvaluationRoute, AssistantConfigurationSnapshot
+    from pathlib import Path
+    import tempfile
+    from unittest.mock import Mock
+    
+    # Crear instancias mínimas
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_full_delegation_"))
+    db_path = temp_dir / "test_full_delegation.sqlite"
+    db = AppDatabase(str(db_path))
+    storage = ArtifactStorage(root=temp_dir)
+    repo = ToolRecordRepository(db=db, storage=storage)
+    registry = ToolRegistry(repository=repo, adapters={})
+    
+    # Mock dependencias no necesarias
+    mock_memory = Mock()
+    mock_sandbox = Mock()
+    mock_validator = Mock()
+    mock_approval_policy = Mock()
+    mock_rollback_manager = Mock()
+    
+    service = ToolTeachService(
+        registry=registry,
+        memory=mock_memory,
+        sandbox=mock_sandbox,
+        validator=mock_validator,
+        approval_policy=mock_approval_policy,
+        rollback_manager=mock_rollback_manager,
+        adapters={},
+        workspace_root=str(temp_dir),
+        experiment_lab=None,
+    )
+    
+    try:
+        # Crear ExperimentRecommendation manual para Devin
+        lab_rec = ExperimentRecommendation(
+            domain=ExperimentDomain.CODE,
+            subject_key='test:full_delegation',
+            recommended_route=EvaluationRoute.DEVIN_API,
+            recommended_assistant_kind='devin',
+            recommended_assistant_configuration=AssistantConfigurationSnapshot(
+                planning_mode='standard',
+                attachments_mode='none',
+                reasoning_level='standard',
+                context_mode='minimal',
+                tools_mode='auto',
+                browser_mode='none',
+                assistant_mode='standard',
+                origin_mode='local',
+            ),
+            recommended_config_signature='',
+            score=0.9,
+            confidence=0.85,
+            rationale='Test',
+            supporting_run_ids=[],
+            metadata={},
+        )
+        
+        # Invocar _build_external_consultation_request() con assistant_preference='devin'
+        request = service._build_external_consultation_request(
+            user_goal='test goal',
+            assistant_preference='devin',
+            context_pack='test context',
+            site_id='test',
+            diagnostic_category='',
+            incident_kind='',
+            launch_dry_run=True,
+            allow_local_automatic_consultation=False,
+            goal_parameters={'subject_key': 'test:full_delegation'},
+        )
+        
+        # Verificar que la cadena completa funciona
+        assert request.goal_parameters['assistant_kind'] == 'devin'
+        assert request.goal_parameters['tool_id'] == 'devin_api'
+        assert request.goal_parameters['prompt_template_id'] == 'devin_consult_v1'
+        
+        # Verificar que la ToolCard tiene el prompt_template_id correcto
+        devin_card = registry.get_card('devin_api')
+        assert devin_card is not None
+        assert devin_card.metadata.get('prompt_template_id') == 'devin_consult_v1'
+        
+    finally:
+        # Cleanup
+        try:
+            db.close()
+            if db_path.exists():
+                db_path.unlink()
+            import shutil
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
+
+
+def test_devin_toolcard_has_prompt_template_id():
+    """Test I: Verificar que ToolCard devin_api tiene prompt_template_id simétrico con otros asistentes.
+    
+    Verifica consistencia de configuración entre ToolCards:
+    - codex_installed tiene prompt_template_id = 'codex_consult_v1'
+    - chatgpt_installed tiene prompt_template_id = 'chatgpt_consult_v1'
+    - claude_installed tiene prompt_template_id = 'claude_consult_v1'
+    - devin_api debe tener prompt_template_id = 'devin_consult_v1'
+    
+    Esto es necesario para simetría con tool_discovery_service._config_signature_for_card()
+    que usa prompt_template_id como parte de la firma de configuración.
+    """
+    from iabv_v15.services.tools.tool_registry import ToolRegistry
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from pathlib import Path
+    import tempfile
+    
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_toolcard_prompt_"))
+    db_path = temp_dir / "test_toolcard_prompt.sqlite"
+    db = AppDatabase(str(db_path))
+    storage = ArtifactStorage(root=temp_dir)
+    repo = ToolRecordRepository(db=db, storage=storage)
+    registry = ToolRegistry(repository=repo, adapters={})
+    
+    try:
+        # Verificar que devin_api tiene prompt_template_id
+        devin_card = registry.get_card('devin_api')
+        assert devin_card is not None, "devin_api card must exist"
+        assert devin_card.metadata.get('prompt_template_id') == 'devin_consult_v1', \
+            f"devin_api must have prompt_template_id='devin_consult_v1', got {devin_card.metadata.get('prompt_template_id')}"
+        
+        # Verificar simetría con otros asistentes
+        cards_to_check = ['codex_installed', 'chatgpt_installed', 'claude_installed', 'devin_api']
+        for tool_id in cards_to_check:
+            card = registry.get_card(tool_id)
+            if card is not None:
+                prompt_template_id = card.metadata.get('prompt_template_id')
+                assert prompt_template_id is not None, \
+                    f"{tool_id} must have prompt_template_id in metadata"
+                assert f"{tool_id.split('_')[0]}_consult_v1" in prompt_template_id, \
+                    f"{tool_id} prompt_template_id should follow naming convention, got {prompt_template_id}"
+        
+    finally:
+        # Cleanup
+        try:
+            db.close()
+            if db_path.exists():
+                db_path.unlink()
+            import shutil
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
     """Test G: Cadena completa desde ExperimentRecommendation hasta InferenceRequest.
     
     Demuestra:

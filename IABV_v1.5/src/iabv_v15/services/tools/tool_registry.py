@@ -447,6 +447,7 @@ class ToolRegistry:
                     'session_scope': 'api_session',
                     'background_capture_mode': 'devin_api',
                     'launch_mode': 'api',
+                    'prompt_template_id': 'devin_consult_v1',
                 },
             ),
             ToolCard(
