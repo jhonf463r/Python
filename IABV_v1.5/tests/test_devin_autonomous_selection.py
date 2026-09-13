@@ -102,6 +102,11 @@ def test_strategy_selector_can_recommend_devin():
     - Historial donde devin_api tiene mejor score
     - Ejecutar StrategySelector.recommend()
     - Verificar que recommended_assistant_kind == 'devin'
+    
+    LIMITACIÓN:
+    Los ExperimentRun usados en este test son sintéticos/fabricados.
+    Esto demuestra que el algoritmo puede seleccionar Devin cuando recibe evidencia histórica favorable,
+    pero NO demuestra evidencia histórica real de Devin en producción.
     """
     selector = StrategySelector()
     
@@ -242,10 +247,15 @@ def test_tool_teach_service_converts_devin_recommendation_to_tool_id():
     
     Flujo:
     - Crear ExperimentRecommendation con recommended_assistant_kind='devin'
-    - Verificar que la lógica de mapeo en _preferred_external_tool_id
-      procesaría 'devin' → 'devin_api' sin assistant_preference manual
+    - Ejecutar realmente _preferred_external_tool_id()
+    - Verificar que devuelve 'devin_api' SIN assistant_preference manual
     """
     from iabv_v15.domain.models import ExperimentRecommendation
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import Mock
     
     # Crear recomendación simulada de StrategySelector
     lab_recommendation = ExperimentRecommendation(
@@ -273,81 +283,270 @@ def test_tool_teach_service_converts_devin_recommendation_to_tool_id():
         metadata={},
     )
     
-    # Verificar que la recomendación contiene 'devin'
-    assert lab_recommendation.recommended_assistant_kind == 'devin'
+    # Crear ToolTeachService con mocks mínimos
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_tool_teach_"))
+    db_path = temp_dir / "test_tool_records.sqlite"
+    db = AppDatabase(str(db_path))
+    repo = ToolRecordRepository(db=db, storage=temp_dir)
     
-    # Simular la lógica de _preferred_external_tool_id para la parte que procesa lab_recommendation
-    # El código real es:
-    # if lab_recommendation is not None:
-    #     recommended_assistant = str(getattr(lab_recommendation, 'recommended_assistant_kind', '') or '').strip().lower()
-    #     if recommended_assistant == 'devin':
-    #         preferred_tool_id = 'devin_api'
+    # Crear registry
+    registry = ToolRegistry(repository=repo, adapters={})
     
-    recommended_assistant = str(getattr(lab_recommendation, 'recommended_assistant_kind', '') or '').strip().lower()
-    assert recommended_assistant == 'devin'
+    # Crear mocks para dependencias que no necesitamos
+    mock_memory = Mock()
+    mock_sandbox = Mock()
+    mock_validator = Mock()
+    mock_approval_policy = Mock()
+    mock_rollback_manager = Mock()
     
-    # Verificar que el mapeo existe en el código real
-    # (Verificación de que el código fuente contiene el mapeo)
-    import inspect
-    from iabv_v15.services.tools.tool_teach_service import ToolTeachService
-    source = inspect.getsource(ToolTeachService._preferred_external_tool_id)
-    assert "elif recommended_assistant == 'devin':" in source
-    assert "preferred_tool_id = 'devin_api'" in source
+    # Crear servicio con dependencias mínimas
+    service = ToolTeachService(
+        registry=registry,
+        memory=mock_memory,
+        sandbox=mock_sandbox,
+        validator=mock_validator,
+        approval_policy=mock_approval_policy,
+        rollback_manager=mock_rollback_manager,
+        adapters={},
+        workspace_root=str(temp_dir),
+        experiment_lab=None,
+    )
+    
+    try:
+        # Ejecutar _preferred_external_tool_id realmente
+        preferred_tool_id = service._preferred_external_tool_id(
+            assistant_preference='',  # VACIO - NO hay override manual
+            diagnostic_category='',
+            incident_kind='',
+            lab_recommendation=lab_recommendation,
+            allow_local_automatic_consultation=False,
+            explicit_external_consultation=False,
+        )
+        
+        # Verificar resultado real
+        assert preferred_tool_id == 'devin_api'
+    finally:
+        # Cleanup
+        try:
+            db.close()
+            if db_path.exists():
+                db_path.unlink()
+            import shutil
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
 
 
 def test_manual_override_still_works():
     """Test C: Override manual assistant_preference='devin' todavía funciona.
     
     Demostrar que la ruta existente de override manual no se rompió.
+    Ejecuta realmente _preferred_external_tool_id() con assistant_preference='devin'.
     """
-    # Verificar que el mapeo explícito en _preferred_external_tool_id
-    # procesaría 'devin' → 'devin_api' cuando assistant_preference='devin'
-    explicit_family_map = {
-        'ollama': 'ollama_llm',
-        'local': 'ollama_llm',
-        'local_first': 'ollama_llm',
-        'codex': 'codex_installed',
-        'claude': 'claude_web_assisted',
-        'chatgpt': 'chatgpt_web_assisted',
-        'devin': 'devin_api',
-    }
-    assert explicit_family_map['devin'] == 'devin_api'
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import Mock
+    
+    # Crear ToolTeachService con mocks mínimos
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_tool_teach_override_"))
+    db_path = temp_dir / "test_tool_records_override.sqlite"
+    db = AppDatabase(str(db_path))
+    repo = ToolRecordRepository(db=db, storage=temp_dir)
+    registry = ToolRegistry(repository=repo, adapters={})
+    
+    # Crear mocks para dependencias que no necesitamos
+    mock_memory = Mock()
+    mock_sandbox = Mock()
+    mock_validator = Mock()
+    mock_approval_policy = Mock()
+    mock_rollback_manager = Mock()
+    
+    service = ToolTeachService(
+        registry=registry,
+        memory=mock_memory,
+        sandbox=mock_sandbox,
+        validator=mock_validator,
+        approval_policy=mock_approval_policy,
+        rollback_manager=mock_rollback_manager,
+        adapters={},
+        workspace_root=str(temp_dir),
+        experiment_lab=None,
+    )
+    
+    try:
+        # Ejecutar con override manual real
+        preferred_tool_id = service._preferred_external_tool_id(
+            assistant_preference='devin',  # OVERRIDE MANUAL EXPLÍCITO
+            diagnostic_category='',
+            incident_kind='',
+            lab_recommendation=None,
+            allow_local_automatic_consultation=False,
+            explicit_external_consultation=False,
+        )
+        
+        # Verificar resultado real
+        assert preferred_tool_id == 'devin_api'
+    finally:
+        # Cleanup
+        try:
+            db.close()
+            if db_path.exists():
+                db_path.unlink()
+            import shutil
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
 
 
 def test_existing_routes_not_regressed():
     """Test D: Rutas existentes (codex, claude, chatgpt, ollama) no regresaron.
     
     Verificar que las rutas existentes siguen funcionando sin cambios.
+    Ejecuta realmente _preferred_external_tool_id() para cada ruta.
     """
-    # Verificar que el mapeo explícito en _preferred_external_tool_id
-    # procesa correctamente las rutas existentes
-    explicit_family_map = {
-        'ollama': 'ollama_llm',
-        'local': 'ollama_llm',
-        'local_first': 'ollama_llm',
-        'codex': 'codex_installed',
-        'claude': 'claude_web_assisted',
-        'chatgpt': 'chatgpt_web_assisted',
-        'devin': 'devin_api',
-    }
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import Mock
     
-    assert explicit_family_map['codex'] == 'codex_installed'
-    assert explicit_family_map['claude'] == 'claude_web_assisted'
-    assert explicit_family_map['chatgpt'] == 'chatgpt_web_assisted'
-    assert explicit_family_map['ollama'] == 'ollama_llm'
+    # Crear ToolTeachService con mocks mínimos
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_tool_teach_regression_"))
+    db_path = temp_dir / "test_tool_records_regression.sqlite"
+    db = AppDatabase(str(db_path))
+    repo = ToolRecordRepository(db=db, storage=temp_dir)
+    registry = ToolRegistry(repository=repo, adapters={})
+    
+    # Crear mocks para dependencias que no necesitamos
+    mock_memory = Mock()
+    mock_sandbox = Mock()
+    mock_validator = Mock()
+    mock_approval_policy = Mock()
+    mock_rollback_manager = Mock()
+    
+    service = ToolTeachService(
+        registry=registry,
+        memory=mock_memory,
+        sandbox=mock_sandbox,
+        validator=mock_validator,
+        approval_policy=mock_approval_policy,
+        rollback_manager=mock_rollback_manager,
+        adapters={},
+        workspace_root=str(temp_dir),
+        experiment_lab=None,
+    )
+    
+    try:
+        # Test Codex - ejecuta producción real
+        codex_tool_id = service._preferred_external_tool_id(
+            assistant_preference='codex',
+            diagnostic_category='need_codex_fix',
+            incident_kind='',
+            lab_recommendation=None,
+            allow_local_automatic_consultation=False,
+            explicit_external_consultation=False,
+        )
+        assert codex_tool_id == 'codex_installed'
+        
+        # Test ChatGPT - ejecuta producción real
+        chatgpt_tool_id = service._preferred_external_tool_id(
+            assistant_preference='chatgpt',
+            diagnostic_category='',
+            incident_kind='',
+            lab_recommendation=None,
+            allow_local_automatic_consultation=False,
+            explicit_external_consultation=False,
+        )
+        assert chatgpt_tool_id == 'chatgpt_web_assisted'
+        
+        # Test Claude - ejecuta producción real
+        claude_tool_id = service._preferred_external_tool_id(
+            assistant_preference='claude',
+            diagnostic_category='',
+            incident_kind='',
+            lab_recommendation=None,
+            allow_local_automatic_consultation=False,
+            explicit_external_consultation=False,
+        )
+        assert claude_tool_id == 'claude_web_assisted'
+        
+        # Test Ollama - ejecuta producción real
+        ollama_tool_id = service._preferred_external_tool_id(
+            assistant_preference='ollama',
+            diagnostic_category='',
+            incident_kind='',
+            lab_recommendation=None,
+            allow_local_automatic_consultation=False,
+            explicit_external_consultation=False,
+        )
+        assert ollama_tool_id == 'ollama_llm'
+    finally:
+        # Cleanup
+        try:
+            db.close()
+            if db_path.exists():
+                db_path.unlink()
+            import shutil
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
 
 
 def test_trace_route_for_devin():
     """Test E: _trace_route mapea devin/devin_api a EvaluationRoute.DEVIN_API.
     
     Verificar que el routing de traza funciona correctamente para Devin.
+    Ejecuta realmente _trace_route() y verifica el resultado.
     """
-    # Verificar que EvaluationRoute.DEVIN_API existe
-    assert EvaluationRoute.DEVIN_API.value == 'devin_api'
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.infra.persistence.database import AppDatabase
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import Mock
     
-    # Verificar que el routing en _trace_route procesaría 'devin' correctamente
-    # (Esto verifica que el código existe sin ejecutar el método completo)
-    # La lógica en _trace_route es:
-    # if resolved_assistant == 'devin' or resolved_tool_id == 'devin_api':
-    #     return EvaluationRoute.DEVIN_API.value
-    assert EvaluationRoute.DEVIN_API.value == 'devin_api'
+    # Crear ToolTeachService con mocks mínimos
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_tool_teach_trace_"))
+    db_path = temp_dir / "test_tool_records_trace.sqlite"
+    db = AppDatabase(str(db_path))
+    repo = ToolRecordRepository(db=db, storage=temp_dir)
+    registry = ToolRegistry(repository=repo, adapters={})
+    
+    # Crear mocks para dependencias que no necesitamos
+    mock_memory = Mock()
+    mock_sandbox = Mock()
+    mock_validator = Mock()
+    mock_approval_policy = Mock()
+    mock_rollback_manager = Mock()
+    
+    service = ToolTeachService(
+        registry=registry,
+        memory=mock_memory,
+        sandbox=mock_sandbox,
+        validator=mock_validator,
+        approval_policy=mock_approval_policy,
+        rollback_manager=mock_rollback_manager,
+        adapters={},
+        workspace_root=str(temp_dir),
+        experiment_lab=None,
+    )
+    
+    try:
+        # Test via assistant_kind - ejecuta producción real
+        route_via_kind = service._trace_route(tool_id='', assistant_kind='devin')
+        assert route_via_kind == EvaluationRoute.DEVIN_API.value
+        
+        # Test via tool_id - ejecuta producción real
+        route_via_tool = service._trace_route(tool_id='devin_api', assistant_kind='')
+        assert route_via_tool == EvaluationRoute.DEVIN_API.value
+    finally:
+        # Cleanup
+        try:
+            db.close()
+            if db_path.exists():
+                db_path.unlink()
+            import shutil
+            shutil.rmtree(temp_dir)
+        except Exception:
+            pass
