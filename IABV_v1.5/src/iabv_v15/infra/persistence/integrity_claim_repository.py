@@ -161,12 +161,15 @@ class IntegrityClaimRepository:
     def retrieve_verifications_by_claim(
         self, claim_id: str, limit: int = 100
     ) -> list[VerificationEvent]:
-        """Recupera VerificationEvents de una Claim."""
+        """Recupera VerificationEvents de una Claim.
+        
+        Usa tie-breaker determinista (event_id) cuando checked_at_utc es idéntico.
+        """
         rows = self.db.fetchall(
             """
             SELECT * FROM verification_events
             WHERE claim_id = ?
-            ORDER BY checked_at_utc DESC
+            ORDER BY checked_at_utc DESC, event_id DESC
             LIMIT ?
             """,
             (claim_id, limit),
@@ -185,12 +188,15 @@ class IntegrityClaimRepository:
     def retrieve_latest_verification(
         self, claim_id: str
     ) -> Optional[VerificationEvent]:
-        """Recupera el VerificationEvent más reciente de una Claim."""
+        """Recupera el VerificationEvent más reciente de una Claim.
+        
+        Usa tie-breaker determinista (event_id) cuando checked_at_utc es idéntico.
+        """
         row = self.db.fetchone(
             """
             SELECT * FROM verification_events
             WHERE claim_id = ?
-            ORDER BY checked_at_utc DESC
+            ORDER BY checked_at_utc DESC, event_id DESC
             LIMIT 1
             """,
             (claim_id,),

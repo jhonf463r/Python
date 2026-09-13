@@ -156,6 +156,55 @@ def test_latest_status_returns_pass_at_t3(repo):
     assert current_status == "PASS"
 
 
+def test_deterministic_latest_with_same_timestamp(repo):
+    """Test A.3.1: latest es determinista cuando checked_at_utc es idéntico.
+    
+    Cuando dos eventos tienen el mismo checked_at_utc, event_id DESC
+    determina cuál es el latest.
+    """
+    claim = IntegrityClaim(
+        claim_id=str(uuid.uuid4()),
+        subject="same_timestamp → deterministic latest",
+        invariant="SEMANTIC",
+        origin="oses",
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    repo.create(claim)
+
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Event IDs con orden determinista (lexicográfico)
+    event1_id = "11111111-1111-1111-1111-111111111111"
+    event2_id = "22222222-2222-2222-2222-222222222222"
+    
+    event1 = VerificationEvent(
+        event_id=event1_id,
+        claim_id=claim.claim_id,
+        checked_at=now,
+        status="PASS",
+        verification_evidence="test_id:test_intent_routing",
+    )
+    event2 = VerificationEvent(
+        event_id=event2_id,
+        claim_id=claim.claim_id,
+        checked_at=now,
+        status="FAIL",
+        verification_evidence="test_id:test_intent_routing",
+    )
+
+    repo.append_verification(event1)
+    repo.append_verification(event2)
+
+    latest = repo.retrieve_latest_verification(claim.claim_id)
+    current_status = repo.get_current_status(claim.claim_id)
+
+    # El latest debe ser event2 (FAIL) porque event2_id > event1_id
+    assert latest is not None
+    assert latest.event_id == event2_id
+    assert latest.status == "FAIL"
+    assert current_status == "FAIL"
+
+
 def test_evidence_typing_distinguishes_kinds(repo):
     """Test A.4: distinguir run_id:X, trace_id:Y, source_path:Z."""
     claim = IntegrityClaim(
@@ -258,8 +307,8 @@ def test_persistence_recovery(repo, tmp_path):
     assert retrieved_events[0].event_id == event.event_id
 
 
-def test_concurrency_two_writes_preserve_history(repo):
-    """Test A.7: dos escrituras de VerificationEvent no destruyen historial."""
+def test_two_sequential_writes_preserve_history(repo):
+    """Test A.7: dos escrituras secuenciales de VerificationEvent no destruyen historial."""
     claim = IntegrityClaim(
         claim_id=str(uuid.uuid4()),
         subject="method → method",
