@@ -536,6 +536,37 @@ class AppDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_chat_messages_created
                 ON chat_messages (created_at_utc DESC);
+
+                CREATE TABLE IF NOT EXISTS integrity_claims (
+                    claim_id TEXT PRIMARY KEY,
+                    subject TEXT NOT NULL,
+                    invariant TEXT NOT NULL,
+                    origin TEXT NOT NULL,
+                    created_at_utc TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS verification_events (
+                    event_id TEXT PRIMARY KEY,
+                    claim_id TEXT NOT NULL,
+                    checked_at_utc TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    verification_evidence TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_integrity_claims_subject
+                ON integrity_claims (subject, created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_integrity_claims_invariant
+                ON integrity_claims (invariant, created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_integrity_claims_created
+                ON integrity_claims (created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_verification_events_claim
+                ON verification_events (claim_id, checked_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_verification_events_checked
+                ON verification_events (checked_at_utc DESC);
                 """
             )
             self._ensure_column(conn, 'run_records', 'duration_ms', 'INTEGER')

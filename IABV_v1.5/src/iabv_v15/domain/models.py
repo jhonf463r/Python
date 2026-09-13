@@ -2736,6 +2736,68 @@ class SelfAuditSnapshot:
 
 
 # ---------------------------------------------------------------------------
+# Integrity Claims and Verification Events
+# ---------------------------------------------------------------------------
+#
+# Contratos para persistencia de Claims y VerificationEvents.
+# Diseño congelado: Claim es inmutable, VerificationEvent es append-only.
+# El estado actual de una Claim se deriva del VerificationEvent más reciente.
+
+
+@dataclass(frozen=True)
+class IntegrityClaim:
+    """Representa una afirmación/invariante sobre el sistema.
+
+    Diseño congelado (FINAL DESIGN FREEZE):
+    - claim_id: identificador único
+    - subject: quién es el sujeto de la afirmación (TEXT)
+    - invariant: qué tipo de invariante (código estable)
+    - origin: de dónde surgió la afirmación
+    - created_at: cuándo se creó la afirmación
+
+    Claim es conceptualmente inmutable después de creación.
+    No tiene 'status' — el estado se deriva de VerificationEvents.
+    """
+
+    claim_id: str
+    subject: str
+    invariant: str
+    origin: str
+    created_at: str
+
+
+@dataclass(frozen=True)
+class VerificationEvent:
+    """Representa una verificación de una Claim en un momento específico.
+
+    Diseño congelado (FINAL DESIGN FREEZE):
+    - event_id: identificador único
+    - claim_id: referencia a la Claim verificada
+    - checked_at: cuándo se verificó
+    - status: resultado (PASS, FAIL, WARN, UNKNOWN, NOT_APPLICABLE)
+    - verification_evidence: referencia a evidencia (formato: {kind}:{id})
+
+    VerificationEvent es append-only. La historia PASS → FAIL → PASS
+    se preserva completamente. El estado actual de Claim se deriva del
+    VerificationEvent más reciente.
+
+    verification_evidence usa referencia tipada:
+    - run_id:<uuid>
+    - trace_id:<id>
+    - test_id:<id>
+    - source_path:<path>
+    - episode_id:<id>
+    - dispatch_id:<id>
+    """
+
+    event_id: str
+    claim_id: str
+    checked_at: str
+    status: str
+    verification_evidence: str
+
+
+# ---------------------------------------------------------------------------
 # PCS v1 — Embodiment Violation Records
 # ---------------------------------------------------------------------------
 #
