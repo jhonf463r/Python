@@ -128,8 +128,12 @@ class AutonomousEvolutionService:
             pending_issue_id=pending_issue.issue_id if pending_issue is not None else '',
             query=query,
         )
+        # autonomous_external_launch controla el modo de ejecución (dry-run vs real)
+        # NO controla governance approval. Son conceptos distintos.
         launch_dry_run = not self.config.autonomous_external_launch
-        approved = True if launch_dry_run else bool(self.config.autonomous_external_launch)
+        # approved es governance approval, que es evaluado por ToolApprovalPolicy
+        # Aquí usamos True temporalmente porque la governance se evalúa dentro de execute_task
+        # launch_dry_run pasa el modo de ejecución al adapter
         task, result, preview = self.tool_teach_service.execute_external_consultation(
             user_goal=user_goal,
             assistant_preference=requested_assistant_kind,
@@ -137,7 +141,7 @@ class AutonomousEvolutionService:
             site_id=self._site_id(payload) or None,
             diagnostic_category=str(assessment['diagnostic_category']),
             incident_kind=self._incident_kind(payload),
-            approved=approved,
+            approved=True,  # Governance se evalúa dentro de execute_task via ToolApprovalPolicy
             launch_dry_run=launch_dry_run,
             allow_local_automatic_consultation=True,
             goal_parameters=self._goal_context(payload),

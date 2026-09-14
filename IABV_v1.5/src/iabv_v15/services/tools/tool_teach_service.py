@@ -729,11 +729,11 @@ class ToolTeachService:
         )
         preview = self.preview_request(request)
         task = self.build_task_from_request(request)
-        result = self.execute_task(task, approved=approved)
+        result = self.execute_task(task, approved=approved, launch_dry_run=launch_dry_run)
         stored_task = self.memory.repository.get_task(task.task_id) or task
         return stored_task, result, preview
 
-    def execute_task(self, task: ToolTask, *, approved: bool = False) -> ToolResult:
+    def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
         card = self.registry.pick_card_for_task(
             task,
             preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
@@ -823,7 +823,12 @@ class ToolTeachService:
                 waiting = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=waiting)
                 self.memory.repository.save_result(waiting)
             return waiting
-        payload = adapter.run(card, task, sandbox=False)
+        # FAIL-CLOSED: launch_dry_run controla si ejecutamos sandbox (dry-run) o real
+        # autonomous_external_launch=False → launch_dry_run=True → sandbox=True (NO external HTTP)
+        # autonomous_external_launch=True → launch_dry_run=False → sandbox=False (external HTTP permitido)
+        # Esto es distinto de governance approval (approved parameter)
+        sandbox_mode = launch_dry_run
+        payload = adapter.run(card, task, sandbox=sandbox_mode)
         payload_metadata = dict(payload.get('metadata') or {})
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
