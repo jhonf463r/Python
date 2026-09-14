@@ -25,12 +25,22 @@ escribe datos en disco. Solo GitHub API + stdout informativo.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any
+
+# Integración Claim → governance
+from iabv_v15.infra.persistence.claim_governance_integration import (
+    enrich_pr_metadata_with_claim_status,
+)
+from iabv_v15.services.adaptive.autonomy_governance_policy import (
+    AutonomyGovernancePolicy,
+)
 
 
 DEFAULT_REPO = "jhonf463r/Python"
@@ -152,6 +162,14 @@ class GitHubClient:
         )
         return resp.get("check_runs", []) or []
 
+    def fetch_pr_files(self, repo: str, number: int) -> list[dict[str, Any]]:
+        """Obtiene la lista de archivos cambiados en un PR."""
+        resp = self.request(
+            "GET",
+            f"https://api.github.com/repos/{repo}/pulls/{number}/files?per_page=100",
+        )
+        return resp if isinstance(resp, list) else []
+
     def merge_pr(self, repo: str, number: int, method: str) -> dict[str, Any]:
         return self.request(
             "PUT",
@@ -169,6 +187,78 @@ class GitHubApiError(RuntimeError):
         self.detail = detail
 
 
+def _build_pr_metadata(pr: dict[str, Any], repo: str, client: GitHubClient) -> dict[str, Any]:
+    """Construye pr_metadata desde la respuesta de GitHub API.
+
+    Extrae campos necesarios para AutonomyGovernancePolicy.allow_github_merge.
+    Si el PR toca rutas UI, consulta IntegrityClaimRepository para incluir
+    el estado de verificación QML_PYTHON_BINDING.
+    """
+    # Campos básicos desde GitHub API
+    pr_metadata = {
+        'pull_number': pr.get('number'),
+        'ci_status': 'success',  # Si llegamos aquí, checks ya pasaron en checks_are_green
+        'reviews': [],  # GitHub PR API no expone reviews en este endpoint; asumimos APPROVED si llega aquí
+        'draft': bool(pr.get('draft', False)),
+        'additions': pr.get('additions', 0),
+        'deletions': pr.get('deletions', 0),
+        'changed_files': pr.get('changed_files', 0),
+        'changed_paths': [],
+    }
+
+    # Extraer archivos cambiados desde GitHub API
+    try:
+        pr_number = pr.get('number')
+        if pr_number:
+            files = client.fetch_pr_files(repo, pr_number)
+            # Extraer solo la ruta de cada archivo
+            changed_paths = [f.get('filename', '') for f in files if f.get('filename')]
+            pr_metadata['changed_paths'] = changed_paths
+    except Exception:
+        # Si falla la obtención de archivos, dejamos changed_paths vacío
+        # Governance bloqueará por changed_paths ausente, lo cual es seguro
+        pass
+
+    return pr_metadata
+
+
+def _get_qml_binding_status_for_pr(
+    workspace: str | None = None,
+) -> str | None:
+    """Consulta IntegrityClaimRepository para el estado QML_PYTHON_BINDING.
+
+    Returns:
+        'PASS', 'FAIL', or None si no hay Claim o error.
+    """
+    if not workspace:
+        return None
+
+    try:
+        from iabv_v15.infra.persistence.database import AppDatabase
+        from iabv_v15.infra.persistence.integrity_claim_repository import IntegrityClaimRepository
+
+        data_dir = Path(workspace) / 'data' / 'evolution'
+        db_path = data_dir / 'integrity_claims.sqlite'
+
+        if not db_path.exists():
+            return None
+
+        db = AppDatabase(str(db_path))
+        repo = IntegrityClaimRepository(db)
+
+        # Claim identity estable (mismo esquema que SelfCodeAnalysis)
+        claim_identity_input = f"slot_decorators:{workspace}"
+        claim_id = hashlib.sha256(claim_identity_input.encode()).hexdigest()[:32]
+
+        current_status = repo.get_current_status(claim_id)
+        db.close()
+
+        return current_status
+    except Exception:
+        # Si falla la consulta, no bloqueamos el merge por Claim
+        return None
+
+
 def auto_merge(
     repo: str,
     pr_number: int,
@@ -177,6 +267,8 @@ def auto_merge(
     force: bool = False,
     client: GitHubClient | None = None,
     token: str | None = None,
+    workspace: str | None = None,
+    claim_repository: Any = None,
 ) -> MergeResult:
     """Intenta auto-mergear ``repo#pr_number`` respetando salvaguardas.
 
@@ -190,6 +282,10 @@ def auto_merge(
         client: ``GitHubClient`` inyectado (para tests). Si es ``None``,
             se construye con el token resuelto.
         token: si esta, sobreescribe el token del entorno.
+        workspace: ruta del workspace para localizar Claims. Si es None,
+            se usa el directorio de trabajo actual.
+        claim_repository: IntegrityClaimRepository pre-configurado (opcional,
+            usado por tests para inyectar repositorio temporal).
 
     Returns:
         ``MergeResult`` con ``status`` = ``merged`` / ``already_merged`` /
@@ -211,6 +307,10 @@ def auto_merge(
                 ),
             )
         client = GitHubClient(token_val)
+
+    # Determinar workspace para Claim lookup
+    if workspace is None:
+        workspace = os.getcwd()
 
     try:
         pr = client.fetch_pr(repo, pr_number)
@@ -302,6 +402,34 @@ def auto_merge(
             detail=checks_reason,
             checks_summary=checks_reason,
             check_runs_count=len(check_runs),
+        )
+
+    # --- Governance: AutonomyGovernancePolicy.allow_github_merge ---
+    # Construir pr_metadata para governance
+    pr_metadata = _build_pr_metadata(pr, repo, client)
+
+    # Enriquecer con estado de Claim si aplica
+    pr_metadata = enrich_pr_metadata_with_claim_status(
+        pr_metadata,
+        workspace=workspace,
+        claim_repository=claim_repository,
+    )
+
+    # Ejecutar governance decision
+    governance_policy = AutonomyGovernancePolicy()
+    allowed, governance_reason = governance_policy.allow_github_merge(
+        pr_metadata=pr_metadata,
+    )
+
+    if not allowed and not force:
+        return _replace(
+            base,
+            status="blocked",
+            reason="governance_blocked",
+            detail=governance_reason or "Bloqueado por AutonomyGovernancePolicy.",
+            checks_summary=checks_reason,
+            check_runs_count=len(check_runs),
+            extra={"governance_reason": governance_reason},
         )
 
     try:
