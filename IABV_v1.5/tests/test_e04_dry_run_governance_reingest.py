@@ -714,6 +714,194 @@ def test_e04_real_pipeline_reingest_devin_fail_closed() -> None:
     print('TEST F PASS: reingest Devin fail closed')
 
 
+def test_e04_real_devin_adapter_with_intercepted_http_transport() -> None:
+    """TEST G: REAL DevinApiToolAdapter con transporte HTTP interceptado.
+    
+    Classification: REAL_ADAPTER_INTEGRATION_WITH_SIMULATED_TRANSPORT
+    
+    Este test ejecuta el DevinApiToolAdapter REAL sin reemplazar sus métodos.
+    Solo intercepta el transporte HTTP en el módulo tool_adapters.
+    
+    Cadena probada:
+    ToolTeachService.execute_task()
+    → REAL DevinApiToolAdapter.is_available()
+    → REAL DevinApiToolAdapter.run()
+    → intercepted POST /v1/sessions
+    → intercepted GET /v1/session/{id}
+    → REAL response parsing
+    → ToolResult
+    
+    NO sustituye:
+    - DevinApiToolAdapter.is_available
+    - DevinApiToolAdapter.run
+    
+    SOLO intercepta:
+    - httpx.get
+    - httpx.post
+    """
+    root = _workspace('test_e04_real_adapter_intercepted')
+    try:
+        # Guardar httpx original
+        original_httpx = tool_adapters.httpx
+        
+        # Contadores locales para HTTP calls
+        post_calls = []
+        get_calls = []
+        
+        # Mock response class
+        class MockResponse:
+            def __init__(self, status_code: int, json_data: dict[str, Any] | None = None, text: str = ''):
+                self.status_code = status_code
+                self._json_data = json_data or {}
+                self.text = text
+            
+            def json(self) -> dict[str, Any]:
+                return self._json_data
+        
+        # Mock httpx.post
+        def mock_post(url: str, *, headers: dict[str, str], json: dict[str, Any], timeout: float) -> MockResponse:
+            # Guardar la llamada
+            post_calls.append({
+                'url': url,
+                'headers': headers,
+                'json': json,
+                'timeout': timeout,
+            })
+            
+            # Guard: fallar si intenta alcanzar api.devin.ai real
+            if 'api.devin.ai' not in url:
+                raise AssertionError(f'POST debe ser a api.devin.ai, pero fue a {url}')
+            
+            # Simular respuesta de creación de sesión
+            return MockResponse(
+                status_code=200,
+                json_data={
+                    'session_id': 'test_session_123',
+                    'url': 'https://app.devin.ai/sessions/test_session_123',
+                    'status': 'running',
+                }
+            )
+        
+        # Mock httpx.get
+        def mock_get(url: str, *, headers: dict[str, str], params: dict[str, str] | None = None, timeout: float) -> MockResponse:
+            # Guardar la llamada
+            get_calls.append({
+                'url': url,
+                'headers': headers,
+                'params': params,
+                'timeout': timeout,
+            })
+            
+            # Guard: fallar si intenta alcanzar api.devin.ai real
+            if 'api.devin.ai' not in url:
+                raise AssertionError(f'GET debe ser a api.devin.ai, pero fue a {url}')
+            
+            # Si es availability check (GET /v1/sessions con limit=1)
+            if '/sessions' in url and 'limit' in (params or {}):
+                return MockResponse(status_code=200)
+            
+            # Si es polling de sesión (GET /v1/session/{id})
+            if '/session/' in url:
+                return MockResponse(
+                    status_code=200,
+                    json_data={
+                        'session_id': 'test_session_123',
+                        'status': 'finished',
+                        'structured_output': '[FAKE DEVIN OUTPUT] Test execution completed successfully.',
+                    }
+                )
+            
+            return MockResponse(status_code=200)
+        
+        # Crear mock httpx
+        mock_httpx = Mock()
+        mock_httpx.post = mock_post
+        mock_httpx.get = mock_get
+        mock_httpx.__version__ = '0.24.0'
+        
+        try:
+            # Parchear httpx en el módulo tool_adapters
+            tool_adapters.httpx = mock_httpx
+            
+            # Construir servicio REAL con adapter REAL
+            service = _tool_teach_service_with_devin(root, api_key='test_key')
+            
+            # Verificar que el adapter es REAL (no reemplazado)
+            assert service.adapters['devin_api'].__class__.__name__ == 'DevinApiToolAdapter'
+            assert hasattr(service.adapters['devin_api'], 'is_available')
+            assert hasattr(service.adapters['devin_api'], 'run')
+            
+            # Crear ToolCard realista
+            card = ToolCard(
+                tool_id='devin_api',
+                title='Devin (Cognition AI)',
+                tool_type=ToolType.MCP_CLIENT,
+                description='Sesion autonoma via API REST de Devin para tareas de codigo, shell y navegacion.',
+                adapter_key='devin_api',
+                available=True,
+                requires_human_approval=True,
+                capabilities=['code_assistance', 'shell_execution', 'web_browsing', 'structured_reasoning'],
+                metadata={
+                    'assistant_kind': 'devin',
+                    'task_affinities': ['long_implementation', 'pr_creation', 'refactor', 'test_writing', 'ci_fix'],
+                    'interaction_cost': 'low',
+                    'manual_effort': 'none',
+                    'long_running_capable': True,
+                    'live_desktop_validation_capable': False,
+                    'repo_patch_capable': True,
+                    'reasoning_synthesis_capable': True,
+                    'response_capture_mode': 'tool_result',
+                    'requires_manual_pasteback': False,
+                    'session_scope': 'api_session',
+                    'background_capture_mode': 'devin_api',
+                    'launch_mode': 'api',
+                },
+            )
+            
+            service.memory.repository.save_card(card)
+            
+            # Crear ToolTask
+            task = ToolTask(
+                task_id=str(uuid4()),
+                tool_id='devin_api',
+                title='Real adapter with intercepted transport test',
+                objective='Test real adapter execution with intercepted HTTP transport',
+                metadata={'context_pack': 'Real adapter test context'},
+                approval_decision=ApprovalDecision.APPROVED,
+            )
+            
+            # Ejecutar con approved=True y launch_dry_run=False
+            result = service.execute_task(task, approved=True, launch_dry_run=False)
+        finally:
+            # Restaurar httpx original
+            tool_adapters.httpx = original_httpx
+        
+        # Afirmaciones
+        assert result.success == True, 'REAL adapter debe retornar success=True'
+        assert result.metadata.get('sandbox') == False, 'Metadata debe indicar sandbox=False'
+        assert result.execution_state.sandboxed == False, 'Execution state debe indicar sandboxed=False'
+        
+        # Verificar HTTP calls
+        assert len(post_calls) == 1, f'Debe haber exactamente 1 POST /v1/sessions, pero hubo {len(post_calls)}'
+        assert post_calls[0]['url'] == 'https://api.devin.ai/v1/sessions'
+        assert 'prompt' in post_calls[0]['json']
+        assert 'real adapter execution' in post_calls[0]['json']['prompt']
+        
+        # Debe haber al menos 1 GET (availability check + polling)
+        assert len(get_calls) >= 1, f'Debe haber al menos 1 GET call, pero hubo {len(get_calls)}'
+        
+        # Verificar que hubo polling
+        polling_calls = [c for c in get_calls if '/session/' in c['url']]
+        assert len(polling_calls) >= 1, f'Debe haber al menos 1 GET /v1/session/{{id}} para polling'
+        
+        # Verificar que el output contiene el resultado fake
+        assert 'FAKE DEVIN OUTPUT' in result.output_text, 'Output debe contener el resultado fake del adapter'
+        
+        print('TEST G PASS: REAL DevinApiToolAdapter ejecutado con transporte HTTP interceptado')
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 if __name__ == '__main__':
     print('=== E04: Pipeline Integration Tests (REAL) - ORDER-INDEPENDENT ===')
     print()
@@ -740,6 +928,10 @@ if __name__ == '__main__':
     print()
     print('--- TEST F: Reingest Devin fail closed ---')
     test_e04_real_pipeline_reingest_devin_fail_closed()
+    
+    print()
+    print('--- TEST G: REAL DevinApiToolAdapter con transporte HTTP interceptado ---')
+    test_e04_real_devin_adapter_with_intercepted_http_transport()
     
     print()
     print('=== E04: Todos los tests de pipeline REAL pasaron (ORDER-INDEPENDENT) ===')
