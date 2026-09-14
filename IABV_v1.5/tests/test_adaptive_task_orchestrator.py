@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from uuid import uuid4
 
@@ -954,6 +955,7 @@ def test_adaptive_orchestrator_prefers_historical_assistant_when_history_is_clea
             auto_route=True,
             enable_planning=True,
             site_hint='wplay',
+            conversation_context=[{'role': 'system', 'content': 'isolated historical-assistant scenario'}],
             metadata={
                 'site_id': 'wplay',
                 'live_audit': {'summary': 'Bridge lag persistente despues de la ensenanza.', 'decision_action': 'consult_codex'},
@@ -1121,6 +1123,139 @@ def test_adaptive_orchestrator_finalize_with_run_records_learning_and_reuses_it(
     assert decision_context['metadata']['preferred_assistant_kind'] == 'claude'
     assert decision_context['metadata']['adaptive_learning_summary']['recommended_assistant_kind'] == 'claude'
     assert decision_context['metadata']['learned_patterns']
+
+
+def test_c09a_persisted_outcome_recommendation_changes_reconstructed_governance(monkeypatch) -> None:
+    """C09-A: only Run N's persisted recommendation differs at N+1."""
+    monkeypatch.setenv('IABV_SQLITE_WAL', '0')
+    store_n = _workspace('c09a_store_n')
+    request = InferenceRequest(
+        user_goal='revisa este problema de codigo en Wplay con el mismo bridge lag',
+        auto_route=True,
+        enable_planning=True,
+        site_hint='wplay',
+        conversation_context=[{'role': 'system', 'content': 'C09 controlled scenario'}],
+    )
+    producer, _ = _orchestrator(store_n)
+    for _ in range(3):
+        producer.context_assembler.hidden_incident_repository.save(
+            HiddenIncident(site_id='wplay', incident_kind='bridge_lag', summary='C09 technical pressure')
+        )
+    _, _, session_n = producer.handle_request(request)
+    run_n = RunRecord(
+        request=request,
+        result=InferenceResult(
+            request_id='c09-run-n', provider_name='Claude', reasoning_mode=ReasoningMode.LOCAL,
+            summary='Claude resolvio el bridge lag.', inferred_task=request.user_goal,
+            confidence=0.92, detected_role=TaskRole.KNOWLEDGE, executor_model='claude-sonnet',
+        ),
+        route=RoleRoute(
+            task_role=TaskRole.KNOWLEDGE, role_title='Knowledge', provider_name='Claude',
+            model_profile_id='claude-profile', model_name='claude-sonnet', reason='C09 real outcome',
+        ),
+        status=RunStatus.SUCCESS,
+    )
+    saved_n = producer.finalize_with_run(session_n.session_id, run_n)
+    assert saved_n is not None and saved_n.metadata['adaptive_learning']['records']
+    assert saved_n.metadata['adaptive_learning']['records'][0]['lab_run_id']
+    repository = producer.context_assembler.experiment_lab_repository
+    assert repository is not None
+    produced = repository.list_recommendations(domain=ExperimentDomain.CODE.value, subject_key='wplay', limit=3)
+    produced_recommendation = next(item for item in produced if item.recommended_assistant_kind == 'claude')
+
+    # Both N+1 stores start as byte-level copies of persisted N state.
+    control_store = store_n.with_name(f'{store_n.name}_control')
+    experiment_store = store_n.with_name(f'{store_n.name}_experiment')
+    shutil.copytree(store_n, control_store)
+    shutil.copytree(store_n, experiment_store)
+    control_db = AppDatabase(str(control_store / 'app.sqlite'))
+    experiment_db = AppDatabase(str(experiment_store / 'app.sqlite'))
+    assert control_db.sqlite_path != experiment_db.sqlite_path
+    assert control_db.sqlite_path != repository.db.sqlite_path
+    assert experiment_db.sqlite_path != repository.db.sqlite_path
+    control_db.execute('DELETE FROM experiment_recommendations')
+
+    control, _ = _orchestrator(control_store)
+    experiment, _ = _orchestrator(experiment_store)
+    control_repository = control.context_assembler.experiment_lab_repository
+    experiment_repository = experiment.context_assembler.experiment_lab_repository
+    assert control_repository is not None and experiment_repository is not None
+    assert control_repository is not experiment_repository
+    assert len(control_repository.list_recommendations(limit=10)) == 0
+    experiment_rows = experiment_repository.list_recommendations(limit=10)
+    assert len(experiment_rows) == len(repository.list_recommendations(limit=10))
+    assert any(item.recommendation_id == produced_recommendation.recommendation_id for item in experiment_rows)
+
+    control_request = request.model_copy(deep=True)
+    experiment_request = request.model_copy(deep=True)
+    assert control_request == experiment_request and control_request is not experiment_request
+    _, control_result, _ = control.handle_request(control_request)
+    control_context = control_result.raw_output['adaptive_session']['context']
+    control_decision = control_result.raw_output['decision_context']
+    assert control_context['experiment_insights'] == []  # NC1
+    assert control_decision['governance']['assistant_kind'] == 'codex'  # FP8 default
+
+    _, experiment_result, _ = experiment.handle_request(experiment_request)
+    experiment_context = experiment_result.raw_output['adaptive_session']['context']
+    experiment_decision = experiment_result.raw_output['decision_context']
+    retrieved_ids = {item['recommendation_id'] for item in experiment_context['experiment_insights']}
+
+    assert produced_recommendation.recommendation_id in retrieved_ids
+    assert control_context['site_id'] == experiment_context['site_id'] == 'wplay'
+    assert control_context['recent_incidents'] == experiment_context['recent_incidents']
+    assert control_context['capability_snapshot'] == experiment_context['capability_snapshot']
+    assert experiment_decision['governance']['assistant_kind'] == 'claude'
+    assert control_decision['governance']['recommended_action'] == 'consult_codex'
+    assert experiment_decision['governance']['recommended_action'] == 'consult_claude'
+    assert control_decision['governance'] != experiment_decision['governance']
+
+
+def test_c09_negative_controls_do_not_treat_recommendation_presence_as_influence() -> None:
+    """C09 NC2/NC3/NC4 use the public orchestration path, not a helper."""
+    request = InferenceRequest(
+        user_goal='revisa este problema de codigo en Wplay con el mismo bridge lag',
+        auto_route=True,
+        enable_planning=True,
+        site_hint='wplay',
+        conversation_context=[{'role': 'system', 'content': 'C09 negative controls'}],
+    )
+    irrelevant, _ = _orchestrator(_workspace('c09_irrelevant_recommendations'))
+    for _ in range(3):
+        irrelevant.context_assembler.hidden_incident_repository.save(
+            HiddenIncident(site_id='wplay', incident_kind='bridge_lag', summary='C09 technical pressure')
+        )
+    repository = irrelevant.context_assembler.experiment_lab_repository
+    assert repository is not None
+    # NC2: matching subject but a domain the request does not retrieve.
+    repository.save_recommendation(ExperimentRecommendation(
+        domain=ExperimentDomain.OCR, subject_key='wplay', recommended_route=EvaluationRoute.UI,
+        recommended_assistant_kind='claude', score=0.99, confidence=0.99, rationale='NC2',
+    ))
+    # NC4: matching domain but an unrelated subject.
+    repository.save_recommendation(ExperimentRecommendation(
+        domain=ExperimentDomain.CODE, subject_key='other-subject', recommended_route=EvaluationRoute.CODE_AGENT,
+        recommended_assistant_kind='claude', score=0.99, confidence=0.99, rationale='NC4',
+    ))
+    _, irrelevant_result, _ = irrelevant.handle_request(request)
+    assert irrelevant_result.raw_output['adaptive_session']['context']['experiment_insights'] == []
+    assert irrelevant_result.raw_output['decision_context']['governance']['assistant_kind'] == 'codex'
+
+    same_default, _ = _orchestrator(_workspace('c09_same_default_recommendation'))
+    for _ in range(3):
+        same_default.context_assembler.hidden_incident_repository.save(
+            HiddenIncident(site_id='wplay', incident_kind='bridge_lag', summary='C09 technical pressure')
+        )
+    default_repository = same_default.context_assembler.experiment_lab_repository
+    assert default_repository is not None
+    # NC3: a relevant record that repeats the no-recommendation default.
+    default_repository.save_recommendation(ExperimentRecommendation(
+        domain=ExperimentDomain.CODE, subject_key='wplay', recommended_route=EvaluationRoute.CODE_AGENT,
+        recommended_assistant_kind='codex', score=0.99, confidence=0.99, rationale='NC3',
+    ))
+    _, same_default_result, _ = same_default.handle_request(request)
+    assert same_default_result.raw_output['adaptive_session']['context']['experiment_insights']
+    assert same_default_result.raw_output['decision_context']['governance']['assistant_kind'] == 'codex'
+    assert same_default_result.raw_output['decision_context']['governance']['recommended_action'] == 'consult_codex'
 
 
 
