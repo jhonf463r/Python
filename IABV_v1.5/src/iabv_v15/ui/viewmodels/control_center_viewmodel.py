@@ -4801,6 +4801,16 @@ class ControlCenterViewModel(QObject):
         'enfoca', 'ventana', 'problema', 'verificacion', 'verificación',
         'permito', 'autorizo', 'observar', 'observa', 'mira', 'mirar',
     )
+    _EXTERNAL_ACTION_NEGATION_TERMS: tuple[str, ...] = (
+        'no abras', 'no uses', 'no hagas', 'no consultes', 'no busques',
+        'no inicies', 'no intentes', 'no abras ', 'no uses ', 'no hagas ',
+        'no consultes ', 'no busques ', 'no inicies ', 'no intentes ',
+        'evita abrir', 'evita usar', 'evita consultar', 'evita buscar',
+        'evitemos abrir', 'evitemos usar', 'evitemos consultar',
+        'prohibido abrir', 'prohibido usar', 'prohibido consultar',
+        'sin abrir', 'sin usar', 'sin consultar',
+        'nada de', 'nada de chat', 'nada de navegador',
+    )
 
     def _classify_external_action_followup(
         self,
@@ -4815,6 +4825,10 @@ class ControlCenterViewModel(QObject):
         semantically equivalent instructions such as "usa un navegador mio".
         This classifier keeps the logic local and evidence-based: it only
         activates when there is a live incident or recent external failure.
+
+        R40-A11-FIX: explicit negation (e.g., "NO abras ChatGPT") now takes
+        priority over positive intent classification. If negation is detected,
+        the method returns 'none' intent regardless of other positive terms.
         """
         normalized = self._normalized_command_text(message)
         if not normalized:
@@ -4823,6 +4837,17 @@ class ControlCenterViewModel(QObject):
         has_context = bool(failure_payload) or bool(active_incident)
         if not has_context:
             return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
+
+        # R40-A11-FIX: check for explicit negation first
+        # Use specific negation+action patterns to avoid false positives
+        negation_hits = [term for term in self._EXTERNAL_ACTION_NEGATION_TERMS if term in normalized]
+        if negation_hits:
+            return {
+                'intent': 'none',
+                'confidence': 0.0,
+                'matched_terms': negation_hits[:4],
+                'negation_detected': True,
+            }
 
         matched: list[str] = []
         score = 0.0

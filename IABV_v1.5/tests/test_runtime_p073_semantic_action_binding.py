@@ -52,6 +52,7 @@ def _semantic_vm(viewmodel_cls, *, active_incident: dict | None = None):
     vm._EXTERNAL_ACTION_OWNERSHIP_TERMS = viewmodel_cls._EXTERNAL_ACTION_OWNERSHIP_TERMS
     vm._EXTERNAL_ACTION_DO_TERMS = viewmodel_cls._EXTERNAL_ACTION_DO_TERMS
     vm._EXTERNAL_ACTION_SHOW_TERMS = viewmodel_cls._EXTERNAL_ACTION_SHOW_TERMS
+    vm._EXTERNAL_ACTION_NEGATION_TERMS = viewmodel_cls._EXTERNAL_ACTION_NEGATION_TERMS
     vm._BROWSER_APP_TOKENS = viewmodel_cls._BROWSER_APP_TOKENS
     vm._ASSISTANT_WINDOW_TOKENS = viewmodel_cls._ASSISTANT_WINDOW_TOKENS
     vm._SECURITY_RETEST_PATTERNS = viewmodel_cls._SECURITY_RETEST_PATTERNS
@@ -636,3 +637,149 @@ def test_bare_sigue_uses_structured_continuity_not_local_worker(viewmodel_cls):
     assert 'sin abrir un worker pesado' in response
     traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
     assert 'continuity_message_answered' in traced_kinds
+
+
+# R40-A11-FIX: Negation detection tests
+
+
+def test_negation_no_abras_chatgpt_blocks_launch(viewmodel_cls):
+    """R40-A11-FIX: Explicit negation 'NO abras ChatGPT' must block launch."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'NO abras ChatGPT',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+    assert 'no abras' in result['matched_terms']
+
+
+def test_negation_no_uses_navegador_blocks_launch(viewmodel_cls):
+    """R40-A11-FIX: Explicit negation 'NO uses navegador' must block launch."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'NO uses navegador',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+
+
+def test_negation_no_hagas_consulta_externa_blocks_launch(viewmodel_cls):
+    """R40-A11-FIX: Explicit negation 'NO hagas una consulta externa' must block launch."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'NO hagas una consulta externa',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+
+
+def test_negation_no_quiero_abrir_does_not_block(viewmodel_cls):
+    """R40-A11-FIX: 'no quiero abrir' is not a specific negation pattern, should not block with negation_detected."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'no quiero abrir ChatGPT',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    # The message may have some confidence from other terms, but should NOT be marked as negation
+    assert result.get('negation_detected') is not True
+    # Intent may be 'none' if no positive pattern matches
+    assert result['intent'] == 'none'
+
+
+def test_positive_abre_sesion_governed_chatgpt_allows_launch(viewmodel_cls):
+    """R40-A11-FIX: Positive intent 'usa un navegador mio' should classify as positive (existing behavior)."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'usa un navegador mio con ChatGPT',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] in {'user_browser_session_requested', 'human_login_available'}
+    assert result['confidence'] >= 0.5
+    assert result.get('negation_detected') is not True
+
+
+def test_positive_consulta_chatgpt_allows_launch(viewmodel_cls):
+    """R40-A11-FIX: Positive intent 'Consulta ChatGPT' should classify as positive."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'Consulta ChatGPT',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] in {'user_browser_session_requested', 'retry_external_consultation_requested'}
+    assert result['confidence'] >= 0.5
+    assert result.get('negation_detected') is not True
+
+
+def test_positive_intent_still_passes_through_governance(viewmodel_cls):
+    """R40-A11-FIX: Positive intent should still trigger governed browser session via governance."""
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    msg = 'usa un navegador mio'
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)
+
+    assert handled is True
+    vm._launch_governed_browser_session.assert_called_once()
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'semantic_action_binding_result' in traced_kinds
+    assert 'external_followup_action_executed' in traced_kinds
+
+
+def test_negation_does_not_reach_launch_governed_browser_session(viewmodel_cls):
+    """R40-A11-FIX: Negative intent must never reach launch_governed_browser_session."""
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    msg = 'NO abras ChatGPT'
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)
+
+    assert handled is False
+    vm._launch_governed_browser_session.assert_not_called()
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'semantic_action_binding_result' in traced_kinds
+    assert 'external_followup_action_executed' not in traced_kinds
+
+
+def test_negation_metadata_preserves_original_incident(viewmodel_cls):
+    """R40-A11-FIX: Negative intent should not convert incident metadata into false authorization."""
+    vm = _semantic_vm(viewmodel_cls)
+    incident = {
+        'incident_id': 'incident-test',
+        'assistant_kind': 'chatgpt',
+        'assistant_title': 'ChatGPT',
+        'terminal_state': 'blocked_by_security_verification',
+        'resolved': False,
+    }
+    vm._get_active_incident = MagicMock(return_value=incident)
+
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'NO abras ChatGPT',
+        active_incident=incident,
+    )
+
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+    # Incident metadata should remain unchanged
+    assert incident['resolved'] is False
