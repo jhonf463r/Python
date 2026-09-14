@@ -700,7 +700,7 @@ def test_negation_no_quiero_abrir_does_not_block(viewmodel_cls):
     assert result['intent'] == 'none'
 
 
-def test_positive_abre_sesion_governed_chatgpt_allows_launch(viewmodel_cls):
+def test_positive_usa_navegador_mio_allows_launch(viewmodel_cls):
     """R40-A11-FIX: Positive intent 'usa un navegador mio' should classify as positive (existing behavior)."""
     vm = _semantic_vm(viewmodel_cls)
     result = viewmodel_cls._classify_external_action_followup(
@@ -712,6 +712,88 @@ def test_positive_abre_sesion_governed_chatgpt_allows_launch(viewmodel_cls):
     assert result['intent'] in {'user_browser_session_requested', 'human_login_available'}
     assert result['confidence'] >= 0.5
     assert result.get('negation_detected') is not True
+
+
+# R40-A11-FIX2: Additional negation pattern tests (infinitive variants)
+
+
+def test_negation_no_usar_navegador_blocks_launch(viewmodel_cls):
+    """R40-A11-FIX2: 'no usar navegador' (infinitive) must block launch."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'no usar navegador',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+    assert 'no usar' in result['matched_terms']
+
+
+def test_negation_no_utilizar_navegador_blocks_launch(viewmodel_cls):
+    """R40-A11-FIX2: 'no utilizar navegador' (infinitive) must block launch."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'no utilizar navegador',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+    assert 'no utilizar' in result['matched_terms']
+
+
+def test_negation_no_utilices_navegador_blocks_launch(viewmodel_cls):
+    """R40-A11-FIX2: 'no utilices el navegador' (imperative) must block launch."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'no utilices el navegador',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+    assert 'no utilices' in result['matched_terms']
+
+
+def test_negation_no_quiero_usar_navegador_blocks_launch(viewmodel_cls):
+    """R40-A11-FIX2: 'no quiero usar el navegador' must not transform into positive intent."""
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'no quiero usar el navegador',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    # Should be blocked by negation detection
+    assert result['intent'] == 'none'
+    assert result['confidence'] == 0.0
+    assert result.get('negation_detected') is True
+
+
+def test_positive_abre_sesion_gobernada_chatgpt_not_false_positive(viewmodel_cls):
+    """R40-A11-FIX2: 'abre una sesión gobernada de ChatGPT' must NOT be marked as negation.
+
+    This tests the fix for the false positive where 'nada de' in 'gobernada de'
+    was incorrectly triggering negation detection.
+    """
+    vm = _semantic_vm(viewmodel_cls)
+    result = viewmodel_cls._classify_external_action_followup(
+        vm,
+        'abre una sesión gobernada de ChatGPT',
+        failure_payload=vm._last_external_failure_payload,
+    )
+
+    # Must NOT be marked as negation
+    assert result.get('negation_detected') is not True
+    # Should classify as positive intent (show window or browser session)
+    assert result['intent'] in {'show_problem_window_requested', 'user_browser_session_requested', 'human_login_available'}
 
 
 def test_positive_consulta_chatgpt_allows_launch(viewmodel_cls):
@@ -749,6 +831,22 @@ def test_negation_does_not_reach_launch_governed_browser_session(viewmodel_cls):
     tracer = MagicMock()
     vm = _semantic_vm(viewmodel_cls)
     msg = 'NO abras ChatGPT'
+
+    with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
+        handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)
+
+    assert handled is False
+    vm._launch_governed_browser_session.assert_not_called()
+    traced_kinds = [call.args[0] for call in tracer.trace.call_args_list if call.args]
+    assert 'semantic_action_binding_result' in traced_kinds
+    assert 'external_followup_action_executed' not in traced_kinds
+
+
+def test_negation_no_usar_navegador_does_not_reach_launch(viewmodel_cls):
+    """R40-A11-FIX2: 'no usar navegador' (infinitive) must never reach launch_governed_browser_session."""
+    tracer = MagicMock()
+    vm = _semantic_vm(viewmodel_cls)
+    msg = 'no usar navegador'
 
     with patch('iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer', return_value=tracer):
         handled = viewmodel_cls._try_handle_external_action_followup(vm, msg)

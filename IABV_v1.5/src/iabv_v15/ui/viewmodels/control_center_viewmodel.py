@@ -4803,13 +4803,13 @@ class ControlCenterViewModel(QObject):
     )
     _EXTERNAL_ACTION_NEGATION_TERMS: tuple[str, ...] = (
         'no abras', 'no uses', 'no hagas', 'no consultes', 'no busques',
-        'no inicies', 'no intentes', 'no abras ', 'no uses ', 'no hagas ',
-        'no consultes ', 'no busques ', 'no inicies ', 'no intentes ',
+        'no inicies', 'no intentes',
+        'no usar', 'no utilizar', 'no consultar', 'no buscar',
+        'no utilices',
         'evita abrir', 'evita usar', 'evita consultar', 'evita buscar',
         'evitemos abrir', 'evitemos usar', 'evitemos consultar',
         'prohibido abrir', 'prohibido usar', 'prohibido consultar',
         'sin abrir', 'sin usar', 'sin consultar',
-        'nada de', 'nada de chat', 'nada de navegador',
     )
 
     def _classify_external_action_followup(
@@ -4826,9 +4826,10 @@ class ControlCenterViewModel(QObject):
         This classifier keeps the logic local and evidence-based: it only
         activates when there is a live incident or recent external failure.
 
-        R40-A11-FIX: explicit negation (e.g., "NO abras ChatGPT") now takes
-        priority over positive intent classification. If negation is detected,
-        the method returns 'none' intent regardless of other positive terms.
+        R40-A11-FIX2: explicit negation (e.g., "NO abras ChatGPT", "no usar navegador")
+        now takes priority over positive intent classification. Negation detection
+        uses word-boundary matching to avoid false positives (e.g., "nada de" in "gobernada de").
+        If negation is detected, the method returns 'none' intent regardless of other positive terms.
         """
         normalized = self._normalized_command_text(message)
         if not normalized:
@@ -4838,9 +4839,15 @@ class ControlCenterViewModel(QObject):
         if not has_context:
             return {'intent': 'none', 'confidence': 0.0, 'matched_terms': []}
 
-        # R40-A11-FIX: check for explicit negation first
-        # Use specific negation+action patterns to avoid false positives
-        negation_hits = [term for term in self._EXTERNAL_ACTION_NEGATION_TERMS if term in normalized]
+        # R40-A11-FIX2: check for explicit negation first
+        # Use word-boundary matching to avoid false positives (e.g., "nada de" in "gobernada de")
+        words = normalized.split()
+        negation_hits = []
+        for term in self._EXTERNAL_ACTION_NEGATION_TERMS:
+            term_words = term.split()
+            # Check if all words in the term appear as complete words in the message
+            if all(tw in words for tw in term_words):
+                negation_hits.append(term)
         if negation_hits:
             return {
                 'intent': 'none',
