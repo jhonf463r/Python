@@ -1873,6 +1873,28 @@ class DevinApiToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        
+        # FAIL-CLOSED: sandbox=True significa NO external HTTP, NO remote side effect
+        if sandbox:
+            return {
+                'success': True,
+                'output_text': f'[SANDBOX] Simulación de Devin para: {task.objective[:100]}...',
+                'extracted_data': {
+                    'session_id': 'sandbox_simulated',
+                    'session_url': 'sandbox_simulated',
+                },
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {
+                    'sandbox': True,
+                    'tool_id': card.tool_id,
+                    'devin_session_status': 'sandboxed',
+                    'state_hint': 'sandboxed',
+                },
+            }
+        
+        # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         if httpx is None:
             return {
                 'success': False,
@@ -1966,15 +1988,14 @@ class DevinApiToolAdapter:
                 'devin_session_status': session_status,
             },
         }
-        if not sandbox:
-            telemetry = ToolAdapter._build_worker_telemetry(
-                result=result,
-                worker_kind='devin',
-                assistant_kind='devin_api',
-                worker_id=session_id,
-                task_packet_id=str(task.metadata.get('task_packet_id') or '') if task.metadata else '',
-            )
-            result = ToolAdapter._stamp_telemetry(result, telemetry)
+        telemetry = ToolAdapter._build_worker_telemetry(
+            result=result,
+            worker_kind='devin',
+            assistant_kind='devin_api',
+            worker_id=session_id,
+            task_packet_id=str(task.metadata.get('task_packet_id') or '') if task.metadata else '',
+        )
+        result = ToolAdapter._stamp_telemetry(result, telemetry)
         return result
 
 
