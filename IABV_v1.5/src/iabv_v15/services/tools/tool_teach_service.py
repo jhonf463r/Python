@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import re
 from collections import Counter
 from datetime import datetime, timezone
@@ -542,6 +543,9 @@ class ToolTeachService:
         selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
         synaptic_decision = self._synaptic_decision_for_request(request)
         synaptic_preferred_assistant_kind = str(synaptic_decision.get('selected_assistant_kind') or '')
+        
+        # Indicador de que synaptic routing tiene autoridad sobre la selección
+        synaptic_selection_authoritative = False
         if synaptic_preferred_assistant_kind and not str(goal_parameters.get('tool_id') or '').strip():
             preferred_card = self.registry.pick_card_for_task(
                 ToolTask(
@@ -553,10 +557,21 @@ class ToolTeachService:
                 preferred_assistant_kind=synaptic_preferred_assistant_kind,
             )
             if preferred_card is not None:
+                # Synaptic routing tiene autoridad: usar su selección directamente
                 suggested_tool_id = preferred_card.tool_id
+                synaptic_selection_authoritative = True
+                # Llamar a _select_mode() para metadata, pero ignorar su selected_tool_id
                 selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
-        selection = self._enforce_explicit_external_selection(request=request, selection=selection, suggested_tool_id=suggested_tool_id)
-        tool_id = str(selection.selected_tool_id or suggested_tool_id)
+        
+        # Si synaptic routing no tiene autoridad, permitir que _enforce_explicit_external_selection() modifique
+        if not synaptic_selection_authoritative:
+            selection = self._enforce_explicit_external_selection(request=request, selection=selection, suggested_tool_id=suggested_tool_id)
+        
+        # Si synaptic routing tiene autoridad, usar su tool_id directamente
+        if synaptic_selection_authoritative:
+            tool_id = suggested_tool_id
+        else:
+            tool_id = str(selection.selected_tool_id or suggested_tool_id)
         reusable_pattern = self._pattern_from_selection(selection)
         actions = self._build_actions(request, tool_id, reusable_pattern)
         now = datetime.now(timezone.utc).isoformat()
@@ -758,7 +773,17 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
             return result
         adapter = self.adapters.get(card.adapter_key)
-        if adapter is None or not adapter.is_available(card, dry_run=launch_dry_run):
+        # Verificar disponibilidad del adapter
+        # Nota: Algunos adapters tienen is_available(card, dry_run=False), otros solo is_available(card)
+        # Usar introspección para evitar TypeError
+        adapter_available = False
+        if adapter is not None:
+            sig = inspect.signature(adapter.is_available)
+            if 'dry_run' in sig.parameters:
+                adapter_available = adapter.is_available(card, dry_run=launch_dry_run)
+            else:
+                adapter_available = adapter.is_available(card)
+        if not adapter_available:
             result = ToolResult(
                 task_id=task.task_id,
                 tool_id=card.tool_id,
