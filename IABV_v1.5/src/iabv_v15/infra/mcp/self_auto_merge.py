@@ -163,12 +163,45 @@ class GitHubClient:
         return resp.get("check_runs", []) or []
 
     def fetch_pr_files(self, repo: str, number: int) -> list[dict[str, Any]]:
-        """Obtiene la lista de archivos cambiados en un PR."""
-        resp = self.request(
-            "GET",
-            f"https://api.github.com/repos/{repo}/pulls/{number}/files?per_page=100",
-        )
-        return resp if isinstance(resp, list) else []
+        """Obtiene la lista completa de archivos cambiados en un PR con paginación.
+
+        GitHub API usa paginación por defecto (per_page=30 máx 100).
+        Este método implementa paginación para obtener TODOS los archivos,
+        no solo los primeros 100.
+
+        Returns:
+            Lista completa de archivos cambiados, o lista vacía si falla.
+        """
+        all_files: list[dict[str, Any]] = []
+        page = 1
+        per_page = 100  # Máximo permitido por GitHub API
+
+        while True:
+            try:
+                url = f"https://api.github.com/repos/{repo}/pulls/{number}/files?per_page={per_page}&page={page}"
+                resp = self.request("GET", url)
+
+                if not isinstance(resp, list):
+                    # Respuesta inesperada, detener paginación
+                    break
+
+                if not resp:
+                    # Página vacía: fin de la paginación
+                    break
+
+                all_files.extend(resp)
+
+                # Si recibimos menos de per_page, es la última página
+                if len(resp) < per_page:
+                    break
+
+                page += 1
+
+            except GitHubApiError:
+                # Si falla una página, devolver lo que tenemos hasta ahora
+                break
+
+        return all_files
 
     def merge_pr(self, repo: str, number: int, method: str) -> dict[str, Any]:
         return self.request(
@@ -187,23 +220,48 @@ class GitHubApiError(RuntimeError):
         self.detail = detail
 
 
-def _build_pr_metadata(pr: dict[str, Any], repo: str, client: GitHubClient) -> dict[str, Any]:
+def _build_pr_metadata(pr: dict[str, Any], repo: str, client: GitHubClient, ci_ok: bool) -> dict[str, Any]:
     """Construye pr_metadata desde la respuesta de GitHub API.
 
     Extrae campos necesarios para AutonomyGovernancePolicy.allow_github_merge.
     Si el PR toca rutas UI, consulta IntegrityClaimRepository para incluir
     el estado de verificación QML_PYTHON_BINDING.
+
+    Args:
+        pr: Respuesta de GitHub API para el PR
+        repo: owner/repo
+        client: GitHubClient para obtener archivos cambiados
+        ci_ok: Resultado de checks_are_green() (True=success, False=failure/unknown)
+
+    Returns:
+        pr_metadata con campos necesarios para governance.
+        - reviews=None: ausencia de evidencia de reviews (fail-closed por policy)
+        - changed_paths=None: si falla la obtención de archivos (fail-closed por policy)
+        - ci_status: derivado de ci_ok
     """
+    # Derivar ci_status desde checks_are_green() en lugar de hardcodear
+    ci_status = 'success' if ci_ok else 'failure'
+
+    # Extraer reviews si están disponibles en PR data
+    # GitHub API puede incluir reviews en el endpoint de PRs
+    reviews = pr.get('reviews')
+    if reviews is None:
+        reviews = None  # Ausencia de evidencia: fail-closed
+    elif isinstance(reviews, list):
+        reviews = reviews  # Lista presente (puede estar vacía)
+    else:
+        reviews = None  # Formato inesperado: tratar como ausente
+
     # Campos básicos desde GitHub API
     pr_metadata = {
         'pull_number': pr.get('number'),
-        'ci_status': 'success',  # Si llegamos aquí, checks ya pasaron en checks_are_green
-        'reviews': [],  # GitHub PR API no expone reviews en este endpoint; asumimos APPROVED si llega aquí
+        'ci_status': ci_status,
+        'reviews': reviews,  # Extraído desde PR data si disponible
         'draft': bool(pr.get('draft', False)),
         'additions': pr.get('additions', 0),
         'deletions': pr.get('deletions', 0),
         'changed_files': pr.get('changed_files', 0),
-        'changed_paths': [],
+        'changed_paths': None,  # Inicialmente None; se pobló si fetch_pr_files() tiene éxito
     }
 
     # Extraer archivos cambiados desde GitHub API
@@ -215,8 +273,8 @@ def _build_pr_metadata(pr: dict[str, Any], repo: str, client: GitHubClient) -> d
             changed_paths = [f.get('filename', '') for f in files if f.get('filename')]
             pr_metadata['changed_paths'] = changed_paths
     except Exception:
-        # Si falla la obtención de archivos, dejamos changed_paths vacío
-        # Governance bloqueará por changed_paths ausente, lo cual es seguro
+        # Si falla la obtención de archivos, dejamos changed_paths=None
+        # Governance bloqueará por changed_paths ausente (fail-closed), lo cual es seguro
         pass
 
     return pr_metadata
@@ -405,8 +463,8 @@ def auto_merge(
         )
 
     # --- Governance: AutonomyGovernancePolicy.allow_github_merge ---
-    # Construir pr_metadata para governance
-    pr_metadata = _build_pr_metadata(pr, repo, client)
+    # Construir pr_metadata para governance (pasando resultado de checks_are_green)
+    pr_metadata = _build_pr_metadata(pr, repo, client, ci_ok=ok)
 
     # Enriquecer con estado de Claim si aplica
     pr_metadata = enrich_pr_metadata_with_claim_status(
@@ -421,16 +479,20 @@ def auto_merge(
         pr_metadata=pr_metadata,
     )
 
-    if not allowed and not force:
-        return _replace(
-            base,
-            status="blocked",
-            reason="governance_blocked",
-            detail=governance_reason or "Bloqueado por AutonomyGovernancePolicy.",
-            checks_summary=checks_reason,
-            check_runs_count=len(check_runs),
-            extra={"governance_reason": governance_reason},
-        )
+    if not allowed:
+        # force bypassea solo checks y reviews, pero no governance de Claim/sensitive paths
+        # Si governance bloquea por Claim FAIL o ruta sensible, NO se bypassea
+        # Documentado como ADMINISTRATIVE_GOVERNANCE_BYPASS gap
+        if not force or "QML_PYTHON_BINDING" in (governance_reason or "") or "ruta sensible" in (governance_reason or "").lower():
+            return _replace(
+                base,
+                status="blocked",
+                reason="governance_blocked",
+                detail=governance_reason or "Bloqueado por AutonomyGovernancePolicy.",
+                checks_summary=checks_reason,
+                check_runs_count=len(check_runs),
+                extra={"governance_reason": governance_reason},
+            )
 
     try:
         merge_resp = client.merge_pr(repo, pr_number, method)

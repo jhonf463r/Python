@@ -145,6 +145,17 @@ def test_operational_claim_pass_governance_allows_merge(claim_repo, workspace):
     )
 
     # Act: Llamar al entrypoint real auto_merge()
+    # NOTA: Como reviews=None bloquea, necesitamos simular reviews=[] para probar Claim específico
+    # Modificamos FakeGitHubClient para incluir reviews en los datos
+    pr_data["reviews"] = [{"state": "APPROVED"}]  # Simular reviews presentes
+
+    fake_client = FakeGitHubClient(
+        pr_data=pr_data,
+        files_data=files_data,
+        check_runs_data=check_runs_data,
+        merge_response=merge_response,
+    )
+
     result = auto_merge(
         repo="test/repo",
         pr_number=123,
@@ -199,6 +210,7 @@ def test_operational_claim_fail_governance_blocks_merge(claim_repo, workspace):
         "additions": 50,
         "deletions": 10,
         "changed_files": 2,
+        "reviews": [{"state": "APPROVED"}],  # Simular reviews presentes
     }
 
     # El PR toca un archivo UI
@@ -278,6 +290,7 @@ def test_operational_claim_fail_ignored_for_non_ui_pr(claim_repo, workspace):
         "additions": 50,
         "deletions": 10,
         "changed_files": 2,
+        "reviews": [{"state": "APPROVED"}],  # Simular reviews presentes
     }
 
     # El PR toca un archivo NO UI
@@ -341,6 +354,7 @@ def test_operational_governance_connection_required(workspace):
         "additions": 50,
         "deletions": 10,
         "changed_files": 2,
+        "reviews": [{"state": "APPROVED"}],  # Simular reviews presentes
     }
 
     # El PR toca AGENTS.md (ruta sensible)
@@ -378,3 +392,175 @@ def test_operational_governance_connection_required(workspace):
 
     # Si este test falla (status es "merged"), significa que governance fue eliminado
     # o desconectado de auto_merge(). Esto es una degradación de seguridad crítica.
+
+
+def test_reviews_none_blocks_merge(workspace):
+    """Test C05.1: reviews=None debe bloquear merge (fail-closed).
+
+    Verifica que ausencia de evidencia de reviews no se interpreta como aprobación.
+    AutonomyGovernancePolicy usa `reviews is None` como condición fail-closed.
+    """
+    # Arrange: PR sin reviews (reviews=None en metadata)
+    pr_data = {
+        "number": 125,
+        "state": "open",
+        "merged": False,
+        "draft": False,
+        "head": {"ref": "devin/test-branch", "sha": "abc123"},
+        "base": {"sha": "def456"},
+        "mergeable_state": "clean",
+        "title": "Test PR",
+        "additions": 10,
+        "deletions": 5,
+        "changed_files": 1,
+    }
+
+    files_data = [
+        {"filename": "src/iabv_v15/services/test_service.py"},
+    ]
+
+    check_runs_data = [
+        {"name": "test", "status": "completed", "conclusion": "success"},
+    ]
+
+    merge_response = {"merged": True, "sha": "merged_sha"}
+
+    fake_client = FakeGitHubClient(
+        pr_data=pr_data,
+        files_data=files_data,
+        check_runs_data=check_runs_data,
+        merge_response=merge_response,
+    )
+
+    # Act: Llamar sin force (para probar fail-closed real)
+    result = auto_merge(
+        repo="test/repo",
+        pr_number=125,
+        client=fake_client,
+        workspace=workspace,
+    )
+
+    # Assert: governance debe BLOCK por reviews ausente
+    assert result.status == "blocked", f"Expected blocked, got {result.status}: {result.detail}"
+    assert result.reason == "governance_blocked"
+    assert "reviews" in (result.detail or "").lower(), f"Expected reviews in reason, got: {result.detail}"
+
+
+def test_fetch_pr_files_pagination():
+    """Test C05.2: fetch_pr_files() debe obtener TODOS los archivos con paginación.
+
+    Verifica que el bucle de paginación recorre múltiples páginas hasta obtener todos los archivos.
+    Este test verifica la lógica de paginación directamente en el código.
+    """
+    from iabv_v15.infra.mcp.self_auto_merge import GitHubClient
+
+    # Arrange: Mock del método request() para simular paginación
+    class PaginatedMockClient(GitHubClient):
+        def __init__(self):
+            super().__init__("dummy")
+            self.request_count = 0
+            self.pages_to_return = [
+                [{"filename": f"src/iabv_v15/services/file_{i}.py"} for i in range(100)],
+                [{"filename": f"src/iabv_v15/services/file_{100 + i}.py"} for i in range(100)],  # 100 para forzar tercera página
+                [{"filename": f"src/iabv_v15/services/file_{200 + i}.py"} for i in range(50)],  # 50 < 100: detiene
+            ]
+
+        def request(self, method: str, url: str, data: Any = None) -> Any:
+            self.request_count += 1
+            # Devolver páginas en secuencia
+            page_index = min(self.request_count - 1, len(self.pages_to_return) - 1)
+            return self.pages_to_return[page_index]
+
+    fake_client = PaginatedMockClient()
+
+    # Act: Llamar a fetch_pr_files (usa el método real con paginación)
+    files = fake_client.fetch_pr_files("test/repo", 126)
+
+    # Assert: Debe haber hecho 3 solicitudes (página 1 + página 2 + página 3)
+    assert fake_client.request_count == 3, f"Expected 3 requests, got {fake_client.request_count}"
+
+    # Assert: Debe tener todos los 250 archivos
+    assert len(files) == 250, f"Expected 250 files, got {len(files)}"
+
+    # Assert: Todos los archivos deben estar presentes
+    filenames = [f["filename"] for f in files]
+    assert "src/iabv_v15/services/file_0.py" in filenames
+    assert "src/iabv_v15/services/file_99.py" in filenames
+    assert "src/iabv_v15/services/file_100.py" in filenames
+    assert "src/iabv_v15/services/file_199.py" in filenames
+    assert "src/iabv_v15/services/file_200.py" in filenames
+    assert "src/iabv_v15/services/file_249.py" in filenames
+
+
+def test_error_paths_do_not_convert_to_pass(workspace):
+    """Test C05.3: Error paths no deben convertirse silenciosamente en PASS.
+
+    Verifica que:
+    - API error → changed_paths=None → governance bloquea
+    - Claim lookup error → qml_python_binding_status ausente → governance permite (fail-safe)
+    """
+    from iabv_v15.infra.mcp.self_auto_merge import _build_pr_metadata
+
+    # Caso A: API error al obtener archivos
+    class ErrorClient:
+        def fetch_pr(self, repo: str, number: int) -> dict[str, Any]:
+            return {
+                "number": number,
+                "draft": False,
+                "additions": 10,
+                "deletions": 5,
+                "changed_files": 1,
+            }
+
+        def fetch_pr_files(self, repo: str, number: int) -> list[dict[str, Any]]:
+            raise Exception("API error simulado")
+
+    pr_data = {
+        "number": 127,
+        "draft": False,
+        "additions": 10,
+        "deletions": 5,
+        "changed_files": 1,
+    }
+
+    pr_metadata = _build_pr_metadata(pr_data, "test/repo", ErrorClient(), ci_ok=True)
+
+    # Assert: changed_paths debe ser None (no [] silencioso)
+    assert pr_metadata["changed_paths"] is None, "changed_paths debe ser None cuando falla API"
+
+    # Governance debe bloquear por changed_paths ausente (reviews=[] para pasar esa validación)
+    pr_metadata["reviews"] = []  # Simular reviews presentes para probar changed_paths
+    from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovernancePolicy
+    policy = AutonomyGovernancePolicy()
+    allowed, reason = policy.allow_github_merge(pr_metadata=pr_metadata)
+    assert not allowed, "Governance debe bloquear cuando changed_paths=None"
+    assert "changed_paths" in (reason or "").lower()
+
+    # Caso B: Claim lookup error con DB missing
+    # No existe base de datos → enrich_pr_metadata_with_claim_status() no agrega campo
+    from iabv_v15.infra.persistence.claim_governance_integration import enrich_pr_metadata_with_claim_status
+
+    pr_metadata_with_ui = {
+        "pull_number": 128,
+        "ci_status": "success",
+        "reviews": [],  # Reviews presentes para probar Claim específicamente
+        "draft": False,
+        "additions": 10,
+        "deletions": 5,
+        "changed_files": 1,
+        "changed_paths": ["src/iabv_v15/ui/viewmodels/test.py"],
+    }
+
+    enriched = enrich_pr_metadata_with_claim_status(
+        pr_metadata_with_ui,
+        workspace=workspace,  # Workspace sin DB
+        claim_repository=None,
+    )
+
+    # Assert: campo NO agregado (fail-safe, no fail-open)
+    assert "qml_python_binding_status" not in enriched, "Claim lookup error no debe agregar campo"
+
+    # Governance permite porque campo ausente (comportamiento fail-safe)
+    allowed, reason = policy.allow_github_merge(pr_metadata=enriched)
+    # Debe permitir porque reviews=[] y changed_paths no es sensible
+    assert allowed, f"Governance debe permitir cuando Claim ausente (fail-safe), got: {reason}"
