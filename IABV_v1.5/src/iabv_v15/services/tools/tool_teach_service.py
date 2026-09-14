@@ -758,7 +758,7 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
             return result
         adapter = self.adapters.get(card.adapter_key)
-        if adapter is None or not adapter.is_available(card):
+        if adapter is None or not adapter.is_available(card, dry_run=launch_dry_run):
             result = ToolResult(
                 task_id=task.task_id,
                 tool_id=card.tool_id,

@@ -1855,11 +1855,14 @@ class DevinApiToolAdapter:
             'Content-Type': 'application/json',
         }
 
-    def is_available(self, card: ToolCard) -> bool:
+    def is_available(self, card: ToolCard, *, dry_run: bool = False) -> bool:
         if not self.api_key:
             return False
         if httpx is None:
             return False
+        # FAIL-CLOSED: dry_run/sandbox mode NO hace HTTP de disponibilidad
+        if dry_run:
+            return True  # Hay API key y httpx, suficiente para dry-run
         try:
             resp = httpx.get(
                 self._sessions_url,

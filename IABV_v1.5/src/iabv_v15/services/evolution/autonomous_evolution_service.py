@@ -298,6 +298,12 @@ class AutonomousEvolutionService:
         assistant_kind = str(existing_consultation.get('assistant_kind') or '').strip().lower()
         if not tool_id or not assistant_kind:
             return {'pre_capture_ingested': False, 'reason': 'no_tool_or_assistant'}
+        
+        # FAIL-CLOSED: Devin no soporta reingesta de sesión existente
+        # El adapter Devin no tiene mecanismo para releer una respuesta de sesión existente
+        # Bloquear explícitamente para evitar crear una nueva sesión bajo una operación de reingesta
+        if tool_id == 'devin_api':
+            return {'pre_capture_ingested': False, 'reason': 'devin_reingest_not_supported'}
 
         goal_parameters = {
             'reingest_existing_response': True,
