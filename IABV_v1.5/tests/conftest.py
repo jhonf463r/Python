@@ -1,23 +1,11 @@
-"""Shared test fixtures — isolate singleton state between test modules."""
+"""Shared test fixtures — isolate persistent learning state between tests."""
 from __future__ import annotations
 
 import pytest
 
 
 @pytest.fixture(autouse=True)
-def _isolate_intent_learning_layer():
-    """Reset the IntentLearningLayer singleton before each test.
-
-    The singleton persists across tests and earlier classify() calls
-    record learned patterns that contaminate later tests.  We clear
-    all in-memory patterns before each test and restore the original
-    snapshot after so each test sees only the patterns loaded from
-    disk at import time.
-    """
-    from iabv_v15.services.adaptive.intent_understanding_service import (
-        _intent_learning_layer,
-    )
-    snapshot = dict(_intent_learning_layer._patterns)
-    _intent_learning_layer.clear()
+def _isolate_intent_learning_layer(tmp_path, monkeypatch):
+    """Give default intent services a distinct caller-owned data directory."""
+    monkeypatch.setenv('IABV_DATA_DIR', str(tmp_path / 'intent_learning_data'))
     yield
-    _intent_learning_layer._patterns = snapshot

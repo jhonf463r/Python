@@ -18,15 +18,22 @@ logger = logging.getLogger(__name__)
 # IntentLearningLayer — aprendizaje persistente de patrones
 # ──────────────────────────────────────────────────────────────
 
-def _intent_learning_path() -> Path:
-    """Return path to the learned intent patterns JSONL file."""
-    env_val = os.environ.get('IABV_DATA_DIR', '').strip()
-    data_dir = Path(env_val) if env_val else (
-        Path(os.path.expanduser('~')) / 'IABV_v1.5' / 'data'
-    )
-    learning_dir = data_dir / 'evolution' / 'intent_learning'
-    learning_dir.mkdir(parents=True, exist_ok=True)
-    return learning_dir / 'learned_patterns.jsonl'
+def _intent_learning_path(
+    *,
+    data_dir: str | Path | None = None,
+    state_path: str | Path | None = None,
+) -> Path:
+    """Resolve the caller-owned learned intent state path."""
+    if state_path is not None:
+        path = Path(state_path)
+    else:
+        env_val = os.environ.get('IABV_DATA_DIR', '').strip()
+        resolved_data_dir = Path(data_dir) if data_dir is not None else (
+            Path(env_val) if env_val else Path(os.path.expanduser('~')) / 'IABV_v1.5' / 'data'
+        )
+        path = resolved_data_dir / 'evolution' / 'intent_learning' / 'learned_patterns.jsonl'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 class IntentLearningLayer:
@@ -47,18 +54,20 @@ class IntentLearningLayer:
     _MIN_CONFIRMATIONS = 3
     _MAX_LEARNED_PATTERNS = 2000
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        data_dir: str | Path | None = None,
+        state_path: str | Path | None = None,
+    ) -> None:
         self._lock = threading.Lock()
         self._patterns: dict[str, dict[str, Any]] = {}
+        self._state_path = _intent_learning_path(data_dir=data_dir, state_path=state_path)
         self._load()
 
     def _load(self) -> None:
         """Load learned patterns from JSONL file."""
-        try:
-            path = _intent_learning_path()
-        except Exception as exc:
-            logger.debug('intent_learning: failed to resolve path: %s', exc)
-            return
+        path = self._state_path
         if not path.exists():
             return
         try:
@@ -87,7 +96,7 @@ class IntentLearningLayer:
 
     def _save_snapshot(self, records: list[dict[str, Any]]) -> None:
         """Write a snapshot of records to disk (lock-free)."""
-        path = _intent_learning_path()
+        path = self._state_path
         try:
             with open(path, 'w', encoding='utf-8') as f:
                 for record in records:
@@ -250,10 +259,6 @@ class IntentLearningLayer:
             }
 
 
-# Singleton instance — loaded once at import time, persists across calls
-_intent_learning_layer = IntentLearningLayer()
-
-
 class IntentUnderstandingService:
     # M4: registro de fallos por patron para confidence decay.
     # Stores (count, first_failure_epoch) per intent_key so entries
@@ -264,6 +269,17 @@ class IntentUnderstandingService:
     _DECAY_PER_FAILURE = 0.03
     _MAX_DECAY = 0.15
     _FAILURE_EXPIRY_SECONDS = 7200.0  # 2 hours
+
+    def __init__(
+        self,
+        *,
+        data_dir: str | Path | None = None,
+        state_path: str | Path | None = None,
+    ) -> None:
+        self._intent_learning_layer = IntentLearningLayer(
+            data_dir=data_dir,
+            state_path=state_path,
+        )
 
     SITE_ALIASES = {
         'wplay': ['wplay', 'w play'],
@@ -490,7 +506,7 @@ class IntentUnderstandingService:
                                 ', y ')
         is_compound = any(c in text for c in _compound_connectors)
         has_conversation_context = bool(request.conversation_context)
-        learned = _intent_learning_layer.lookup(text) if not is_compound and not has_conversation_context else None
+        learned = self._intent_learning_layer.lookup(text) if not is_compound and not has_conversation_context else None
         # Don't let learned patterns override explicit sandbox/tool signals
         if learned:
             _has_sandbox_signal = any(w in text for w in ('sandbox', 'probar herramienta', 'probar tool'))
@@ -702,7 +718,7 @@ class IntentUnderstandingService:
             # promoted to "trusted" and permanently bypass static
             # pattern matching.
             if intent.confidence >= 0.7 and intent.intent_key != 'general.assistance':
-                _intent_learning_layer.record(
+                self._intent_learning_layer.record(
                     text,
                     intent.intent_key,
                     confidence=intent.confidence,
@@ -1093,7 +1109,7 @@ class IntentUnderstandingService:
                         break
                     prev_text = self._normalize(str(prev_msg.get('text', prev_msg.get('content', ''))))
                     if prev_text and len(prev_text.split()) >= 3:
-                        _intent_learning_layer.record(
+                        self._intent_learning_layer.record(
                             prev_text,
                             intent.intent_key,
                             confidence=intent.confidence * 0.8,
@@ -1126,13 +1142,12 @@ class IntentUnderstandingService:
         )
         return intent, schema
 
-    @staticmethod
-    def get_learning_stats() -> dict[str, Any]:
+    def get_learning_stats(self) -> dict[str, Any]:
         """Return statistics about learned intent patterns."""
-        return _intent_learning_layer.get_stats()
+        return self._intent_learning_layer.get_stats()
 
-    @staticmethod
     def record_intent_correction(
+        self,
         normalized_text: str,
         correct_intent_key: str,
         confidence: float = 0.9,
@@ -1145,7 +1160,7 @@ class IntentUnderstandingService:
         if correct_intent_key == 'general.assistance':
             logger.info('record_intent_correction: refusing to record general.assistance (lock-in risk)')
             return
-        _intent_learning_layer.record(
+        self._intent_learning_layer.record(
             normalized_text,
             correct_intent_key,
             confidence=confidence,

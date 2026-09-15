@@ -310,15 +310,11 @@ def test_wplay_explicit_mention_still_routes_to_wplay() -> None:
     assert intent.site_hint == 'wplay' or 'wplay' in intent.intent_key
 
 
-def test_intent_learning_layer_records_failure_and_decays() -> None:
+def test_intent_learning_layer_records_failure_and_decays(tmp_path) -> None:
     """record_failure should reduce confirmations and confidence."""
-    import threading
     from iabv_v15.services.adaptive.intent_understanding_service import IntentLearningLayer
 
-    # Isolated instance with no file persistence.
-    layer = IntentLearningLayer.__new__(IntentLearningLayer)
-    layer._lock = threading.Lock()
-    layer._patterns = {}
+    layer = IntentLearningLayer(data_dir=tmp_path)
 
     layer.record('test pattern decay', 'general.assistance', confidence=0.8)
     layer.record('test pattern decay', 'general.assistance', confidence=0.8)
@@ -330,3 +326,25 @@ def test_intent_learning_layer_records_failure_and_decays() -> None:
     assert record is not None
     assert record['confirmations'] == 2  # was 3, decayed to 2
     assert record['confidence'] < 0.8   # 0.8 * 0.7 = 0.56
+
+
+def test_intent_learning_state_is_isolated_by_explicit_data_dir(tmp_path) -> None:
+    pattern = 'peticion aislada c08 unitaria'
+    service_a = IntentUnderstandingService(data_dir=tmp_path / 'workspace_a')
+    service_b = IntentUnderstandingService(data_dir=tmp_path / 'workspace_b')
+
+    for _ in range(3):
+        service_a.record_intent_correction(
+            pattern,
+            'project.evolution',
+            confidence=0.91,
+        )
+
+    learned_a, _ = service_a.classify(InferenceRequest(user_goal=pattern))
+    clean_b, _ = service_b.classify(InferenceRequest(user_goal=pattern))
+    reloaded_a = IntentUnderstandingService(data_dir=tmp_path / 'workspace_a')
+
+    assert learned_a.metadata['learned_pattern'] is True
+    assert clean_b.metadata.get('learned_pattern') is None
+    assert clean_b.intent_key == 'general.assistance'
+    assert reloaded_a.get_learning_stats()['trusted_patterns'] == 1

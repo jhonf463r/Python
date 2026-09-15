@@ -169,7 +169,7 @@ def _orchestrator(root: Path) -> tuple[AdaptiveTaskOrchestrator, EpisodeReposito
     orchestrator = AdaptiveTaskOrchestrator(
         role_router=router,
         adaptive_session_repository=adaptive_sessions,
-        intent_service=IntentUnderstandingService(),
+        intent_service=IntentUnderstandingService(data_dir=root),
         context_assembler=context,
         capability_service=CapabilityReadinessService(capabilities),
         strategy_pack_registry=StrategyPackRegistry(strategy_packs),

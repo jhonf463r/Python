@@ -1077,7 +1077,9 @@ class AppBootstrap:
             experiment_lab_repository=self.experiment_lab_repository,
         )
 
-        self.intent_understanding_service = IntentUnderstandingService()
+        self.intent_understanding_service = IntentUnderstandingService(
+            data_dir=self.config.data_dir,
+        )
         self.autonomy_governance_policy = AutonomyGovernancePolicy()
         self.goal_engine = GoalEngine(self.objective_repository)
         self.portable_context_service = PortableContextService(
