@@ -1622,6 +1622,7 @@ class ControlCenterViewModel(QObject):
             'chatgpt': 'ChatGPT',
             'claude': 'Claude',
             'ollama': 'Ollama',
+            'devin': 'Devin',
         }.get(str(assistant_kind or '').strip().lower(), 'Asistente externo')
 
     def _assistant_kind_from_tool_id(self, tool_id: str) -> str:
@@ -1634,6 +1635,8 @@ class ControlCenterViewModel(QObject):
             return 'chatgpt'
         if normalized.startswith('ollama'):
             return 'ollama'
+        if normalized.startswith('devin'):
+            return 'devin'
         return ''
 
     def _contains_internal_chat_terms(self, text: str) -> bool:
@@ -12093,6 +12096,8 @@ class ControlCenterViewModel(QObject):
             return self._run_external_consultation('claude', announce=announce)
         if action == 'consult_ollama':
             return self._run_external_consultation('ollama', announce=announce)
+        if action == 'consult_devin':
+            return self._run_external_consultation('devin', announce=announce)
         if action == 'approve_observation_permission':
             return self._grant_pending_observation_permission(announce=announce)
         if action == 'run_self_test':
