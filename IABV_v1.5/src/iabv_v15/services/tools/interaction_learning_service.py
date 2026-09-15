@@ -51,6 +51,8 @@ class InteractionLearningService:
         selection = dict(task.metadata.get('mode_selection') or {})
         reused_pattern_id = str(selection.get('reusable_pattern_id') or '')
         was_reused = bool(reused_pattern_id and existing is not None and existing.pattern_id == reused_pattern_id)
+        # NF-IL-01-R1: Check if actions actually came from the reused pattern
+        actions_actually_reused = bool(selection.get('reused_actions_from_pattern', False))
         
         # NF-IL-01: Threshold for pattern invalidation
         _INVALIDATION_THRESHOLD = 3
@@ -58,12 +60,12 @@ class InteractionLearningService:
         if existing is not None:
             # Handle consecutive reuse failures
             consecutive_failures = int(existing.metadata.get('consecutive_reuse_failures') or 0)
-            if was_reused and effective_failure:
+            # NF-IL-01-R1: Only count as refutation if actions actually came from the pattern
+            if was_reused and actions_actually_reused and effective_failure:
                 consecutive_failures += 1
             elif was_reused and effective_success:
-                consecutive_failures = 0  # Reset on success after reuse
-            elif not was_reused:
-                consecutive_failures = 0  # Reset if not reused
+                consecutive_failures = 0  # Reset on success after reuse (positive evidence)
+            # NF-IL-01-R1: Do NOT reset on unrelated failures - preserve negative evidence
             
             # Check if pattern should be invalidated
             should_invalidate = consecutive_failures >= _INVALIDATION_THRESHOLD
