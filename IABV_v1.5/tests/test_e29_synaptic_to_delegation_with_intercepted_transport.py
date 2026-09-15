@@ -38,6 +38,8 @@ from unittest.mock import Mock
 
 from iabv_v15.domain.models import (
     ApprovalDecision,
+    ExternalActionAuthorization,
+    ExternalActionAuthorizationStatus,
     AssistantCapabilityProfile,
     AssistantStrength,
     ExperimentDomain,
@@ -222,6 +224,28 @@ def _tool_teach_service_with_synaptic(
     return service
 
 
+def _create_external_authorization(
+    task_id: str,
+    tool_id: str,
+    adapter_key: str,
+    assistant_kind: str,
+    prompt: str,
+    adapter: DevinApiToolAdapter,
+) -> ExternalActionAuthorization:
+    """Crea una autorización externa válida para P0-B."""
+    prompt_digest = adapter._compute_prompt_digest(prompt)
+    return ExternalActionAuthorization(
+        task_id=task_id,
+        tool_id=tool_id,
+        adapter_key=adapter_key,
+        assistant_kind=assistant_kind,
+        prompt_digest=prompt_digest,
+        status=ExternalActionAuthorizationStatus.VALIDATED,
+        approved_by='test_user@example.com',
+        reason='Test authorization for C29',
+    )
+
+
 def test_e29_synaptic_to_delegation_with_intercepted_transport() -> None:
     """Test: Cadena completa Synaptic → Delegation → Adapter con transporte interceptado."""
     root = _workspace('test_e29_synaptic_to_delegation')
@@ -399,8 +423,21 @@ def test_e29_synaptic_to_delegation_with_intercepted_transport() -> None:
         try:
             tool_adapters.httpx = mock_httpx
             
-            # === STEP 7: Ejecutar task ===
-            print("\n=== STEP 7: execute_task ===")
+            # === STEP 7: Ejecutar task con autorización P0-B ===
+            print("\n=== STEP 7: execute_task (with P0-B authorization) ===")
+            
+            # Crear autorización externa válida (P0-B)
+            external_auth = _create_external_authorization(
+                task_id=task.task_id,
+                tool_id=task.tool_id,
+                adapter_key=card.adapter_key,
+                assistant_kind=card.metadata.get('assistant_kind', ''),
+                prompt=task.objective,
+                adapter=service.adapters['devin_api'],
+            )
+            
+            # Inyectar autorización en el adapter
+            service.adapters['devin_api']._external_authorization = external_auth
             
             # Marcar como approved para pasar governance
             task = task.model_copy(update={'approval_decision': ApprovalDecision.APPROVED})

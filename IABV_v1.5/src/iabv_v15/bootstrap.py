@@ -142,13 +142,32 @@ def _resolve_github_token(environ: dict[str, str] | None = None) -> str:
     return ''
 
 
-def _devin_create_session(adapter, prompt: str) -> str:
+def _devin_create_session(adapter, prompt: str, authorization: Any | None = None) -> str:
     """Crea una sesion en Devin via `DevinApiToolAdapter`.
 
     Devuelve ``session_id`` o string vacio si falla. No raises: errores
     se registran como log warning y el briefing marca UNRESOLVED en
     lugar de fingir exito.
+    
+    P0-B Trust Root: requiere autorización externa válida para ejecución real.
     """
+    # P0-B: Verificar autorización externa
+    if authorization is not None:
+        try:
+            from iabv_v15.domain.models import ExternalActionAuthorization
+            if isinstance(authorization, ExternalActionAuthorization):
+                if not authorization.is_valid():
+                    logger.warning('devin create session blocked: invalid external authorization')
+                    return ''
+                # Consumir autorización (single-use)
+                authorization.consume()
+        except Exception:
+            logger.warning('devin create session blocked: authorization check failed')
+            return ''
+    else:
+        logger.warning('devin create session blocked: no external authorization provided')
+        return ''
+    
     if adapter is None or not getattr(adapter, 'api_key', ''):
         return ''
     try:
@@ -172,8 +191,28 @@ def _devin_create_session(adapter, prompt: str) -> str:
         return ''
 
 
-def _devin_send_message(adapter, session_id: str, content: str) -> bool:
-    """Envia un mensaje a una sesion Devin. True si la API respondio 2xx."""
+def _devin_send_message(adapter, session_id: str, content: str, authorization: Any | None = None) -> bool:
+    """Envia un mensaje a una sesion Devin. True si la API respondio 2xx.
+    
+    P0-B Trust Root: requiere autorización externa válida para ejecución real.
+    """
+    # P0-B: Verificar autorización externa
+    if authorization is not None:
+        try:
+            from iabv_v15.domain.models import ExternalActionAuthorization
+            if isinstance(authorization, ExternalActionAuthorization):
+                if not authorization.is_valid():
+                    logger.warning('devin send message blocked: invalid external authorization')
+                    return False
+                # Consumir autorización (single-use)
+                authorization.consume()
+        except Exception:
+            logger.warning('devin send message blocked: authorization check failed')
+            return False
+    else:
+        logger.warning('devin send message blocked: no external authorization provided')
+        return False
+    
     if adapter is None or not getattr(adapter, 'api_key', ''):
         return False
     if not session_id:

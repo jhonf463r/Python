@@ -3213,3 +3213,85 @@ class AccountApproval(BaseModel):
     snapshot_id: str = ""
     valid: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ExternalActionAuthorizationStatus(str, Enum):
+    """Estado de una autorización de acción externa."""
+    ISSUED = "issued"
+    VALIDATED = "validated"
+    CONSUMED = "consumed"
+    EXPIRED = "expired"
+    REJECTED = "rejected"
+
+
+class ExternalActionAuthorization(BaseModel):
+    """Autorización explícita para una acción externa concreta.
+
+    Vincula una aprobación humana a un efecto externo específico:
+    - task_id específico
+    - tool_id específico
+    - adapter_key específico
+    - prompt_digest específico
+    - endpoint/action específico
+    - nonce único (single-use)
+    - expiración temporal
+
+    Diseñado para evitar:
+    - Reuso de autorización entre tasks diferentes
+    - Reuso de autorización entre prompts diferentes
+    - Reuso de autorización entre adapters diferentes
+    - Replay attacks
+    - Autorizaciones permanentes
+    """
+    authorization_id: str = Field(default_factory=lambda: str(uuid4()))
+    task_id: str
+    tool_id: str
+    adapter_key: str
+    assistant_kind: str
+    endpoint: str = ""
+    action: str = ""
+    prompt_digest: str = ""
+    nonce: str = Field(default_factory=lambda: str(uuid4()))
+    status: ExternalActionAuthorizationStatus = ExternalActionAuthorizationStatus.ISSUED
+    issued_at: datetime = Field(default_factory=utc_now)
+    expires_at: datetime | None = None
+    consumed_at: datetime | None = None
+    approved_by: str = ""  # email o identificador de la autoridad
+    reason: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def is_valid(self) -> bool:
+        """Verifica si la autorización es válida para uso."""
+        if self.status != ExternalActionAuthorizationStatus.VALIDATED:
+            return False
+        if self.status == ExternalActionAuthorizationStatus.CONSUMED:
+            return False
+        if self.status == ExternalActionAuthorizationStatus.EXPIRED:
+            return False
+        if self.status == ExternalActionAuthorizationStatus.REJECTED:
+            return False
+        if self.expires_at and self.expires_at < utc_now():
+            return False
+        return True
+
+    def validate_binding(
+        self,
+        task_id: str,
+        tool_id: str,
+        adapter_key: str,
+        prompt_digest: str,
+    ) -> bool:
+        """Verifica que la autorización coincide con los parámetros de ejecución."""
+        return (
+            self.task_id == task_id
+            and self.tool_id == tool_id
+            and self.adapter_key == adapter_key
+            and self.prompt_digest == prompt_digest
+        )
+
+    def consume(self) -> None:
+        """Marca la autorización como consumida (single-use)."""
+        if self.status == ExternalActionAuthorizationStatus.CONSUMED:
+            raise ValueError("Authorization already consumed")
+        self.status = ExternalActionAuthorizationStatus.CONSUMED
+        self.consumed_at = utc_now()

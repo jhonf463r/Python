@@ -1836,11 +1836,13 @@ class DevinApiToolAdapter:
         org_id: str = '',
         timeout_seconds: float = 120.0,
         poll_interval_seconds: float = 5.0,
+        external_authorization: Any | None = None,
     ) -> None:
         self.api_key = api_key
         self.org_id = org_id  # kept for backwards compat; unused in v1 API.
         self.timeout_seconds = timeout_seconds
         self.poll_interval_seconds = poll_interval_seconds
+        self._external_authorization = external_authorization
 
     @property
     def _sessions_url(self) -> str:
@@ -1854,6 +1856,52 @@ class DevinApiToolAdapter:
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json',
         }
+
+    def _compute_prompt_digest(self, prompt: str) -> str:
+        """Computa un digest del prompt para binding de autorización."""
+        import hashlib
+        return hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+
+    def _check_external_authorization(
+        self,
+        task: ToolTask,
+        prompt: str,
+    ) -> bool:
+        """Verifica que existe una autorización externa válida para esta ejecución.
+
+        P0-B Trust Root: sandbox=False requiere autorización externa válida.
+        """
+        if self._external_authorization is None:
+            return False
+        
+        try:
+            from iabv_v15.domain.models import ExternalActionAuthorization
+            
+            if not isinstance(self._external_authorization, ExternalActionAuthorization):
+                return False
+            
+            auth = self._external_authorization
+            
+            # Verificar estado
+            if not auth.is_valid():
+                return False
+            
+            # Verificar binding
+            prompt_digest = self._compute_prompt_digest(prompt)
+            if not auth.validate_binding(
+                task_id=task.task_id,
+                tool_id=task.tool_id,
+                adapter_key=auth.adapter_key,
+                prompt_digest=prompt_digest,
+            ):
+                return False
+            
+            # Consumir autorización (single-use)
+            auth.consume()
+            
+            return True
+        except Exception:
+            return False
 
     def is_available(self, card: ToolCard, *, dry_run: bool = False) -> bool:
         if not self.api_key:
@@ -1898,6 +1946,22 @@ class DevinApiToolAdapter:
             }
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
+        # P0-B Trust Root: requiere autorización externa válida
+        if not self._check_external_authorization(task, task.objective):
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'External action authorization required but not provided or invalid',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {
+                    'sandbox': sandbox,
+                    'tool_id': card.tool_id,
+                    'authorization': 'missing_or_invalid',
+                },
+            }
+        
         if httpx is None:
             return {
                 'success': False,
