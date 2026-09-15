@@ -1101,6 +1101,7 @@ class ToolAdapter:
                     **consultation_metadata,
                             'auto_capture_attempted': True,
                             'auto_capture_reason': str(captured.get('error_message') or 'browser_dom_launch_failed'),
+                            'browser_dom_metadata': dict(captured.get('metadata') or {}),
                         },
                     }
             launched = False

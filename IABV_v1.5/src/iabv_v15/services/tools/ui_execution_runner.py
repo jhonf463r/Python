@@ -8,7 +8,7 @@ import subprocess
 import time
 import webbrowser
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 try:
     import ctypes
@@ -46,9 +46,17 @@ class UIExecutionRunner:
     result and makes that explicit in metadata instead of pretending success.
     """
 
-    def __init__(self, workspace_root: str) -> None:
+    def __init__(
+        self,
+        workspace_root: str,
+        *,
+        browser_launch_authorizer: Callable[[list[str]], bool] | None = None,
+    ) -> None:
         self.workspace_root = Path(workspace_root)
         self._user32 = self._load_user32()
+        # Capability injected by a trusted controlled harness. It is
+        # deliberately separate from ToolCard/ToolTask metadata.
+        self._browser_launch_authorizer = browser_launch_authorizer
 
     def is_available(self) -> bool:
         return bool(os.name == 'nt' and self._user32 is not None)
@@ -822,6 +830,29 @@ class UIExecutionRunner:
         started = time.perf_counter()
         profile_dir = Path(browser_profile_dir) if browser_profile_dir else (self.workspace_root / 'data' / 'tool_teaching' / 'external_assistants' / 'web_program_session' / 'browser_profile')
         profile_dir.mkdir(parents=True, exist_ok=True)
+        browser_launch_args = list(browser_launch_args or [])
+        insecure_launch_requested = self._contains_insecure_browser_launch_arg(browser_launch_args)
+        if insecure_launch_requested:
+            authorized = bool(self._browser_launch_authorizer and self._browser_launch_authorizer(browser_launch_args))
+            if not authorized:
+                return {
+                    'launched': False,
+                    'focused': False,
+                    'focused_title': '',
+                    'prompt_pasted': False,
+                    'response_captured': False,
+                    'captured_text': '',
+                    'captured_excerpt': '',
+                    'capture_source': 'browser_dom',
+                    'error_message': 'browser_insecure_launch_unauthorized',
+                    'browser_profile_dir': str(profile_dir),
+                    'execution_ms': int((time.perf_counter() - started) * 1000),
+                    'metadata': {
+                        'background_capture_mode': 'browser_dom',
+                        'browser_launch_args': browser_launch_args,
+                        'browser_launch_security_mode': 'insecure_launch_rejected',
+                    },
+                }
         if browser_sync_playwright is None:
             return {
                 'launched': False,
@@ -848,8 +879,7 @@ class UIExecutionRunner:
                 reingest_only=reingest_only,
                 started=started,
             )
-        browser_launch_args = list(browser_launch_args or [])
-        explicit_no_sandbox = '--no-sandbox' in browser_launch_args
+        explicit_no_sandbox = insecure_launch_requested
         controller = BrowserSessionController(
             user_data_dir=str(profile_dir),
             headless=browser_headless,
@@ -970,6 +1000,17 @@ class UIExecutionRunner:
                 'reingest_only': reingest_only,
             },
         }
+
+    @staticmethod
+    def _contains_insecure_browser_launch_arg(browser_launch_args: list[str]) -> bool:
+        """Recognize the direct Chromium sandbox-disabling flags we support."""
+        for raw_arg in browser_launch_args:
+            arg = str(raw_arg or '').strip().lower()
+            if arg == '--no-sandbox' or arg.startswith('--no-sandbox='):
+                return True
+            if arg == '--disable-setuid-sandbox' or arg.startswith('--disable-setuid-sandbox='):
+                return True
+        return False
 
     def _capture_browser_dom_response_via_shared_cdp(
         self,
