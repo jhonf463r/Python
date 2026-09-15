@@ -115,6 +115,9 @@ class InteractionLearningService:
         # NF-IL-01: Threshold for pattern invalidation
         _INVALIDATION_THRESHOLD = 3
         
+        # D1 FIX: Use _is_effective_success_for_invalidation to exclude sandbox_pass from reset
+        effective_success_for_invalidation = self._is_effective_success_for_invalidation(result)
+        
         if existing is not None:
             # Handle consecutive reuse failures
             consecutive_failures = int(existing.metadata.get('consecutive_reuse_failures') or 0)
@@ -122,9 +125,10 @@ class InteractionLearningService:
             # NF-IL-02: Only if pattern has verified success (success_count > 0)
             if was_reused and actions_actually_reused and effective_failure and existing.success_count > 0:
                 consecutive_failures += 1
-            # FIX #4: Reset only if actual reuse + success (symmetry with failure path)
-            elif was_reused and actions_actually_reused and effective_success:
-                consecutive_failures = 0  # Reset on success after reuse (positive evidence)
+            # FIX #4: Reset only if actual reuse + real execution success (symmetry with failure path)
+            # D1 FIX: Use effective_success_for_invalidation to exclude sandbox_pass from reset
+            elif was_reused and actions_actually_reused and effective_success_for_invalidation:
+                consecutive_failures = 0  # Reset on real execution success after reuse (positive evidence)
             # NF-IL-01-R1: Do NOT reset on unrelated failures - preserve negative evidence
             
             # FIX #2: Maintain signature ↔ operations integrity for NEW patterns
@@ -637,6 +641,29 @@ class InteractionLearningService:
         if not result.success:
             return False
         if result.validation_status.value not in {'approved', 'sandbox_pass'}:
+            return False
+        execution_metadata = dict(result.execution_state.metadata or {})
+        if execution_metadata.get('manual_pasteback_required') and not execution_metadata.get('response_captured'):
+            return False
+        if execution_metadata.get('response_capture_pending') or execution_metadata.get('assistant_login_required'):
+            return False
+        consultation_metadata = dict(result.metadata.get('autonomous_consultation') or {})
+        coherence_flags = list(execution_metadata.get('coherence_flags') or consultation_metadata.get('coherence_flags') or [])
+        if coherence_flags:
+            return False
+        return True
+
+    def _is_effective_success_for_invalidation(self, result: ToolResult) -> bool:
+        """
+        D1 FIX: Effective success for pattern invalidation.
+        
+        Sandbox preflight success (sandbox_pass) should NOT reset consecutive_reuse_failures.
+        Only real execution success (approved) can reset negative evidence.
+        """
+        if not result.success:
+            return False
+        # D1 FIX: Exclude sandbox_pass from invalidation logic
+        if result.validation_status.value not in {'approved'}:
             return False
         execution_metadata = dict(result.execution_state.metadata or {})
         if execution_metadata.get('manual_pasteback_required') and not execution_metadata.get('response_captured'):

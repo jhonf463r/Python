@@ -2493,3 +2493,247 @@ def test_nf_il_02_signature_operations_integrity_after_fallback(simple_card, rep
     # Verify operations did not change
     assert updated_pattern.operations == original_operations, \
         "Canonical operations should remain unchanged after fallback"
+
+
+def test_d1_sandbox_pass_does_not_reset_consecutive_failures(simple_card, repository, learning_service):
+    """
+    D1 FIX: Sandbox preflight success should not reset consecutive_reuse_failures.
+    
+    Reproduces the defect:
+    - Create pattern P with verified success
+    - Execute 3 times with:
+      1. sandbox_pass (preflight) → should NOT reset consecutive
+      2. real failure → should increment consecutive
+    - Verify that consecutive_reuse_failures reaches 3 after 3 real failures
+    - Verify that pattern becomes invalid (reusable=False)
+    """
+    # Create pattern P with verified success
+    task = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task',
+        objective='Test objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result = ToolResult(
+        task_id=task.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern = learning_service.learn_from_execution(card=simple_card, task=task, result=result)
+    pattern_id = pattern.pattern_id
+    
+    # Verify pattern is reusable and has verified success
+    assert pattern.reusable is True
+    assert pattern.success_count == 1
+    assert pattern.failure_count == 0
+    assert pattern.metadata.get('consecutive_reuse_failures') == 0
+    
+    # Execute 3 times with preflight (sandbox_pass) + real failure
+    for i in range(3):
+        # Simulate preflight success (sandbox_pass)
+        preflight_result = ToolResult(
+            task_id=task.task_id,
+            tool_id=simple_card.tool_id,
+            tool_type=simple_card.tool_type,
+            result_id=f'preflight_{i+1}',
+            success=True,
+            output_text='preflight passed',
+            error_message='',
+            execution_ms=50,
+            execution_state=ExecutionState(state='sandbox_pass', detail='Preflight passed'),
+            validation_status=ToolValidationStatus.SANDBOX_PASS,
+            rollback_state=ExecutionState(state='none', detail=''),
+            extracted_data={},
+            artifacts=[],
+            metadata={},
+        )
+        
+        task_with_reuse = task.model_copy(
+            update={
+                'metadata': {
+                    'reused_pattern_id': pattern_id,
+                    'reused_actions_from_pattern': True,
+                },
+                'actions': [
+                    ToolAction(
+                        action_type=ToolActionType.OPEN_URL,
+                        target='http://example.com',
+                        label='open test url',
+                        metadata={'reused_from_pattern': True}
+                    )
+                ]
+            }
+        )
+        
+        # Learn from preflight (should NOT reset consecutive)
+        learning_service.learn_from_execution(
+            card=simple_card, task=task_with_reuse, result=preflight_result
+        )
+        
+        # Reload pattern to check state
+        pattern = repository.get_interaction_pattern(pattern_id)
+        consecutive_after_preflight = pattern.metadata.get('consecutive_reuse_failures', 0)
+        
+        # Simulate real execution failure
+        failure_result = ToolResult(
+            task_id=task.task_id,
+            tool_id=simple_card.tool_id,
+            tool_type=simple_card.tool_type,
+            result_id=f'failure_{i+1}',
+            success=False,
+            output_text='',
+            error_message=f'Real failure {i+1}',
+            execution_ms=100,
+            execution_state=ExecutionState(state='failed', detail='Error'),
+            validation_status=ToolValidationStatus.UNVALIDATED,
+            rollback_state=ExecutionState(state='none', detail=''),
+            extracted_data={},
+            artifacts=[],
+            metadata={},
+        )
+        
+        # Learn from real failure (should increment consecutive)
+        pattern = learning_service.learn_from_execution(
+            card=simple_card, task=task_with_reuse, result=failure_result
+        )
+        
+        # Verify state after real failure
+        expected_consecutive = i + 1  # Should be 1, 2, 3
+        assert pattern.metadata.get('consecutive_reuse_failures') == expected_consecutive, \
+            f"After round {i+1}, consecutive should be {expected_consecutive}"
+        assert pattern.failure_count == i + 1, \
+            f"After round {i+1}, failure_count should be {i+1}"
+    
+    # After 3 real failures, pattern should be invalid
+    assert pattern.reusable is False, "Pattern should be invalid after 3 consecutive failures"
+    assert pattern.metadata.get('invalidated_at_utc') is not None, "Pattern should have invalidation timestamp"
+    assert pattern.metadata.get('consecutive_reuse_failures') == 3, "Consecutive failures should be 3"
+
+
+def test_d1_approved_success_resets_consecutive_failures(simple_card, repository, learning_service):
+    """
+    D1 FIX: Real execution success (approved) should reset consecutive_reuse_failures.
+    
+    Verify that the fix doesn't break the original reset behavior for real success.
+    """
+    # Create pattern P with verified success
+    task = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task',
+        objective='Test objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result = ToolResult(
+        task_id=task.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern = learning_service.learn_from_execution(card=simple_card, task=task, result=result)
+    pattern_id = pattern.pattern_id
+    
+    # Accumulate 2 consecutive failures
+    for i in range(2):
+        task_with_reuse = task.model_copy(
+            update={
+                'metadata': {
+                    'reused_pattern_id': pattern_id,
+                    'reused_actions_from_pattern': True,
+                },
+                'actions': [
+                    ToolAction(
+                        action_type=ToolActionType.OPEN_URL,
+                        target='http://example.com',
+                        label='open test url',
+                        metadata={'reused_from_pattern': True}
+                    )
+                ]
+            }
+        )
+        
+        failure_result = ToolResult(
+            task_id=task.task_id,
+            tool_id=simple_card.tool_id,
+            tool_type=simple_card.tool_type,
+            result_id=f'failure_{i+1}',
+            success=False,
+            output_text='',
+            error_message=f'Failure {i+1}',
+            execution_ms=100,
+            execution_state=ExecutionState(state='failed', detail='Error'),
+            validation_status=ToolValidationStatus.UNVALIDATED,
+            rollback_state=ExecutionState(state='none', detail=''),
+            extracted_data={},
+            artifacts=[],
+            metadata={},
+        )
+        
+        pattern = learning_service.learn_from_execution(
+            card=simple_card, task=task_with_reuse, result=failure_result
+        )
+    
+    # Verify 2 consecutive failures
+    assert pattern.metadata.get('consecutive_reuse_failures') == 2
+    assert pattern.reusable is True  # Not yet invalid (threshold is 3)
+    
+    # Execute real success (approved) - should reset consecutive
+    success_result = ToolResult(
+        task_id=task.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='success_reset',
+        success=True,
+        output_text='real success',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_with_reuse, result=success_result
+    )
+    
+    # Verify reset happened
+    assert pattern.metadata.get('consecutive_reuse_failures') == 0, \
+        "Real execution success should reset consecutive failures"
+    assert pattern.reusable is True, "Pattern should remain reusable after reset"
