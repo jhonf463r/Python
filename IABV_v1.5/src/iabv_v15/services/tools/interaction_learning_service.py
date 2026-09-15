@@ -49,10 +49,22 @@ class InteractionLearningService:
         
         # NF-IL-01: Track consecutive reuse failures for invalidation
         selection = dict(task.metadata.get('mode_selection') or {})
-        reused_pattern_id = str(selection.get('reusable_pattern_id') or '')
+        # NF-IL-02: Read reused_pattern_id from task.metadata directly (where production writes it)
+        reused_pattern_id = str(task.metadata.get('reused_pattern_id') or '')
+        # NF-IL-01-R1 & NF-IL-02: Check if actions actually came from the reused pattern
+        # Production writes this to task.metadata directly
+        actions_actually_reused = bool(task.metadata.get('reused_actions_from_pattern', False))
+        
+        # NF-IL-02: Robust pattern identity - fallback to pattern_id when signature changed
+        # Only use fallback if actions were actually reused from the pattern
+        if existing is None and actions_actually_reused and reused_pattern_id:
+            # Signature lookup failed, but execution was actually derived from a pattern
+            # Try to find the source pattern by ID instead of signature
+            source_pattern = self.repository.get_interaction_pattern(reused_pattern_id)
+            if source_pattern is not None:
+                existing = source_pattern  # Use the source pattern for learning
+        
         was_reused = bool(reused_pattern_id and existing is not None and existing.pattern_id == reused_pattern_id)
-        # NF-IL-01-R1: Check if actions actually came from the reused pattern
-        actions_actually_reused = bool(selection.get('reused_actions_from_pattern', False))
         
         # NF-IL-01: Threshold for pattern invalidation
         _INVALIDATION_THRESHOLD = 3
@@ -61,7 +73,8 @@ class InteractionLearningService:
             # Handle consecutive reuse failures
             consecutive_failures = int(existing.metadata.get('consecutive_reuse_failures') or 0)
             # NF-IL-01-R1: Only count as refutation if actions actually came from the pattern
-            if was_reused and actions_actually_reused and effective_failure:
+            # NF-IL-02: Only if pattern has verified success (success_count > 0)
+            if was_reused and actions_actually_reused and effective_failure and existing.success_count > 0:
                 consecutive_failures += 1
             elif was_reused and effective_success:
                 consecutive_failures = 0  # Reset on success after reuse (positive evidence)
