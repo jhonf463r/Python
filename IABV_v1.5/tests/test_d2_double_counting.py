@@ -150,6 +150,13 @@ def test_d2_case_a_sandbox_pass_real_pass_no_double_count():
             f"Expected success_count == 1 for single logical task, got {pattern.success_count}"
         assert pattern.failure_count == 0, \
             f"Expected failure_count == 0 for successful task, got {pattern.failure_count}"
+        
+        # KD-2: Verify ToolCard counters also not double-counted
+        card_after = repo.get_card(card.tool_id)
+        assert card_after.success_count == 1, \
+            f"Expected ToolCard success_count == 1 for single logical task, got {card_after.success_count}"
+        assert card_after.failure_count == 0, \
+            f"Expected ToolCard failure_count == 0 for successful task, got {card_after.failure_count}"
 
     finally:
         shutil.rmtree(root, ignore_errors=True)
@@ -205,6 +212,13 @@ def test_d2_case_b_sandbox_pass_real_fail_no_double_count():
             f"Expected success_count == 0 for failed task, got {pattern.success_count}"
         assert pattern.failure_count == 1, \
             f"Expected failure_count == 1 for single logical task, got {pattern.failure_count}"
+        
+        # KD-2: Verify ToolCard counters also not double-counted
+        card_after = repo.get_card(card.tool_id)
+        assert card_after.success_count == 0, \
+            f"Expected ToolCard success_count == 0 for failed task, got {card_after.success_count}"
+        assert card_after.failure_count == 1, \
+            f"Expected ToolCard failure_count == 1 for single logical task, got {card_after.failure_count}"
 
     finally:
         shutil.rmtree(root, ignore_errors=True)
@@ -390,6 +404,119 @@ def test_d1_e2e_adversarial_sandbox_pass_real_fail():
             f"Expected consecutive_reuse_failures == 3 after round 3, got {pattern_p_3.metadata.get('consecutive_reuse_failures')}"
         assert pattern_p_3.reusable is False, \
             "Pattern should be reusable=False after 3 consecutive failures"
+
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_h1_selector_real_before_after_invalidation():
+    """
+    H1: Real selector behavior before and after pattern invalidation
+    
+    Demonstrates:
+    1. BEFORE: InteractionModeSelector selects P (reusable=True)
+    2. AFTER: InteractionModeSelector does NOT select P (reusable=False)
+    
+    Uses real selector without fabricating reuse metadata.
+    """
+    import shutil
+    root = Path(tempfile.mkdtemp(prefix='h1_selector_'))
+    try:
+        service, repo = _create_service(root, sandbox_pass=True, real_pass=True)
+
+        card = ToolCard(
+            tool_id='shell_command',
+            title='Shell Command',
+            tool_type=ToolType.SHELL,
+            adapter_key='shell',
+            description='Test shell tool',
+            available=True,
+            success_count=0,
+            failure_count=0,
+            last_result_id=None,
+            last_validated_at_utc=None,
+            metadata={'workspace_root': str(root)},
+        )
+        repo.save_card(card)
+
+        # FASE A: Crear patrón P con éxito
+        request_create = InferenceRequest(
+            user_goal='ejecutar comando shell get-location',
+            task_role=TaskRole.TOOL_SANDBOX,
+            goal_parameters={
+                'tool_id': 'shell_command',
+                'command': 'Get-Location',
+                'execution_scope': 'read_only',
+            },
+        )
+        task_create = service.build_task_from_request(request_create)
+        result_create = service.execute_task(task_create, approved=False)
+
+        patterns = repo.list_interaction_patterns()
+        assert len(patterns) == 1, "Should create one pattern after first execution"
+        pattern_p = patterns[0]
+        pattern_p_id = pattern_p.pattern_id
+        assert pattern_p.reusable is True, "Pattern should be reusable after success"
+        assert pattern_p.success_count == 1, "Pattern should have 1 success"
+
+        # FASE B: Selector ANTES de invalidación
+        selector = service.mode_selector
+        decision_before = selector.select(
+            request=request_create,
+            draft_task=task_create,
+        )
+        
+        # Verificar que el selector selecciona P
+        assert decision_before.reusable_pattern_id == pattern_p_id, \
+            f"BEFORE: Selector should select P, got reusable_pattern_id={decision_before.reusable_pattern_id}"
+        assert decision_before.selected_tool_id == card.tool_id, \
+            f"BEFORE: Selector should select the tool, got {decision_before.selected_tool_id}"
+
+        # FASE C: Tres fallos reales
+        adapter = service.adapters['shell']
+        adapter.set_real_pass(False)
+
+        for i in range(3):
+            request_fail = InferenceRequest(
+                user_goal='ejecutar comando shell get-location',
+                task_role=TaskRole.TOOL_SANDBOX,
+                goal_parameters={
+                    'tool_id': 'shell_command',
+                    'command': 'Get-Location',
+                    'execution_scope': 'read_only',
+                },
+            )
+            task_fail = service.build_task_from_request(request_fail)
+            # El selector debe decidir reutilizar P naturalmente
+            decision_fail = selector.select(request=request_fail, draft_task=task_fail)
+            if decision_fail.reusable_pattern_id:
+                task_fail.metadata['reused_pattern_id'] = decision_fail.reusable_pattern_id
+                task_fail.metadata['reused_actions_from_pattern'] = True
+                for action in task_fail.actions:
+                    action.metadata['reused_from_pattern'] = True
+            result_fail = service.execute_task(task_fail, approved=False)
+
+        # Verificar invalidación
+        patterns_after_3 = repo.list_interaction_patterns()
+        assert len(patterns_after_3) == 1, "Should still have one pattern"
+        pattern_p_3 = patterns_after_3[0]
+        assert pattern_p_3.pattern_id == pattern_p_id, "Pattern ID should be preserved"
+        assert pattern_p_3.metadata.get('consecutive_reuse_failures') == 3, \
+            f"Expected consecutive_reuse_failures == 3, got {pattern_p_3.metadata.get('consecutive_reuse_failures')}"
+        assert pattern_p_3.reusable is False, \
+            "Pattern should be reusable=False after 3 consecutive failures"
+
+        # FASE D: Selector DESPUÉS de invalidación
+        decision_after = selector.select(
+            request=request_create,
+            draft_task=task_create,
+        )
+        
+        # Verificar que el selector NO selecciona P
+        assert decision_after.reusable_pattern_id != pattern_p_id, \
+            f"AFTER: Selector should NOT select P, got reusable_pattern_id={decision_after.reusable_pattern_id}"
+        assert decision_after.reusable_pattern_id is None, \
+            f"AFTER: Selector should return None for reusable_pattern_id, got {decision_after.reusable_pattern_id}"
 
     finally:
         shutil.rmtree(root, ignore_errors=True)

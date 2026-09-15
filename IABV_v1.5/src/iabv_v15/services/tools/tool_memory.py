@@ -33,20 +33,24 @@ class ToolMemory:
         if goal_metadata:
             result = result.model_copy(update={'metadata': {**result.metadata, **goal_metadata}})
         self.repository.save_result(result)
-        updated_card = card.model_copy(
-            update={
-                'success_count': card.success_count + (1 if result.success else 0),
-                'failure_count': card.failure_count + (0 if result.success else 1),
-                'last_result_id': result.result_id,
-                'last_validated_at_utc': result.created_at_utc,
-                'validation_status': result.validation_status,
-                'metadata': {
-                    **card.metadata,
-                    'updated_at_utc': result.created_at_utc.isoformat(),
-                },
-            }
-        )
-        self.repository.save_card(updated_card)
+        
+        # KD-2 FIX: Only update ToolCard counters for final execution, not sandbox preflight
+        # Sandbox preflight is an intermediate observation, not a final experience
+        if not is_sandbox_preflight:
+            updated_card = card.model_copy(
+                update={
+                    'success_count': card.success_count + (1 if result.success else 0),
+                    'failure_count': card.failure_count + (0 if result.success else 1),
+                    'last_result_id': result.result_id,
+                    'last_validated_at_utc': result.created_at_utc,
+                    'validation_status': result.validation_status,
+                    'metadata': {
+                        **card.metadata,
+                        'updated_at_utc': result.created_at_utc.isoformat(),
+                    },
+                }
+            )
+            self.repository.save_card(updated_card)
         self.repository.log_execution(
             tool_id=task.tool_id,
             task_id=task.task_id,
@@ -58,7 +62,7 @@ class ToolMemory:
         # D2 FIX: Only learn from final execution outcome, not sandbox preflight
         # Sandbox preflight is an intermediate observation, not a final experience
         if self.interaction_learning_service is not None and not is_sandbox_preflight:
-            pattern = self.interaction_learning_service.learn_from_execution(card=updated_card, task=task, result=result)
+            pattern = self.interaction_learning_service.learn_from_execution(card=card, task=task, result=result)
             result = result.model_copy(
                 update={
                     'metadata': {
