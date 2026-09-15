@@ -36,6 +36,32 @@ class InteractionLearningService:
     def __init__(self, repository: ToolRecordRepository):
         self.repository = repository
 
+    def _actions_compatible_with_pattern(self, materialized_steps, pattern_operations) -> bool:
+        """
+        FIX #5: Verify if materialized actions are structurally compatible with source pattern.
+        
+        Materialization-tolerant comparison: ignores fields that can change during
+        materialization (expected_signal, temporal paths, etc.) but checks that
+        operator and core parameters match.
+        """
+        if len(materialized_steps) != len(pattern_operations):
+            return False  # Different number of operations = not compatible
+        
+        for materialized, canonical in zip(materialized_steps, pattern_operations):
+            # Check operator type
+            if materialized.operation != canonical.operation:
+                return False
+            
+            # Check core parameters (target is materialization-dependent, value_hint is stable)
+            # Allow target to differ (workspace-dependent) but require value_hint match
+            if materialized.value_hint != canonical.value_hint:
+                return False
+            
+            # expected_signal can change during materialization (e.g., empty -> 'page_opened')
+            # Do not use it for compatibility check
+        
+        return True
+
     def learn_from_execution(self, *, card: ToolCard, task: ToolTask, result: ToolResult) -> InteractionPattern:
         channel = self._channel_for_tool(card.tool_type)
         normalized_steps = [self._normalize_action(action, channel) for action in task.actions]
@@ -56,11 +82,15 @@ class InteractionLearningService:
         metadata_flag = bool(task.metadata.get('reused_actions_from_pattern', False))
         
         # FIX #1: Verify provenance from actual actions, not just metadata flag
-        # Check if actions actually carry reused_from_pattern=True
-        actions_have_provenance = any(
-            action.metadata.get('reused_from_pattern', False)
-            for action in task.actions
-        )
+        # Check if ALL actions actually carry valid provenance (materialization-tolerant)
+        # A single action marked does not certify a complete task as reuse
+        if task.actions:
+            actions_have_provenance = all(
+                action.metadata.get('reused_from_pattern', False)
+                for action in task.actions
+            )
+        else:
+            actions_have_provenance = False  # No actions = no provenance
         
         # Only consider actions as actually reused if BOTH metadata flag AND action-level provenance agree
         actions_actually_reused = metadata_flag and actions_have_provenance
@@ -74,7 +104,11 @@ class InteractionLearningService:
             # FIX #3: Prevent cross-tool contamination
             # Only use pattern if it matches the current tool/card
             if source_pattern is not None and source_pattern.tool_id == card.tool_id:
-                existing = source_pattern  # Use the source pattern for learning
+                # FIX #5: Verify structural compatibility with source pattern
+                # Actions must be compatible with source pattern (materialization-tolerant)
+                if self._actions_compatible_with_pattern(normalized_steps, source_pattern.operations):
+                    existing = source_pattern  # Use the source pattern for learning
+                # If actions are not compatible, fallback is rejected (will create new pattern)
         
         was_reused = bool(reused_pattern_id and existing is not None and existing.pattern_id == reused_pattern_id)
         
@@ -93,10 +127,19 @@ class InteractionLearningService:
                 consecutive_failures = 0  # Reset on success after reuse (positive evidence)
             # NF-IL-01-R1: Do NOT reset on unrelated failures - preserve negative evidence
             
-            # FIX #2: Maintain signature ↔ operations integrity
+            # FIX #2: Maintain signature ↔ operations integrity for NEW patterns
             # When updating operations, also update signature to maintain consistency
             updated_operations = normalized_steps or existing.operations
             updated_signature = self._signature_for(task=task, card=card, channel=channel, steps=updated_operations)
+            
+            # FIX #5: Preserve canonical pattern definition in fallback path
+            # If we reached this via fallback (signature != canonical), do NOT overwrite
+            # canonical operations/signature. Only update evidence/counts.
+            # This prevents fragmentation where P' appears with materialized signature.
+            if was_reused and existing.pattern_id == reused_pattern_id:
+                # Using fallback: preserve canonical definition
+                updated_operations = existing.operations  # Keep canonical operations
+                updated_signature = existing.signature  # Keep canonical signature
             
             # Check if pattern should be invalidated
             should_invalidate = consecutive_failures >= _INVALIDATION_THRESHOLD
