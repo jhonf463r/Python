@@ -1967,3 +1967,529 @@ def test_nf_il_02_success_without_actual_reuse_does_not_reset_refutation(simple_
     # VERIFY: Counter should now reset to 0
     assert pattern.metadata.get('consecutive_reuse_failures') == 0, \
         "Success with actual reuse should reset consecutive failures"
+
+
+def test_nf_il_02_rejects_mixed_actions(simple_card, repository, learning_service):
+    """
+    NF-IL-02 Adversarial P1: Reject mixed actions.
+    
+    One valid action from P + several unrelated actions.
+    Should reject as complete reuse of P.
+    """
+    # Create pattern P
+    task_p = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task P',
+        objective='Test objective P',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result_p = ToolResult(
+        task_id=task_p.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_p1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern_p = learning_service.learn_from_execution(card=simple_card, task=task_p, result=result_p)
+    pattern_p_id = pattern_p.pattern_id
+    original_operations = pattern_p.operations
+    original_failures = pattern_p.failure_count
+    
+    # Task with mixed actions: one from P (reused_from_pattern=True), one unrelated (False)
+    task_mixed = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Mixed task',
+        objective='Mixed objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url', metadata={'reused_from_pattern': True}),
+            ToolAction(action_type=ToolActionType.RUN_COMMAND, target='echo test', label='run command', metadata={'reused_from_pattern': False}),
+        ],
+        metadata={
+            'reused_pattern_id': pattern_p_id,
+            'reused_actions_from_pattern': True,
+        },
+    )
+    
+    result_mixed = ToolResult(
+        task_id=task_mixed.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_mixed1',
+        success=False,
+        output_text='',
+        error_message='Mixed failure',
+        execution_ms=100,
+        execution_state=ExecutionState(state='failed', detail='Error'),
+        validation_status=ToolValidationStatus.UNVALIDATED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    updated_pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_mixed, result=result_mixed
+    )
+    
+    # VERIFY: Should NOT attribute to P (mixed actions = not complete reuse due to all() check)
+    assert updated_pattern.pattern_id != pattern_p_id, \
+        "Should create new pattern for mixed actions, not reuse P"
+    
+    # Reload P and verify it's unchanged
+    reloaded_p = repository.get_interaction_pattern(pattern_p_id)
+    assert reloaded_p is not None, "Original pattern P should still exist"
+    assert reloaded_p.operations == original_operations, \
+        "P operations should not be modified"
+    assert reloaded_p.failure_count == original_failures, \
+        "P failure count should not be incremented"
+
+
+def test_nf_il_02_same_tool_wrong_pattern_id_does_not_contaminate(simple_card, repository, learning_service):
+    """
+    NF-IL-02 Adversarial P2: Same tool, wrong pattern_id.
+    
+    P and Q have same tool_id but different IDs.
+    Task with Q's actions but reused_pattern_id=P should not contaminate P.
+    """
+    # Create pattern P
+    task_p = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task P',
+        objective='Test objective P',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site_p',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result_p = ToolResult(
+        task_id=task_p.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_p1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern_p = learning_service.learn_from_execution(card=simple_card, task=task_p, result=result_p)
+    pattern_p_id = pattern_p.pattern_id
+    original_p_operations = pattern_p.operations
+    original_p_failures = pattern_p.failure_count
+    original_p_consecutive = pattern_p.metadata.get('consecutive_reuse_failures', 0)
+    
+    # Create pattern Q (same tool, different site_id = different signature)
+    task_q = task_p.model_copy(update={'site_id': 'test_site_q'})
+    result_q = result_p.model_copy(update={'result_id': 'result_q1'})
+    pattern_q = learning_service.learn_from_execution(card=simple_card, task=task_q, result=result_q)
+    pattern_q_id = pattern_q.pattern_id
+    
+    # Task with Q's actions but reused_pattern_id=P
+    task_for_p = task_q.model_copy(
+        update={
+            'metadata': {
+                'reused_pattern_id': pattern_p_id,  # Wrong pattern ID
+                'reused_actions_from_pattern': True,
+            },
+            'actions': [
+                ToolAction(
+                    action_type=ToolActionType.OPEN_URL,
+                    target='http://example.com',
+                    label='open test url',
+                    metadata={'reused_from_pattern': True}
+                )
+            ]
+        }
+    )
+    
+    result_for_p = ToolResult(
+        task_id=task_for_p.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_for_p1',
+        success=False,
+        output_text='',
+        error_message='Failure',
+        execution_ms=100,
+        execution_state=ExecutionState(state='failed', detail='Error'),
+        validation_status=ToolValidationStatus.UNVALIDATED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    updated_pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_for_p, result=result_for_p
+    )
+    
+    # VERIFY: P should remain intact (not contaminated by Q's actions)
+    reloaded_p = repository.get_interaction_pattern(pattern_p_id)
+    assert reloaded_p is not None, "Pattern P should still exist"
+    assert reloaded_p.operations == original_p_operations, \
+        "P operations should not be contaminated with Q's actions"
+    assert reloaded_p.pattern_id == pattern_p_id, \
+        "P identity should be preserved"
+    assert reloaded_p.failure_count == original_p_failures, \
+        "P failure count should not be incremented"
+    assert reloaded_p.metadata.get('consecutive_reuse_failures') == original_p_consecutive, \
+        "P consecutive failures should not be incremented"
+
+
+def test_nf_il_02_post_build_mutation_rejected(simple_card, repository, learning_service):
+    """
+    NF-IL-02 Adversarial P3: Post-build mutation.
+    
+    Construct a legitimately reused task, then modify actions incompatibly
+    while preserving provenance flags. Learner should reject attribution.
+    """
+    # Create pattern P
+    task_p = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task P',
+        objective='Test objective P',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result_p = ToolResult(
+        task_id=task_p.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_p1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern_p = learning_service.learn_from_execution(card=simple_card, task=task_p, result=result_p)
+    pattern_p_id = pattern_p.pattern_id
+    original_operations = pattern_p.operations
+    
+    # Construct legitimately reused task
+    task_reused = task_p.model_copy(
+        update={
+            'metadata': {
+                'reused_pattern_id': pattern_p_id,
+                'reused_actions_from_pattern': True,
+            },
+            'actions': [
+                ToolAction(
+                    action_type=ToolActionType.OPEN_URL,
+                    target='http://example.com',
+                    label='open test url',
+                    metadata={'reused_from_pattern': True}
+                )
+            ]
+        }
+    )
+    
+    # POST-BUILD MUTATION: modify action incompatibly while preserving flags
+    task_reused.actions[0] = ToolAction(
+        action_type=ToolActionType.RUN_COMMAND,  # Incompatible operator
+        target='echo test',
+        label='run command',
+        metadata={'reused_from_pattern': True}  # Flag preserved
+    )
+    
+    result_mutation = ToolResult(
+        task_id=task_reused.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_mutation1',
+        success=False,
+        output_text='',
+        error_message='Mutation failure',
+        execution_ms=100,
+        execution_state=ExecutionState(state='failed', detail='Error'),
+        validation_status=ToolValidationStatus.UNVALIDATED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    updated_pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_reused, result=result_mutation
+    )
+    
+    # VERIFY: Should NOT attribute to P (incompatible operator detected by structural check)
+    assert updated_pattern.pattern_id != pattern_p_id, \
+        "Should create new pattern for mutated actions, not reuse P"
+    
+    # Reload P and verify it's unchanged
+    reloaded_p = repository.get_interaction_pattern(pattern_p_id)
+    assert reloaded_p is not None, "Original pattern P should still exist"
+    assert reloaded_p.operations == original_operations, \
+        "P operations should not be modified"
+
+
+def test_nf_il_02_fallback_does_not_fragment_canonical_pattern(simple_card, repository, learning_service):
+    """
+    NF-IL-02: Fallback does not fragment canonical pattern.
+    
+    After fallback with different signature, P should remain the canonical pattern.
+    Executing original representation should still find P.
+    """
+    # Create pattern P
+    task = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task',
+        objective='Test objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result = ToolResult(
+        task_id=task.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern = learning_service.learn_from_execution(card=simple_card, task=task, result=result)
+    pattern_id = pattern.pattern_id
+    original_signature = pattern.signature
+    original_operations = pattern.operations
+    original_success_count = pattern.success_count
+    
+    # Simulate materialized execution with different signature
+    materialized_actions = [
+        ToolAction(
+            action_type=ToolActionType.OPEN_URL,
+            target='http://example.com',
+            label='open test url',
+            expected_signal='page_opened',  # Different metadata = different signature
+            metadata={'reused_from_pattern': True}
+        )
+    ]
+    
+    task_materialized = task.model_copy(
+        update={
+            'actions': materialized_actions,
+            'metadata': {
+                'reused_pattern_id': pattern_id,
+                'reused_actions_from_pattern': True,
+            }
+        }
+    )
+    
+    failure_result = ToolResult(
+        task_id=task_materialized.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_2',
+        success=False,
+        output_text='',
+        error_message='Failure',
+        execution_ms=100,
+        execution_state=ExecutionState(state='failed', detail='Error'),
+        validation_status=ToolValidationStatus.UNVALIDATED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    updated_pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_materialized, result=failure_result
+    )
+    
+    # VERIFY: P should still be the canonical pattern
+    assert updated_pattern.pattern_id == pattern_id, \
+        "Pattern ID should be preserved"
+    
+    # VERIFY: Canonical signature should be preserved (not changed to materialized)
+    assert updated_pattern.signature == original_signature, \
+        "Canonical signature should be preserved (not replaced with materialized)"
+    
+    # VERIFY: Canonical operations should be preserved
+    assert updated_pattern.operations == original_operations, \
+        "Canonical operations should be preserved (not replaced with materialized)"
+    
+    # VERIFY: Counters should be updated (evidence)
+    assert updated_pattern.success_count == original_success_count, \
+        "Success count should be preserved"
+    assert updated_pattern.failure_count == 1, \
+        "Failure count should be incremented"
+    
+    # VERIFY: Executing original representation should still find P
+    channel = learning_service._channel_for_tool(task.tool_id)
+    normalized_original = [learning_service._normalize_action(action, channel) for action in task.actions]
+    original_signature_recalc = learning_service._signature_for(
+        task=task, card=simple_card, channel=channel, steps=normalized_original
+    )
+    
+    found_by_original_signature = repository.get_interaction_pattern_by_signature(original_signature_recalc)
+    assert found_by_original_signature is not None, \
+        "Original signature should still locate P"
+    assert found_by_original_signature.pattern_id == pattern_id, \
+        "Should locate same P by original signature"
+    
+    # VERIFY: No fragmentation (P' should not exist)
+    all_patterns = repository.list_interaction_patterns(limit=100)
+    patterns_with_same_id = [p for p in all_patterns if p.pattern_id == pattern_id]
+    assert len(patterns_with_same_id) == 1, \
+        "Should not create fragmented P' (only one P should exist)"
+
+
+def test_nf_il_02_signature_operations_integrity_after_fallback(simple_card, repository, learning_service):
+    """
+    NF-IL-02: Signature/operations integrity after fallback.
+    
+    Demonstrate that after fallback:
+    signature == hash(canonical operations)
+    and fallback does not substitute canonical content with materialization.
+    """
+    # Create pattern P
+    task = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task',
+        objective='Test objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result = ToolResult(
+        task_id=task.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern = learning_service.learn_from_execution(card=simple_card, task=task, result=result)
+    pattern_id = pattern.pattern_id
+    original_signature = pattern.signature
+    original_operations = pattern.operations
+    
+    # Verify integrity before fallback
+    channel = learning_service._channel_for_tool(task.tool_id)
+    recomputed_before = learning_service._signature_for(
+        task=task, card=simple_card, channel=channel, steps=original_operations
+    )
+    assert original_signature == recomputed_before, \
+        "Canonical signature should hash canonical operations before fallback"
+    
+    # Execute materialized execution with different signature
+    materialized_actions = [
+        ToolAction(
+            action_type=ToolActionType.OPEN_URL,
+            target='http://example.com',
+            label='open test url',
+            expected_signal='page_opened',
+            metadata={'reused_from_pattern': True}
+        )
+    ]
+    
+    task_materialized = task.model_copy(
+        update={
+            'actions': materialized_actions,
+            'metadata': {
+                'reused_pattern_id': pattern_id,
+                'reused_actions_from_pattern': True,
+            }
+        }
+    )
+    
+    failure_result = ToolResult(
+        task_id=task_materialized.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_2',
+        success=False,
+        output_text='',
+        error_message='Failure',
+        execution_ms=100,
+        execution_state=ExecutionState(state='failed', detail='Error'),
+        validation_status=ToolValidationStatus.UNVALIDATED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    updated_pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_materialized, result=failure_result
+    )
+    
+    # Verify integrity after fallback
+    recomputed_after = learning_service._signature_for(
+        task=task, card=simple_card, channel=channel, steps=updated_pattern.operations
+    )
+    assert updated_pattern.signature == recomputed_after, \
+        "Canonical signature should hash canonical operations after fallback"
+    
+    # Verify signature did not change
+    assert updated_pattern.signature == original_signature, \
+        "Canonical signature should remain unchanged after fallback"
+    
+    # Verify operations did not change
+    assert updated_pattern.operations == original_operations, \
+        "Canonical operations should remain unchanged after fallback"
