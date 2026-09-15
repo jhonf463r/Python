@@ -28,7 +28,7 @@ class ToolMemory:
             created_at_utc=datetime.now(timezone.utc).isoformat(),
         )
 
-    def remember_result(self, card: ToolCard, task: ToolTask, result: ToolResult) -> ToolResult:
+    def remember_result(self, card: ToolCard, task: ToolTask, result: ToolResult, *, is_sandbox_preflight: bool = False) -> ToolResult:
         goal_metadata = self._goal_metadata(task.metadata)
         if goal_metadata:
             result = result.model_copy(update={'metadata': {**result.metadata, **goal_metadata}})
@@ -55,7 +55,9 @@ class ToolMemory:
             payload=result.model_dump(mode='json'),
             created_at_utc=result.created_at_utc.isoformat(),
         )
-        if self.interaction_learning_service is not None:
+        # D2 FIX: Only learn from final execution outcome, not sandbox preflight
+        # Sandbox preflight is an intermediate observation, not a final experience
+        if self.interaction_learning_service is not None and not is_sandbox_preflight:
             pattern = self.interaction_learning_service.learn_from_execution(card=updated_card, task=task, result=result)
             result = result.model_copy(
                 update={

@@ -819,7 +819,8 @@ class ToolTeachService:
             task = task.model_copy(update={'approval_decision': ApprovalDecision.APPROVED})
         self.memory.remember_task(task)
         sandbox_result = self.sandbox.run(card=card, task=task, adapter=adapter)
-        sandbox_result = self.memory.remember_result(card, task, sandbox_result)
+        # D2 FIX: Sandbox preflight is intermediate observation, not final experience
+        sandbox_result = self.memory.remember_result(card, task, sandbox_result, is_sandbox_preflight=True)
         approval_required = bool(task.metadata.get('approval_required'))
         if not sandbox_result.success:
             return sandbox_result
