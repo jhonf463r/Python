@@ -55,6 +55,18 @@ def test_browser_session_controller_hides_automation_banner_by_default() -> None
     assert '--disable-infobars' in controller.launch_args
     assert '--start-maximized' in controller.launch_args
     assert controller.chromium_sandbox is True
+    assert '--no-sandbox' not in controller.launch_args
+
+
+def test_browser_session_controller_only_uses_no_sandbox_when_explicitly_requested() -> None:
+    controller = BrowserSessionController(
+        user_data_dir='profile',
+        headless=True,
+        launch_args=['--no-sandbox'],
+    )
+
+    assert controller.chromium_sandbox is True
+    assert controller.launch_args == ['--no-sandbox']
 
 
 def test_build_storage_seed_script_embeds_origin_local_storage() -> None:

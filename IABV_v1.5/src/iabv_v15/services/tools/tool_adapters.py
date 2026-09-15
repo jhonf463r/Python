@@ -1235,11 +1235,19 @@ class ToolAdapter:
             launch_env=self._launch_env(card=card, task=task, workspace_root=workspace_root),
             browser_profile_dir=self._browser_profile_dir(card=card, task=task, workspace_root=workspace_root),
             browser_headless=bool(task.metadata.get('background_headless', card.metadata.get('background_headless', True))) and not bool(task.metadata.get('debug_visible_browser', card.metadata.get('debug_visible_browser', False))),
+            browser_launch_args=self._browser_launch_args(card=card, task=task),
             input_selectors=self._selectors(card=card, task=task, key='input_selectors'),
             response_selectors=self._selectors(card=card, task=task, key='response_selectors'),
             submit_selectors=self._selectors(card=card, task=task, key='submit_selectors'),
             reingest_only=reingest_only,
         )
+
+    def _browser_launch_args(self, *, card: ToolCard, task: ToolTask) -> list[str]:
+        """Return explicitly configured browser arguments for controlled runs."""
+        raw_args = task.metadata.get('browser_launch_args', card.metadata.get('browser_launch_args', []))
+        if not isinstance(raw_args, (list, tuple)):
+            return []
+        return [str(arg).strip() for arg in raw_args if str(arg).strip()]
 
 
     def _response_match_markers(self, *, task: ToolTask, prompt_text: str) -> list[str]:

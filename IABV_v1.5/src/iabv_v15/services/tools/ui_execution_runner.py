@@ -144,6 +144,7 @@ class UIExecutionRunner:
         launch_env: dict[str, str] | None = None,
         browser_profile_dir: str = '',
         browser_headless: bool = True,
+        browser_launch_args: list[str] | tuple[str, ...] | None = None,
         input_selectors: list[str] | tuple[str, ...] | None = None,
         response_selectors: list[str] | tuple[str, ...] | None = None,
         submit_selectors: list[str] | tuple[str, ...] | None = None,
@@ -161,6 +162,7 @@ class UIExecutionRunner:
                 response_wait_seconds=response_wait_seconds,
                 browser_profile_dir=browser_profile_dir,
                 browser_headless=browser_headless,
+                browser_launch_args=list(browser_launch_args or []),
                 input_selectors=list(input_selectors or []),
                 response_selectors=list(response_selectors or []),
                 submit_selectors=list(submit_selectors or []),
@@ -811,6 +813,7 @@ class UIExecutionRunner:
         response_wait_seconds: float,
         browser_profile_dir: str,
         browser_headless: bool,
+        browser_launch_args: list[str] | None = None,
         input_selectors: list[str],
         response_selectors: list[str],
         submit_selectors: list[str],
@@ -845,7 +848,13 @@ class UIExecutionRunner:
                 reingest_only=reingest_only,
                 started=started,
             )
-        controller = BrowserSessionController(user_data_dir=str(profile_dir), headless=browser_headless)
+        browser_launch_args = list(browser_launch_args or [])
+        explicit_no_sandbox = '--no-sandbox' in browser_launch_args
+        controller = BrowserSessionController(
+            user_data_dir=str(profile_dir),
+            headless=browser_headless,
+            launch_args=browser_launch_args or None,
+        )
         launched = False
         prompt_pasted = False
         response_captured = False
@@ -901,7 +910,11 @@ class UIExecutionRunner:
                     'error_message': error_message,
                     'browser_profile_dir': str(profile_dir),
                     'execution_ms': int((time.perf_counter() - started) * 1000),
-                    'metadata': {'background_capture_mode': 'browser_dom', 'security_retries': attempt + 1},
+                    'metadata': {
+                        'background_capture_mode': 'browser_dom',
+                        'security_retries': attempt + 1,
+                        'browser_launch_security_mode': 'explicit_no_sandbox_test' if explicit_no_sandbox else 'sandboxed_default',
+                    },
                 }
             if reingest_only:
                 # Modo reingesta: la sesion aislada ya tiene un hilo abierto con respuesta.
@@ -952,6 +965,8 @@ class UIExecutionRunner:
             'metadata': {
                 'background_capture_mode': 'browser_dom',
                 'browser_headless': browser_headless,
+                'browser_launch_args': browser_launch_args,
+                'browser_launch_security_mode': 'explicit_no_sandbox_test' if explicit_no_sandbox else 'sandboxed_default',
                 'reingest_only': reingest_only,
             },
         }
