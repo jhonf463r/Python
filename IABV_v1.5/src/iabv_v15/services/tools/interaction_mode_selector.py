@@ -326,6 +326,9 @@ class InteractionModeSelector:
         best = None
         best_score = -1.0
         for pattern in patterns:
+            # NF-IL-01: Skip invalidated patterns
+            if not pattern.reusable:
+                continue
             tokens = self._tokens(pattern.title + ' ' + str(pattern.metadata.get('objective_excerpt') or ''))
             overlap = len(goal_tokens.intersection(tokens))
             success_bias = pattern.success_count - pattern.failure_count

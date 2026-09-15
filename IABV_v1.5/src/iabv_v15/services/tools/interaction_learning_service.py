@@ -46,7 +46,27 @@ class InteractionLearningService:
         goal_metadata = self._goal_metadata(task.metadata)
         effective_success = self._is_effective_success(result)
         effective_failure = self._is_effective_failure(result)
+        
+        # NF-IL-01: Track consecutive reuse failures for invalidation
+        selection = dict(task.metadata.get('mode_selection') or {})
+        reused_pattern_id = str(selection.get('reusable_pattern_id') or '')
+        was_reused = bool(reused_pattern_id and existing is not None and existing.pattern_id == reused_pattern_id)
+        
+        # NF-IL-01: Threshold for pattern invalidation
+        _INVALIDATION_THRESHOLD = 3
+        
         if existing is not None:
+            # Handle consecutive reuse failures
+            consecutive_failures = int(existing.metadata.get('consecutive_reuse_failures') or 0)
+            if was_reused and effective_failure:
+                consecutive_failures += 1
+            elif was_reused and effective_success:
+                consecutive_failures = 0  # Reset on success after reuse
+            elif not was_reused:
+                consecutive_failures = 0  # Reset if not reused
+            
+            # Check if pattern should be invalidated
+            should_invalidate = consecutive_failures >= _INVALIDATION_THRESHOLD
             pattern = existing.model_copy(
                 update={
                     'title': task.title or existing.title,
@@ -56,6 +76,7 @@ class InteractionLearningService:
                     'last_task_id': task.task_id,
                     'last_result_id': result.result_id,
                     'updated_at_utc': now,
+                    'reusable': False if should_invalidate else existing.reusable,
                     'metadata': {
                         **existing.metadata,
                         'objective_excerpt': task.objective[:200],
@@ -63,6 +84,8 @@ class InteractionLearningService:
                         'approval_decision': task.approval_decision.value,
                         'last_validation_status': result.validation_status.value,
                         'last_execution_state': result.execution_state.state,
+                        'consecutive_reuse_failures': consecutive_failures,
+                        'invalidated_at_utc': now.isoformat() if should_invalidate else existing.metadata.get('invalidated_at_utc'),
                         **goal_metadata,
                     },
                 }
@@ -89,6 +112,7 @@ class InteractionLearningService:
                     'approval_decision': task.approval_decision.value,
                     'last_validation_status': result.validation_status.value,
                     'last_execution_state': result.execution_state.state,
+                    'consecutive_reuse_failures': 0,
                     **goal_metadata,
                 },
             )
