@@ -1594,3 +1594,376 @@ def test_nf_il_02_no_false_fallback(simple_card, repository, learning_service):
     # VERIFY: Should create NEW pattern, not attribute to P
     # Signature lookup fails, ID fallback should NOT happen (actions_actually_reused = False)
     assert updated_pattern.pattern_id != pattern_id, "Should create new pattern, not reuse existing"
+
+
+def test_nf_il_02_rejects_spoofed_reuse_metadata_with_unrelated_actions(simple_card, repository, learning_service):
+    """
+    NF-IL-02 Adversarial: Reject spoofed reuse metadata with unrelated actions.
+    
+    Test FIX #1: Even if metadata is spoofed with reused_pattern_id and
+    reused_actions_from_pattern=True, if actual actions don't carry
+    reused_from_pattern=True, the pattern should NOT be updated.
+    
+    This prevents forgery of provenance.
+    """
+    # Create pattern P (Playwright-like)
+    task_p = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task P',
+        objective='Test objective P',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result_p = ToolResult(
+        task_id=task_p.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_p1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern_p = learning_service.learn_from_execution(card=simple_card, task=task_p, result=result_p)
+    pattern_p_id = pattern_p.pattern_id
+    original_operations = pattern_p.operations
+    original_failures = pattern_p.failure_count
+    original_consecutive_failures = pattern_p.metadata.get('consecutive_reuse_failures', 0)
+    
+    # Create Shell task with unrelated actions (run_command)
+    task_shell = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Shell task',
+        objective='Shell objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.RUN_COMMAND, target='echo test', label='run command'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={
+            # SPOOF: Fake reuse metadata pointing to P
+            'reused_pattern_id': pattern_p_id,
+            'reused_actions_from_pattern': True,
+        },
+    )
+    
+    # Actions do NOT carry reused_from_pattern (actual provenance)
+    result_shell = ToolResult(
+        task_id=task_shell.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_shell1',
+        success=False,
+        output_text='',
+        error_message='Shell failure',
+        execution_ms=100,
+        execution_state=ExecutionState(state='failed', detail='Error'),
+        validation_status=ToolValidationStatus.UNVALIDATED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    updated_pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_shell, result=result_shell
+    )
+    
+    # VERIFY: P should NOT be updated
+    assert updated_pattern.pattern_id != pattern_p_id, \
+        "Should create new pattern for different actions, not reuse P"
+    
+    # Reload P and verify it's unchanged
+    reloaded_p = repository.get_interaction_pattern(pattern_p_id)
+    assert reloaded_p is not None, "Original pattern P should still exist"
+    assert reloaded_p.operations == original_operations, \
+        "P operations should not be contaminated with Shell actions"
+    assert reloaded_p.failure_count == original_failures, \
+        "P failure count should not be incremented"
+    assert reloaded_p.metadata.get('consecutive_reuse_failures') == original_consecutive_failures, \
+        "P consecutive failures should not be incremented"
+
+
+def test_nf_il_02_signature_operations_integrity(simple_card, repository, learning_service):
+    """
+    NF-IL-02: Verify signature ↔ operations integrity after learning.
+    
+    Test FIX #2: After learning with signature fallback, ensure that
+    stored signature matches recomputed signature from stored operations.
+    """
+    # Create pattern P
+    task = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task',
+        objective='Test objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result = ToolResult(
+        task_id=task.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern = learning_service.learn_from_execution(card=simple_card, task=task, result=result)
+    pattern_id = pattern.pattern_id
+    
+    # Simulate materialized execution with different signature
+    materialized_actions = [
+        ToolAction(
+            action_type=ToolActionType.OPEN_URL,
+            target='http://example.com',
+            label='open test url',
+            expected_signal='page_opened',  # Different metadata = different signature
+            metadata={'reused_from_pattern': True}
+        )
+    ]
+    
+    task_reused = task.model_copy(
+        update={
+            'actions': materialized_actions,
+            'metadata': {
+                'reused_pattern_id': pattern_id,
+                'reused_actions_from_pattern': True,
+            }
+        }
+    )
+    
+    failure_result = ToolResult(
+        task_id=task_reused.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_2',
+        success=False,
+        output_text='',
+        error_message='Failure',
+        execution_ms=100,
+        execution_state=ExecutionState(state='failed', detail='Error'),
+        validation_status=ToolValidationStatus.UNVALIDATED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    updated_pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_reused, result=failure_result
+    )
+    
+    # Reload from repository
+    reloaded = repository.get_interaction_pattern(pattern_id)
+    assert reloaded is not None
+    
+    # Recompute signature from stored operations
+    channel = learning_service._channel_for_tool(simple_card.tool_type)
+    recomputed_signature = learning_service._signature_for(
+        task=task_reused,
+        card=simple_card,
+        channel=channel,
+        steps=reloaded.operations
+    )
+    
+    # VERIFY: Stored signature should match recomputed signature
+    assert reloaded.signature == recomputed_signature, \
+        "Stored signature should match recomputed signature from stored operations"
+    
+    # Verify repository can still locate the pattern
+    found_by_signature = repository.get_interaction_pattern_by_signature(reloaded.signature)
+    assert found_by_signature is not None, \
+        "Pattern should be locatable by its updated signature"
+    assert found_by_signature.pattern_id == pattern_id
+
+
+def test_nf_il_02_success_without_actual_reuse_does_not_reset_refutation(simple_card, repository, learning_service):
+    """
+    NF-IL-02: Success without actual reuse does not reset refutation.
+    
+    Test FIX #4: Success should only reset consecutive_reuse_failures
+    if there was actual reuse. Mere selection should not reset.
+    """
+    # Create pattern P
+    task = ToolTask(
+        tool_id=simple_card.tool_id,
+        title='Test task',
+        objective='Test objective',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        site_id='test_site',
+        actions=[
+            ToolAction(action_type=ToolActionType.OPEN_URL, target='http://example.com', label='open test url'),
+        ],
+        approval_decision=ApprovalDecision.SKIPPED,
+        metadata={},
+    )
+    result = ToolResult(
+        task_id=task.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_1',
+        success=True,
+        output_text='hello',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    pattern = learning_service.learn_from_execution(card=simple_card, task=task, result=result)
+    pattern_id = pattern.pattern_id
+    
+    # Accumulate 2 failures with real reuse
+    for i in range(2):
+        task_with_reuse = task.model_copy(
+            update={
+                'metadata': {
+                    'reused_pattern_id': pattern_id,
+                    'reused_actions_from_pattern': True,
+                },
+                'actions': [
+                    ToolAction(
+                        action_type=ToolActionType.OPEN_URL,
+                        target='http://example.com',
+                        label='open test url',
+                        metadata={'reused_from_pattern': True}
+                    )
+                ]
+            }
+        )
+        failure_result = ToolResult(
+            task_id=task_with_reuse.task_id,
+            tool_id=simple_card.tool_id,
+            tool_type=simple_card.tool_type,
+            result_id=f'result_{i+2}',
+            success=False,
+            output_text='',
+            error_message=f'Failure {i+1}',
+            execution_ms=100,
+            execution_state=ExecutionState(state='failed', detail='Error'),
+            validation_status=ToolValidationStatus.UNVALIDATED,
+            rollback_state=ExecutionState(state='none', detail=''),
+            extracted_data={},
+            artifacts=[],
+            metadata={},
+        )
+        pattern = learning_service.learn_from_execution(
+            card=simple_card, task=task_with_reuse, result=failure_result
+        )
+    
+    assert pattern.metadata.get('consecutive_reuse_failures') == 2
+    
+    # Success WITHOUT actual reuse (only selection)
+    task_success_no_reuse = task.model_copy(
+        update={
+            'metadata': {
+                'reused_pattern_id': pattern_id,  # Selected
+                'reused_actions_from_pattern': False,  # But NOT actually reused
+            },
+            'actions': [
+                ToolAction(
+                    action_type=ToolActionType.OPEN_URL,
+                    target='http://example.com',
+                    label='open test url',
+                    metadata={'reused_from_pattern': False}
+                )
+            ]
+        }
+    )
+    success_result = ToolResult(
+        task_id=task_success_no_reuse.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_4',
+        success=True,
+        output_text='success',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_success_no_reuse, result=success_result
+    )
+    
+    # VERIFY: Counter should remain 2 (not reset)
+    assert pattern.metadata.get('consecutive_reuse_failures') == 2, \
+        "Success without actual reuse should not reset consecutive failures"
+    
+    # Success WITH actual reuse should reset
+    task_success_with_reuse = task.model_copy(
+        update={
+            'metadata': {
+                'reused_pattern_id': pattern_id,
+                'reused_actions_from_pattern': True,
+            },
+            'actions': [
+                ToolAction(
+                    action_type=ToolActionType.OPEN_URL,
+                    target='http://example.com',
+                    label='open test url',
+                    metadata={'reused_from_pattern': True}
+                )
+            ]
+        }
+    )
+    success_result_2 = ToolResult(
+        task_id=task_success_with_reuse.task_id,
+        tool_id=simple_card.tool_id,
+        tool_type=simple_card.tool_type,
+        result_id='result_5',
+        success=True,
+        output_text='success',
+        error_message='',
+        execution_ms=100,
+        execution_state=ExecutionState(state='completed', detail='Success'),
+        validation_status=ToolValidationStatus.APPROVED,
+        rollback_state=ExecutionState(state='none', detail=''),
+        extracted_data={},
+        artifacts=[],
+        metadata={},
+    )
+    
+    pattern = learning_service.learn_from_execution(
+        card=simple_card, task=task_success_with_reuse, result=success_result_2
+    )
+    
+    # VERIFY: Counter should now reset to 0
+    assert pattern.metadata.get('consecutive_reuse_failures') == 0, \
+        "Success with actual reuse should reset consecutive failures"

@@ -53,7 +53,17 @@ class InteractionLearningService:
         reused_pattern_id = str(task.metadata.get('reused_pattern_id') or '')
         # NF-IL-01-R1 & NF-IL-02: Check if actions actually came from the reused pattern
         # Production writes this to task.metadata directly
-        actions_actually_reused = bool(task.metadata.get('reused_actions_from_pattern', False))
+        metadata_flag = bool(task.metadata.get('reused_actions_from_pattern', False))
+        
+        # FIX #1: Verify provenance from actual actions, not just metadata flag
+        # Check if actions actually carry reused_from_pattern=True
+        actions_have_provenance = any(
+            action.metadata.get('reused_from_pattern', False)
+            for action in task.actions
+        )
+        
+        # Only consider actions as actually reused if BOTH metadata flag AND action-level provenance agree
+        actions_actually_reused = metadata_flag and actions_have_provenance
         
         # NF-IL-02: Robust pattern identity - fallback to pattern_id when signature changed
         # Only use fallback if actions were actually reused from the pattern
@@ -61,7 +71,9 @@ class InteractionLearningService:
             # Signature lookup failed, but execution was actually derived from a pattern
             # Try to find the source pattern by ID instead of signature
             source_pattern = self.repository.get_interaction_pattern(reused_pattern_id)
-            if source_pattern is not None:
+            # FIX #3: Prevent cross-tool contamination
+            # Only use pattern if it matches the current tool/card
+            if source_pattern is not None and source_pattern.tool_id == card.tool_id:
                 existing = source_pattern  # Use the source pattern for learning
         
         was_reused = bool(reused_pattern_id and existing is not None and existing.pattern_id == reused_pattern_id)
@@ -76,16 +88,23 @@ class InteractionLearningService:
             # NF-IL-02: Only if pattern has verified success (success_count > 0)
             if was_reused and actions_actually_reused and effective_failure and existing.success_count > 0:
                 consecutive_failures += 1
-            elif was_reused and effective_success:
+            # FIX #4: Reset only if actual reuse + success (symmetry with failure path)
+            elif was_reused and actions_actually_reused and effective_success:
                 consecutive_failures = 0  # Reset on success after reuse (positive evidence)
             # NF-IL-01-R1: Do NOT reset on unrelated failures - preserve negative evidence
+            
+            # FIX #2: Maintain signature ↔ operations integrity
+            # When updating operations, also update signature to maintain consistency
+            updated_operations = normalized_steps or existing.operations
+            updated_signature = self._signature_for(task=task, card=card, channel=channel, steps=updated_operations)
             
             # Check if pattern should be invalidated
             should_invalidate = consecutive_failures >= _INVALIDATION_THRESHOLD
             pattern = existing.model_copy(
                 update={
                     'title': task.title or existing.title,
-                    'operations': normalized_steps or existing.operations,
+                    'signature': updated_signature,  # FIX #2: Update signature when operations change
+                    'operations': updated_operations,
                     'success_count': existing.success_count + (1 if effective_success else 0),
                     'failure_count': existing.failure_count + (1 if effective_failure else 0),
                     'last_task_id': task.task_id,
