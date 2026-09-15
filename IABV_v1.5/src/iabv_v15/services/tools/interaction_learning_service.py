@@ -122,9 +122,10 @@ class InteractionLearningService:
             # NF-IL-02: Only if pattern has verified success (success_count > 0)
             if was_reused and actions_actually_reused and effective_failure and existing.success_count > 0:
                 consecutive_failures += 1
-            # FIX #4: Reset only if actual reuse + success (symmetry with failure path)
-            elif was_reused and actions_actually_reused and effective_success:
-                consecutive_failures = 0  # Reset on success after reuse (positive evidence)
+            # FIX #4: Reset only if actual reuse + real execution success (symmetry with failure path)
+            # D1 FIX: Exclude sandbox preflight from reset - only real execution success resets
+            elif was_reused and actions_actually_reused and effective_success and not result.execution_state.sandboxed:
+                consecutive_failures = 0  # Reset on real execution success after reuse (positive evidence)
             # NF-IL-01-R1: Do NOT reset on unrelated failures - preserve negative evidence
             
             # FIX #2: Maintain signature ↔ operations integrity for NEW patterns

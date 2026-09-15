@@ -6,6 +6,7 @@ cuando producen fallos consecutivos tras ser reutilizados.
 """
 
 import pytest
+import tempfile
 from datetime import datetime, timezone
 
 from iabv_v15.domain.models import (
@@ -2493,3 +2494,144 @@ def test_nf_il_02_signature_operations_integrity_after_fallback(simple_card, rep
     # Verify operations did not change
     assert updated_pattern.operations == original_operations, \
         "Canonical operations should remain unchanged after fallback"
+
+
+def test_nf_il_02_production_pipeline_integration():
+    """
+    NF-IL-02: Integration test with real production pipeline (ToolTeachService).
+    Verifies that the fallback mechanism works through the complete execution path.
+    """
+    import shutil
+    from pathlib import Path
+    from iabv_v15.domain.models import ToolCard, ToolType, InferenceRequest, TaskRole, ToolTask
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    from iabv_v15.services.tools.tool_teach_service import ToolTeachService
+    from iabv_v15.services.tools.tool_registry import ToolRegistry
+    from iabv_v15.services.tools.tool_validator import ToolValidator
+    from iabv_v15.services.tools.tool_sandbox import ToolSandbox
+    from iabv_v15.services.tools.tool_memory import ToolMemory
+    from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
+    from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
+
+    class FakeToolAdapter:
+        def __init__(self, tool_type: ToolType, *, available: bool = True) -> None:
+            self.tool_type = tool_type
+            self.available = available
+
+        def is_available(self, card: ToolCard) -> bool:
+            return self.available
+
+        def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, any]:
+            stage = 'sandbox' if sandbox else 'executed'
+            return {
+                'success': True,
+                'output_text': f'{card.tool_id}:{stage}',
+                'extracted_data': {'action_count': len(task.actions)},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': 5,
+                'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+            }
+
+    root = Path(tempfile.mkdtemp(prefix='nf_il_02_production_'))
+    try:
+        db = AppDatabase(str(root / 'app.sqlite'))
+        storage = ArtifactStorage(str(root / 'tool_teaching'))
+        repo = ToolRecordRepository(db=db, storage=storage)
+        adapters = {
+            'shell': FakeToolAdapter(ToolType.SHELL),
+        }
+        registry = ToolRegistry(repo, adapters)
+        validator = ToolValidator()
+        sandbox = ToolSandbox(validator)
+        interaction_learning_service = InteractionLearningService(repo)
+        mode_selector = InteractionModeSelector(registry, repo)
+        memory = ToolMemory(repo, interaction_learning_service)
+        approval_policy = ToolApprovalPolicy()
+        service = ToolTeachService(
+            registry=registry,
+            memory=memory,
+            sandbox=sandbox,
+            validator=validator,
+            approval_policy=approval_policy,
+            rollback_manager=None,
+            adapters=adapters,
+            workspace_root=str(root),
+            interaction_learning_service=interaction_learning_service,
+            mode_selector=mode_selector,
+            experiment_lab=None,
+            live_audit_supervisor=None,
+        )
+
+        # Create tool card
+        card = ToolCard(
+            tool_id='shell_command',
+            title='Shell Command',
+            tool_type=ToolType.SHELL,
+            adapter_key='shell',
+            description='Test shell tool',
+            available=True,
+            success_count=0,
+            failure_count=0,
+            last_result_id=None,
+            last_validated_at_utc=None,
+            metadata={'workspace_root': str(root)},
+        )
+        repo.save_card(card)
+
+        # First execution to create pattern P
+        request1 = InferenceRequest(
+            user_goal='Ejecutar comando shell',
+            task_role=TaskRole.TOOL_SANDBOX,
+            goal_parameters={
+                'tool_id': 'shell_command',
+                'command': 'Get-Location',
+                'execution_scope': 'read_only',
+            },
+        )
+        task1 = service.build_task_from_request(request1)
+        result1 = service.execute_task(task1, approved=False)
+
+        # Verify pattern was created
+        patterns = repo.list_interaction_patterns()
+        assert len(patterns) == 1, "Should create one pattern after first execution"
+        pattern_p = patterns[0]
+        pattern_p_id = pattern_p.pattern_id
+
+        # Mock signature lookup to force fallback
+        original_get_by_signature = repo.get_interaction_pattern_by_signature
+        def mock_get_by_signature(signature):
+            return None
+        repo.get_interaction_pattern_by_signature = mock_get_by_signature
+
+        # Second execution reusing P
+        request2 = InferenceRequest(
+            user_goal='Ejecutar comando shell similar',
+            task_role=TaskRole.TOOL_SANDBOX,
+            goal_parameters={
+                'tool_id': 'shell_command',
+                'command': 'Get-Location',
+                'execution_scope': 'read_only',
+            },
+        )
+        task2 = service.build_task_from_request(request2)
+        task2.metadata['reused_pattern_id'] = pattern_p_id
+        task2.metadata['reused_actions_from_pattern'] = True
+        for action in task2.actions:
+            action.metadata['reused_from_pattern'] = True
+        result2 = service.execute_task(task2, approved=False)
+
+        # Restore original method
+        repo.get_interaction_pattern_by_signature = original_get_by_signature
+
+        # Verify pattern was updated via fallback
+        patterns_after = repo.list_interaction_patterns()
+        assert len(patterns_after) == 1, "Should still have one pattern"
+        pattern_p_updated = patterns_after[0]
+        assert pattern_p_updated.pattern_id == pattern_p_id, "Pattern ID should be preserved via fallback"
+        assert pattern_p_updated.success_count >= 2, "Pattern should have at least 2 successes"
+
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
