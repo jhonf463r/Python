@@ -22,6 +22,9 @@ from iabv_v15.domain.models import (
     ToolTask,
     ToolType,
 )
+from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
 
 
@@ -636,5 +639,65 @@ if __name__ == '__main__':
     test_p0_b_10_direct_bootstrap_bypass()
     test_p0_b_11_sandbox()
     test_p0_b_12_authorization_survives_no_substitution()
+    test_p0_b_13_database_save_load_cycle()
     
     print("\n=== ALL TESTS PASSED ===")
+
+
+def test_p0_b_13_database_save_load_cycle() -> None:
+    """R3-12: Database save → load cycle verification.
+    
+    Tests that save_external_authorization() → get_external_authorization()
+    preserves all relevant fields and maintains semantic integrity.
+    """
+    print("\n=== TEST 13: Database save → load cycle ===")
+    
+    root = _workspace('p0b_db_cycle')
+    db = AppDatabase(str(root / 'app.sqlite'))
+    storage = ArtifactStorage(str(root / 'tool_teaching'))
+    repo = ToolRecordRepository(db=db, storage=storage)
+    
+    # Create authorization
+    auth = _create_authorization(
+        task_id='test_task_db',
+        tool_id='devin_api',
+        adapter_key='devin_api',
+        assistant_kind='gpt-4',
+        prompt_digest='abc123',
+    )
+    
+    # Save to database
+    saved = repo.save_external_authorization(auth)
+    assert saved.authorization_id == auth.authorization_id
+    
+    # Load by authorization_id
+    loaded = repo.get_external_authorization(auth.authorization_id)
+    assert loaded is not None
+    assert loaded['authorization_id'] == auth.authorization_id
+    assert loaded['task_id'] == auth.task_id
+    assert loaded['tool_id'] == auth.tool_id
+    assert loaded['adapter_key'] == auth.adapter_key
+    assert loaded['assistant_kind'] == auth.assistant_kind
+    assert loaded['prompt_digest'] == auth.prompt_digest
+    assert loaded['status'] == 'validated'
+    assert loaded['approved_by'] == 'test_user@example.com'
+    
+    # Verify nonce is preserved
+    assert loaded['nonce'] == auth.nonce
+    
+    # Verify timestamps
+    assert loaded['issued_at'] is not None
+    assert loaded['expires_at'] is not None
+    assert loaded['consumed_at'] is None  # Not consumed yet
+    
+    # Consume and verify persistence of consumed state
+    consumed_auth = ExternalActionAuthorization(**loaded)
+    consumed_auth.consume()
+    repo.save_external_authorization(consumed_auth)
+    
+    reloaded = repo.get_external_authorization(auth.authorization_id)
+    assert reloaded is not None
+    assert reloaded['status'] == 'consumed'
+    assert reloaded['consumed_at'] is not None
+    
+    print("OK: R3-12 Database save → load cycle verified")
