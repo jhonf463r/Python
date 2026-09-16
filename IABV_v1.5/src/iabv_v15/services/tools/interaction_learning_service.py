@@ -18,6 +18,7 @@ from iabv_v15.domain.models import (
     InteractionEvidence,
     InteractionObservation,
     InteractionPattern,
+    VerifiedTransition,
     InteractionPolicyDecision,
     InteractionResult,
     LearningSignal,
@@ -187,6 +188,40 @@ class InteractionLearningService:
         )
         self.repository.save_interaction_observation(observation)
         return saved
+
+    def learn_from_verified_transition(self, transition: VerifiedTransition) -> InteractionPattern:
+        """Persist and learn an independently verified transition without ToolResult semantics."""
+        self.repository.save_verified_transition(transition)
+        existing = self.repository.get_interaction_pattern_by_signature(transition.action_signature)
+        now = datetime.now(timezone.utc)
+        verified = transition.verification_status == 'verified' and transition.action_result_verified
+        failed = transition.verification_status == 'verification_failed' or not transition.action_result_verified
+        provenance = {
+            'last_verified_transition_id': transition.transition_id,
+            'last_verified_transition': transition.model_dump(mode='json'),
+            'objective_excerpt': transition.objective[:200],
+            'world_grounded_learning': True,
+        }
+        if existing is not None:
+            pattern = existing.model_copy(update={
+                'title': transition.objective[:80] or existing.title,
+                'success_count': existing.success_count,
+                'failure_count': existing.failure_count,
+                'verified_transition_success_count': existing.verified_transition_success_count + int(verified),
+                'verified_transition_failure_count': existing.verified_transition_failure_count + int(failed),
+                'updated_at_utc': now,
+                'metadata': {**existing.metadata, **provenance},
+            })
+        else:
+            pattern = InteractionPattern(
+                signature=transition.action_signature, title=transition.objective[:80] or transition.action,
+                channel=transition.channel, tool_id=transition.tool_id, tool_type=transition.tool_type,
+                operations=[UniversalInteractionStep(channel=transition.channel, operation=transition.action, target=transition.target)],
+                success_count=0, failure_count=0,
+                verified_transition_success_count=int(verified), verified_transition_failure_count=int(failed),
+                created_at_utc=now, updated_at_utc=now, metadata=provenance,
+            )
+        return self.repository.save_interaction_pattern(pattern)
 
     def learn_from_teaching_session(
         self,

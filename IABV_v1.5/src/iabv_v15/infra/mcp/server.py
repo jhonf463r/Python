@@ -3704,6 +3704,49 @@ class IABVMCPServer:
             trace['result_verification'] = result_verification
             trace['steps'].append({'step': 'result_verification', 'status': 'error', 'error': str(exc)})
 
+        # The learning bridge consumes the independently verified transition,
+        # never the actor's success report as a substitute for verification.
+        learning_service = getattr(self.container, 'interaction_learning_service', None)
+        if learning_service is not None and result_verification.get('status') in {'verified', 'verification_failed'}:
+            try:
+                from iabv_v15.domain.models import InteractionChannel, ToolType, VerifiedTransition
+
+                action_signature = hashlib.sha256(
+                    f'{assigned_tool}|{action}|{target}'.encode('utf-8')
+                ).hexdigest()
+                transition = VerifiedTransition(
+                    action_signature=action_signature,
+                    action=action,
+                    target=target,
+                    tool_id=assigned_tool,
+                    tool_type=ToolType.MCP_CLIENT,
+                    channel=InteractionChannel.API,
+                    objective=user_goal,
+                    expected_state=dict(result_verification.get('expected_result') or {}),
+                    observed_state=dict(result_verification.get('observed_result') or {}),
+                    verification_status=str(result_verification['status']),
+                    actor_reported_success=tool_result.get('status') == 'ok',
+                    action_executed=bool(result_verification.get('action_executed')),
+                    action_result_observed=bool(result_verification.get('action_result_observed')),
+                    action_result_verified=bool(result_verification.get('action_result_verified')),
+                    expected_state_source=str(result_verification.get('expected_result_source') or ''),
+                    observed_state_source=str(result_verification.get('observed_result_source') or ''),
+                    execution_id=execution_context.get('execution_id'), run_id=execution_context.get('run_id'),
+                    lease_id=execution_context.get('lease_id'), session_id=execution_context.get('session_id'),
+                    episode_id=execution_context.get('episode_id'), invocation_id=execution_context.get('invocation_id'),
+                    plan_id=plan.plan_id,
+                    metadata={'g1_operation': True, 'correlation_ids_are_not_all_persisted_entities': True},
+                )
+                pattern = learning_service.learn_from_verified_transition(transition)
+                trace['learning_bridge'] = {
+                    'status': 'persisted', 'transition_id': transition.transition_id,
+                    'pattern_id': pattern.pattern_id,
+                    'actor_reported_success': transition.actor_reported_success,
+                    'verification_status': transition.verification_status,
+                }
+            except Exception as exc:
+                trace['learning_bridge'] = {'status': 'error', 'error': str(exc)}
+
         # AFTER state capture
         after_state: dict[str, Any] = {
             'git_status': '',

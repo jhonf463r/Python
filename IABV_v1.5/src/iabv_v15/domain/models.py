@@ -1367,10 +1367,49 @@ class InteractionPattern(BaseModel):
     reusable: bool = True
     success_count: int = 0
     failure_count: int = 0
+    # World-grounded outcomes are deliberately separate from ToolResult success.
+    verified_transition_success_count: int = 0
+    verified_transition_failure_count: int = 0
     last_task_id: str | None = None
     last_result_id: str | None = None
     created_at_utc: datetime = Field(default_factory=utc_now)
     updated_at_utc: datetime = Field(default_factory=utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class VerifiedTransition(BaseModel):
+    """A persisted expected-versus-observed action transition.
+
+    This is evidence for interaction learning, not a generic execution-success
+    flag: an actor may report success while the independent verifier rejects
+    the expected state.
+    """
+    transition_id: str = Field(default_factory=lambda: str(uuid4()))
+    action_signature: str
+    action: str
+    target: str
+    tool_id: str
+    tool_type: ToolType
+    channel: InteractionChannel
+    objective: str = ""
+    expected_state: dict[str, Any] = Field(default_factory=dict)
+    observed_state: dict[str, Any] = Field(default_factory=dict)
+    verification_status: str
+    actor_reported_success: bool
+    action_executed: bool
+    action_result_observed: bool
+    action_result_verified: bool
+    expected_state_source: str = ""
+    observed_state_source: str = ""
+    execution_id: str | None = None
+    run_id: str | None = None
+    lease_id: str | None = None
+    session_id: str | None = None
+    episode_id: str | None = None
+    invocation_id: str | None = None
+    plan_id: str | None = None
+    step_id: str | None = None
+    created_at_utc: datetime = Field(default_factory=utc_now)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

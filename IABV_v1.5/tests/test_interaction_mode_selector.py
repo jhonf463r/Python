@@ -22,6 +22,7 @@ from iabv_v15.infra.persistence.tool_record_repository import ToolRecordReposito
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
 from iabv_v15.services.tools.tool_registry import ToolRegistry
+from iabv_v15.domain.models import InteractionChannel, VerifiedTransition
 
 
 class DummyAdapter:
@@ -276,6 +277,32 @@ def test_selector_does_not_reuse_failure_only_pattern() -> None:
         assert selection.already_resolved is False
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_selector_discriminates_verified_transition_history() -> None:
+    root_a = _workspace('verified_transition_arm_a')
+    root_b = _workspace('verified_transition_arm_b')
+    try:
+        task = ToolTask(tool_id='shell_command', title='Escribir demo', objective='Escribir demo verificable', actions=[ToolAction(action_type=ToolActionType.RUN_COMMAND, label='Escribir', target='demo.txt')])
+        request = InferenceRequest(user_goal='Escribir demo verificable', task_role=TaskRole.TOOL_USE)
+        selector_a, registry_a, _repo_a, learning_a = _selector(root_a)
+        selector_b, registry_b, _repo_b, learning_b = _selector(root_b)
+        for learning, verified in ((learning_a, True), (learning_b, False)):
+            learning.learn_from_verified_transition(VerifiedTransition(
+                action_signature='verified-demo', action='WRITE_REPOSITORY_FILE', target='file:demo.txt',
+                tool_id='shell_command', tool_type=ToolType.SHELL, channel=InteractionChannel.BACKGROUND,
+                objective='Escribir demo verificable', expected_state={'file_exists': True},
+                observed_state={'file_exists': verified}, verification_status='verified' if verified else 'verification_failed',
+                actor_reported_success=True, action_executed=True, action_result_observed=True,
+                action_result_verified=verified, expected_state_source='plan', observed_state_source='filesystem',
+            ))
+        a = selector_a.select(request=request, draft_task=task, suggested_tool_id='shell_command')
+        b = selector_b.select(request=request, draft_task=task, suggested_tool_id='shell_command')
+        assert a.equivalent_pattern_exists is True
+        assert b.equivalent_pattern_exists is False
+    finally:
+        shutil.rmtree(root_a, ignore_errors=True)
+        shutil.rmtree(root_b, ignore_errors=True)
 
 
 def test_selector_avoids_repeatedly_blocked_external_tool_when_same_family_alternative_exists() -> None:

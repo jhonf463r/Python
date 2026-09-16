@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask
+from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask, VerifiedTransition
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
@@ -328,6 +328,36 @@ class ToolRecordRepository:
             ),
         )
         return observation
+
+    def save_verified_transition(self, transition: VerifiedTransition) -> VerifiedTransition:
+        relative_path = f"verified_transitions/{transition.transition_id}.json"
+        saved_path = self.storage.save_json_atomic(relative_path, transition.model_dump(mode='json'))
+        self.db.execute(
+            """INSERT OR REPLACE INTO verified_transitions
+               (transition_id, action_signature, tool_id, target, verification_status, path, created_at_utc)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (transition.transition_id, transition.action_signature, transition.tool_id,
+             transition.target, transition.verification_status, saved_path,
+             transition.created_at_utc.isoformat()),
+        )
+        return transition
+
+    def list_verified_transitions(self, *, action_signature: str | None = None, limit: int = 20) -> list[VerifiedTransition]:
+        sql = 'SELECT transition_id, path FROM verified_transitions'
+        parameters: list[object] = []
+        if action_signature:
+            sql += ' WHERE action_signature = ?'
+            parameters.append(action_signature)
+        sql += ' ORDER BY created_at_utc DESC LIMIT ?'
+        parameters.append(limit)
+        rows = self.db.fetchall(sql, tuple(parameters))
+        items: list[VerifiedTransition] = []
+        for row in rows:
+            try:
+                items.append(VerifiedTransition.model_validate(self._load_json(f"verified_transitions/{row['transition_id']}.json", row['path'])))
+            except (FileNotFoundError, json.JSONDecodeError, ValueError):
+                self.db.execute('DELETE FROM verified_transitions WHERE transition_id = ?', (row['transition_id'],))
+        return items
 
     def list_interaction_observations(
         self,

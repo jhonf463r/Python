@@ -307,6 +307,16 @@ class AppDatabase:
                     created_at_utc TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS verified_transitions (
+                    transition_id TEXT PRIMARY KEY,
+                    action_signature TEXT NOT NULL,
+                    tool_id TEXT NOT NULL,
+                    target TEXT NOT NULL,
+                    verification_status TEXT NOT NULL,
+                    path TEXT NOT NULL,
+                    created_at_utc TEXT NOT NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS objective_nodes (
                     objective_id TEXT PRIMARY KEY,
                     kind TEXT NOT NULL,
@@ -509,6 +519,9 @@ class AppDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_interaction_results_episode
                 ON interaction_results (interaction_episode_id, created_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_verified_transitions_signature
+                ON verified_transitions (action_signature, created_at_utc DESC);
 
                 CREATE INDEX IF NOT EXISTS idx_objective_nodes_root
                 ON objective_nodes (root_id, updated_at_utc DESC);

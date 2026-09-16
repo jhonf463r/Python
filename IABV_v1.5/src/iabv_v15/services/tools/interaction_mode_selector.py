@@ -217,14 +217,17 @@ class InteractionModeSelector:
         adapter_exists = 1.0 if card.adapter_key in self.registry.adapters else 0.0
         total_runs = card.success_count + card.failure_count
         stability = (card.success_count / total_runs) if total_runs else 0.55
-        if pattern is not None and (pattern.success_count + pattern.failure_count):
-            pattern_stability = pattern.success_count / max(pattern.success_count + pattern.failure_count, 1)
+        if pattern is not None and (pattern.success_count + pattern.failure_count + pattern.verified_transition_success_count + pattern.verified_transition_failure_count):
+            successes = pattern.success_count + pattern.verified_transition_success_count
+            outcomes = successes + pattern.failure_count + pattern.verified_transition_failure_count
+            pattern_stability = successes / max(outcomes, 1)
             stability = max(stability, pattern_stability)
         cost = self._cost_score(card.tool_type)
         risk = 0.0 if repeated_block else self._risk_score(card=card, request=request)
         latency = self._latency_score(card=card)
-        frequency = min(1.0, (total_runs + (pattern.success_count if pattern is not None else 0)) / 8.0)
-        learned_pattern = 1.0 if pattern is not None and pattern.success_count > 0 else 0.45 if pattern is not None else 0.0
+        pattern_successes = (pattern.success_count + pattern.verified_transition_success_count) if pattern is not None else 0
+        frequency = min(1.0, (total_runs + pattern_successes) / 8.0)
+        learned_pattern = 1.0 if pattern is not None and pattern_successes > 0 else 0.45 if pattern is not None else 0.0
         desired_match = 1.0 if mode in desired_modes else 0.2
         suggested_match = 1.0 if suggested_tool_id and suggested_tool_id == card.tool_id else 0.0
         already_resolved = episode is not None and episode.result is not None and episode.result.success
@@ -328,12 +331,12 @@ class InteractionModeSelector:
         for pattern in patterns:
             tokens = self._tokens(pattern.title + ' ' + str(pattern.metadata.get('objective_excerpt') or ''))
             overlap = len(goal_tokens.intersection(tokens))
-            success_bias = pattern.success_count - pattern.failure_count
+            success_bias = (pattern.success_count + pattern.verified_transition_success_count) - (pattern.failure_count + pattern.verified_transition_failure_count)
             score = overlap * 1.5 + success_bias * 0.2
             if score > best_score:
                 best_score = score
                 best = pattern
-        return best if best_score >= 0.5 and best is not None and best.success_count > 0 else None
+        return best if best_score >= 0.5 and best is not None and (best.success_count + best.verified_transition_success_count) > 0 else None
 
     def _best_episode(self, *, card: ToolCard, goal: str, site_id: str | None):
         episodes = self.repository.list_interaction_episodes(tool_id=card.tool_id, mode_used=self._mode_for_tool(card.tool_type).value, site_id=site_id, limit=12) if site_id else self.repository.list_interaction_episodes(tool_id=card.tool_id, mode_used=self._mode_for_tool(card.tool_type).value, limit=12)

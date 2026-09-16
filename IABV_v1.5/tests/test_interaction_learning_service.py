@@ -20,6 +20,7 @@ from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
+from iabv_v15.domain.models import InteractionChannel, ToolType, VerifiedTransition
 
 
 def _workspace(name: str) -> Path:
@@ -238,5 +239,51 @@ def test_interaction_learning_service_learns_from_teaching_session_and_reuses_ep
         assert len(stored_patterns) == 1
         assert stored_patterns[0].tool_id == 'playwright_browser'
         assert stored_episodes[0].metadata['notes'] == 'Replay corregido.'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_verified_transition_persists_and_keeps_actor_report_separate() -> None:
+    root = _workspace('verified_transition_reload')
+    try:
+        repository = _repository(root)
+        service = InteractionLearningService(repository)
+        transition = VerifiedTransition(
+            action_signature='write-demo', action='WRITE_REPOSITORY_FILE', target='file:demo.txt',
+            tool_id='shell_command', tool_type=ToolType.SHELL, channel=InteractionChannel.BACKGROUND,
+            objective='Escribir demo verificable', expected_state={'file_exists': True},
+            observed_state={'file_exists': True, 'file_hash_sha256': 'abc'}, verification_status='verified',
+            actor_reported_success=True, action_executed=True, action_result_observed=True,
+            action_result_verified=True, expected_state_source='plan_parameters_deterministic',
+            observed_state_source='independent_filesystem_observation', execution_id='exec-1', run_id='run-1',
+        )
+        pattern = service.learn_from_verified_transition(transition)
+        reloaded = _repository(root).list_verified_transitions(action_signature='write-demo')
+        assert len(reloaded) == 1
+        assert reloaded[0].observed_state['file_hash_sha256'] == 'abc'
+        assert reloaded[0].actor_reported_success is True
+        assert reloaded[0].verification_status == 'verified'
+        assert pattern.success_count == 0
+        assert pattern.verified_transition_success_count == 1
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_verified_transition_failure_is_not_counted_as_success() -> None:
+    root = _workspace('verified_transition_failure')
+    try:
+        repository = _repository(root)
+        pattern = InteractionLearningService(repository).learn_from_verified_transition(VerifiedTransition(
+            action_signature='write-failure', action='WRITE_REPOSITORY_FILE', target='file:demo.txt',
+            tool_id='shell_command', tool_type=ToolType.SHELL, channel=InteractionChannel.BACKGROUND,
+            objective='Escribir demo verificable', expected_state={'file_exists': True},
+            observed_state={'file_exists': False}, verification_status='verification_failed',
+            actor_reported_success=True, action_executed=True, action_result_observed=True,
+            action_result_verified=False, expected_state_source='plan_parameters_deterministic',
+            observed_state_source='independent_filesystem_observation',
+        ))
+        assert pattern.success_count == 0
+        assert pattern.verified_transition_success_count == 0
+        assert pattern.verified_transition_failure_count == 1
     finally:
         shutil.rmtree(root, ignore_errors=True)
