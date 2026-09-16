@@ -678,21 +678,33 @@ class ToolTeachService:
         )
         task = self.build_task_from_request(request)
         
-        # KD-P0B-4: Copy approval decision from session checkpoints to task
-        # This establishes the real connection from HumanApprovalBroker → execution
-        # Check for REJECTED first (most restrictive)
+        # C5: Copy approval decision from session checkpoints to task
+        # C5: NO EVIDENCE OF APPROVAL != APPROVED
+        # Semántica fail-closed:
+        # - REJECTED checkpoints → REJECTED
+        # - PENDING checkpoints → PENDING
+        # - No checkpoints → SKIPPED (no approval evidence, not approved)
+        # - APPROVED checkpoints → APPROVED
         rejected_checkpoints = [item for item in session.approval_checkpoints if item.decision == ApprovalDecision.REJECTED]
         if rejected_checkpoints:
             task.approval_decision = ApprovalDecision.REJECTED
         else:
-            # Check for PENDING
             pending_checkpoints = [item for item in session.approval_checkpoints if item.decision == ApprovalDecision.PENDING]
             if pending_checkpoints:
                 task.approval_decision = ApprovalDecision.PENDING
+            elif session.approval_checkpoints:
+                # Has checkpoints but none are REJECTED or PENDING
+                # Check if any are APPROVED
+                approved_checkpoints = [item for item in session.approval_checkpoints if item.decision == ApprovalDecision.APPROVED]
+                if approved_checkpoints:
+                    task.approval_decision = ApprovalDecision.APPROVED
+                else:
+                    # Has checkpoints but no clear decision (e.g., SKIPPED)
+                    task.approval_decision = ApprovalDecision.SKIPPED
             else:
-                # No REJECTED or PENDING means approved or no approval required
-                # Use APPROVED as the positive case for authorization issuance
-                task.approval_decision = ApprovalDecision.APPROVED
+                # C5: No checkpoints at all → SKIPPED (no approval evidence)
+                # This is the critical fix: empty checkpoints must NOT become APPROVED
+                task.approval_decision = ApprovalDecision.SKIPPED
         
         return task.model_copy(
             update={
@@ -914,14 +926,16 @@ class ToolTeachService:
                     reason=f'Authorization issued for task {task.task_id} with approval decision {task.approval_decision.value}',
                 )
                 
-                # KD-P0B-6: Use canonical database for persistence
+                # C4: Use canonical database for persistence
                 # ToolTeachService already has repository through self.memory.repository
-                # Authorization is persisted and then loaded by adapter (load-bearing)
+                # Authorization is persisted for audit trail
+                # NOTE: Persistence is NOT load-bearing in current implementation
+                # Adapter receives authorization via direct injection, not from canonical store
                 self.memory.repository.save_external_authorization(authorization)
                 
-                # KD-P0B-6: Pass authorization to adapter
+                # C4: Pass authorization to adapter via direct injection
                 # The adapter will validate and consume this authorization
-                # This makes persistence load-bearing: save → load → validate → consume → execute
+                # NOTE: This is NOT load-bearing persistence - adapter uses injected object
                 if hasattr(adapter, '_external_authorization'):
                     adapter._external_authorization = authorization
                 else:

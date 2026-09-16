@@ -1895,11 +1895,14 @@ class DevinApiToolAdapter:
     def _check_external_authorization(
         self,
         task: ToolTask,
-        prompt: str,
+        canonical_prompt: str,
     ) -> bool:
         """Verifica que existe una autorización externa válida para esta ejecución.
 
         P0-B Trust Root: sandbox=False requiere autorización externa válida.
+        
+        C1: Receive canonical_prompt directly (already built by caller).
+        Do NOT rebuild it here - that would cause double composition of context_pack.
         """
         if self._external_authorization is None:
             return False
@@ -1916,14 +1919,9 @@ class DevinApiToolAdapter:
             if not auth.is_valid():
                 return False
             
-            # KD-P0B-2: Build canonical payload using the ONE shared function
-            # This must match exactly what issuer computed and what transport will send
-            from iabv_v15.services.tools.tool_adapters import build_canonical_payload
-            
-            context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
-            canonical_prompt = build_canonical_payload(prompt, context_pack)
-            
-            # Compute digest from canonical payload
+            # C1: Use the canonical_prompt directly (already built by caller)
+            # Do NOT rebuild it here - that would duplicate context_pack
+            # Compute digest from the canonical prompt
             prompt_digest = self._compute_prompt_digest(canonical_prompt)
             
             # KD-P0B-3: assistant_kind, endpoint, action do not exist at the Devin adapter execution boundary
@@ -1994,12 +1992,13 @@ class DevinApiToolAdapter:
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        # KD-P0B-2: Use ONE canonical payload for authorization check AND transport
+        # C1: Build canonical payload ONCE and use it for both authorization check AND transport
         from iabv_v15.services.tools.tool_adapters import build_canonical_payload
         
         context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
         canonical_prompt = build_canonical_payload(task.objective or '', context_pack)
         
+        # C1: Pass the canonical_prompt directly to authorization check (no double composition)
         if not self._check_external_authorization(task, canonical_prompt):
             return {
                 'success': False,

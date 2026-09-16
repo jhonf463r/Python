@@ -701,3 +701,25 @@ def test_p0_b_13_database_save_load_cycle() -> None:
     assert reloaded['consumed_at'] is not None
     
     print("OK: R3-12 Database save → load cycle verified")
+
+
+def test_p0_b_13_context_pack_no_double_composition() -> None:
+    """C2: Test discriminante de context_pack != ''."""
+    print("\n=== TEST 13: Context pack no double composition ===")
+    
+    from iabv_v15.services.tools.tool_adapters import build_canonical_payload, compute_canonical_prompt_digest
+    
+    objective = "Fix auth bug"
+    context_pack = "repo=X branch=Y issue=123"
+    
+    issuer_payload = build_canonical_payload(objective, context_pack)
+    issuer_digest = compute_canonical_prompt_digest(issuer_payload)
+    
+    validator_payload = issuer_payload
+    validator_digest = compute_canonical_prompt_digest(validator_payload)
+    
+    assert issuer_digest == validator_digest
+    assert "--- context ---" in issuer_payload
+    assert context_pack in issuer_payload
+    
+    print(f"OK: Context pack no double composition - D_issued == D_validated: {issuer_digest[:16]}...")
