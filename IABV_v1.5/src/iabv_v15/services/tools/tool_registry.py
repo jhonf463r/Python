@@ -49,7 +49,11 @@ class ToolRegistry:
             card = self.get_card(task.tool_id)
             if card is not None:
                 return self.refresh_card(card)
-        preferred_assistant_kind = str(preferred_assistant_kind or '').strip().lower()
+        # Track original caller intent for authority contract
+        # Empty string means caller provided no preference → historical fallback allowed
+        # Non-empty string means caller wants semantic match → only semantic match allowed
+        original_preferred = str(preferred_assistant_kind or '').strip().lower()
+        preferred_assistant_kind = original_preferred
         # Identity mapping: normalize synaptic router names to ToolCard metadata names
         # SynapticRouter may produce names like 'chatgpt_web', 'claude_web', 'ollama_local'
         # but ToolCard metadata uses short names like 'chatgpt', 'claude', 'ollama'
@@ -64,6 +68,11 @@ class ToolRegistry:
                 card_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
                 if card_kind == preferred_assistant_kind:
                     return self.refresh_card(card)
+            # Authority contract: if caller provided preferred_assistant_kind != ''
+            # and no semantic match exists, return None to prevent false authority
+            # Fallback (keyword scoring, cards[0]) only allowed when original_preferred == ''
+            if original_preferred:
+                return None
         objective = (task.objective + ' ' + task.title).lower()
         for card in self.list_cards():
             score = 0

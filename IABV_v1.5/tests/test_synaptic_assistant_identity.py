@@ -149,8 +149,8 @@ def test_assistant_identity_mapping_ollama_local(registry):
 def test_assistant_identity_mapping_unmapped(registry):
     """Test that unmapped assistant_kind does not produce false authority.
 
-    If an assistant_kind has no valid mapping, the fallback should not
-    return an unrelated card as if it were a semantic match.
+    With preferred_assistant_kind != '', if there is no semantic match,
+    the method must return None to prevent false authority.
     """
     task = ToolTask(
         objective='test',
@@ -159,12 +159,23 @@ def test_assistant_identity_mapping_unmapped(registry):
         task_role=TaskRole.ANALYTICS,
     )
     card = registry.pick_card_for_task(task, preferred_assistant_kind='unknown_assistant_xyz')
-    # With the current fallback logic, this returns cards[0]
-    # After fix, this should either:
-    # 1. Return None (no authoritative selection)
-    # 2. Explicitly mark as fallback in metadata
-    # For now, we verify it doesn't silently claim semantic match
-    if card is not None:
-        # If a card is returned, it should NOT have assistant_kind matching
-        # the requested kind (since it's a fallback)
-        assert card.metadata.get('assistant_kind') != 'unknown_assistant_xyz'
+    # POST-FIX: With preferred_assistant_kind != '' and no semantic match, must return None
+    # PRE-FIX: This returns cards[0] fallback, which produces false authority
+    assert card is None, "preferred_assistant_kind != '' with no match must return None"
+
+
+def test_authority_contract_empty_preferred_assistant(registry):
+    """Test that empty preferred_assistant_kind preserves historical fallback.
+
+    When preferred_assistant_kind == '', the historical fallback behavior
+    (keyword scoring → cards[0]) must be preserved for caller compatibility.
+    """
+    task = ToolTask(
+        objective='test',
+        title='test',
+        tool_id='',
+        task_role=TaskRole.ANALYTICS,
+    )
+    # Empty preferred_assistant_kind should use keyword scoring fallback
+    card = registry.pick_card_for_task(task, preferred_assistant_kind='')
+    assert card is not None, "Empty preferred_assistant_kind should preserve historical fallback"
