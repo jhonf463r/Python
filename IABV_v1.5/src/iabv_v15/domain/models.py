@@ -3280,14 +3280,31 @@ class ExternalActionAuthorization(BaseModel):
         tool_id: str,
         adapter_key: str,
         prompt_digest: str,
+        assistant_kind: str = '',
+        endpoint: str = '',
+        action: str = '',
     ) -> bool:
-        """Verifica que la autorización coincide con los parámetros de ejecución."""
-        return (
+        """Verifica que la autorización coincide con los parámetros de ejecución.
+        
+        KD-P0B-6: adapter_key must be independently sourced from the executing adapter,
+        not from the authorization itself (tautological comparison).
+        """
+        binding_valid = (
             self.task_id == task_id
             and self.tool_id == tool_id
             and self.adapter_key == adapter_key
             and self.prompt_digest == prompt_digest
         )
+        
+        # Optional binding fields if they exist in the authorization
+        if self.assistant_kind and assistant_kind:
+            binding_valid = binding_valid and self.assistant_kind == assistant_kind
+        if self.endpoint and endpoint:
+            binding_valid = binding_valid and self.endpoint == endpoint
+        if self.action and action:
+            binding_valid = binding_valid and self.action == action
+        
+        return binding_valid
 
     def consume(self) -> None:
         """Marca la autorización como consumida (single-use)."""

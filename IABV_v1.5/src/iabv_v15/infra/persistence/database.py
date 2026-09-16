@@ -248,6 +248,24 @@ class AppDatabase:
                     created_at_utc TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS external_authorizations (
+                    authorization_id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL,
+                    tool_id TEXT NOT NULL,
+                    adapter_key TEXT NOT NULL,
+                    assistant_kind TEXT NOT NULL,
+                    endpoint TEXT NOT NULL DEFAULT '',
+                    action TEXT NOT NULL DEFAULT '',
+                    prompt_digest TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    issued_at TEXT NOT NULL,
+                    expires_at TEXT,
+                    consumed_at TEXT,
+                    approved_by TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    path TEXT NOT NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS interaction_patterns (
                     pattern_id TEXT PRIMARY KEY,
                     signature TEXT NOT NULL UNIQUE,
@@ -518,6 +536,15 @@ class AppDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_objective_nodes_kind_status
                 ON objective_nodes (kind, status, updated_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_external_authorizations_task
+                ON external_authorizations (task_id, issued_at DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_external_authorizations_tool
+                ON external_authorizations (tool_id, issued_at DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_external_authorizations_status
+                ON external_authorizations (status, issued_at DESC);
 
                 CREATE INDEX IF NOT EXISTS idx_objective_nodes_site
                 ON objective_nodes (site_id, updated_at_utc DESC);

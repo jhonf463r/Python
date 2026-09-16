@@ -142,6 +142,23 @@ def _resolve_github_token(environ: dict[str, str] | None = None) -> str:
     return ''
 
 
+def _validate_external_authorization(authorization: Any | None) -> bool:
+    """Valida una autorización externa usando la misma lógica que DevinApiToolAdapter.
+    
+    KD-P0B-8: Unificar enforcement entre bootstrap y adapter para evitar
+    duplicación de lógica y semantic drift.
+    """
+    if authorization is None:
+        return False
+    try:
+        from iabv_v15.domain.models import ExternalActionAuthorization
+        if not isinstance(authorization, ExternalActionAuthorization):
+            return False
+        return authorization.is_valid()
+    except Exception:
+        return False
+
+
 def _devin_create_session(adapter, prompt: str, authorization: Any | None = None) -> str:
     """Crea una sesion en Devin via `DevinApiToolAdapter`.
 
@@ -150,22 +167,20 @@ def _devin_create_session(adapter, prompt: str, authorization: Any | None = None
     lugar de fingir exito.
     
     P0-B Trust Root: requiere autorización externa válida para ejecución real.
+    KD-P0B-8: Usa validación compartida con adapter.
     """
-    # P0-B: Verificar autorización externa
-    if authorization is not None:
-        try:
-            from iabv_v15.domain.models import ExternalActionAuthorization
-            if isinstance(authorization, ExternalActionAuthorization):
-                if not authorization.is_valid():
-                    logger.warning('devin create session blocked: invalid external authorization')
-                    return ''
-                # Consumir autorización (single-use)
-                authorization.consume()
-        except Exception:
-            logger.warning('devin create session blocked: authorization check failed')
-            return ''
-    else:
-        logger.warning('devin create session blocked: no external authorization provided')
+    # P0-B: Verificar autorización externa (shared logic)
+    if not _validate_external_authorization(authorization):
+        logger.warning('devin create session blocked: invalid or missing external authorization')
+        return ''
+    
+    # Consumir autorización (single-use)
+    try:
+        from iabv_v15.domain.models import ExternalActionAuthorization
+        if isinstance(authorization, ExternalActionAuthorization):
+            authorization.consume()
+    except Exception:
+        logger.warning('devin create session: failed to consume authorization')
         return ''
     
     if adapter is None or not getattr(adapter, 'api_key', ''):
@@ -195,22 +210,20 @@ def _devin_send_message(adapter, session_id: str, content: str, authorization: A
     """Envia un mensaje a una sesion Devin. True si la API respondio 2xx.
     
     P0-B Trust Root: requiere autorización externa válida para ejecución real.
+    KD-P0B-8: Usa validación compartida con adapter.
     """
-    # P0-B: Verificar autorización externa
-    if authorization is not None:
-        try:
-            from iabv_v15.domain.models import ExternalActionAuthorization
-            if isinstance(authorization, ExternalActionAuthorization):
-                if not authorization.is_valid():
-                    logger.warning('devin send message blocked: invalid external authorization')
-                    return False
-                # Consumir autorización (single-use)
-                authorization.consume()
-        except Exception:
-            logger.warning('devin send message blocked: authorization check failed')
-            return False
-    else:
-        logger.warning('devin send message blocked: no external authorization provided')
+    # P0-B: Verificar autorización externa (shared logic)
+    if not _validate_external_authorization(authorization):
+        logger.warning('devin send message blocked: invalid or missing external authorization')
+        return False
+    
+    # Consumir autorización (single-use)
+    try:
+        from iabv_v15.domain.models import ExternalActionAuthorization
+        if isinstance(authorization, ExternalActionAuthorization):
+            authorization.consume()
+    except Exception:
+        logger.warning('devin send message: failed to consume authorization')
         return False
     
     if adapter is None or not getattr(adapter, 'api_key', ''):

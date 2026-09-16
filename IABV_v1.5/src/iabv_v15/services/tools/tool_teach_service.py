@@ -846,6 +846,53 @@ class ToolTeachService:
                 waiting = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=waiting)
                 self.memory.repository.save_result(waiting)
             return waiting
+        
+        # P0-B: Emit ExternalActionAuthorization when human approval is granted
+        if approval_required and task.approval_decision == ApprovalDecision.APPROVED:
+            try:
+                from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
+                from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+                from iabv_v15.infra.persistence.database import AppDatabase
+                from iabv_v15.infra.persistence.storage import ArtifactStorage
+                from datetime import datetime, timezone, timedelta
+                import hashlib
+                
+                # Compute prompt digest
+                prompt_content = task.objective or ''
+                prompt_digest = hashlib.sha256(prompt_content.encode()).hexdigest()
+                
+                # Create authorization
+                authorization = ExternalActionAuthorization(
+                    task_id=task.task_id,
+                    tool_id=card.tool_id,
+                    adapter_key=card.adapter_key,
+                    assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
+                    prompt_digest=prompt_digest,
+                    endpoint=task.metadata.get('github_action', ''),
+                    action=task.metadata.get('action_type', ''),
+                    status=ExternalActionAuthorizationStatus.VALIDATED,
+                    expires_at=datetime.now(timezone.utc) + timedelta(minutes=60),
+                    approved_by='human',
+                    reason=f'Human approval granted for task {task.task_id}',
+                )
+                
+                # Store authorization in repository for persistence
+                db = AppDatabase(str(self.workspace_root / 'app.sqlite'))
+                storage = ArtifactStorage(str(self.workspace_root / 'tool_teaching'))
+                repo = ToolRecordRepository(db=db, storage=storage)
+                repo.save_external_authorization(authorization)
+                
+                # Pass authorization to adapter
+                if hasattr(adapter, '_external_authorization'):
+                    adapter._external_authorization = authorization
+                else:
+                    # If adapter doesn't support external authorization, store it in task metadata
+                    task = task.model_copy(update={'metadata': {**task.metadata, 'external_authorization': authorization.model_dump()}})
+            except Exception:
+                # Authorization issuance failure should not block execution if not enforced by adapter
+                import logging
+                logging.getLogger(__name__).exception('Failed to issue ExternalActionAuthorization')
+        
         # FAIL-CLOSED: launch_dry_run controla si ejecutamos sandbox (dry-run) o real
         # autonomous_external_launch=False → launch_dry_run=True → sandbox=True (NO external HTTP)
         # autonomous_external_launch=True → launch_dry_run=False → sandbox=False (external HTTP permitido)

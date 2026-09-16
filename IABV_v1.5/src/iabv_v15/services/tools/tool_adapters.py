@@ -1886,13 +1886,22 @@ class DevinApiToolAdapter:
             if not auth.is_valid():
                 return False
             
-            # Verificar binding
+            # Verificar binding with actual adapter identity
             prompt_digest = self._compute_prompt_digest(prompt)
+            # KD-P0B-6: Use 'devin_api' as the actual adapter identity, not auth.adapter_key (tautological)
+            actual_adapter_key = 'devin_api'
+            actual_assistant_kind = ''  # TODO: extract from runtime if available
+            actual_endpoint = ''  # TODO: extract from runtime if available
+            actual_action = ''  # TODO: extract from runtime if available
+            
             if not auth.validate_binding(
                 task_id=task.task_id,
                 tool_id=task.tool_id,
-                adapter_key=auth.adapter_key,
+                adapter_key=actual_adapter_key,
                 prompt_digest=prompt_digest,
+                assistant_kind=actual_assistant_kind,
+                endpoint=actual_endpoint,
+                action=actual_action,
             ):
                 return False
             

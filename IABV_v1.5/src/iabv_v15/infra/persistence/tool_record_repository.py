@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask
+from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask, ExternalActionAuthorization
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
@@ -537,4 +537,52 @@ class ToolRecordRepository:
             return self._load_json(f'log/{log_id}.json', path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             self.db.execute('DELETE FROM tool_execution_log WHERE log_id = ?', (log_id,))
+            return None
+
+    def save_external_authorization(self, authorization: ExternalActionAuthorization) -> ExternalActionAuthorization:
+        """Save an external action authorization to persistent storage."""
+        relative_path = f"authorizations/{authorization.authorization_id}.json"
+        saved_path = self.storage.save_json_atomic(relative_path, authorization.model_dump(mode='json'))
+        self.db.execute(
+            """
+            INSERT OR REPLACE INTO external_authorizations
+            (authorization_id, task_id, tool_id, adapter_key, assistant_kind, endpoint, action, prompt_digest, status, issued_at, expires_at, consumed_at, approved_by, reason, path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                authorization.authorization_id,
+                authorization.task_id,
+                authorization.tool_id,
+                authorization.adapter_key,
+                authorization.assistant_kind,
+                authorization.endpoint,
+                authorization.action,
+                authorization.prompt_digest,
+                authorization.status.value,
+                authorization.issued_at.isoformat(),
+                authorization.expires_at.isoformat() if authorization.expires_at else None,
+                authorization.consumed_at.isoformat() if authorization.consumed_at else None,
+                authorization.approved_by,
+                authorization.reason,
+                saved_path,
+            ),
+        )
+        return authorization
+
+    def get_external_authorization(self, authorization_id: str) -> ExternalActionAuthorization | None:
+        """Load an external action authorization by ID."""
+        row = self.db.fetchone(
+            """
+            SELECT authorization_id, path
+            FROM external_authorizations
+            WHERE authorization_id = ?
+            """,
+            (authorization_id,),
+        )
+        if row is None:
+            return None
+        try:
+            return self._load_json(f'authorizations/{authorization_id}.json', row['path'])
+        except (FileNotFoundError, json.JSONDecodeError, ValueError):
+            self.db.execute('DELETE FROM external_authorizations WHERE authorization_id = ?', (authorization_id,))
             return None
