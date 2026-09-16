@@ -1336,10 +1336,15 @@ class ToolTeachService:
         if self.synaptic_router is None:
             return {}
         goal_parameters = dict(request.goal_parameters or {})
-        # Preserve None sentinel when no candidates are explicitly supplied
-        # This allows _resolve_candidates() to use the full registry
-        raw_candidates = goal_parameters.get('candidate_assistant_kinds') or goal_parameters.get('allowed_assistant_kinds')
-        # Only process as list if explicitly provided; otherwise preserve None
+        # Check presence of keys, not truthiness, to preserve explicit empty list
+        # Contract: None → use full registry, [] → no candidates, non-empty → exactly those
+        if 'candidate_assistant_kinds' in goal_parameters:
+            raw_candidates = goal_parameters['candidate_assistant_kinds']
+        elif 'allowed_assistant_kinds' in goal_parameters:
+            raw_candidates = goal_parameters['allowed_assistant_kinds']
+        else:
+            raw_candidates = None
+        # Process based on raw_candidates value
         if raw_candidates is None:
             candidate_assistant_kinds = None
         else:
