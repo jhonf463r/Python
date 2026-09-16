@@ -546,7 +546,7 @@ class ToolRecordRepository:
         self.db.execute(
             """
             INSERT OR REPLACE INTO external_authorizations
-            (authorization_id, task_id, tool_id, adapter_key, assistant_kind, endpoint, action, prompt_digest, status, issued_at, expires_at, consumed_at, approved_by, reason, path)
+            (authorization_id, task_id, tool_id, adapter_key, assistant_kind, endpoint, action, prompt_digest, nonce, status, issued_at, expires_at, consumed_at, approved_by, reason, path)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
@@ -558,6 +558,7 @@ class ToolRecordRepository:
                 authorization.endpoint,
                 authorization.action,
                 authorization.prompt_digest,
+                authorization.nonce,
                 authorization.status.value,
                 authorization.issued_at.isoformat(),
                 authorization.expires_at.isoformat() if authorization.expires_at else None,

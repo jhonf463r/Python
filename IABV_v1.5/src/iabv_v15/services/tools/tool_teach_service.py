@@ -677,12 +677,30 @@ class ToolTeachService:
             metadata={'adaptive_session_id': session.session_id},
         )
         task = self.build_task_from_request(request)
+        
+        # KD-P0B-4: Copy approval decision from session checkpoints to task
+        # This establishes the real connection from HumanApprovalBroker → execution
+        # Check for REJECTED first (most restrictive)
+        rejected_checkpoints = [item for item in session.approval_checkpoints if item.decision == ApprovalDecision.REJECTED]
+        if rejected_checkpoints:
+            task.approval_decision = ApprovalDecision.REJECTED
+        else:
+            # Check for PENDING
+            pending_checkpoints = [item for item in session.approval_checkpoints if item.decision == ApprovalDecision.PENDING]
+            if pending_checkpoints:
+                task.approval_decision = ApprovalDecision.PENDING
+            else:
+                # No REJECTED or PENDING means approved or no approval required
+                # Use APPROVED as the positive case for authorization issuance
+                task.approval_decision = ApprovalDecision.APPROVED
+        
         return task.model_copy(
             update={
                 'session_id': session.session_id,
                 'run_id': session.run_id,
                 'pack_id': session.chosen_pack_id,
                 'site_id': session.context.site_id or session.intent.site_hint,
+                'approval_decision': task.approval_decision,
             }
         )
 
@@ -747,6 +765,9 @@ class ToolTeachService:
         return stored_task, result, preview
 
     def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
+        # KD-P0B-4: Ignore the 'approved' boolean parameter - it's not a real trust root
+        # Use task.approval_decision from session.approval_checkpoints instead
+        # This establishes the real connection: HumanApprovalBroker → session.checkpoints → task.approval_decision → authorization
         card = self.registry.pick_card_for_task(
             task,
             preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
@@ -856,18 +877,13 @@ class ToolTeachService:
                 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
                 from datetime import datetime, timezone, timedelta
                 
-                # KD-P0B-1 + KD-P0B-7: Use same digest computation as adapter with REAL payload
-                # The adapter actually sends: objective + context_pack (if present)
-                # Therefore the digest must cover the same canonical representation
-                from iabv_v15.services.tools.tool_adapters import compute_canonical_prompt_digest
+                # KD-P0B-1 + KD-P0B-2: Use same canonical payload for issuer, validator, and transport
+                # Invariant: D_issued == D_validated == D_transmitted
+                from iabv_v15.services.tools.tool_adapters import build_canonical_payload, compute_canonical_prompt_digest
                 
-                # Build canonical payload matching what adapter sends
-                context_pack = str(task.metadata.get('context_pack') or '').strip()
-                if context_pack:
-                    canonical_payload = f'{task.objective}\n\n--- context ---\n{context_pack}'
-                else:
-                    canonical_payload = task.objective or ''
-                
+                # Build canonical payload - exact representation that will be transmitted
+                context_pack = str(task.metadata.get('context_pack') or '')
+                canonical_payload = build_canonical_payload(task.objective or '', context_pack)
                 prompt_digest = compute_canonical_prompt_digest(canonical_payload)
                 
                 # KD-P0B-3: Use real approval provenance instead of hard-coded 'human'
@@ -900,10 +916,12 @@ class ToolTeachService:
                 
                 # KD-P0B-6: Use canonical database for persistence
                 # ToolTeachService already has repository through self.memory.repository
-                # Use that instead of creating a new database
+                # Authorization is persisted and then loaded by adapter (load-bearing)
                 self.memory.repository.save_external_authorization(authorization)
                 
-                # Pass authorization to adapter
+                # KD-P0B-6: Pass authorization to adapter
+                # The adapter will validate and consume this authorization
+                # This makes persistence load-bearing: save → load → validate → consume → execute
                 if hasattr(adapter, '_external_authorization'):
                     adapter._external_authorization = authorization
                 else:

@@ -143,10 +143,22 @@ def _resolve_github_token(environ: dict[str, str] | None = None) -> str:
 
 
 def _validate_external_authorization(authorization: Any | None) -> bool:
-    """Valida una autorización externa usando la misma lógica que DevinApiToolAdapter.
+    """Valida si una autorización externa es válida (no expirada, no consumida).
     
-    KD-P0B-5: Unificar enforcement entre bootstrap y adapter para evitar
-    duplicación de lógica y semantic drift.
+    KD-P0B-5: Bootstrap helpers do NOT have task/tool context, so they cannot
+    perform full binding validation. This function only checks is_valid().
+    
+    IMPORTANT: Bootstrap helpers are pre-adapter convenience functions that
+    CANNOT independently authorize cross-boundary execution. Only the adapter
+    with full task/tool context can perform binding validation.
+    
+    The adapter does full binding validation:
+    - task_id
+    - tool_id
+    - adapter_key
+    - prompt_digest
+    
+    Bootstrap cannot verify these because it lacks the execution context.
     """
     if authorization is None:
         return False
@@ -154,10 +166,8 @@ def _validate_external_authorization(authorization: Any | None) -> bool:
         from iabv_v15.domain.models import ExternalActionAuthorization
         if not isinstance(authorization, ExternalActionAuthorization):
             return False
-        # KD-P0B-5: Include binding validation in shared function
-        # Bootstrap helpers should validate binding the same way adapter does
-        # But bootstrap doesn't have task/tool context, so skip binding check here
-        # Adapter does full binding validation with context
+        # Only check validity (not expired, not consumed)
+        # Cannot check binding without task/tool context
         return authorization.is_valid()
     except Exception:
         return False

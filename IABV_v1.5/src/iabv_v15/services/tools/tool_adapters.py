@@ -1810,6 +1810,23 @@ class ExternalAssistantToolAdapter(ToolAdapter):
         return ToolAdapter._stamp_telemetry(result, telemetry)
 
 
+def build_canonical_payload(objective: str, context_pack: str) -> str:
+    """Build the exact canonical payload that will be transmitted.
+    
+    KD-P0B-2: This is the ONE canonical representation used by:
+    - Issuer (authorization issuance)
+    - Validator (binding check)
+    - Transport (actual HTTP request)
+    
+    Invariant: D_issued == D_validated == D_transmitted
+    """
+    context_pack_clean = context_pack.strip()
+    if context_pack_clean:
+        return f'{objective}\n\n--- context ---\n{context_pack_clean}'
+    else:
+        return objective
+
+
 def compute_canonical_prompt_digest(prompt: str) -> str:
     """Computa un digest canonical del prompt para binding de autorización.
     
@@ -1899,30 +1916,30 @@ class DevinApiToolAdapter:
             if not auth.is_valid():
                 return False
             
-            # KD-P0B-7: Build canonical payload including context_pack for binding
-            # This must match exactly what issuer computed
-            context_pack = str(task.metadata.get('context_pack') or '').strip() if task.metadata else ''
-            if context_pack:
-                canonical_prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
-            else:
-                canonical_prompt = prompt
+            # KD-P0B-2: Build canonical payload using the ONE shared function
+            # This must match exactly what issuer computed and what transport will send
+            from iabv_v15.services.tools.tool_adapters import build_canonical_payload
             
-            # Verificar binding with actual adapter identity
+            context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+            canonical_prompt = build_canonical_payload(prompt, context_pack)
+            
+            # Compute digest from canonical payload
             prompt_digest = self._compute_prompt_digest(canonical_prompt)
-            # KD-P0B-6: Use 'devin_api' as the actual adapter identity, not auth.adapter_key (tautological)
+            
+            # KD-P0B-3: assistant_kind, endpoint, action do not exist at the Devin adapter execution boundary
+            # The adapter only sends a prompt via HTTP POST - there is no separate assistant_kind,
+            # endpoint, or action in the actual transport layer.
+            # Therefore, these fields are NOT enforced in binding validation.
+            # They are only included in the authorization model for potential future use
+            # or for other adapters that may have these boundaries.
             actual_adapter_key = 'devin_api'
-            actual_assistant_kind = ''  # TODO: extract from runtime if available
-            actual_endpoint = ''  # TODO: extract from runtime if available
-            actual_action = ''  # TODO: extract from runtime if available
             
             if not auth.validate_binding(
                 task_id=task.task_id,
                 tool_id=task.tool_id,
                 adapter_key=actual_adapter_key,
                 prompt_digest=prompt_digest,
-                assistant_kind=actual_assistant_kind,
-                endpoint=actual_endpoint,
-                action=actual_action,
+                # assistant_kind, endpoint, action omitted - not enforced for Devin adapter
             ):
                 return False
             
@@ -1977,12 +1994,11 @@ class DevinApiToolAdapter:
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        # KD-P0B-7: Pass canonical payload for authorization check
-        context_pack = str(task.metadata.get('context_pack') or '').strip() if task.metadata else ''
-        if context_pack:
-            canonical_prompt = f'{task.objective}\n\n--- context ---\n{context_pack}'
-        else:
-            canonical_prompt = task.objective
+        # KD-P0B-2: Use ONE canonical payload for authorization check AND transport
+        from iabv_v15.services.tools.tool_adapters import build_canonical_payload
+        
+        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+        canonical_prompt = build_canonical_payload(task.objective or '', context_pack)
         
         if not self._check_external_authorization(task, canonical_prompt):
             return {
@@ -2020,10 +2036,9 @@ class DevinApiToolAdapter:
                 'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
             }
 
-        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
-        prompt = str(task.objective or '')
-        if context_pack:
-            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+        # KD-P0B-2: Use the SAME canonical_prompt for transport (already computed above)
+        # This ensures D_issued == D_validated == D_transmitted
+        prompt = canonical_prompt
 
         session_id = ''
         session_url = ''

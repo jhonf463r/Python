@@ -3286,9 +3286,11 @@ class ExternalActionAuthorization(BaseModel):
     ) -> bool:
         """Verifica que la autorización coincide con los parámetros de ejecución.
         
-        KD-P0B-6: adapter_key must be independently sourced from the executing adapter,
-        not from the authorization itself (tautological comparison).
+        KD-P0B-3: Only validate fields that exist at the execution boundary.
+        assistant_kind, endpoint, action are not enforced if they don't exist
+        in the actual runtime execution context.
         """
+        # Core binding fields that always exist at execution boundary
         binding_valid = (
             self.task_id == task_id
             and self.tool_id == tool_id
@@ -3296,7 +3298,9 @@ class ExternalActionAuthorization(BaseModel):
             and self.prompt_digest == prompt_digest
         )
         
-        # Optional binding fields if they exist in the authorization
+        # KD-P0B-3: Optional binding fields are only validated if they are
+        # actually populated in the authorization (not empty strings)
+        # These fields are NOT enforced if they don't exist at the boundary
         if self.assistant_kind and assistant_kind:
             binding_valid = binding_valid and self.assistant_kind == assistant_kind
         if self.endpoint and endpoint:
