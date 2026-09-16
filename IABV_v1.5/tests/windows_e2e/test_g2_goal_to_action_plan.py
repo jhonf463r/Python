@@ -249,7 +249,7 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
 # Demonstrates: Expected result does not match observed result → VERIFICATION_FAILED
 # ============================================================================
 
-def test_g2_verification_negative(authority_service, workspace_root):
+def test_g2_verification_negative(authority_service, workspace_root, tmp_path):
     """G2 VERIFICATION-NEGATIVE E2E: Expected result does not match observed result.
     
     This test demonstrates:
@@ -294,6 +294,16 @@ def test_g2_verification_negative(authority_service, workspace_root):
             self.self_audit_service = None
             self.perception_cross_validator = None
             self.github_remote_service = None
+            from iabv_v15.infra.persistence.database import AppDatabase
+            from iabv_v15.infra.persistence.storage import ArtifactStorage
+            from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+            from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
+            self._learning_root = tmp_path / 'g2_failed_transition_learning'
+            self._learning_db = self._learning_root / 'tool_records.sqlite'
+            self._learning_storage = self._learning_root / 'tool_teaching'
+            self.interaction_learning_service = InteractionLearningService(
+                ToolRecordRepository(AppDatabase(str(self._learning_db)), ArtifactStorage(str(self._learning_storage)))
+            )
             
             # NEGATIVE TEST ONLY: Controlled planner with wrong expected_result
             class NegativeVerificationPlanner:
@@ -384,6 +394,22 @@ def test_g2_verification_negative(authority_service, workspace_root):
     # Verify file was actually created (action succeeded)
     verification = result.get('verification')
     assert verification.get('file_exists') is True, "File must exist (action succeeded)"
+
+    bridge = trace.get('learning_bridge') or {}
+    assert bridge.get('status') == 'persisted'
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    transition = next(item for item in ToolRecordRepository(
+        AppDatabase(str(container._learning_db)), ArtifactStorage(str(container._learning_storage))
+    ).list_verified_transitions(limit=10) if item.transition_id == bridge['transition_id'])
+    assert transition.actor_reported_success is True
+    assert transition.verification_status == 'verification_failed'
+    assert transition.action_result_verified is False
+    pattern = container.interaction_learning_service.repository.get_interaction_pattern(bridge['pattern_id'])
+    assert pattern is not None
+    assert pattern.verified_transition_success_count == 0
+    assert pattern.verified_transition_failure_count == 1
     
     # Clean up test file
     test_file = workspace_root / "g2_verification_negative_test.txt"
@@ -402,7 +428,7 @@ def test_g2_verification_negative(authority_service, workspace_root):
 # Demonstrates: GOAL → REAL PROVIDER → ACTION → INDEPENDENT OBSERVATION → VERIFIED
 # ============================================================================
 
-def test_g3_independent_result_verification(authority_service, workspace_root):
+def test_g3_independent_result_verification(authority_service, workspace_root, tmp_path):
     """G3 POSITIVE E2E: Goal → Action → Independent Observation → Verified.
     
     This test demonstrates G3 improvements:
@@ -453,6 +479,18 @@ def test_g3_independent_result_verification(authority_service, workspace_root):
             self.self_audit_service = None
             self.perception_cross_validator = None
             self.github_remote_service = None
+            # Real B-loop persistence, kept outside the source worktree so
+            # the G3 result must cross a storage/reload boundary.
+            from iabv_v15.infra.persistence.database import AppDatabase
+            from iabv_v15.infra.persistence.storage import ArtifactStorage
+            from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+            from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
+            self._learning_root = tmp_path / 'g3_verified_transition_learning'
+            self._learning_db = self._learning_root / 'tool_records.sqlite'
+            self._learning_storage = self._learning_root / 'tool_teaching'
+            self.interaction_learning_service = InteractionLearningService(
+                ToolRecordRepository(AppDatabase(str(self._learning_db)), ArtifactStorage(str(self._learning_storage)))
+            )
             
             # Real CloudReasoningPlannerService
             from iabv_v15.services.adaptive.cloud_reasoning_planner import CloudReasoningPlannerService
@@ -552,6 +590,23 @@ def test_g3_independent_result_verification(authority_service, workspace_root):
     # G3: Verify sources are independent
     assert result_verification.get('expected_result_source') == 'plan_parameters_deterministic', "Expected result must come from plan parameters (deterministic)"
     assert result_verification.get('observed_result_source') == 'independent_filesystem_observation', "Observed result must come from independent filesystem observation"
+
+    # The bridge must persist the G3 result and a new repository must reload
+    # the epistemically separate actor report and independent verification.
+    bridge = trace.get('learning_bridge') or {}
+    assert bridge.get('status') == 'persisted'
+    from iabv_v15.infra.persistence.database import AppDatabase
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
+    reloaded = ToolRecordRepository(
+        AppDatabase(str(container._learning_db)), ArtifactStorage(str(container._learning_storage))
+    ).list_verified_transitions(limit=10)
+    transition = next(item for item in reloaded if item.transition_id == bridge['transition_id'])
+    assert transition.actor_reported_success is True
+    assert transition.verification_status == 'verified'
+    assert transition.action_result_verified is True
+    assert transition.expected_state_source == 'plan_parameters_deterministic'
+    assert transition.observed_state_source == 'independent_filesystem_observation'
     
     # Clean up test file
     test_file = workspace_root / "g3_verification_test.txt"
