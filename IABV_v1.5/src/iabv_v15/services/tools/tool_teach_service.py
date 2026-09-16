@@ -777,9 +777,11 @@ class ToolTeachService:
         return stored_task, result, preview
 
     def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
-        # KD-P0B-4: Ignore the 'approved' boolean parameter - it's not a real trust root
+        # KD-P0B-E1A: Ignore the 'approved' boolean parameter - it's not a real trust root
         # Use task.approval_decision from session.approval_checkpoints instead
-        # This establishes the real connection: HumanApprovalBroker → session.checkpoints → task.approval_decision → authorization
+        # KD-P0B-E1A-CORRECTED: The real connection is NOT HumanApprovalBroker
+        # Actual authority source: ExecutionPlaybookService converts PENDING → APPROVED
+        # Real path: ApprovalGateService → session.checkpoints (PENDING) → ExecutionPlaybookService → session.checkpoints (APPROVED) → task.approval_decision → authorization
         card = self.registry.pick_card_for_task(
             task,
             preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
