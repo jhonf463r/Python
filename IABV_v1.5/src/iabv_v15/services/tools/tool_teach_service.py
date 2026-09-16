@@ -815,8 +815,10 @@ class ToolTeachService:
             }
         )
         task = self.approval_policy.evaluate(card=card, task=task)
-        if approved and task.approval_decision == ApprovalDecision.PENDING:
-            task = task.model_copy(update={'approval_decision': ApprovalDecision.APPROVED})
+        # KD-P0B-2: Do not convert PENDING to APPROVED without explicit human approval
+        # The 'approved' parameter is an override that should not bypass trust boundary
+        # Only ApprovalDecision.APPROVED from policy should be respected
+        # Removing automatic conversion of PENDING to APPROVED
         self.memory.remember_task(task)
         sandbox_result = self.sandbox.run(card=card, task=task, adapter=adapter)
         sandbox_result = self.memory.remember_result(card, task, sandbox_result)
@@ -852,35 +854,54 @@ class ToolTeachService:
             try:
                 from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
                 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
-                from iabv_v15.infra.persistence.database import AppDatabase
-                from iabv_v15.infra.persistence.storage import ArtifactStorage
                 from datetime import datetime, timezone, timedelta
-                import hashlib
                 
-                # Compute prompt digest
-                prompt_content = task.objective or ''
-                prompt_digest = hashlib.sha256(prompt_content.encode()).hexdigest()
+                # KD-P0B-1 + KD-P0B-7: Use same digest computation as adapter with REAL payload
+                # The adapter actually sends: objective + context_pack (if present)
+                # Therefore the digest must cover the same canonical representation
+                from iabv_v15.services.tools.tool_adapters import compute_canonical_prompt_digest
+                
+                # Build canonical payload matching what adapter sends
+                context_pack = str(task.metadata.get('context_pack') or '').strip()
+                if context_pack:
+                    canonical_payload = f'{task.objective}\n\n--- context ---\n{context_pack}'
+                else:
+                    canonical_payload = task.objective or ''
+                
+                prompt_digest = compute_canonical_prompt_digest(canonical_payload)
+                
+                # KD-P0B-3: Use real approval provenance instead of hard-coded 'human'
+                # Extract from task.metadata if provided by actual approval system
+                # Otherwise, use the execution requestor as fallback
+                approved_by = str(task.metadata.get('approved_by') or task.requested_by_role or 'unknown')
+                
+                # KD-P0B-4: Only bind fields that exist in runtime
+                # assistant_kind is taken from task.metadata if available
+                # endpoint and action are only set if they exist in metadata
+                # Do not invent or hardcode these values
+                assistant_kind_value = str(task.metadata.get('synaptic_preferred_assistant_kind') or '')
+                endpoint_value = task.metadata.get('github_action', '')
+                action_value = task.metadata.get('action_type', '')
                 
                 # Create authorization
                 authorization = ExternalActionAuthorization(
                     task_id=task.task_id,
                     tool_id=card.tool_id,
                     adapter_key=card.adapter_key,
-                    assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
+                    assistant_kind=assistant_kind_value,
                     prompt_digest=prompt_digest,
-                    endpoint=task.metadata.get('github_action', ''),
-                    action=task.metadata.get('action_type', ''),
+                    endpoint=endpoint_value,
+                    action=action_value,
                     status=ExternalActionAuthorizationStatus.VALIDATED,
                     expires_at=datetime.now(timezone.utc) + timedelta(minutes=60),
-                    approved_by='human',
-                    reason=f'Human approval granted for task {task.task_id}',
+                    approved_by=approved_by,
+                    reason=f'Authorization issued for task {task.task_id} with approval decision {task.approval_decision.value}',
                 )
                 
-                # Store authorization in repository for persistence
-                db = AppDatabase(str(self.workspace_root / 'app.sqlite'))
-                storage = ArtifactStorage(str(self.workspace_root / 'tool_teaching'))
-                repo = ToolRecordRepository(db=db, storage=storage)
-                repo.save_external_authorization(authorization)
+                # KD-P0B-6: Use canonical database for persistence
+                # ToolTeachService already has repository through self.memory.repository
+                # Use that instead of creating a new database
+                self.memory.repository.save_external_authorization(authorization)
                 
                 # Pass authorization to adapter
                 if hasattr(adapter, '_external_authorization'):

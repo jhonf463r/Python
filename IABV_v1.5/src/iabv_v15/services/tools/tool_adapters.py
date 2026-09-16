@@ -1810,6 +1810,16 @@ class ExternalAssistantToolAdapter(ToolAdapter):
         return ToolAdapter._stamp_telemetry(result, telemetry)
 
 
+def compute_canonical_prompt_digest(prompt: str) -> str:
+    """Computa un digest canonical del prompt para binding de autorización.
+    
+    KD-P0B-1: Canonical digest computation - shared between issuer and validator.
+    Both issuer and validator must use exactly the same mechanism.
+    """
+    import hashlib
+    return hashlib.sha256(prompt.encode('utf-8')).hexdigest()
+
+
 class DevinApiToolAdapter:
     """Adapter REST para Devin (Cognition AI) via API v1.
 
@@ -1858,9 +1868,12 @@ class DevinApiToolAdapter:
         }
 
     def _compute_prompt_digest(self, prompt: str) -> str:
-        """Computa un digest del prompt para binding de autorización."""
-        import hashlib
-        return hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+        """Computa un digest del prompt para binding de autorización.
+        
+        KD-P0B-1: Canonical digest computation - shared between issuer and validator.
+        Both issuer and validator must use exactly the same mechanism.
+        """
+        return compute_canonical_prompt_digest(prompt)
 
     def _check_external_authorization(
         self,
@@ -1886,8 +1899,16 @@ class DevinApiToolAdapter:
             if not auth.is_valid():
                 return False
             
+            # KD-P0B-7: Build canonical payload including context_pack for binding
+            # This must match exactly what issuer computed
+            context_pack = str(task.metadata.get('context_pack') or '').strip() if task.metadata else ''
+            if context_pack:
+                canonical_prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+            else:
+                canonical_prompt = prompt
+            
             # Verificar binding with actual adapter identity
-            prompt_digest = self._compute_prompt_digest(prompt)
+            prompt_digest = self._compute_prompt_digest(canonical_prompt)
             # KD-P0B-6: Use 'devin_api' as the actual adapter identity, not auth.adapter_key (tautological)
             actual_adapter_key = 'devin_api'
             actual_assistant_kind = ''  # TODO: extract from runtime if available
@@ -1956,7 +1977,14 @@ class DevinApiToolAdapter:
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        if not self._check_external_authorization(task, task.objective):
+        # KD-P0B-7: Pass canonical payload for authorization check
+        context_pack = str(task.metadata.get('context_pack') or '').strip() if task.metadata else ''
+        if context_pack:
+            canonical_prompt = f'{task.objective}\n\n--- context ---\n{context_pack}'
+        else:
+            canonical_prompt = task.objective
+        
+        if not self._check_external_authorization(task, canonical_prompt):
             return {
                 'success': False,
                 'output_text': '',

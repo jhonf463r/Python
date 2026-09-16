@@ -145,7 +145,7 @@ def _resolve_github_token(environ: dict[str, str] | None = None) -> str:
 def _validate_external_authorization(authorization: Any | None) -> bool:
     """Valida una autorización externa usando la misma lógica que DevinApiToolAdapter.
     
-    KD-P0B-8: Unificar enforcement entre bootstrap y adapter para evitar
+    KD-P0B-5: Unificar enforcement entre bootstrap y adapter para evitar
     duplicación de lógica y semantic drift.
     """
     if authorization is None:
@@ -154,6 +154,10 @@ def _validate_external_authorization(authorization: Any | None) -> bool:
         from iabv_v15.domain.models import ExternalActionAuthorization
         if not isinstance(authorization, ExternalActionAuthorization):
             return False
+        # KD-P0B-5: Include binding validation in shared function
+        # Bootstrap helpers should validate binding the same way adapter does
+        # But bootstrap doesn't have task/tool context, so skip binding check here
+        # Adapter does full binding validation with context
         return authorization.is_valid()
     except Exception:
         return False
