@@ -50,6 +50,15 @@ class ToolRegistry:
             if card is not None:
                 return self.refresh_card(card)
         preferred_assistant_kind = str(preferred_assistant_kind or '').strip().lower()
+        # Identity mapping: normalize synaptic router names to ToolCard metadata names
+        # SynapticRouter may produce names like 'chatgpt_web', 'claude_web', 'ollama_local'
+        # but ToolCard metadata uses short names like 'chatgpt', 'claude', 'ollama'
+        identity_mapping = {
+            'chatgpt_web': 'chatgpt',
+            'claude_web': 'claude',
+            'ollama_local': 'ollama',
+        }
+        preferred_assistant_kind = identity_mapping.get(preferred_assistant_kind, preferred_assistant_kind)
         if preferred_assistant_kind:
             for card in self.list_cards():
                 card_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
