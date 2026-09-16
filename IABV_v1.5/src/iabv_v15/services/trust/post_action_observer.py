@@ -7,8 +7,12 @@ performs its own filesystem observation and expected-versus-observed check.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from iabv_v15.domain.models import ToolCard, ToolResult, ToolTask
-from iabv_v15.services.tools.tool_memory import ToolMemory
+
+if TYPE_CHECKING:
+    from iabv_v15.services.tools.tool_memory import ToolMemory
 
 
 class PostActionObserver:
