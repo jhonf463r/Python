@@ -1336,8 +1336,14 @@ class ToolTeachService:
         if self.synaptic_router is None:
             return {}
         goal_parameters = dict(request.goal_parameters or {})
-        raw_candidates = goal_parameters.get('candidate_assistant_kinds') or goal_parameters.get('allowed_assistant_kinds') or []
-        candidate_assistant_kinds = [str(item) for item in raw_candidates if str(item).strip()] if isinstance(raw_candidates, list) else None
+        # Preserve None sentinel when no candidates are explicitly supplied
+        # This allows _resolve_candidates() to use the full registry
+        raw_candidates = goal_parameters.get('candidate_assistant_kinds') or goal_parameters.get('allowed_assistant_kinds')
+        # Only process as list if explicitly provided; otherwise preserve None
+        if raw_candidates is None:
+            candidate_assistant_kinds = None
+        else:
+            candidate_assistant_kinds = [str(item) for item in raw_candidates if str(item).strip()] if isinstance(raw_candidates, list) else None
         task_kind = str(
             goal_parameters.get('task_kind')
             or goal_parameters.get('diagnostic_category')
