@@ -24,13 +24,13 @@ DISCRIMINATING EXPERIMENT: Compare materially equivalent executions with/without
 
 QUESTION: After a verified experience is persisted, does a later decision change because of that experience?
 
-CURRENT STATUS: NOT PROVEN.
+CURRENT STATUS: NOT FULLY PROVEN AT SYSTEM LEVEL. A 2026-09-17 L5 report claims selector-level causal change, but the reported test artifact is not present in the remote branch tip used as provenance. Treat the claim as candidate evidence pending independent audit.
 
 REQUIRED CHAIN:
 
 `experience → provenance → persistence → later retrieval → decision influence → independently observed changed action`
 
-Persistence alone is insufficient.
+Persistence alone is insufficient. Selector-level influence is not yet equivalent to downstream behavioral change.
 
 ### UK-03 — Second-agent continuity
 
@@ -215,6 +215,41 @@ The benchmark should prefer fixed/reproducible cases, dimension-level evidence, 
 NEXT DISCRIMINATING ACTION:
 Before another Codex implementation/audit cycle, inspect existing evaluation infrastructure and build/run the smallest reproducible comparative benchmark using the existing IABV evaluation mechanisms where possible. If live provider access is unavailable, use fixed recorded external outputs so benchmark design is not blocked by API connectivity.
 
+### UK-15 — Selector-level causal reuse / L5 provenance gate
+
+QUESTION: Does the reported 2026-09-17 L5 experiment actually prove that a persisted verified experience reaches a future selector decision and changes that decision under controlled conditions?
+
+CURRENT STATUS: **CANDIDATE / PENDING INDEPENDENT AUDIT.**
+
+REPORTED RESULT:
+
+- Control: `learned_pattern=0.0`, `total_score=7.545`, no selected pattern.
+- Treatment: fresh reload, `learned_pattern=1.0`, `total_score=10.095`, selected pattern `8e8f6695-8bdb-4d6b-922d-fa6a11728245`.
+- Reported causal variable: persisted and reloaded verified experience.
+
+PROVEN PRECONDITION:
+G3 established verified transition → persistence → fresh reader → `verified_transition_success_count` mutation `0 → 1` in a Windows/Ollama runtime.
+
+PROVENANCE WARNING:
+The remote branch `codex/world-grounded-learning-bridge` currently points to `55d3e2c93807202ec5d0177eda163e8de10418ef`. Direct GitHub read-back of that commit shows a G3 observation-wrapper diff in `test_g2_goal_to_action_plan.py`; the reported `tests/test_l5_causal_decision.py` is not present at that remote tip. The runtime report may therefore have used an uncommitted or otherwise separate artifact. This must be reconciled before promoting L5 to canonical evidence.
+
+REQUIRED AUDIT:
+
+1. identify the exact artifact actually executed;
+2. reconcile commit SHA vs working-tree state;
+3. verify the test did not fabricate `InteractionPattern`, counters or decision scores;
+4. verify persistence/reload are real and not memory-only;
+5. identify whether the normal production decision path (`ToolTeachService` or equivalent) was exercised or whether `InteractionModeSelector` was called directly;
+6. verify Control/Treatment are matched except for the intended verified-experience variable;
+7. verify the observed score difference is causally attributable to that variable;
+8. classify the maximum justified claim as selector-level, production-decision-level, or not proven.
+
+NEXT ACTOR:
+**SONNET** for independent forensic audit.
+
+NEXT AFTER AUDIT:
+If L5 survives, design L6 as a controlled behavioral-change experiment; if a local defect is found, route the minimal fix to Devin; if an architectural contradiction appears, route to Opus before implementation.
+
 ## DEFERRED BUT IMPORTANT DESIGN IDEAS
 
 These are intentionally recorded without forcing implementation:
@@ -245,7 +280,8 @@ These are intentionally recorded without forcing implementation:
 - treat a new field as canonical while legacy fields still control behavior;
 - treat a local archive as sufficient for deletion safety;
 - force every objective through the same fixed AI role sequence;
-- use Codex as the first detector of errors that a validated IABV benchmark can detect itself.
+- use Codex as the first detector of errors that a validated IABV benchmark can detect itself;
+- promote a runtime claim to a commit claim without direct artifact read-back.
 
 ## USE OF THIS REGISTER
 
@@ -256,5 +292,7 @@ For UK-11 / UK-12 work, the future chat should prefer an **acceleration experime
 For UK-13, the first implementation question is **ownership and activation**, not creation of another decision service: trace `AutonomyCycleService → AdaptiveTaskOrchestrator → existing external-consultation path → Devin → verification → outcome/replan` and implement only the smallest missing edge that prevents the causal loop from closing.
 
 For UK-14, the benchmark becomes a gate before expensive external audit cycles: first measure IABV, compare against relevant agent capabilities, identify the smallest learning opportunity, verify the correction independently, and remeasure before spending Codex effort on implementation/audit that the benchmark indicates IABV should already be able to reason about.
+
+For UK-15, never promote L5 from a report alone. First reconcile the exact artifact/commit and independently audit the control/treatment causal chain.
 
 Resolution requires evidence, not a status edit based only on a later claim.
