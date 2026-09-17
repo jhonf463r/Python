@@ -58,6 +58,7 @@ The previously cited `CHAT-ARCH-2026-09-11-001-cognitive-control-plane-p0b-symbi
 - `IABV_v1.5/docs/history/2026-09-03_CHAT-ARCH-2026-011_github-persistence-deletion-gate.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` — DIRECT_CANONICAL_SOURCE=YES / 2026-09-17 causal checkpoint
 
 ### Authority / trust / P0.213 / P0-B
 
@@ -125,3 +126,21 @@ Canonical synthesis:
 `IABV_v1.5/docs/history/CHAT-ARCH/CANONICAL-ABSORPTION-2026-09-11.md`
 
 This file is the current adjudication layer for the older chat reports audited on 2026-09-11.
+
+## 2026-09-17 REGISTRATION
+
+Canonical source:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`
+
+State:
+
+`DIRECT_CANONICAL_SOURCE=YES`
+
+`REMOTE_READBACK=YES`
+
+Purpose: preserve the latest cross-IA causal-learning checkpoint, branch/commit reconciliation, L3/L4 evidence, L5 candidate evidence and provenance discrepancy, P0-B execution boundary, negative knowledge and dynamic role routing.
+
+Routing: `CONTEXT-INDEX.md` must activate this source for P0-B causal completion, adapter execution, causal learning/L5+, and dynamic cross-IA role-selection objectives.
+
+Promotion rule: the reported L5 result remains candidate until the exact test artifact and provenance are independently reconciled. The existence of this canonical checkpoint does not itself promote the claim.
