@@ -163,6 +163,10 @@ The canonical current-state bridge and source record for the latest causal inves
 
 `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`
 
+The independent provenance audit of the reported L5 experiment is:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-002-sonnet-l5-provenance-audit.md`
+
 The active technical code baseline for that investigation is:
 
 `main code baseline = 4b04566686c40cc6d48d64edb411b36867c54dcf`
@@ -173,12 +177,14 @@ Experimental branches are pinned separately:
 
 `codex/world-grounded-learning-bridge = 55d3e2c93807202ec5d0177eda163e8de10418ef`
 
-The latter remote tip does not contain the reported `tests/test_l5_causal_decision.py`; therefore reported L5 evidence remains pending independent artifact/provenance audit.
+The latest independent audit found that the reported `tests/test_l5_causal_decision.py` does not exist at the cited SHA, in the clean working tree, or in the observable repository history/branch set searched. Therefore the reported L5 results are **NOT PROVEN / ARTIFACT-ABSENT** until the provenance contradiction is resolved.
 
-For future prompts, the next actor is not predetermined. At this checkpoint the best-fit actor is **Sonnet** for independent forensic audit of the L5 claim. If a genuine architectural contradiction appears, use Opus; if a concrete local runtime/test correction is required, use Devin; do not invoke Codex just to repeat already-closed causal edges.
+For future prompts, the next actor is selected from the current uncertainty. At this checkpoint the best-fit actor is **Codex** for provenance reconciliation because the disputed report and cited branch are attributed to Codex work. Codex must first locate a verifiable artifact/commit, identify the actual runtime artifact provenance, or explicitly retract the L5 report. It must not redesign L5 at this stage.
+
+If the artifact is recovered, route back to **Sonnet** for independent forensic audit before accepting L5. If a genuine architectural contradiction emerges, use **Opus 5**. If a concrete local runtime/test fix is needed after adjudication, use **Devin**. Do not invoke an actor merely to repeat a closed causal edge.
 
 The required future prompt pattern is:
 
 `OBJECTIVE → CURRENT VERIFIED STATE → EXACT PROVENANCE → CLOSED EDGES (do not reopen) → FIRST OPEN CAUSAL EDGE → EVIDENCE REQUIRED → FALSE-POSITIVE CONTROLS → STOP CONDITION → REQUIRED REPORT → NEXT ACTOR`
 
-This prevents future AIs from reconstructing old prompt context from scratch.
+This prevents future AIs from reconstructing old prompt context from scratch and prevents an AI report from being promoted above the artifact actually verified.
