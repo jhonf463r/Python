@@ -160,7 +160,7 @@ A record has high activation priority when it:
 7. records a cross-IA correction that changes the proper method;
 8. establishes the latest independently verified gate for the same subsystem;
 9. changes which AI capability should be selected;
-10. identifies an existing organ that may already own the capability, reducing unnecessary architecture creation.
+10. identifies an existing organ that can replace a proposed new component, reducing unnecessary architecture creation.
 
 ## TEMPORAL RECONCILIATION
 
@@ -343,7 +343,8 @@ A new historical update is warranted when the session creates or changes:
 - the collaboration strategy itself;
 - the canonical absorption/routing state;
 - a cross-organ integrity/contract/temporal/semantic finding;
-- the identification of an existing organ that can replace a proposed new component.
+- the identification of an existing organ that can replace a proposed new component;
+- a provenance discrepancy that changes whether evidence can be promoted.
 
 Routine repetition should not generate redundant history.
 
@@ -361,6 +362,118 @@ When new knowledge changes the operational model:
 8. register new source records in `ARCHIVE-REGISTRY.md`.
 
 Do not silently rewrite historical records to make contradictions disappear.
+
+## EVIDENCE PROMOTION GATE
+
+A report produced by an AI is not automatically evidence at the same level as the artifact it describes.
+
+Before promoting a result to a stronger epistemic state, reconcile:
+
+```text
+reported claim
+  ↓
+reported artifact
+  ↓
+exact branch/ref
+  ↓
+exact commit SHA
+  ↓
+working-tree state, when relevant
+  ↓
+artifact read-back
+  ↓
+runtime provenance
+  ↓
+independent verification
+```
+
+If the reported artifact is absent from the cited commit, preserve the discrepancy and downgrade the claim to the highest state actually supported. Do not silently infer that the report used committed code.
+
+## CAUSAL EDGE DISCIPLINE
+
+Treat each meaningful arrow as an independent evidentiary edge.
+
+Examples:
+
+`selection proven != execution proven`
+
+`adapter invoked != authorization accepted`
+
+`authorization accepted != transport transmitted`
+
+`transport transmitted != external effect`
+
+`external effect != independently verified outcome`
+
+`verified outcome != learning`
+
+`learning state != future decision influence`
+
+`future decision influence != behavioral change`
+
+`behavioral change != improvement`
+
+A future investigation should advance to the **first open causal edge**, not restart already closed edges, unless new contradictory evidence appears.
+
+## SYMBIOSIS MEASUREMENT
+
+A cross-IA collaboration is materially successful when it creates an observable delta in the working method/system, not merely agreement.
+
+Track qualitatively or quantitatively where possible:
+
+`ΔK = demonstrated knowledge delta`
+
+`Δπ = policy/method change`
+
+`ΔB = observable behavior change`
+
+`ΔY = observable outcome change`
+
+Agreement among agents is not a proxy for ΔK, Δπ, ΔB or ΔY.
+
+## DYNAMIC MESSAGE ECONOMY
+
+Use the minimum number of external AI interventions required to remove the current material uncertainty.
+
+Do not invoke an agent to repeat an edge already closed with stronger evidence.
+
+Prefer a single actor to combine compatible execution tasks when doing so preserves audit independence and provenance. Split roles when independence or materially different capability is required.
+
+Reserve high-cost/high-reasoning interventions for:
+
+- genuine architectural contradiction;
+- policy adjudication under competing valid interpretations;
+- higher-order causal ambiguity;
+- a failure that cannot be reconciled by the current runtime/source auditor.
+
+## ROLE-ROUTING EXAMPLE — 2026-09-17
+
+For the current causal learning/P0-B frontier:
+
+`ChatGPT → Sonnet → (Opus only if contradiction) → Devin if fix needed → Sonnet re-audit`
+
+This is an example of capability-driven routing, not a permanent sequence.
+
+## REPORT-TO-CANONICAL-STATE RULE
+
+Every material external-agent report that changes the project model should be converted into a structured delta before the next actor is selected.
+
+The conversion should include:
+
+```text
+REPORT
+→ OBSERVED FACTS
+→ CLAIMS
+→ EVIDENCE LEVEL
+→ PROVENANCE
+→ CONTRADICTIONS
+→ NEGATIVE KNOWLEDGE
+→ KNOWLEDGE DELTA
+→ POLICY / ROLE CHANGE
+→ NEXT CAUSAL EDGE
+```
+
+This prevents the next prompt from accidentally carrying forward assertions as facts.
 
 ## MEMORY DECAY / SUPERSESSION
 
@@ -432,3 +545,53 @@ This memory architecture is successful only when a genuinely new chat:
 10. writes that delta back into the appropriate durable layer.
 
 That is the operational definition of **cross-chat continuity** for IABV.
+
+## 2026-09-17 PROTOCOL AMENDMENT — CAUSAL SYMBIOSIS / PROVENANCE
+
+This amendment is active for future chats.
+
+### A. Treat provenance as part of the evidence, not metadata decoration
+
+A claim may not be promoted merely because an AI report contains a SHA. The exact artifact must be recoverable from that SHA/ref, or the report must explicitly identify the uncommitted working-tree state used.
+
+### B. Treat discrepancies as useful state
+
+A contradiction such as:
+
+`reported test exists`
+
+versus
+
+`remote commit does not contain test`
+
+must become an explicit unresolved/provenance item and must affect the next actor's task.
+
+### C. Route by uncertainty, not habit
+
+Before assigning an actor, ask which capability is the bottleneck now:
+
+`architecture | source audit | runtime | controlled experiment | implementation | verification | reconciliation`
+
+Then choose the least redundant capable actor and add an independent challenger only when the claim warrants it.
+
+### D. Advance monotonically through causal edges
+
+Do not repeatedly reprove a closed edge because a new prompt is easier to write that way. Preserve its evidence level and move to the first still-open edge.
+
+### E. Convert reports into durable operational state
+
+After a material report, update current state, routing, capability evidence, unresolved status and source registry as appropriate before starting another cross-IA cycle.
+
+### F. Preserve explicit claim granularity
+
+Future prompts must distinguish at least:
+
+`SOURCE-PROVEN`
+`UNIT-TEST-PROVEN`
+`INTEGRATION-TEST-PROVEN`
+`PRIMARY-RUNTIME-PROVEN`
+`INDEPENDENTLY-RUNTIME-VERIFIED`
+`NOT PROVEN`
+`CONTRADICTED`
+
+Do not use vague closure language such as “basically proven”.
