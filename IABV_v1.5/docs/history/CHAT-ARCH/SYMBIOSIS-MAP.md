@@ -248,3 +248,87 @@ Example:
 - cognitive objective → activate receipt-vs-cognition and persistence-vs-learning transfers;
 - continuity objective → activate archive/deletion and dynamic-context transfers;
 - systemic-integrity objective → activate cross-organ coherence, runtime-repair and durable-memory transfer rules.
+
+## 2026-09-17 TRANSFER 11 — PROVENANCE DISCREPANCY IS ITSELF KNOWLEDGE
+
+A reported experiment cannot be promoted to canonical evidence until the artifact actually executed is reconciled with its reported commit/branch.
+
+Observed case:
+
+`reported L5 test → reported SHA 55d3e2c...`
+
+but direct GitHub read-back showed the `55d3e2c...` committed diff did not contain the reported `tests/test_l5_causal_decision.py`.
+
+New invariant:
+
+`reported artifact != committed artifact until remotely verified`
+
+Therefore, a provenance discrepancy is not noise. It is a Knowledge Delta that must alter the audit method and future prompt requirements.
+
+## 2026-09-17 TRANSFER 12 — RUNTIME EVIDENCE CAN CLOSE A ROUTE WITHOUT ARCHITECTURE CHANGES
+
+Sonnet runtime evidence demonstrated that:
+
+`ToolTask.tool_id → execute_task() → get_card(task.tool_id) → correct adapter → adapter.run()`
+
+and that the correct adapter was actually invoked for baseline, known Synaptic assistants and the unknown-assistant baseline-preservation case.
+
+Method change:
+
+Do not spend another AI intervention re-auditing an edge once stronger runtime evidence has closed it, unless a new contradictory observation appears.
+
+New invariant:
+
+`stronger causal evidence → retire redundant audit work → advance to first open edge`
+
+## 2026-09-17 TRANSFER 13 — ROLE SELECTION IS A CAPABILITY OPTIMIZATION PROBLEM
+
+Current routing lesson:
+
+`objective → uncertainty → required capability → best-fit actor → independent challenge → reconciliation`
+
+For this cycle:
+
+- ChatGPT: adjudication, synthesis, evidence-boundary definition and memory writeback;
+- Sonnet: forensic independent audit;
+- Devin: Windows/runtime execution and minimal local test/fixture implementation;
+- Opus 5: reserve for architectural contradictions or higher-order policy/causal adjudication;
+- Codex: reserve for broader or ambiguous implementation work.
+
+This is evidence-based capability routing, not permanent role identity.
+
+New invariant:
+
+`role label != role authority; capability fit is selected per objective`
+
+## 2026-09-17 TRANSFER 14 — SYMBIOSIS IS MEASURED BY METHOD/STATE CHANGE
+
+Agreement between AIs is not enough.
+
+A stronger symbiosis event has:
+
+`agent observation → independent reconciliation → changed experiment/method/system → observed delta → durable writeback → future behavior affected`
+
+Useful measurements remain:
+
+`ΔK = demonstrated knowledge delta`
+
+`Δπ = policy/method change`
+
+`ΔB = observable behavior change`
+
+`ΔY = observable outcome change`
+
+A cycle may have ΔK without Δπ, ΔB or ΔY. Do not infer higher-order symbiosis from agreement or from a green test.
+
+## 2026-09-17 CURRENT ROLE ROUTING STATE
+
+The present route is:
+
+`ChatGPT → Sonnet → (Opus only if architectural contradiction) → Devin if minimal fix is required → Sonnet re-audit`
+
+After a valid L5 audit:
+
+`Devin → L6 runtime behavioral experiment → Sonnet audit → ChatGPT adjudication`
+
+The route must be recomputed when the active uncertainty changes.
