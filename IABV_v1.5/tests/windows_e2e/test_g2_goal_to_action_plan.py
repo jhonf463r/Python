@@ -90,26 +90,6 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
     
     container = MockContainer()
 
-    # Capture the persisted learning state immediately before the real G3
-    # bridge invokes the learning method.  The wrapper does not replace the
-    # production mutation; it delegates to the original instance method.
-    learning_before = {}
-    original_learn_from_verified_transition = container.interaction_learning_service.learn_from_verified_transition
-
-    def observe_learning_before(transition):
-        existing = container.interaction_learning_service.repository.get_interaction_pattern_by_signature(
-            transition.action_signature
-        )
-        learning_before['signature'] = transition.action_signature
-        learning_before['verified_success_count'] = (
-            existing.verified_transition_success_count if existing is not None else 0
-        )
-        learning_before['verified_failure_count'] = (
-            existing.verified_transition_failure_count if existing is not None else 0
-        )
-        return original_learn_from_verified_transition(transition)
-
-    container.interaction_learning_service.learn_from_verified_transition = observe_learning_before
     server = IABVMCPServer(container)
     
     # Register self-update tools
@@ -530,6 +510,27 @@ def test_g3_independent_result_verification(authority_service, workspace_root, t
         def get(self, service_name, default=None):
             return None
     
+    # Capture the persisted learning state immediately before the real G3
+    # bridge invokes the learning method. The wrapper delegates to the
+    # production mutation and only records its persisted precondition.
+    learning_before = {}
+    original_learn_from_verified_transition = container.interaction_learning_service.learn_from_verified_transition
+
+    def observe_learning_before(transition):
+        existing = container.interaction_learning_service.repository.get_interaction_pattern_by_signature(
+            transition.action_signature
+        )
+        learning_before['signature'] = transition.action_signature
+        learning_before['verified_success_count'] = (
+            existing.verified_transition_success_count if existing is not None else 0
+        )
+        learning_before['verified_failure_count'] = (
+            existing.verified_transition_failure_count if existing is not None else 0
+        )
+        return original_learn_from_verified_transition(transition)
+
+    container.interaction_learning_service.learn_from_verified_transition = observe_learning_before
+
     # Cleanup any existing G3 test files
     test_file = workspace_root / "g3_verification_test.txt"
     if test_file.exists():
