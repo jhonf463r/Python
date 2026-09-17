@@ -149,10 +149,36 @@ An open technical task does not by itself block historical-chat deletion. Unpres
 
 The operational-memory layer is on `main`. The exact current `main` HEAD must be checked from GitHub at use time; this file deliberately does not become the authority for a mutable branch tip.
 
-The latest recorded P0-B validation target remains outside `main`:
+The historical hardening target remains recorded separately:
 
 `origin/audit/p0-b-repopath-on-hardened-base`
 
 `c7abe9abcbf91d2cf31d7e3cdee37c19100a2fb3`
 
-This distinction must be preserved.
+This is not the 2026-09-17 P0-B code baseline.
+
+## 2026-09-17 ACTIVE MEMORY CHECKPOINT
+
+The canonical current-state bridge and source record for the latest causal investigation are:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`
+
+The active technical code baseline for that investigation is:
+
+`main code baseline = 4b04566686c40cc6d48d64edb411b36867c54dcf`
+
+Experimental branches are pinned separately:
+
+`p0b-first-causal-break = 2d472ccaaf5a37773fed1d8e389e580812599c03`
+
+`codex/world-grounded-learning-bridge = 55d3e2c93807202ec5d0177eda163e8de10418ef`
+
+The latter remote tip does not contain the reported `tests/test_l5_causal_decision.py`; therefore reported L5 evidence remains pending independent artifact/provenance audit.
+
+For future prompts, the next actor is not predetermined. At this checkpoint the best-fit actor is **Sonnet** for independent forensic audit of the L5 claim. If a genuine architectural contradiction appears, use Opus; if a concrete local runtime/test correction is required, use Devin; do not invoke Codex just to repeat already-closed causal edges.
+
+The required future prompt pattern is:
+
+`OBJECTIVE → CURRENT VERIFIED STATE → EXACT PROVENANCE → CLOSED EDGES (do not reopen) → FIRST OPEN CAUSAL EDGE → EVIDENCE REQUIRED → FALSE-POSITIVE CONTROLS → STOP CONDITION → REQUIRED REPORT → NEXT ACTOR`
+
+This prevents future AIs from reconstructing old prompt context from scratch.
