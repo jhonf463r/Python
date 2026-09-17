@@ -19,11 +19,12 @@ Core retrieval:
 1. `README.md` — continuity contract and evidence rules.
 2. `CONTEXT-INDEX.md` — objective-driven routing.
 3. `CURRENT-STATE.md` — current project state and active gates.
-4. `SYMBIOSIS-MAP.md` — cross-IA capability and knowledge transfer.
-5. `UNRESOLVED-KNOWLEDGE.md` — ideas, deductions and unresolved boundaries.
-6. `CANONICAL-ABSORPTION-2026-09-11.md` — source reachability, absorption and deletion-readiness audit.
-7. `ARCHIVE-REGISTRY.md` — source-history locations and identities.
-8. Relevant historical source records selected by the objective.
+4. `CURRENT-STATE-OVERRIDE-2026-09-17.md` — latest append-only operational corrections for the 2026-09-17 causal-learning frontier.
+5. `SYMBIOSIS-MAP.md` — cross-IA capability and knowledge transfer.
+6. `UNRESOLVED-KNOWLEDGE.md` — ideas, deductions and unresolved boundaries.
+7. `CANONICAL-ABSORPTION-2026-09-11.md` — source reachability, absorption and deletion-readiness audit.
+8. `ARCHIVE-REGISTRY.md` — source-history locations and identities.
+9. Relevant historical source records selected by the objective.
 
 Do **not** read every historical record by default.
 
@@ -188,3 +189,50 @@ The required future prompt pattern is:
 `OBJECTIVE → CURRENT VERIFIED STATE → EXACT PROVENANCE → CLOSED EDGES (do not reopen) → FIRST OPEN CAUSAL EDGE → EVIDENCE REQUIRED → FALSE-POSITIVE CONTROLS → STOP CONDITION → REQUIRED REPORT → NEXT ACTOR`
 
 This prevents future AIs from reconstructing old prompt context from scratch and prevents an AI report from being promoted above the artifact actually verified.
+
+## 2026-09-17 LATEST OVERLAY — PROVENANCE GAP CLOSED / L5 STILL OPEN
+
+The preceding checkpoint above is historical and contains the **pre-recovery** state. It must not be used as the current routing instruction for the L5 artifact.
+
+The latest append-only corrections are:
+
+- `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`
+- `CURRENT-STATE-OVERRIDE-2026-09-17.md`
+
+The recovered L5 artifact is now remotely verified on:
+
+`audit/l5-artifact-evidence-2026-09-17`
+
+with branch HEAD:
+
+`f3e8a21c58fd73ad1b09ae11abae0cce915138cb`
+
+Artifact path:
+
+`IABV_v1.5/tests/test_l5_causal_decision.py`
+
+Git blob:
+
+`2844537f80c190a1351dac3a95f35f80cf79dc19`
+
+SHA-256:
+
+`E0DC044C00992034DDE2F826E7A7517B326318060BDB68DF84D06B2F5FF60D5B`
+
+Direct remote read-back now succeeds. The former artifact-location/provenance gap is therefore **CLOSED AT PUBLICATION LEVEL**.
+
+Devin's fresh Windows result is preserved as reported runtime evidence: the byte-identical artifact passed the focused test with Python 3.14.4 / pytest 9.0.3 and produced `learned_pattern 0.0 → 1.0`, `total_score 7.545 → 10.095`, with a pattern id appearing after the learned state was persisted and reloaded.
+
+This still does **not** promote L5 to proven under the strong definition, because the test directly evaluates `InteractionModeSelector._assess_candidate()` and uses one candidate rather than a competitive normal application selection. The treatment `VerifiedTransition` is also constructed in the test, so the test itself does not establish a fresh real-world episode as the source of the learned state.
+
+CURRENT ROUTING:
+
+`SONNET → independent forensic audit`
+
+If that audit confirms only selector-level scoring influence, route the minimal competitive/multi-candidate normal-selector experiment to `DEVIN`. Use `OPUS 5` only for a genuine architecture contradiction. Do not spend `CODEX` on the already closed artifact-location problem.
+
+The durable method is:
+
+`objective → boundary → relevant memory → current read-back → capability/access fit → smallest discriminating experiment → independent verification → knowledge delta → writeback`
+
+END OF LATEST OVERLAY
