@@ -144,3 +144,38 @@ Purpose: preserve the latest cross-IA causal-learning checkpoint, branch/commit 
 Routing: `CONTEXT-INDEX.md` must activate this source for P0-B causal completion, adapter execution, causal learning/L5+, and dynamic cross-IA role-selection objectives.
 
 Promotion rule: the reported L5 result remains candidate until the exact test artifact and provenance are independently reconciled. The existence of this canonical checkpoint does not itself promote the claim.
+
+## 2026-09-17 L5 RECONCILIATION REGISTRATION
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-002-sonnet-l5-provenance-audit.md`
+
+Type: `RECONCILIATION`
+
+The earlier provenance contradiction is preserved as historical knowledge. The recovered artifact was subsequently published and remotely read back on:
+
+`audit/l5-artifact-evidence-2026-09-17`
+
+Evidence commit:
+
+`f3e8a21c58fd73ad1b09ae11abae0cce915138cb`
+
+Artifact:
+
+`IABV_v1.5/tests/test_l5_causal_decision.py`
+
+The latest cross-chat reconciliation is:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`
+
+and the latest operational overlay is:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE-OVERRIDE-2026-09-17.md`
+
+Current promotion state:
+
+- artifact publication/provenance = CLOSED AT REMOTE READ-BACK LEVEL;
+- fresh Windows execution = REPORTED PASS;
+- selector-level learned-scoring influence = EVIDENCED;
+- competitive future decision change = NOT PROVEN;
+- strong L5 = NOT PROVEN;
+- next actor = SONNET for independent forensic adjudication.
