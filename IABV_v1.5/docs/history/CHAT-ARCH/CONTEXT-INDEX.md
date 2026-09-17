@@ -46,13 +46,12 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 | **Systemic integrity / cross-organ connectivity / contract drift** | `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | OSES, SelfCodeAnalysis, SystemKnowledgeRegistry, SystemIdentityRegistry, OrganismStateSnapshot, RuntimeAuditTracer, DecisionAuditTrail, PerceptionCrossValidator, historical UniversalMetacognitiveScanner records | Which integrity mechanisms already exist? Are producer/consumer contracts, timing, semantics, duplication and drift actually verified, or only observed locally? |
 | IABV-directed external-agent execution | `CURRENT-STATE.md`, `SYMBIOSIS-MAP.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | Devin adapter, ToolTeachService, agent handoff/briefing records, R3 cognitive wiring records | Can IABV autonomously prepare, delegate and verify work through an external agent without turning the UI or human into a manual transport layer? |
 | Comparative reasoning / metacognitive benchmark | `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | Evolution Control Room benchmark guidance, prior agent capability comparisons, learning-gate records, external-agent evidence | Is IABV improving at observation, uncertainty, contradictions, causal tracing, minimal action, verification, escalation, stop discipline and reuse? Is avoidable external work decreasing? |
-| Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records, `CURRENT-STATE-OVERRIDE-2026-09-17.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md` | Can a new chat reconstruct only the relevant state from GitHub? Is current provenance/negative knowledge/active gate preserved? |
+| Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records, `CURRENT-STATE-OVERRIDE-2026-09-17.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`, `CHAT-ARCH-2026-09-17-006-l5-competitive-selection-routing.md` | Can a new chat reconstruct only the relevant state from GitHub? Is current provenance/negative knowledge/active gate preserved? |
 | P0-B authority / provenance / security | `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | P0.213 authority/trust records, P0-B records, current P0-B branch evidence, canonical absorption | Is legitimate authority independently bound to trust root, identity, runtime and invocation? Where is the first unproven edge after adapter.run()? |
 | **P0-B causal completion / adapter execution** | `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`, `CURRENT-STATE.md` | `p0b-first-causal-break`, `codex/world-grounded-learning-bridge`, P0-B authority records | What actually happens after `adapter.run()`? Is authorization real, bound, consumed and followed by transport/effect? |
-| **Causal learning / L5+** | `CURRENT-STATE-OVERRIDE-2026-09-17.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | `audit/l5-artifact-evidence-2026-09-17`, L5 reproduction record, G3/L5 records, learning selector code | Does legitimate verified experience persist, reload and causally change a future competitive decision? Is the artifact and execution provenance independently accessible? |
+| **Causal learning / L5+** | `CURRENT-STATE-OVERRIDE-2026-09-17.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`, `CHAT-ARCH-2026-09-17-006-l5-competitive-selection-routing.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | `audit/l5-artifact-evidence-2026-09-17`, L5 reproduction/audit records, G3/L5 records, learning selector code | Does legitimate verified experience persist, reload and causally change a future competitive decision? Is the artifact and execution provenance independently accessible? Which actor can perform the next bounded experiment at lowest intervention cost? |
 | AdaptiveSession provenance / replan lineage | `CURRENT-STATE.md` | provenance records and `aa3ff2c2` history | Are typed fields actually canonical in runtime decisions, or only persisted mirrors? |
 | R3 / Devin adapter / tool execution | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | R5/R3 loopback records, Devin adapter, ToolTeachService, current test evidence | Does the production path select and invoke the adapter rather than bypassing it, and can IABV select/verify the route dynamically? |
-| Runtime/bootstrap/provenance | `CURRENT-STATE.md` | runtime-integration, Windows forensic, cognitive symbiosis records | Is the exact intended commit actually running? Is package origin/workspace/runtime aligned? |
 | Evidence adequacy / verification | `CURRENT-STATE.md`, `CANONICAL-ABSORPTION-2026-09-11.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | adaptive-evidence, objective-verifier records, persistence and deletion records | What does evidence actually prove, and what remains merely asserted? Are provenance discrepancies themselves blocking promotion? |
 | Objective verifier / goal-evidence alignment | `CANONICAL-ABSORPTION-2026-09-11.md`, `CURRENT-STATE.md` | `CHAT-ARCH-2026-09-11-018` source records on `foundation/reconstruction`, adaptive-evidence history | Does the verifier prove the declared objective, or only a narrower mechanical property? |
 | Scientific metacognition / prediction / calibration | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md` | multi-tool/scientific-metacognition records, prediction/calibration records | Are expectations established before execution and compared against later reality? |
@@ -60,7 +59,7 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 | Architecture-to-runtime construction | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md` | architecture-to-runtime construction history | Which architectural claims are actually implemented and runtime proven? |
 | Windows runtime / hardening | `CURRENT-STATE.md` | Windows forensic and P0-B records | What security claims survive adversarial Windows execution? |
 | Historical deletion safety | `CANONICAL-ABSORPTION-2026-09-11.md`, `README.md`, `ARCHIVE-REGISTRY.md` | source records and deletion-gate records | Is knowledge preserved directly or through canonical absorption with provenance? |
-| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, with required artifact/runtime access, and is IABV learning this capability map from evidence? |
+| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`, `CHAT-ARCH-2026-09-17-006-l5-competitive-selection-routing.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, with required artifact/runtime access, and is IABV learning this capability map from evidence? |
 
 ## CROSS-CUTTING ACTIVATION — ALWAYS CONSIDER WHEN MATERIAL
 
@@ -157,20 +156,15 @@ This index is not a static list of tasks. It is a **routing mechanism from prese
 
 The routing map must evolve when new work creates boundaries, failure modes, experiments, concepts, cross-IA learning, new source records or new absorption states.
 
-## 2026-09-17 LIVE ROUTING OVERRIDE
+## 2026-09-17 LIVE ROUTING OVERRIDE — L5 COMPETITIVE SELECTION
 
-The earlier L5 routing text was written before the recovered artifact was published. The current L5 route is now:
-
-`CURRENT-STATE-OVERRIDE-2026-09-17.md`
-→ `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`
-→ remote evidence branch `audit/l5-artifact-evidence-2026-09-17`
-→ independent Sonnet forensic audit.
+The previous L5 routing to Sonnet is now superseded because Sonnet has independently adjudicated the preserved artifact.
 
 Current evidence branch:
 
 `audit/l5-artifact-evidence-2026-09-17`
 
-Current evidence commit:
+Evidence commit:
 
 `f3e8a21c58fd73ad1b09ae11abae0cce915138cb`
 
@@ -186,12 +180,64 @@ Artifact SHA-256:
 
 `E0DC044C00992034DDE2F826E7A7517B326318060BDB68DF84D06B2F5FF60D5B`
 
-The publication/provenance gap is CLOSED AT REMOTE READ-BACK LEVEL.
+Publication/provenance is CLOSED.
 
-The L5 causal claim itself remains OPEN / NOT PROVEN under the strong definition because the current test demonstrates selector-level scoring influence rather than a competitive future selection change. The next discriminating edge is:
+Sonnet's independent conclusion is:
 
-`legitimate verified experience → persistence → reload → normal production selector → multiple competing candidates → selected decision difference → causal attribution`
+`L4 = PARTIALLY PROVEN`
 
-Current next actor: **SONNET**.
+`L5 = NOT PROVEN under the strong canonical definition`
 
-Do not route to Codex merely because it recovered the artifact. Route to Devin only after independent audit if a concrete Windows/runtime experiment or minimal fix is required.
+The preserved test proves selector-level scoring influence, including the source-derived `+2.55` delta, but not a competitive winner change. The test directly invokes `_assess_candidate()` and contains one candidate.
+
+The first open causal edge is:
+
+`legitimate verified experience → persistence → reload → normal production selector → multiple competing candidates → selected decision difference → specific causal attribution`
+
+### Capability-cost routing decision
+
+The next actor is **DEVIN**, not Codex.
+
+Reason:
+
+- the required action is a bounded new test plus Windows execution;
+- Devin has demonstrated exact Windows filesystem/runtime access and local test implementation capability;
+- Codex has demonstrated high value for repository archaeology/provenance, but no current Codex-specific capability is required by this edge;
+- therefore the lowest-cost capable actor should be tried first;
+- the Codex intervention budget should be preserved;
+- if Devin encounters a genuine implementation/access limitation that materially requires Codex's broader or ambiguous implementation strength, route to Codex rather than forcing Devin beyond capability fit.
+
+### Opus budget
+
+Three Opus 5 interventions remain reserved for genuine architectural contradiction or higher-order causal/policy ambiguity. Do not spend Opus on routine test creation/execution.
+
+### Next experiment
+
+Create a NEW test on a separate experimental branch. Do not modify the preserved evidence artifact.
+
+Use the real `InteractionModeSelector.select()` path with at least two candidates.
+
+Control:
+
+`candidate A wins`
+
+Treatment:
+
+same request + same candidate universe + same non-learning state + one prior learned experience affecting candidate B
+→ `candidate B wins`
+
+The winner flip must be attributable specifically to prior verified experience. Avoid preferred-tool/external-assistant shortcuts and any hard-coded winner.
+
+Use existing deterministic selector-test infrastructure where appropriate; this is a selector experiment, not a claim of real external-world execution.
+
+### STOP / ESCALATION
+
+Stop if production semantics must change, if a faithful multi-candidate selector experiment cannot be constructed, or if the winner must be artificially forced.
+
+If the bounded experiment can be implemented and executed, do not call Codex.
+
+If Devin reports a genuine capability/access blocker that is not an architecture contradiction, route to Codex.
+
+If Sonnet's future audit finds an architecture contradiction, route to Opus 5.
+
+After successful Devin execution, independent verification should return to Sonnet before L5 promotion.
