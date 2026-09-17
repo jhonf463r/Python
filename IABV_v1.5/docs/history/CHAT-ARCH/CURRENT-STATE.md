@@ -14,6 +14,8 @@ The continuity/navigation, operational-memory and canonical-absorption layers ar
 
 Do not assume `main` is the active validation target for every subsystem.
 
+**Code-baseline rule:** documentation commits on `main` do not redefine the technical baseline of an experiment. Any active experiment must pin its exact code SHA/branch explicitly.
+
 ## OPERATIONAL MEMORY STATE
 
 GitHub contains a canonical objective-driven historical-memory layer:
@@ -28,6 +30,7 @@ GitHub contains a canonical objective-driven historical-memory layer:
 - `IABV_v1.5/docs/history/CHAT-ARCH/DELETION-READINESS-2026-09-11.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/ARCHIVE-REGISTRY.md`
 - `IABV_v1.5/docs/history/CHAT-ARCH/SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`
 
 The intended cross-chat property is:
 
@@ -74,7 +77,7 @@ Interpretation: **R3 is closed as a production-path technical integration gate, 
 
 ### P0-B — authority / provenance boundary
 
-Latest recorded target:
+### Historical hardening target
 
 `origin/audit/p0-b-repopath-on-hardened-base`
 
@@ -84,7 +87,31 @@ This target includes the recorded V4-R9.4 → V4-R9.7 hardening lineage, includi
 
 Last independently verified P0-B failure remains the earlier V4-R3 attack in which an ordinary caller could fabricate/replace the trust root and tests self-provisioned with the same bypass as the attacker.
 
-Current status in the available history: **P0-B OPEN / runtime-adversarial validation pending.**
+Current status in the historical hardening record: **P0-B OPEN / runtime-adversarial validation pending.**
+
+### Active causal P0-B baseline
+
+For the 2026-09-17 causal investigation, the technical P0-B baseline is explicitly pinned to:
+
+`main code baseline = 4b04566686c40cc6d48d64edb411b36867c54dcf`
+
+This SHA was directly verified on GitHub as the main code baseline used by the investigation. Its commit message documents the `ExternalActionAuthorization` model, adapter/bootstrap enforcement and intercepted C29 path, while explicitly marking `SAFE_FOR_REAL_DEVIN: NO` because the test key is fictitious and transport is intercepted.
+
+The experimental causal-routing branch is:
+
+`p0b-first-causal-break = 2d472ccaaf5a37773fed1d8e389e580812599c03`
+
+Its authority-contract correction is separately evidenced. It must not be silently treated as `main`.
+
+The 2026-09-17 source checkpoint is:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`
+
+The immediate unresolved authority/execution question remains:
+
+`adapter.run() → authorization → transport → external effect → observable result → independent verification`
+
+Do not reopen the already proven selection/dispatch edges unless new contradictory runtime evidence appears.
 
 ### AdaptiveSession provenance
 
@@ -208,6 +235,8 @@ The active next investigation is therefore **existing systemic integrity algorit
 11. **Search-index-as-readback fallacy:** a code-search result or stale indexed URL is not equivalent to a successful direct file read-back.
 12. **Runtime-repair closure fallacy:** source/test repair was treated as enough until an actual UI path exposed a second stale import/contract.
 13. **Cross-organ fragmentation:** multiple organs can each observe a correct local fact while no organ verifies that the end-to-end relationship remains coherent.
+14. **Experimental-artifact provenance drift:** a runtime report may refer to uncommitted files not represented by the reported commit SHA; never treat a report as evidence of a commit's contents without remote read-back.
+15. **Symbiosis-by-agreement fallacy:** multiple AIs agreeing on a conclusion is not evidence that knowledge transfer causally changed the method or system.
 
 ## CURRENT SYMBIOSIS METHOD
 
@@ -216,6 +245,18 @@ The collaboration model is explicitly dynamic:
 `objective → uncertainty/boundary → required capabilities → evidence of strongest available AI role → independent challenge if critical → execution/observation → reconciliation → update capability/method model`
 
 Historical role patterns are evidence about capabilities, not permanent identities.
+
+### 2026-09-17 operational routing
+
+For the current causal-learning investigation:
+
+- **ChatGPT:** adjudication, reconciliation, memory writeback, evidence-boundary definition and selection of the smallest discriminating next action.
+- **Sonnet:** independent forensic audit of the latest critical claim and artifact/provenance reconciliation.
+- **Devin:** Windows/runtime execution and strictly local test/fixture changes when needed.
+- **Opus 5:** reserve for genuine architectural contradiction, policy adjudication or higher-order causal ambiguity.
+- **Codex:** reserve for implementation scope that is materially broader/ambiguous than Devin's local runtime/test capability.
+
+This is not a fixed sequence. The next actor must be selected from the current uncertainty and demonstrated capability fit.
 
 ## META-CONTINUITY FRONTIER
 
@@ -262,3 +303,72 @@ Whenever a new chat materially changes any of the following, update this file an
 - canonical absorption or deletion-readiness status;
 - systemic connectivity / contract-drift findings;
 - discovered duplication, stale-reference or cross-organ integration failures.
+
+## 2026-09-17 CAUSAL CHECKPOINT OVERRIDE
+
+The latest source conversation and direct GitHub read-back produce the following active operational facts:
+
+### Verified branches / baselines
+
+`main code baseline = 4b04566686c40cc6d48d64edb411b36867c54dcf`
+
+`p0b-first-causal-break = 2d472ccaaf5a37773fed1d8e389e580812599c03`
+
+`codex/world-grounded-learning-bridge = 55d3e2c93807202ec5d0177eda163e8de10418ef`
+
+The latter two are experimental and must not be silently substituted for `main`.
+
+### Proven routing/dispatch chain
+
+`candidate → SynapticRouter → assistant identity → semantic ToolCard → ToolTask.tool_id → execute_task() → correct ToolCard → correct adapter → adapter.run()`
+
+This chain has runtime evidence in the recorded experiments. In particular, `task.tool_id` was shown to be the operational authority used by `execute_task()`, and the corresponding adapter was actually invoked.
+
+### Still open execution boundary
+
+`adapter.run() → authorization → transport → external effect → observable result → independent verification`
+
+The historical P0-B failure and current baseline explicitly prohibit inferring real authorization or external effect from the existence of the authority classes/tests alone.
+
+### Learning checkpoint
+
+G3 established:
+
+`VerifiedTransition → persistence → fresh repository/database reload → learning-state mutation`
+
+with observed verified-success counter `0 → 1` in the recorded Windows run.
+
+A Devin report then claimed an L5 matched control/treatment result (`7.545 → 10.095`, learned pattern `0.0 → 1.0`) and a new `tests/test_l5_causal_decision.py`.
+
+However, direct GitHub read-back of the reported branch tip `55d3e2c...` showed that the committed diff only changes `test_g2_goal_to_action_plan.py`; the reported L5 test file is not present at that remote tip. Therefore:
+
+`L5 = CANDIDATE / PENDING INDEPENDENT AUDIT`
+
+The next audit must reconcile artifact SHA, working-tree state, exact test content and exact selector path before upgrading L5.
+
+### Authority separation
+
+`REAL AUTHORITY = NOT PROVEN BY G3`
+
+The G3 learning experiment used an always-authorized mock. Do not transfer authority credit across experiments unless the same causal path genuinely exercises the real authority mechanism.
+
+### Next actor
+
+**SONNET** is the current next actor for independent L5 forensic audit.
+
+After that audit:
+
+- if L5 survives, route the smallest L6 behavioral-change experiment to Devin;
+- if an architectural contradiction appears, use Opus 5 before implementation;
+- if a concrete local/test defect appears, use Devin for the minimal correction;
+- do not invoke Codex merely to repeat an edge already closed by stronger evidence.
+
+## OPERATIONAL MEMORY SUCCESS TEST
+
+The 2026-09-17 cycle adds a stronger cross-chat requirement: future agents must detect not only the current status but also **why the current status has that status**, including negative evidence and provenance conflicts.
+
+A successful future activation should reconstruct:
+
+`current objective → current code baseline → relevant historical checkpoint → proven edges → unproven edge → negative controls → provenance conflicts → best-fit actor → smallest discriminating action`
+
+without requiring replay of the entire source transcript.
