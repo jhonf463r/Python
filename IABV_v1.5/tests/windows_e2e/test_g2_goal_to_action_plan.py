@@ -89,6 +89,27 @@ def test_g2_goal_to_action_plan(authority_service, workspace_root):
             return None
     
     container = MockContainer()
+
+    # Capture the persisted learning state immediately before the real G3
+    # bridge invokes the learning method.  The wrapper does not replace the
+    # production mutation; it delegates to the original instance method.
+    learning_before = {}
+    original_learn_from_verified_transition = container.interaction_learning_service.learn_from_verified_transition
+
+    def observe_learning_before(transition):
+        existing = container.interaction_learning_service.repository.get_interaction_pattern_by_signature(
+            transition.action_signature
+        )
+        learning_before['signature'] = transition.action_signature
+        learning_before['verified_success_count'] = (
+            existing.verified_transition_success_count if existing is not None else 0
+        )
+        learning_before['verified_failure_count'] = (
+            existing.verified_transition_failure_count if existing is not None else 0
+        )
+        return original_learn_from_verified_transition(transition)
+
+    container.interaction_learning_service.learn_from_verified_transition = observe_learning_before
     server = IABVMCPServer(container)
     
     # Register self-update tools
@@ -598,15 +619,25 @@ def test_g3_independent_result_verification(authority_service, workspace_root, t
     from iabv_v15.infra.persistence.database import AppDatabase
     from iabv_v15.infra.persistence.storage import ArtifactStorage
     from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
-    reloaded = ToolRecordRepository(
+    reloaded_repository = ToolRecordRepository(
         AppDatabase(str(container._learning_db)), ArtifactStorage(str(container._learning_storage))
-    ).list_verified_transitions(limit=10)
+    )
+    reloaded = reloaded_repository.list_verified_transitions(limit=10)
     transition = next(item for item in reloaded if item.transition_id == bridge['transition_id'])
     assert transition.actor_reported_success is True
     assert transition.verification_status == 'verified'
     assert transition.action_result_verified is True
     assert transition.expected_state_source == 'plan_parameters_deterministic'
     assert transition.observed_state_source == 'independent_filesystem_observation'
+    reloaded_pattern = reloaded_repository.get_interaction_pattern(bridge['pattern_id'])
+    assert reloaded_pattern is not None
+    assert learning_before['signature'] == transition.action_signature
+    assert reloaded_pattern.verified_transition_success_count == (
+        learning_before['verified_success_count'] + 1
+    )
+    assert reloaded_pattern.verified_transition_failure_count == learning_before['verified_failure_count']
+    print(f"LEARNING_VERIFIED_SUCCESS_BEFORE: {learning_before['verified_success_count']}")
+    print(f"LEARNING_VERIFIED_SUCCESS_AFTER: {reloaded_pattern.verified_transition_success_count}")
     
     # Clean up test file
     test_file = workspace_root / "g3_verification_test.txt"
