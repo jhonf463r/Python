@@ -46,19 +46,21 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 | **Systemic integrity / cross-organ connectivity / contract drift** | `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | OSES, SelfCodeAnalysis, SystemKnowledgeRegistry, SystemIdentityRegistry, OrganismStateSnapshot, RuntimeAuditTracer, DecisionAuditTrail, PerceptionCrossValidator, historical UniversalMetacognitiveScanner records | Which integrity mechanisms already exist? Are producer/consumer contracts, timing, semantics, duplication and drift actually verified, or only observed locally? |
 | IABV-directed external-agent execution | `CURRENT-STATE.md`, `SYMBIOSIS-MAP.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | Devin adapter, ToolTeachService, agent handoff/briefing records, R3 cognitive wiring records | Can IABV autonomously prepare, delegate and verify work through an external agent without turning the UI or human into a manual transport layer? |
 | Comparative reasoning / metacognitive benchmark | `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | Evolution Control Room benchmark guidance, prior agent capability comparisons, learning-gate records, external-agent evidence | Is IABV improving at observation, uncertainty, contradictions, causal tracing, minimal action, verification, escalation, stop discipline and reuse? Is avoidable external work decreasing? |
-| Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CANONICAL-ABSORPTION-2026-09-11.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records | Can a new chat reconstruct only the relevant state from GitHub? Is material knowledge absorbed even when a source remains branch-only? |
-| P0-B authority / provenance / security | `CURRENT-STATE.md` | P0.213 authority/trust records, P0-B records, current P0-B branch evidence, canonical absorption | Is legitimate authority independently bound to trust root, identity, runtime and invocation? |
+| Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records | Can a new chat reconstruct only the relevant state from GitHub? Is current provenance/negative knowledge/active gate preserved? |
+| P0-B authority / provenance / security | `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | P0.213 authority/trust records, P0-B records, current P0-B branch evidence, canonical absorption | Is legitimate authority independently bound to trust root, identity, runtime and invocation? Where is the first unproven edge after adapter.run()? |
+| **P0-B causal completion / adapter execution** | `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`, `CURRENT-STATE.md` | `p0b-first-causal-break`, `codex/world-grounded-learning-bridge`, P0-B authority records | What actually happens after `adapter.run()`? Is authorization real, bound, consumed and followed by transport/effect? |
+| **Causal learning / L5+** | `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | G3/L5 records, learning selector code, current experimental branch evidence | Did verified experience persist, reload and causally change a future decision? Is the claimed artifact committed and reproducible? |
 | AdaptiveSession provenance / replan lineage | `CURRENT-STATE.md` | provenance records and `aa3ff2c2` history | Are typed fields actually canonical in runtime decisions, or only persisted mirrors? |
 | R3 / Devin adapter / tool execution | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | R5/R3 loopback records, Devin adapter, ToolTeachService, current test evidence | Does the production path select and invoke the adapter rather than bypassing it, and can IABV select/verify the route dynamically? |
 | Runtime/bootstrap/provenance | `CURRENT-STATE.md` | runtime-integration, Windows forensic, cognitive symbiosis records | Is the exact intended commit actually running? Is package origin/workspace/runtime aligned? |
-| Evidence adequacy / verification | `CURRENT-STATE.md`, `CANONICAL-ABSORPTION-2026-09-11.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md` | adaptive-evidence, objective-verifier records, persistence and deletion records | What does evidence actually prove, and what remains merely asserted? |
+| Evidence adequacy / verification | `CURRENT-STATE.md`, `CANONICAL-ABSORPTION-2026-09-11.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | adaptive-evidence, objective-verifier records, persistence and deletion records | What does evidence actually prove, and what remains merely asserted? Are provenance discrepancies themselves blocking promotion? |
 | Objective verifier / goal-evidence alignment | `CANONICAL-ABSORPTION-2026-09-11.md`, `CURRENT-STATE.md` | `CHAT-ARCH-2026-09-11-018` source records on `foundation/reconstruction`, adaptive-evidence history | Does the verifier prove the declared objective, or only a narrower mechanical property? |
 | Scientific metacognition / prediction / calibration | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md` | multi-tool/scientific-metacognition records, prediction/calibration records | Are expectations established before execution and compared against later reality? |
 | Self-development / autoevolution | `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md` | cognitive metabolism, self-operation, lifecycle/autoevolution, authority records | Is self-observation actually changing strategy/behavior, or only producing reports? |
 | Architecture-to-runtime construction | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md` | architecture-to-runtime construction history | Which architectural claims are actually implemented and runtime proven? |
 | Windows runtime / hardening | `CURRENT-STATE.md` | Windows forensic and P0-B records | What security claims survive adversarial Windows execution? |
 | Historical deletion safety | `CANONICAL-ABSORPTION-2026-09-11.md`, `README.md`, `ARCHIVE-REGISTRY.md` | source records and deletion-gate records | Is knowledge preserved directly or through canonical absorption with provenance? |
-| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, and is IABV learning this capability map from evidence? |
+| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, and is IABV learning this capability map from evidence? |
 
 ## CROSS-CUTTING ACTIVATION — ALWAYS CONSIDER WHEN MATERIAL
 
@@ -72,7 +74,7 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 
 ### False positives
 
-Use prior failures as active constraints, not merely historical anecdotes. Recurring examples include test-boundary substitution, provenance drift, constructor-order fallacy, persistence mistaken for learning, signature mistaken for authority, canonical fields that are not behaviorally canonical, and fixed-role symbiosis.
+Use prior failures as active constraints, not merely historical anecdotes. Recurring examples include test-boundary substitution, provenance drift, constructor-order fallacy, persistence mistaken for learning, signature mistaken for authority, canonical fields that are not behaviorally canonical, fixed-role symbiosis, and reported artifact/commit mismatch.
 
 ### Negative knowledge
 
@@ -108,7 +110,8 @@ A historical record is relevant when at least one of the following can materiall
 8. it changes which AI capability should be used for the objective;
 9. it contains a canonical absorption that preserves otherwise branch-only historical knowledge relevant to the objective;
 10. it contains benchmark evidence that can establish whether IABV has improved or regressed;
-11. it identifies an existing organ that may already own the capability, preventing unnecessary architecture creation.
+11. it identifies an existing organ that may already own the capability, preventing unnecessary architecture creation;
+12. it contains a provenance discrepancy or negative result that prevents false closure.
 
 Otherwise do not activate it by default.
 
@@ -125,6 +128,8 @@ Otherwise do not activate it by default.
 `Depth 4: broad chronology / full forensic reconstruction only when needed`
 
 For systemic-integrity objectives, activate `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` at Depth 1 and inspect the referenced existing algorithms before proposing any new subsystem.
+
+For the 2026-09-17 causal-learning/P0-B objective, activate the 2026-09-17 checkpoint at Depth 1 and reconcile the exact experimental branch/commit before trusting reported L5 evidence.
 
 ## DEEP-RECONSTRUCTION MODE
 
@@ -151,3 +156,23 @@ then require provenance, remote read-back, knowledge-loss pass, blind reconstruc
 This index is not a static list of tasks. It is a **routing mechanism from present objective to historically relevant knowledge, evidence and collaboration capability**.
 
 The routing map must evolve when new work creates boundaries, failure modes, experiments, concepts, cross-IA learning, new source records or new absorption states.
+
+## 2026-09-17 LIVE ROUTING OVERRIDE
+
+For the current objective family, the first relevant source is:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`
+
+Then reconcile against current GitHub branches:
+
+- `main` code baseline used by the checkpoint: `4b04566686c40cc6d48d64edb411b36867c54dcf`
+- `p0b-first-causal-break`: `2d472ccaaf5a37773fed1d8e389e580812599c03`
+- `codex/world-grounded-learning-bridge`: `55d3e2c93807202ec5d0177eda163e8de10418ef`
+
+Do not infer the active technical baseline from whichever branch happens to be most recently updated.
+
+Current next actor: **SONNET**.
+
+Current evidentiary target: independently audit the reported L5 control/treatment experiment and artifact provenance.
+
+A provenance contradiction is itself a stop condition for evidence promotion, not a reason to assume the report is wrong or right.
