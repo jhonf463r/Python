@@ -3718,7 +3718,7 @@ class IABVMCPServer:
                     action_signature=action_signature,
                     action=action,
                     target=target,
-                    tool_id=assigned_tool,
+                    tool_id='mcp_client',  # Normalize to execution channel identity for selector lookup
                     tool_type=ToolType.MCP_CLIENT,
                     channel=InteractionChannel.API,
                     objective=user_goal,
@@ -3735,7 +3735,11 @@ class IABVMCPServer:
                     lease_id=execution_context.get('lease_id'), session_id=execution_context.get('session_id'),
                     episode_id=execution_context.get('episode_id'), invocation_id=execution_context.get('invocation_id'),
                     plan_id=plan.plan_id,
-                    metadata={'g1_operation': True, 'correlation_ids_are_not_all_persisted_entities': True},
+                    metadata={
+                        'g1_operation': True,
+                        'correlation_ids_are_not_all_persisted_entities': True,
+                        'assigned_tool': assigned_tool,  # Preserve MCP function identity for provenance
+                    },
                 )
                 pattern = learning_service.learn_from_verified_transition(transition)
                 trace['learning_bridge'] = {
