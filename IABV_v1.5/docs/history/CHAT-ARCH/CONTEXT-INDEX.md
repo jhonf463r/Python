@@ -46,10 +46,10 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 | **Systemic integrity / cross-organ connectivity / contract drift** | `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | OSES, SelfCodeAnalysis, SystemKnowledgeRegistry, SystemIdentityRegistry, OrganismStateSnapshot, RuntimeAuditTracer, DecisionAuditTrail, PerceptionCrossValidator, historical UniversalMetacognitiveScanner records | Which integrity mechanisms already exist? Are producer/consumer contracts, timing, semantics, duplication and drift actually verified, or only observed locally? |
 | IABV-directed external-agent execution | `CURRENT-STATE.md`, `SYMBIOSIS-MAP.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | Devin adapter, ToolTeachService, agent handoff/briefing records, R3 cognitive wiring records | Can IABV autonomously prepare, delegate and verify work through an external agent without turning the UI or human into a manual transport layer? |
 | Comparative reasoning / metacognitive benchmark | `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | Evolution Control Room benchmark guidance, prior agent capability comparisons, learning-gate records, external-agent evidence | Is IABV improving at observation, uncertainty, contradictions, causal tracing, minimal action, verification, escalation, stop discipline and reuse? Is avoidable external work decreasing? |
-| Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records | Can a new chat reconstruct only the relevant state from GitHub? Is current provenance/negative knowledge/active gate preserved? |
+| Cross-chat continuity / operational memory | `MEMORY-OPERATING-PROTOCOL.md`, `README.md`, `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | `ARCHIVE-REGISTRY.md`, continuity/knowledge-sync records, `CURRENT-STATE-OVERRIDE-2026-09-17.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md` | Can a new chat reconstruct only the relevant state from GitHub? Is current provenance/negative knowledge/active gate preserved? |
 | P0-B authority / provenance / security | `CURRENT-STATE.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | P0.213 authority/trust records, P0-B records, current P0-B branch evidence, canonical absorption | Is legitimate authority independently bound to trust root, identity, runtime and invocation? Where is the first unproven edge after adapter.run()? |
 | **P0-B causal completion / adapter execution** | `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`, `CURRENT-STATE.md` | `p0b-first-causal-break`, `codex/world-grounded-learning-bridge`, P0-B authority records | What actually happens after `adapter.run()`? Is authorization real, bound, consumed and followed by transport/effect? |
-| **Causal learning / L5+** | `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | G3/L5 records, learning selector code, current experimental branch evidence | Did verified experience persist, reload and causally change a future decision? Is the claimed artifact committed and reproducible? |
+| **Causal learning / L5+** | `CURRENT-STATE-OVERRIDE-2026-09-17.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`, `CURRENT-STATE.md`, `UNRESOLVED-KNOWLEDGE.md` | `audit/l5-artifact-evidence-2026-09-17`, L5 reproduction record, G3/L5 records, learning selector code | Does legitimate verified experience persist, reload and causally change a future competitive decision? Is the artifact and execution provenance independently accessible? |
 | AdaptiveSession provenance / replan lineage | `CURRENT-STATE.md` | provenance records and `aa3ff2c2` history | Are typed fields actually canonical in runtime decisions, or only persisted mirrors? |
 | R3 / Devin adapter / tool execution | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `EXECUTIVE-LOOP-TRACEABILITY-2026-09-12.md` | R5/R3 loopback records, Devin adapter, ToolTeachService, current test evidence | Does the production path select and invoke the adapter rather than bypassing it, and can IABV select/verify the route dynamically? |
 | Runtime/bootstrap/provenance | `CURRENT-STATE.md` | runtime-integration, Windows forensic, cognitive symbiosis records | Is the exact intended commit actually running? Is package origin/workspace/runtime aligned? |
@@ -60,7 +60,7 @@ SELECT MINIMAL DISCRIMINATING NEXT ACTION
 | Architecture-to-runtime construction | `CURRENT-STATE.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md` | architecture-to-runtime construction history | Which architectural claims are actually implemented and runtime proven? |
 | Windows runtime / hardening | `CURRENT-STATE.md` | Windows forensic and P0-B records | What security claims survive adversarial Windows execution? |
 | Historical deletion safety | `CANONICAL-ABSORPTION-2026-09-11.md`, `README.md`, `ARCHIVE-REGISTRY.md` | source records and deletion-gate records | Is knowledge preserved directly or through canonical absorption with provenance? |
-| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, and is IABV learning this capability map from evidence? |
+| Cross-IA capability selection / dynamic orchestration | `SYMBIOSIS-MAP.md`, `MEMORY-OPERATING-PROTOCOL.md`, `METACOGNITIVE-DEDUCTION-2026-09-12.md`, `AGENT-REASONING-BENCHMARK-2026-09-12.md`, `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md` | capability evidence, actor-routing records, implementation/verification traces | Which actor reduces uncertainty most per unit intervention cost, with required artifact/runtime access, and is IABV learning this capability map from evidence? |
 
 ## CROSS-CUTTING ACTIVATION — ALWAYS CONSIDER WHEN MATERIAL
 
@@ -129,7 +129,7 @@ Otherwise do not activate it by default.
 
 For systemic-integrity objectives, activate `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` at Depth 1 and inspect the referenced existing algorithms before proposing any new subsystem.
 
-For the 2026-09-17 causal-learning/P0-B objective, activate the 2026-09-17 checkpoint at Depth 1 and reconcile the exact experimental branch/commit before trusting reported L5 evidence.
+For the 2026-09-17 causal-learning/P0-B objective, activate the 2026-09-17 checkpoint and its latest overlay at Depth 1 and reconcile the exact experimental branch/commit before trusting any reported L5 evidence.
 
 ## DEEP-RECONSTRUCTION MODE
 
@@ -159,20 +159,39 @@ The routing map must evolve when new work creates boundaries, failure modes, exp
 
 ## 2026-09-17 LIVE ROUTING OVERRIDE
 
-For the current objective family, the first relevant source is:
+The earlier L5 routing text was written before the recovered artifact was published. The current L5 route is now:
 
-`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-17-001-symbiosis-causal-execution-learning.md`
+`CURRENT-STATE-OVERRIDE-2026-09-17.md`
+→ `CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md`
+→ remote evidence branch `audit/l5-artifact-evidence-2026-09-17`
+→ independent Sonnet forensic audit.
 
-Then reconcile against current GitHub branches:
+Current evidence branch:
 
-- `main` code baseline used by the checkpoint: `4b04566686c40cc6d48d64edb411b36867c54dcf`
-- `p0b-first-causal-break`: `2d472ccaaf5a37773fed1d8e389e580812599c03`
-- `codex/world-grounded-learning-bridge`: `55d3e2c93807202ec5d0177eda163e8de10418ef`
+`audit/l5-artifact-evidence-2026-09-17`
 
-Do not infer the active technical baseline from whichever branch happens to be most recently updated.
+Current evidence commit:
+
+`f3e8a21c58fd73ad1b09ae11abae0cce915138cb`
+
+Artifact:
+
+`IABV_v1.5/tests/test_l5_causal_decision.py`
+
+Artifact blob:
+
+`2844537f80c190a1351dac3a95f35f80cf79dc19`
+
+Artifact SHA-256:
+
+`E0DC044C00992034DDE2F826E7A7517B326318060BDB68DF84D06B2F5FF60D5B`
+
+The publication/provenance gap is CLOSED AT REMOTE READ-BACK LEVEL.
+
+The L5 causal claim itself remains OPEN / NOT PROVEN under the strong definition because the current test demonstrates selector-level scoring influence rather than a competitive future selection change. The next discriminating edge is:
+
+`legitimate verified experience → persistence → reload → normal production selector → multiple competing candidates → selected decision difference → causal attribution`
 
 Current next actor: **SONNET**.
 
-Current evidentiary target: independently audit the reported L5 control/treatment experiment and artifact provenance.
-
-A provenance contradiction is itself a stop condition for evidence promotion, not a reason to assume the report is wrong or right.
+Do not route to Codex merely because it recovered the artifact. Route to Devin only after independent audit if a concrete Windows/runtime experiment or minimal fix is required.
