@@ -132,9 +132,10 @@ CRITICAL RULES:
 2. For write_repo_file: target should be the file path (e.g., "test.txt"),
    parameters should include relative_path and content, expected_result should
    describe the file state after creation (e.g., file_exists=true).
-3. IMPORTANT: Do NOT include cryptographic hashes (content_hash, file_hash_sha256)
-   in expected_result. These will be calculated deterministically from the parameters.
+3. CRITICAL: NEVER include cryptographic hashes (content_hash, file_hash_sha256, sha256, hash)
+   in expected_result. The verifier will calculate hashes from the actual file.
    Only include semantic expectations like file_exists, file_size, or content_contains.
+   Including ANY hash field will cause verification to fail.
 4. Order steps logically — later steps may depend on earlier results.
 5. If a step is risky or irreversible, set requires_approval=true.
 6. Keep plans concise: 2-6 steps for most goals.

@@ -99,12 +99,13 @@ def write_repo_file_impl(
     try:
         if create_dirs:
             target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
-        logger.info("write_repo_file: wrote %d bytes to %s", len(content), relative_path)
+        # Write bytes directly to preserve exact UTF-8 encoding (prevents Windows newline translation)
+        target.write_bytes(content.encode("utf-8"))
+        logger.info("write_repo_file: wrote %d bytes to %s", len(content.encode("utf-8")), relative_path)
         return {
             "status": "ok",
             "path": relative_path,
-            "bytes_written": len(content),
+            "bytes_written": len(content.encode("utf-8")),
         }
     except Exception as exc:
         return {"status": "error", "detail": str(exc)}

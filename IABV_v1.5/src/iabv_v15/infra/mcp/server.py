@@ -3288,22 +3288,48 @@ class IABVMCPServer:
         plan_parameters = first_step.parameters
         plan_expected_result = first_step.expected_result
         plan_rationale = first_step.rationale
-        
+
         trace['plan_target'] = plan_target
         trace['plan_parameters'] = plan_parameters
         trace['plan_expected_result'] = plan_expected_result
         trace['plan_rationale'] = plan_rationale
-        
+
         # G2: Use plan parameters instead of human-provided tool_parameters
         # If plan_parameters are non-empty AND human didn't provide tool_parameters, use plan (G2 case)
         # If human provided tool_parameters, use human's (G1 backward compatibility)
         # Only use plan_parameters if they are non-empty and tool_parameters was not provided
-        if plan_parameters and not tool_parameters:
+        caller_parameters_provided = tool_parameters is not None and tool_parameters != {}
+        if plan_parameters and not caller_parameters_provided:
             tool_parameters = plan_parameters
+            expected_result = plan_expected_result
+            expected_result_source = 'planner_proposal'
         elif not tool_parameters:
             tool_parameters = {}
-        # If plan_parameters is empty/None, keep human-provided tool_parameters (G1 case)
-        # Only set to empty dict if neither plan nor human provided parameters
+            expected_result = plan_expected_result
+            expected_result_source = 'planner_proposal'
+        else:
+            # Caller provided parameters - they govern execution
+            # Derive expected_result from caller parameters for consistency
+            expected_result = {}
+            expected_result_source = 'caller_parameters'
+
+            # For write_repo_file, derive deterministic expectations from caller content
+            if assigned_tool == 'write_repo_file' and 'content' in tool_parameters:
+                content = tool_parameters['content']
+                content_bytes = content.encode("utf-8")
+                import hashlib
+                content_hash = hashlib.sha256(content_bytes).hexdigest()
+
+                expected_result = {
+                    'file_exists': True,
+                    'file_size_bytes': len(content_bytes),
+                    'file_hash_sha256': content_hash,
+                }
+                # Preserve any non-contradictory semantic expectations from planner
+                if plan_expected_result:
+                    # Only preserve expectations that don't contradict the actual content
+                    # (e.g., content_contains that actually matches the content)
+                    pass  # For now, use only deterministic derived expectations
 
         # Step 3: Validate assigned_tool against MCP tool registry (canonical dispatch)
         # Check if the assigned_tool is registered as an MCP tool
@@ -3549,27 +3575,32 @@ class IABVMCPServer:
             # G3: ACTION_EXECUTED - tool execution succeeded
             action_executed = tool_result.get('status') == 'ok'
             result_verification['action_executed'] = action_executed
-            
-            if plan_expected_result:
-                # G3: Calculate deterministic expected hash from plan parameters
+
+            # Use the authority-resolved expected_result, not plan_expected_result
+            effective_expected_result = expected_result if expected_result else plan_expected_result
+            effective_parameters = tool_parameters if tool_parameters else plan_parameters
+
+            if effective_expected_result:
+                # G3: Calculate deterministic expected hash from effective parameters
                 # This separates LLM reasoning (what should happen) from deterministic derivation (exact hash)
                 calculated_expected_result = {}
-                
-                # Copy non-hash fields from plan expected_result (semantic expectations)
+
+                # Copy non-hash fields from effective expected_result (semantic expectations)
                 # Ignore LLM-generated hash fields (content_hash, file_hash_sha256)
-                for key, value in plan_expected_result.items():
+                for key, value in effective_expected_result.items():
                     if key not in ('content_hash', 'file_hash_sha256'):
                         calculated_expected_result[key] = value
-                
-                # If plan specifies content in parameters, calculate the expected hash
-                if 'content' in plan_parameters:
-                    content = plan_parameters.get('content', '')
+
+                # If effective parameters specify content, calculate the expected hash
+                if 'content' in effective_parameters:
+                    content = effective_parameters.get('content', '')
                     import hashlib
                     expected_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
                     calculated_expected_result['file_hash_sha256'] = expected_hash
                     trace['calculated_expected_hash'] = expected_hash
-                    trace['hash_derivation'] = 'deterministic_from_plan_parameters'
-                
+                    trace['hash_derivation'] = 'deterministic_from_effective_parameters'
+                    trace['expected_result_source'] = expected_result_source
+
                 # G3: INDEPENDENT OBSERVATION - observe from real filesystem, not plan parameters
                 target_file = Path(ws) / relative_path
                 observed_result = {
