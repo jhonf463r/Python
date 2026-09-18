@@ -244,9 +244,9 @@ def test_health_non_effect():
     print("  PASS: Health check does not create sessions")
 
 
-def test_quota_semantics():
-    """Test G: quota semantics - 403 out_of_quota produces AUTHENTICATED, AUTHORIZED, EXHAUSTED."""
-    print("\nTest G: Quota semantics")
+def test_forbidden_does_not_claim_partial_authorization():
+    """Test G: 403 forbidden does not claim partial authorization - states remain UNKNOWN."""
+    print("\nTest G: Forbidden does not claim partial authorization")
     
     from iabv_v15.services.trust.devin_credential_adapter import DevinCredentialAdapter
     from iabv_v15.services.trust.provider_credential_adapter import (
@@ -255,7 +255,6 @@ def test_quota_semantics():
         CredentialRecord,
         CredentialStatus,
         HealthState,
-        QuotaState,
     )
     
     adapter = DevinCredentialAdapter()
@@ -271,7 +270,7 @@ def test_quota_semantics():
     )
     
     with patch('iabv_v15.services.trust.devin_credential_adapter.httpx') as mock_httpx:
-        # Simulate 403 with out_of_quota detail
+        # Simulate 403 with out_of_quota detail (context: this is what provider might return)
         mock_response = Mock()
         mock_response.status_code = 403
         mock_response.json.return_value = {
@@ -281,16 +280,20 @@ def test_quota_semantics():
         
         adapter.check_health(record, 'synthetic-key')
         
-        # Should be AUTHENTICATED (credential accepted) but FORBIDDEN
-        assert record.auth_state == AuthState.AUTHENTICATED
-        # Authorization should be UNKNOWN (we can't determine from 403 alone)
-        assert record.authorization_state == AuthorizationState.UNKNOWN
-        # Health should be UNKNOWN (403 could be auth or quota)
-        assert record.health_state == HealthState.UNKNOWN
-        # No PARTIALLY_AUTHORIZED should exist
-        assert record.authorization_state != AuthorizationState.PARTIALLY_AUTHORIZED
+        # Current behavior: 403 produces AUTHENTICATED but UNKNOWN for authz/health
+        assert record.auth_state == AuthState.AUTHENTICATED, \
+            "403 should indicate credential was accepted (authenticated)"
+        # Authorization state remains UNKNOWN (code does not parse body)
+        assert record.authorization_state == AuthorizationState.UNKNOWN, \
+            "Authorization should be UNKNOWN, not inferred from 403"
+        # Health state remains UNKNOWN (code does not parse body)
+        assert record.health_state == HealthState.UNKNOWN, \
+            "Health should be UNKNOWN, not inferred from 403"
+        # PARTIALLY_AUTHORIZED must not be claimed
+        assert record.authorization_state != AuthorizationState.PARTIALLY_AUTHORIZED, \
+            "PARTIALLY_AUTHORIZED must not be inferred from 403"
     
-    print("  PASS: Quota semantics - no PARTIALLY_AUTHORIZED")
+    print("  PASS: Forbidden does not claim partial authorization")
 
 
 def test_identity_not_derived():
@@ -301,37 +304,80 @@ def test_identity_not_derived():
     
     adapter = DevinCredentialAdapter()
     
-    # Simulate environment with secret
+    # Use a variable that discover() actually recognizes: DEVIN_API_KEY
+    # Monkeypatch environment to isolate the test
     import os
-    os.environ['TEST_DEVIN_KEY'] = 'apk_test_synthetic_key'
+    original_key = os.environ.get('DEVIN_API_KEY')
+    os.environ['DEVIN_API_KEY'] = 'apk_test_synthetic_key'
     
-    result = adapter.discover()
-    
-    for record in result.records:
-        # Principal ID should be empty, not derived from secret prefix
-        assert record.principal_id == '', f"Principal ID should be empty, got: {record.principal_id}"
-    
-    print("  PASS: Identity not derived from secret")
+    try:
+        result = adapter.discover()
+        
+        # ASSERT that at least one record was discovered
+        assert len(result.records) > 0, "No credentials discovered"
+        
+        # Find the record for DEVIN_API_KEY
+        devin_record = None
+        for record in result.records:
+            if record.secret_ref == 'DEVIN_API_KEY':
+                devin_record = record
+                break
+        
+        # ASSERT that the record exists
+        assert devin_record is not None, "DEVIN_API_KEY record not found"
+        
+        # ASSERT that principal_id is empty, not derived from secret prefix
+        assert devin_record.principal_id == '', \
+            f"Principal ID should be empty, got: {devin_record.principal_id}"
+        
+        print("  PASS: Identity not derived from secret")
+    finally:
+        # Restore original environment
+        if original_key is None:
+            os.environ.pop('DEVIN_API_KEY', None)
+        else:
+            os.environ['DEVIN_API_KEY'] = original_key
 
 
 def test_negative_secret_leak():
-    """Negative test: synthetic secret leak should cause test failure."""
+    """Negative test: invocation key must not leak into result metadata."""
     print("\nNegative test: Secret leak detection")
     
-    # This test intentionally creates a scenario where a secret WOULD leak
-    # to verify the test framework can detect it
     adapter = DevinApiToolAdapter(
-        api_key='test-secret-key'
+        api_key='constructor-key'
     )
     
-    # Intentionally try to leak the secret (simulated defect)
-    leaked = False
-    if 'test-secret-key' in str(adapter.__dict__):
-        leaked = True
+    card = _make_card()
+    task = _make_task()
     
-    # In a real negative test, this would FAIL
-    # For this implementation, we just verify the mechanism exists
-    print("  PASS: Negative test mechanism verified (no actual leak in current code)")
+    synthetic_invocation_key = 'synthetic-invocation-secret'
+    
+    with patch('iabv_v15.services.tools.tool_adapters.httpx') as mock_httpx:
+        mock_post = Mock()
+        mock_get = Mock()
+        mock_httpx.post = mock_post
+        mock_httpx.get = mock_get
+        
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {
+            'session_id': 'test-session',
+            'url': 'https://test.com/session',
+            'status': 'finished',
+            'structured_output': 'test output'
+        }
+        
+        result = adapter.run(card, task, api_key=synthetic_invocation_key)
+        
+        # Assertion: invocation key must NOT appear in result
+        result_str = str(result)
+        assert synthetic_invocation_key not in result_str, \
+            f"Invocation key leaked into result: {synthetic_invocation_key}"
+        
+        # Constructor key is in adapter instance (by design), but invocation key must not persist
+        assert adapter.api_key == 'constructor-key', \
+            "Adapter instance was mutated"
+        
+        print("  PASS: Invocation key does not leak into result metadata")
 
 
 if __name__ == "__main__":
@@ -341,7 +387,7 @@ if __name__ == "__main__":
     test_omission_fallback()
     test_no_secret_leakage()
     test_health_non_effect()
-    test_quota_semantics()
+    test_forbidden_does_not_claim_partial_authorization()
     test_identity_not_derived()
     test_negative_secret_leak()
     
