@@ -3715,7 +3715,7 @@ class IABVMCPServer:
                     result_verification['status'] = 'verified'
                 
                 result_verification['expected_result'] = calculated_expected_result
-                result_verification['expected_result_source'] = 'plan_parameters_deterministic'
+                result_verification['expected_result_source'] = expected_result_source  # Reflect actual authority
                 result_verification['observed_result'] = observed_result
                 result_verification['observed_result_source'] = 'independent_filesystem_observation'
                 result_verification['original_plan_expected_result'] = plan_expected_result

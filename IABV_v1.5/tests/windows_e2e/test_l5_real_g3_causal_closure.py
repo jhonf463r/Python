@@ -506,6 +506,10 @@ def test_l5_real_g3_causal_closure(authority_service, workspace_root):
     treatment_winner = treatment_decision.selected_tool_id
     print(f"Treatment winner: {treatment_winner}")
 
+    # ===== CAUSAL ORACLE: Assertions for decision change =====
+    assert control_winner != treatment_winner, "Treatment winner must differ from control winner (causal change required)"
+    assert treatment_mcp_score > control_mcp_score, "mcp_client score must improve after verified learning (causal attribution required)"
+
     # ===== CAUSAL RESULT =====
     print(f"\n=== L5 REAL G3 CAUSAL CLOSURE EVIDENCE ===")
     print(f"REAL_WORLD_EFFECT: PROVEN (SHA256 changed, file mutated)")
