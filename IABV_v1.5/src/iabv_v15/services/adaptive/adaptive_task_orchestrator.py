@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import concurrent.futures
+import threading
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
@@ -294,6 +295,11 @@ class AdaptiveTaskOrchestrator:
         self._pending_queue: list[dict[str, Any]] = []
         self._COGNITIVE_LOAD_THRESHOLD = 5
         self._processing_count: int = 0
+        # I2 queue activation guard: prevents duplicate executive submissions
+        # while retaining the queue item as pending until its runtime lifecycle
+        # produces a terminal state.
+        self._autonomous_queue_lock = threading.RLock()
+        self._autonomous_queue_inflight: set[str] = set()
         # Shadow mode (Brecha 2.1): timestamp of last shadow dispatch.
         self._last_shadow_at: float = 0.0
         self._SHADOW_COOLDOWN_SECONDS: float = 300.0
@@ -310,6 +316,118 @@ class AdaptiveTaskOrchestrator:
             return self.autonomy_cycle_service.startup_summary()
         except Exception:
             return {}
+    def execute_next_actionable_work_item(self) -> dict[str, Any] | None:
+        """Activate one canonical PlatformPendingTask through this orchestrator.
+
+        This is the queue-to-executive edge for I2. It does not execute a worker
+        directly and does not create another coordinator: the existing
+        handle_request() remains the single decision authority.
+
+        A task is marked with executive_activation after successful acceptance
+        so the heartbeat cannot repeatedly re-submit the same item before its
+        runtime lifecycle has finished. Failed activations remain retryable.
+        """
+        service = self.autonomy_cycle_service
+        if service is None:
+            return None
+        queue = getattr(service, 'queue', None)
+        if queue is None or not hasattr(queue, 'list_actionable'):
+            return None
+
+        with self._autonomous_queue_lock:
+            tasks = list(queue.list_actionable() or [])
+            selected = None
+            for task in tasks:
+                task_id = str(getattr(task, 'id', '') or '')
+                if not task_id or task_id in self._autonomous_queue_inflight:
+                    continue
+                metadata = dict(getattr(task, 'metadata', {}) or {})
+                activation = metadata.get('executive_activation')
+                if isinstance(activation, dict) and str(activation.get('status') or '') in {
+                    'accepted',
+                    'waiting_approval',
+                }:
+                    continue
+                self._autonomous_queue_inflight.add(task_id)
+                selected = task
+                break
+
+        if selected is None:
+            return None
+
+        task_id = str(getattr(selected, 'id', '') or '')
+        try:
+            metadata = dict(getattr(selected, 'metadata', {}) or {})
+            goal_parameters = dict(metadata.get('goal_parameters') or {})
+            goal_parameters.update({
+                'pending_task_id': task_id,
+                'pending_task_category': str(getattr(selected, 'category', '') or ''),
+                'pending_task_priority': str(getattr(selected, 'priority', '') or ''),
+                'pending_task_reason': str(getattr(selected, 'reason', '') or ''),
+                'pending_task_next_action': str(getattr(selected, 'next_action', '') or ''),
+            })
+            request_metadata = dict(metadata.get('request_metadata') or {})
+            request_metadata.update({
+                'autonomous_queue_activation': True,
+                'autonomous_queue_source': 'AutonomyCycleService',
+                'pending_task_id': task_id,
+                'pending_task_category': str(getattr(selected, 'category', '') or ''),
+            })
+            objective_id = str(metadata.get('objective_id') or metadata.get('control_master_objective_id') or '')
+            if objective_id:
+                request_metadata['control_master_objective_id'] = objective_id
+
+            request = InferenceRequest(
+                user_goal=str(getattr(selected, 'title', '') or getattr(selected, 'next_action', '') or 'Ejecutar trabajo pendiente'),
+                prompt=str(getattr(selected, 'description', '') or ''),
+                goal_parameters=goal_parameters,
+                metadata=request_metadata,
+                approval_mode='phased',
+                execution_scope='operational',
+                auto_route=True,
+            )
+            route, result, session = self.handle_request(request)
+            activation_status = (
+                'waiting_approval'
+                if session.status == AdaptiveSessionStatus.WAITING_APPROVAL
+                else 'accepted'
+            )
+            selected = selected.model_copy(update={
+                'metadata': {
+                    **metadata,
+                    'executive_activation': {
+                        'status': activation_status,
+                        'session_id': session.session_id,
+                        'request_id': request.request_id,
+                        'activated_at_utc': datetime.now(timezone.utc).isoformat(),
+                    },
+                },
+                'updated_at': datetime.now(timezone.utc),
+            })
+            queue.upsert(selected)
+            return {
+                'executed': True,
+                'task_id': task_id,
+                'request_id': request.request_id,
+                'session_id': session.session_id,
+                'activation_status': activation_status,
+                'session_status': session.status.value,
+                'route_provider': str(getattr(route, 'provider_name', '') or ''),
+                'result_status': str(getattr(result, 'status', '') or ''),
+            }
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                'autonomous queue activation failed for %s: %s', task_id, exc
+            )
+            return {
+                'executed': False,
+                'task_id': task_id,
+                'activation_status': 'failed',
+                'error': f'{type(exc).__name__}: {str(exc)[:240]}',
+            }
+        finally:
+            with self._autonomous_queue_lock:
+                self._autonomous_queue_inflight.discard(task_id)
 
     def _maybe_synaptic_decision(self, intent: TaskIntent | None) -> SynapticRoutingDecision | None:
         """Consulta ``SynapticRouter.decide`` si el intent es external-worthy.
