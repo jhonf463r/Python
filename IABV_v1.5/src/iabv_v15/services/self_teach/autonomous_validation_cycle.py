@@ -799,6 +799,28 @@ class AutonomousValidationCycleService:
         orchestrator = getattr(self, 'adaptive_task_orchestrator', None)
         if orchestrator is None:
             return
+
+        # I2.1: feed one canonical actionable queue item into the same
+        # executive orchestrator used by user-originated requests.
+        # Critical resource pressure still inhibits autonomous execution.
+        queue_auto_result = None
+        pressure = dict(sync_data.get('resource_pressure') or {})
+        if not pressure.get('critical'):
+            queue_method = getattr(orchestrator, 'execute_next_actionable_work_item', None)
+            if callable(queue_method):
+                try:
+                    queue_auto_result = queue_method()
+                except Exception:
+                    queue_auto_result = None
+        if queue_auto_result:
+            with self._lock:
+                current_snapshot = self._current_snapshot
+                metadata = dict(current_snapshot.metadata or {})
+                pulse = dict(metadata.get('sync_pulse') or {})
+                pulse['queue_auto_execution'] = dict(queue_auto_result)
+                metadata['sync_pulse'] = pulse
+                self._current_snapshot = current_snapshot.model_copy(update={'metadata': metadata})
+
         actionable = [
             p for p in (sync_data.get('actionable_proposals') or [])
             if isinstance(p, dict)
