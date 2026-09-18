@@ -330,3 +330,34 @@ must read this file together with:
 - `CHAT-ARCH-2026-09-17-006-l5-competitive-selection-routing.md`
 
 Then reconcile every claim against current remote Git state before acting.
+
+## 2026-09-18 LIVE UPDATE — L5 ARTIFACT PUBLICATION IS STILL OPEN
+
+Direct remote read-back now establishes:
+
+- remote branch `l5-evidence-capture-3241b3ef6` currently resolves to `caaf23c4b380d2228b3f5a7e494e66419b6934fb`;
+- remote runtime artifact path is `IABV_v1.5/l5_evidence/l5_experiment_20260918_022256_runtime.txt`;
+- remote blob size is 17267 bytes;
+- local original runtime artifact was independently measured at 17617 bytes with SHA256 `61c56fd0404469dec60cb29827546b23011d93d4942ce5470c83a705d1628ef2`;
+- therefore the remote artifact is not byte-identical to the original runtime evidence;
+- the branch history contains local publication attempts/duplicates, so future repair must NOT use merge/rebase/reset on the contaminated worktree.
+
+Correct recovery procedure:
+1. create a fresh worktree from `origin/l5-evidence-capture-3241b3ef6`;
+2. set `core.autocrlf=false` for that fresh worktree;
+3. copy the ORIGINAL local runtime bytes into the existing remote artifact path;
+4. verify SHA256 = `61c56fd0404469dec60cb29827546b23011d93d4942ce5470c83a705d1628ef2`;
+5. `git add -f` only the runtime artifact and, if necessary, the manifest path;
+6. make one fast-forward commit;
+7. push without force;
+8. verify the remote blob hash from `git show <remote-ref>:<path>` or equivalent byte-preserving readback.
+
+Do not create another runtime execution. Do not rewrite the original runtime log. Do not add a new evidence run.
+
+L5 remains: **strongly evidenced under the existing Windows test harness, but canonical closure is pending final byte-identical remote artifact readback and independent Sonnet audit.**
+
+The strategic roadmap remains two parallel tracks:
+- Proof track: L5 -> L6 -> L7.
+- Symbiosis inflection track: I0 -> I1 -> I2, where I2 means IABV can select an external AI, delegate, receive, verify, learn/replan and delegate the next task without human copy/paste. I2 can be developed in parallel with L6/L7 and is not a prerequisite to complete them.
+
+Do not force a fixed AI order. Route by capability fit and current uncertainty.
