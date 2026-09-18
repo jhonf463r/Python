@@ -147,7 +147,13 @@ def test_i0_external_agent_round_trip():
         target_file = context.experiment_workspace / "i0_artifact.txt"
         
         # Verify API key available
-        api_key = _resolve_devin_api_key(os.environ)
+        # Explicitly check all possible env vars for I0 experiment
+        api_key_candidates = [
+            os.environ.get('DEVIN_API_KEY_IABV', ''),
+            os.environ.get('IABV_DEVIN_API_KEY', ''),
+            os.environ.get('DEVIN_API_KEY', ''),
+        ]
+        api_key = next((k for k in api_key_candidates if k.strip()), '')
         assert api_key, "DEVIN_API_KEY must be available for I0 experiment"
         
         # Create Devin API adapter
@@ -168,6 +174,8 @@ def test_i0_external_agent_round_trip():
         
         # Create experimental task
         task = ToolTask(
+            tool_id="devin_api",
+            title="I0 External Agent Round Trip",
             task_id=context.task_id,
             objective=f"Create a file at {target_file} containing exactly this nonce: {nonce}. "
                      f"Do not modify any other files. This is an isolated experimental workspace.",
