@@ -31,6 +31,23 @@ def test_l5_real_g3_causal_closure(authority_service, workspace_root):
     8. COLD RELOAD: fresh repository/registry/selector
     9. TREATMENT SELECTOR: same candidate universe, winner change
     """
+    # Capture git provenance BEFORE execution
+    import subprocess as sp
+    provenance = {}
+    try:
+        provenance['tested_head'] = sp.check_output(['git', 'rev-parse', 'HEAD'], text=True, cwd=workspace_root).strip()
+        provenance['parent'] = sp.check_output(['git', 'rev-parse', 'HEAD^'], text=True, cwd=workspace_root).strip()
+        provenance['tree'] = sp.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True, cwd=workspace_root).strip()
+        provenance['branch'] = sp.check_output(['git', 'branch', '--show-current'], text=True, cwd=workspace_root).strip()
+        provenance['repo'] = sp.check_output(['git', 'config', '--get', 'remote.origin.url'], text=True, cwd=workspace_root).strip()
+    except Exception as e:
+        print(f"WARNING: Could not capture git provenance: {e}")
+        provenance['tested_head'] = 'UNKNOWN'
+        provenance['parent'] = 'UNKNOWN'
+        provenance['tree'] = 'UNKNOWN'
+        provenance['branch'] = 'UNKNOWN'
+        provenance['repo'] = 'UNKNOWN'
+
     # Extract authority service and PID from fixture
     service, authority_pid = authority_service
 
@@ -48,8 +65,9 @@ def test_l5_real_g3_causal_closure(authority_service, workspace_root):
     from iabv_v15.domain.models import InferenceRequest
     import tempfile
 
-    # Create isolated persistence for this experiment
-    experiment_root = workspace_root / 'l5_experiment'
+    # Create isolated persistence for this experiment with timestamp
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+    experiment_root = workspace_root / f'l5_experiment_{timestamp}'
     experiment_root.mkdir(exist_ok=True)
     db_path = experiment_root / 'tool_records.sqlite'
     storage_path = experiment_root / 'tool_teaching'
@@ -61,6 +79,18 @@ def test_l5_real_g3_causal_closure(authority_service, workspace_root):
         import shutil
         shutil.rmtree(storage_path)
     storage_path.mkdir(parents=True, exist_ok=True)
+
+    # Print provenance header
+    print(f"\n=== EXPERIMENT PROVENANCE ===")
+    print(f"EXPERIMENT_ID: {timestamp}")
+    print(f"REPO: {provenance['repo']}")
+    print(f"BRANCH: {provenance['branch']}")
+    print(f"TESTED_HEAD: {provenance['tested_head']}")
+    print(f"PARENT: {provenance['parent']}")
+    print(f"TREE_SHA: {provenance['tree']}")
+    print(f"TIMESTAMP_START: {timestamp}")
+    print(f"EXPERIMENT_ROOT: {experiment_root}")
+    print(f"")
 
     # ===== CONTROL: Baseline selector ranking =====
     control_repository = ToolRecordRepository(
@@ -529,3 +559,9 @@ def test_l5_real_g3_causal_closure(authority_service, workspace_root):
     print(f"  card.tool_id: mcp_client")
     print(f"  pattern.tool_id: {pattern.tool_id}")
     print(f"  assigned_tool (MCP function): {assigned_tool_in_metadata}")
+
+    # Capture timestamp end and create manifest
+    timestamp_end = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+    print(f"\n=== EXPERIMENT COMPLETION ===")
+    print(f"TIMESTAMP_END: {timestamp_end}")
+    print(f"")
