@@ -1845,9 +1845,10 @@ class DevinApiToolAdapter:
     def _session_detail_url(self, session_id: str) -> str:
         return f'{self.BASE_URL}/session/{session_id}'
 
-    def _headers(self) -> dict[str, str]:
+    def _headers(self, api_key: str | None = None) -> dict[str, str]:
+        effective_key = api_key if api_key is not None else self.api_key
         return {
-            'Authorization': f'Bearer {self.api_key}',
+            'Authorization': f'Bearer {effective_key}',
             'Content-Type': 'application/json',
         }
 
@@ -1867,7 +1868,7 @@ class DevinApiToolAdapter:
         except Exception:
             return False
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, api_key: str | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         
         # C-1 FIX: sandbox=True returns simulated result without real API call
@@ -1892,7 +1893,9 @@ class DevinApiToolAdapter:
                 'execution_ms': int((time.perf_counter() - start) * 1000),
                 'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
             }
-        if not self.api_key:
+        
+        effective_key = api_key if api_key is not None else self.api_key
+        if not effective_key:
             return {
                 'success': False,
                 'output_text': '',
@@ -1916,7 +1919,7 @@ class DevinApiToolAdapter:
         try:
             create_resp = httpx.post(
                 self._sessions_url,
-                headers=self._headers(),
+                headers=self._headers(effective_key),
                 json={'prompt': prompt},
                 timeout=30.0,
             )
@@ -1943,7 +1946,7 @@ class DevinApiToolAdapter:
                 time.sleep(self.poll_interval_seconds)
                 poll_resp = httpx.get(
                     self._session_detail_url(session_id),
-                    headers=self._headers(),
+                    headers=self._headers(effective_key),
                     timeout=15.0,
                 )
                 if poll_resp.status_code == 200:

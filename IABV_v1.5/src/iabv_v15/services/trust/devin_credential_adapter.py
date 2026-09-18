@@ -57,7 +57,7 @@ class DevinCredentialAdapter(ProviderCredentialAdapter):
             record = CredentialRecord(
                 credential_id=self._generate_credential_id('devin', env_var),
                 provider='devin',
-                principal_id=key[:10],  # Store only prefix for identification
+                principal_id='',  # Identity unknown until provided by API response
                 credential_type=credential_type,
                 secret_ref=env_var,
                 api_version=api_version,
@@ -126,61 +126,8 @@ class DevinCredentialAdapter(ProviderCredentialAdapter):
                 record.authorization_state_at = datetime.now(timezone.utc).isoformat()
                 record.health_state = HealthState.HEALTHY
                 record.health_state_at = datetime.now(timezone.utc).isoformat()
-                record.organization_id = data.get('organization', {}).get('id', '')
-                record.last_error_code = ""
-                record.last_error_at = ""
-                
-            elif response.status_code == 401:
-                record.status = CredentialStatus.AUTH_FAILURE
-                record.auth_state = AuthState.NOT_AUTHENTICATED
-                record.auth_state_at = datetime.now(timezone.utc).isoformat()
-                record.last_error_code = "401"
-                record.last_error_at = datetime.now(timezone.utc).isoformat()
-                
-            elif response.status_code == 403:
-                record.status = CredentialStatus.FORBIDDEN
-                record.auth_state = AuthState.AUTHENTICATED
-                record.auth_state_at = datetime.now(timezone.utc).isoformat()
-                record.authorization_state = AuthorizationState.NOT_AUTHORIZED
-                record.authorization_state_at = datetime.now(timezone.utc).isoformat()
-                record.last_error_code = "403"
-                record.last_error_at = datetime.now(timezone.utc).isoformat()
-                
-            else:
-                record.status = CredentialStatus.UNKNOWN
-                record.last_error_code = str(response.status_code)
-                record.last_error_at = datetime.now(timezone.utc).isoformat()
-                
-        except Exception as e:
-            record.status = CredentialStatus.UNKNOWN
-            record.last_error_code = type(e).__name__
-            record.last_error_at = datetime.now(timezone.utc).isoformat()
-        
-        return record
-    
-    def _check_v1_health(self, record: CredentialRecord, headers: dict) -> CredentialRecord:
-        """Check health of a v1 credential."""
-        try:
-            # Test with minimal session creation request
-            response = httpx.post(
-                'https://api.devin.ai/v1/sessions',
-                headers=headers,
-                json={
-                    'prompt': 'test',
-                    'repo_url': 'https://github.com/test/test',
-                },
-                timeout=10.0,
-            )
-            
-            if response.status_code == 200:
-                record.status = CredentialStatus.AVAILABLE
-                record.auth_state = AuthState.AUTHENTICATED
-                record.auth_state_at = datetime.now(timezone.utc).isoformat()
-                record.authorization_state = AuthorizationState.AUTHORIZED
-                record.authorization_state_at = datetime.now(timezone.utc).isoformat()
-                record.health_state = HealthState.HEALTHY
-                record.health_state_at = datetime.now(timezone.utc).isoformat()
                 record.quota_state = QuotaState.AVAILABLE
+                record.organization_id = data.get('organization', {}).get('id', '')
                 record.last_error_code = ""
                 record.last_error_at = ""
                 
@@ -195,32 +142,13 @@ class DevinCredentialAdapter(ProviderCredentialAdapter):
                 record.last_error_at = datetime.now(timezone.utc).isoformat()
                 
             elif response.status_code == 403:
-                data = response.json()
-                error_detail = data.get('detail', '')
-                record.last_error_message = error_detail
-                
-                # Authenticated (credential accepted) but operation forbidden
+                record.status = CredentialStatus.FORBIDDEN
                 record.auth_state = AuthState.AUTHENTICATED
                 record.auth_state_at = datetime.now(timezone.utc).isoformat()
-                
-                if 'out_of_quota' in error_detail:
-                    record.status = CredentialStatus.QUOTA_EXHAUSTED
-                    record.quota_state = QuotaState.EXHAUSTED
-                    record.quota_reset_at = "UNKNOWN"  # Devin does not provide reset time
-                    record.last_error_code = "out_of_quota"
-                    # Authorization is PARTIALLY_CHARACTERIZED - credential is valid but quota is exhausted
-                    record.authorization_state = AuthorizationState.PARTIALLY_AUTHORIZED
-                    record.authorization_state_at = datetime.now(timezone.utc).isoformat()
-                    record.health_state = HealthState.HEALTHY  # Credential itself is healthy, quota is the issue
-                    record.health_state_at = datetime.now(timezone.utc).isoformat()
-                else:
-                    record.status = CredentialStatus.FORBIDDEN
-                    record.authorization_state = AuthorizationState.NOT_AUTHORIZED
-                    record.authorization_state_at = datetime.now(timezone.utc).isoformat()
-                    record.health_state = HealthState.UNHEALTHY
-                    record.health_state_at = datetime.now(timezone.utc).isoformat()
-                    record.last_error_code = "403"
-                
+                record.authorization_state = AuthorizationState.UNKNOWN
+                record.health_state = HealthState.UNKNOWN
+                record.health_state_at = datetime.now(timezone.utc).isoformat()
+                record.last_error_code = "403"
                 record.last_error_at = datetime.now(timezone.utc).isoformat()
                 
             else:
@@ -239,6 +167,17 @@ class DevinCredentialAdapter(ProviderCredentialAdapter):
             record.last_error_code = type(e).__name__
             record.last_error_at = datetime.now(timezone.utc).isoformat()
         
+        return record
+    
+    def _check_v1_health(self, record: CredentialRecord, headers: dict) -> CredentialRecord:
+        """Check health of a v1 credential."""
+        # No idempotent health endpoint exists for v1
+        # Do not create sessions for health check
+        # Health state remains UNKNOWN until legitimate observation
+        record.health_state = HealthState.UNKNOWN
+        record.quota_state = QuotaState.UNKNOWN
+        record.last_error_code = "health_endpoint_unavailable"
+        record.last_error_at = datetime.now(timezone.utc).isoformat()
         return record
     
     def parse_quota(self, response_data: dict) -> tuple[QuotaState, int, str]:

@@ -5,8 +5,8 @@ Discovers, classifies, and checks health of credentials without storing secrets.
 Delegates provider-specific logic to ProviderCredentialAdapter implementations.
 """
 
-import os
 from datetime import datetime, timezone
+from typing import Callable
 
 from iabv_v15.services.trust.provider_credential_adapter import (
     CredentialRecord,
@@ -23,9 +23,10 @@ class CredentialRegistry:
     Delegates provider-specific logic to ProviderCredentialAdapter implementations.
     """
     
-    def __init__(self):
+    def __init__(self, secret_resolver: Callable[[str], str] | None = None):
         self._credentials: dict[str, CredentialRecord] = {}
         self._adapters: dict[str, ProviderCredentialAdapter] = {}
+        self._secret_resolver = secret_resolver if secret_resolver is not None else lambda ref: ''
     
     def register_adapter(self, adapter: ProviderCredentialAdapter) -> None:
         """Register a provider credential adapter."""
@@ -60,8 +61,8 @@ class CredentialRegistry:
         
         Delegates to the appropriate provider adapter.
         """
-        # Get secret from secure reference
-        secret = os.environ.get(record.secret_ref, '')
+        # Get secret from secure reference via resolver
+        secret = self._secret_resolver(record.secret_ref)
         if not secret:
             record.status = CredentialStatus.UNKNOWN
             record.last_error_code = "secret_not_found"
