@@ -136,6 +136,28 @@ class CredentialRegistry:
         """Get a credential by ID."""
         return self._credentials.get(credential_id)
     
+    def resolve_credential_secret(self, credential_id: str) -> str:
+        """Resolve the secret for a credential by ID for a single invocation.
+        
+        This is a temporary resolution for execution. The secret is not stored
+        and must be used immediately, then discarded.
+        
+        Args:
+            credential_id: The credential ID to resolve
+        
+        Returns:
+            The secret value, or empty string if not found
+        
+        Security:
+            The secret is returned transiently for immediate use in adapter.run().
+            The caller must not persist it, log it, or include it in telemetry.
+        """
+        record = self._credentials.get(credential_id)
+        if not record:
+            return ''
+        
+        return self._secret_resolver(record.secret_ref)
+    
     def check_all_credentials(self) -> dict[str, CredentialRecord]:
         """Check health of all registered credentials."""
         results = {}

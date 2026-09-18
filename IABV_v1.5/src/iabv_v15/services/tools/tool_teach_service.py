@@ -70,6 +70,8 @@ class ToolTeachService:
         # F14: Authority integration
         capability_action_bridge: CapabilityActionBridge | None = None,
         post_action_observer: PostActionObserver | None = None,
+        # I0: Credential registry for per-invocation credential resolution
+        credential_registry: Any | None = None,
     ) -> None:
         self.registry = registry
         self.memory = memory
@@ -87,6 +89,8 @@ class ToolTeachService:
         # F14: Authority integration
         self.capability_action_bridge = capability_action_bridge
         self.post_action_observer = post_action_observer
+        # I0: Credential registry
+        self.credential_registry = credential_registry
 
     def _assistant_configuration_snapshot(
         self,
@@ -803,7 +807,16 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
             return result
         adapter = self.adapters.get(card.adapter_key)
-        if adapter is None or not adapter.is_available(card):
+        
+        # I0: Resolve credential for preflight if specified
+        preflight_api_key = None
+        credential_id = task.metadata.get("credential_id")
+        if credential_id and self.credential_registry is not None:
+            preflight_secret = self.credential_registry.resolve_credential_secret(credential_id)
+            if preflight_secret:
+                preflight_api_key = preflight_secret
+        
+        if adapter is None or not adapter.is_available(card, api_key=preflight_api_key):
             result = ToolResult(
                 task_id=task.task_id,
                 tool_id=card.tool_id,
@@ -1033,7 +1046,40 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
             return result
         
-        payload = adapter.run(card, task, sandbox=False)
+        # I0: Resolve credential if specified in task metadata
+        resolved_api_key = None
+        credential_id = task.metadata.get("credential_id")
+        if credential_id and self.credential_registry is not None:
+            resolved_secret = self.credential_registry.resolve_credential_secret(credential_id)
+            if not resolved_secret:
+                # Credential ID specified but secret not resolvable - fail closed
+                result = ToolResult(
+                    task_id=task.task_id,
+                    tool_id=card.tool_id,
+                    tool_type=card.tool_type,
+                    success=False,
+                    validation_status=ToolValidationStatus.BLOCKED,
+                    execution_state=ExecutionState(
+                        state='credential_not_resolvable',
+                        detail=f'Credential "{credential_id}" specified but secret could not be resolved.',
+                        executor_name='CredentialRegistry',
+                        sandboxed=False,
+                        destructive_blocked=True,
+                    ),
+                    error_message='credential_not_resolvable',
+                )
+                self.memory.audit_event(
+                    tool_id=card.tool_id,
+                    task_id=task.task_id,
+                    action_type='credential_resolution',
+                    state='failed',
+                    payload={'credential_id': credential_id, 'reason': 'secret_not_resolvable'},
+                )
+                self.memory.repository.save_result(result)
+                return result
+            resolved_api_key = resolved_secret
+        
+        payload = adapter.run(card, task, sandbox=False, api_key=resolved_api_key)
         payload_metadata = dict(payload.get('metadata') or {})
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')

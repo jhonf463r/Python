@@ -262,6 +262,9 @@ from iabv_v15.services.evolution.hidden_incident_detector import HiddenIncidentD
 from iabv_v15.services.evolution.incident_packet_service import IncidentPacketService
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.evolution.operational_self_examination_service import OperationalSelfExaminationService
+# I0: Credential registry for per-invocation credential resolution
+from iabv_v15.services.trust.credential_registry import CredentialRegistry
+from iabv_v15.services.trust.devin_credential_adapter import DevinCredentialAdapter
 from iabv_v15.services.evolution.embodiment_violation_detector import EmbodimentViolationDetector
 from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
 from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
@@ -808,6 +811,14 @@ class AppBootstrap:
             capability_action_bridge=self.capability_action_bridge
         )
         
+        # I0: Create CredentialRegistry with os.environ as secret resolver
+        # This allows per-invocation credential resolution without storing secrets
+        self.credential_registry = CredentialRegistry(
+            secret_resolver=lambda ref: os.environ.get(ref, '')
+        )
+        # Register Devin credential adapter for provider discovery
+        self.credential_registry.register_adapter(DevinCredentialAdapter())
+        
         self.tool_teach_service = ToolTeachService(
             registry=self.tool_registry,
             memory=self.tool_memory,
@@ -825,6 +836,8 @@ class AppBootstrap:
             # F14: Pass authority components
             capability_action_bridge=self.capability_action_bridge,
             post_action_observer=self.post_action_observer,
+            # I0: Pass credential registry for per-invocation resolution
+            credential_registry=self.credential_registry,
         )
         self.embedding_service = EmbeddingIndexService(
             base_url=self.config.ollama_base_url,

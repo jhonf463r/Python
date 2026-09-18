@@ -1852,15 +1852,16 @@ class DevinApiToolAdapter:
             'Content-Type': 'application/json',
         }
 
-    def is_available(self, card: ToolCard) -> bool:
-        if not self.api_key:
+    def is_available(self, card: ToolCard, *, api_key: str | None = None) -> bool:
+        effective_key = api_key if api_key is not None else self.api_key
+        if not effective_key:
             return False
         if httpx is None:
             return False
         try:
             resp = httpx.get(
                 self._sessions_url,
-                headers=self._headers(),
+                headers=self._headers(effective_key),
                 params={'limit': '1'},
                 timeout=10.0,
             )
