@@ -241,3 +241,34 @@ If Devin reports a genuine capability/access blocker that is not an architecture
 If Sonnet's future audit finds an architecture contradiction, route to Opus 5.
 
 After successful Devin execution, independent verification should return to Sonnet before L5 promotion.
+
+## 2026-09-18 LIVE ROUTING OVERRIDE — L5 PROVENANCE RECONCILIATION + SYMBIOSIS INFLECTION TRACK
+
+For any new chat whose objective touches current L5 closure, external-agent orchestration, automatic prompt relay, multi-agent delegation, or development acceleration, activate:
+
+`CURRENT-STATE-OVERRIDE-2026-09-18.md`
+
+This override supersedes stale 2026-09-17 L5 routing statements where they conflict with later evidence.
+
+Current L5 status:
+- strong mechanism and runtime result exist;
+- hardened evidence chain has been materially reconciled;
+- the latest publication attempt is still being verified because the remote branch has a history of duplicate/local reconciliation commits and the runtime artifact publication must be read back directly;
+- do not declare L5 canonically closed until the exact artifact path, blob, hash and tested-code provenance are all remotely readable and independently audited.
+
+New strategic distinction:
+- L5/L6/L7 are scientific proof stages.
+- I0/I1/I2 are operational symbiosis stages whose purpose is to remove the human from manual prompt/response transport.
+- I2 is the first operational point of inflection: IABV chooses a capable external agent, delegates work, receives the result, verifies it, learns/replans and delegates the next work item automatically.
+- L6/L7 do NOT need to be completed before I0/I1/I2 are explored; the automation track can reduce the human bottleneck and then accelerate future proof experiments.
+
+Current next actor for the unresolved L5 publication problem:
+**DEVIN**.
+
+After the evidence is cleanly published and remotely verified:
+**SONNET 5 LOW** for final independent L5 audit.
+
+After L5 is adjudicated:
+**CHATGPT** designs the smallest I0/I1 symbiosis experiment before broad L6/L7 expansion.
+
+Routing remains capability-fit based, not a fixed model order.
