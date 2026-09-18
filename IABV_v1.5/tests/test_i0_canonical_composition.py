@@ -1,6 +1,11 @@
-"""Test I0 canonical composition: credential_id → CredentialRegistry → adapter.run(api_key)
+"""Test I0 secret resolver seam: credential_id → CredentialRegistry → adapter.run(api_key)
 
-This test demonstrates the runtime causal edge with minimal composition.
+This test demonstrates the seam at the secret resolver level, NOT the full
+ToolTeachService execute_task() path. It uses minimal composition to verify
+that the secret_resolver can resolve from environment and reach adapter.run(api_key).
+
+Note: This is NOT a test of the canonical ToolTeachService composition.
+For full composition testing, see other test modules.
 """
 
 import os

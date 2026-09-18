@@ -818,6 +818,10 @@ class AppBootstrap:
         )
         # Register Devin credential adapter for provider discovery
         self.credential_registry.register_adapter(DevinCredentialAdapter())
+        # I0: Discover and register credentials from environment
+        # This populates the registry with CredentialRecord entries without storing secrets
+        discovered = self.credential_registry.discover_credentials("devin")
+        self.credential_registry.register_credentials(discovered)
         
         self.tool_teach_service = ToolTeachService(
             registry=self.tool_registry,

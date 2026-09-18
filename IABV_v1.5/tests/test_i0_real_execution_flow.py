@@ -1,7 +1,10 @@
-"""Test I0 real execution flow: verify execute_task() blocks unknown credentials
+"""Test I0 structural inspection: verify execute_task() credential ordering
 
-This test verifies the ACTUAL behavior of execute_task() when a credential_id
-is specified but cannot be resolved, ensuring no adapter.run() or HTTP calls occur.
+This test uses SOURCE INSPECTION (inspect.getsource) to verify the order
+of credential resolution and fail-closed checks in execute_task(). It does NOT
+execute runtime flows or make real HTTP calls.
+
+For runtime testing, see other test modules.
 """
 
 import os
