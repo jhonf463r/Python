@@ -173,6 +173,8 @@ class LocalRoleRouter:
 
         The pool now includes both browser accounts and universal resources
         (API credentials, local endpoints) merged into a common representation.
+        Universal resources are stored separately to avoid duplication
+        (rank_workers_for_target handles the merge).
         """
         now = time.monotonic()
         if not refresh:
@@ -193,11 +195,10 @@ class LocalRoleRouter:
                 'error': str(exc),
             }
 
-        # Build universal resource pool and merge with browser pool
+        # Build universal resource pool
         try:
             from iabv_v15.services.account_resource_scanner import (
                 build_universal_resource_pool,
-                universal_resource_to_worker,
             )
 
             universal_resources = build_universal_resource_pool(
@@ -206,20 +207,8 @@ class LocalRoleRouter:
                 include_local=True,
             )
 
-            # Convert universal resources to worker dicts and merge
-            for resource in universal_resources:
-                if not resource.routing_eligible:
-                    continue  # Skip routing-ineligible resources
-
-                worker = universal_resource_to_worker(resource)
-
-                # Add to pool's workers list
-                pool.setdefault('workers', []).append(worker)
-
-                # Update available count
-                pool['available_count'] = pool.get('available_count', 0) + 1
-
-            # Store universal resources in pool for ranking
+            # Store universal resources separately (not in workers list)
+            # rank_workers_for_target will handle the merge to avoid duplication
             pool['universal_resources'] = universal_resources
 
         except Exception as exc:
@@ -311,10 +300,17 @@ class LocalRoleRouter:
 
         top = ranked[0]
         _WORKER_KEYS = ('tool', 'email', 'browser', 'profile', 'remaining_messages', 'score', 'block_risk')
+        _UNIVERSAL_KEYS = ('resource_id', 'provider', 'credential_ref')
 
         def _compact(w: dict[str, Any]) -> dict[str, Any]:
             d: dict[str, Any] = {}
+            # Add browser-specific keys
             for k in _WORKER_KEYS:
+                v = w.get(k)
+                if v is not None and v != '':
+                    d[k] = v
+            # Add universal resource identity keys (for API credentials)
+            for k in _UNIVERSAL_KEYS:
                 v = w.get(k)
                 if v is not None and v != '':
                     d[k] = v
