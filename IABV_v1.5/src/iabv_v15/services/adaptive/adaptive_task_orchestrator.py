@@ -1782,16 +1782,40 @@ class AdaptiveTaskOrchestrator:
         # This ensures the resource selected by worker_health_gate() reaches ToolTeachService
         governance = dict(decision_context.governance or {})
         if governance.get('should_consult'):
-            # First, check decision_context.metadata.worker_gate (if available from orchestrator)
+            # Extract from decision_context.metadata.worker_gate (if available from orchestrator)
             dc_meta = dict(decision_context.metadata or {})
-            worker_gate = dict(dc_meta.get('worker_gate') or {})
-            top_worker = dict(worker_gate.get('top_worker') or {})
+            worker_gate_dc = dict(dc_meta.get('worker_gate') or {})
+            top_worker_dc = dict(worker_gate_dc.get('top_worker') or {})
 
-            # Fallback: check metadata.worker_gate (from serialized AdaptiveSession)
-            # This is the path when ControlCenterViewModel passes session.model_dump() as adaptive_payload
-            if not top_worker:
-                session_worker_gate = dict(metadata.get('worker_gate') or {})
-                top_worker = dict(session_worker_gate.get('top_worker') or {})
+            # Extract from metadata.worker_gate (from serialized AdaptiveSession)
+            session_worker_gate = dict(metadata.get('worker_gate') or {})
+            top_worker_session = dict(session_worker_gate.get('top_worker') or {})
+
+            # Identity conflict detection: if both sources exist and differ → BLOCK
+            if top_worker_dc and top_worker_session:
+                resource_id_dc = top_worker_dc.get('resource_id', '')
+                resource_id_session = top_worker_session.get('resource_id', '')
+                credential_ref_dc = top_worker_dc.get('credential_ref', '')
+                credential_ref_session = top_worker_session.get('credential_ref', '')
+
+                if resource_id_dc != resource_id_session or credential_ref_dc != credential_ref_session:
+                    # Identity conflict: decision_context and session have different selections
+                    # The session selection (metadata.worker_gate) is the operational identity of the first dispatch
+                    # Block execution to prevent using the wrong credential
+                    metadata['identity_conflict'] = {
+                        'decision_context_resource_id': resource_id_dc,
+                        'session_resource_id': resource_id_session,
+                        'decision_context_credential_ref': credential_ref_dc,
+                        'session_credential_ref': credential_ref_session,
+                        'reason': 'decision_context.worker_gate != metadata.worker_gate - conflicting identities',
+                    }
+                    # Do NOT propagate any selection - this ensures fail-closed behavior
+                    top_worker_dc = {}
+                    top_worker_session = {}
+
+            # Use session selection as the operational identity (it was persisted by the actual dispatch)
+            # If session selection exists, use it; otherwise fall back to decision_context
+            top_worker = top_worker_session if top_worker_session else top_worker_dc
 
             if top_worker:
                 # Propagate resource selection identity to payload metadata
