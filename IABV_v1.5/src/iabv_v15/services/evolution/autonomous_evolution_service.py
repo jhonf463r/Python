@@ -133,6 +133,18 @@ class AutonomousEvolutionService:
         launch_dry_run = not self.config.autonomous_external_launch
         # approved se evalúa dentro de execute_task via ToolApprovalPolicy
         # Aquí usamos False para forzar que governance sea evaluado correctamente
+
+        # Extract resource selection metadata from payload to propagate to ToolTeachService
+        payload_metadata = dict(payload.get('metadata') or {})
+        request_metadata = {
+            'selected_resource_id': payload_metadata.get('selected_resource_id', ''),
+            'selected_provider': payload_metadata.get('selected_provider', ''),
+            'selected_credential_ref': payload_metadata.get('selected_credential_ref', ''),
+            'selected_email': payload_metadata.get('selected_email', ''),
+            'selected_browser': payload_metadata.get('selected_browser', ''),
+            'selected_profile': payload_metadata.get('selected_profile', ''),
+        }
+
         task, result, preview = self.tool_teach_service.execute_external_consultation(
             user_goal=user_goal,
             assistant_preference=requested_assistant_kind,
@@ -144,6 +156,7 @@ class AutonomousEvolutionService:
             launch_dry_run=launch_dry_run,
             allow_local_automatic_consultation=True,
             goal_parameters=self._goal_context(payload),
+            request_metadata=request_metadata,
         )
         actual_assistant_kind = str(
             result.execution_state.metadata.get('assistant_kind')

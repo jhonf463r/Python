@@ -711,6 +711,7 @@ class ToolTeachService:
         launch_dry_run: bool = False,
         allow_local_automatic_consultation: bool = False,
         goal_parameters: dict[str, Any] | None = None,
+        request_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         request = self._build_external_consultation_request(
             user_goal=user_goal,
@@ -722,6 +723,7 @@ class ToolTeachService:
             launch_dry_run=launch_dry_run,
             allow_local_automatic_consultation=allow_local_automatic_consultation,
             goal_parameters=goal_parameters,
+            request_metadata=request_metadata,
         )
         preview = self.preview_request(request)
         preview['context_pack'] = context_pack
@@ -741,6 +743,7 @@ class ToolTeachService:
         launch_dry_run: bool = False,
         allow_local_automatic_consultation: bool = False,
         goal_parameters: dict[str, Any] | None = None,
+        request_metadata: dict[str, Any] | None = None,
     ) -> tuple[ToolTask, ToolResult, dict[str, Any]]:
         request = self._build_external_consultation_request(
             user_goal=user_goal,
@@ -752,6 +755,7 @@ class ToolTeachService:
             launch_dry_run=launch_dry_run,
             allow_local_automatic_consultation=allow_local_automatic_consultation,
             goal_parameters=goal_parameters,
+            request_metadata=request_metadata,
         )
         preview = self.preview_request(request)
         task = self.build_task_from_request(request)
@@ -1584,6 +1588,7 @@ class ToolTeachService:
         launch_dry_run: bool,
         allow_local_automatic_consultation: bool,
         goal_parameters: dict[str, Any] | None = None,
+        request_metadata: dict[str, Any] | None = None,
     ) -> InferenceRequest:
         assistant = (assistant_preference or '').strip().lower() or 'codex'
         goal_payload = dict(goal_parameters or {})
@@ -1651,6 +1656,18 @@ class ToolTeachService:
             session_label=f'{assistant_title} especial de IABV' if isolated_session_required else assistant_title,
             isolated_session_required=isolated_session_required,
         )
+
+        # Propagate resource selection from request_metadata (if present from adaptive_payload)
+        request_metadata = dict(request_metadata or {})
+        resource_selection = {
+            'selected_resource_id': request_metadata.get('selected_resource_id', ''),
+            'selected_provider': request_metadata.get('selected_provider', ''),
+            'selected_credential_ref': request_metadata.get('selected_credential_ref', ''),
+            'selected_email': request_metadata.get('selected_email', ''),
+            'selected_browser': request_metadata.get('selected_browser', ''),
+            'selected_profile': request_metadata.get('selected_profile', ''),
+        }
+
         return InferenceRequest(
             user_goal=f'Consultar {assistant_title} sobre: {user_goal}',
             prompt=consultation_metadata['context_pack'],
@@ -1690,7 +1707,10 @@ class ToolTeachService:
                 'reused_thread': consultation_metadata['reused_thread'],
                 'session_profile_dir': consultation_metadata['session_profile_dir'],
             },
-            metadata={'external_consultation': True},
+            metadata={
+                **resource_selection,
+                'external_consultation': True,
+            },
         )
 
     def _build_external_consultation_metadata(
