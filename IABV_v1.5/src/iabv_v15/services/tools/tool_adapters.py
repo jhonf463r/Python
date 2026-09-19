@@ -2021,6 +2021,46 @@ class DevinApiToolAdapter:
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
 
+        # FAIL-CLOSED: Check selection_status from govern_adaptive_payload()
+        # This ensures identity_conflict and selection_lost block execution before HTTP
+        selection_status = None
+        if task.metadata:
+            selection_status = task.metadata.get('selection_status')
+
+        if selection_status == 'identity_conflict':
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'identity_conflict: decision_context.worker_gate != metadata.worker_gate - execution blocked',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {
+                    'sandbox': sandbox,
+                    'tool_id': card.tool_id,
+                    'selection_status': 'identity_conflict',
+                    'identity_conflict': task.metadata.get('identity_conflict', {}),
+                    'blocked_reason': 'identity_conflict',
+                },
+            }
+
+        if selection_status == 'selection_lost':
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': 'selection_lost: worker_gate selected resource but selection was lost before execution - execution blocked',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {
+                    'sandbox': sandbox,
+                    'tool_id': card.tool_id,
+                    'selection_status': 'selection_lost',
+                    'selection_lost': task.metadata.get('selection_lost', {}),
+                    'blocked_reason': 'selection_lost',
+                },
+            }
+
         # Resolve credential from task metadata if available
         # This binds the selected resource to the actual execution
         selected_credential_ref = None

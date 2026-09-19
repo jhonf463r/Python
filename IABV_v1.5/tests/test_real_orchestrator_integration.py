@@ -109,109 +109,76 @@ class TestRealFirstDispatchIntegration:
         assert metadata['selected_provider'] == 'devin'
         assert metadata['selected_credential_ref'] == 'devin:credential_0:DEVIN_API_KEY_A'
 
-    def test_identity_conflict_documented(self):
-        """Test: decision_context.worker_gate = A, metadata.worker_gate = B → documented behavior."""
-        # Simulate adaptive_payload with CONFLICTING worker_gate in both sources
-        adaptive_payload = {
-            'user_goal': 'Test objective',
-            'metadata': {
-                'decision_context': {
-                    'user_goal': 'test goal',
-                    'governance': {'should_consult': True, 'assistant_kind': 'codex'},
-                    'metadata': {
-                        'worker_gate': {
-                            'usable': True,
-                            'top_worker': {
-                                'resource_id': 'devin_credential_A',  # A in decision_context
-                                'provider': 'devin',
-                                'tool': 'devin_api',
-                                'credential_ref': 'devin:credential_A:DEVIN_API_KEY_A',
-                                'email': '',
-                                'browser': '',
-                                'profile': '',
-                            },
-                        },
-                    },
-                },
-                'worker_gate': {
-                    'usable': True,
-                    'top_worker': {
-                        'resource_id': 'devin_credential_B',  # B in metadata
-                        'provider': 'devin',
-                        'tool': 'devin_api',
-                        'credential_ref': 'devin:credential_B:DEVIN_API_KEY_B',
-                        'email': '',
-                        'browser': '',
-                        'profile': '',
-                    },
+    def test_identity_conflict_blocks_execution(self):
+        """Test: decision_context.worker_gate = A, metadata.worker_gate = B → BLOCK at adapter."""
+        from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
+        from iabv_v15.domain.models import ToolCard, ToolTask, ToolAction, ToolActionType, ToolType
+
+        # Simulate task with identity_conflict status
+        task = ToolTask(
+            task_id='test_task',
+            tool_id='devin_api',
+            title='Test task',
+            objective='Test objective',
+            actions=[ToolAction(action_type=ToolActionType.LLM_QUERY, label='test', value='Test prompt')],
+            metadata={
+                'selection_status': 'identity_conflict',
+                'identity_conflict': {
+                    'decision_context_resource_id': 'devin_credential_A',
+                    'session_resource_id': 'devin_credential_B',
+                    'decision_context_credential_ref': 'devin:credential_A:DEVIN_API_KEY_A',
+                    'session_credential_ref': 'devin:credential_B:DEVIN_API_KEY_B',
+                    'reason': 'decision_context.worker_gate != metadata.worker_gate - conflicting identities',
                 },
             },
-        }
+        )
 
-        # Simulate govern_adaptive_payload() extraction logic (current implementation)
-        payload = dict(adaptive_payload or {})
-        metadata = dict(payload.get('metadata') or {})
-        decision_context = dict(metadata.get('decision_context') or {})
-        dc_meta = dict(decision_context.get('metadata') or {})
-        worker_gate = dict(dc_meta.get('worker_gate') or {})
-        top_worker = dict(worker_gate.get('top_worker') or {})
+        card = ToolCard(tool_id='devin_api', title='Devin API', tool_type=ToolType.MCP_CLIENT, adapter_key='devin_api', metadata={})
 
-        # Fallback to metadata.worker_gate
-        if not top_worker:
-            session_worker_gate = dict(metadata.get('worker_gate') or {})
-            top_worker = dict(session_worker_gate.get('top_worker') or {})
+        adapter = DevinApiToolAdapter(api_key='default_key')
+        result = adapter.run(card, task, sandbox=True)
 
-        if top_worker:
-            metadata['selected_resource_id'] = top_worker.get('resource_id', '')
-            metadata['selected_provider'] = top_worker.get('provider', '')
-            metadata['selected_credential_ref'] = top_worker.get('credential_ref', '')
-
-        # Current behavior: decision_context has priority, so A is selected
-        assert metadata['selected_resource_id'] == 'devin_credential_A'
-        assert metadata['selected_credential_ref'] == 'devin:credential_A:DEVIN_API_KEY_A'
-
-        # TODO: Implement identity_conflict detection
-        # When decision_context.metadata.worker_gate != metadata.worker_gate → BLOCK
-        # The selection persisted in AdaptiveSession (metadata.worker_gate) should have priority
-        # as the operational identity of the first dispatch
+        # Verify: execution blocked with identity_conflict status
+        assert result['success'] is False
+        assert result['metadata']['selection_status'] == 'identity_conflict'
+        assert result['metadata']['blocked_reason'] == 'identity_conflict'
+        assert 'identity_conflict' in result['metadata']
+        assert result['metadata']['identity_conflict']['decision_context_resource_id'] == 'devin_credential_A'
+        assert result['metadata']['identity_conflict']['session_resource_id'] == 'devin_credential_B'
 
     def test_negative_selection_lost_no_worker_gate(self):
-        """Test: no worker_gate in metadata or decision_context → no selection propagated."""
-        # Simulate adaptive_payload WITHOUT worker_gate
-        adaptive_payload = {
-            'user_goal': 'Test objective',
-            'metadata': {
-                # No worker_gate - selection lost
+        """Test: worker_gate selected A, but selection lost → BLOCK at adapter."""
+        from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
+        from iabv_v15.domain.models import ToolCard, ToolTask, ToolAction, ToolActionType, ToolType
+
+        # Simulate task with selection_lost status
+        task = ToolTask(
+            task_id='test_task',
+            tool_id='devin_api',
+            title='Test task',
+            objective='Test objective',
+            actions=[ToolAction(action_type=ToolActionType.LLM_QUERY, label='test', value='Test prompt')],
+            metadata={
+                'selection_status': 'selection_lost',
+                'selection_lost': {
+                    'session_usable': True,
+                    'session_had_top_worker': True,
+                    'reason': 'worker_gate selected resource but selection was lost before payload construction',
+                },
             },
-        }
+        )
 
-        # Simulate govern_adaptive_payload() extraction logic
-        payload = dict(adaptive_payload or {})
-        metadata = dict(payload.get('metadata') or {})
+        card = ToolCard(tool_id='devin_api', title='Devin API', tool_type=ToolType.MCP_CLIENT, adapter_key='devin_api', metadata={})
 
-        # Try decision_context first
-        decision_context = dict(metadata.get('decision_context') or {})
-        dc_meta = dict(decision_context.get('metadata') or {})
-        worker_gate = dict(dc_meta.get('worker_gate') or {})
-        top_worker = dict(worker_gate.get('top_worker') or {})
+        adapter = DevinApiToolAdapter(api_key='default_key')
+        result = adapter.run(card, task, sandbox=True)
 
-        # Fallback to metadata.worker_gate
-        if not top_worker:
-            session_worker_gate = dict(metadata.get('worker_gate') or {})
-            top_worker = dict(session_worker_gate.get('top_worker') or {})
-
-        if top_worker:
-            metadata['selected_resource_id'] = top_worker.get('resource_id', '')
-            metadata['selected_provider'] = top_worker.get('provider', '')
-            metadata['selected_credential_ref'] = top_worker.get('credential_ref')
-
-        # Verify: selection was NOT propagated (because it was lost from both sources)
-        assert metadata.get('selected_resource_id', '') == ''
-        assert metadata.get('selected_credential_ref', '') == ''
-
-        # TODO: Implement selection_lost detection in adapter or executor
-        # When worker_gate selected A but no selection present → BLOCK
-        # This should be distinguished from NO_SELECTION (when worker_gate never ran)
+        # Verify: execution blocked with selection_lost status
+        assert result['success'] is False
+        assert result['metadata']['selection_status'] == 'selection_lost'
+        assert result['metadata']['blocked_reason'] == 'selection_lost'
+        assert 'selection_lost' in result['metadata']
+        assert result['metadata']['selection_lost']['session_had_top_worker'] is True
 
     def test_end_to_end_metadata_worker_gate_to_adapter(self):
         """Test: metadata.worker_gate → extraction → adapter resolution."""

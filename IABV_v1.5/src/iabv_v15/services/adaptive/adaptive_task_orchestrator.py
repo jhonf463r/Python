@@ -1802,6 +1802,7 @@ class AdaptiveTaskOrchestrator:
                     # Identity conflict: decision_context and session have different selections
                     # The session selection (metadata.worker_gate) is the operational identity of the first dispatch
                     # Block execution to prevent using the wrong credential
+                    metadata['selection_status'] = 'identity_conflict'
                     metadata['identity_conflict'] = {
                         'decision_context_resource_id': resource_id_dc,
                         'session_resource_id': resource_id_session,
@@ -1813,11 +1814,28 @@ class AdaptiveTaskOrchestrator:
                     top_worker_dc = {}
                     top_worker_session = {}
 
+            # Selection lost detection: if session.worker_gate exists but neither source has selection
+            # This means the selection was made but lost during serialization/payload construction
+            session_had_selection = bool(session_worker_gate.get('usable', False) and session_worker_gate.get('top_worker'))
+            if session_had_selection and not top_worker_dc and not top_worker_session:
+                # Selection was made in session but lost before reaching govern_adaptive_payload
+                metadata['selection_status'] = 'selection_lost'
+                metadata['selection_lost'] = {
+                    'session_usable': session_worker_gate.get('usable', False),
+                    'session_had_top_worker': bool(session_worker_gate.get('top_worker')),
+                    'reason': 'worker_gate selected resource but selection was lost before payload construction',
+                }
+                # Do NOT propagate any selection - this ensures fail-closed behavior
+                top_worker_dc = {}
+                top_worker_session = {}
+
             # Use session selection as the operational identity (it was persisted by the actual dispatch)
             # If session selection exists, use it; otherwise fall back to decision_context
             top_worker = top_worker_session if top_worker_session else top_worker_dc
 
             if top_worker:
+                # Valid selection exists
+                metadata['selection_status'] = 'valid'
                 # Propagate resource selection identity to payload metadata
                 metadata['selected_resource_id'] = top_worker.get('resource_id', '')
                 metadata['selected_provider'] = top_worker.get('provider', '')
@@ -1826,6 +1844,10 @@ class AdaptiveTaskOrchestrator:
                 metadata['selected_email'] = top_worker.get('email', '')
                 metadata['selected_browser'] = top_worker.get('browser', '')
                 metadata['selected_profile'] = top_worker.get('profile', '')
+            elif not session_had_selection:
+                # No selection was ever made (this is not an error)
+                metadata['selection_status'] = 'no_selection'
+            # If selection_status is 'identity_conflict' or 'selection_lost', no selection propagated
 
         payload['metadata'] = metadata
         if self.autonomous_evolution_service is None:
