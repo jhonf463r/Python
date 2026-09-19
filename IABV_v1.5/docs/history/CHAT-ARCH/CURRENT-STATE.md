@@ -394,3 +394,18 @@ Independent audit resolved the apparent cost/type confound: `0.40` was the winni
 This closes the prior L5 provenance/causal gate. It does **not** close L6/L7, full P0-B authority/security, I0/I1/I2 external-agent orchestration, or real Devin cognitive influence. The separate constraint `REAL AUTHORITY = NOT PROVEN BY G3` remains active for the authority/security subsystem.
 
 The next strategic work may proceed in two parallel directions: L6 behavioral-change proof and the minimum I0/I1 symbiosis experiment. The latter should use existing orchestration/adapter/briefing organs before any new service is proposed.
+## 2026-09-19 I0/I1 DEVIN RUNTIME PROBE — CREDENTIAL BLOCK
+
+An independent Windows runtime probe reached the existing Devin integration boundary but was blocked before HTTP authentication because the controlled environment contained none of:
+`DEVIN_API_KEY_IABV`, `IABV_DEVIN_API_KEY`, `DEVIN_API_KEY`.
+
+Classification: **E — BLOCKED**.
+
+First broken edge:
+`credential resolution → Devin API authentication`.
+
+I0 is not proven and I1 was not reached. No Devin session/result was created. Do not infer I0 from adapter/bootstrap/briefing code existence.
+
+Next action: make a real Devin credential securely available to the Windows runtime through an already-supported environment variable, without exposing or committing the secret; then rerun only the I0 Phase-A connection test. Once authenticated, continue through the existing production path and stop at the first causal break.
+
+Credential provisioning is an account/environment prerequisite for the person controlling the Devin account. After secure credential availability, Devin remains the best-fit runtime actor. This does not alter L5 or close P0-B/I0/I1/I2.
