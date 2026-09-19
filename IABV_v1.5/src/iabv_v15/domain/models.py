@@ -3040,6 +3040,140 @@ class AccountInventorySnapshot(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Universal External Resource Contract
+# ---------------------------------------------------------------------------
+#
+# Universal representation for heterogeneous external resources:
+# - Browser accounts (ChatGPT, Claude, etc.)
+# - API credentials (Devin, GitHub, OpenAI, etc.)
+# - Local endpoints (Ollama, etc.)
+# - Future provider resources
+#
+# This contract separates:
+# - PROVIDER (devin, github, chatgpt, claude, ollama, etc.)
+# - TOOL (devin_api, github_api, chatgpt_web, etc.)
+# - RESOURCE (the actual endpoint/account/credential)
+# - CREDENTIAL (opaque reference to secret)
+# - PRINCIPAL (user/entity that owns the resource)
+# - ORGANIZATION (scope of quota/billing)
+# - QUOTA (rate limits, credits)
+# - AVAILABILITY (ready, blocked, exhausted)
+# - APPROVAL (human authorization)
+
+
+class ResourceKind(str, Enum):
+    """Type of external resource."""
+    BROWSER_ACCOUNT = "browser_account"
+    API_CREDENTIAL = "api_credential"
+    LOCAL_ENDPOINT = "local_endpoint"
+    UNKNOWN = "unknown"
+
+
+class AuthenticationState(str, Enum):
+    """Authentication status of a resource."""
+    UNCONFIGURED = "unconfigured"
+    AUTHENTICATED = "authenticated"
+    AUTH_FAILURE = "auth_failure"
+    QUOTA_EXHAUSTED = "quota_exhausted"
+    PROVIDER_ERROR = "provider_error"
+    NETWORK_ERROR = "network_error"
+    BLOCKED = "blocked"
+    UNKNOWN = "unknown"
+
+
+class QuotaScope(str, Enum):
+    """Scope of quota limitation."""
+    CREDENTIAL = "credential"
+    USER = "user"
+    ORGANIZATION = "organization"
+    WORKSPACE = "workspace"
+    UNKNOWN = "unknown"
+
+
+class UniversalResource(BaseModel):
+    """Universal representation of an external resource.
+
+    This contract unifies browser accounts, API credentials, and local endpoints
+    into a single representation that can be consumed by routing/governance without
+    provider-specific assumptions (e.g., email, browser, profile).
+
+    The model separates identity, authentication, quota, and availability concerns.
+    Credentials are stored as opaque references via SecretVault, never as values.
+    """
+
+    # Identity
+    resource_id: str
+    provider: str
+    tool_id: str
+    resource_kind: ResourceKind = ResourceKind.UNKNOWN
+
+    # Credential (opaque reference only, never the secret value)
+    credential_ref: str | None = None
+
+    # Principal/Organization identity (when verifiable)
+    principal_id: str | None = None
+    principal_kind: str | None = None
+    organization_id: str | None = None
+    identity_source: str | None = None
+
+    # State
+    authentication_state: AuthenticationState = AuthenticationState.UNCONFIGURED
+    availability_state: AccountStatus = AccountStatus.UNRESOLVED
+
+    # Quota (when known)
+    quota_scope: QuotaScope = QuotaScope.UNKNOWN
+    quota_remaining: int = 0
+    quota_limit: int = 0
+    quota_resets_at: datetime | None = None
+    exhausted: bool = False  # Compatibility with AccountInventoryEntry
+    status: AccountStatus = AccountStatus.UNRESOLVED  # Compatibility with AccountInventoryEntry
+
+    # Rate limiting (when known)
+    rate_limit_remaining: int = 0
+    rate_limit_resets_at: datetime | None = None
+
+    # Blocking
+    block_reason: str | None = None
+    block_signals: list[str] = Field(default_factory=list)
+
+    # Capabilities
+    capabilities: list[str] = Field(default_factory=list)
+
+    # Routing
+    routing_eligible: bool = False
+    last_verified: datetime | None = None
+    score: float = 0.0
+
+    # Compatibility projection (for browser accounts)
+    # These fields preserve compatibility with AccountInventoryEntry consumers
+    email: str = ""
+    browser: str = ""
+    profile: str = ""
+    has_session: bool = False
+    session_verified_at: datetime | None = None
+
+    # Metadata
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class UniversalResourceSnapshot(BaseModel):
+    """Point-in-time snapshot of all universal resources.
+
+    Replaces AccountInventorySnapshot for universal routing while maintaining
+    compatibility via the continuity_queue contract.
+    """
+
+    entries: list[UniversalResource] = Field(default_factory=list)
+    continuity_queue: list[UniversalResource] = Field(default_factory=list)
+    active_count: int = 0
+    exhausted_count: int = 0
+    unavailable_count: int = 0
+    tools_available: list[str] = Field(default_factory=list)
+    unresolved_items: list[str] = Field(default_factory=list)
+    snapshot_at: datetime = Field(default_factory=utc_now)
+
+
+# ---------------------------------------------------------------------------
 # Cross-Agent Synchronization — Handoff Knowledge
 # ---------------------------------------------------------------------------
 #

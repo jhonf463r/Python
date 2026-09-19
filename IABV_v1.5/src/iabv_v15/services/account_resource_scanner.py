@@ -119,6 +119,104 @@ def scan_devin_api() -> dict[str, Any]:
     }
 
 
+def scan_devin_as_universal_resource() -> list['UniversalResource']:
+    """Scan Devin API credential as a universal resource.
+
+    Returns a list of UniversalResource objects representing Devin credentials.
+    Credentials are stored as opaque references (not actual secret values).
+    """
+    from iabv_v15.domain.models import (
+        UniversalResource,
+        ResourceKind,
+        AuthenticationState,
+        AccountStatus,
+        QuotaScope,
+        utc_now,
+    )
+
+    # Check for configured credentials
+    # This is a minimal implementation that checks environment variables
+    # In a full implementation, this would query SecretVault for all Devin credentials
+    env_vars = ['DEVIN_API_KEY_IABV', 'DEVIN_API_KEY', 'IABV_DEVIN_API_KEY']
+    resources: list[UniversalResource] = []
+
+    for idx, env_var in enumerate(env_vars):
+        token = os.environ.get(env_var)
+        if not token:
+            continue
+
+        # Create an opaque credential reference
+        # The actual secret is never stored in the resource object
+        credential_ref = f"devin:credential_{idx}:{env_var}"
+
+        # Determine authentication state by attempting a real API call
+        auth_state = AuthenticationState.UNCONFIGURED
+        availability = AccountStatus.UNRESOLVED
+        block_reason = None
+        quota_scope = QuotaScope.ORGANIZATION  # Devin quota is per organization, not per key
+
+        resp = _safe_request(
+            'https://api.devin.ai/v1/sessions',
+            headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
+        )
+
+        status_code = resp.get('status', 0)
+        body = resp.get('body', '')
+
+        if resp.get('ok'):
+            auth_state = AuthenticationState.AUTHENTICATED
+            availability = AccountStatus.ACTIVE
+        elif status_code == 403:
+            # Distinguish between auth failure and quota exhaustion
+            if 'out_of_quota' in body or 'billing' in body.lower():
+                auth_state = AuthenticationState.QUOTA_EXHAUSTED
+                availability = AccountStatus.EXHAUSTED
+                block_reason = 'out_of_quota'
+            else:
+                auth_state = AuthenticationState.AUTH_FAILURE
+                availability = AccountStatus.EXHAUSTED
+                block_reason = 'auth_failure'
+        elif status_code == 401:
+            auth_state = AuthenticationState.AUTH_FAILURE
+            availability = AccountStatus.EXHAUSTED
+            block_reason = 'auth_failure'
+        else:
+            auth_state = AuthenticationState.PROVIDER_ERROR
+            availability = AccountStatus.UNRESOLVED
+            block_reason = f'provider_error_{status_code}'
+
+        resource = UniversalResource(
+            resource_id=f"devin_credential_{idx}",
+            provider="devin",
+            tool_id="devin_api",
+            resource_kind=ResourceKind.API_CREDENTIAL,
+            credential_ref=credential_ref,
+            # Identity is unknown - Devin API does not expose account/organization info
+            principal_id=None,
+            principal_kind=None,
+            organization_id=None,
+            identity_source=None,
+            authentication_state=auth_state,
+            availability_state=availability,
+            quota_scope=quota_scope,
+            quota_remaining=0,  # Not available via API
+            quota_limit=0,
+            quota_resets_at=None,
+            block_reason=block_reason,
+            routing_eligible=(auth_state == AuthenticationState.AUTHENTICATED),
+            last_verified=utc_now(),
+            score=1.0 if auth_state == AuthenticationState.AUTHENTICATED else 0.0,
+            metadata={
+                'env_var': env_var,
+                'credential_index': idx,
+                'status_code': status_code,
+            },
+        )
+        resources.append(resource)
+
+    return resources
+
+
 def scan_ollama_api() -> dict[str, Any]:
     """Check Ollama local API and loaded models."""
     resp = _safe_request('http://localhost:11434/api/tags', timeout=5)
