@@ -769,6 +769,9 @@ class ToolTeachService:
 
         Fail-closed: solo crea autorización si la aprobación es APPRUEVED.
         REJECTED o PENDING no generan autorización.
+
+        Extended for resource binding: includes selected resource identity and credential fingerprint
+        to ensure authorized resource == executed resource.
         """
         if task.approval_decision != ApprovalDecision.APPROVED:
             return None
@@ -784,6 +787,13 @@ class ToolTeachService:
         except Exception:
             pass
 
+        # Extract resource binding identity from task metadata
+        task_metadata = task.metadata or {}
+        selected_resource_id = task_metadata.get('selected_resource_id', '')
+        selected_provider = task_metadata.get('selected_provider', '')
+        selected_credential_ref = task_metadata.get('selected_credential_ref', '')
+        credential_fingerprint = task_metadata.get('effective_credential_fingerprint', '')
+
         return ExternalActionAuthorization(
             task_id=task.task_id,
             tool_id=card.tool_id,
@@ -797,6 +807,10 @@ class ToolTeachService:
             expires_at=datetime.now(timezone.utc) + timedelta(hours=1),  # 1 hour expiry
             approved_by=approved_by,
             reason=f'Human approval for task {task.task_id} via {card.tool_id}',
+            selected_resource_id=selected_resource_id,
+            selected_provider=selected_provider,
+            selected_credential_ref=selected_credential_ref,
+            credential_fingerprint=credential_fingerprint,
             metadata={'task_title': task.title, 'card_title': card.title},
         )
 

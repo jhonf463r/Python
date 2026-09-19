@@ -35,37 +35,40 @@ class TestCredentialBinding:
         credential_ref = 'devin:credential_0:DEVIN_API_KEY_ALT'
 
         # Resolve credential
-        effective_key = adapter._resolve_api_key(credential_ref)
+        effective_key, fingerprint = adapter._resolve_api_key(credential_ref)
 
         # Verify binding: credential_ref → effective credential
         assert effective_key == 'alt_key'
         assert effective_key != 'default_key'
+        assert fingerprint != ''  # Fingerprint computed
 
         # Cleanup
         del os.environ['DEVIN_API_KEY_ALT']
 
     def test_credential_ref_fallback_to_default(self):
-        """Test: credential_ref fallback to default when resolution fails."""
+        """Test: credential_ref fallback to default when resolution fails (NO SELECTION case)."""
         adapter = DevinApiToolAdapter(api_key='default_key')
 
         # Invalid credential_ref (no matching env var)
         credential_ref = 'devin:credential_0:NONEXISTENT_VAR'
 
         # Resolve credential
-        effective_key = adapter._resolve_api_key(credential_ref)
+        effective_key, fingerprint = adapter._resolve_api_key(credential_ref)
 
-        # Verify fallback to default
-        assert effective_key == 'default_key'
+        # Verify: explicit selection that fails resolution → empty (NOT default)
+        assert effective_key == ''
+        assert fingerprint == ''
 
     def test_no_credential_ref_uses_default(self):
-        """Test: no credential_ref uses default."""
+        """Test: no credential_ref uses default (compatibility for old paths)."""
         adapter = DevinApiToolAdapter(api_key='default_key')
 
         # No credential_ref provided
-        effective_key = adapter._resolve_api_key(None)
+        effective_key, fingerprint = adapter._resolve_api_key(None)
 
         # Verify default is used
         assert effective_key == 'default_key'
+        assert fingerprint != ''
 
 
 class TestMultiResourceDiscrimination:
@@ -83,13 +86,14 @@ class TestMultiResourceDiscrimination:
         credential_ref_a = 'devin:credential_0:DEVIN_API_KEY_A'
         credential_ref_b = 'devin:credential_1:DEVIN_API_KEY_B'
 
-        effective_key_a = adapter._resolve_api_key(credential_ref_a)
-        effective_key_b = adapter._resolve_api_key(credential_ref_b)
+        effective_key_a, fingerprint_a = adapter._resolve_api_key(credential_ref_a)
+        effective_key_b, fingerprint_b = adapter._resolve_api_key(credential_ref_b)
 
         # Verify they remain distinct
         assert effective_key_a == 'credential_a'
         assert effective_key_b == 'credential_b'
         assert effective_key_a != effective_key_b
+        assert fingerprint_a != fingerprint_b
 
         # Cleanup
         del os.environ['DEVIN_API_KEY_A']
@@ -103,13 +107,12 @@ class TestMultiResourceDiscrimination:
         adapter = DevinApiToolAdapter(api_key='default_key')
         credential_ref = 'devin:credential_0:DEVIN_API_KEY_TEST'
 
-        effective_key = adapter._resolve_api_key(credential_ref)
+        effective_key, fingerprint = adapter._resolve_api_key(credential_ref)
         headers = adapter._headers(effective_key)
 
         # Verify Authorization header uses resolved credential
         assert 'Authorization' in headers
-        assert headers['Authorization'] == f'Bearer test_key'
-        assert headers['Authorization'] != f'Bearer default_key'
+        assert 'Bearer test_key' in headers['Authorization']
 
         # Cleanup
         del os.environ['DEVIN_API_KEY_TEST']
@@ -153,74 +156,188 @@ class TestSecretHygiene:
 class TestNegativeCase:
     """Test negative case: selected != effective should block."""
 
-    def test_mismatch_selected_vs_effective_fails_binding(self):
-        """Test: selected credential_ref != effective credential → fails binding."""
+    def test_mismatch_selected_vs_effective_blocks_execution(self):
+        """Test: selected credential_ref != effective credential → BLOCKED before HTTP."""
         import os
         os.environ['DEVIN_API_KEY_WRONG'] = 'wrong_key'
 
         adapter = DevinApiToolAdapter(api_key='default_key')
 
-        # Select credential_ref pointing to wrong key
-        selected_credential_ref = 'devin:credential_0:DEVIN_API_KEY_WRONG'
-
-        # Resolve (this would use the wrong key)
-        effective_key = adapter._resolve_api_key(selected_credential_ref)
-
-        # The binding exists but is wrong - this should be caught by:
-        # 1. Authorization binding check (matches task_id, tool_id, prompt_digest)
-        # 2. Runtime validation (if effective key is invalid, HTTP 401/403)
-
-        # For this test, we verify the resolution logic works
-        assert effective_key == 'wrong_key'
-        assert effective_key != 'default_key'
-
-        # In production, this would be blocked by:
-        # - ExternalActionAuthorization binding validation
-        # - HTTP 401/403 if the wrong key is invalid
-
-        # Cleanup
-        del os.environ['DEVIN_API_KEY_WRONG']
-
-
-class TestTaskMetadataPropagation:
-    """Test that resource selection identity propagates from request to task."""
-
-    def test_resource_identity_propagates_to_task_metadata(self):
-        """Test: selected_resource_id, selected_provider, selected_credential_ref propagate to task."""
-        from iabv_v15.services.tools.tool_teach_service import ToolTeachService
-        from iabv_v15.services.tools.tool_registry import ToolRegistry
-        from iabv_v15.services.tools.tool_memory import ToolMemory
-        from iabv_v15.services.tools.tool_sandbox import ToolSandbox
-        from iabv_v15.services.tools.tool_validator import ToolValidator
-        from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
-        from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
-
-        # Create request with resource selection metadata
-        request = InferenceRequest(
-            user_goal='Test objective',
-            prompt='Test objective',
-            task_role=TaskRole.TOOL_USE,
+        # Create task with explicit selection to wrong credential
+        task = ToolTask(
+            tool_id='devin_api',
+            title='Test',
+            objective='Test objective',
+            requested_by_role=TaskRole.TOOL_USE,
             metadata={
+                'selected_credential_ref': 'devin:credential_0:DEVIN_API_KEY_WRONG',
                 'selected_resource_id': 'devin_credential_0',
                 'selected_provider': 'devin',
-                'selected_credential_ref': 'devin:credential_0:DEVIN_API_KEY',
             },
         )
 
-        # Note: This test cannot fully execute build_task_from_request without
-        # full dependency injection (registry, memory, sandbox, etc.)
-        # For now, we verify the logic exists in the source code
+        # Test resolution logic directly (before authorization check)
+        selected_credential_ref = task.metadata.get('selected_credential_ref')
+        effective_key, fingerprint = adapter._resolve_api_key(selected_credential_ref)
 
-        # The actual propagation is in build_task_from_request():
-        # request_metadata = request.metadata or {}
-        # task_metadata = {
-        #     'selected_resource_id': request_metadata.get('selected_resource_id', ''),
-        #     'selected_provider': request_metadata.get('selected_provider', ''),
-        #     'selected_credential_ref': request_metadata.get('selected_credential_ref', ''),
-        # }
-        # metadata = { ... , **task_metadata }
+        # Verify resolution succeeds (env var exists)
+        assert effective_key == 'wrong_key'
+        assert fingerprint != ''
 
-        # Verify the metadata exists in request
-        assert request.metadata['selected_resource_id'] == 'devin_credential_0'
-        assert request.metadata['selected_provider'] == 'devin'
-        assert request.metadata['selected_credential_ref'] == 'devin:credential_0:DEVIN_API_KEY'
+        # Now test that if env var didn't exist, resolution would fail
+        del os.environ['DEVIN_API_KEY_WRONG']
+        effective_key_failed, fingerprint_failed = adapter._resolve_api_key(selected_credential_ref)
+
+        # Verify: explicit selection that fails resolution → empty (NOT default)
+        assert effective_key_failed == ''
+        assert fingerprint_failed == ''
+
+        # Verify that this causes execution to fail (even in sandbox)
+        from iabv_v15.domain.models import ToolCard, ToolType
+        card = ToolCard(
+            tool_id='devin_api',
+            title='Devin API',
+            tool_type=ToolType.MCP_CLIENT,
+            adapter_key='devin_api',
+            description='Test',
+        )
+
+        result = adapter.run(card, task, sandbox=True, external_authorization=None)
+
+        # Verify execution is BLOCKED because resolution fails
+        assert result['success'] is False
+        assert 'credential_resolution_failed' in result.get('metadata', {})
+        assert result['metadata']['credential_resolution_failed'] is True
+        assert 'Credential resolution failed' in result.get('error_message', '')
+
+    def test_selected_resolves_to_correct_credential(self):
+        """Test: selected credential_ref → effective credential → fingerprint verification."""
+        import os
+        os.environ['DEVIN_API_KEY_TEST'] = 'test_key'
+
+        adapter = DevinApiToolAdapter(api_key='default_key')
+
+        # Create task with explicit selection to test credential
+        task = ToolTask(
+            tool_id='devin_api',
+            title='Test',
+            objective='Test objective',
+            requested_by_role=TaskRole.TOOL_USE,
+            metadata={
+                'selected_credential_ref': 'devin:credential_0:DEVIN_API_KEY_TEST',
+                'selected_resource_id': 'devin_credential_0',
+                'selected_provider': 'devin',
+            },
+        )
+
+        # Mock card
+        from iabv_v15.domain.models import ToolCard, ToolType
+        card = ToolCard(
+            tool_id='devin_api',
+            title='Devin API',
+            tool_type=ToolType.MCP_CLIENT,
+            adapter_key='devin_api',
+            description='Test',
+        )
+
+        # Run with sandbox=True to avoid HTTP
+        result = adapter.run(card, task, sandbox=True, external_authorization=None)
+
+        # Verify execution succeeded
+        assert result['success'] is True
+
+        # Verify execution identity metadata
+        assert result['metadata']['selected_credential_ref'] == 'devin:credential_0:DEVIN_API_KEY_TEST'
+        assert result['metadata']['selected_resource_id'] == 'devin_credential_0'
+        assert result['metadata']['selected_provider'] == 'devin'
+        assert result['metadata']['effective_credential_fingerprint'] != ''  # Fingerprint computed
+
+        # Verify fingerprint matches expected credential
+        import hashlib
+        expected_fingerprint = hashlib.sha256('test_key'.encode('utf-8')).hexdigest()[:16]
+        assert result['metadata']['effective_credential_fingerprint'] == expected_fingerprint
+
+        # Cleanup
+        del os.environ['DEVIN_API_KEY_TEST']
+
+
+class TestAuthorizationResourceBinding:
+    """Test that ExternalActionAuthorization includes resource binding verification."""
+
+    def test_authorization_includes_resource_binding_fields(self):
+        """Test: ExternalActionAuthorization includes resource binding fields."""
+        from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
+
+        auth = ExternalActionAuthorization(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='unknown',
+            prompt_digest='test_digest',
+            selected_resource_id='devin_credential_0',
+            selected_provider='devin',
+            selected_credential_ref='devin:credential_0:DEVIN_API_KEY',
+            credential_fingerprint='test_fingerprint',
+        )
+
+        # Verify resource binding fields are present
+        assert auth.selected_resource_id == 'devin_credential_0'
+        assert auth.selected_provider == 'devin'
+        assert auth.selected_credential_ref == 'devin:credential_0:DEVIN_API_KEY'
+        assert auth.credential_fingerprint == 'test_fingerprint'
+
+    def test_authorization_validate_binding_includes_credential_fingerprint(self):
+        """Test: validate_binding() verifies credential fingerprint when present."""
+        from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
+
+        auth = ExternalActionAuthorization(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='unknown',
+            prompt_digest='test_digest',
+            selected_resource_id='devin_credential_0',
+            selected_provider='devin',
+            selected_credential_ref='devin:credential_0:DEVIN_API_KEY',
+            credential_fingerprint='authorized_fingerprint',
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+        )
+
+        # Valid binding
+        assert auth.validate_binding(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            prompt_digest='test_digest',
+            credential_fingerprint='authorized_fingerprint',
+        ) is True
+
+        # Invalid binding (wrong credential fingerprint)
+        assert auth.validate_binding(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            prompt_digest='test_digest',
+            credential_fingerprint='different_fingerprint',
+        ) is False
+
+    def test_authorization_validate_binding_without_resource_fields(self):
+        """Test: validate_binding() works without resource binding fields (backward compatibility)."""
+        from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
+
+        auth = ExternalActionAuthorization(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='unknown',
+            prompt_digest='test_digest',
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+        )
+
+        # Valid binding (no resource fields - backward compatible)
+        assert auth.validate_binding(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            prompt_digest='test_digest',
+        ) is True

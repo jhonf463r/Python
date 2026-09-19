@@ -3376,6 +3376,13 @@ class ExternalActionAuthorization(BaseModel):
     - Reuso de autorización entre adapters diferentes
     - Replay attacks
     - Autorizaciones permanentes
+
+    Extended for resource binding:
+    - selected_resource_id: specific resource that was selected
+    - selected_provider: provider of the selected resource
+    - selected_credential_ref: opaque reference to the selected credential
+    - credential_fingerprint: secure hash of the effective credential
+    This ensures: authorized resource == executed resource
     """
     authorization_id: str = Field(default_factory=lambda: str(uuid4()))
     task_id: str
@@ -3392,6 +3399,11 @@ class ExternalActionAuthorization(BaseModel):
     consumed_at: datetime | None = None
     approved_by: str = ""  # email o identificador de la autoridad
     reason: str = ""
+    # Resource binding fields (optional for backward compatibility)
+    selected_resource_id: str = ""
+    selected_provider: str = ""
+    selected_credential_ref: str = ""
+    credential_fingerprint: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def is_valid(self) -> bool:
@@ -3414,14 +3426,30 @@ class ExternalActionAuthorization(BaseModel):
         tool_id: str,
         adapter_key: str,
         prompt_digest: str,
+        credential_fingerprint: str = "",
     ) -> bool:
-        """Verifica que la autorización coincide con los parámetros de ejecución."""
-        return (
+        """Verifica que la autorización coincide con los parámetros de ejecución.
+
+        Extended for resource binding: if resource binding fields are present,
+        also verifies that the authorized credential matches the effective credential.
+        """
+        # Original binding validation
+        if not (
             self.task_id == task_id
             and self.tool_id == tool_id
             and self.adapter_key == adapter_key
             and self.prompt_digest == prompt_digest
-        )
+        ):
+            return False
+
+        # Resource binding validation (if present)
+        if self.selected_resource_id or self.selected_provider or self.selected_credential_ref:
+            # If resource binding fields are present, verify credential fingerprint
+            if credential_fingerprint and self.credential_fingerprint:
+                if self.credential_fingerprint != credential_fingerprint:
+                    return False
+
+        return True
 
     def consume(self) -> None:
         """Marca la autorización como consumida (single-use)."""

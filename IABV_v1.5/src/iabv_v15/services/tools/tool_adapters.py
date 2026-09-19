@@ -1898,11 +1898,13 @@ class DevinApiToolAdapter:
             
             # Verificar binding against actual runtime values
             prompt_digest = self._compute_prompt_digest(prompt)
+            # Pass credential fingerprint for resource binding verification
             if not auth.validate_binding(
                 task_id=task.task_id,
                 tool_id=task.tool_id,
                 adapter_key=self.ADAPTER_KEY,  # Use actual adapter constant
                 prompt_digest=prompt_digest,
+                credential_fingerprint=effective_fingerprint,
             ):
                 return False
             
@@ -1924,7 +1926,7 @@ class DevinApiToolAdapter:
         try:
             resp = httpx.get(
                 self._sessions_url,
-                headers=self._headers(),
+                headers=self._headers(effective_api_key),
                 params={'limit': '1'},
                 timeout=10.0,
             )
@@ -1932,7 +1934,16 @@ class DevinApiToolAdapter:
         except Exception:
             return False
 
-    def _resolve_api_key(self, credential_ref: str | None = None) -> str:
+    def _compute_credential_fingerprint(self, api_key: str) -> str:
+        """Compute a secure fingerprint of the credential for identity verification.
+
+        This is an irreversible hash used to verify that the selected credential
+        matches the effective credential without exposing the secret.
+        """
+        import hashlib
+        return hashlib.sha256(api_key.encode('utf-8')).hexdigest()[:16]
+
+    def _resolve_api_key(self, credential_ref: str | None = None) -> tuple[str, str]:
         """Resolve the API key from an opaque credential reference.
 
         This is the binding point between resource selection and execution.
@@ -1944,23 +1955,30 @@ class DevinApiToolAdapter:
             credential_ref: Opaque reference to the credential (e.g., "devin:credential_0:DEVIN_API_KEY")
 
         Returns:
-            The actual API key value (or empty string if not found)
+            Tuple of (api_key, fingerprint) where fingerprint is the secure hash of the credential.
+            Returns empty string and empty fingerprint if resolution fails.
+
+        IMPORTANT: When credential_ref is provided but cannot be resolved,
+        this now FAILS instead of falling back to self.api_key.
+        This ensures: selected resource == executed resource.
         """
         if not credential_ref:
-            # Fallback to constructor default if no credential_ref provided
-            return self.api_key
+            # No explicit selection: use constructor default (compatibility for old paths)
+            fingerprint = self._compute_credential_fingerprint(self.api_key) if self.api_key else ''
+            return self.api_key, fingerprint
 
-        # Parse credential_ref: "provider:resource_id:env_var_name"
+        # Explicit selection provided: MUST resolve
         parts = credential_ref.split(':')
         if len(parts) >= 3:
             env_var_name = parts[2]
             import os
             api_key = os.environ.get(env_var_name, '')
             if api_key:
-                return api_key
+                fingerprint = self._compute_credential_fingerprint(api_key)
+                return api_key, fingerprint
 
-        # Fallback to constructor default if resolution fails
-        return self.api_key
+        # Explicit selection but resolution failed: return empty (caller must handle)
+        return '', ''
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
@@ -1971,7 +1989,33 @@ class DevinApiToolAdapter:
         if task.metadata:
             selected_credential_ref = task.metadata.get('selected_credential_ref')
 
-        effective_api_key = self._resolve_api_key(selected_credential_ref)
+        effective_api_key, effective_fingerprint = self._resolve_api_key(selected_credential_ref)
+
+        # FAIL-CLOSED: Explicit selection but resolution failed → BLOCK (even in sandbox)
+        if selected_credential_ref and not effective_api_key:
+            return {
+                'success': False,
+                'output_text': '',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': f'Credential resolution failed for selected resource. credential_ref={selected_credential_ref}',
+                'execution_ms': int((time.perf_counter() - start) * 1000),
+                'metadata': {
+                    'sandbox': sandbox,
+                    'tool_id': card.tool_id,
+                    'credential_resolution_failed': True,
+                    'selected_credential_ref': selected_credential_ref,
+                    'effective_credential_fingerprint': '',
+                },
+            }
+
+        # Store execution identity for verification
+        execution_identity = {
+            'selected_resource_id': task.metadata.get('selected_resource_id', '') if task.metadata else '',
+            'selected_provider': task.metadata.get('selected_provider', '') if task.metadata else '',
+            'selected_credential_ref': selected_credential_ref or '',
+            'effective_credential_fingerprint': effective_fingerprint,
+        }
 
         # Use per-execution authorization if provided, otherwise use constructor default (deprecated)
         auth_to_check = external_authorization if external_authorization is not None else self._external_authorization
@@ -1993,6 +2037,7 @@ class DevinApiToolAdapter:
                     'tool_id': card.tool_id,
                     'devin_session_status': 'sandboxed',
                     'state_hint': 'sandboxed',
+                    **execution_identity,
                 },
             }
 
@@ -2016,6 +2061,7 @@ class DevinApiToolAdapter:
                     'sandbox': sandbox,
                     'tool_id': card.tool_id,
                     'authorization': 'missing_or_invalid',
+                    **execution_identity,
                 },
             }
         
@@ -2037,7 +2083,11 @@ class DevinApiToolAdapter:
                 'artifacts': [],
                 'error_message': 'DEVIN_API_KEY no configurado.',
                 'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
+                'metadata': {
+                    'sandbox': sandbox,
+                    'tool_id': card.tool_id,
+                    **execution_identity,
+                },
             }
 
         # Use the effective_prompt already constructed above
@@ -2194,7 +2244,7 @@ class GitHubApiToolAdapter:
             # scope a nivel fino-grained.
             resp = httpx.get(
                 f'{self.BASE_URL}/repos/{self.repo}',
-                headers=self._headers(),
+                headers=self._headers(effective_api_key),
                 timeout=10.0,
             )
             return resp.status_code == 200
