@@ -20,18 +20,17 @@ from uuid import uuid4
 import time
 import threading
 
-# Global event counter for temporal ordering
-EVENT_COUNTER = 0
+# Global event sink and counter for unified instrumentation
+EVENT_SINK = []
 EVENT_LOCK = threading.Lock()
 
 def next_sequence():
-    global EVENT_COUNTER
+    global EVENT_SINK
     with EVENT_LOCK:
-        EVENT_COUNTER += 1
-        return EVENT_COUNTER
+        return len(EVENT_SINK) + 1
 
 def current_timestamp_ns():
-    return time.time_ns()
+    return time.monotonic_ns()
 
 import pytest
 
@@ -135,9 +134,9 @@ class ActionAuthorization:
 class CapabilityActionBridgeTestDouble:
     """Test double for CapabilityActionBridge to isolate authority boundary."""
     
-    def __init__(self, event_trace=None):
+    def __init__(self, event_sink=None):
         self.authorized_requests = []
-        self.event_trace = event_trace or []
+        self.event_sink = event_sink
     
     def authorize_action(self, request: ActionRequest) -> ActionAuthorization:
         """Authorize action - always returns authorized=True for valid requests."""
@@ -146,7 +145,7 @@ class CapabilityActionBridgeTestDouble:
         caller = stack[-2].name if len(stack) >= 2 else "unknown"
         file = stack[-2].filename if len(stack) >= 2 else "unknown"
         
-        self.event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="authority_authorize_ENTER",
@@ -163,7 +162,7 @@ class CapabilityActionBridgeTestDouble:
         self.authorized_requests.append(request)
         
         if not request.lease_id or not request.execution_id:
-            self.event_trace.append(Event(
+            EVENT_SINK.append(Event(
                 sequence=next_sequence(),
                 timestamp_ns=current_timestamp_ns(),
                 event_type="authority_authorize_EXIT",
@@ -189,7 +188,7 @@ class CapabilityActionBridgeTestDouble:
             consumed_at=None
         )
         
-        self.event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="authority_authorize_EXIT",
@@ -217,15 +216,15 @@ class CapabilityActionBridgeTestDouble:
 
 class InstrumentedDevinAdapter:
     """Adapter that tracks api_key usage without real HTTP calls."""
-    def __init__(self, api_key: str = "", event_trace=None):
+    def __init__(self, api_key: str = "", event_sink=None):
         self.api_key = api_key
-        self.event_trace = event_trace or []
+        self.event_sink = event_sink
         self.run_calls = []
         self.api_keys_received = []
         self.preflight_api_keys_received = []
     
     def _add_event(self, event_type: str, credential_id: str = None, api_key=None, sandbox: bool = False, caller=None, callsite=None, object_id=None, execution_id=None, task_id=None):
-        self.event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type=event_type,
@@ -287,15 +286,17 @@ def _workspace(name: str) -> Path:
 
 
 def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, ToolRecordRepository, CredentialRegistry, CapabilityActionBridgeTestDouble, list]:
-    """Canonical pattern from test_tool_teach_service.py with CredentialRegistry added."""
-    event_trace = []
+    """Canonical pattern from test_tool_teach_service.py with CredentialRegistry added and shared event sink."""
+    # Clear global event sink for each test
+    global EVENT_SINK
+    EVENT_SINK = []
     
     db = AppDatabase(str(root / 'app.sqlite'))
     storage = ArtifactStorage(str(root / 'tool_teaching'))
     repository = ToolRecordRepository(db, storage)
     
-    # Create instrumented adapter with EMPTY constructor key
-    adapter = InstrumentedDevinAdapter(api_key="", event_trace=event_trace)
+    # Create instrumented adapter with EMPTY constructor key and shared event sink
+    adapter = InstrumentedDevinAdapter(api_key="", event_sink=EVENT_SINK)
     
     # Monkeypatch is_available to capture ALL calls from any origin
     original_is_available = adapter.is_available
@@ -305,7 +306,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
         caller = stack[-2].name if len(stack) >= 2 else "unknown"
         file = stack[-2].filename if len(stack) >= 2 else "unknown"
         
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="is_available_ENTER",
@@ -320,7 +321,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
         
         result = original_is_available(card, api_key=api_key)
         
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="is_available_EXIT",
@@ -353,7 +354,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
     # Instrument sandbox to register run calls
     original_sandbox_run = sandbox.run
     def instrumented_sandbox_run(*, card, task, adapter):
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="sandbox_run",
@@ -367,7 +368,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
             task_id=task.task_id
         ))
         result = original_sandbox_run(card=card, task=task, adapter=adapter)
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="sandbox_result_success",
@@ -401,7 +402,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
         caller = stack[-2].name if len(stack) >= 2 else "unknown"
         file = stack[-2].filename if len(stack) >= 2 else "unknown"
         
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="credential_resolve_ENTER",
@@ -415,7 +416,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
         
         result = original_resolve(credential_id)
         
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="credential_resolve_EXIT",
@@ -431,8 +432,8 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
     
     credential_registry.resolve_credential_secret = instrumented_resolve
     
-    # Authority test double to isolate boundary
-    capability_action_bridge = CapabilityActionBridgeTestDouble(event_trace=event_trace)
+    # Authority test double to isolate boundary with shared event sink
+    capability_action_bridge = CapabilityActionBridgeTestDouble(event_sink=EVENT_SINK)
     
     service = ToolTeachService(
         registry=registry,
@@ -453,7 +454,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
     original_pick_card = registry.pick_card_for_task
     def instrumented_pick_card(task, **kwargs):
         card = original_pick_card(task, **kwargs)
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="pick_card_for_task",
@@ -470,38 +471,32 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
     
     # Instrument service.adapters.get to see what adapter is retrieved
     class InstrumentedDict(dict):
-        def __init__(self, original_dict, event_trace):
+        def __init__(self, original_dict):
             super().__init__(original_dict)
             self._original_dict = original_dict
-            self._event_trace = event_trace
         
         def get(self, key, default=None):
             adapter = super().get(key, default)
-            self._event_trace.append(Event(
-                sequence=len(self._event_trace) + 1,
-                timestamp=time.time(),
+            EVENT_SINK.append(Event(
+                sequence=next_sequence(),
+                timestamp_ns=current_timestamp_ns(),
                 event_type="adapters_get",
                 credential_id=None,
                 resolved=False,
                 sandbox=False,
                 caller="ToolTeachService.execute_task",
-                callsite=f"key={key}, adapter_exists={adapter is not None}, adapter_id={id(adapter) if adapter else None}"
+                callsite=f"key={key}, adapter_exists={adapter is not None}, adapter_id={id(adapter) if adapter else None}",
+                object_id=id(self)
             ))
-            print(f"\n=== ADAPTERS.GET DEBUG ===")
-            print(f"key: {key}")
-            print(f"adapter exists: {adapter is not None}")
-            print(f"adapter id: {id(adapter) if adapter else None}")
-            print(f"adapter type: {type(adapter).__name__ if adapter else None}")
-            print("==========================\n")
             return adapter
     
-    service.adapters = InstrumentedDict(adapters, event_trace)
+    service.adapters = InstrumentedDict(adapters)
     
     # Monkeypatch execute_task to capture early return conditions
     original_execute_task = ToolTeachService.execute_task
     def patched_execute_task(self, task, *, approved=False):
         approval_required = bool(task.metadata.get('approval_required'))
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
             event_type="execute_task_BEFORE_SANDBOX",
@@ -513,10 +508,10 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
             object_id=id(self)
         ))
         result = original_execute_task(self, task, approved=approved)
-        event_trace.append(Event(
+        EVENT_SINK.append(Event(
             sequence=next_sequence(),
             timestamp_ns=current_timestamp_ns(),
-            event_type="execute_task_AFTER_SANDBOX",
+            event_type="execute_task_RETURNED",
             credential_id=task.metadata.get("credential_id"),
             resolved=False,
             sandbox=False,
@@ -528,22 +523,7 @@ def _service_with_credential_registry(root: Path) -> tuple[ToolTeachService, Too
     
     ToolTeachService.execute_task = patched_execute_task
     
-    service = ToolTeachService(
-        registry=registry,
-        memory=memory,
-        sandbox=sandbox,
-        validator=validator,
-        approval_policy=approval_policy,
-        rollback_manager=rollback_manager,
-        adapters=adapters,
-        workspace_root=str(root),
-        interaction_learning_service=interaction_learning_service,
-        mode_selector=mode_selector,
-        credential_registry=credential_registry,
-        capability_action_bridge=capability_action_bridge,
-    )
-    
-    return service, repository, credential_registry, capability_action_bridge, event_trace
+    return service, repository, credential_registry, capability_action_bridge, EVENT_SINK
 
 
 def test_causal_credential_propagation():
@@ -558,14 +538,18 @@ def test_causal_credential_propagation():
         try:
             service, repository, credential_registry, authority_bridge, event_trace = _service_with_credential_registry(root)
             
+            # Verify shared event sink (adapter is created inside _service_with_credential_registry)
+            adapter = service.adapters.get("devin_api")
+            assert adapter.event_sink is EVENT_SINK, "Adapter event sink not shared"
+            assert authority_bridge.event_sink is EVENT_SINK, "Authority event sink not shared"
+            
             # CRITICAL: Verify object identity before execution
             print("\n=== OBJECT IDENTITY VERIFICATION ===")
-            adapter = service.adapters.get("devin_api")
             print(f"service: {id(service)}")
             print(f"service.adapters['devin_api']: {id(adapter)}")
             print(f"service.sandbox: {id(service.sandbox)}")
-            print(f"service.credential_registry: {id(service.credential_registry)}")
-            print(f"service.capability_action_bridge: {id(service.capability_action_bridge)}")
+            print(f"service.credential_registry: {id(credential_registry)}")
+            print(f"service.capability_action_bridge: {id(authority_bridge)}")
             
             assert service.adapters.get("devin_api") is adapter, "Adapter identity mismatch"
             assert service.sandbox is service.sandbox, "Sandbox identity mismatch"
@@ -582,7 +566,7 @@ def test_causal_credential_propagation():
             record = discovered[0]
             
             # 2. Mark credential registration time
-            event_trace.append(Event(
+            EVENT_SINK.append(Event(
                 sequence=next_sequence(),
                 timestamp_ns=current_timestamp_ns(),
                 event_type="credential_registered",
@@ -627,7 +611,7 @@ def test_causal_credential_propagation():
             )
             
             # 6. Execute and mark boundaries
-            event_trace.append(Event(
+            EVENT_SINK.append(Event(
                 sequence=next_sequence(),
                 timestamp_ns=current_timestamp_ns(),
                 event_type="execute_task_entered",
@@ -642,7 +626,7 @@ def test_causal_credential_propagation():
             
             result = service.execute_task(task, approved=True)
             
-            event_trace.append(Event(
+            EVENT_SINK.append(Event(
                 sequence=next_sequence(),
                 timestamp_ns=current_timestamp_ns(),
                 event_type="execute_task_returned",
@@ -673,25 +657,42 @@ def test_causal_credential_propagation():
             assert len(is_available_entries) > 0, "is_available not called from execute_task"
             preflight_is_available_idx = is_available_entries[0]
             
-            # Verify temporal ordering for what we observed
+            # Find authority
+            authority_entries = [i for i, e in enumerate(event_trace) if e.event_type == "authority_authorize_ENTER"]
+            assert len(authority_entries) > 0, "authority not called"
+            authority_idx = authority_entries[0]
+            
+            # Find post-authority resolve (should be after authority)
+            resolve_exits = [i for i, e in enumerate(event_trace) if e.event_type == "credential_resolve_EXIT"]
+            assert len(resolve_exits) >= 2, "Need at least 2 credential resolutions"
+            post_authority_resolve_idx = resolve_exits[1]  # Second resolve should be post-authority
+            
+            # Find protected run (sandbox=False)
+            protected_run_entries = [i for i, e in enumerate(event_trace) if e.event_type == "adapter_run_ENTER" and e.sandbox == False]
+            assert len(protected_run_entries) > 0, "protected adapter.run not called"
+            protected_run_idx = protected_run_entries[0]
+            
+            # Verify temporal ordering
             assert registered_idx < execute_enter_idx, "credential_registered must be before execute_task_entered"
             assert execute_enter_idx < preflight_is_available_idx, "execute_task_entered must be before is_available"
+            assert preflight_is_available_idx < authority_idx, "is_available must be before authority"
+            assert authority_idx < post_authority_resolve_idx, "authority must be before post-authority resolve"
+            assert post_authority_resolve_idx < protected_run_idx, "post-authority resolve must be before protected run"
             
             # Verify preflight received credential
             preflight_event = event_trace[preflight_is_available_idx]
             assert preflight_event.api_key_present == True, "preflight is_available must receive api_key"
             
-            # Find sandbox and verify it's after preflight
-            sandbox_idx = event_types.index("sandbox_run")
-            assert preflight_is_available_idx < sandbox_idx, "is_available must be before sandbox_run"
+            # Verify protected run is sandbox=False
+            protected_event = event_trace[protected_run_idx]
+            assert protected_event.sandbox == False, "protected run must have sandbox=False"
+            assert protected_event.api_key_present == True, "protected run must receive api_key"
             
-            # Find authority (may or may not be called)
-            authority_entries = [i for i, e in enumerate(event_trace) if e.event_type == "authority_authorize_ENTER"]
-            if authority_entries:
-                authority_idx = authority_entries[0]
-                print(f"\n=== AUTHORITY WAS CALLED at index {authority_idx} ===\n")
-            else:
-                print(f"\n=== AUTHORITY WAS NOT CALLED - possible early return ===\n")
+            # Verify object identity consistency
+            adapter_id = id(adapter)
+            for e in event_trace:
+                if e.object_id and "adapter" in e.event_type.lower() and e.event_type != "adapters_get":
+                    assert e.object_id == adapter_id, f"Adapter object identity mismatch in {e.event_type}"
             
             # Verify adapter still empty after execution
             assert adapter.api_key == "", "Adapter constructor key should remain empty"
