@@ -74,3 +74,15 @@ without human copy/paste. Do not create a new orchestration subsystem unless sou
 ## CROSS-CHAT RULE
 
 Future chats touching L5+, external-agent delegation, automatic prompt relay, multi-agent orchestration or symbiosis must treat this override as later than the 2026-09-18 override and reconcile it against the current GitHub tip before acting.
+
+## 2026-09-19 I0/I1 LIVE UPDATE — CREDENTIAL BLOCK
+
+The first I0 runtime probe was blocked before any Devin HTTP request because the controlled Windows environment had no value for `DEVIN_API_KEY_IABV`, `IABV_DEVIN_API_KEY` or `DEVIN_API_KEY`.
+
+**I0 = NOT PROVEN. I1 = NOT REACHED. Primary classification = E (BLOCKED).**
+
+Do not patch around this blocker and do not infer connection/authorization from source existence.
+
+Next action: securely expose a real Devin API key to the controlled runtime using an already-supported environment variable, then rerun only the connection/authentication phase. After authentication succeeds, resume the production round-trip probe.
+
+Credential availability is an environment/account prerequisite. The repository implementation should not contain the secret.
