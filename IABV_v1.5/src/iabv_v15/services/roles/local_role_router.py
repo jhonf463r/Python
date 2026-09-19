@@ -170,6 +170,9 @@ class LocalRoleRouter:
         The cache stores the **unfiltered** pool so that
         ``worker_health_gate`` can filter by ``target_assistant`` on every
         call without re-scanning.
+
+        The pool now includes both browser accounts and universal resources
+        (API credentials, local endpoints) merged into a common representation.
         """
         now = time.monotonic()
         if not refresh:
@@ -181,6 +184,7 @@ class LocalRoleRouter:
                     return dict(self._worker_pool_cache)
 
         try:
+            # Get browser pool from existing scanner
             pool = self._account_resource_scanner()
         except Exception as exc:
             pool = {
@@ -188,6 +192,40 @@ class LocalRoleRouter:
                 'workers': [],
                 'error': str(exc),
             }
+
+        # Build universal resource pool and merge with browser pool
+        try:
+            from iabv_v15.services.account_resource_scanner import (
+                build_universal_resource_pool,
+                universal_resource_to_worker,
+            )
+
+            universal_resources = build_universal_resource_pool(
+                include_browser=False,  # Browser already scanned above
+                include_api=True,
+                include_local=True,
+            )
+
+            # Convert universal resources to worker dicts and merge
+            for resource in universal_resources:
+                if not resource.routing_eligible:
+                    continue  # Skip routing-ineligible resources
+
+                worker = universal_resource_to_worker(resource)
+
+                # Add to pool's workers list
+                pool.setdefault('workers', []).append(worker)
+
+                # Update available count
+                pool['available_count'] = pool.get('available_count', 0) + 1
+
+            # Store universal resources in pool for ranking
+            pool['universal_resources'] = universal_resources
+
+        except Exception as exc:
+            # If universal resource building fails, log but don't break browser pool
+            logger.warning(f"Failed to build universal resource pool: {exc}")
+            pool['universal_resources'] = []
 
         with self._worker_health_lock:
             self._worker_pool_cache = dict(pool)
@@ -245,7 +283,15 @@ class LocalRoleRouter:
         available = pool.get('available_count', 0)
         target = str(target_assistant or '').strip().lower()
 
-        ranked = rank_workers_for_target(target, pool=pool, block_signals=block_signals or {})
+        # Get universal resources from pool if available
+        universal_resources = pool.get('universal_resources', [])
+
+        ranked = rank_workers_for_target(
+            target,
+            pool=pool,
+            block_signals=block_signals or {},
+            universal_resources=universal_resources,
+        )
 
         if not ranked:
             if available == 0:
