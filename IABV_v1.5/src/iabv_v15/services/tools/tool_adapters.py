@@ -1916,7 +1916,14 @@ class DevinApiToolAdapter:
             return False
 
     def is_available(self, card: ToolCard, *, dry_run: bool = False) -> bool:
-        if not self.api_key:
+        # Resolve credential from card metadata if available (for selected resource)
+        selected_credential_ref = None
+        if card.metadata:
+            selected_credential_ref = card.metadata.get('selected_credential_ref')
+
+        effective_api_key, _ = self._resolve_api_key(selected_credential_ref)
+
+        if not effective_api_key:
             return False
         if httpx is None:
             return False
@@ -1942,6 +1949,34 @@ class DevinApiToolAdapter:
         """
         import hashlib
         return hashlib.sha256(api_key.encode('utf-8')).hexdigest()[:16]
+
+    def _resolve_credential_fingerprint(self, credential_ref: str | None = None) -> str:
+        """Resolve the credential fingerprint without exposing the secret.
+
+        This is used before creating ExternalActionAuthorization to bind
+        the authorization to the specific credential that will be used.
+
+        Args:
+            credential_ref: Opaque reference to the credential (e.g., "devin:credential_0:DEVIN_API_KEY")
+
+        Returns:
+            The secure fingerprint of the credential, or empty string if resolution fails.
+        """
+        if not credential_ref:
+            # No explicit selection: use constructor default fingerprint
+            return self._compute_credential_fingerprint(self.api_key) if self.api_key else ''
+
+        # Explicit selection provided: resolve fingerprint
+        parts = credential_ref.split(':')
+        if len(parts) >= 3:
+            env_var_name = parts[2]
+            import os
+            api_key = os.environ.get(env_var_name, '')
+            if api_key:
+                return self._compute_credential_fingerprint(api_key)
+
+        # Explicit selection but resolution failed: return empty
+        return ''
 
     def _resolve_api_key(self, credential_ref: str | None = None) -> tuple[str, str]:
         """Resolve the API key from an opaque credential reference.

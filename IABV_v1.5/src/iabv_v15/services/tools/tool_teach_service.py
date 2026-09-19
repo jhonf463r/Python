@@ -764,6 +764,7 @@ class ToolTeachService:
         task: ToolTask,
         card,
         effective_prompt: str,
+        adapter: Any | None = None,
     ) -> ExternalActionAuthorization | None:
         """Crea ExternalActionAuthorization solo si existe aprobación humana verificada.
 
@@ -772,6 +773,9 @@ class ToolTeachService:
 
         Extended for resource binding: includes selected resource identity and credential fingerprint
         to ensure authorized resource == executed resource.
+
+        The credential fingerprint is resolved from the adapter to ensure it matches
+        the actual credential that will be used for execution.
         """
         if task.approval_decision != ApprovalDecision.APPROVED:
             return None
@@ -792,7 +796,11 @@ class ToolTeachService:
         selected_resource_id = task_metadata.get('selected_resource_id', '')
         selected_provider = task_metadata.get('selected_provider', '')
         selected_credential_ref = task_metadata.get('selected_credential_ref', '')
-        credential_fingerprint = task_metadata.get('effective_credential_fingerprint', '')
+
+        # Resolve credential fingerprint from adapter to ensure it matches execution
+        credential_fingerprint = ''
+        if adapter is not None and hasattr(adapter, '_resolve_credential_fingerprint'):
+            credential_fingerprint = adapter._resolve_credential_fingerprint(selected_credential_ref)
 
         return ExternalActionAuthorization(
             task_id=task.task_id,
@@ -930,7 +938,7 @@ class ToolTeachService:
         # Create external authorization if approved and not sandbox
         external_authorization = None
         if not sandbox_mode and task.approval_decision == ApprovalDecision.APPROVED:
-            external_authorization = self._create_external_action_authorization(task, card, effective_prompt)
+            external_authorization = self._create_external_action_authorization(task, card, effective_prompt, adapter)
 
         payload = adapter.run(card, task, sandbox=sandbox_mode, external_authorization=external_authorization)
         payload_metadata = dict(payload.get('metadata') or {})

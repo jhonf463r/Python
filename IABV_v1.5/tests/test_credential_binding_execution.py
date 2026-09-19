@@ -341,3 +341,150 @@ class TestAuthorizationResourceBinding:
             adapter_key='devin_api',
             prompt_digest='test_digest',
         ) is True
+
+
+class TestAvailabilityUnit:
+    """Test availability with selected credentials."""
+
+    def test_is_available_no_nameerror(self):
+        """Test: is_available() does not fail with NameError."""
+        adapter = DevinApiToolAdapter(api_key='test_key')
+
+        from iabv_v15.domain.models import ToolCard, ToolType
+        card = ToolCard(
+            tool_id='devin_api',
+            title='Devin API',
+            tool_type=ToolType.MCP_CLIENT,
+            adapter_key='devin_api',
+            description='Test',
+        )
+
+        # Should not raise NameError
+        result = adapter.is_available(card, dry_run=True)
+        assert result is True
+
+    def test_is_available_uses_selected_credential(self):
+        """Test: is_available() uses selected credential when provided."""
+        import os
+        os.environ['DEVIN_API_KEY_A'] = 'credential_a'
+
+        adapter = DevinApiToolAdapter(api_key='default_key')
+
+        from iabv_v15.domain.models import ToolCard, ToolType
+        card = ToolCard(
+            tool_id='devin_api',
+            title='Devin API',
+            tool_type=ToolType.MCP_CLIENT,
+            adapter_key='devin_api',
+            description='Test',
+            metadata={'selected_credential_ref': 'devin:credential_0:DEVIN_API_KEY_A'},
+        )
+
+        # Verify resolution uses selected credential
+        selected_credential_ref = card.metadata.get('selected_credential_ref')
+        effective_key, fingerprint = adapter._resolve_api_key(selected_credential_ref)
+
+        assert effective_key == 'credential_a'
+        assert fingerprint != ''
+
+        # Verify is_available() uses selected credential (dry_run mode)
+        result = adapter.is_available(card, dry_run=True)
+        assert result is True
+
+        # Cleanup
+        del os.environ['DEVIN_API_KEY_A']
+
+    def test_is_available_no_selection_uses_default(self):
+        """Test: is_available() uses default when no selection (compatibility)."""
+        adapter = DevinApiToolAdapter(api_key='default_key')
+
+        from iabv_v15.domain.models import ToolCard, ToolType
+        card = ToolCard(
+            tool_id='devin_api',
+            title='Devin API',
+            tool_type=ToolType.MCP_CLIENT,
+            adapter_key='devin_api',
+            description='Test',
+        )
+
+        # Verify is_available() uses default (dry_run mode)
+        result = adapter.is_available(card, dry_run=True)
+        assert result is True
+
+
+class TestAuthorizationFingerprintBinding:
+    """Test that authorization fingerprint matches execution fingerprint."""
+
+    def test_adapter_resolves_fingerprint_before_authorization(self):
+        """Test: _resolve_credential_fingerprint() resolves fingerprint without exposing secret."""
+        import os
+        os.environ['DEVIN_API_KEY_TEST'] = 'test_key'
+
+        adapter = DevinApiToolAdapter(api_key='default_key')
+
+        # Resolve fingerprint for selected credential
+        credential_ref = 'devin:credential_0:DEVIN_API_KEY_TEST'
+        fingerprint = adapter._resolve_credential_fingerprint(credential_ref)
+
+        # Verify fingerprint is computed
+        assert fingerprint != ''
+
+        # Verify fingerprint matches expected
+        import hashlib
+        expected_fingerprint = hashlib.sha256('test_key'.encode('utf-8')).hexdigest()[:16]
+        assert fingerprint == expected_fingerprint
+
+        # Cleanup
+        del os.environ['DEVIN_API_KEY_TEST']
+
+    def test_authorization_fingerprint_matches_execution_fingerprint(self):
+        """Test: authorization fingerprint == execution fingerprint."""
+        import os
+        os.environ['DEVIN_API_KEY_TEST'] = 'test_key'
+
+        adapter = DevinApiToolAdapter(api_key='default_key')
+
+        # Simulate authorization creation path
+        credential_ref = 'devin:credential_0:DEVIN_API_KEY_TEST'
+        auth_fingerprint = adapter._resolve_credential_fingerprint(credential_ref)
+
+        # Simulate execution path
+        execution_key, execution_fingerprint = adapter._resolve_api_key(credential_ref)
+
+        # Verify fingerprints match
+        assert auth_fingerprint == execution_fingerprint
+        assert execution_key == 'test_key'
+
+        # Cleanup
+        del os.environ['DEVIN_API_KEY_TEST']
+
+
+class TestNegativeAuthorizationToExecutionMismatch:
+    """Test that authorization A + execution B → BLOCK."""
+
+    def test_authorization_a_execution_b_blocks(self):
+        """Test: authorization fingerprint A + execution fingerprint B → BLOCK."""
+        from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
+
+        # Create authorization for credential A
+        auth = ExternalActionAuthorization(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='unknown',
+            prompt_digest='test_digest',
+            selected_resource_id='devin_credential_0',
+            selected_provider='devin',
+            selected_credential_ref='devin:credential_0:DEVIN_API_KEY_A',
+            credential_fingerprint='fingerprint_a',
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+        )
+
+        # Try to validate binding with execution fingerprint B
+        assert auth.validate_binding(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            prompt_digest='test_digest',
+            credential_fingerprint='fingerprint_b',  # Different fingerprint
+        ) is False
