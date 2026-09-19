@@ -296,3 +296,25 @@ For UK-14, the benchmark becomes a gate before expensive external audit cycles: 
 For UK-15, never promote L5 from a report alone. First reconcile the exact artifact/commit and independently audit the control/treatment causal chain.
 
 Resolution requires evidence, not a status edit based only on a later claim.
+
+## 2026-09-19 UK-15 RESOLUTION — L5 PROVEN
+
+The previous UK-15 status `CANDIDATE / PENDING INDEPENDENT AUDIT` is superseded by the independent Sonnet 5 Low adjudication recorded in:
+`CHAT-ARCH-2026-09-19-001-l5-final-independent-audit.md`.
+
+**CURRENT STATUS: PROVEN — SELECTOR-LEVEL CAUSAL LEARNING.**
+
+Verified chain:
+`real G3 effect → independently observed verification → VerifiedTransition → persisted InteractionPattern → cold reload → production InteractionModeSelector.select() → fixed two-candidate universe → winner change → score delta attributable to the verified experience`.
+
+The prior `cost 0.40 → 0.75` confound was a false longitudinal comparison of different round winners, not a mutation of one candidate. For the same `mcp_client` candidate, non-learning score inputs were constant and the observed delta was reconstructed from InteractionPattern-derived stability, frequency and learned-pattern terms.
+
+REMAINING BOUNDARIES:
+- L6 behavioral causality remains open;
+- L7 later external-world causal closure remains open;
+- P0-B authority/security closure remains open;
+- I0/I1/I2 external-agent orchestration remains unproven;
+- real Devin cognitive influence remains unproven.
+
+NEXT DISCRIMINATING ACTION:
+Run a minimal I0/I1 experiment through existing IABV external-agent adapter/briefing/orchestration paths, with state-before, delegated action, received result, provenance binding and independent verification. Do not create a new delegation service unless source evidence proves no existing owner can close the edge without duplication.
