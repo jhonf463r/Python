@@ -1829,6 +1829,7 @@ class DevinApiToolAdapter:
 
     tool_type = ToolType.MCP_CLIENT
     BASE_URL = 'https://api.devin.ai/v1'
+    ADAPTER_KEY = 'devin_api'
 
     def __init__(
         self,
@@ -1842,7 +1843,9 @@ class DevinApiToolAdapter:
         self.org_id = org_id  # kept for backwards compat; unused in v1 API.
         self.timeout_seconds = timeout_seconds
         self.poll_interval_seconds = poll_interval_seconds
-        self._external_authorization = external_authorization
+        self._external_authorization = external_authorization  # Kept for backwards compat
+        # Note: Constructor external_authorization is deprecated for task isolation.
+        # Pass authorization per-execution via run() parameter instead.
 
     @property
     def _sessions_url(self) -> str:
@@ -1866,32 +1869,33 @@ class DevinApiToolAdapter:
         self,
         task: ToolTask,
         prompt: str,
+        authorization: Any | None = None,
     ) -> bool:
         """Verifica que existe una autorización externa válida para esta ejecución.
 
         P0-B Trust Root: sandbox=False requiere autorización externa válida.
         """
-        if self._external_authorization is None:
+        if authorization is None:
             return False
         
         try:
             from iabv_v15.domain.models import ExternalActionAuthorization
-            
-            if not isinstance(self._external_authorization, ExternalActionAuthorization):
+
+            if not isinstance(authorization, ExternalActionAuthorization):
                 return False
-            
-            auth = self._external_authorization
+
+            auth = authorization
             
             # Verificar estado
             if not auth.is_valid():
                 return False
             
-            # Verificar binding
+            # Verificar binding against actual runtime values
             prompt_digest = self._compute_prompt_digest(prompt)
             if not auth.validate_binding(
                 task_id=task.task_id,
                 tool_id=task.tool_id,
-                adapter_key=auth.adapter_key,
+                adapter_key=self.ADAPTER_KEY,  # Use actual adapter constant
                 prompt_digest=prompt_digest,
             ):
                 return False
@@ -1922,9 +1926,12 @@ class DevinApiToolAdapter:
         except Exception:
             return False
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
-        
+
+        # Use per-execution authorization if provided, otherwise use constructor default (deprecated)
+        auth_to_check = external_authorization if external_authorization is not None else self._external_authorization
+
         # FAIL-CLOSED: sandbox=True significa NO external HTTP, NO remote side effect
         if sandbox:
             return {
@@ -1944,10 +1951,16 @@ class DevinApiToolAdapter:
                     'state_hint': 'sandboxed',
                 },
             }
-        
+
+        # Build effective prompt once (objective + context_pack)
+        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+        effective_prompt = str(task.objective or '')
+        if context_pack:
+            effective_prompt = f'{effective_prompt}\n\n--- context ---\n{context_pack}'
+
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        if not self._check_external_authorization(task, task.objective):
+        if not self._check_external_authorization(task, effective_prompt, auth_to_check):
             return {
                 'success': False,
                 'output_text': '',
@@ -1983,10 +1996,8 @@ class DevinApiToolAdapter:
                 'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
             }
 
-        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
-        prompt = str(task.objective or '')
-        if context_pack:
-            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+        # Use the effective_prompt already constructed above
+        prompt = effective_prompt
 
         session_id = ''
         session_url = ''

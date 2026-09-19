@@ -38,7 +38,13 @@ class ToolOperationalExecutor:
         if not self.supports(session):
             return OperationalExecutorResult(executed=False, status=RunStatus.PARTIAL, summary=self.describe(session), next_actions=['Simular', 'Preparar Codex'], metadata={'mode': 'adapter_missing'})
         task = self.tool_teach_service.build_task_for_session(session)
-        approved = not any(item.decision == ApprovalDecision.PENDING for item in session.approval_checkpoints)
+        # Fail-closed approval logic:
+        # - If checkpoints exist: require APPROVED (PENDING and REJECTED both block)
+        # - If no checkpoints: allow (no approval required)
+        if session.approval_checkpoints:
+            approved = any(item.decision == ApprovalDecision.APPROVED for item in session.approval_checkpoints)
+        else:
+            approved = True  # No checkpoints = no approval required
         result = self.tool_teach_service.execute_task(task, approved=approved)
         metadata = {
             'mode': result.execution_state.state,

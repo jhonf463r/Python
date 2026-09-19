@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,8 @@ from iabv_v15.domain.models import (
     AssistantConfigurationSnapshot,
     ApprovalDecision,
     ExecutionState,
+    ExternalActionAuthorization,
+    ExternalActionAuthorizationStatus,
     ExternalStateFlag,
     EvaluationRoute,
     ExperimentDomain,
@@ -746,6 +749,47 @@ class ToolTeachService:
         stored_task = self.memory.repository.get_task(task.task_id) or task
         return stored_task, result, preview
 
+    def _create_external_action_authorization(
+        self,
+        task: ToolTask,
+        card,
+        effective_prompt: str,
+    ) -> ExternalActionAuthorization | None:
+        """Crea ExternalActionAuthorization solo si existe aprobación humana verificada.
+
+        Fail-closed: solo crea autorización si la aprobación es APPRUEVED.
+        REJECTED o PENDING no generan autorización.
+        """
+        if task.approval_decision != ApprovalDecision.APPROVED:
+            return None
+
+        # Compute prompt digest for binding
+        prompt_digest = hashlib.sha256(effective_prompt.encode('utf-8')).hexdigest()[:16]
+
+        # Get user identity from available sources
+        approved_by = 'system'  # Default fallback
+        try:
+            import getpass
+            approved_by = getpass.getuser()
+        except Exception:
+            pass
+
+        return ExternalActionAuthorization(
+            task_id=task.task_id,
+            tool_id=card.tool_id,
+            adapter_key=card.adapter_key,
+            assistant_kind=str(card.metadata.get('assistant_kind') or task.metadata.get('assistant_kind') or 'unknown'),
+            endpoint='',
+            action='',
+            prompt_digest=prompt_digest,
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+            issued_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),  # 1 hour expiry
+            approved_by=approved_by,
+            reason=f'Human approval for task {task.task_id} via {card.tool_id}',
+            metadata={'task_title': task.title, 'card_title': card.title},
+        )
+
     def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
         card = self.registry.pick_card_for_task(
             task,
@@ -815,8 +859,9 @@ class ToolTeachService:
             }
         )
         task = self.approval_policy.evaluate(card=card, task=task)
-        if approved and task.approval_decision == ApprovalDecision.PENDING:
-            task = task.model_copy(update={'approval_decision': ApprovalDecision.APPROVED})
+        # FAIL-CLOSED: Do not override approval_decision based on approved parameter
+        # approved is a flow control flag, not a trust root. Real human approval
+        # must come from ApprovalDecision.APPROVED in task.approval_decision.
         self.memory.remember_task(task)
         sandbox_result = self.sandbox.run(card=card, task=task, adapter=adapter)
         sandbox_result = self.memory.remember_result(card, task, sandbox_result)
@@ -851,7 +896,19 @@ class ToolTeachService:
         # autonomous_external_launch=True → launch_dry_run=False → sandbox=False (external HTTP permitido)
         # Esto es distinto de governance approval (approved parameter)
         sandbox_mode = launch_dry_run
-        payload = adapter.run(card, task, sandbox=sandbox_mode)
+
+        # Build effective prompt once (objective + context_pack)
+        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+        effective_prompt = str(task.objective or '')
+        if context_pack:
+            effective_prompt = f'{effective_prompt}\n\n--- context ---\n{context_pack}'
+
+        # Create external authorization if approved and not sandbox
+        external_authorization = None
+        if not sandbox_mode and task.approval_decision == ApprovalDecision.APPROVED:
+            external_authorization = self._create_external_action_authorization(task, card, effective_prompt)
+
+        payload = adapter.run(card, task, sandbox=sandbox_mode, external_authorization=external_authorization)
         payload_metadata = dict(payload.get('metadata') or {})
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
