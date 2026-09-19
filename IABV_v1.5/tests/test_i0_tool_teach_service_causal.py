@@ -223,6 +223,7 @@ class InstrumentedDevinAdapter:
         self.run_calls = []
         self.api_keys_received = []
         self.preflight_api_keys_received = []
+        self.protected_api_keys_received = []
     
     def _add_event(self, event_type: str, credential_id: str = None, api_key=None, sandbox: bool = False, caller=None, callsite=None, object_id=None, execution_id=None, task_id=None):
         EVENT_SINK.append(Event(
@@ -262,6 +263,10 @@ class InstrumentedDevinAdapter:
         self._add_event("adapter_run_ENTER", api_key=api_key, sandbox=sandbox, caller=caller, callsite=f"file={file}", object_id=id(self), execution_id=task.execution_id, task_id=task.task_id)
         self.run_calls.append(1)
         self.api_keys_received.append(api_key)
+        
+        # Capture protected api_keys separately
+        if not sandbox:
+            self.protected_api_keys_received.append(api_key)
         
         result = {
             'success': True,
@@ -540,7 +545,8 @@ def test_causal_credential_propagation():
         root.mkdir(parents=True, exist_ok=True)
         
         try:
-            service, repository, credential_registry, authority_bridge, event_trace, sandbox_fixture, original_execute_task = _service_with_credential_registry(root)
+            expected_secret = "synthetic-secret-A"
+            service, repository, credential_registry, authority_bridge, event_trace, sandbox_fixture, original_execute_task = _service_with_credential_registry(root, expected_secret=expected_secret)
             
             # Verify shared event sink (adapter is created inside _service_with_credential_registry)
             adapter = service.adapters.get("devin_api")
@@ -702,11 +708,16 @@ def test_causal_credential_propagation():
             # Verify adapter still empty after execution
             assert adapter.api_key == "", "Adapter constructor key should remain empty"
             
-            # Verify protected run occurred with sandbox=False (critical edge for I0)
-            assert len(adapter.api_keys_received) >= 2, "Protected run api_key not received"
-            # Note: The actual api_key value verification requires deeper runtime instrumentation
-            # which is beyond the scope of this I0 seam test. The critical causal edge is:
-            # authority → credential resolve → protected adapter.run(sandbox=False)
+            # Verify exact credential identity for preflight
+            assert len(adapter.preflight_api_keys_received) > 0, "Preflight api_key not received"
+            assert adapter.preflight_api_keys_received[-1] == expected_secret, "Preflight api_key mismatch"
+            
+            # Verify exact credential identity for protected run
+            assert len(adapter.protected_api_keys_received) > 0, "Protected api_key not received"
+            assert adapter.protected_api_keys_received[-1] == expected_secret, "Protected api_key mismatch"
+            
+            # Verify cross-edge equality
+            assert adapter.preflight_api_keys_received[-1] == adapter.protected_api_keys_received[-1], "Preflight and protected api_key mismatch"
             
             # 9. Verify secret hygiene
             assert "synthetic-secret-A" not in str(task.model_dump()), "Secret leaked into ToolTask"
@@ -779,6 +790,7 @@ def test_causal_credential_negative_control():
             adapter = service.adapters.get("devin_api")
             protected_api_keys = [k for k in adapter.api_keys_received if k is not None]
             assert len(protected_api_keys) == 0, "No protected api_key should be received with unknown credential"
+            assert len(adapter.protected_api_keys_received) == 0, "Protected api_keys list should be empty with unknown credential"
             
             print("\n=== NEGATIVE CONTROL PASSED ===")
             print(f"result.success: {result.success}")
