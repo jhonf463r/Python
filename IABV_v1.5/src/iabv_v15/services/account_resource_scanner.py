@@ -217,6 +217,206 @@ def scan_devin_as_universal_resource() -> list['UniversalResource']:
     return resources
 
 
+def build_universal_resource_pool(
+    *,
+    include_browser: bool = True,
+    include_api: bool = True,
+    include_local: bool = True,
+) -> list['UniversalResource']:
+    """Build a universal resource pool from heterogeneous sources.
+
+    Combines:
+    - Browser accounts (ChatGPT, Claude, Codex)
+    - API credentials (Devin, GitHub, OpenAI)
+    - Local endpoints (Ollama)
+
+    Returns a list of UniversalResource objects that can be consumed by
+    routing/governance without provider-specific assumptions.
+
+    This is the compositon layer that allows the existing worker gate
+    to operate on a common resource representation.
+    """
+    from iabv_v15.domain.models import (
+        UniversalResource,
+        ResourceKind,
+        AuthenticationState,
+        AccountStatus,
+        QuotaScope,
+        utc_now,
+    )
+
+    resources: list[UniversalResource] = []
+
+    # 1. Browser accounts from existing scanner
+    if include_browser:
+        pool = estimate_available_workers()
+        all_workers = [*pool.get('workers', []), *pool.get('exhausted', [])]
+
+        for w in all_workers:
+            email = w.get('email', '')
+            tool = w.get('tool', '')
+            exhausted = w.get('exhausted', False)
+            remaining = w.get('remaining_messages', 0)
+            limit = w.get('limit', 0)
+
+            # Determine authentication state
+            if exhausted:
+                auth_state = AuthenticationState.QUOTA_EXHAUSTED
+                availability = AccountStatus.EXHAUSTED
+            elif remaining > 0:
+                auth_state = AuthenticationState.AUTHENTICATED
+                availability = AccountStatus.ACTIVE
+            else:
+                auth_state = AuthenticationState.UNKNOWN
+                availability = AccountStatus.UNRESOLVED
+
+            # Convert browser worker to UniversalResource
+            resource = UniversalResource(
+                resource_id=f"browser_{tool}_{email}",
+                provider=tool,
+                tool_id=tool,
+                resource_kind=ResourceKind.BROWSER_ACCOUNT,
+                credential_ref=f"browser:{tool}:{email}",  # Opaque reference to session
+                principal_id=email,
+                principal_kind="email",
+                organization_id=None,
+                identity_source="browser_session",
+                authentication_state=auth_state,
+                availability_state=availability,
+                quota_scope=QuotaScope.USER,  # Browser quota is per user
+                quota_remaining=remaining,
+                quota_limit=limit,
+                quota_resets_at=None,
+                routing_eligible=(not exhausted and remaining > 0),
+                last_verified=utc_now(),
+                score=float(remaining) / max(limit, 1) if limit > 0 else 0.0,
+                # Compatibility fields
+                email=email,
+                browser=w.get('browser', ''),
+                profile=w.get('profile', ''),
+                has_session=True,
+                session_verified_at=utc_now(),
+                exhausted=exhausted,
+                status=availability,
+                metadata={
+                    'full_name': w.get('full_name', ''),
+                    'window_hours': w.get('window_hours', 0),
+                    'label': w.get('label', ''),
+                    'used_in_window': w.get('used_in_window', 0),
+                },
+            )
+            resources.append(resource)
+
+    # 2. API credentials from dedicated scanners
+    if include_api:
+        # Devin
+        devin_resources = scan_devin_as_universal_resource()
+        resources.extend(devin_resources)
+
+        # GitHub (placeholder - needs implementation)
+        # github_resources = scan_github_as_universal_resource()
+        # resources.extend(github_resources)
+
+    # 3. Local endpoints
+    if include_local:
+        # Ollama (placeholder - needs implementation)
+        # ollama_resources = scan_ollama_as_universal_resource()
+        # resources.extend(ollama_resources)
+        pass
+
+    return resources
+
+
+def build_universal_resource_snapshot(
+    *,
+    block_signals: dict[str, list[str]] | None = None,
+) -> 'UniversalResourceSnapshot':
+    """Build a formal UniversalResourceSnapshot from live scanner data.
+
+    This is the universal version of build_inventory_snapshot.
+    It composes browser accounts, API credentials, and local endpoints
+    into a single typed contract that Control Master, PortableContext,
+    WorldModel, and the UI can consume directly.
+
+    The continuity_queue is the ranked subset of routing-eligible resources
+    sorted by score. The first entry is the recommended next resource.
+    """
+    from iabv_v15.domain.models import (
+        UniversalResourceSnapshot,
+        AccountStatus,
+        AuthenticationState,
+        QuotaScope,
+        utc_now,
+    )
+
+    resources = build_universal_resource_pool()
+
+    # Deduplicate resources by credential_ref
+    # This handles the case where multiple environment variables point to the same secret
+    seen_refs: dict[str, UniversalResource] = {}
+    for r in resources:
+        if r.credential_ref:
+            if r.credential_ref in seen_refs:
+                # Merge block signals from duplicates
+                existing = seen_refs[r.credential_ref]
+                for sig in r.block_signals:
+                    if sig not in existing.block_signals:
+                        existing.block_signals.append(sig)
+            else:
+                seen_refs[r.credential_ref] = r
+        else:
+            # Resources without credential_ref (e.g., local endpoints) are never deduplicated
+            seen_refs[r.resource_id] = r
+
+    deduplicated = list(seen_refs.values())
+
+    # Apply block signals
+    if block_signals:
+        for r in deduplicated:
+            # Check if this resource has any active block signals
+            resource_key = f"{r.provider}:{r.tool_id}:{r.resource_id}"
+            if resource_key in block_signals:
+                r.block_signals.extend(block_signals[resource_key])
+                # Remove duplicates
+                r.block_signals = list(set(r.block_signals))
+                # Update routing eligibility
+                if r.block_signals:
+                    r.routing_eligible = False
+                    r.score = 0.0
+
+    # Build continuity queue: routing-eligible, sorted by score desc
+    continuity_queue = sorted(
+        [r for r in deduplicated if r.routing_eligible],
+        key=lambda r: r.score,
+        reverse=True,
+    )
+
+    # Aggregate counts
+    active_count = sum(1 for r in deduplicated if r.availability_state == AccountStatus.ACTIVE)
+    exhausted_count = sum(1 for r in deduplicated if r.availability_state == AccountStatus.EXHAUSTED)
+    unavailable_count = sum(1 for r in deduplicated if not r.routing_eligible)
+    tools_available = sorted(set(r.tool_id for r in deduplicated if r.routing_eligible))
+
+    # Collect unresolved items
+    unresolved_items: list[str] = []
+    for r in deduplicated:
+        if r.authentication_state == AuthenticationState.UNKNOWN:
+            unresolved_items.append(f'UNRESOLVED:authentication_state:{r.resource_id}')
+        if r.quota_scope == QuotaScope.UNKNOWN:
+            unresolved_items.append(f'UNRESOLVED:quota_scope:{r.resource_id}')
+
+    return UniversalResourceSnapshot(
+        entries=deduplicated,
+        continuity_queue=continuity_queue,
+        active_count=active_count,
+        exhausted_count=exhausted_count,
+        unavailable_count=unavailable_count,
+        tools_available=tools_available,
+        unresolved_items=unresolved_items,
+        snapshot_at=utc_now(),
+    )
+
+
 def scan_ollama_api() -> dict[str, Any]:
     """Check Ollama local API and loaded models."""
     resp = _safe_request('http://localhost:11434/api/tags', timeout=5)
@@ -1369,34 +1569,53 @@ def _resolve_worker_signals(
     """Find the most specific signal list that matches *worker*.
 
     Lookup order (most-specific first):
-      1. ``email:tool``   — e.g. ``"user@t.com:chatgpt"``
-      2. ``browser:profile:tool`` — e.g. ``"Chrome:Default:chatgpt"``
-      3. ``tool``          — e.g. ``"chatgpt"``  (backward-compatible)
+      1. ``email:tool``   — e.g. ``"user@t.com:chatgpt"`` (browser accounts)
+      2. ``browser:profile:tool`` — e.g. ``"Chrome:Default:chatgpt"`` (browser accounts)
+      3. ``resource_id:tool`` — e.g. ``"devin_credential_0:devin_api"`` (API credentials)
+      4. ``provider:tool`` — e.g. ``"devin:devin_api"`` (API credentials)
+      5. ``tool``          — e.g. ``"chatgpt"``  (backward-compatible fallback)
 
     The first key that exists in *block_signals* wins; there is no merging
     across levels.  All keys are compared lower-case.
+
+    Universal resources (API credentials) may not have email/browser/profile,
+    so those fields are optional.
     """
     tool = str(worker.get('tool', '')).strip().lower()
     email = str(worker.get('email', '')).strip().lower()
     browser = str(worker.get('browser', '')).strip().lower()
     profile = str(worker.get('profile', '')).strip().lower()
+    resource_id = str(worker.get('resource_id', '')).strip().lower()
+    provider = str(worker.get('provider', '')).strip().lower()
 
     # Normalise block_signals keys once
     norm: dict[str, list[str]] = {k.strip().lower(): v for k, v in block_signals.items()}
 
-    # 1. email:tool
+    # 1. email:tool (browser accounts)
     if email and tool:
         key = f"{email}:{tool}"
         if key in norm:
             return norm[key]
 
-    # 2. browser:profile:tool
+    # 2. browser:profile:tool (browser accounts)
     if browser and profile and tool:
         key = f"{browser}:{profile}:{tool}"
         if key in norm:
             return norm[key]
 
-    # 3. tool (fallback — original behaviour)
+    # 3. resource_id:tool (API credentials / universal resources)
+    if resource_id and tool:
+        key = f"{resource_id}:{tool}"
+        if key in norm:
+            return norm[key]
+
+    # 4. provider:tool (API credentials / universal resources)
+    if provider and tool:
+        key = f"{provider}:{tool}"
+        if key in norm:
+            return norm[key]
+
+    # 5. tool (fallback — original behaviour)
     return norm.get(tool, [])
 
 
@@ -1438,14 +1657,33 @@ def _score_worker(
     score = quota_ratio × (1 - block_risk)
 
     - quota_ratio:  remaining_messages / limit  (0.0 .. 1.0)
+      For API credentials without message quotas, uses routing_eligible as proxy
     - block_risk:   penalty derived from active block signals for
                     the worker's tool (0.0 .. 0.95)
 
-    Workers with ``exhausted=True`` always score 0.0.
+    Workers with ``exhausted=True`` or ``routing_eligible=False`` always score 0.0.
     Returns a float in [0.0, 1.0].  Higher is better.
+
+    Universal resources (API credentials) may not have remaining_messages/limit,
+    so routing_eligible is used as the primary signal.
     """
+    # Check explicit routing eligibility (for universal resources)
+    if worker.get('routing_eligible') is False:
+        return 0.0
+
+    # Check exhausted flag (for browser accounts)
     if worker.get('exhausted', True):
         return 0.0
+
+    # For universal resources without message quotas, use routing_eligible as proxy
+    if 'remaining_messages' not in worker or 'limit' not in worker or worker.get('limit', 0) == 0:
+        # No quota info available - use routing_eligible as primary signal
+        if worker.get('routing_eligible', False):
+            block_risk = _compute_block_risk(worker, block_signals)
+            return round(1.0 * (1.0 - block_risk), 4)
+        return 0.0
+
+    # Browser accounts with message quotas
     limit = max(worker.get('limit', 1), 1)
     remaining = max(worker.get('remaining_messages', 0), 0)
     quota_ratio = min(remaining / limit, 1.0)
@@ -1453,11 +1691,52 @@ def _score_worker(
     return round(quota_ratio * (1.0 - block_risk), 4)
 
 
+def universal_resource_to_worker(resource: 'UniversalResource') -> dict[str, Any]:
+    """Convert a UniversalResource to a worker dict compatible with ranking.
+
+    This bridges the universal resource contract with the existing worker
+    ranking system. Universal resources without email/browser/profile get
+    empty strings for those fields, allowing the ranking logic to operate
+    without requiring browser-specific attributes.
+
+    Returns a dict with fields compatible with rank_workers_for_target and
+    worker_health_gate.
+    """
+    from iabv_v15.domain.models import AccountStatus
+
+    # Map universal resource fields to worker dict fields
+    worker = {
+        'resource_id': resource.resource_id,
+        'provider': resource.provider,
+        'tool': resource.tool_id,
+        'email': resource.email,  # Empty for API credentials
+        'browser': resource.browser,  # Empty for API credentials
+        'profile': resource.profile,  # Empty for API credentials
+        'remaining_messages': resource.quota_remaining,
+        'limit': resource.quota_limit,
+        'exhausted': resource.exhausted or (resource.availability_state == AccountStatus.EXHAUSTED),
+        'routing_eligible': resource.routing_eligible,
+        'block_signals': resource.block_signals,
+        'score': resource.score,
+        'authentication_state': str(resource.authentication_state),
+        'availability_state': str(resource.availability_state),
+        'quota_scope': str(resource.quota_scope),
+        'credential_ref': resource.credential_ref,
+        'has_session': resource.has_session,
+        'session_verified_at': resource.session_verified_at.isoformat() if resource.session_verified_at else None,
+        'block_reason': resource.block_reason,
+        'last_verified': resource.last_verified.isoformat() if resource.last_verified else None,
+    }
+
+    return worker
+
+
 def rank_workers_for_target(
     target_assistant: str,
     *,
     pool: dict[str, Any] | None = None,
     block_signals: dict[str, list[str]] | None = None,
+    universal_resources: list['UniversalResource'] | None = None,
 ) -> list[dict[str, Any]]:
     """Rank available workers for *target_assistant* by composite score.
 
@@ -1465,20 +1744,23 @@ def rank_workers_for_target(
     ----------
     target_assistant:
         Tool name to filter by (e.g. ``'chatgpt'``, ``'claude'``,
-        ``'codex'``).  Case-insensitive.  Empty string returns all.
+        ``'codex'``, ``'devin_api'``).  Case-insensitive.  Empty string returns all.
     pool:
-        Pre-computed pool from ``estimate_available_workers()``.
+        Pre-computed pool from ``estimate_available_workers()`` (browser accounts).
         If ``None``, a fresh scan is performed.
     block_signals:
         Optional dict mapping tool name (lower-case) to a list of active
         block signal names.  Signals penalise the composite score so
         blocked workers rank lower.
+    universal_resources:
+        Optional list of UniversalResource objects (API credentials, local endpoints).
+        If provided, these are merged with browser workers for unified ranking.
 
     Returns
     -------
     list of dicts, each with the original worker fields plus ``'score'``
     and ``'block_risk'``, sorted descending by score.  Exhausted workers
-    are excluded.
+    and routing-ineligible resources are excluded.
     """
     if pool is None:
         pool = estimate_available_workers()
@@ -1486,6 +1768,7 @@ def rank_workers_for_target(
     target = target_assistant.strip().lower()
     workers = pool.get('workers', [])
 
+    # Start with browser workers
     if target:
         candidates = [
             w for w in workers
@@ -1494,6 +1777,27 @@ def rank_workers_for_target(
         ]
     else:
         candidates = [w for w in workers if not w.get('exhausted', True)]
+
+    # Add universal resources if provided
+    if universal_resources:
+        for r in universal_resources:
+            # Convert to worker dict
+            w = universal_resource_to_worker(r)
+
+            # Filter by target if specified
+            if target:
+                if str(w.get('tool', '')).strip().lower() != target:
+                    continue
+
+            # Filter out routing-ineligible resources
+            if not w.get('routing_eligible', False):
+                continue
+
+            # Filter out exhausted resources
+            if w.get('exhausted', False):
+                continue
+
+            candidates.append(w)
 
     scored: list[dict[str, Any]] = []
     for w in candidates:
