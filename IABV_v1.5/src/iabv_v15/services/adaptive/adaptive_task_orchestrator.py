@@ -1777,6 +1777,32 @@ class AdaptiveTaskOrchestrator:
         existing = dict(metadata.get('autonomous_evolution') or {})
         decision_context = self._decision_context_from_payload(payload=payload, user_goal=user_goal)
         metadata['decision_context'] = decision_context.model_dump(mode='json')
+
+        # Propagate worker_gate selection to payload metadata for credential binding
+        # This ensures the resource selected by worker_health_gate() reaches ToolTeachService
+        governance = dict(decision_context.governance or {})
+        if governance.get('should_consult'):
+            # First, check decision_context.metadata.worker_gate (if available from orchestrator)
+            dc_meta = dict(decision_context.metadata or {})
+            worker_gate = dict(dc_meta.get('worker_gate') or {})
+            top_worker = dict(worker_gate.get('top_worker') or {})
+
+            # Fallback: check metadata.worker_gate (from serialized AdaptiveSession)
+            # This is the path when ControlCenterViewModel passes session.model_dump() as adaptive_payload
+            if not top_worker:
+                session_worker_gate = dict(metadata.get('worker_gate') or {})
+                top_worker = dict(session_worker_gate.get('top_worker') or {})
+
+            if top_worker:
+                # Propagate resource selection identity to payload metadata
+                metadata['selected_resource_id'] = top_worker.get('resource_id', '')
+                metadata['selected_provider'] = top_worker.get('provider', '')
+                metadata['selected_credential_ref'] = top_worker.get('credential_ref', '')
+                # Also propagate browser compatibility fields
+                metadata['selected_email'] = top_worker.get('email', '')
+                metadata['selected_browser'] = top_worker.get('browser', '')
+                metadata['selected_profile'] = top_worker.get('profile', '')
+
         payload['metadata'] = metadata
         if self.autonomous_evolution_service is None:
             return payload
