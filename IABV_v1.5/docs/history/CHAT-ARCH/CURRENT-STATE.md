@@ -372,3 +372,25 @@ A successful future activation should reconstruct:
 `current objective → current code baseline → relevant historical checkpoint → proven edges → unproven edge → negative controls → provenance conflicts → best-fit actor → smallest discriminating action`
 
 without requiring replay of the entire source transcript.
+
+## 2026-09-19 L5 FINAL INDEPENDENT ADJUDICATION
+
+Independent Sonnet 5 Low forensic audit has closed UK-15.
+
+**L5 = PROVEN** for the selector-level causal-learning claim:
+
+`real verified experience → persisted InteractionPattern/VerifiedTransition → cold reload → normal competitive InteractionModeSelector.select() with multiple candidates → changed future winner → causal attribution to the verified experience`
+
+Canonical evidence:
+- evidence branch: `l5-evidence-capture-3241b3ef6`
+- publication commit: `97bb60b71a3ed438021cb18acf55111d7c71265a`
+- tested code SHA: `70553010bafca96e98b7dc5b113eed4f3ad84e8b`
+- runtime artifact: `IABV_v1.5/l5_evidence/l5_experiment_20260918_022256_runtime.txt`
+- artifact SHA-256: `61c56fd0404469dec60cb29827546b23011d93d4942ce5470c83a705d1628ef2`
+- artifact size: 17617 bytes
+
+Independent audit resolved the apparent cost/type confound: `0.40` was the winning `aider_coder` candidate in control, while `0.75` was the winning `mcp_client` candidate in treatment. The same `mcp_client` candidate did not mutate type or cost. Its score delta was explained by the InteractionPattern-derived stability, frequency and learned-pattern changes.
+
+This closes the prior L5 provenance/causal gate. It does **not** close L6/L7, full P0-B authority/security, I0/I1/I2 external-agent orchestration, or real Devin cognitive influence. The separate constraint `REAL AUTHORITY = NOT PROVEN BY G3` remains active for the authority/security subsystem.
+
+The next strategic work may proceed in two parallel directions: L6 behavioral-change proof and the minimum I0/I1 symbiosis experiment. The latter should use existing orchestration/adapter/briefing organs before any new service is proposed.
