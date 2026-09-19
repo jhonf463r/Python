@@ -546,7 +546,16 @@ class ToolTeachService:
         selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
         synaptic_decision = self._synaptic_decision_for_request(request)
         synaptic_preferred_assistant_kind = str(synaptic_decision.get('selected_assistant_kind') or '')
-        
+
+        # Propagate resource selection identity from request metadata to task metadata
+        # This binds the selected resource to the actual execution
+        request_metadata = request.metadata or {}
+        task_metadata = {
+            'selected_resource_id': request_metadata.get('selected_resource_id', ''),
+            'selected_provider': request_metadata.get('selected_provider', ''),
+            'selected_credential_ref': request_metadata.get('selected_credential_ref', ''),
+        }
+
         # Indicador de que synaptic routing tiene autoridad sobre la selección
         synaptic_selection_authoritative = False
         if synaptic_preferred_assistant_kind and not str(goal_parameters.get('tool_id') or '').strip():
@@ -657,6 +666,7 @@ class ToolTeachService:
                 'background_capture_mode': str(goal_parameters.get('background_capture_mode') or ''),
                 'assistant_configuration': assistant_configuration.model_dump(mode='json'),
                 'config_signature': config_signature,
+                **task_metadata,  # Add resource selection identity
             },
         )
         trace_entry = self._build_ia_trace_entry(task=task)

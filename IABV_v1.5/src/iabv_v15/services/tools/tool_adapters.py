@@ -1854,9 +1854,15 @@ class DevinApiToolAdapter:
     def _session_detail_url(self, session_id: str) -> str:
         return f'{self.BASE_URL}/session/{session_id}'
 
-    def _headers(self) -> dict[str, str]:
+    def _headers(self, api_key: str | None = None) -> dict[str, str]:
+        """Build HTTP headers with Authorization Bearer token.
+
+        Args:
+            api_key: The API key to use. If None, uses self.api_key (constructor default).
+        """
+        effective_key = api_key if api_key is not None else self.api_key
         return {
-            'Authorization': f'Bearer {self.api_key}',
+            'Authorization': f'Bearer {effective_key}',
             'Content-Type': 'application/json',
         }
 
@@ -1926,8 +1932,46 @@ class DevinApiToolAdapter:
         except Exception:
             return False
 
+    def _resolve_api_key(self, credential_ref: str | None = None) -> str:
+        """Resolve the API key from an opaque credential reference.
+
+        This is the binding point between resource selection and execution.
+        The credential_ref is an opaque reference like "devin:credential_0:DEVIN_API_KEY".
+        For now, this uses environment variable names as a fallback.
+        Future implementation should use SecretVault.resolve_reference().
+
+        Args:
+            credential_ref: Opaque reference to the credential (e.g., "devin:credential_0:DEVIN_API_KEY")
+
+        Returns:
+            The actual API key value (or empty string if not found)
+        """
+        if not credential_ref:
+            # Fallback to constructor default if no credential_ref provided
+            return self.api_key
+
+        # Parse credential_ref: "provider:resource_id:env_var_name"
+        parts = credential_ref.split(':')
+        if len(parts) >= 3:
+            env_var_name = parts[2]
+            import os
+            api_key = os.environ.get(env_var_name, '')
+            if api_key:
+                return api_key
+
+        # Fallback to constructor default if resolution fails
+        return self.api_key
+
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
+
+        # Resolve credential from task metadata if available
+        # This binds the selected resource to the actual execution
+        selected_credential_ref = None
+        if task.metadata:
+            selected_credential_ref = task.metadata.get('selected_credential_ref')
+
+        effective_api_key = self._resolve_api_key(selected_credential_ref)
 
         # Use per-execution authorization if provided, otherwise use constructor default (deprecated)
         auth_to_check = external_authorization if external_authorization is not None else self._external_authorization
@@ -2007,7 +2051,7 @@ class DevinApiToolAdapter:
         try:
             create_resp = httpx.post(
                 self._sessions_url,
-                headers=self._headers(),
+                headers=self._headers(effective_api_key),
                 json={'prompt': prompt},
                 timeout=30.0,
             )
@@ -2034,7 +2078,7 @@ class DevinApiToolAdapter:
                 time.sleep(self.poll_interval_seconds)
                 poll_resp = httpx.get(
                     self._session_detail_url(session_id),
-                    headers=self._headers(),
+                    headers=self._headers(effective_api_key),
                     timeout=15.0,
                 )
                 if poll_resp.status_code == 200:
