@@ -2452,6 +2452,28 @@ class AdaptiveTaskOrchestrator:
     def _request_from_session(self, session: AdaptiveSession) -> InferenceRequest:
         goal_parameters = {**dict(session.metadata.get('goal_parameters') or {}), **self._goal_parameters(session.context.goal_context)}
         conversation_history = list(session.metadata.get('conversation_history') or [])
+
+        # Propagate worker_gate selection to request metadata
+        # This ensures the resource selected by worker_health_gate() reaches ToolTeachService
+        worker_gate = dict(session.metadata.get('worker_gate') or {})
+        top_worker = dict(worker_gate.get('top_worker') or {})
+
+        request_metadata = {
+            'decision_source': 'adaptive_session_refresh',
+            'session_id': session.session_id,
+            'conversation_history': conversation_history,
+        }
+
+        # Propagate resource selection identity from worker_gate
+        if top_worker:
+            request_metadata['selected_resource_id'] = top_worker.get('resource_id', '')
+            request_metadata['selected_provider'] = top_worker.get('provider', '')
+            request_metadata['selected_credential_ref'] = top_worker.get('credential_ref', '')
+            # Also propagate browser compatibility fields for existing paths
+            request_metadata['selected_email'] = top_worker.get('email', '')
+            request_metadata['selected_browser'] = top_worker.get('browser', '')
+            request_metadata['selected_profile'] = top_worker.get('profile', '')
+
         return InferenceRequest(
             user_goal=session.user_goal,
             prompt=session.user_goal,
@@ -2462,11 +2484,7 @@ class AdaptiveTaskOrchestrator:
             approval_mode=str(session.metadata.get('approval_mode') or 'phased'),
             execution_scope=str(session.metadata.get('execution_scope') or 'operational'),
             goal_parameters=goal_parameters,
-            metadata={
-                'decision_source': 'adaptive_session_refresh',
-                'session_id': session.session_id,
-                'conversation_history': conversation_history,
-            },
+            metadata=request_metadata,
         )
 
     def _session_status_from_value(self, value: str) -> AdaptiveSessionStatus:

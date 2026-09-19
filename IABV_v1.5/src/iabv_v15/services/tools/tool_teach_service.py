@@ -855,10 +855,17 @@ class ToolTeachService:
         adapter_available = False
         if adapter is not None:
             sig = inspect.signature(adapter.is_available)
+            params = {'card': card, 'dry_run': launch_dry_run}
+            if 'task' in sig.parameters:
+                params['task'] = task  # Pass task for credential consistency
             if 'dry_run' in sig.parameters:
-                adapter_available = adapter.is_available(card, dry_run=launch_dry_run)
+                adapter_available = adapter.is_available(**params)
             else:
-                adapter_available = adapter.is_available(card)
+                # Fallback for adapters without dry_run parameter
+                if 'task' in sig.parameters:
+                    adapter_available = adapter.is_available(card=card, task=task)
+                else:
+                    adapter_available = adapter.is_available(card)
         if not adapter_available:
             result = ToolResult(
                 task_id=task.task_id,

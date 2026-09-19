@@ -1915,10 +1915,13 @@ class DevinApiToolAdapter:
         except Exception:
             return False
 
-    def is_available(self, card: ToolCard, *, dry_run: bool = False) -> bool:
-        # Resolve credential from card metadata if available (for selected resource)
+    def is_available(self, card: ToolCard, *, dry_run: bool = False, task: ToolTask | None = None) -> bool:
+        # Resolve credential from task metadata first (execution path consistency)
+        # Fall back to card metadata for availability checks before task creation
         selected_credential_ref = None
-        if card.metadata:
+        if task is not None and task.metadata:
+            selected_credential_ref = task.metadata.get('selected_credential_ref')
+        if selected_credential_ref is None and card.metadata:
             selected_credential_ref = card.metadata.get('selected_credential_ref')
 
         effective_api_key, _ = self._resolve_api_key(selected_credential_ref)
