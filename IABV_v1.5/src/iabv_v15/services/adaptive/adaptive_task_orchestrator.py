@@ -977,6 +977,17 @@ class AdaptiveTaskOrchestrator:
             target_assistant=secondary_kind,
         ) if secondary_kind else {}
         _email = str((_gate.get('top_worker') or {}).get('email') or '')
+
+        # Propagate worker_gate selection to payload metadata for credential binding
+        if _gate.get('usable') and _gate.get('top_worker'):
+            top_worker = dict(_gate.get('top_worker') or {})
+            payload['metadata']['selected_resource_id'] = top_worker.get('resource_id', '')
+            payload['metadata']['selected_provider'] = top_worker.get('provider', '')
+            payload['metadata']['selected_credential_ref'] = top_worker.get('credential_ref', '')
+            payload['metadata']['selected_email'] = top_worker.get('email', '')
+            payload['metadata']['selected_browser'] = top_worker.get('browser', '')
+            payload['metadata']['selected_profile'] = top_worker.get('profile', '')
+
         try:
             result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=payload,
@@ -1077,6 +1088,17 @@ class AdaptiveTaskOrchestrator:
             target_assistant=primary_ia,
         ) if primary_ia else {}
         _email_p = str((_gate_p.get('top_worker') or {}).get('email') or '')
+
+        # Propagate worker_gate selection to payload metadata for credential binding
+        if _gate_p.get('usable') and _gate_p.get('top_worker'):
+            top_worker = dict(_gate_p.get('top_worker') or {})
+            primary_payload['metadata']['selected_resource_id'] = top_worker.get('resource_id', '')
+            primary_payload['metadata']['selected_provider'] = top_worker.get('provider', '')
+            primary_payload['metadata']['selected_credential_ref'] = top_worker.get('credential_ref', '')
+            primary_payload['metadata']['selected_email'] = top_worker.get('email', '')
+            primary_payload['metadata']['selected_browser'] = top_worker.get('browser', '')
+            primary_payload['metadata']['selected_profile'] = top_worker.get('profile', '')
+
         try:
             primary_result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=primary_payload,
@@ -1173,6 +1195,17 @@ class AdaptiveTaskOrchestrator:
             target_assistant=primary_ia,
         ) if primary_ia else {}
         _email_ap = str((_gate_ap.get('top_worker') or {}).get('email') or '')
+
+        # Propagate worker_gate selection to payload metadata for credential binding
+        if _gate_ap.get('usable') and _gate_ap.get('top_worker'):
+            top_worker = dict(_gate_ap.get('top_worker') or {})
+            primary_payload['metadata']['selected_resource_id'] = top_worker.get('resource_id', '')
+            primary_payload['metadata']['selected_provider'] = top_worker.get('provider', '')
+            primary_payload['metadata']['selected_credential_ref'] = top_worker.get('credential_ref', '')
+            primary_payload['metadata']['selected_email'] = top_worker.get('email', '')
+            primary_payload['metadata']['selected_browser'] = top_worker.get('browser', '')
+            primary_payload['metadata']['selected_profile'] = top_worker.get('profile', '')
+
         try:
             primary_result = self.autonomous_evolution_service.plan_or_execute(
                 adaptive_payload=primary_payload,
@@ -1744,26 +1777,6 @@ class AdaptiveTaskOrchestrator:
         existing = dict(metadata.get('autonomous_evolution') or {})
         decision_context = self._decision_context_from_payload(payload=payload, user_goal=user_goal)
         metadata['decision_context'] = decision_context.model_dump(mode='json')
-
-        # Propagate worker_gate selection to payload metadata for credential binding
-        # This ensures the resource selected by worker_health_gate() reaches ToolTeachService
-        governance = dict(decision_context.governance or {})
-        if governance.get('should_consult'):
-            # Extract worker_gate selection from decision context metadata
-            dc_meta = dict(decision_context.metadata or {})
-            worker_gate = dict(dc_meta.get('worker_gate') or {})
-            top_worker = dict(worker_gate.get('top_worker') or {})
-
-            if top_worker:
-                # Propagate resource selection identity to payload metadata
-                metadata['selected_resource_id'] = top_worker.get('resource_id', '')
-                metadata['selected_provider'] = top_worker.get('provider', '')
-                metadata['selected_credential_ref'] = top_worker.get('credential_ref', '')
-                # Also propagate browser compatibility fields
-                metadata['selected_email'] = top_worker.get('email', '')
-                metadata['selected_browser'] = top_worker.get('browser', '')
-                metadata['selected_profile'] = top_worker.get('profile', '')
-
         payload['metadata'] = metadata
         if self.autonomous_evolution_service is None:
             return payload
