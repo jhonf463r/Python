@@ -1792,6 +1792,7 @@ class AdaptiveTaskOrchestrator:
             top_worker_session = dict(session_worker_gate.get('top_worker') or {})
 
             # Identity conflict detection: if both sources exist and differ → BLOCK
+            identity_conflict_detected = False
             if top_worker_dc and top_worker_session:
                 resource_id_dc = top_worker_dc.get('resource_id', '')
                 resource_id_session = top_worker_session.get('resource_id', '')
@@ -1802,6 +1803,7 @@ class AdaptiveTaskOrchestrator:
                     # Identity conflict: decision_context and session have different selections
                     # The session selection (metadata.worker_gate) is the operational identity of the first dispatch
                     # Block execution to prevent using the wrong credential
+                    identity_conflict_detected = True
                     metadata['selection_status'] = 'identity_conflict'
                     metadata['identity_conflict'] = {
                         'decision_context_resource_id': resource_id_dc,
@@ -1816,8 +1818,9 @@ class AdaptiveTaskOrchestrator:
 
             # Selection lost detection: if session.worker_gate exists but neither source has selection
             # This means the selection was made but lost during serialization/payload construction
+            # IMPORTANT: Only apply selection_lost detection if identity_conflict was NOT detected
             session_had_selection = bool(session_worker_gate.get('usable', False) and session_worker_gate.get('top_worker'))
-            if session_had_selection and not top_worker_dc and not top_worker_session:
+            if not identity_conflict_detected and session_had_selection and not top_worker_dc and not top_worker_session:
                 # Selection was made in session but lost before reaching govern_adaptive_payload
                 metadata['selection_status'] = 'selection_lost'
                 metadata['selection_lost'] = {

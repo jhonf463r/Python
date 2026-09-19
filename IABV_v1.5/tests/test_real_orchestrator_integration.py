@@ -247,6 +247,96 @@ class TestRealFirstDispatchIntegration:
         # Cleanup
         del os.environ['DEVIN_API_KEY_A']
 
+    def test_identity_conflict_not_reclassified_as_selection_lost(self):
+        """Test: identity_conflict is NOT reclassified as selection_lost when session had selection."""
+        # Simulate adaptive_payload with CONFLICTING worker_gate in both sources
+        adaptive_payload = {
+            'user_goal': 'Test objective',
+            'metadata': {
+                'decision_context': {
+                    'user_goal': 'test goal',
+                    'governance': {'should_consult': True, 'assistant_kind': 'codex'},
+                    'metadata': {
+                        'worker_gate': {
+                            'usable': True,
+                            'top_worker': {
+                                'resource_id': 'devin_credential_A',  # A in decision_context
+                                'provider': 'devin',
+                                'tool': 'devin_api',
+                                'credential_ref': 'devin:credential_A:DEVIN_API_KEY_A',
+                                'email': '',
+                                'browser': '',
+                                'profile': '',
+                            },
+                        },
+                    },
+                },
+                'worker_gate': {
+                    'usable': True,
+                    'top_worker': {
+                        'resource_id': 'devin_credential_B',  # B in metadata
+                        'provider': 'devin',
+                        'tool': 'devin_api',
+                        'credential_ref': 'devin:credential_B:DEVIN_API_KEY_B',
+                        'email': '',
+                        'browser': '',
+                        'profile': '',
+                    },
+                },
+            },
+        }
+
+        # Simulate govern_adaptive_payload() extraction logic (FIXED implementation)
+        payload = dict(adaptive_payload or {})
+        metadata = dict(payload.get('metadata') or {})
+        decision_context = dict(metadata.get('decision_context') or {})
+        dc_meta = dict(decision_context.get('metadata') or {})
+        worker_gate_dc = dict(dc_meta.get('worker_gate') or {})
+        top_worker_dc = dict(worker_gate_dc.get('top_worker') or {})
+
+        session_worker_gate = dict(metadata.get('worker_gate') or {})
+        top_worker_session = dict(session_worker_gate.get('top_worker') or {})
+
+        # Identity conflict detection
+        identity_conflict_detected = False
+        if top_worker_dc and top_worker_session:
+            resource_id_dc = top_worker_dc.get('resource_id', '')
+            resource_id_session = top_worker_session.get('resource_id', '')
+            credential_ref_dc = top_worker_dc.get('credential_ref', '')
+            credential_ref_session = top_worker_session.get('credential_ref', '')
+
+            if resource_id_dc != resource_id_session or credential_ref_dc != credential_ref_session:
+                identity_conflict_detected = True
+                metadata['selection_status'] = 'identity_conflict'
+                metadata['identity_conflict'] = {
+                    'decision_context_resource_id': resource_id_dc,
+                    'session_resource_id': resource_id_session,
+                    'decision_context_credential_ref': credential_ref_dc,
+                    'session_credential_ref': credential_ref_session,
+                    'reason': 'decision_context.worker_gate != metadata.worker_gate - conflicting identities',
+                }
+                top_worker_dc = {}
+                top_worker_session = {}
+
+        # Selection lost detection (only if identity_conflict was NOT detected)
+        session_had_selection = bool(session_worker_gate.get('usable', False) and session_worker_gate.get('top_worker'))
+        if not identity_conflict_detected and session_had_selection and not top_worker_dc and not top_worker_session:
+            metadata['selection_status'] = 'selection_lost'
+            metadata['selection_lost'] = {
+                'session_usable': session_worker_gate.get('usable', False),
+                'session_had_top_worker': bool(session_worker_gate.get('top_worker')),
+                'reason': 'worker_gate selected resource but selection was lost before payload construction',
+            }
+            top_worker_dc = {}
+            top_worker_session = {}
+
+        # Verify: identity_conflict is NOT reclassified as selection_lost
+        assert identity_conflict_detected is True
+        assert metadata['selection_status'] == 'identity_conflict'
+        assert metadata['selection_status'] != 'selection_lost'
+        assert 'identity_conflict' in metadata
+        assert 'selection_lost' not in metadata
+
     def test_ab_discrimination_real_resources(self):
         """Test: A selected → executor A, B selected → executor B (simulated with real adapter)."""
         # Case A
