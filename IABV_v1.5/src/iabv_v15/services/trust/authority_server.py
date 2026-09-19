@@ -150,8 +150,8 @@ class AuthorityServer:
         Phase 2: Explicit DACL, reject remote clients.
         PART II: Instrumented to log exact CreateNamedPipe parameters.
         """
-        # Use no security attributes for maximum compatibility
-        security_attributes = None
+        # I0-1.9A: Apply explicit DACL from _create_security_attributes
+        security_attributes = self._create_security_attributes()
         
         # Create named pipe with exact parameters
         # Use standard PIPE_ACCESS_DUPLEX without FILE_FLAG_OVERLAPPED
@@ -170,7 +170,7 @@ class AuthorityServer:
         print(f"[AuthorityServer]   Out buffer size: {out_buffer_size}")
         print(f"[AuthorityServer]   In buffer size: {in_buffer_size}")
         print(f"[AuthorityServer]   Default timeout: {default_timeout}")
-        print(f"[AuthorityServer]   Security attributes: NONE (maximum compatibility)")
+        print(f"[AuthorityServer]   Security attributes: EXPLICIT DACL (I0-1.9A)")
         
         pipe_handle = win32pipe.CreateNamedPipe(
             self._pipe_name,
