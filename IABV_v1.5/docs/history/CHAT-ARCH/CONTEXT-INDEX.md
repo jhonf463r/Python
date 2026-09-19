@@ -272,3 +272,19 @@ After L5 is adjudicated:
 **CHATGPT** designs the smallest I0/I1 symbiosis experiment before broad L6/L7 expansion.
 
 Routing remains capability-fit based, not a fixed model order.
+
+## 2026-09-19 LIVE ROUTING OVERRIDE — L5 CLOSED
+
+Latest canonical override:
+`CURRENT-STATE-OVERRIDE-2026-09-19.md`
+
+UK-15 / L5 is now **PROVEN** at selector-level causal learning after independent provenance and causal-confound audit. The preserved evidence record is:
+`CHAT-ARCH-2026-09-19-001-l5-final-independent-audit.md`
+
+Do not rerun L5 merely to reproduce the already closed edge. Do not reopen the false `cost 0.40 → 0.75` anomaly unless contradictory evidence appears.
+
+Next routing:
+- for L6, use a bounded behavioral-change experiment;
+- for symbiosis, begin the minimum I0/I1 external-agent round-trip experiment;
+- preserve `REAL AUTHORITY = NOT PROVEN BY G3` and P0-B as separate security boundaries;
+- route by capability fit rather than fixed model sequence.
