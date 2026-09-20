@@ -446,3 +446,22 @@ The latest preflight ran at artifact-preservation HEAD `99d670b0...` and found n
 Next actor after secure credential availability: **DEVIN** for the exact Windows runtime experiment; **SONNET** for independent audit of the resulting artifact.
 
 Do not reset the branch or destroy the preserved R2 evidence commit. Prefer detached checkout/worktree for execution.
+
+
+## 2026-09-20 ROUTING — I0 PREFLIGHT REDUNDANCY CLOSED
+
+The exact implementation target has now been verified in detached Windows runtime, but the three supported Devin credential variables remain absent.
+
+Current discriminator:
+
+`environment change → real credential present`
+
+No further identical preflight is useful before that change.
+
+Routing after secure credential provisioning:
+
+**DEVIN** → exact-SHA real connection experiment
+→ **SONNET** independent audit
+→ **CHATGPT** adjudication/writeback.
+
+This is an environment prerequisite, not an implementation task.
