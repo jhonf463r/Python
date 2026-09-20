@@ -10,7 +10,7 @@ Classification: REAL_EXTERNAL_RUNTIME
 
 import os
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4
 from unittest.mock import Mock, patch
@@ -276,3 +276,67 @@ class TestI02RealExternalExecution:
         # - task.task_id
         # - ToolResult.task_id
         # - ExternalActionAuthorization.task_id
+
+    def test_check_external_authorization_with_fingerprint(self):
+        """Test that _check_external_authorization can receive effective_fingerprint parameter."""
+        from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
+        import hashlib
+
+        # Create a mock adapter
+        adapter = DevinApiToolAdapter()
+
+        # Compute the correct prompt digest
+        prompt = 'Test objective'
+        prompt_digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+
+        # Create a valid authorization with matching digest
+        auth = ExternalActionAuthorization(
+            task_id='test_task',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='devin',
+            endpoint='',
+            action='',
+            prompt_digest=prompt_digest,
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+            issued_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            approved_by='test_user',
+            reason='Test authorization',
+            selected_resource_id='devin_credential_0',
+            selected_provider='devin',
+            selected_credential_ref='devin:credential_0:DEVIN_API_KEY',
+            credential_fingerprint='test_fingerprint',
+        )
+
+        task = ToolTask(
+            task_id='test_task',
+            tool_id='devin_api',
+            title='Test',
+            objective=prompt,
+        )
+
+        # Test that _check_external_authorization accepts effective_fingerprint parameter
+        # Before fix: effective_fingerprint would be undefined in scope → exception → False
+        # After fix: effective_fingerprint is passed as parameter → binding validation succeeds
+        result = adapter._check_external_authorization(
+            task=task,
+            prompt=prompt,
+            authorization=auth,
+            effective_fingerprint='test_fingerprint',
+        )
+
+        # The authorization is consumed in the check, so subsequent calls should fail
+        # This proves the method is actually executing the binding validation
+        assert result is True
+
+        # Test with wrong fingerprint (FAIL CLOSED)
+        result_wrong = adapter._check_external_authorization(
+            task=task,
+            prompt=prompt,
+            authorization=auth,  # Same auth, but it was already consumed
+            effective_fingerprint='wrong_fingerprint',
+        )
+
+        # Should fail because auth was consumed or binding doesn't match
+        assert result_wrong is False

@@ -1876,6 +1876,7 @@ class DevinApiToolAdapter:
         task: ToolTask,
         prompt: str,
         authorization: Any | None = None,
+        effective_fingerprint: str = '',
     ) -> bool:
         """Verifica que existe una autorización externa válida para esta ejecución.
 
@@ -1883,7 +1884,7 @@ class DevinApiToolAdapter:
         """
         if authorization is None:
             return False
-        
+
         try:
             from iabv_v15.domain.models import ExternalActionAuthorization
 
@@ -1891,11 +1892,11 @@ class DevinApiToolAdapter:
                 return False
 
             auth = authorization
-            
+
             # Verificar estado
             if not auth.is_valid():
                 return False
-            
+
             # Verificar binding against actual runtime values
             prompt_digest = self._compute_prompt_digest(prompt)
             # Pass credential fingerprint for resource binding verification
@@ -1907,10 +1908,10 @@ class DevinApiToolAdapter:
                 credential_fingerprint=effective_fingerprint,
             ):
                 return False
-            
+
             # Consumir autorización (single-use)
             auth.consume()
-            
+
             return True
         except Exception:
             return False
@@ -2127,7 +2128,7 @@ class DevinApiToolAdapter:
 
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        if not self._check_external_authorization(task, effective_prompt, auth_to_check):
+        if not self._check_external_authorization(task, effective_prompt, auth_to_check, effective_fingerprint):
             return {
                 'success': False,
                 'output_text': '',
