@@ -422,3 +422,14 @@ No authentication/authorization/network evidence was generated.
 Next discriminating execution requires the exact implementation revision plus a real securely provisioned credential. The artifact-preservation commit must remain intact; use detached checkout or a separate runtime worktree rather than rewriting the branch history.
 
 The malformed reported value `471670b058` is not a valid replacement for the canonical tested SHA and is not accepted as evidence.
+
+
+## 2026-09-20 I0 — REPEATED PREFLIGHT IS NOW REDUNDANT
+
+The latest preflight used the exact target implementation `4710a668541225ffe3b9d1335d31bb5da8b1e685` and again found no value for any supported Devin credential variable. It correctly stopped before the production resolver.
+
+Negative knowledge:
+
+`repeating the same no-credential preflight without changing the environment does not reduce the current uncertainty`.
+
+Therefore the next useful action is environmental, not code-level: securely provision a real Devin credential to the controlled Windows process. No additional runtime attempt should be made until that condition changes.
