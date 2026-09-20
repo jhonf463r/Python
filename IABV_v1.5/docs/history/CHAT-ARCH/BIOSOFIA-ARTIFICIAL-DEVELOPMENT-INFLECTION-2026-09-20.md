@@ -497,3 +497,14 @@ The development inflection remains a later longitudinal condition, not a single 
 `I0 real external connection → I1 automatic round trip → I2 dynamic closed loop → repeated verified experience changing routing/strategy while routine human coordination falls → U7 developmental acceleration`.
 
 Next actor: **DEVIN** for the controlled Windows credential/execution boundary; then **SONNET** for independent verification.
+
+
+## 2026-09-20 LIVE ADDENDUM — I0 PREFLIGHT BLOCKED
+
+The real-connection preflight did not reach credential resolution because the runtime workspace HEAD was the R2 artifact-preservation commit rather than the implementation target, and no supported Devin credential was present.
+
+Therefore the immediate prerequisite remains:
+
+`secure real credential availability + exact implementation runtime at 4710a668...`
+
+This is an environmental/runtime prerequisite, not a new architecture task.
