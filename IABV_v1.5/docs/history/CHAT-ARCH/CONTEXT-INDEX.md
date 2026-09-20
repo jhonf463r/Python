@@ -361,3 +361,22 @@ The current implementation gate is now:
 
 After implementation: SONNET independent artifact audit.
 
+
+
+## 2026-09-20 I0 RESOLUTION — CANONICAL ASSISTANT↔TOOL RESOURCE SEAM CLOSED
+
+Independent Sonnet re-audit of `devin/i0-canonical-tool-registry-resolution-fix-2026-09-20` at `4710a668541225ffe3b9d1335d31bb5da8b1e685` classified the bounded seam as:
+
+`A — VERIFIED EFFECTIVE SEAM`
+
+Verified chain:
+
+`assistant_kind → ToolRegistry → canonical tool_id(s) → rank_workers_for_target() → UniversalResource → credential_ref`
+
+Do not reopen this ownership/resolution question without contradictory evidence.
+
+The **next open I0 edge is credential availability/authentication**, not assistant↔tool identity:
+
+`credential → authentication/authorization → transport → external effect → observed result → independent verification`
+
+The existing Windows runtime credential-block evidence remains active; I0 overall is not equivalent to real external execution.

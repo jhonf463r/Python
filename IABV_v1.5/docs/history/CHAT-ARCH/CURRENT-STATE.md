@@ -409,3 +409,45 @@ I0 is not proven and I1 was not reached. No Devin session/result was created. Do
 Next action: make a real Devin credential securely available to the Windows runtime through an already-supported environment variable, without exposing or committing the secret; then rerun only the I0 Phase-A connection test. Once authenticated, continue through the existing production path and stop at the first causal break.
 
 Credential provisioning is an account/environment prerequisite for the person controlling the Devin account. After secure credential availability, Devin remains the best-fit runtime actor. This does not alter L5 or close P0-B/I0/I1/I2.
+
+## 2026-09-20 I0 CANONICAL RESOURCE-RESOLUTION SEAM — VERIFIED
+
+Independent Sonnet re-audit closed the bounded assistant↔tool identity/resource-resolution edge on:
+
+`devin/i0-canonical-tool-registry-resolution-fix-2026-09-20`
+
+`4710a668541225ffe3b9d1335d31bb5da8b1e685`
+
+Result:
+
+**I0 CANONICAL RESOURCE-RESOLUTION SEAM = VERIFIED EFFECTIVE**
+
+Verified:
+
+- `ToolCard` remains declarative identity owner;
+- `ToolRegistry` resolves `assistant_kind → canonical tool_id(s)`;
+- `LocalRoleRouter` receives the real registry instance through production bootstrap;
+- `worker_health_gate()` routes the resolved tool ID into resource ranking;
+- router-level tests cover assistant resolution, credentials, direct tool ID, no-target, fail-closed and one-to-many behavior.
+
+This does **not** change the wider I0 status.
+
+The last recorded real Windows probe still stopped at:
+
+`credential resolution → Devin API authentication`
+
+because no supported Devin credential was present in the controlled runtime.
+
+Therefore:
+
+`I0 resource-resolution seam = CLOSED`
+
+but:
+
+`I0 overall external-agent execution = OPEN / CREDENTIAL-BLOCKED`
+
+Next action is the smallest controlled runtime credential/authentication experiment, using existing I0 infrastructure and no new architecture.
+
+Canonical history record:
+
+`CHAT-ARCH-2026-09-20-002-i0-canonical-resource-resolution-closure.md`

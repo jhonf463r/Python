@@ -342,3 +342,28 @@ Next actor: **DEVIN** for the bounded implementation, followed by independent **
 Canonical adjudication:
 `CHAT-ARCH-2026-09-20-001-canonical-tool-owner-adjudication.md`
 
+
+
+## 2026-09-20 RESOLUTION — I0 ASSISTANT↔TOOL RESOURCE-RESOLUTION SEAM
+
+The implementation seam left open in the 2026-09-20 ownership adjudication is now closed by the independently audited remote artifact:
+
+Branch: `devin/i0-canonical-tool-registry-resolution-fix-2026-09-20`
+
+Commit: `4710a668541225ffe3b9d1335d31bb5da8b1e685`
+
+Independent status: **A — VERIFIED EFFECTIVE SEAM**
+
+Verified boundary:
+
+`assistant_kind → ToolRegistry → canonical tool_id(s) → rank_workers_for_target() → UniversalResource → credential_ref`
+
+This item is no longer an unresolved ownership/resolution problem.
+
+Required negative knowledge remains preserved: the predecessor introduced a reachable `NameError`, broke no-target ranking, failed to wire the registry in bootstrap, and had insufficient router-level test coverage.
+
+Remaining I0 question:
+
+`credential availability → authentication/authorization → transport → external effect → independent verification`
+
+Overall I0/I1 external-agent execution remains open until the real runtime credential/authentication boundary is experimentally closed.

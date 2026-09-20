@@ -215,3 +215,38 @@ Routing: activate for objectives involving assistant↔tool identity, universal 
 Current next edge:
 `assistant_kind → ToolRegistry → normalized tool_id set → rank_workers_for_target() → UniversalResource → credential_ref`
 
+
+
+## 2026-09-20 REGISTRATION — I0 CANONICAL RESOURCE-RESOLUTION CLOSURE
+
+Canonical record:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-20-002-i0-canonical-resource-resolution-closure.md`
+
+Type:
+
+`RECONCILIATION / PERSISTENCE_PROOF`
+
+State:
+
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Implementation artifact:
+
+Branch `devin/i0-canonical-tool-registry-resolution-fix-2026-09-20`
+
+Commit `4710a668541225ffe3b9d1335d31bb5da8b1e685`
+
+Independent audit:
+
+Sonnet classified the bounded seam **A — VERIFIED EFFECTIVE SEAM**.
+
+Verified edge:
+
+`assistant_kind → ToolRegistry → canonical tool_id(s) → resource ranking → UniversalResource → credential_ref`
+
+Routing consequence:
+
+Do not reopen assistant↔tool ownership without contradictory evidence. For I0, the next open edge is credential availability/authentication and then the external execution/effect boundary.
+
+This registration does not promote overall I0, I1 or I2 external-agent execution to proven.
