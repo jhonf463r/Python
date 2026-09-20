@@ -318,3 +318,27 @@ REMAINING BOUNDARIES:
 
 NEXT DISCRIMINATING ACTION:
 Run a minimal I0/I1 experiment through existing IABV external-agent adapter/briefing/orchestration paths, with state-before, delegated action, received result, provenance binding and independent verification. Do not create a new delegation service unless source evidence proves no existing owner can close the edge without duplication.
+
+## 2026-09-20 RESOLUTION — ASSISTANT↔TOOL OWNERSHIP
+
+Resolved by independent Codex adjudication:
+
+**CANONICAL OWNER = ToolCard declaration + ToolRegistry resolution.**
+
+Resolved boundary:
+
+`assistant_kind → ToolRegistry → candidate ToolCard(s) → canonical tool_id(s) → resource ranking`
+
+The previous uncertainty over whether `ToolTeachService` should own this semantic mapping is closed.
+
+Remaining open implementation seam:
+
+`assistant_kind → ToolRegistry resolution → normalized tool identity set → rank_workers_for_target() → selected UniversalResource → credential_ref`
+
+The resource scanner must not become a global assistant-alias resolver or depend on ToolTeachService.
+
+Next actor: **DEVIN** for the bounded implementation, followed by independent **SONNET** audit.
+
+Canonical adjudication:
+`CHAT-ARCH-2026-09-20-001-canonical-tool-owner-adjudication.md`
+
