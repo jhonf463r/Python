@@ -478,3 +478,14 @@ Use the IABV single-window secret flow:
 Do not instruct the user to edit PowerShell or secret files manually while the UI is running.
 
 Next actor: **IABV UI** for secure provisioning flow. After non-secret confirmation of credential presence: **DEVIN** for exact-SHA I0 connection experiment; **SONNET** audits resulting runtime evidence.
+
+
+## 2026-09-20 ROUTING — I0 EXTERNAL ROUTE TARGET NAMEERROR
+
+Current first open implementation edge for the affected external route:
+
+`worker_health_gate() approval path → undefined target → NameError`.
+
+Next actor: **DEVIN** for bounded repair + regression coverage. After fix: **SONNET** independent audit. Only after this defect is cleared should I0 credential/authentication execution resume.
+
+The assistant↔tool/resource-resolution seam remains CLOSED.
