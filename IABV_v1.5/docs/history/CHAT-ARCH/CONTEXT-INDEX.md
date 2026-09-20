@@ -489,3 +489,12 @@ Current first open implementation edge for the affected external route:
 Next actor: **DEVIN** for bounded repair + regression coverage. After fix: **SONNET** independent audit. Only after this defect is cleared should I0 credential/authentication execution resume.
 
 The assistant↔tool/resource-resolution seam remains CLOSED.
+
+
+## 2026-09-20 ROUTING CORRECTION — I0 RUNTIME EFFECTIVENESS REGRESSION
+
+Do not reopen canonical assistant↔tool ownership. The open implementation edge is now:
+
+`LocalRoleRouter.worker_health_gate() → account_approval_ledger path → undefined target → NameError`.
+
+After minimal repair and a production-path regression test, SONNET must independently reassess router/resource-resolution effectiveness.
