@@ -367,3 +367,18 @@ Remaining I0 question:
 `credential availability → authentication/authorization → transport → external effect → independent verification`
 
 Overall I0/I1 external-agent execution remains open until the real runtime credential/authentication boundary is experimentally closed.
+
+
+## 2026-09-20 I0 PHASE A — RUNTIME EVIDENCE PROVENANCE GAP
+
+Current status: **C — INCONCLUSIVE** at independent-audit level.
+
+The reported Windows runtime says all supported Devin credential variables are absent and therefore no authentication request occurred. Independent review verified the production resolver and the pre-HTTP empty-key gate, but could not independently inspect the effective remote process environment or the uncommitted JSON artifact.
+
+Required next evidence:
+
+`exact Windows process → raw non-secret runtime capture → artifact preservation/read-back → independent reconciliation`.
+
+Do not reinterpret this as successful authentication or as I1/I2 progress. Operationally, the reported environment remains credential-blocked.
+
+Secondary unresolved auditability observation: multiple Devin credential-check implementations exist in `account_resource_scanner.py`, including one path that omits `IABV_DEVIN_API_KEY`. This is currently a maintainability/auditability finding, not a demonstrated Phase-A causal blocker.
