@@ -445,29 +445,50 @@ class TestI02RealExternalExecution:
         assert result_second is False
 
     def test_check_external_authorization_empty_fingerprint(self):
-        """Test empty fingerprint behavior.
+        """Test empty fingerprint behavior and document I0-2 vs legacy contract.
 
-        NOTE: In I0-2 valid execution path, effective_fingerprint cannot be empty:
-        - LocalRoleRouter.worker_health_gate() always selects a resource
-        - selected_credential_ref is always present in real I0-2 execution
+        I0-2 CONTRACT (governed external execution):
+        - LocalRoleRouter.worker_health_gate() ALWAYS selects a resource
+        - selected_credential_ref is ALWAYS present in real I0-2 execution
         - run() has FAIL CLOSED at line 2074: if selected_credential_ref but effective_api_key is empty
         - Therefore, if resolution fails, execution is blocked BEFORE authorization check
         - If resolution succeeds, effective_fingerprint is non-empty
+        - CONCLUSION: empty fingerprint is UNREACHABLE in valid I0-2 execution
 
-        This test documents the behavior for completeness, but this case is
-        unreachable in valid I0-2 real execution.
+        LEGACY CONTRACT (constructor-based adapter execution):
+        - selected_credential_ref can be None or empty
+        - In that case, _resolve_api_key(None) uses constructor self.api_key
+        - This allows non-I0-2 callers to use adapter with constructor default
+        - Example: bootstrap.py:639 creates adapter with _resolve_devin_api_key()
+        - Example: GitHubRemoteService may not use resource selection
+        - This is a separate contract from I0-2 governed execution
+
+        validate_binding() BEHAVIOR (pre-existing in models.py:3446-3450):
+        if credential_fingerprint and self.credential_fingerprint:
+            if self.credential_fingerprint != credential_fingerprint:
+                return False
+        - If either fingerprint is empty, the check is SKIPPED
+        - This is pre-existing behavior, not introduced by b1959ea1d
+        - For I0-2, this is safe because fingerprints are never empty in valid I0-2 path
+        - For legacy, this allows constructor-based execution without fingerprint binding
+
+        NO PRODUCTION CODE CHANGE NEEDED:
+        - I0-2 path is protected by worker_health_gate + FAIL CLOSED at line 2074
+        - Legacy path is a separate contract that uses constructor defaults
+        - validate_binding() behavior is pre-existing and appropriate for both contracts
         """
         from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
         import hashlib
 
-        # Create a mock adapter
-        adapter = DevinApiToolAdapter()
+        # Create a mock adapter with constructor api_key (legacy mode)
+        adapter = DevinApiToolAdapter(api_key='test_constructor_key')
 
         # Compute the correct prompt digest
         prompt = 'Test objective'
         prompt_digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
 
         # Create a FRESH authorization WITHOUT credential_fingerprint (empty)
+        # This simulates legacy mode where authorization was created without fingerprint binding
         auth = ExternalActionAuthorization(
             task_id='test_task_4',
             tool_id='devin_api',
@@ -480,10 +501,10 @@ class TestI02RealExternalExecution:
             issued_at=datetime.now(timezone.utc),
             expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
             approved_by='test_user',
-            reason='Test authorization for empty fingerprint test',
-            selected_resource_id='devin_credential_0',
-            selected_provider='devin',
-            selected_credential_ref='devin:credential_0:DEVIN_API_KEY',
+            reason='Test authorization for empty fingerprint test (legacy mode)',
+            selected_resource_id='',  # Empty - legacy mode
+            selected_provider='',  # Empty - legacy mode
+            selected_credential_ref='',  # Empty - legacy mode
             credential_fingerprint='',  # Empty - authorization created without fingerprint
         )
 
@@ -492,24 +513,23 @@ class TestI02RealExternalExecution:
             tool_id='devin_api',
             title='Test',
             objective=prompt,
+            metadata={
+                'selected_credential_ref': '',  # Empty - legacy mode
+            },
         )
 
-        # Test with empty effective_fingerprint
-        # According to validate_binding() logic (models.py:3446-3450):
-        # if credential_fingerprint and self.credential_fingerprint:
-        #     if self.credential_fingerprint != credential_fingerprint:
-        #         return False
-        # If either is empty, the fingerprint check is SKIPPED
+        # Test with empty effective_fingerprint (legacy mode)
+        # According to validate_binding() logic: if either fingerprint is empty, check is skipped
         result_empty = adapter._check_external_authorization(
             task=task,
             prompt=prompt,
             authorization=auth,
-            effective_fingerprint='',  # Empty
+            effective_fingerprint='',  # Empty - legacy mode
         )
 
         # Document actual behavior:
         # Since both fingerprints are empty, the check is skipped
         # This demonstrates the pre-existing behavior in validate_binding()
-        # This case is unreachable in valid I0-2 execution (see docstring)
+        # This is LEGACY MODE behavior, not I0-2 mode
         # We just verify it doesn't crash
         assert isinstance(result_empty, bool)
