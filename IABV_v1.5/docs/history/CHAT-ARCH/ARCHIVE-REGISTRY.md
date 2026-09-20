@@ -250,3 +250,28 @@ Routing consequence:
 Do not reopen assistant↔tool ownership without contradictory evidence. For I0, the next open edge is credential availability/authentication and then the external execution/effect boundary.
 
 This registration does not promote overall I0, I1 or I2 external-agent execution to proven.
+
+
+## 2026-09-20 REGISTRATION — I0 PHASE A INDEPENDENT AUDIT
+
+Canonical record:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-20-003-i0-phase-a-independent-audit-inconclusive.md`
+
+Type:
+
+`RECONCILIATION / PERSISTENCE_PROOF`
+
+State:
+
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Purpose: preserve the first independent audit of the reported Windows I0 Phase-A credential-block evidence.
+
+Classification: **C — INCONCLUSIVE**.
+
+The production resolver and pre-HTTP empty-key gate are verified. The remote process environment and uncommitted runtime JSON remain unverified.
+
+Routing: next actor DEVIN for raw non-secret runtime evidence capture; SONNET for independent reconciliation afterward.
+
+This record does not promote I0 Phase A, I1, I2, authentication, authorization or external execution to proven.
