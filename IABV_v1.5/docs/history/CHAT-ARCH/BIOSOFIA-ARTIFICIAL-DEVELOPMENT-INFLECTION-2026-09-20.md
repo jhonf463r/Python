@@ -480,3 +480,20 @@ It is:
 "Can IABV progressively acquire, verify and reuse the organizational and developmental capabilities required to direct its own future development, while remaining observable, governed and causally accountable?"
 
 That question remains open and should be tested incrementally.
+
+
+## 2026-09-20 LIVE ADDENDUM — I0 PHASE A R2
+
+The assistant↔tool/resource-resolution prerequisite is now CLOSED/VERIFIED EFFECTIVE at `4710a668541225ffe3b9d1335d31bb5da8b1e685`.
+
+Independent Sonnet audit of the preserved R2 runtime artifact classified Phase A **B — PARTIALLY VERIFIED**. Artifact provenance/integrity and source consistency are closed; real Windows credential availability and external execution remain open.
+
+Therefore the universal-substrate frontier is now:
+
+`credential availability → authentication/authorization → adapter → transport → external effect → observation → independent verification → learning/reuse`.
+
+The development inflection remains a later longitudinal condition, not a single successful API call. The strategic path is:
+
+`I0 real external connection → I1 automatic round trip → I2 dynamic closed loop → repeated verified experience changing routing/strategy while routine human coordination falls → U7 developmental acceleration`.
+
+Next actor: **DEVIN** for the controlled Windows credential/execution boundary; then **SONNET** for independent verification.
