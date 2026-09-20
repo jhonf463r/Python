@@ -1194,38 +1194,14 @@ class AdaptiveTaskOrchestrator:
             },
             'metadata': {
                 'user_goal': user_goal,
-                'assistant_kind': primary_ia,
                 'auto_executed_from_pulse': True,
                 'proposal_type': str(best.get('type') or ''),
                 'proposal_title': str(best.get('title') or ''),
+                # Proposed assistant from G1 - NOT a decision, only a recommendation
+                'proposed_assistant_kind': primary_ia,
+                'proposed_assistant_source': 'autonomous_validation_cycle',
             },
         }
-
-        # Worker gate selection for quota tracking and credential binding
-        _gate_ap = self.role_router.worker_health_gate(
-            target_assistant=primary_ia,
-        ) if primary_ia else {}
-        _email_ap = str((_gate_ap.get('top_worker') or {}).get('email') or '')
-
-        # Propagate worker_gate selection to adaptive_session metadata for credential binding
-        if _gate_ap.get('usable') and _gate_ap.get('top_worker'):
-            top_worker = dict(_gate_ap.get('top_worker') or {})
-            adaptive_session['metadata']['worker_gate'] = {
-                'usable': True,
-                'top_worker': top_worker,
-                'recommended_account': None,
-                'ranked_workers': [],
-                'available_count': 1,
-                'reason': '',
-                'account_selection_source': 'auto_ranked',
-                'fallback_used': False,
-            }
-            adaptive_session['metadata']['selected_resource_id'] = top_worker.get('resource_id', '')
-            adaptive_session['metadata']['selected_provider'] = top_worker.get('provider', '')
-            adaptive_session['metadata']['selected_credential_ref'] = top_worker.get('credential_ref', '')
-            adaptive_session['metadata']['selected_email'] = top_worker.get('email', '')
-            adaptive_session['metadata']['selected_browser'] = top_worker.get('browser', '')
-            adaptive_session['metadata']['selected_profile'] = top_worker.get('profile', '')
 
         # Call canonical activation authority (activate_phase2 → govern_adaptive_payload → plan_or_execute)
         try:
@@ -1239,16 +1215,23 @@ class AdaptiveTaskOrchestrator:
 
         # Extract primary result from governed payload
         primary_dict = dict((governed_payload.get('metadata') or {}).get('autonomous_evolution') or {})
-        primary_dict.setdefault('assistant_kind', primary_ia)
         _aps = str(primary_dict.get('status') or '')
         if _aps not in ('noop', 'failed', 'blocked_external', ''):
-            _aq = self._record_quota_usage(
-                str(primary_dict.get('actual_assistant_kind') or primary_ia),
-                _email_ap,
-                source='auto_execute_from_sync_pulse',
-            )
-            if _aq is not None:
-                primary_dict['quota_status'] = _aq
+            # Extract actual assistant from governance decision (not the proposal)
+            actual_assistant = str(primary_dict.get('actual_assistant_kind') or '')
+            # Get email from governed payload metadata (resource selection happens AFTER governance)
+            governed_metadata = governed_payload.get('metadata') or {}
+            worker_gate = governed_metadata.get('worker_gate') or {}
+            top_worker = worker_gate.get('top_worker') or {}
+            _email_ap = str(top_worker.get('email') or '')
+            if actual_assistant and _email_ap:
+                _aq = self._record_quota_usage(
+                    actual_assistant,
+                    _email_ap,
+                    source='auto_execute_from_sync_pulse',
+                )
+                if _aq is not None:
+                    primary_dict['quota_status'] = _aq
         # Preserve G1 semantics: chained consultation to secondary_ia
         secondary_ia = str(best.get('secondary_ia') or '')
         chained_result = None
@@ -2050,6 +2033,12 @@ class AdaptiveTaskOrchestrator:
             adaptive_payload['chosen_pack_title'] = adaptive_session['chosen_pack_title']
         if 'status' in adaptive_session:
             adaptive_payload['status'] = adaptive_session['status']
+
+        # Promote proposed assistant fields for G1 handoff
+        if 'proposed_assistant_kind' in adaptive_session.get('metadata', {}):
+            adaptive_payload['proposed_assistant_kind'] = adaptive_session['metadata']['proposed_assistant_kind']
+        if 'proposed_assistant_source' in adaptive_session.get('metadata', {}):
+            adaptive_payload['proposed_assistant_source'] = adaptive_session['metadata']['proposed_assistant_source']
 
         # Call the canonical Phase 2 implementation
         governed_payload = self.govern_adaptive_payload(
@@ -3331,6 +3320,8 @@ class AdaptiveTaskOrchestrator:
             supporting_trace_ids=supporting_trace_ids,
             blocked_assistants=list(ia_trace_summary.get('blocked_assistants') or []),
             world_model=world_model,
+            proposed_assistant_kind=str(payload.get('proposed_assistant_kind') or '').strip(),
+            proposed_assistant_source=str(payload.get('proposed_assistant_source') or '').strip(),
         )
         guided_assistant = self._enrich_assistant_guidance(
             session=AdaptiveSession(
@@ -4110,6 +4101,8 @@ class AdaptiveTaskOrchestrator:
         blocked_assistants: list[str] | None = None,
         environment_self_model: EnvironmentSelfModel | None = None,
         world_model: WorldModelSnapshot | None = None,
+        proposed_assistant_kind: str = '',
+        proposed_assistant_source: str = '',
     ) -> dict[str, Any]:
         if self.autonomy_governance_policy is not None:
             return self.autonomy_governance_policy.evaluate(
@@ -4130,6 +4123,8 @@ class AdaptiveTaskOrchestrator:
                 blocked_assistants=blocked_assistants,
                 environment_self_model=environment_self_model,
                 world_model=world_model,
+                proposed_assistant_kind=proposed_assistant_kind,
+                proposed_assistant_source=proposed_assistant_source,
             )
         guidance_mode = str(assistant_guidance.get('mode') or '').strip().lower()
         live_action = str(session_readiness.get('live_audit_action') or live_audit.get('decision_action') or '').strip().lower()

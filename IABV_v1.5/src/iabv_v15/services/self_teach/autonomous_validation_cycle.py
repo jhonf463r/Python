@@ -584,7 +584,7 @@ class AutonomousValidationCycleService:
                             'action_plan': p.get('action_plan'),
                             'estimated_confidence': float(p.get('estimated_confidence') or 0.0),
                             'primary_ia': str((p.get('action_plan') or [{}])[0].get('ia') or '') if isinstance(p.get('action_plan'), list) and p.get('action_plan') else '',
-                            'secondary_ia': str((p.get('action_plan') or [{}])[1].get('ia') or '') if isinstance(p.get('action_plan'), list) and len(p.get('action_plan') or []) >= 2 else '',
+                            'secondary_ia': self._derive_secondary_ia_from_action_plan(p.get('action_plan')),
                         }
                         for p in proposals[:4]
                         if isinstance(p, dict)
@@ -701,6 +701,37 @@ class AutonomousValidationCycleService:
         except Exception:
             pass
         return result
+
+    def _derive_secondary_ia_from_action_plan(self, action_plan: Any) -> str:
+        """Derive secondary_ia from action_plan only when it represents a real consultation.
+
+        NOT all action_plan[1] entries are consultations. For example, in route_substitution:
+        [0] {'ia': best_alt, 'action': 'Asumir tareas...'}
+        [1] {'ia': failing_kind, 'action': 'Reducir prioridad hasta evidencia de mejora'}
+
+        The second element is a policy adjustment, NOT a consultation/interlocution.
+        We only derive secondary_ia when the second step is actually a consultation.
+
+        Current heuristic: derive only if the action text suggests interaction/consultation.
+        If a structural marker exists in the future, use that instead.
+        """
+        if not isinstance(action_plan, list) or len(action_plan) < 2:
+            return ''
+        second_step = action_plan[1]
+        if not isinstance(second_step, dict):
+            return ''
+        ia = str(second_step.get('ia') or '').strip()
+        action = str(second_step.get('action') or '').strip().lower()
+        # Only treat as consultation if action suggests interaction/consultation
+        # Policy adjustments like "reducir prioridad" are NOT consultations
+        consultation_keywords = {
+            'validar', 'complementar', 'consultar', 'interactuar', 'revisar',
+            'verificar', 'evaluar', 'analizar', 'investigar', 'comprobar',
+        }
+        if any(keyword in action for keyword in consultation_keywords):
+            return ia
+        # If no clear consultation keyword, treat as policy adjustment
+        return ''
 
     def _maybe_git_auto_sync(self) -> dict[str, Any] | None:
         """Check for remote updates and auto-pull when safe.

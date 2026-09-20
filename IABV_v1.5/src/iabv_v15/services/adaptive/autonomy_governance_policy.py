@@ -279,6 +279,8 @@ class AutonomyGovernancePolicy:
         ambiguity_score: float = 0.0,
         requires_clarification: bool = False,
         sub_intents: list[str] | None = None,
+        proposed_assistant_kind: str = '',
+        proposed_assistant_source: str = '',
     ) -> dict[str, Any]:
         goal = self._normalize_goal_context(goal_context)
         environment = self._normalize_environment_self_model(environment_self_model)
@@ -289,6 +291,9 @@ class AutonomyGovernancePolicy:
         goal_confidence = float(goal.get('confidence') or 0.0)
         external_states = canonical_external_state_flags(external_state_flags)
         historical_assistant = str(preferred_assistant_kind or '').strip().lower()
+        proposed_assistant = str(proposed_assistant_kind or '').strip().lower()
+        proposed_assistant_original = proposed_assistant  # Keep original for tracing
+        proposed_source = str(proposed_assistant_source or '').strip()
         blocked_assistant_set = {
             str(item or '').strip().lower()
             for item in (blocked_assistants or [])
@@ -296,6 +301,8 @@ class AutonomyGovernancePolicy:
         }
         if historical_assistant in blocked_assistant_set:
             historical_assistant = ''
+        if proposed_assistant in blocked_assistant_set:
+            proposed_assistant = ''  # Clear for use in decision, but keep original for tracing
 
         # ETAPA 2: Ambiguity and clarification check
         if requires_clarification or ambiguity_score > 0.75:
@@ -422,6 +429,9 @@ class AutonomyGovernancePolicy:
             explicit_assistant=explicit_assistant,
             historical_assistant=historical_assistant,
             technical_pressure=technical_pressure,
+            proposed_assistant=proposed_assistant,
+            proposed_assistant_source=proposed_source,
+            proposed_assistant_kind=proposed_assistant_original,
         )
         if world_model_guard is not None:
             return world_model_guard
@@ -514,6 +524,7 @@ class AutonomyGovernancePolicy:
 
         if explicit_assistant:
             explicit_action = self._consult_action_for_assistant(explicit_assistant)
+            proposal_disposition = 'overridden' if proposed_assistant_original and proposed_assistant_original != explicit_assistant else ''
             return self._snapshot(
                 autonomy_level='guarded_research' if explicit_assistant != 'ollama' else 'autonomous_local',
                 recommended_action=explicit_action,
@@ -528,6 +539,51 @@ class AutonomyGovernancePolicy:
                 blockers=blockers,
                 diagnostic_category='explicit_external_consultation',
                 external_state_flags=external_states,
+                proposed_assistant_kind=proposed_assistant_original,
+                proposed_assistant_source=proposed_source,
+                proposal_disposition=proposal_disposition,
+            )
+
+        # Autonomous proposal branch (G1 handoff)
+        # Precedence: human explicit > autonomous proposal > technical pressure
+        if proposed_assistant_original and not explicit_assistant:
+            # Check if proposed assistant is blocked
+            if proposed_assistant_original in blocked_assistant_set:
+                return self._snapshot(
+                    autonomy_level='guarded_local',
+                    recommended_action='stop_and_wait_user',
+                    reason=f'La propuesta autónoma sugirió {proposed_assistant_original}, pero ese asistente está bloqueado. La propuesta fue vetada por política.',
+                    confidence=max(confidence, 0.75),
+                    should_consult=False,
+                    approval_required=False,
+                    block_risky_action=True,
+                    require_sandbox=False,
+                    blockers=[f'Propuesta autónoma {proposed_assistant_original} está en blocked_assistants'],
+                    diagnostic_category='autonomous_proposal_vetoed',
+                    external_state_flags=external_states,
+                    proposed_assistant_kind=proposed_assistant_original,
+                    proposed_assistant_source=proposed_source,
+                    proposal_disposition='vetoed',
+                )
+            # Accept autonomous proposal
+            proposed_action = self._consult_action_for_assistant(proposed_assistant)
+            return self._snapshot(
+                autonomy_level='guarded_research' if proposed_assistant != 'ollama' else 'autonomous_local',
+                recommended_action=proposed_action,
+                reason=f'La propuesta autónoma ({proposed_source}) sugirió {proposed_assistant}. No hay solicitud humana explícita que la sobrepase.',
+                confidence=max(confidence, 0.76),
+                should_consult=True,
+                research_needed=proposed_assistant != 'ollama',
+                assistant_kind=proposed_assistant,
+                approval_required=False,
+                block_risky_action=False,
+                require_sandbox=proposed_assistant == 'codex',
+                blockers=blockers,
+                diagnostic_category='autonomous_proposal_accepted',
+                external_state_flags=external_states,
+                proposed_assistant_kind=proposed_assistant,
+                proposed_assistant_source=proposed_source,
+                proposal_disposition='accepted',
             )
 
         if technical_pressure:
@@ -683,8 +739,11 @@ class AutonomyGovernancePolicy:
         external_state_flags: list[str] | None = None,
         blocked_routes: list[str] | None = None,
         permission_gates: list[dict[str, Any]] | None = None,
+        proposed_assistant_kind: str = '',
+        proposed_assistant_source: str = '',
+        proposal_disposition: str = '',
     ) -> dict[str, Any]:
-        return {
+        snapshot = {
             'autonomy_level': autonomy_level,
             'should_consult': should_consult,
             'should_retry': should_retry,
@@ -704,6 +763,13 @@ class AutonomyGovernancePolicy:
             'blocked_routes': [item for item in (blocked_routes or []) if str(item).strip()][:6],
             'permission_gates': list(permission_gates or [])[:6],
         }
+        # Add proposal tracing if present
+        if proposed_assistant_kind or proposal_disposition:
+            snapshot['proposed_assistant_kind'] = proposed_assistant_kind
+            snapshot['proposed_assistant_source'] = proposed_assistant_source
+            snapshot['proposal_disposition'] = proposal_disposition
+            snapshot['final_assistant_kind'] = assistant_kind
+        return snapshot
 
     def _environment_guard(
         self,
@@ -795,6 +861,9 @@ class AutonomyGovernancePolicy:
         explicit_assistant: str,
         historical_assistant: str,
         technical_pressure: bool,
+        proposed_assistant: str = '',
+        proposed_assistant_source: str = '',
+        proposed_assistant_kind: str = '',
     ) -> dict[str, Any] | None:
         if world_model is None:
             return None
@@ -808,7 +877,7 @@ class AutonomyGovernancePolicy:
         if not meaningful_signal:
             return None
 
-        assistant_hint = explicit_assistant or historical_assistant or ('codex' if technical_pressure else '')
+        assistant_hint = explicit_assistant or proposed_assistant or historical_assistant or ('codex' if technical_pressure else '')
         statuses = {
             str(item.assistant_kind or '').strip().lower(): item
             for item in (world_model.tool_live_status or [])
@@ -860,6 +929,8 @@ class AutonomyGovernancePolicy:
                 'assistant_unavailable': f'No pude confirmar que {explicit_record.title or assistant_hint or "la herramienta"} este disponible antes de usarla.',
                 'network_blocked': 'La red no esta lista para sostener una consulta externa confiable en este momento.',
             }
+            # If this is a veto of an autonomous proposal, trace it
+            proposal_disposition = 'vetoed' if proposed_assistant and proposed_assistant == assistant_hint else ''
             return self._snapshot(
                 autonomy_level='guarded_local',
                 recommended_action='continue_local' if category != 'wrong_thread' else 'audit_autonomy',
@@ -873,6 +944,9 @@ class AutonomyGovernancePolicy:
                 external_state_flags=canonical_external_state_flags([*external_state_flags, category]),
                 blocked_routes=[str(explicit_record.target_scope or '')],
                 permission_gates=[item.model_dump(mode='json') for item in permission_gates],
+                proposed_assistant_kind=proposed_assistant if proposal_disposition else '',
+                proposed_assistant_source=proposed_assistant_source if proposal_disposition else '',
+                proposal_disposition=proposal_disposition,
             )
         network = world_model.network_status
         if assistant_hint and assistant_hint != 'ollama' and network.status in {'desconectado', 'bloqueado'}:

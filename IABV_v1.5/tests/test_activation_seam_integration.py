@@ -339,11 +339,14 @@ class TestActivationSeamIntegration:
         assert result['executed'] is True
         assert result['coordination_status'] == 'auto_executed'
 
-        # Verify worker_gate selection was propagated to adaptive_session
+        # Verify proposed_assistant_kind is in adaptive_session metadata (not worker_gate)
+        # Worker gate selection now happens AFTER governance, not before
         adaptive_session_arg = activate_phase2_called[0]['adaptive_session']
-        assert 'worker_gate' in adaptive_session_arg['metadata']
-        assert adaptive_session_arg['metadata']['selected_resource_id'] == 'devin_credential_0'
-        assert adaptive_session_arg['metadata']['selected_credential_ref'] == 'devin:credential_0:DEVIN_API_KEY_A'
+        assert 'proposed_assistant_kind' in adaptive_session_arg['metadata']
+        assert adaptive_session_arg['metadata']['proposed_assistant_kind'] == 'codex'
+        assert adaptive_session_arg['metadata']['proposed_assistant_source'] == 'autonomous_validation_cycle'
+        # worker_gate is NOT in adaptive_session anymore (selection happens after governance)
+        assert 'worker_gate' not in adaptive_session_arg['metadata']
 
     def test_g1_intent_preserved_through_canonical_reconstruction(self):
         """Test: G1 intent is promoted to adaptive_payload for canonical DecisionContext reconstruction."""
