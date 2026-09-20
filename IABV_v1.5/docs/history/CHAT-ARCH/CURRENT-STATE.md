@@ -565,3 +565,10 @@ La evidencia del `NameError: target is not defined` obliga a separar dos afirmac
 - **Production router/resource-resolution effectiveness** = OPEN PENDING REPAIR. La ruta real atraviesa `LocalRoleRouter.worker_health_gate()` y puede romperse en el approval-ledger branch antes de completar el uso del recurso.
 
 No se reabre la decisión de ownership. Se reabre únicamente la verificación de efectividad del consumidor runtime hasta que la regresión sea reparada y auditada.
+
+
+## 2026-09-20 I0 TARGET FIX — REMOTE PROVENANCE PENDING
+
+Devin reported a bounded fix for the reachable `target` NameError: `target_assistant=target` → `target_assistant=target_assistant_normalized`, with a unit test covering a non-null approval-ledger path. However, the reported branch `devin/i0-external-route-target-fix-2026-09-20` and abbreviated SHA `b3e211fbb` are not currently readable through GitHub search/read-back. Therefore the fix is **reported only, not yet remotely verified**.
+
+The next action is not another runtime experiment: Devin must publish/read-back the branch and exact full commit SHA, then the diff and regression test can be independently audited. Do not claim the runtime route is repaired until remote provenance is established.
