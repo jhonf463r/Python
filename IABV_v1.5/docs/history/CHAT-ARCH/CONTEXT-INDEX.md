@@ -498,3 +498,7 @@ Do not reopen canonical assistant↔tool ownership. The open implementation edge
 `LocalRoleRouter.worker_health_gate() → account_approval_ledger path → undefined target → NameError`.
 
 After minimal repair and a production-path regression test, SONNET must independently reassess router/resource-resolution effectiveness.
+
+## 2026-09-20 ROUTING — I0 TARGET FIX PROVENANCE
+
+The reported `target` NameError fix is not yet remotely readable. Route next to **DEVIN** only for publication/read-back of the exact implementation branch and full commit SHA; after remote verification, route to **SONNET** for independent code/test audit. Do not run another external runtime probe yet.
