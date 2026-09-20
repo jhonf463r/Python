@@ -418,3 +418,18 @@ Current state:
 - Phase-A classification = **C — INCONCLUSIVE**.
 
 Next actor: **SONNET**. Do not reopen ToolCard/ToolRegistry resolution and do not attempt authentication/I1/I2.
+
+
+## 2026-09-20 ROUTING — I0 PHASE A R2 AUDIT CLOSED AT B
+
+Activate:
+`CHAT-ARCH-2026-09-20-005-i0-phase-a-r2-independent-audit-b.md`
+
+Current I0 edge:
+`real credential availability → authentication/authorization → transport → external effect → independent verification`.
+
+Phase-A R2 classification: **B — PARTIALLY VERIFIED**.
+
+Next actor: **DEVIN** for the real Windows credential/execution boundary. After new runtime evidence: **SONNET** for independent forensic audit.
+
+Do not reopen the verified assistant↔tool/resource-resolution seam.
