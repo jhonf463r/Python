@@ -4,6 +4,7 @@ import concurrent.futures
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
+from uuid import uuid4
 
 from iabv_v15.domain.models import (
     AdaptiveSession,
@@ -1160,9 +1161,9 @@ class AdaptiveTaskOrchestrator:
 
         Called by ``AutonomousValidationCycleService._maybe_auto_execute_proposals``
         when the heartbeat determines ``action_ready``.  Uses the existing
-        orchestrator as mediator — no new brain.  Delegates to
-        ``autonomous_evolution_service.plan_or_execute`` for the primary IA,
-        then chains to secondary IA if the primary yields a usable response.
+        orchestrator as mediator — no new brain.  Delegates to the canonical
+        activation authority via ``activate_phase2()`` to ensure governance
+        consistency with the governed Phase-2 path.
 
         Returns an execution summary dict, or ``None`` if nothing qualified.
         """
@@ -1180,42 +1181,70 @@ class AdaptiveTaskOrchestrator:
         if not primary_ia:
             return None
         user_goal = str(best.get('title') or 'Ejecutar propuesta coordinada')
-        primary_payload = {
+
+        # Build canonical adaptive_session from proposal (Phase 1 result)
+        # This represents the decision state before Phase 2 activation
+        adaptive_session = {
+            'session_id': str(uuid4()),
             'user_goal': user_goal,
-            'site_hint': '',
+            'intent': {
+                'intent_key': 'auto_execute_from_pulse',
+                'confidence': float(best.get('estimated_confidence') or 0.0),
+                'detected_role': 'tool_use',
+            },
             'metadata': {
                 'user_goal': user_goal,
                 'assistant_kind': primary_ia,
                 'auto_executed_from_pulse': True,
                 'proposal_type': str(best.get('type') or ''),
                 'proposal_title': str(best.get('title') or ''),
+                'decision_context': {
+                    'governance': {
+                        'should_consult': True,
+                        'assistant_kind': primary_ia,
+                    },
+                },
             },
         }
+
+        # Worker gate selection for quota tracking and credential binding
         _gate_ap = self.role_router.worker_health_gate(
             target_assistant=primary_ia,
         ) if primary_ia else {}
         _email_ap = str((_gate_ap.get('top_worker') or {}).get('email') or '')
 
-        # Propagate worker_gate selection to payload metadata for credential binding
+        # Propagate worker_gate selection to adaptive_session metadata for credential binding
         if _gate_ap.get('usable') and _gate_ap.get('top_worker'):
             top_worker = dict(_gate_ap.get('top_worker') or {})
-            primary_payload['metadata']['selected_resource_id'] = top_worker.get('resource_id', '')
-            primary_payload['metadata']['selected_provider'] = top_worker.get('provider', '')
-            primary_payload['metadata']['selected_credential_ref'] = top_worker.get('credential_ref', '')
-            primary_payload['metadata']['selected_email'] = top_worker.get('email', '')
-            primary_payload['metadata']['selected_browser'] = top_worker.get('browser', '')
-            primary_payload['metadata']['selected_profile'] = top_worker.get('profile', '')
+            adaptive_session['metadata']['worker_gate'] = {
+                'usable': True,
+                'top_worker': top_worker,
+                'recommended_account': None,
+                'ranked_workers': [],
+                'available_count': 1,
+                'reason': '',
+                'account_selection_source': 'auto_ranked',
+                'fallback_used': False,
+            }
+            adaptive_session['metadata']['selected_resource_id'] = top_worker.get('resource_id', '')
+            adaptive_session['metadata']['selected_provider'] = top_worker.get('provider', '')
+            adaptive_session['metadata']['selected_credential_ref'] = top_worker.get('credential_ref', '')
+            adaptive_session['metadata']['selected_email'] = top_worker.get('email', '')
+            adaptive_session['metadata']['selected_browser'] = top_worker.get('browser', '')
+            adaptive_session['metadata']['selected_profile'] = top_worker.get('profile', '')
 
+        # Call canonical activation authority (activate_phase2 → govern_adaptive_payload → plan_or_execute)
         try:
-            primary_result = self.autonomous_evolution_service.plan_or_execute(
-                adaptive_payload=primary_payload,
+            governed_payload = self.activate_phase2(
+                adaptive_session=adaptive_session,
                 user_goal=user_goal,
                 source='auto_execute_from_sync_pulse',
-                decision_context=None,
             )
         except Exception:
             return None
-        primary_dict = dict(primary_result or {})
+
+        # Extract primary result from governed payload
+        primary_dict = dict((governed_payload.get('metadata') or {}).get('autonomous_evolution') or {})
         primary_dict.setdefault('assistant_kind', primary_ia)
         _aps = str(primary_dict.get('status') or '')
         if _aps not in ('noop', 'failed', 'blocked_external', ''):
@@ -1226,6 +1255,7 @@ class AdaptiveTaskOrchestrator:
             )
             if _aq is not None:
                 primary_dict['quota_status'] = _aq
+        # Preserve G1 semantics: chained consultation to secondary_ia
         secondary_ia = str(best.get('secondary_ia') or '')
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):

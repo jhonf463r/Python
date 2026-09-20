@@ -296,3 +296,51 @@ class TestActivationSeamIntegration:
         assert phase2_payload['metadata']['selected_resource_id'] == 'devin_credential_0'
         assert phase2_payload['metadata']['selected_provider'] == 'devin'
         assert phase2_payload['metadata']['selected_credential_ref'] == 'devin:credential_0:DEVIN_API_KEY_A'
+
+    def test_auto_execute_from_sync_pulse_uses_canonical_authority(self):
+        """Test: auto_execute_from_sync_pulse() delegates to activate_phase2() canonical authority."""
+        orchestrator = _minimal_orchestrator(_workspace('test_g1_canonical'))
+
+        # Simulate proposals from sync_pulse
+        proposals = [
+            {
+                'estimated_confidence': 0.8,
+                'primary_ia': 'codex',
+                'secondary_ia': 'chatgpt',
+                'type': 'coordinated_plan',
+                'title': 'Test proposal',
+            },
+        ]
+
+        # Mock activate_phase2 to track invocation
+        original_activate_phase2 = orchestrator.activate_phase2
+        activate_phase2_called = []
+
+        def mock_activate_phase2(adaptive_session, *, user_goal, source):
+            activate_phase2_called.append({
+                'adaptive_session': adaptive_session,
+                'user_goal': user_goal,
+                'source': source,
+            })
+            return original_activate_phase2(adaptive_session, user_goal=user_goal, source=source)
+
+        orchestrator.activate_phase2 = mock_activate_phase2
+
+        # Call auto_execute_from_sync_pulse
+        result = orchestrator.auto_execute_from_sync_pulse(proposals)
+
+        # Verify activate_phase2 was called (canonical authority used)
+        assert len(activate_phase2_called) == 1
+        assert activate_phase2_called[0]['user_goal'] == 'Test proposal'
+        assert activate_phase2_called[0]['source'] == 'auto_execute_from_sync_pulse'
+
+        # Verify result is not None (proposal was qualified)
+        assert result is not None
+        assert result['executed'] is True
+        assert result['coordination_status'] == 'auto_executed'
+
+        # Verify worker_gate selection was propagated to adaptive_session
+        adaptive_session_arg = activate_phase2_called[0]['adaptive_session']
+        assert 'worker_gate' in adaptive_session_arg['metadata']
+        assert adaptive_session_arg['metadata']['selected_resource_id'] == 'devin_credential_0'
+        assert adaptive_session_arg['metadata']['selected_credential_ref'] == 'devin:credential_0:DEVIN_API_KEY_A'
