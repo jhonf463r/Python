@@ -58,6 +58,7 @@ class LocalRoleRouter:
         run_repository: RunRepository,
         artifact_repository: SessionArtifactRepository,
         tool_teach_service: Any | None = None,
+        tool_registry: Any | None = None,
         account_resource_scanner: Callable[[], dict[str, Any]] | None = None,
         account_approval_ledger: Any | None = None,
     ) -> None:
@@ -76,6 +77,7 @@ class LocalRoleRouter:
         self.run_repository = run_repository
         self.artifact_repository = artifact_repository
         self.tool_teach_service = tool_teach_service
+        self.tool_registry = tool_registry
         self._account_resource_scanner = account_resource_scanner
         self._account_approval_ledger = account_approval_ledger
         self._health_snapshot_lock = threading.RLock()
@@ -270,17 +272,51 @@ class LocalRoleRouter:
         )
 
         available = pool.get('available_count', 0)
-        target = str(target_assistant or '').strip().lower()
+        target_assistant_normalized = str(target_assistant or '').strip().lower()
+
+        # Normalize assistant_kind to canonical tool_id(s) using ToolRegistry
+        # This is the canonical resolution path: assistant_kind → ToolCard → tool_id(s)
+        normalized_tool_ids = []
+
+        # First, check if the input is already a registered tool_id (direct path compatibility)
+        is_direct_tool_id = False
+        if target_assistant_normalized and self.tool_registry is not None:
+            for card in self.tool_registry.list_cards():
+                if card.tool_id == target_assistant_normalized:
+                    is_direct_tool_id = True
+                    normalized_tool_ids = [target_assistant_normalized]
+                    break
+
+        # If not a direct tool_id, treat as assistant_kind and require resolution
+        if not is_direct_tool_id and target_assistant_normalized and self.tool_registry is not None:
+            try:
+                resolved_ids = self.tool_registry.resolve_tool_ids_by_assistant_kind(
+                    target_assistant_normalized
+                )
+                if resolved_ids:
+                    normalized_tool_ids = resolved_ids
+                # If resolution returns empty, unknown assistant -> no candidates (fail closed)
+            except Exception:
+                # Resolution error -> no candidates (fail closed)
+                pass
 
         # Get universal resources from pool if available
         universal_resources = pool.get('universal_resources', [])
 
-        ranked = rank_workers_for_target(
-            target,
-            pool=pool,
-            block_signals=block_signals or {},
-            universal_resources=universal_resources,
-        )
+        # Rank workers for each resolved tool_id and merge results
+        all_ranked = []
+        for tool_id in normalized_tool_ids:
+            ranked_for_tool = rank_workers_for_target(
+                tool_id,
+                pool=pool,
+                block_signals=block_signals or {},
+                universal_resources=universal_resources,
+            )
+            all_ranked.extend(ranked_for_tool)
+
+        # Sort all ranked workers by score (descending)
+        all_ranked.sort(key=lambda w: w.get('score', 0.0), reverse=True)
+        ranked = all_ranked
 
         if not ranked:
             if available == 0:

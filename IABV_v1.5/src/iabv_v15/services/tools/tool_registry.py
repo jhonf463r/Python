@@ -67,6 +67,32 @@ class ToolRegistry:
         cards = self.list_cards()
         return self.refresh_card(cards[0]) if cards else None
 
+
+    def resolve_tool_ids_by_assistant_kind(self, assistant_kind: str) -> list[str]:
+        """Resolve canonical tool_id(s) for a given assistant_kind.
+
+        This is the canonical source for assistant_kind -> tool_id resolution.
+        It reads from ToolCard.metadata["assistant_kind"] and returns all matching
+        tool_ids. This supports one-to-many mappings (e.g., a single assistant
+        family may have multiple ToolCards with different routes).
+
+        Args:
+            assistant_kind: The assistant identity (e.g., "devin", "chatgpt", "claude")
+
+        Returns:
+            List of tool_id strings that declare this assistant_kind.
+            Empty list if no matching ToolCards exist or if assistant_kind is empty/None.
+        """
+        target_kind = str(assistant_kind or '').strip().lower()
+        if not target_kind:
+            return []
+        matching_tool_ids = []
+        for card in self.list_cards():
+            card_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
+            if card_kind == target_kind:
+                matching_tool_ids.append(card.tool_id)
+        return matching_tool_ids
+
     def refresh_card(self, card: ToolCard, *, force: bool = False, max_age_seconds: float | None = None) -> ToolCard:
         metadata_signature = self._availability_signature(card)
         if not force:
