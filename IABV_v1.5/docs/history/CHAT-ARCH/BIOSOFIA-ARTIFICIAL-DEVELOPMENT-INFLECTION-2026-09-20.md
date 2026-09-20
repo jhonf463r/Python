@@ -285,9 +285,15 @@ assistant_kind = devin
 → target/resource ranking
 → UniversalResource.tool_id = devin_api
 
-The exact fix placement is NOT yet canonically adjudicated.
+The canonical ownership is now adjudicated by Codex and preserved in `CHAT-ARCH-2026-09-20-001-canonical-tool-owner-adjudication.md`.
 
-In particular, do not automatically place the canonical mapping inside ToolTeachService merely because it already contains an assistant-family helper. Before implementation, determine whether ToolCard/ToolRegistry or another lower-level canonical contract is the correct owner without introducing upward dependency from resource infrastructure to task-execution infrastructure.
+CANONICAL OWNER = `ToolCard` declaration + `ToolRegistry` resolution.
+
+The remaining implementation seam is:
+
+`assistant_kind → ToolRegistry resolution → normalized tool identity set → rank_workers_for_target() → selected UniversalResource → credential_ref`
+
+The resource scanner must not own assistant aliases and must not depend on ToolTeachService.
 
 ## 11. CURRENT EXPERIMENTAL LESSON
 
