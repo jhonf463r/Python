@@ -506,3 +506,19 @@ Canonical audit record:
 `CHAT-ARCH-2026-09-20-005-i0-phase-a-r2-independent-audit-b.md`.
 
 Next actor: **DEVIN** for controlled Windows runtime execution with a real securely provisioned credential, stopping at the first causal break; then **SONNET** for independent audit.
+
+
+## 2026-09-20 I0 REAL-CONNECTION PREFLIGHT — BLOCKED AGAIN
+
+The attempted real-connection experiment did **not** execute against the intended implementation revision because the Windows workspace HEAD was the artifact-preservation commit `99d670b0dd2ecea04bc691e09bb2444c7721bff7`, not the tested implementation `4710a668541225ffe3b9d1335d31bb5da8b1e685`.
+
+The same preflight also observed all three supported Devin credential variables absent. Therefore the experiment correctly stopped before resolver/authorization/adapter/network activity.
+
+This creates two independent preconditions for the next attempt:
+
+1. execute the runtime from exact implementation revision `4710a668541225ffe3b9d1335d31bb5da8b1e685` (prefer detached checkout/worktree so the preserved evidence commit is not lost);
+2. securely make a real Devin credential available to the exact Windows process through an already-supported environment variable.
+
+Do not reset or overwrite the artifact-preservation commit. Do not expose or commit the credential.
+
+The report field `tested_code_sha = 471670b058` is treated as a malformed/typo value because it does not equal the canonical target and conflicts with the repository lineage. The canonical tested code remains `4710a668541225ffe3b9d1335d31bb5da8b1e685`.
