@@ -278,27 +278,34 @@ class LocalRoleRouter:
         # This is the canonical resolution path: assistant_kind → ToolCard → tool_id(s)
         normalized_tool_ids = []
 
-        # First, check if the input is already a registered tool_id (direct path compatibility)
-        is_direct_tool_id = False
-        if target_assistant_normalized and self.tool_registry is not None:
+        # Case A: no-target - rank all eligible workers (historical behavior)
+        if not target_assistant_normalized:
+            normalized_tool_ids = ['']  # Empty string triggers "rank all" in rank_workers_for_target
+        # Case B/C/D: ToolRegistry available - resolve or validate
+        elif self.tool_registry is not None:
+            # Check if input is already a registered tool_id (Case B)
+            is_direct_tool_id = False
             for card in self.tool_registry.list_cards():
                 if card.tool_id == target_assistant_normalized:
                     is_direct_tool_id = True
                     normalized_tool_ids = [target_assistant_normalized]
                     break
-
-        # If not a direct tool_id, treat as assistant_kind and require resolution
-        if not is_direct_tool_id and target_assistant_normalized and self.tool_registry is not None:
-            try:
-                resolved_ids = self.tool_registry.resolve_tool_ids_by_assistant_kind(
-                    target_assistant_normalized
-                )
-                if resolved_ids:
-                    normalized_tool_ids = resolved_ids
-                # If resolution returns empty, unknown assistant -> no candidates (fail closed)
-            except Exception:
-                # Resolution error -> no candidates (fail closed)
-                pass
+            # Case C: assistant_kind resolution via ToolRegistry
+            if not is_direct_tool_id:
+                try:
+                    resolved_ids = self.tool_registry.resolve_tool_ids_by_assistant_kind(
+                        target_assistant_normalized
+                    )
+                    if resolved_ids:
+                        normalized_tool_ids = resolved_ids
+                    # Case D: unknown assistant -> fail closed (no candidates)
+                except Exception:
+                    # Resolution error -> fail closed (no candidates)
+                    pass
+        else:
+            # Case E: tool_registry unavailable - preserve original behavior
+            # Pass the target directly to the scanner (backward compatibility)
+            normalized_tool_ids = [target_assistant_normalized]
 
         # Get universal resources from pool if available
         universal_resources = pool.get('universal_resources', [])
@@ -321,8 +328,8 @@ class LocalRoleRouter:
         if not ranked:
             if available == 0:
                 reason = 'No hay workers con sesion activa y cuota disponible.'
-            elif target:
-                reason = f'No hay worker usable para {target} (agotados o sin sesion).'
+            elif target_assistant_normalized:
+                reason = f'No hay worker usable para {target_assistant_normalized} (agotados o sin sesion).'
             else:
                 reason = 'Todos los workers estan agotados o sin sesion activa.'
             return {

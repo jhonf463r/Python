@@ -875,6 +875,7 @@ class AppBootstrap:
             run_repository=self.run_repository,
             artifact_repository=self.session_artifact_repository,
             tool_teach_service=self.tool_teach_service,
+            tool_registry=self.tool_registry,
             account_resource_scanner=estimate_available_workers,
             account_approval_ledger=self.account_approval_ledger,
         )
