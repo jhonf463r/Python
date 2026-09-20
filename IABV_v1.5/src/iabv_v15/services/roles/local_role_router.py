@@ -369,7 +369,7 @@ class LocalRoleRouter:
 
         if self._account_approval_ledger is not None:
             _approval = self._resolve_approved_account(
-                target_assistant=target, ranked=ranked,
+                target_assistant=target_assistant_normalized, ranked=ranked,
             )
             if _approval is not None:
                 approved_ref = {
