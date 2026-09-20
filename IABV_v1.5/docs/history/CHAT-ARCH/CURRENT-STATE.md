@@ -542,3 +542,16 @@ Repository inspection confirms the project's sovereign `AGENTS.md` contract: use
 For Devin, the current code maps the missing secret to the Devin API-key page. Unlike Gemini/Groq, the current autonomous provisioning code does not claim full browser automation for Devin; the user interaction remains creation/login/copy through the provider UI, while IABV handles secure local capture/storage.
 
 Therefore the next practical actor is **IABV UI**, not Devin runtime and not PowerShell. After the UI confirms non-secret credential presence, return to **DEVIN** for the exact-SHA real connection experiment, then **SONNET** for independent audit.
+
+
+## 2026-09-20 I0 EXTERNAL ROUTE — REACHABLE TARGET NAMEERROR FOUND
+
+A live external-guided interaction produced `name 'target' is not defined`. Direct read-back of the exact implementation `4710a668541225ffe3b9d1335d31bb5da8b1e685` shows a reachable production defect in `LocalRoleRouter.worker_health_gate()`: production bootstrap injects a non-null `AccountApprovalLedger`, and the approval path calls `_resolve_approved_account(target_assistant=target, ...)` although `target` is not defined in the method. The same undefined symbol is later used by logging.
+
+This is now a verified code-level causal explanation for the observed runtime error. It is distinct from the missing Devin credential. The current external-route blocker is therefore:
+
+`external request → worker_health_gate approval path → undefined target → NameError`.
+
+A prior independent router audit had incorrectly concluded that no undefined `target` remained; that audit did not exercise the non-null approval-ledger path sufficiently. Preserve the lesson: `adjacent green router tests != complete production-path coverage`.
+
+Next actor: **DEVIN** for the smallest fix using the existing normalized target variable plus a regression test that actually exercises the approval-ledger path. Then **SONNET** independently audits the fix/runtime evidence. Do not reopen ToolCard/ToolRegistry ownership. Do not infer credential/authentication state from this incident.
