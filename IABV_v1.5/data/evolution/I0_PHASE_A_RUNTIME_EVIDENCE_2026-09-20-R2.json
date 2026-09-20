@@ -1,0 +1,25 @@
+{
+  "experiment": "I0_PHASE_A",
+  "revision": 2,
+  "tested_code_sha": "4710a668541225ffe3b9d1335d31bb5da8b1e685",
+  "runtime_branch": "devin/i0-canonical-tool-registry-resolution-fix-2026-09-20",
+  "runtime_parent_sha": "a7ae929ae476469c1467f3ac4a29d83aeb16f87d",
+  "python_executable": "C:\\Python314\\python.exe",
+  "python_version": "3.14.4 (tags/v3.14.4:23116f9, Apr  7 2026, 14:10:54) [MSC v.1944 64 bit (AMD64)]",
+  "workspace": "C:\\Python\\IABV_v1.5",
+  "timestamp": "2026-09-20T18:35:05.044866+00:00",
+  "environment": {
+    "DEVIN_API_KEY_IABV_present": false,
+    "IABV_DEVIN_API_KEY_present": false,
+    "DEVIN_API_KEY_present": false
+  },
+  "resolver": {
+    "invoked": true,
+    "has_credential": false,
+    "status": "empty"
+  },
+  "network": {
+    "attempted": false
+  },
+  "scope": "credential_resolution_only"
+}
