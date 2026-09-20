@@ -288,3 +288,54 @@ Next routing:
 - for symbiosis, begin the minimum I0/I1 external-agent round-trip experiment;
 - preserve `REAL AUTHORITY = NOT PROVEN BY G3` and P0-B as separate security boundaries;
 - route by capability fit rather than fixed model sequence.
+
+## 2026-09-20 STRATEGIC ROUTING — BIOSOFÍA ARTIFICIAL / DEVELOPMENT INFLECTION
+
+For any objective touching biosofía artificial, development acceleration, universal capability/resource access, dynamic actor selection, automatic prompt/task delegation, or the transition from collaboration to progressively self-directed development, activate first:
+
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+
+Then reconcile it against:
+
+- `CURRENT-STATE-OVERRIDE-2026-09-19.md`
+- `CURRENT-STATE.md`
+- `UNRESOLVED-KNOWLEDGE.md`
+- `SYMBIOSIS-MAP.md`
+- `SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md`
+- exact current GitHub branch/commit
+- relevant runtime evidence.
+
+This strategic anchor defines the long-horizon objective without promoting it to a claim of achieved consciousness or general intelligence.
+
+### Current acceleration gate
+
+Do not add broad autonomous-development architecture before closing the universal substrate seam:
+
+`objective → capability → actor → canonical tool identity → resource → credential → authorization → adapter → transport → observation → independent verification → learning → future decision`
+
+Current experimental blocker:
+
+`assistant_kind=devin → tool_id=devin_api` namespace/resource-selection continuity.
+
+The exact ownership of the canonical assistant↔tool relationship remains unresolved; the presence of an existing mapping in `ToolTeachService` is not by itself sufficient justification for making that layer depend upward from resource infrastructure.
+
+### Actor routing for this gate
+
+- **Codex**: narrow technical/ownership adjudication of the canonical assistant↔tool seam.
+- **Devin**: minimal implementation only after ownership is adjudicated; then real Windows/runtime execution.
+- **Sonnet**: independent forensic and runtime audit after the artifact/evidence exists.
+- **Opus**: reserve for a genuine architecture/ownership contradiction that remains after bounded technical adjudication.
+- **ChatGPT**: cross-chat reconciliation, experiment selection, evidence adjudication, knowledge writeback.
+
+Routing remains capability-fit based; this is not a permanent fixed sequence.
+
+### Scientific versus operational track
+
+Keep separate:
+
+`L5 → L6 → L7` = scientific causal-learning proof.
+
+`I0 → I1 → I2` = operational symbiosis/automation proof.
+
+L5 does not prove I0/I1/I2. I0/I1/I2 do not prove consciousness or general intelligence.
+
