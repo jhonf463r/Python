@@ -196,3 +196,22 @@ Purpose: consolidate the long-horizon IABV objective across chats: experimentall
 This record must be activated for objectives involving biosofía artificial, development acceleration, universal tool/resource access, dynamic actor routing, automatic prompt/task delegation, or self-directed development.
 
 It does not promote any claim of consciousness, general intelligence, or completed external-agent autonomy. Those remain experimental questions requiring evidence.
+
+
+## 2026-09-20 REGISTRATION — CANONICAL TOOL OWNER ADJUDICATION
+
+Canonical record:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-20-001-canonical-tool-owner-adjudication.md`
+
+Type: `RECONCILIATION`
+
+State: `DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Purpose: preserve Codex's independent technical adjudication that `ToolCard` is the declarative source of assistant/tool identity and `ToolRegistry` is the runtime resolver. This closes the ownership ambiguity preceding the I0 universal-resource implementation seam.
+
+Routing: activate for objectives involving assistant↔tool identity, universal resource selection, Devin I0 resource binding, dynamic actor/tool routing, or future tool onboarding.
+
+Current next edge:
+`assistant_kind → ToolRegistry → normalized tool_id set → rank_workers_for_target() → UniversalResource → credential_ref`
+
