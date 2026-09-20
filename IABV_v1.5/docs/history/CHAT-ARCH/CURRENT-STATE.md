@@ -533,3 +533,12 @@ This adds no new code evidence. It confirms the blocker is now isolated to an **
 Do not repeat the same preflight until the effective Windows process environment changes. The next discriminating event is secure availability of a real Devin credential through one supported variable, without exposing or committing the secret.
 
 Once that prerequisite changes, DEVIN should execute the real-connection experiment from exact SHA `4710a668...`; SONNET audits the resulting runtime artifact.
+
+
+## 2026-09-20 I0 CREDENTIAL PROVISIONING — USE IABV SINGLE-WINDOW FLOW
+
+Repository inspection confirms the project's sovereign `AGENTS.md` contract: users should not manually configure API tokens in PowerShell or configuration files once the IABV UI is available. The intended path is `auto_provision_missing_secrets()` → browser to the provider's credential page → user supplies the token through the IABV UI → `save_secret_to_profile()` stores it in `~/.iabv_secrets.ps1` and activates it in the process environment.
+
+For Devin, the current code maps the missing secret to the Devin API-key page. Unlike Gemini/Groq, the current autonomous provisioning code does not claim full browser automation for Devin; the user interaction remains creation/login/copy through the provider UI, while IABV handles secure local capture/storage.
+
+Therefore the next practical actor is **IABV UI**, not Devin runtime and not PowerShell. After the UI confirms non-secret credential presence, return to **DEVIN** for the exact-SHA real connection experiment, then **SONNET** for independent audit.
