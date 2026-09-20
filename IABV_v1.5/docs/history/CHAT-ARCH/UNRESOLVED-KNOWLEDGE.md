@@ -397,3 +397,14 @@ Remaining uncertainty:
 `preserved artifact → truthful observation of exact Windows process environment/resolver/network state` = PENDING INDEPENDENT AUDIT.
 
 Current Phase-A evidence classification remains **C — INCONCLUSIVE** until Sonnet audits R2 independently.
+
+
+## 2026-09-20 I0 PHASE A R2 — CURRENT OPEN EDGE
+
+Independent audit of the preserved R2 artifact = **B — PARTIALLY VERIFIED**.
+
+Artifact provenance and source reconciliation are closed. The remaining uncertainty is not artifact preservation; it is whether a real securely provisioned Devin credential is available to the exact Windows runtime and, once available, which next causal boundary breaks:
+
+`credential → authentication/authorization → transport → external effect → independently verified result`.
+
+The multiple credential-check paths in `account_resource_scanner.py` remain a non-causal auditability finding unless future evidence links them to the active path.
