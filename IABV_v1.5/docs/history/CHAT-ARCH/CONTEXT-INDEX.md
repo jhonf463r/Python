@@ -465,3 +465,16 @@ Routing after secure credential provisioning:
 → **CHATGPT** adjudication/writeback.
 
 This is an environment prerequisite, not an implementation task.
+
+
+## 2026-09-20 ROUTING — I0 CREDENTIAL PROVISIONING THROUGH IABV UI
+
+The remaining environment blocker has an existing project-native path.
+
+Use the IABV single-window secret flow:
+
+`missing Devin secret → auto_provision_missing_secrets() → provider page → user supplies credential in IABV UI → save_secret_to_profile() → effective environment`
+
+Do not instruct the user to edit PowerShell or secret files manually while the UI is running.
+
+Next actor: **IABV UI** for secure provisioning flow. After non-secret confirmation of credential presence: **DEVIN** for exact-SHA I0 connection experiment; **SONNET** audits resulting runtime evidence.
