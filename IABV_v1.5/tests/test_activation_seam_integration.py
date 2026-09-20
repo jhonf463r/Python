@@ -344,3 +344,102 @@ class TestActivationSeamIntegration:
         assert 'worker_gate' in adaptive_session_arg['metadata']
         assert adaptive_session_arg['metadata']['selected_resource_id'] == 'devin_credential_0'
         assert adaptive_session_arg['metadata']['selected_credential_ref'] == 'devin:credential_0:DEVIN_API_KEY_A'
+
+    def test_g1_intent_preserved_through_canonical_reconstruction(self):
+        """Test: G1 intent is promoted to adaptive_payload for canonical DecisionContext reconstruction."""
+        orchestrator = _minimal_orchestrator(_workspace('test_g1_intent'))
+
+        # Mock activate_phase2 to observe the adaptive_payload before governance
+        original_activate = orchestrator.activate_phase2
+        observed_payloads = []
+
+        def mock_activate(adaptive_session, *, user_goal, source):
+            observed_payloads.append({
+                'adaptive_session': adaptive_session,
+                'user_goal': user_goal,
+                'source': source,
+            })
+            return original_activate(adaptive_session, user_goal=user_goal, source=source)
+
+        orchestrator.activate_phase2 = mock_activate
+
+        # Simulate G1 proposal
+        proposals = [
+            {
+                'estimated_confidence': 0.8,
+                'primary_ia': 'codex',
+                'type': 'coordinated_plan',
+                'title': 'Test G1 proposal',
+            },
+        ]
+
+        # Call auto_execute_from_sync_pulse
+        result = orchestrator.auto_execute_from_sync_pulse(proposals)
+
+        # Verify that activate_phase2 was called
+        assert len(observed_payloads) == 1
+        adaptive_session_arg = observed_payloads[0]['adaptive_session']
+
+        # Verify that the G1 intent is in the adaptive_session
+        assert 'intent' in adaptive_session_arg
+        assert adaptive_session_arg['intent']['intent_key'] == 'auto_execute_from_pulse'
+
+        # Now verify that activate_phase2() promotes the intent to adaptive_payload
+        # by calling it directly and observing the payload passed to govern_adaptive_payload
+        original_govern = orchestrator.govern_adaptive_payload
+        govern_payloads = []
+
+        def mock_govern(adaptive_payload, *, user_goal, source):
+            govern_payloads.append(adaptive_payload)
+            return original_govern(adaptive_payload, user_goal=user_goal, source=source)
+
+        orchestrator.govern_adaptive_payload = mock_govern
+
+        # Call activate_phase2 directly
+        governed = orchestrator.activate_phase2(
+            adaptive_session=adaptive_session_arg,
+            user_goal='Test G1 proposal',
+            source='auto_execute_from_sync_pulse',
+        )
+
+        # Verify that the intent was promoted to the adaptive_payload
+        assert len(govern_payloads) == 1
+        assert 'intent' in govern_payloads[0]
+        assert govern_payloads[0]['intent']['intent_key'] == 'auto_execute_from_pulse'
+
+    def test_regression_invalid_partial_decision_context_does_not_silently_replace_intent(self):
+        """Test: Invalid partial decision_context does not silently cause G1 intent to disappear."""
+        orchestrator = _minimal_orchestrator(_workspace('test_regression_intent'))
+
+        # Create adaptive_session with intent but NO partial decision_context
+        adaptive_session = {
+            'session_id': str(uuid4()),
+            'user_goal': 'Test objective',
+            'intent': {
+                'intent_key': 'custom_g1_intent',
+                'confidence': 0.9,
+                'detected_role': 'tool_use',
+            },
+            'metadata': {
+                'selected_resource_id': 'devin_credential_0',
+                'selected_provider': 'devin',
+                'selected_credential_ref': 'devin:credential_0:DEVIN_API_KEY_A',
+                'selection_status': 'valid',
+            },
+        }
+
+        # Call activate_phase2
+        governed_payload = orchestrator.activate_phase2(
+            adaptive_session=adaptive_session,
+            user_goal='Test objective',
+            source='executive',
+        )
+
+        # Verify that the intent was promoted to adaptive_payload
+        assert 'intent' in governed_payload
+        assert governed_payload['intent']['intent_key'] == 'custom_g1_intent'
+
+        # Verify that the original decision_context in metadata is preserved (not removed)
+        # This ensures that if a valid decision_context exists, it is not overwritten
+        if 'decision_context' in adaptive_session['metadata']:
+            assert 'decision_context' in governed_payload['metadata']

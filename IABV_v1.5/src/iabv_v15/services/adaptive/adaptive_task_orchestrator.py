@@ -1198,12 +1198,6 @@ class AdaptiveTaskOrchestrator:
                 'auto_executed_from_pulse': True,
                 'proposal_type': str(best.get('type') or ''),
                 'proposal_title': str(best.get('title') or ''),
-                'decision_context': {
-                    'governance': {
-                        'should_consult': True,
-                        'assistant_kind': primary_ia,
-                    },
-                },
             },
         }
 
@@ -2027,11 +2021,35 @@ class AdaptiveTaskOrchestrator:
             return adaptive_session
 
         # Wrap session in adaptive_payload format expected by govern_adaptive_payload
+        # Promote relevant fields from adaptive_session to adaptive_payload so that
+        # _decision_context_from_payload() can reconstruct a valid DecisionContext
         adaptive_payload = {
             'adaptive_session': adaptive_session,
             'user_goal': user_goal,
             'metadata': dict(adaptive_session.get('metadata') or {}),
         }
+
+        # Promote fields for canonical DecisionContext reconstruction
+        if 'intent' in adaptive_session:
+            adaptive_payload['intent'] = adaptive_session['intent']
+        if 'context' in adaptive_session:
+            adaptive_payload['context'] = adaptive_session['context']
+        if 'capability_readiness' in adaptive_session:
+            adaptive_payload['capability_readiness'] = adaptive_session['capability_readiness']
+        if 'assistant_guidance' in adaptive_session:
+            adaptive_payload['assistant_guidance'] = adaptive_session['assistant_guidance']
+        if 'approval_checkpoints' in adaptive_session:
+            adaptive_payload['approval_checkpoints'] = adaptive_session['approval_checkpoints']
+        if 'evidence_refs' in adaptive_session:
+            adaptive_payload['evidence_refs'] = adaptive_session['evidence_refs']
+        if 'chosen_pack' in adaptive_session:
+            adaptive_payload['chosen_pack'] = adaptive_session['chosen_pack']
+        if 'chosen_pack_id' in adaptive_session:
+            adaptive_payload['chosen_pack_id'] = adaptive_session['chosen_pack_id']
+        if 'chosen_pack_title' in adaptive_session:
+            adaptive_payload['chosen_pack_title'] = adaptive_session['chosen_pack_title']
+        if 'status' in adaptive_session:
+            adaptive_payload['status'] = adaptive_session['status']
 
         # Call the canonical Phase 2 implementation
         governed_payload = self.govern_adaptive_payload(
