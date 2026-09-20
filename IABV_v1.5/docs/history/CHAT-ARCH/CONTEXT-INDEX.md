@@ -380,3 +380,24 @@ The **next open I0 edge is credential availability/authentication**, not assista
 `credential → authentication/authorization → transport → external effect → observed result → independent verification`
 
 The existing Windows runtime credential-block evidence remains active; I0 overall is not equivalent to real external execution.
+
+
+## 2026-09-20 ROUTING — I0 PHASE A INDEPENDENT AUDIT
+
+For objectives involving the current I0 credential/authentication gate, activate:
+
+`CHAT-ARCH-2026-09-20-002-i0-canonical-resource-resolution-closure.md`
+`CHAT-ARCH-2026-09-20-003-i0-phase-a-independent-audit-inconclusive.md`
+`
+
+Current gate:
+`credential availability → credential resolution → authentication`
+
+Current independent evidence state:
+**C — INCONCLUSIVE**.
+
+The canonical assistant↔tool/resource-resolution seam remains CLOSED. The next discriminating actor is **DEVIN** for a raw Windows runtime evidence capture; **SONNET** follows for independent reconciliation. Do not reopen already closed ownership resolution.
+
+The evidence standard remains:
+`reported artifact → independently readable artifact → causally reconciled runtime state → preserved knowledge`.
+
