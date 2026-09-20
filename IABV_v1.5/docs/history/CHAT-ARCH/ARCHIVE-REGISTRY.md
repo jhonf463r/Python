@@ -275,3 +275,26 @@ The production resolver and pre-HTTP empty-key gate are verified. The remote pro
 Routing: next actor DEVIN for raw non-secret runtime evidence capture; SONNET for independent reconciliation afterward.
 
 This record does not promote I0 Phase A, I1, I2, authentication, authorization or external execution to proven.
+
+
+## 2026-09-20 REGISTRATION — I0 PHASE A R2 ARTIFACT PRESERVED
+
+Canonical record:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-20-004-i0-phase-a-r2-artifact-preserved.md`
+
+Type:
+
+`PERSISTENCE_PROOF / RECONCILIATION`
+
+State:
+
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+R2 artifact commit: `99d670b0dd2ecea04bc691e09bb2444c7721bff7`.
+
+Tested code: `4710a668541225ffe3b9d1335d31bb5da8b1e685`.
+
+Artifact SHA-256: `8ed7b1e43065a85d91142350ad82b28f9d8fba82075ddeb74c330a71bd3fd074`.
+
+Purpose: preserve the R2 evidence and establish that artifact provenance/byte integrity is closed while runtime truth remains pending independent forensic audit.
