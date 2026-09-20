@@ -401,3 +401,20 @@ The canonical assistant↔tool/resource-resolution seam remains CLOSED. The next
 The evidence standard remains:
 `reported artifact → independently readable artifact → causally reconciled runtime state → preserved knowledge`.
 
+
+
+## 2026-09-20 ROUTING — I0 PHASE A R2 ARTIFACT PRESERVED
+
+For the current I0 Phase-A credential boundary, activate:
+
+`CHAT-ARCH-2026-09-20-003-i0-phase-a-independent-audit-inconclusive.md`
+`CHAT-ARCH-2026-09-20-004-i0-phase-a-r2-artifact-preserved.md`
+
+Current state:
+
+- artifact provenance/read-back = CLOSED;
+- artifact byte/hash integrity = VERIFIED;
+- runtime environmental truth = pending independent audit;
+- Phase-A classification = **C — INCONCLUSIVE**.
+
+Next actor: **SONNET**. Do not reopen ToolCard/ToolRegistry resolution and do not attempt authentication/I1/I2.
