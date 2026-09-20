@@ -485,3 +485,24 @@ The artifact commit is exactly one commit ahead of tested code `4710a668541225ff
 Therefore **artifact provenance and byte integrity are CLOSED**. This does not yet prove the truth of the Windows process observations. Current Phase-A evidence remains **C — INCONCLUSIVE pending Sonnet independent audit** of the preserved runtime artifact against the exact source revision.
 
 Do not reopen the closed assistant↔tool/resource-resolution seam or advance to authentication/I1/I2 during this audit.
+
+
+## 2026-09-20 I0 PHASE A R2 — INDEPENDENT AUDIT B
+
+Sonnet independently audited the remotely preserved R2 artifact and classified Phase A **B — PARTIALLY VERIFIED**.
+
+Closed: artifact provenance, artifact byte/hash integrity, tested-code lineage, source consistency, production resolver wiring and empty-api-key pre-HTTP gate.
+
+Still open: direct independent observation of the Windows process environment; real credential availability; authentication; authorization; external transport/effect; I1; I2.
+
+Current practical frontier:
+`real credential availability → authentication/authorization → transport → external effect → observation → independent verification`.
+
+The canonical assistant↔tool/resource-resolution seam remains CLOSED/VERIFIED EFFECTIVE. Do not reopen it.
+
+Secondary non-causal finding: multiple Devin credential-check implementations exist in `account_resource_scanner.py` with different variable coverage. Do not repair unless future causal evidence links them to the active path.
+
+Canonical audit record:
+`CHAT-ARCH-2026-09-20-005-i0-phase-a-r2-independent-audit-b.md`.
+
+Next actor: **DEVIN** for controlled Windows runtime execution with a real securely provisioned credential, stopping at the first causal break; then **SONNET** for independent audit.
