@@ -446,3 +446,13 @@ Current blocker is therefore:
 `Devin account credential creation (user administrative action) → IABV secure UI capture → effective Windows environment`.
 
 Do not treat this as a repository implementation gap unless the UI path itself fails empirically.
+
+## 2026-09-20 I0 — REACHABLE PRODUCTION DEFECT BEFORE CREDENTIAL BOUNDARY
+
+The latest live external interaction exposed a real `NameError: target is not defined` in `LocalRoleRouter.worker_health_gate()`. The defect is reachable because `account_approval_ledger` is non-null in production bootstrap and the approval branch uses an undefined `target` symbol.
+
+This supersedes the assumption that the external route is currently blocked only by credential availability. The active implementation prerequisite is now:
+
+`remove reachable target NameError → re-run exact runtime path → then reassess credential/authentication boundary`.
+
+Prior router tests were insufficient because they did not force the approval-ledger branch. Preserve negative knowledge: `tested helper cases without the production ledger path can miss reachable runtime defects`.
