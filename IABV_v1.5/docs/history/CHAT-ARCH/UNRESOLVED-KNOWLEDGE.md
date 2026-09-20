@@ -456,3 +456,14 @@ This supersedes the assumption that the external route is currently blocked only
 `remove reachable target NameError → re-run exact runtime path → then reassess credential/authentication boundary`.
 
 Prior router tests were insufficient because they did not force the approval-ledger branch. Preserve negative knowledge: `tested helper cases without the production ledger path can miss reachable runtime defects`.
+
+
+## 2026-09-20 I0 — TARGET FIX PROVENANCE GAP
+
+Reported fix: `target_assistant=target` changed to `target_assistant=target_assistant_normalized` in `LocalRoleRouter.worker_health_gate()`, with a claimed approval-ledger regression test.
+
+Current independent state: **NOT YET VERIFIED REMOTELY**. The reported branch/SHA cannot currently be read back from GitHub. Preserve the rule:
+
+`local/agent-reported commit ≠ remotely verified commit`.
+
+Next action: publish the exact branch and full SHA, then independent audit.
