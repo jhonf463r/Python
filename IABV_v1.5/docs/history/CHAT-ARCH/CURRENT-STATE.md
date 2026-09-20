@@ -470,3 +470,18 @@ Next discriminating action: obtain a raw, non-secret runtime artifact from the e
 Do not reopen the assistant↔tool/resource-resolution seam. Do not attempt I1/I2 while Phase A evidence is unresolved.
 
 A secondary auditability observation was recorded: `account_resource_scanner.py` contains multiple Devin credential-check paths with slightly different variable sets. This is not established as the Phase-A cause and should not be promoted to a blocker without causal evidence.
+
+
+## 2026-09-20 I0 PHASE A R2 — ARTIFACT PROVENANCE CLOSED
+
+A second Windows Phase-A runtime artifact is now remotely preserved at:
+
+`IABV_v1.5/data/evolution/I0_PHASE_A_RUNTIME_EVIDENCE_2026-09-20-R2.json`
+
+Artifact commit: `99d670b0dd2ecea04bc691e09bb2444c7721bff7`.
+
+The artifact commit is exactly one commit ahead of tested code `4710a668541225ffe3b9d1335d31bb5da8b1e685` and adds only the evidence JSON. Its independently recomputed SHA-256 is `8ed7b1e43065a85d91142350ad82b28f9d8fba82075ddeb74c330a71bd3fd074`, matching the declared hash.
+
+Therefore **artifact provenance and byte integrity are CLOSED**. This does not yet prove the truth of the Windows process observations. Current Phase-A evidence remains **C — INCONCLUSIVE pending Sonnet independent audit** of the preserved runtime artifact against the exact source revision.
+
+Do not reopen the closed assistant↔tool/resource-resolution seam or advance to authentication/I1/I2 during this audit.
