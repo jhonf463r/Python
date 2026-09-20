@@ -433,3 +433,16 @@ Negative knowledge:
 `repeating the same no-credential preflight without changing the environment does not reduce the current uncertainty`.
 
 Therefore the next useful action is environmental, not code-level: securely provision a real Devin credential to the controlled Windows process. No additional runtime attempt should be made until that condition changes.
+
+
+## 2026-09-20 I0 CREDENTIAL PROVISIONING — EXISTING UI PATH CONFIRMED
+
+The project already contains an intended one-window secret-provisioning mechanism. This removes the need for manual PowerShell configuration as the default route.
+
+For Devin, IABV can detect the missing secret, open the configured Devin API-key page when user-initiated/confirmed, and capture the resulting token through the UI into `~/.iabv_secrets.ps1` via `save_secret_to_profile()`. Full autonomous browser creation is currently implemented only for a subset of providers, so Devin account creation remains a user administrative action.
+
+Current blocker is therefore:
+
+`Devin account credential creation (user administrative action) → IABV secure UI capture → effective Windows environment`.
+
+Do not treat this as a repository implementation gap unless the UI path itself fails empirically.
