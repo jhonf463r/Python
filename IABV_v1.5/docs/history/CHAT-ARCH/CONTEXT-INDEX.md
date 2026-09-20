@@ -433,3 +433,16 @@ Phase-A R2 classification: **B — PARTIALLY VERIFIED**.
 Next actor: **DEVIN** for the real Windows credential/execution boundary. After new runtime evidence: **SONNET** for independent forensic audit.
 
 Do not reopen the verified assistant↔tool/resource-resolution seam.
+
+
+## 2026-09-20 ROUTING — I0 REAL-CONNECTION PREFLIGHT BLOCKED
+
+Current open prerequisites:
+
+`exact implementation runtime (4710a668...) + real Devin credential availability`
+
+The latest preflight ran at artifact-preservation HEAD `99d670b0...` and found no supported credential variables. It correctly stopped before the resolver.
+
+Next actor after secure credential availability: **DEVIN** for the exact Windows runtime experiment; **SONNET** for independent audit of the resulting artifact.
+
+Do not reset the branch or destroy the preserved R2 evidence commit. Prefer detached checkout/worktree for execution.
