@@ -339,3 +339,25 @@ Keep separate:
 
 L5 does not prove I0/I1/I2. I0/I1/I2 do not prove consciousness or general intelligence.
 
+
+
+## 2026-09-20 ADJUDICATED ROUTING — CANONICAL ASSISTANT↔TOOL OWNER
+
+The ownership ambiguity identified in the 2026-09-20 universal-substrate audit is CLOSED by the Codex adjudication preserved in `CHAT-ARCH-2026-09-20-001-canonical-tool-owner-adjudication.md`.
+
+**Canonical owner:** `ToolCard` declaration + `ToolRegistry` resolution.
+
+Use this rule for future objectives touching universal tools/resources:
+
+`assistant_kind → ToolRegistry → candidate ToolCard(s) → canonical tool_id(s) → resource ranking`
+
+Do not route canonical assistant/tool identity through `ToolTeachService` or `account_resource_scanner`.
+
+The current implementation gate is now:
+
+`assistant_kind → ToolRegistry resolution → normalized tool identity set → rank_workers_for_target() → selected UniversalResource → credential_ref`
+
+**Next actor:** DEVIN for the bounded implementation.
+
+After implementation: SONNET independent artifact audit.
+
