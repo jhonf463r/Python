@@ -382,3 +382,18 @@ Required next evidence:
 Do not reinterpret this as successful authentication or as I1/I2 progress. Operationally, the reported environment remains credential-blocked.
 
 Secondary unresolved auditability observation: multiple Devin credential-check implementations exist in `account_resource_scanner.py`, including one path that omits `IABV_DEVIN_API_KEY`. This is currently a maintainability/auditability finding, not a demonstrated Phase-A causal blocker.
+
+
+## 2026-09-20 I0 PHASE A R2 — PROVENANCE CLOSED, RUNTIME TRUTH PENDING
+
+The second runtime evidence artifact is now repository-preserved in commit `99d670b0dd2ecea04bc691e09bb2444c7721bff7`, one commit after tested code `4710a668541225ffe3b9d1335d31bb5da8b1e685`.
+
+Independent recomputation confirms artifact SHA-256 `8ed7b1e43065a85d91142350ad82b28f9d8fba82075ddeb74c330a71bd3fd074`.
+
+Resolved uncertainty:
+`reported artifact → remotely readable preserved artifact → byte/hash integrity` = CLOSED.
+
+Remaining uncertainty:
+`preserved artifact → truthful observation of exact Windows process environment/resolver/network state` = PENDING INDEPENDENT AUDIT.
+
+Current Phase-A evidence classification remains **C — INCONCLUSIVE** until Sonnet audits R2 independently.
