@@ -408,3 +408,17 @@ Artifact provenance and source reconciliation are closed. The remaining uncertai
 `credential → authentication/authorization → transport → external effect → independently verified result`.
 
 The multiple credential-check paths in `account_resource_scanner.py` remain a non-causal auditability finding unless future evidence links them to the active path.
+
+
+## 2026-09-20 I0 REAL-CONNECTION PREFLIGHT — TWO PRECONDITIONS OPEN
+
+The latest runtime preflight stopped before the production resolver because:
+
+- runtime HEAD was `99d670b0dd2ecea04bc691e09bb2444c7721bff7` (artifact-preservation commit), not tested code `4710a668541225ffe3b9d1335d31bb5da8b1e685`;
+- all supported Devin credential variables were absent.
+
+No authentication/authorization/network evidence was generated.
+
+Next discriminating execution requires the exact implementation revision plus a real securely provisioned credential. The artifact-preservation commit must remain intact; use detached checkout or a separate runtime worktree rather than rewriting the branch history.
+
+The malformed reported value `471670b058` is not a valid replacement for the canonical tested SHA and is not accepted as evidence.
