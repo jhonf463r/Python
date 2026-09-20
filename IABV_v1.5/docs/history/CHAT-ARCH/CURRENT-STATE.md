@@ -555,3 +555,13 @@ This is now a verified code-level causal explanation for the observed runtime er
 A prior independent router audit had incorrectly concluded that no undefined `target` remained; that audit did not exercise the non-null approval-ledger path sufficiently. Preserve the lesson: `adjacent green router tests != complete production-path coverage`.
 
 Next actor: **DEVIN** for the smallest fix using the existing normalized target variable plus a regression test that actually exercises the approval-ledger path. Then **SONNET** independently audits the fix/runtime evidence. Do not reopen ToolCard/ToolRegistry ownership. Do not infer credential/authentication state from this incident.
+
+
+## 2026-09-20 CORRECCIÓN DE ESTADO — OWNERSHIP CERRADO, EFECTIVIDAD RUNTIME REABIERTA
+
+La evidencia del `NameError: target is not defined` obliga a separar dos afirmaciones que antes estaban agrupadas:
+
+- **Canonical ownership assistant↔tool** = CLOSED. `ToolCard + ToolRegistry` sigue siendo el propietario/resolver canónico.
+- **Production router/resource-resolution effectiveness** = OPEN PENDING REPAIR. La ruta real atraviesa `LocalRoleRouter.worker_health_gate()` y puede romperse en el approval-ledger branch antes de completar el uso del recurso.
+
+No se reabre la decisión de ownership. Se reabre únicamente la verificación de efectividad del consumidor runtime hasta que la regresión sea reparada y auditada.
