@@ -451,3 +451,22 @@ Next action is the smallest controlled runtime credential/authentication experim
 Canonical history record:
 
 `CHAT-ARCH-2026-09-20-002-i0-canonical-resource-resolution-closure.md`
+
+
+## 2026-09-20 I0 PHASE A INDEPENDENT AUDIT — INCONCLUSIVE
+
+The first independent forensic audit of the reported Windows I0 Phase-A runtime result is preserved at `CHAT-ARCH-2026-09-20-003-i0-phase-a-independent-audit-inconclusive.md`.
+
+The bounded implementation seam remains closed. The reported Windows credential state is operationally blocked, but the independent evidence classification is:
+
+**C — INCONCLUSIVE**
+
+Reason: the auditor verified the production credential resolver and the empty-credential adapter gate, but could not independently observe the remote process environment or read the uncommitted runtime JSON artifact. Therefore:
+
+`reported credential absence ≠ independently observed credential absence`.
+
+Next discriminating action: obtain a raw, non-secret runtime artifact from the exact Windows process containing runtime identity, credential-presence booleans, resolver status and adapter invocation status, then preserve/read it back for independent reconciliation.
+
+Do not reopen the assistant↔tool/resource-resolution seam. Do not attempt I1/I2 while Phase A evidence is unresolved.
+
+A secondary auditability observation was recorded: `account_resource_scanner.py` contains multiple Devin credential-check paths with slightly different variable sets. This is not established as the Phase-A cause and should not be promoted to a blocker without causal evidence.
