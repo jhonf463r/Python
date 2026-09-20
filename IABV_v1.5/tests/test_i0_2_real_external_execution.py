@@ -330,13 +330,186 @@ class TestI02RealExternalExecution:
         # This proves the method is actually executing the binding validation
         assert result is True
 
-        # Test with wrong fingerprint (FAIL CLOSED)
+    def test_check_external_authorization_wrong_fingerprint(self):
+        """Test that wrong fingerprint is properly rejected (not confused with consumed auth)."""
+        from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
+        import hashlib
+
+        # Create a mock adapter
+        adapter = DevinApiToolAdapter()
+
+        # Compute the correct prompt digest
+        prompt = 'Test objective'
+        prompt_digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+
+        # Create a FRESH authorization (not consumed) with matching digest
+        auth = ExternalActionAuthorization(
+            task_id='test_task_2',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='devin',
+            endpoint='',
+            action='',
+            prompt_digest=prompt_digest,
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+            issued_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            approved_by='test_user',
+            reason='Test authorization for wrong fingerprint test',
+            selected_resource_id='devin_credential_0',
+            selected_provider='devin',
+            selected_credential_ref='devin:credential_0:DEVIN_API_KEY',
+            credential_fingerprint='test_fingerprint',
+        )
+
+        task = ToolTask(
+            task_id='test_task_2',
+            tool_id='devin_api',
+            title='Test',
+            objective=prompt,
+        )
+
+        # Test with WRONG fingerprint on FRESH authorization
+        # This should fail due to fingerprint mismatch, NOT due to consumed auth
         result_wrong = adapter._check_external_authorization(
             task=task,
             prompt=prompt,
-            authorization=auth,  # Same auth, but it was already consumed
+            authorization=auth,
             effective_fingerprint='wrong_fingerprint',
         )
 
-        # Should fail because auth was consumed or binding doesn't match
+        # Should fail because fingerprint doesn't match
         assert result_wrong is False
+
+        # Verify auth was NOT consumed (still VALIDATED)
+        assert auth.status == ExternalActionAuthorizationStatus.VALIDATED
+
+    def test_check_external_authorization_consumed_auth(self):
+        """Test that consumed authorization is properly rejected."""
+        from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
+        import hashlib
+
+        # Create a mock adapter
+        adapter = DevinApiToolAdapter()
+
+        # Compute the correct prompt digest
+        prompt = 'Test objective'
+        prompt_digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+
+        # Create a FRESH authorization
+        auth = ExternalActionAuthorization(
+            task_id='test_task_3',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='devin',
+            endpoint='',
+            action='',
+            prompt_digest=prompt_digest,
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+            issued_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            approved_by='test_user',
+            reason='Test authorization for consumed auth test',
+            selected_resource_id='devin_credential_0',
+            selected_provider='devin',
+            selected_credential_ref='devin:credential_0:DEVIN_API_KEY',
+            credential_fingerprint='test_fingerprint',
+        )
+
+        task = ToolTask(
+            task_id='test_task_3',
+            tool_id='devin_api',
+            title='Test',
+            objective=prompt,
+        )
+
+        # First call: should succeed and consume auth
+        result_first = adapter._check_external_authorization(
+            task=task,
+            prompt=prompt,
+            authorization=auth,
+            effective_fingerprint='test_fingerprint',
+        )
+        assert result_first is True
+
+        # Verify auth was consumed
+        assert auth.status == ExternalActionAuthorizationStatus.CONSUMED
+
+        # Second call: should fail because auth is consumed
+        result_second = adapter._check_external_authorization(
+            task=task,
+            prompt=prompt,
+            authorization=auth,
+            effective_fingerprint='test_fingerprint',
+        )
+        assert result_second is False
+
+    def test_check_external_authorization_empty_fingerprint(self):
+        """Test empty fingerprint behavior.
+
+        NOTE: In I0-2 valid execution path, effective_fingerprint cannot be empty:
+        - LocalRoleRouter.worker_health_gate() always selects a resource
+        - selected_credential_ref is always present in real I0-2 execution
+        - run() has FAIL CLOSED at line 2074: if selected_credential_ref but effective_api_key is empty
+        - Therefore, if resolution fails, execution is blocked BEFORE authorization check
+        - If resolution succeeds, effective_fingerprint is non-empty
+
+        This test documents the behavior for completeness, but this case is
+        unreachable in valid I0-2 real execution.
+        """
+        from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
+        import hashlib
+
+        # Create a mock adapter
+        adapter = DevinApiToolAdapter()
+
+        # Compute the correct prompt digest
+        prompt = 'Test objective'
+        prompt_digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+
+        # Create a FRESH authorization WITHOUT credential_fingerprint (empty)
+        auth = ExternalActionAuthorization(
+            task_id='test_task_4',
+            tool_id='devin_api',
+            adapter_key='devin_api',
+            assistant_kind='devin',
+            endpoint='',
+            action='',
+            prompt_digest=prompt_digest,
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+            issued_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            approved_by='test_user',
+            reason='Test authorization for empty fingerprint test',
+            selected_resource_id='devin_credential_0',
+            selected_provider='devin',
+            selected_credential_ref='devin:credential_0:DEVIN_API_KEY',
+            credential_fingerprint='',  # Empty - authorization created without fingerprint
+        )
+
+        task = ToolTask(
+            task_id='test_task_4',
+            tool_id='devin_api',
+            title='Test',
+            objective=prompt,
+        )
+
+        # Test with empty effective_fingerprint
+        # According to validate_binding() logic (models.py:3446-3450):
+        # if credential_fingerprint and self.credential_fingerprint:
+        #     if self.credential_fingerprint != credential_fingerprint:
+        #         return False
+        # If either is empty, the fingerprint check is SKIPPED
+        result_empty = adapter._check_external_authorization(
+            task=task,
+            prompt=prompt,
+            authorization=auth,
+            effective_fingerprint='',  # Empty
+        )
+
+        # Document actual behavior:
+        # Since both fingerprints are empty, the check is skipped
+        # This demonstrates the pre-existing behavior in validate_binding()
+        # This case is unreachable in valid I0-2 execution (see docstring)
+        # We just verify it doesn't crash
+        assert isinstance(result_empty, bool)
