@@ -522,3 +522,14 @@ This creates two independent preconditions for the next attempt:
 Do not reset or overwrite the artifact-preservation commit. Do not expose or commit the credential.
 
 The report field `tested_code_sha = 471670b058` is treated as a malformed/typo value because it does not equal the canonical target and conflicts with the repository lineage. The canonical tested code remains `4710a668541225ffe3b9d1335d31bb5da8b1e685`.
+
+
+## 2026-09-20 I0 REAL-CONNECTION — REPEATED PREFLIGHT CONFIRMED ENVIRONMENTAL BLOCK
+
+A subsequent preflight executed from the **exact implementation SHA** `4710a668541225ffe3b9d1335d31bb5da8b1e685` in detached HEAD mode. It again observed all three supported Devin credential variables absent and therefore stopped before resolver, authorization, adapter and network activity.
+
+This adds no new code evidence. It confirms the blocker is now isolated to an **environment prerequisite**, while the implementation/runtime target condition is satisfied.
+
+Do not repeat the same preflight until the effective Windows process environment changes. The next discriminating event is secure availability of a real Devin credential through one supported variable, without exposing or committing the secret.
+
+Once that prerequisite changes, DEVIN should execute the real-connection experiment from exact SHA `4710a668...`; SONNET audits the resulting runtime artifact.
