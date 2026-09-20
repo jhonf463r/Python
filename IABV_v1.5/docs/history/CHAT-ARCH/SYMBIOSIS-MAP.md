@@ -387,3 +387,32 @@ The current Devin case exposes `devin → devin_api` as a namespace boundary. Th
 See:
 `BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
 
+
+
+## 2026-09-20 TRANSFER 16 — CANONICAL TOOL IDENTITY BELONGS TO TOOL CATALOG
+
+Codex independently resolved the ownership ambiguity exposed by the I0 Devin resource seam.
+
+Canonical source:
+
+`ToolCard` declares `assistant_kind`, `tool_id`, `adapter_key` and capability/availability facts.
+
+Canonical resolver:
+
+`ToolRegistry` resolves `assistant_kind → candidate ToolCard(s) → canonical tool_id(s)`.
+
+The resource scanner remains responsible for resource discovery/ranking and must not interpret assistant aliases.
+
+New invariant:
+
+`assistant identity resolution != resource ranking authority`
+
+Accepted implementation path:
+
+`assistant_kind → ToolRegistry → normalized tool_id set → rank_workers_for_target() → UniversalResource → credential_ref`
+
+This is a reusable architectural lesson for future assistants/tools, not a Devin-only mapping.
+
+Canonical adjudication:
+`CHAT-ARCH-2026-09-20-001-canonical-tool-owner-adjudication.md`
+
