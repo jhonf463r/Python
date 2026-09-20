@@ -332,3 +332,58 @@ After a valid L5 audit:
 `Devin → L6 runtime behavioral experiment → Sonnet audit → ChatGPT adjudication`
 
 The route must be recomputed when the active uncertainty changes.
+
+
+## 2026-09-20 TRANSFER 15 — BIOSOFÍA ARTIFICIAL AS A MEASURED DEVELOPMENT OBJECTIVE
+
+The long-horizon objective is broader than AI-to-AI symbiosis.
+
+IABV is intended to become an experimentally observable substrate for tracking the progressive emergence of artificial cognitive/organizational capabilities:
+
+`perception → representation → interpretation → decision → action → observation → verification → memory → learning → adaptation → self-regulation → collaboration → self-directed development`
+
+This is a research/engineering objective, not a claim of consciousness or personhood.
+
+### Development inflection
+
+The desired development inflection is measured by:
+
+`verified experience → reusable knowledge → changed future decision → reduced routine human coordination → more efficient experimentation → new verified experience`
+
+Code volume is not the target metric.
+
+### Universal capability principle
+
+The architecture should prefer:
+
+`same concept → same canonical concept/owner`
+
+`same function → same canonical organ`
+
+and specialize only when semantics genuinely differ.
+
+A new assistant/tool/resource should normally enter through existing contracts rather than create a parallel brain, router or delegation subsystem.
+
+### Cross-IA role learning
+
+Current role assignments remain capability hypotheses:
+
+- ChatGPT: synthesis/adjudication/reconciliation/writeback;
+- Sonnet: independent forensic audit;
+- Devin: bounded Windows/runtime implementation and evidence;
+- Codex: narrow technical ambiguity/implementation seam adjudication;
+- Opus: genuine architecture/ownership contradiction.
+
+Future evidence may revise these.
+
+### Current universal-substrate gate
+
+The next material seam is the continuity:
+
+`assistant_kind → tool_id → resource_id → credential_ref → authorization`
+
+The current Devin case exposes `devin → devin_api` as a namespace boundary. The next implementation must not create duplicate semantic authority merely to close this one case.
+
+See:
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+
