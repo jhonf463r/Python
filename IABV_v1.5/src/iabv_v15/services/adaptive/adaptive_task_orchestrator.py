@@ -1961,6 +1961,57 @@ class AdaptiveTaskOrchestrator:
             payload['assistant_guidance'] = self._guidance_for_pending_external_response(result)
         return payload
 
+    def activate_phase2(
+        self,
+        adaptive_session: dict[str, Any],
+        *,
+        user_goal: str,
+        source: str = 'executive',
+    ) -> dict[str, Any]:
+        """Activate Phase 2 (autonomous evolution) from a completed Phase 1 result.
+
+        This is the canonical entry point for non-UI activation of Fase 2.
+        It reuses the existing govern_adaptive_payload() implementation to ensure
+        ONE canonical Phase 2 implementation with multiple legitimate callers.
+
+        Args:
+            adaptive_session: Serialized AdaptiveSession from Phase 1 (session.model_dump(mode='json'))
+            user_goal: The original user goal from Phase 1
+            source: Caller identifier ('executive' for non-UI, 'chat' for UI)
+
+        Returns:
+            The adaptive payload with Phase 2 results appended.
+
+        Duplicate activation guard:
+        - Checks metadata['autonomous_evolution']['status'] to prevent duplicate execution
+        - Returns existing result if already in {prepared, reused, awaiting_response, failed}
+        - Uses the same guard logic as govern_adaptive_payload()
+
+        Governance preserved:
+        - Respects autonomous_evolution_enabled gate
+        - Respects governance.should_consult decision
+        - Respects authorization and sandbox gates
+        - Preserves resource identity from Phase 1
+        """
+        if self.autonomous_evolution_service is None:
+            return adaptive_session
+
+        # Wrap session in adaptive_payload format expected by govern_adaptive_payload
+        adaptive_payload = {
+            'adaptive_session': adaptive_session,
+            'user_goal': user_goal,
+            'metadata': dict(adaptive_session.get('metadata') or {}),
+        }
+
+        # Call the canonical Phase 2 implementation
+        governed_payload = self.govern_adaptive_payload(
+            adaptive_payload=adaptive_payload,
+            user_goal=user_goal,
+            source=source,
+        )
+
+        return governed_payload
+
     def _prepare_retry_for_expired_consultation(
         self,
         payload: dict[str, Any],
