@@ -568,3 +568,21 @@ The 2026-09-21 I0 M3 artifact (`7753ce...`) demonstrates remote artifact publica
 
 The long-horizon question therefore remains open:
 Can IABV make its own metacognitive analysis, capability routing and provenance enforcement increasingly causal in the next decision cycle without removing governance or independent verification?
+
+## 2026-09-21 METHOD ADDENDUM — TRACEABILITY HAS TEMPORAL/LINAGE DIMENSION
+
+Evidence-bearing self-development requires not only knowing "which commit" but also knowing the revision relationship of the evidence.
+
+The durable causal record should preserve:
+`objective → evidence claim → target SHA → direct parent → historical baseline → cumulative lineage → observed experiment → independent verification`.
+
+This matters because a locally correct experiment can be valid at the target SHA while its interpretation becomes wrong when silently projected onto an older baseline.
+
+New biosofía invariant:
+`evidence validity is revision-scoped`.
+
+A claimed capability may be:
+`VALID AT TARGET REVISION`
+without being:
+`VALID AT HISTORICAL BASELINE`
+unless cross-revision invariance is independently demonstrated.
