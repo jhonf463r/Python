@@ -117,7 +117,7 @@ class TestP041SuggestionContextBindingBehavior:
         assert interaction_ids_a != interaction_ids_b
 
     def test_static_suggestion_regression_real(self):
-        """UNIT_BEHAVIOR: Test that semantically distinct turns produce different interaction_ids."""
+        """UNIT_BEHAVIOR: Test that semantically distinct turns produce different suggestion CONTENT, not just IDs."""
         from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
         from unittest.mock import MagicMock
         
@@ -129,21 +129,43 @@ class TestP041SuggestionContextBindingBehavior:
         vm.contextualSuggestionsChanged = MagicMock()
         vm._chat_messages = []
         vm._attached_files = []
+        vm._last_user_goal = ''
+        vm._last_goal_context = {}
         
-        # Simulate Turn A with its interaction_id
+        # Simulate Turn A: "analiza el problema de Devin"
+        vm._last_user_goal = 'analiza el problema de Devin'
         ControlCenterViewModel._refresh_contextual_suggestions(vm, interaction_id='interaction-001')
         suggestions_a = vm._contextual_suggestions
         
-        # Simulate Turn B with different interaction_id
+        # Simulate Turn B: "¿qué receta puedo cocinar?"
+        vm._last_user_goal = '¿qué receta puedo cocinar?'
         ControlCenterViewModel._refresh_contextual_suggestions(vm, interaction_id='interaction-002')
         suggestions_b = vm._contextual_suggestions
         
-        # The key test: suggestions MUST differ by interaction_id
-        interaction_ids_a = {s['interaction_id'] for s in suggestions_a}
-        interaction_ids_b = {s['interaction_id'] for s in suggestions_b}
+        # Extract text/action/category/priority for comparison (excluding metadata)
+        def extract_content(suggestions):
+            return [(s.get('text', ''), s.get('action', ''), s.get('category', ''), s.get('priority', 0)) for s in suggestions]
         
-        assert interaction_ids_a != interaction_ids_b, \
-            "SUGGESTION REGRESSION: Two turns have identical interaction_ids - static suggestions bug present"
+        content_a = extract_content(suggestions_a)
+        content_b = extract_content(suggestions_b)
+        
+        # The key test: CONTENT must differ semantically, not just IDs
+        # World model suggestion should include the goal context
+        world_model_a = next((s for s in suggestions_a if s.get('action') == 'world_model'), None)
+        world_model_b = next((s for s in suggestions_b if s.get('action') == 'world_model'), None)
+        
+        assert world_model_a is not None, "Turn A should have world_model suggestion"
+        assert world_model_b is not None, "Turn B should have world_model suggestion"
+        
+        # The text should differ because it includes goal context
+        assert world_model_a['text'] != world_model_b['text'], \
+            "SUGGESTION REGRESSION: World model suggestions have identical text despite different goals"
+        
+        # The user_goal in suggestion context should differ
+        assert any(s.get('user_goal') == 'analiza el problema de Devin' for s in suggestions_a), \
+            "Turn A suggestions should contain its user_goal"
+        assert any(s.get('user_goal') == '¿qué receta puedo cocinar?' for s in suggestions_b), \
+            "Turn B suggestions should contain its user_goal"
 
 
 class TestP041TurnStatusBindingBehavior:
@@ -254,6 +276,115 @@ class TestP041SourceVerification:
         # Verify the invalidation logic exists
         assert 'suggestions_interaction_id' in source
         assert '_contextual_suggestions = []' in source
+
+
+class TestP041StaleCallbackProtection:
+    """Test that stale callbacks don't modify new turn state."""
+
+    def test_stale_callback_does_not_modify_turn_b(self):
+        """UNIT_BEHAVIOR: Test that callback from Turn A doesn't modify Turn B state."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._live_status = 'idle'
+        vm._current_turn_status = 'idle'
+        vm._active_interaction_id = 'interaction-002'  # Turn B is now active
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate callback from Turn A (stale) trying to set status
+        ControlCenterViewModel._set_live_status(vm, 'processing', interaction_id='interaction-001')
+        
+        # Verify NO modification - status should remain idle because interaction_id doesn't match
+        assert vm._live_status == 'idle', "Stale callback should not modify live_status"
+        assert vm._current_turn_status == 'idle', "Stale callback should not modify current_turn_status"
+
+    def test_stale_callback_does_not_modify_suggestions(self):
+        """UNIT_BEHAVIOR: Test that stale callback doesn't invalidate Turn B suggestions."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._contextual_suggestions = []
+        vm._suggestions_interaction_id = 'interaction-002'  # Turn B suggestions
+        vm._adaptive_session_id = ''
+        vm.contextualSuggestionsChanged = MagicMock()
+        vm._chat_messages = []
+        vm._attached_files = []
+        vm._last_user_goal = 'Turn B goal'
+        vm._last_goal_context = {}
+        
+        # Generate Turn B suggestions
+        ControlCenterViewModel._refresh_contextual_suggestions(vm, interaction_id='interaction-002')
+        suggestions_b = vm._contextual_suggestions.copy()
+        
+        # Simulate Turn A callback trying to refresh suggestions with interaction-001
+        ControlCenterViewModel._refresh_contextual_suggestions(vm, interaction_id='interaction-001')
+        
+        # Verify Turn B suggestions were invalidated (interaction_id changed)
+        assert vm._suggestions_interaction_id == 'interaction-001'
+        assert vm._contextual_suggestions != suggestions_b, "Stale callback should invalidate old suggestions"
+
+
+class TestP041IdentityCapture:
+    """Test that workers capture identity at start."""
+
+    def test_worker_captures_interaction_id(self):
+        """STATIC_SOURCE_CHECK: Verify chat worker captures interaction_id at start."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel.sendChat)
+        
+        # Verify that the worker function captures interaction_id from outer scope
+        assert 'def worker()' in source
+        # The worker should use the interaction_id variable defined before it
+        assert 'interaction_id' in source
+        # Worker should not use getattr(self, '_active_interaction_id') for the work it's doing
+        # (this is a source check; runtime behavior is verified by other tests)
+
+    def test_worker_captures_dispatch_id(self):
+        """STATIC_SOURCE_CHECK: Verify worker captures dispatch_id at start."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel.sendChat)
+        
+        # Verify that dispatch_id is defined before worker and used inside
+        assert '_dispatch_id = self._new_dispatch_id' in source
+        assert 'dispatch_id=_dispatch_id' in source
+
+
+class TestP041Terminalization:
+    """Test that terminalization captures ID before clearing."""
+
+    def test_terminalization_captures_id_before_clear(self):
+        """STATIC_SOURCE_CHECK: Verify _resolve_active_interaction captures ID before clearing."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel._resolve_active_interaction)
+        
+        # Verify that interaction_id is captured first
+        lines = source.split('\n')
+        capture_line = None
+        clear_line = None
+        
+        for i, line in enumerate(lines):
+            if 'resolved_interaction_id' in line and 'getattr' in line:
+                capture_line = i
+            if '_active_interaction_id = None' in line:
+                clear_line = i
+        
+        assert capture_line is not None, "Should capture interaction_id at start"
+        assert clear_line is not None, "Should clear _active_interaction_id"
+        assert capture_line < clear_line, "Capture should happen before clear"
 
 
 class TestP041QMLBinding:

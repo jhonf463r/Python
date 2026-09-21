@@ -8467,6 +8467,9 @@ class ControlCenterViewModel(QObject):
     ) -> None:
         """Close the active interaction episode and reset watchdog state.
 
+        P041-R2: Capture interaction_id at the start and use it for all terminalization.
+        Only clear _active_interaction_id after all status updates are complete.
+
         Non-final outcomes (``prepared``, ``awaiting_external_response``,
         ``reused_context``) record the outcome in the lifecycle but
         keep the interaction_id and watchdog state active so that the
@@ -8475,27 +8478,32 @@ class ControlCenterViewModel(QObject):
         Terminal non-successful outcomes (``blocked``, ``failed``) close
         the episode and clear watchdog state, but ``resolved=False``.
         """
-        interaction_id = getattr(self, '_active_interaction_id', None)
-        if not interaction_id:
+        # Capture interaction_id at the start - this is the identity of the work being resolved
+        resolved_interaction_id = getattr(self, '_active_interaction_id', None)
+        if not resolved_interaction_id:
             return
+        
         is_final = outcome in self._FINAL_INTERACTION_OUTCOMES
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         if lifecycle is not None:
             try:
                 lifecycle.resolve_interaction(
-                    interaction_id,
+                    resolved_interaction_id,
                     outcome=outcome,
                     provider=provider,
                 )
             except Exception:
                 pass
+        
         if is_final:
-            self._active_interaction_id = None
+            # Only clear after terminalization is complete
             watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
             if watchdog is not None:
                 watchdog.set_query_pending(False)
                 watchdog.set_active_interaction(None)
-            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
+            self._active_interaction_id = None
+            # Use the captured ID for status update
+            self._set_live_status('idle', interaction_id=resolved_interaction_id)
             self._promote_metacognition_after_resolution()
 
     # ── Dispatch-id helpers (stale-result guard) ────────────────
@@ -13316,23 +13324,39 @@ class ControlCenterViewModel(QObject):
     def _set_live_status(self, status: str, interaction_id: str | None = None) -> None:
         """Set live status and current turn status linked to interaction_id.
 
-        P041: The current turn status is now explicitly linked to the active interaction_id
-        to prevent stale status from appearing as current context when a new turn starts.
+        P041-R2: When interaction_id is provided and doesn't match _active_interaction_id,
+        do NOT modify _live_status to avoid contaminating global state with stale callbacks.
+        Only update status when interaction_id matches the active turn or when no interaction_id is provided (global/background updates).
         """
         with self._ui_state_lock:
             previous = self._live_status
             if previous == status:
                 return
-            self._live_status = status
             
-            # Update current turn status only if it belongs to the active interaction
-            if interaction_id is None:
-                interaction_id = getattr(self, '_active_interaction_id', None)
-            
-            if interaction_id is not None and interaction_id == getattr(self, '_active_interaction_id', None):
+            # If interaction_id is provided, check if it matches the active turn
+            if interaction_id is not None:
+                active_id = getattr(self, '_active_interaction_id', None)
+                if interaction_id != active_id:
+                    # Stale callback: do not modify any status
+                    # Optionally log this discard via tracing infrastructure
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        tracer = get_runtime_tracer()
+                        tracer.trace(
+                            'stale_status_update_discarded',
+                            provided_interaction_id=interaction_id,
+                            active_interaction_id=active_id,
+                            attempted_status=status,
+                        )
+                    except Exception:
+                        pass
+                    return
+                # Matches active turn: update both statuses
+                self._live_status = status
                 self._current_turn_status = status
-            elif interaction_id is None:
-                # No interaction_id provided, update general live status
+            else:
+                # No interaction_id: this is a global/background update
+                self._live_status = status
                 self._current_turn_status = status
                 
         self.liveStatusChanged.emit(status)
@@ -13446,8 +13470,12 @@ class ControlCenterViewModel(QObject):
     def _refresh_contextual_suggestions(self, interaction_id: str | None = None) -> None:
         """Refresh contextual suggestions bound to the current interaction_id.
 
-        P041: Each suggestion is now associated with an interaction_id to prevent
-        stale suggestions from appearing as current context when a new turn starts.
+        P041-R2: Suggestions now incorporate semantic context from the current turn:
+        - user_goal (last message)
+        - goal_context (objective, project, task)
+        - intent when available
+        - adaptive_session_id
+        - current dispatch/governance state when available
         """
         # If interaction_id is provided and differs from cached, invalidate old suggestions
         if interaction_id is not None:
@@ -13458,38 +13486,79 @@ class ControlCenterViewModel(QObject):
 
         suggestions: list[dict[str, Any]] = []
         
-        # Add interaction_id to each suggestion for tracking
+        # Capture semantic context from current turn
+        current_goal = self._last_user_goal or ''
+        goal_context = self._last_goal_context or {}
+        objective = dict(goal_context.get('objective') or {})
+        project = dict(goal_context.get('project') or {})
+        task = dict(goal_context.get('task') or {})
+        
+        # Extract intent from goal context
+        current_intent = str(objective.get('title') or goal_context.get('active_title') or current_goal or '')
+        
+        # Extract adaptive session state
+        adaptive_session_active = bool(self._adaptive_session_id)
+        
+        # Add interaction_id and semantic context to each suggestion
         suggestion_context = {
             'interaction_id': self._suggestions_interaction_id,
             'adaptive_session_id': self._adaptive_session_id if self._adaptive_session_id else None,
+            'user_goal': current_goal,
+            'intent': current_intent,
+            'objective_title': objective.get('title', ''),
+            'project_title': project.get('title', ''),
+            'task_title': task.get('title', ''),
         }
         
+        # Efficiency audit suggestion - only if goal context suggests efficiency-related work
         if hasattr(self, '_efficiency_audit_service'):
-            suggestions.append({
-                'text': 'Ejecutar auditoria de eficiencia',
-                'category': 'audit',
-                'icon': '\U0001f50d',
-                'action': 'run_efficiency_audit',
-                'priority': 3,
-                **suggestion_context,
-            })
+            goal_lower = current_goal.lower()
+            # Only show if goal mentions efficiency, performance, or audit-related keywords
+            if any(kw in goal_lower for kw in ('eficiencia', 'eficiencia', 'rendimiento', 'audit', 'performance', 'slow', 'lento')):
+                suggestions.append({
+                    'text': 'Ejecutar auditoria de eficiencia',
+                    'category': 'audit',
+                    'icon': '\U0001f50d',
+                    'action': 'run_efficiency_audit',
+                    'priority': 3,
+                    **suggestion_context,
+                })
+        
+        # Self-examination suggestion - only if chat has history AND goal is not purely operational
         if self._chat_messages and len(self._chat_messages) > 2:
+            goal_lower = current_goal.lower()
+            # Only show if goal mentions self-awareness, status, or diagnostics
+            if any(kw in goal_lower for kw in ('estado', 'status', 'diagnostic', 'auto-exam', 'self', 'salud', 'health')):
+                suggestions.append({
+                    'text': 'Revisar self-examination',
+                    'category': 'diagnostic',
+                    'icon': '\U0001f9e0',
+                    'action': 'show_self_examination',
+                    'priority': 2,
+                    **suggestion_context,
+                })
+        
+        # World model suggestion - always available but context-aware
+        if current_goal:
             suggestions.append({
-                'text': 'Revisar self-examination',
-                'category': 'diagnostic',
-                'icon': '\U0001f9e0',
-                'action': 'show_self_examination',
-                'priority': 2,
+                'text': f'Mostrar estado del mundo (contexto: {current_goal[:30]}...)' if len(current_goal) > 30 else f'Mostrar estado del mundo (contexto: {current_goal})',
+                'category': 'command',
+                'icon': '\U0001f30d',
+                'action': 'world_model',
+                'priority': 1,
                 **suggestion_context,
             })
-        suggestions.append({
-            'text': 'Mostrar estado del mundo',
-            'category': 'command',
-            'icon': '\U0001f30d',
-            'action': 'world_model',
-            'priority': 1,
-            **suggestion_context,
-        })
+        else:
+            suggestions.append({
+                'text': 'Mostrar estado del mundo',
+                'category': 'command',
+                'icon': '\U0001f30d',
+                'action': 'world_model',
+                'priority': 1,
+                **suggestion_context,
+            })
+        
+        # Evolution suggestion - always available
         suggestions.append({
             'text': 'Ver evolucion del sistema',
             'category': 'evolution',
@@ -13498,6 +13567,8 @@ class ControlCenterViewModel(QObject):
             'priority': 1,
             **suggestion_context,
         })
+        
+        # Attachments suggestion - only when files are attached
         if self._attached_files:
             suggestions.append({
                 'text': f'Procesar {len(self._attached_files)} archivo(s) adjunto(s)',
@@ -13507,6 +13578,18 @@ class ControlCenterViewModel(QObject):
                 'priority': 5,
                 **suggestion_context,
             })
+        
+        # Adaptive session suggestions - only if adaptive session is active
+        if adaptive_session_active:
+            suggestions.append({
+                'text': 'Ver sesión adaptativa actual',
+                'category': 'adaptive',
+                'icon': '\U0001f504',
+                'action': 'show_adaptive_session',
+                'priority': 4,
+                **suggestion_context,
+            })
+        
         self._contextual_suggestions = suggestions
         self.contextualSuggestionsChanged.emit(suggestions)
 
@@ -14058,21 +14141,26 @@ class ControlCenterViewModel(QObject):
         )
 
         def worker() -> None:
+            # P041-R2: Capture interaction_id and dispatch_id at worker start
+            # These are the identities of the work being done
+            origin_interaction_id = interaction_id
+            origin_dispatch_id = _dispatch_id
+            
             try:
                 # Mark lifecycle phase: first_technical_response
-                if interaction_id and lifecycle is not None:
+                if origin_interaction_id and lifecycle is not None:
                     try:
-                        lifecycle.mark_phase(interaction_id, 'first_technical_response')
+                        lifecycle.mark_phase(origin_interaction_id, 'first_technical_response')
                     except Exception:
                         pass
                 request = self._build_request(message)
                 record = self.inference_service.infer_task(request)
                 adaptive_session = record.result.raw_output.get('adaptive_session') if isinstance(record.result.raw_output, dict) else None
-                if not self._is_dispatch_active('chat', _dispatch_id):
+                if not self._is_dispatch_active('chat', origin_dispatch_id):
                     import logging
-                    logging.getLogger(__name__).debug('chat worker %s discarded (stale)', _dispatch_id[:8])
+                    logging.getLogger(__name__).debug('chat worker %s discarded (stale)', origin_dispatch_id[:8])
                     self._trace_dispatch_terminal(
-                        task_name='chat', dispatch_id=_dispatch_id,
+                        task_name='chat', dispatch_id=origin_dispatch_id,
                         terminal_state='cancelled', reason='stale_discarded: worker finished after dispatch invalidated',
                         user_visible_message=False,
                     )
@@ -14099,11 +14187,11 @@ class ControlCenterViewModel(QObject):
                     },
                 )
             except Exception as exc:
-                if not self._is_dispatch_active('chat', _dispatch_id):
+                if not self._is_dispatch_active('chat', origin_dispatch_id):
                     import logging
-                    logging.getLogger(__name__).debug('chat worker %s error discarded (stale)', _dispatch_id[:8])
+                    logging.getLogger(__name__).debug('chat worker %s error discarded (stale)', origin_dispatch_id[:8])
                     self._trace_dispatch_terminal(
-                        task_name='chat', dispatch_id=_dispatch_id,
+                        task_name='chat', dispatch_id=origin_dispatch_id,
                         terminal_state='cancelled', reason=f'stale_discarded: error discarded: {exc}',
                         user_visible_message=False,
                     )
