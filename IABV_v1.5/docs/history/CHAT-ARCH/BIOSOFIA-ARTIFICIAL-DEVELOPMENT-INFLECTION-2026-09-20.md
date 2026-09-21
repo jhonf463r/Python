@@ -508,3 +508,42 @@ Therefore the immediate prerequisite remains:
 `secure real credential availability + exact implementation runtime at 4710a668...`
 
 This is an environmental/runtime prerequisite, not a new architecture task.
+
+## 2026-09-20/21 LIVE STRATEGIC ADDENDUM — IABV AS ITS OWN ANALYST
+
+The project should now deliberately test a new operating mode:
+
+`IABV objective`
+→ `IABV retrieves relevant operational memory`
+→ `IABV performs deep self-assessment using existing organs`
+→ `IABV states uncertainty and first open causal edge`
+→ `IABV selects the smallest discriminating action`
+→ external/internal actor executes under governance
+→ independent verifier audits
+→ IABV writes Knowledge Delta
+→ later selection uses the delta.
+
+This is the intended bridge between “symbiosis around IABV” and “IABV using its own symbiosis”.
+
+The target is not unrestricted self-modification. The target is an observable, governed and evidence-bearing developmental loop.
+
+### Updated development-inflection criterion
+
+A meaningful inflection requires repeated evidence of:
+
+`verified experience → reusable knowledge → future decision change → reduced routine coordination → more efficient subsequent experimentation`.
+
+The current project has not yet proven this full internal loop.
+
+### Current strategic priority
+
+Prefer one high-information IABV-native self-assessment experiment over broad additional architecture, provided that:
+- exact repository/runtime state is pinned;
+- observation and mutation are separated;
+- independent verification remains present;
+- I0/I1 external execution status is not conflated with the metacognitive track.
+
+### Historical versus current state warning
+
+The older section naming a fixed current next actor (e.g. Codex/Devin) must not override the current dynamic routing policy. Actor choice is conditioned on the current uncertainty and capability fit.
+
