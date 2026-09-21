@@ -745,3 +745,60 @@ Promotion rule:
 
 This becomes part of the evidence promotion gate:
 `claim → target SHA → direct parent → historical baseline → cumulative diff → exact source/test at target`.
+
+
+
+## 2026-09-21 PROTOCOL ADDENDUM — BIOSOFÍA ARTIFICIAL / DEVELOPMENTAL SUBSTRATE
+
+For objectives touching biosofía artificial, artificial life, autoconstrucción, autoevolución, digital organisms, developmental robotics, generational learning or recursive capability growth, treat the canonical developmental thesis as an objective-conditioned research source:
+
+`IABV_v1.5/docs/history/CHAT-ARCH/BIOSOFIA-ARTIFICIAL-DEVELOPMENTAL-AUTOPOIETIC-THESIS-2026-09-21.md`
+
+Activate it after current-state orientation and before implementation planning.
+
+Use the following reasoning model:
+
+`
+objective
+→ developmental level
+→ current substrate
+→ existing organ capability
+→ first open causal edge
+→ minimum discriminating experiment
+→ independent verification
+→ Knowledge Delta
+→ next developmental cycle
+`
+
+The biological analogy must remain a hypothesis generator, never evidence by itself.
+
+Preserve these distinctions:
+
+`
+automation != development
+memory != learning
+learning != heredity
+persistence != reproduction
+reproduction != evolution
+cooperation != higher-level individuality
+many organs != integrated organism
+complexity != open-ended evolution
+self-modification != self-construction
+`
+
+Before introducing new architecture, perform organ/contract archaeology and determine whether an existing composition already supplies the required developmental function.
+
+For critical developmental claims, require:
+
+`
+report
+→ artifact
+→ exact revision
+→ runtime provenance
+→ observation
+→ independent verification
+→ causal attribution
+`
+
+The development target is not uncontrolled self-modification. It is governed, observable, reversible acquisition and organization of new capabilities.
+
