@@ -5786,9 +5786,9 @@ class ControlCenterViewModel(QObject):
         self._set_live_status('processing')
         self.dataChanged.emit()
 
-        # P041-R5: Capture interaction identity for security_retest (turn-bound task)
+        # P041-R6: Capture interaction identity for security_retest (turn-bound task)
         _origin_interaction_id = getattr(self, '_active_interaction_id', None)
-        _retest_dispatch_id = f'security_retest_{uuid.uuid4().hex[:8]}'
+        _retest_dispatch_id = self._new_dispatch_id('security_retest')  # P041-R6: Use proper dispatch registration
 
         def _retest_worker() -> None:
             try:
@@ -5801,6 +5801,10 @@ class ControlCenterViewModel(QObject):
                     'assistant_kind': assistant_kind,
                     'assistant_title': assistant_title,
                 }
+                # P041-R6: Add origin identity to result payload
+                if _origin_interaction_id:
+                    result_payload['origin_interaction_id'] = _origin_interaction_id
+                result_payload['origin_dispatch_id'] = _retest_dispatch_id
                 try:
                     from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                     get_runtime_tracer().trace(
@@ -14301,7 +14305,12 @@ class ControlCenterViewModel(QObject):
                         user_visible_message=False,
                     )
                     return
-                self.taskResolved.emit('adaptive_action', session.model_dump(mode='json'))
+                # P041-R6: Add origin identity to result payload
+                result_payload = session.model_dump(mode='json')
+                if _origin_interaction_id:
+                    result_payload['origin_interaction_id'] = _origin_interaction_id
+                result_payload['origin_dispatch_id'] = _dispatch_id
+                self.taskResolved.emit('adaptive_action', result_payload)
             except Exception as exc:
                 if not self._is_dispatch_active('adaptive_action', _dispatch_id):
                     self._trace_dispatch_terminal(
@@ -14387,6 +14396,10 @@ class ControlCenterViewModel(QObject):
                 record = self.inference_service.infer_task(request)
                 payload = self.self_teach_orchestrator.run_diagnostic(record)
                 payload['run_summary'] = record.result.summary
+                # P041-R6: Add origin identity to result payload
+                if _origin_interaction_id:
+                    payload['origin_interaction_id'] = _origin_interaction_id
+                payload['origin_dispatch_id'] = _self_teach_dispatch_id
                 self.taskResolved.emit('self_teach', payload)
             except Exception as exc:
                 # P041-R5: Emit failure with origin identity context
@@ -14415,7 +14428,17 @@ class ControlCenterViewModel(QObject):
         def worker() -> None:
             try:
                 payload, saved_path = self.training_orchestrator.prepare_and_archive()
-                self.taskResolved.emit('payload', {'episodes': len(payload.episodes), 'artifacts': len(payload.artifacts), 'knowledge': len(payload.knowledge_items), 'path': saved_path})
+                result_payload = {
+                    'episodes': len(payload.episodes),
+                    'artifacts': len(payload.artifacts),
+                    'knowledge': len(payload.knowledge_items),
+                    'path': saved_path,
+                }
+                # P041-R6: Add origin identity to result payload
+                if _origin_interaction_id:
+                    result_payload['origin_interaction_id'] = _origin_interaction_id
+                result_payload['origin_dispatch_id'] = _payload_dispatch_id
+                self.taskResolved.emit('payload', result_payload)
             except Exception as exc:
                 # P041-R5: Emit failure with origin identity context
                 failure_payload = {
@@ -14443,6 +14466,10 @@ class ControlCenterViewModel(QObject):
         def worker() -> None:
             try:
                 state = self.pbt_service.run_cycle(self._collect_metrics())
+                # P041-R6: Add origin identity to result payload
+                if _origin_interaction_id:
+                    state['origin_interaction_id'] = _origin_interaction_id
+                state['origin_dispatch_id'] = _pbt_dispatch_id
                 self.taskResolved.emit('pbt', state)
             except Exception as exc:
                 # P041-R5: Emit failure with origin identity context
@@ -14571,6 +14598,49 @@ class ControlCenterViewModel(QObject):
         self.dataChanged.emit()
     @Slot(str, object)
     def _apply_task_result(self, task_name: str, payload: Any) -> None:
+        # P041-R6: Unified identity guard for all turn-bound tasks before any mutation
+        # provider_health is global/background and skips this guard
+        if task_name != 'provider_health':
+            origin_interaction_id = payload.get('origin_interaction_id') if isinstance(payload, dict) else None
+            origin_dispatch_id = payload.get('origin_dispatch_id') if isinstance(payload, dict) else None
+            
+            active_interaction_id = getattr(self, '_active_interaction_id', None)
+            active_dispatch_id = self._active_dispatch_ids.get(task_name, '')
+            
+            # If origin identity is provided, validate it matches the active turn
+            if origin_interaction_id is not None:
+                if origin_interaction_id != active_interaction_id:
+                    # Stale result: do not apply to current turn
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        tracer = get_runtime_tracer()
+                        tracer.trace(
+                            f'stale_{task_name}_result_discarded',
+                            origin_interaction_id=origin_interaction_id,
+                            active_interaction_id=active_interaction_id,
+                            origin_dispatch_id=origin_dispatch_id,
+                            active_dispatch_id=active_dispatch_id,
+                            task_name=task_name,
+                        )
+                    except Exception:
+                        pass
+                    return
+                # Validate dispatch_id as well
+                if origin_dispatch_id and origin_dispatch_id != active_dispatch_id:
+                    # Dispatch mismatch: result is stale
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        tracer = get_runtime_tracer()
+                        tracer.trace(
+                            f'stale_{task_name}_dispatch_mismatch',
+                            origin_dispatch_id=origin_dispatch_id,
+                            active_dispatch_id=active_dispatch_id,
+                            task_name=task_name,
+                        )
+                    except Exception:
+                        pass
+                    return
+        
         if task_name == 'provider_health':
             self._provider_refreshing = False
             self._provider_cards = list(payload)
@@ -14584,44 +14654,7 @@ class ControlCenterViewModel(QObject):
             self._diagnostic_truth_state = 'observed'
         elif task_name == 'chat':
             # P041-R3: Result application guard - validate origin identity before applying
-            origin_interaction_id = payload.get('origin_interaction_id')
-            origin_dispatch_id = payload.get('origin_dispatch_id')
-            
-            active_interaction_id = getattr(self, '_active_interaction_id', None)
-            active_dispatch_id = self._active_dispatch_ids.get('chat', '')
-            
-            # If origin identity is provided, validate it matches the active turn
-            if origin_interaction_id is not None:
-                if origin_interaction_id != active_interaction_id:
-                    # Stale result: do not apply to current turn
-                    try:
-                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                        tracer = get_runtime_tracer()
-                        tracer.trace(
-                            'stale_chat_result_discarded',
-                            origin_interaction_id=origin_interaction_id,
-                            active_interaction_id=active_interaction_id,
-                            origin_dispatch_id=origin_dispatch_id,
-                            active_dispatch_id=active_dispatch_id,
-                        )
-                    except Exception:
-                        pass
-                    return
-                # Validate dispatch_id as well
-                if origin_dispatch_id and origin_dispatch_id != active_dispatch_id:
-                    # Dispatch mismatch: result is stale
-                    try:
-                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-                        tracer = get_runtime_tracer()
-                        tracer.trace(
-                            'stale_chat_result_dispatch_mismatch',
-                            origin_dispatch_id=origin_dispatch_id,
-                            active_dispatch_id=active_dispatch_id,
-                        )
-                    except Exception:
-                        pass
-                    return
-            
+            # (Guard now moved to unified section above, chat still processes here)
             self._clear_autonomy_activity_override()
             # Mark lifecycle phase: first_useful_response
             _iid = getattr(self, '_active_interaction_id', None)
