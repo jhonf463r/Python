@@ -467,3 +467,73 @@ Current independent state: **NOT YET VERIFIED REMOTELY**. The reported branch/SH
 `local/agent-reported commit ≠ remotely verified commit`.
 
 Next action: publish the exact branch and full SHA, then independent audit.
+
+## 2026-09-20/21 — NEW STRATEGIC UNRESOLVED KNOWLEDGE: METACOGNITIVE COMPOSITION
+
+### UK-META-01 — Deep self-assessment is not causally closed
+
+Existing organs can individually observe:
+- runtime/environment state;
+- WorldModel state;
+- source/code state;
+- audit history;
+- experimental state;
+- adaptive strategy state.
+
+Still unresolved:
+
+`combined self-assessment → first broken causal edge → verified Knowledge Delta → future decision change`.
+
+### UK-META-02 — Deep introspection lacks proven changed-surface causal mapping
+
+Needed reusable capability:
+
+`DIFF/SYMBOL CHANGE → impacted consumers/producers → contracts → alternative routes → fallbacks → adversarial negatives → downstream effects`.
+
+This should be investigated before creating new architecture.
+
+### UK-META-03 — Introspection persistence/learning bridge is not proven
+
+Need to verify whether a deep self-analysis result is transformed into a durable sequence such as:
+
+`CodeAuditTrail → OSES → PortableContext → ExperimentLab/StrategySelector → future decision`.
+
+Do not infer learning from merely storing an analysis report.
+
+### UK-META-04 — Observation/mutation boundary in auto-analysis
+
+Existing auto-analysis may mutate repository/worktree state. It remains unresolved whether the current implementation can guarantee a pure observation phase before mutation.
+
+### UK-META-05 — I0 target-fix regression coverage
+
+Remote source fix `b3e211fbbe001d6c360071c04a83ea40cff48071` is verified at source level.
+
+The supplied independent audit reports that the regression test may return before exercising the historically failing approval-ledger branch. Treat:
+
+`source fix verified != production-path regression test verified`.
+
+Next useful action is direct re-audit/correction of the test fixture, not blind repetition of external runtime attempts.
+
+### UK-META-06 — P041-R8 runtime boundary
+
+`879605b4e17b6194868f0e4bc39a014994dc0a83` remains static/unit evidence only until independent runtime verification establishes response-routing and guidance behavior under the intended environment.
+
+### Negative knowledge
+
+`organ inventory != cognitive integration`
+
+`self-analysis report != self-learning`
+
+`positive test != affected-surface proof`
+
+`source fix != causal regression coverage`
+
+`observation mixed with mutation != trustworthy self-state observation`
+
+`external AI agreement != method change`.
+
+### Strategic next discriminating action
+
+Run one IABV-native deep self-assessment experiment on an explicitly pinned code/runtime state, then have Sonnet independently audit the resulting artifact and claim boundary.
+
+
