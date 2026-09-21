@@ -768,3 +768,28 @@ The two tracks do not imply a fixed actor sequence. Actor choice remains capabil
 - Opus 5 only for genuine architecture/policy/higher-order causal contradictions.
 
 Do not let a historical 'next actor' entry override the newer objective-conditioned routing state.
+
+
+
+## 2026-09-21 CURRENT STRATEGIC ADDENDUM — FROM COGNITIVE CONTROL PLANE TO DEVELOPMENTAL SUBSTRATE
+
+The current long-horizon objective is now explicitly two-dimensional:
+
+1. **Operational control/symbiosis track**
+   `objective → capability → actor/tool/resource → governed execution → verification → learning`
+
+2. **Developmental substrate track**
+   `seed → experience → verified capability → composition → new capability → lineage → repeated development`
+
+These tracks reinforce each other but do not prove one another.
+
+The key conceptual advance is the recognition that the development inflection should not be treated merely as a later metric. It is a consequence of whether the system can repeatedly turn verified experience into a cause of its own next capability.
+
+Current strategic question:
+`Can IABV progress from learning to use existing capabilities toward generating and preserving new capabilities that can themselves participate in constructing the next capabilities?`
+
+This question is now canonically represented in:
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENTAL-AUTOPOIETIC-THESIS-2026-09-21.md`
+
+No promotion is made for self-reproduction, autonomy, life, consciousness or open-ended evolution. Each requires separate causal evidence.
+
