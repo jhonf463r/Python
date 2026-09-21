@@ -5786,10 +5786,14 @@ class ControlCenterViewModel(QObject):
         self._set_live_status('processing')
         self.dataChanged.emit()
 
+        # P041-R5: Capture interaction identity for security_retest (turn-bound task)
+        _origin_interaction_id = getattr(self, '_active_interaction_id', None)
+        _retest_dispatch_id = f'security_retest_{uuid.uuid4().hex[:8]}'
+
         def _retest_worker() -> None:
             try:
                 result = self._execute_external_consultation_sync(
-                    assistant_kind, dispatch_id=f'security_retest_{uuid.uuid4().hex[:8]}',
+                    assistant_kind, dispatch_id=_retest_dispatch_id,
                 )
                 result_payload = {
                     'success': bool(result.get('success')),
@@ -5807,7 +5811,14 @@ class ControlCenterViewModel(QObject):
                     pass
                 self.taskResolved.emit('security_retest', result_payload)
             except Exception as exc:
-                self.taskFailed.emit('security_retest', str(exc))
+                # P041-R5: Emit failure with origin identity context
+                failure_payload = {
+                    'message': str(exc),
+                }
+                if _origin_interaction_id:
+                    failure_payload['origin_interaction_id'] = _origin_interaction_id
+                failure_payload['origin_dispatch_id'] = _retest_dispatch_id
+                self.taskFailed.emit('security_retest', failure_payload)
 
         self._bg_pool.submit(_retest_worker)
         return True
@@ -14366,6 +14377,10 @@ class ControlCenterViewModel(QObject):
         self._busy_label = 'Corriendo autotest interno: interpretar, diagnosticar, ajustar runtime y decidir si hace falta Codex.'
         self.dataChanged.emit()
 
+        # P041-R5: Capture interaction identity for self_teach (turn-bound task)
+        _origin_interaction_id = getattr(self, '_active_interaction_id', None)
+        _self_teach_dispatch_id = self._new_dispatch_id('self_teach')
+
         def worker() -> None:
             try:
                 request = self._build_request(goal)
@@ -14374,7 +14389,14 @@ class ControlCenterViewModel(QObject):
                 payload['run_summary'] = record.result.summary
                 self.taskResolved.emit('self_teach', payload)
             except Exception as exc:
-                self.taskFailed.emit('self_teach', f'No pude completar el autotest interno: {exc}')
+                # P041-R5: Emit failure with origin identity context
+                failure_payload = {
+                    'message': f'No pude completar el autotest interno: {exc}',
+                }
+                if _origin_interaction_id:
+                    failure_payload['origin_interaction_id'] = _origin_interaction_id
+                failure_payload['origin_dispatch_id'] = _self_teach_dispatch_id
+                self.taskFailed.emit('self_teach', failure_payload)
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -14386,12 +14408,23 @@ class ControlCenterViewModel(QObject):
         self._busy_label = 'Empaquetando episodios, artefactos y conocimiento.'
         self.dataChanged.emit()
 
+        # P041-R5: Capture interaction identity for payload (turn-bound task)
+        _origin_interaction_id = getattr(self, '_active_interaction_id', None)
+        _payload_dispatch_id = self._new_dispatch_id('payload')
+
         def worker() -> None:
             try:
                 payload, saved_path = self.training_orchestrator.prepare_and_archive()
                 self.taskResolved.emit('payload', {'episodes': len(payload.episodes), 'artifacts': len(payload.artifacts), 'knowledge': len(payload.knowledge_items), 'path': saved_path})
             except Exception as exc:
-                self.taskFailed.emit('payload', f'No pude generar el payload: {exc}')
+                # P041-R5: Emit failure with origin identity context
+                failure_payload = {
+                    'message': f'No pude generar el payload: {exc}',
+                }
+                if _origin_interaction_id:
+                    failure_payload['origin_interaction_id'] = _origin_interaction_id
+                failure_payload['origin_dispatch_id'] = _payload_dispatch_id
+                self.taskFailed.emit('payload', failure_payload)
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -14403,12 +14436,23 @@ class ControlCenterViewModel(QObject):
         self._busy_label = 'Ejecutando un ciclo PBT inspirado en IABV 1.3.'
         self.dataChanged.emit()
 
+        # P041-R5: Capture interaction identity for pbt (turn-bound task)
+        _origin_interaction_id = getattr(self, '_active_interaction_id', None)
+        _pbt_dispatch_id = self._new_dispatch_id('pbt')
+
         def worker() -> None:
             try:
                 state = self.pbt_service.run_cycle(self._collect_metrics())
                 self.taskResolved.emit('pbt', state)
             except Exception as exc:
-                self.taskFailed.emit('pbt', f'No pude ejecutar el ciclo PBT: {exc}')
+                # P041-R5: Emit failure with origin identity context
+                failure_payload = {
+                    'message': f'No pude ejecutar el ciclo PBT: {exc}',
+                }
+                if _origin_interaction_id:
+                    failure_payload['origin_interaction_id'] = _origin_interaction_id
+                failure_payload['origin_dispatch_id'] = _pbt_dispatch_id
+                self.taskFailed.emit('pbt', failure_payload)
 
         threading.Thread(target=worker, daemon=True).start()
 

@@ -905,3 +905,367 @@ class TestP041R4FailureIdentityGuard:
         # Verify failure was applied (no identity guard for non-chat tasks)
         assert vm._provider_refreshing == False, "Provider health failure should set refreshing=False"
 
+
+class TestP041R5TurnBoundFailuresIdentity:
+    """P041-R5: Test that all turn-bound taskFailed emitters include origin identity."""
+
+    def test_security_retest_includes_origin_ids(self):
+        """STATIC_SOURCE_CHECK: Verify security_retest emits failure with origin IDs."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel._try_handle_security_verification_retest)
+        
+        # Verify failure payload includes origin IDs
+        assert 'origin_interaction_id' in source, "Security retest failure should include origin_interaction_id"
+        assert 'origin_dispatch_id' in source, "Security retest failure should include origin_dispatch_id"
+
+    def test_self_teach_includes_origin_ids(self):
+        """STATIC_SOURCE_CHECK: Verify self_teach emits failure with origin IDs."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel.runSelfTeach)
+        
+        # Verify failure payload includes origin IDs
+        assert 'origin_interaction_id' in source, "Self teach failure should include origin_interaction_id"
+        assert 'origin_dispatch_id' in source, "Self teach failure should include origin_dispatch_id"
+
+    def test_payload_includes_origin_ids(self):
+        """STATIC_SOURCE_CHECK: Verify payload emits failure with origin IDs."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel.preparePayload)
+        
+        # Verify failure payload includes origin IDs
+        assert 'origin_interaction_id' in source, "Payload failure should include origin_interaction_id"
+        assert 'origin_dispatch_id' in source, "Payload failure should include origin_dispatch_id"
+
+    def test_pbt_includes_origin_ids(self):
+        """STATIC_SOURCE_CHECK: Verify pbt emits failure with origin IDs."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel.runQuickPbt)
+        
+        # Verify failure payload includes origin IDs
+        assert 'origin_interaction_id' in source, "PBT failure should include origin_interaction_id"
+        assert 'origin_dispatch_id' in source, "PBT failure should include origin_dispatch_id"
+
+    def test_stale_security_retest_does_not_modify_turn_b(self):
+        """UNIT_BEHAVIOR: Test that stale security_retest failure from A doesn't modify Turn B."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-002'  # Turn B is active
+        vm._active_dispatch_ids = {'security_retest': 'dispatch-002'}
+        vm._working = False
+        vm._current_turn_status = 'idle'
+        vm._live_status = 'idle'
+        vm._contextual_suggestions = [{'text': 'Suggestion B', 'action': 'test'}]
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate stale security_retest failure from Turn A
+        payload = {
+            'message': 'Security retest error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Mismatch with active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        initial_suggestions = vm._contextual_suggestions.copy()
+        initial_status = vm._current_turn_status
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'security_retest', payload)
+        
+        # Verify B remains completely intact
+        assert vm._current_turn_status == initial_status, "Stale security_retest should not modify turn status"
+        assert vm._contextual_suggestions == initial_suggestions, "Stale security_retest should not modify suggestions"
+        vm._append_message.assert_not_called(), "Stale security_retest should not append message"
+
+    def test_stale_self_teach_does_not_modify_turn_b(self):
+        """UNIT_BEHAVIOR: Test that stale self_teach failure from A doesn't modify Turn B."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-002'  # Turn B is active
+        vm._active_dispatch_ids = {'self_teach': 'dispatch-002'}
+        vm._working = False
+        vm._current_turn_status = 'idle'
+        vm._live_status = 'idle'
+        vm._contextual_suggestions = [{'text': 'Suggestion B', 'action': 'test'}]
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate stale self_teach failure from Turn A
+        payload = {
+            'message': 'Self teach error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Mismatch with active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        initial_suggestions = vm._contextual_suggestions.copy()
+        initial_status = vm._current_turn_status
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'self_teach', payload)
+        
+        # Verify B remains completely intact
+        assert vm._current_turn_status == initial_status, "Stale self_teach should not modify turn status"
+        assert vm._contextual_suggestions == initial_suggestions, "Stale self_teach should not modify suggestions"
+        vm._append_message.assert_not_called(), "Stale self_teach should not append message"
+
+    def test_stale_payload_does_not_modify_turn_b(self):
+        """UNIT_BEHAVIOR: Test that stale payload failure from A doesn't modify Turn B."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-002'  # Turn B is active
+        vm._active_dispatch_ids = {'payload': 'dispatch-002'}
+        vm._working = False
+        vm._current_turn_status = 'idle'
+        vm._live_status = 'idle'
+        vm._contextual_suggestions = [{'text': 'Suggestion B', 'action': 'test'}]
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate stale payload failure from Turn A
+        payload = {
+            'message': 'Payload error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Mismatch with active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        initial_suggestions = vm._contextual_suggestions.copy()
+        initial_status = vm._current_turn_status
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'payload', payload)
+        
+        # Verify B remains completely intact
+        assert vm._current_turn_status == initial_status, "Stale payload should not modify turn status"
+        assert vm._contextual_suggestions == initial_suggestions, "Stale payload should not modify suggestions"
+        vm._append_message.assert_not_called(), "Stale payload should not append message"
+
+    def test_stale_pbt_does_not_modify_turn_b(self):
+        """UNIT_BEHAVIOR: Test that stale pbt failure from A doesn't modify Turn B."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-002'  # Turn B is active
+        vm._active_dispatch_ids = {'pbt': 'dispatch-002'}
+        vm._working = False
+        vm._current_turn_status = 'idle'
+        vm._live_status = 'idle'
+        vm._contextual_suggestions = [{'text': 'Suggestion B', 'action': 'test'}]
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate stale pbt failure from Turn A
+        payload = {
+            'message': 'PBT error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Mismatch with active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        initial_suggestions = vm._contextual_suggestions.copy()
+        initial_status = vm._current_turn_status
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'pbt', payload)
+        
+        # Verify B remains completely intact
+        assert vm._current_turn_status == initial_status, "Stale pbt should not modify turn status"
+        assert vm._contextual_suggestions == initial_suggestions, "Stale pbt should not modify suggestions"
+        vm._append_message.assert_not_called(), "Stale pbt should not append message"
+
+    def test_legitimate_security_retest_modifies_turn_a(self):
+        """UNIT_BEHAVIOR: Test that legitimate security_retest failure for Turn A modifies Turn A."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'  # Turn A is active
+        vm._active_dispatch_ids = {'security_retest': 'dispatch-001'}
+        vm._working = True
+        vm._current_turn_status = 'processing'
+        vm._live_status = 'processing'
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate legitimate security_retest failure for Turn A
+        payload = {
+            'message': 'Security retest error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Matches active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'security_retest', payload)
+        
+        # Verify failure was applied (security_retest has special handling, doesn't call resolve_active_interaction)
+        vm._append_message.assert_called_once(), "Legitimate security_retest should append message"
+        assert vm._working == False, "Legitimate security_retest should set working=False"
+
+    def test_legitimate_self_teach_modifies_turn_a(self):
+        """UNIT_BEHAVIOR: Test that legitimate self_teach failure for Turn A modifies Turn A."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'  # Turn A is active
+        vm._active_dispatch_ids = {'self_teach': 'dispatch-001'}
+        vm._working = True
+        vm._current_turn_status = 'processing'
+        vm._live_status = 'processing'
+        vm._interaction_has_pending_followup = False
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        vm._busy_label = ''
+        vm._diagnostic_text = ''
+        vm._clear_autonomy_activity_override = MagicMock()
+        vm._humanize_task_failure = Mock(return_value=('Visible error', 'error_meta'))
+        vm._last_user_goal = 'Turn A goal'
+        vm._resolve_active_interaction = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate legitimate self_teach failure for Turn A
+        payload = {
+            'message': 'Self teach error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Matches active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'self_teach', payload)
+        
+        # Verify failure was applied
+        vm._append_message.assert_called_once(), "Legitimate self_teach should append message"
+        vm._resolve_active_interaction.assert_called_once_with(outcome='failed')
+        assert vm._working == False, "Legitimate self_teach should set working=False"
+
+    def test_legitimate_payload_modifies_turn_a(self):
+        """UNIT_BEHAVIOR: Test that legitimate payload failure for Turn A modifies Turn A."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'  # Turn A is active
+        vm._active_dispatch_ids = {'payload': 'dispatch-001'}
+        vm._working = True
+        vm._current_turn_status = 'processing'
+        vm._live_status = 'processing'
+        vm._interaction_has_pending_followup = False
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        vm._busy_label = ''
+        vm._diagnostic_text = ''
+        vm._clear_autonomy_activity_override = MagicMock()
+        vm._humanize_task_failure = Mock(return_value=('Visible error', 'error_meta'))
+        vm._last_user_goal = 'Turn A goal'
+        vm._resolve_active_interaction = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate legitimate payload failure for Turn A
+        payload = {
+            'message': 'Payload error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Matches active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'payload', payload)
+        
+        # Verify failure was applied
+        vm._append_message.assert_called_once(), "Legitimate payload should append message"
+        vm._resolve_active_interaction.assert_called_once_with(outcome='failed')
+        assert vm._working == False, "Legitimate payload should set working=False"
+
+    def test_legitimate_pbt_modifies_turn_a(self):
+        """UNIT_BEHAVIOR: Test that legitimate pbt failure for Turn A modifies Turn A."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'  # Turn A is active
+        vm._active_dispatch_ids = {'pbt': 'dispatch-001'}
+        vm._working = True
+        vm._current_turn_status = 'processing'
+        vm._live_status = 'processing'
+        vm._interaction_has_pending_followup = False
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        vm._busy_label = ''
+        vm._diagnostic_text = ''
+        vm._clear_autonomy_activity_override = MagicMock()
+        vm._humanize_task_failure = Mock(return_value=('Visible error', 'error_meta'))
+        vm._last_user_goal = 'Turn A goal'
+        vm._resolve_active_interaction = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate legitimate pbt failure for Turn A
+        payload = {
+            'message': 'PBT error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Matches active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'pbt', payload)
+        
+        # Verify failure was applied
+        vm._append_message.assert_called_once(), "Legitimate pbt should append message"
+        vm._resolve_active_interaction.assert_called_once_with(outcome='failed')
+        assert vm._working == False, "Legitimate pbt should set working=False"
+
