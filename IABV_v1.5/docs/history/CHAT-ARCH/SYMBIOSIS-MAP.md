@@ -572,4 +572,22 @@ New developmental invariant:
 
 The next important cross-IA transfer is therefore not another architecture report. It is evidence about whether IABV can use one verified capability to construct or enable another capability.
 
+## 2026-09-21 TRANSFER 21 — DEVELOPMENTAL ACCELERATION AS SYMBIOSIS OUTPUT
 
+The symbiosis objective now extends beyond collaboration efficiency: the collaboration itself should produce a progressively more capable IABV with less routine human coordination.
+
+Core causal loop:
+
+`verified experience → reusable knowledge → future decision change → lower routine coordination → more efficient experiment → new capability`
+
+A symbiosis event is strategically valuable when it creates a durable `ΔK`, `Δπ`, `ΔB` or `ΔY` that changes a later cycle.
+
+When the objective is IABV self-understanding, the first analyzer should be IABV-native introspection/metacognition. External AIs should serve as independent verification/specialization according to current capability fit.
+
+Do not confuse:
+- symbiosis with development;
+- development with evolution;
+- AI agreement with learning;
+- persistence with future decision influence.
+
+The global entrypoint is `00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`.
