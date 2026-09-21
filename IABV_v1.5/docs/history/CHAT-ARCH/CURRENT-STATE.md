@@ -826,3 +826,23 @@ Its first open edge is:
 `ExperimentRun / ExperimentRecommendation → reader → next hypothesis / next experiment`
 
 The audit is static; current runtime/branch must be freshly reconciled before operational claims.
+
+## 2026-09-21 DEVELOPMENT CONTROL TOWER — LATEST CROSS-TRACK RECONCILIATION
+
+The consolidated cross-track state is preserved in:
+
+`DEVELOPMENT-CONTROL-TOWER-2026-09-21.md`
+
+It must be used when a new objective spans scientific metacognition, autonomous development, I0/I1/I2, L5/L6/L7, systemic integrity and the global development-inflection objective.
+
+Important precedence:
+- L5 = PROVEN at selector level;
+- I0 full external connection = NOT PROVEN;
+- I1 = NOT PROVEN;
+- I2 = NOT PROVEN;
+- scientific-organ full causal circuit = OPEN;
+- META-01 = OPEN/PENDING;
+- development C/D and A7+ = OPEN RESEARCH.
+
+Current scientific next edge:
+`ExperimentRun / ExperimentRecommendation → reader → next hypothesis / next experiment`.
