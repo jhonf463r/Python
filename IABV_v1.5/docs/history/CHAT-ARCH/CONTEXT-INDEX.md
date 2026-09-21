@@ -679,3 +679,19 @@ Before new architecture, exhaustively trace existing readers/consumers.
 ### Development-inflection gate
 
 The target is a longitudinal decrease in routine human coordination together with increased verified reusable capability per unit of human coordination. “Exponential” remains a hypothesis until the measured series supports it.
+
+## 2026-09-21 DEVELOPMENT CONTROL TOWER ROUTING
+
+For any broad objective where several IABV tracks interact, activate:
+
+`DEVELOPMENT-CONTROL-TOWER-2026-09-21.md`
+
+It is the consolidated map of:
+- global objective/North Star;
+- proven, partial and open gates;
+- scientific/development/symbiosis tracks;
+- prioritized pending work;
+- stale-status avoidance;
+- current actor routing.
+
+Use it as the first cross-domain reconciliation layer, then drill into the specific source records.
