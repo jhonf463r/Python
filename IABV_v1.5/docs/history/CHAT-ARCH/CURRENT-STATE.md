@@ -1,5 +1,10 @@
 # IABV v1.5 — CHAT-ARCH Current State Reconciliation
 
+> **LATEST OPERATIONAL OVERRIDE — 2026-09-21**
+>
+> Later dated addenda in this file supersede older conflicting status paragraphs. Current scientific state: L5 selector-level causal learning is **PROVEN** by the 2026-09-19 independent adjudication; BIO-R13A has implementer-reported runtime evidence for outcome → recommendation; BIO-R13B has implementer-reported runtime evidence for recommendation → ToolEvolutionProposal. Independent verification of the BIO-R13B runtime claim remains an evidence/provenance gate because the raw runtime artifact was not separately preserved. The next active boundary is **proposal → real executable experiment → independently observed outcome**.
+>
+
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
