@@ -721,3 +721,35 @@ Keep visible in the evolution backlog:
 - longitudinal development and human coordination;
 - governance of self-development.
 
+## 2026-09-21 GLOBAL DEVELOPMENT NORTH STAR — CONSOLIDATED UNRESOLVED FRONTIER
+
+### UK-BIO-08 — IABV self-use as the first analyzer
+**Status:** OPEN RESEARCH
+
+Prove that IABV's own introspection/metacognition can routinely produce a useful, evidence-qualified first open causal edge and smallest discriminating experiment, with external AIs used according to capability fit rather than as a permanent substitute.
+
+### UK-BIO-09 — Compounding development efficiency
+**Status:** OPEN RESEARCH
+
+Measure whether verified reusable capability per unit of routine human coordination rises over successive cycles.
+
+Do not label the regime exponential without longitudinal evidence.
+
+### UK-BIO-10 — Developmental construction
+**Status:** OPEN RESEARCH
+
+Prove:
+
+`observed deficit → hypothesis → variation → sandbox → independent verification → accepted capability → later reuse`
+
+The accepted capability must become a cause of the next cycle, not merely a stored artifact.
+
+### UK-BIO-11 — Scientific result → developmental capability
+**Status:** OPEN RESEARCH
+
+Prove that a validated scientific result can become a reusable capability and alter a later developmental decision.
+
+### UK-BIO-12 — Existing-organ composition
+**Status:** OPEN
+
+Before adding any coordinator or new “brain”, determine whether the current graph already contains the necessary producer/consumer contracts and only lacks wiring, semantic normalization, or verified causal composition.
