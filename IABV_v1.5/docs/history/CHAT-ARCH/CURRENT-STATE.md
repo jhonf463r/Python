@@ -874,3 +874,6 @@ BIO-R13 did not execute. The executor reported a missing practical deterministic
 No CONTROL/TREATMENT evidence was produced, so causal outcome→next-experiment status remains **NOT PROVEN**, not false.
 
 The next step is BIO-R14: identify the smallest real-code deterministic seam capable of discriminating outcome sensitivity before considering a full harness.
+
+### BIO-R14 — NEXT FRONTIER
+BIO-R13 is blocked before execution, not disproven. The next action is a Sonnet forensic decomposition to identify the smallest deterministic seam capable of testing outcome→later proposal/experiment without constructing the full runtime harness.
