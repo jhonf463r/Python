@@ -1,4 +1,9 @@
 # IABV v1.5 — DEVELOPMENT CONTROL TOWER
+
+> **LATEST OPERATIONAL OVERRIDE — 2026-09-21**
+>
+> Later dated sections supersede older conflicting blocks. BIO-R13A/B currently have implementer-reported runtime causal evidence for outcome → recommendation → ToolEvolutionProposal; independent verification remains pending. The next active technical boundary is **proposal consumption → real executable sandbox operation → independent observation**. Do not reopen the already closed selector/resource seams merely to restate them.
+>
 ## Estado global, tracks, gates, pendientes y routing — 2026-09-21
 
 **Purpose:** mapa operativo global para futuros chats. Reconciliación entre intención estratégica y evidencia conocida. Requiere fresh check de branch/runtime antes de claims operativos.
