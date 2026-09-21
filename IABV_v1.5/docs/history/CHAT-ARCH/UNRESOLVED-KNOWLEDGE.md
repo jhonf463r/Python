@@ -753,3 +753,22 @@ Prove that a validated scientific result can become a reusable capability and al
 **Status:** OPEN
 
 Before adding any coordinator or new “brain”, determine whether the current graph already contains the necessary producer/consumer contracts and only lacks wiring, semantic normalization, or verified causal composition.
+
+## UK-BIO-13 — Outcome-to-next-experiment causal sensitivity
+**Status:** OPEN
+
+Current source proves an automatic path exists:
+
+`ExperimentRun → ExperimentRecommendation → ToolEvolutionMonitor → ToolEvolutionProposal → AutonomousValidationCycle → SandboxExperiment`.
+
+What remains unproven is whether a controlled change in the prior scientific outcome causes a different next proposal/experiment under otherwise matched conditions.
+
+Required experiment:
+- identical subject/objective/context;
+- control prior outcome A;
+- treatment prior outcome B;
+- same candidate universe and governance;
+- observe recommendation, proposal and next sandbox experiment;
+- independent verification;
+- attribution must exclude unrelated ranking, availability or hard-coded branches.
+
