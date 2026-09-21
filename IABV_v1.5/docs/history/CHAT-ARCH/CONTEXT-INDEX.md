@@ -618,3 +618,32 @@ and
 when the narrative claims continuity from an older baseline.
 
 A test-only immediate diff must not be mistaken for ancestry-wide production immutability.
+
+
+
+## 2026-09-21 ROUTING DOMAIN — BIOSOFÍA ARTIFICIAL / DEVELOPMENTAL SELF-CONSTRUCTION
+
+When an objective concerns biosofía artificial, autoconstrucción, autoevolución, digital organisms, generational learning or development acceleration, activate first:
+
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+`BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENTAL-AUTOPOIETIC-THESIS-2026-09-21.md`
+`SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` when cross-organ coherence is implicated.
+
+Questions to route:
+1. What developmental level is actually being tested (acquisition, recombination, development, generational evolution)?
+2. What existing IABV organs already provide the required substrate?
+3. What is the first unproven causal edge?
+4. What must be heredable and what is only runtime state?
+5. What negative controls distinguish development from automation, persistence from heredity, and adaptation from open-ended evolution?
+6. What independent verifier can validate the result?
+
+The research analogy is:
+`seed → unit → cooperation → differentiation → integration → lineage → variation → selection → next generation`
+
+but the evidence model remains:
+`idea → design → code → wired → invoked → observed → independently verified → causally proven → learned → reused`
+
+Do not treat biological analogy as evidence.
+Do not treat the existence of many IABV services as proof of organism-level organization.
+
