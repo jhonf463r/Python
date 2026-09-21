@@ -374,3 +374,28 @@ on
 `devin/i0-credential-get-coverage-2026-09-21`.
 
 The artifact is remotely verifiable; independent M3 audit and Windows runtime remain pending.
+
+## 2026-09-21 REGISTRATION — I0 M3 INDEPENDENT AUDIT / LINEAGE RECONCILIATION
+
+Canonical source:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-21-009-i0-m3-independent-audit-lineage-reconciliation.md`
+
+Type:
+`RECONCILIATION / INDEPENDENT_AUDIT`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Purpose:
+preserve the independent M3 mutation reproduction, the exact evidence boundary, and the newly discovered distinction between commit-local scope and cumulative branch lineage.
+
+Related artifact:
+`7753ce5632370b2a03726aeff63dbcd1ac7afc42`
+on
+`devin/i0-credential-get-coverage-2026-09-21`.
+
+M3 status:
+`UNIT/MUTATION CLOSED / INDEPENDENT AUDIT REPORTED`.
+
+Current I0 runtime status:
+`WINDOWS RUNTIME NOT PROVEN`.
