@@ -694,3 +694,35 @@ The new I0 experimental artifact establishes a concrete positive example:
 The M3 mutation result remains implementer-reported pending independent Sonnet audit. Windows runtime and full I0 closure remain unproven.
 
 Do not confuse this experimental branch with current main I0 runtime state. The metacognitive track and I0 operational track must remain separate.
+
+## 2026-09-21 LIVE ADDENDUM — I0 M3 INDEPENDENT VERIFICATION + LINEAGE RECONCILIATION
+
+Independent Claude/Sonnet audit of remote `7753ce5632370b2a03726aeff63dbcd1ac7afc42` reports and directly explains the requested M3 mutation. The audit reconstructed the real POST→running→GET→finished test path, verified separate POST/GET mocks, applied the GET-only mutation `_headers(effective_key) → _headers()`, and observed failure at the GET assertion with the constructor credential. False-positive vectors and persistent adapter state were also checked.
+
+Therefore:
+- `M3 = CLOSED AT UNIT/MUTATION LEVEL`;
+- `independent causal reproduction = REPORTED BY INDEPENDENT AUDITOR`;
+- `remote artifact = VERIFIED`;
+- `Windows runtime = NOT PROVEN`;
+- `I0 full closure = NOT PROVEN`.
+
+### Important lineage correction
+
+The direct parent of `7753ce563...` is `6c8be71c7dc2718802c83f79e03f90bedf3e818b`, not `64260e424...`.
+
+GitHub compare `64260e424... → 7753ce563...` is eight commits ahead and includes cumulative changes to production and test files, including `tool_adapters.py`, `bootstrap.py`, `tool_teach_service.py`, `authority_server.py`, `credential_registry.py`, and multiple I0 tests.
+
+Thus:
+`7753... immediate diff scope = test-only`
+but
+`64260... cumulative lineage → 7753... = production + test evolution`.
+
+Do not describe the production seam as "unchanged since 64260" without qualification. The accurate claim is that `7753...` itself changes only the test relative to its direct parent.
+
+At `7753...`, `credential_registry.py` contains `resolve_credential_secret(credential_id)`, which was absent at `64260...`; therefore the branch lineage includes real credential-registry evolution.
+
+New invariant:
+`commit-local diff scope != cumulative branch lineage scope`.
+
+Do not reopen M3. The next edge remains:
+`exact implementation revision → real Windows credential binding/execution → observed behavior → independent runtime verification`.
