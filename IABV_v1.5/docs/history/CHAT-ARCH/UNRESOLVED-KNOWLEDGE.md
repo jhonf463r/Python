@@ -772,3 +772,19 @@ Required experiment:
 - independent verification;
 - attribution must exclude unrelated ranking, availability or hard-coded branches.
 
+## UK-BIO-14 — Narrow causal seam before full harness
+**Status:** OPEN
+
+BIO-R13 was blocked before execution because a full deterministic runtime harness for `ToolEvolutionMonitor.build_status()` was not available.
+
+The correct next question is not “build the full harness” but:
+
+`What is the smallest existing deterministic producer→reader→decision seam that can discriminate outcome sensitivity?`
+
+Candidate seams:
+- prior `ExperimentRun` set → `AdaptiveWeightLayer.suggest()`;
+- grouped runs → ranked profiles;
+- ranked profiles + recommendation → `_proposal_for_subject()`;
+- recommendation → `ToolTeachService._preferred_external_tool_id()`.
+
+Acceptance requires using real production functions/fixtures where possible and explicitly stating when a lower-level result is only partial evidence for the end-to-end claim.
