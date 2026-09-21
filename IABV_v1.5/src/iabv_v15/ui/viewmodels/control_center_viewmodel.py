@@ -1828,10 +1828,11 @@ class ControlCenterViewModel(QObject):
         word_tokens = set(re.findall(r'[a-z0-9_]+', normalized))
         asks_system_state = any(token in word_tokens for token in ('entorno', 'arquitectura', 'herramienta', 'herramientas', 'ias', 'ia', 'estado', 'conexiones'))
         asks_directly = any(token in normalized for token in ('conoces', 'sabes', 'tienes', 'disponibles', 'te conectas', 'te puedes conectar', 'consciente', 'que tan bien', 'como estas', 'cómo estás'))
-        # P041-R7: Align with IntentUnderstandingService - recognize analysis verbs + system state + system reference
+        # P041-R8: Align with IntentUnderstandingService - require state concept to avoid false-positives
         asks_analysis = any(token in normalized for token in ('analiza', 'analizar', 'revisa', 'revisar', 'diagnostica', 'diagnosticar', 'evalua', 'evaluar', 'examina', 'examinar'))
         has_state_concept = any(token in word_tokens for token in ('estado', 'situacion', 'condicion', 'salud', 'funcionamiento'))
         has_system_reference = any(token in word_tokens for token in ('iabv', 'sistema', 'sistema mismo', 'propio sistema', 'tu sistema'))
+        # P041-R8: Require all three conditions to avoid false-positives like "analiza el sistema de pagos"
         if asks_analysis and has_state_concept and has_system_reference:
             return True
         return asks_system_state and asks_directly

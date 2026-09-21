@@ -4108,7 +4108,9 @@ class AdaptiveTaskOrchestrator:
                 'prompt': f'Ya tengo la estrategia lista para {site_name}. Solo me falta tu aprobacion para pasar a la siguiente fase.',
                 'actions': actions[:2],
             }
-        if not bool(execution_state.get('executor_available')) and not bool(execution_state.get('simulation_only')):
+        # P041-R8: Only activate need_adapter guidance when there's a real execute step requiring execution
+        # Conversational sessions without execute_step should not trigger operational fallback
+        if bool(execution_state.get('execute_step_present')) and not bool(execution_state.get('executor_available')) and not bool(execution_state.get('simulation_only')):
             return {
                 'mode': 'need_adapter',
                 'title': 'Falta adaptador operativo',

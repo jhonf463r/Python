@@ -1683,10 +1683,11 @@ class IntentUnderstandingService:
         asks_analysis = any(token in normalized for token in ('analiza', 'analizar', 'revisa', 'revisar', 'diagnostica', 'diagnosticar', 'evalua', 'evaluar', 'examina', 'examinar'))
         has_state_concept = any(token in word_tokens for token in ('estado', 'situacion', 'condicion', 'salud', 'funcionamiento', 'como esta', 'como esta', 'como est', 'cómo está', 'cómo est', 'como va', 'cómo va'))
         has_system_reference = any(token in word_tokens for token in ('iabv', 'sistema', 'sistema mismo', 'propio sistema', 'tu sistema'))
-        # P041-R7: Be more flexible - recognize analysis verb + system reference as sufficient for state inquiry
-        if asks_analysis and has_system_reference:
+        # P041-R8: Require state/self-diagnosis signal to avoid false-positives like "analiza el sistema de pagos"
+        # Only recognize analysis verb + system reference when explicitly combined with state concept
+        if asks_analysis and has_system_reference and has_state_concept:
             return True
-        # P041-R7: Also recognize when asking "what's happening" without explicit "estado"
+        # P041-R8: Also recognize when asking "what's happening" without explicit "estado"
         if asks_analysis and ('que pasa' in normalized or 'qué pasa' in normalized) and has_system_reference:
             return True
         return asks_system_state and asks_directly

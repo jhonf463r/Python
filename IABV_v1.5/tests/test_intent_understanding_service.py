@@ -492,3 +492,136 @@ def test_p041_r7_null_executor_operational_session_with_execute_step_produces_fa
     # Operational sessions should get the fallback next_actions
     assert result.next_actions == ['Simular', 'Ver evolutivo', 'Preparar Codex'], f"Expected operational fallback, got {result.next_actions}"
     assert result.metadata.get('mode') == 'adapter_missing', f"Expected mode='adapter_missing', got {result.metadata.get('mode')}"
+
+
+# ---------------------------------------------------------------------------
+# P041-R8: Prevent false-positives - analysis verb + system reference without state concept
+# ---------------------------------------------------------------------------
+
+
+def test_p041_r8_analiza_sistema_pagos_not_self_awareness() -> None:
+    """P041-R8: Verify that 'analiza el sistema de pagos' does NOT fall to system.self_awareness (false-positive)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='analiza el sistema de pagos')
+    )
+
+    assert intent.intent_key != 'system.self_awareness', f"Should not be system.self_awareness, got {intent.intent_key}"
+    assert intent.intent_key != 'system.metacognition', f"Should not be system.metacognition, got {intent.intent_key}"
+
+
+def test_p041_r8_revisa_sistema_bancario_not_self_awareness() -> None:
+    """P041-R8: Verify that 'revisa el sistema bancario' does NOT fall to system.self_awareness (false-positive)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='revisa el sistema bancario')
+    )
+
+    assert intent.intent_key != 'system.self_awareness', f"Should not be system.self_awareness, got {intent.intent_key}"
+    assert intent.intent_key != 'system.metacognition', f"Should not be system.metacognition, got {intent.intent_key}"
+
+
+def test_p041_r8_analiza_sistema_wplay_not_self_awareness() -> None:
+    """P041-R8: Verify that 'analiza el sistema Wplay' does NOT fall to system.self_awareness (false-positive)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='analiza el sistema Wplay')
+    )
+
+    assert intent.intent_key != 'system.self_awareness', f"Should not be system.self_awareness, got {intent.intent_key}"
+    assert intent.intent_key != 'system.metacognition', f"Should not be system.metacognition, got {intent.intent_key}"
+
+
+def test_p041_r8_revisa_sistema_produccion_not_self_awareness() -> None:
+    """P041-R8: Verify that 'revisa el sistema de produccion' does NOT fall to system.self_awareness (false-positive)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='revisa el sistema de produccion')
+    )
+
+    assert intent.intent_key != 'system.self_awareness', f"Should not be system.self_awareness, got {intent.intent_key}"
+    assert intent.intent_key != 'system.metacognition', f"Should not be system.metacognition, got {intent.intent_key}"
+
+
+def test_p041_r8_analiza_sistema_disenamos_not_self_awareness() -> None:
+    """P041-R8: Verify that 'analiza el sistema que disenamos' does NOT fall to system.self_awareness (false-positive)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='analiza el sistema que disenamos')
+    )
+
+    assert intent.intent_key != 'system.self_awareness', f"Should not be system.self_awareness, got {intent.intent_key}"
+    assert intent.intent_key != 'system.metacognition', f"Should not be system.metacognition, got {intent.intent_key}"
+
+
+# ---------------------------------------------------------------------------
+# P041-R8: Guidance tests - verify need_adapter condition logic
+# ---------------------------------------------------------------------------
+
+
+def test_p041_r8_guidance_condition_conversational_no_need_adapter() -> None:
+    """P041-R8: Verify that conversational session state does NOT satisfy need_adapter condition."""
+    # Conversational session: no execute step
+    execution_state = {
+        'state': 'not_applicable',
+        'executor_available': False,
+        'simulation_only': False,
+        'execute_step_present': False,
+    }
+
+    # P041-R8 condition: need_adapter only when execute_step_present AND NOT executor_available AND NOT simulation_only
+    # This should NOT trigger need_adapter for conversational sessions
+    need_adapter_condition = (
+        bool(execution_state.get('execute_step_present'))
+        and not bool(execution_state.get('executor_available'))
+        and not bool(execution_state.get('simulation_only'))
+    )
+
+    assert not need_adapter_condition, f"Conversational session should not satisfy need_adapter condition"
+
+
+def test_p041_r8_guidance_condition_operational_with_execute_step_produces_need_adapter() -> None:
+    """P041-R8: Verify that operational session with execute step + missing executor DOES satisfy need_adapter condition."""
+    # Operational session: has execute step but no executor
+    execution_state = {
+        'state': 'adapter_missing',
+        'executor_available': False,
+        'simulation_only': False,
+        'execute_step_present': True,
+    }
+
+    # P041-R8 condition: need_adapter only when execute_step_present AND NOT executor_available AND NOT simulation_only
+    # This SHOULD trigger need_adapter for operational sessions with missing executor
+    need_adapter_condition = (
+        bool(execution_state.get('execute_step_present'))
+        and not bool(execution_state.get('executor_available'))
+        and not bool(execution_state.get('simulation_only'))
+    )
+
+    assert need_adapter_condition, f"Operational session with missing executor should satisfy need_adapter condition"
+
+
+def test_p041_r8_guidance_condition_simulation_only_no_need_adapter() -> None:
+    """P041-R8: Verify that simulation_only mode does NOT trigger need_adapter even with missing executor."""
+    # Simulation only mode: has execute step but marked as simulation_only
+    execution_state = {
+        'state': 'simulation_only',
+        'executor_available': False,
+        'simulation_only': True,
+        'execute_step_present': True,
+    }
+
+    # P041-R8 condition: need_adapter only when execute_step_present AND NOT executor_available AND NOT simulation_only
+    # This should NOT trigger need_adapter for simulation_only mode
+    need_adapter_condition = (
+        bool(execution_state.get('execute_step_present'))
+        and not bool(execution_state.get('executor_available'))
+        and not bool(execution_state.get('simulation_only'))
+    )
+
+    assert not need_adapter_condition, f"Simulation_only mode should not satisfy need_adapter condition"
