@@ -178,22 +178,20 @@ This refinement supersedes only the broad wording of the earlier “no consumer�
 
 `BIO-R13` is now the next bounded scientific/developmental experiment: prove or falsify whether changing a prior ExperimentRun outcome, under matched conditions, changes the subsequent ExperimentRecommendation → ToolEvolutionProposal → SandboxExperiment path. Next actor: DEVIN for test-only execution; then SONNET for independent audit. The broader architecture remains unchanged.
 
-## 2026-09-21 BIO-R13 RESULT — BLOCKED, FRONTIER NARROWED
+## 2026-09-21 BIO-R13A/B — RUNTIME CAUSALITY CONFIRMED
 
-BIO-R13 execution did **not** run CONTROL/TREATMENT. Provenance reported by the executor:
-- branch: `devin/i0-external-route-target-fix-2026-09-20`
-- HEAD: `f0c98ca1af756273f14a7fae65fafa9bd69a3a30`
-- working tree: 5738 untracked files
-- runtime: Python 3.14.4 win32
-- no test artifact, commit, command execution, negative control or cold restart
+BIO-R13A confirmed at runtime that a controlled `ExperimentRun.success` perturbation changes the subsequent `ExperimentRecommendation`. BIO-R13B then confirmed at runtime that the recommendation change propagates into `ToolEvolutionProposal` generation. The observed control/treatment chain was:
 
-Verdict: **BLOCKED**.
+`success → eligibility → adaptive profile/ranking → recommendation → baseline_row → proposal`.
 
-The exact blocker is the absence of a practical deterministic runtime harness for `ToolEvolutionMonitor.build_status()` while controlling repository, storage, AdaptiveWeightLayer state and all relevant variables.
+BIO-R13B execution used branch `devin/i0-external-route-target-fix-2026-09-20`, HEAD `f0c98ca1af756273f14a7fae65fafa9bd69a3a30`, Python 3.14.4 win32. CONTROL recommendation=codex with proposal=`validate_local_first`; TREATMENT changed only codex.success=False, yielding recommendation=ollama and proposal=None.
 
-This does **not** prove the causal hypothesis false. It does not prove learning absent.
+The earlier full-`build_status()` harness concern is no longer the active blocker. The smallest proposal seam was proven runnable without the full runtime graph.
 
-New first question:
-`Can outcome→next-proposal causality be isolated at a smaller deterministic seam before building a full runtime harness?`
+### Remaining frontier — BIO-R13C
 
-New next task: **BIO-R14** — audit the narrowest causal seam. First inspect whether existing functions such as grouping, adaptive-weight suggestion, ranking and proposal construction can be exercised with matched synthetic/persisted run sets using the real code path or existing fixtures.
+The next edge is not merely “proposal exists”. It is:
+
+`ToolEvolutionProposal → AutonomousValidationCycle candidate → SandboxExperimentService.validate_recommendation() → actual executable experiment → independently observed outcome`.
+
+Source inspection shows `run_once()` consumes actionable proposals and invokes `validate_recommendation()`; however existing tests stub the sandbox service, and `validate_recommendation()` constructs a `SandboxExperiment` and records a derived `ExperimentRun`. Therefore proposal-consumption is source-confirmed, while real execution/observed phenotype remains OPEN.
