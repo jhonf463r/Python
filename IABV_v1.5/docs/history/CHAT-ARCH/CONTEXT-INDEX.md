@@ -543,4 +543,15 @@ Do not reopen canonical assistant↔tool ownership.
 ### P041-R8
 
 Experimental commit `879605b4e17b6194868f0e4bc39a014994dc0a83` remains static/unit evidence pending independent audit/runtime.
+## 2026-09-21 ROUTING — BIOSOFIA METACOGNITIVE EXECUTION
+
+For objectives concerning IABV self-understanding, biosophia artificial, deep self-audit, anticipated regressions or development acceleration, route first to the IABV-native metacognitive/self-audit organs before outsourcing analysis.
+
+Activate:
+`CURRENT-STATE + SYMBIOSIS-MAP + UNRESOLVED-KNOWLEDGE + SYSTEMIC-INTEGRITY + BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION + exact current repository/runtime evidence`.
+
+First discriminating action:
+`META-01 IABV-native deep self-assessment preflight`.
+
+Then use independent external verification when the result makes a critical claim. Do not bypass the persistent evolution backlog.
 
