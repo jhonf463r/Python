@@ -8496,14 +8496,16 @@ class ControlCenterViewModel(QObject):
                 pass
         
         if is_final:
-            # Only clear after terminalization is complete
+            # P041-R3: Update status BEFORE clearing _active_interaction_id
+            # This ensures the status update is not rejected as stale
+            self._set_live_status('idle', interaction_id=resolved_interaction_id)
+            
+            # Now clear watchdog and active interaction
             watchdog = getattr(self, '_ui_heartbeat_watchdog', None)
             if watchdog is not None:
                 watchdog.set_query_pending(False)
                 watchdog.set_active_interaction(None)
             self._active_interaction_id = None
-            # Use the captured ID for status update
-            self._set_live_status('idle', interaction_id=resolved_interaction_id)
             self._promote_metacognition_after_resolution()
 
     # ── Dispatch-id helpers (stale-result guard) ────────────────
@@ -13843,6 +13845,10 @@ class ControlCenterViewModel(QObject):
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
         
+        # P041-R3: Set user goal BEFORE any operation that depends on it
+        # This ensures suggestions are based on the current message, not the previous one
+        self._last_user_goal = message
+        
         # P041: Invalidate stale turn state when a new turn starts
         previous_interaction_id = getattr(self, '_active_interaction_id', None)
         if previous_interaction_id is not None:
@@ -14184,6 +14190,9 @@ class ControlCenterViewModel(QObject):
                         'adaptive_session': adaptive_session,
                         'assistant_guidance': (record.result.raw_output or {}).get('assistant_guidance') if isinstance(record.result.raw_output, dict) else None,
                         'local_chat_llm': (record.result.raw_output or {}).get('local_chat_llm') if isinstance(record.result.raw_output, dict) else None,
+                        # P041-R3: Include origin identity for result application guard
+                        'origin_interaction_id': origin_interaction_id,
+                        'origin_dispatch_id': origin_dispatch_id,
                     },
                 )
             except Exception as exc:
@@ -14494,6 +14503,45 @@ class ControlCenterViewModel(QObject):
             self._diagnostic_text = self._build_provider_diagnostic(nonblocking=True)
             self._diagnostic_truth_state = 'observed'
         elif task_name == 'chat':
+            # P041-R3: Result application guard - validate origin identity before applying
+            origin_interaction_id = payload.get('origin_interaction_id')
+            origin_dispatch_id = payload.get('origin_dispatch_id')
+            
+            active_interaction_id = getattr(self, '_active_interaction_id', None)
+            active_dispatch_id = self._active_dispatch_ids.get('chat', '')
+            
+            # If origin identity is provided, validate it matches the active turn
+            if origin_interaction_id is not None:
+                if origin_interaction_id != active_interaction_id:
+                    # Stale result: do not apply to current turn
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        tracer = get_runtime_tracer()
+                        tracer.trace(
+                            'stale_chat_result_discarded',
+                            origin_interaction_id=origin_interaction_id,
+                            active_interaction_id=active_interaction_id,
+                            origin_dispatch_id=origin_dispatch_id,
+                            active_dispatch_id=active_dispatch_id,
+                        )
+                    except Exception:
+                        pass
+                    return
+                # Validate dispatch_id as well
+                if origin_dispatch_id and origin_dispatch_id != active_dispatch_id:
+                    # Dispatch mismatch: result is stale
+                    try:
+                        from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                        tracer = get_runtime_tracer()
+                        tracer.trace(
+                            'stale_chat_result_dispatch_mismatch',
+                            origin_dispatch_id=origin_dispatch_id,
+                            active_dispatch_id=active_dispatch_id,
+                        )
+                    except Exception:
+                        pass
+                    return
+            
             self._clear_autonomy_activity_override()
             # Mark lifecycle phase: first_useful_response
             _iid = getattr(self, '_active_interaction_id', None)
