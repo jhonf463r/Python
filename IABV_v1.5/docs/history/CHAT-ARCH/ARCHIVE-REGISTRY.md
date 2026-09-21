@@ -434,3 +434,7 @@ Related canonical records:
 Current evidence boundary:
 IABV has substantial substrate organs and causal selector-level learning evidence; recursive developmental closure, heredity, generational evolution and open-endedness remain open.
 
+## 2026-09-21 CANONICAL BIOSOFÍA / DEVELOPMENT ENTRYPOINT
+
+- `00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md` — primary strategic entrypoint for the user's global objective: IABV self-use, developmental acceleration, autonomous scientific/developmental cycles, and progressive reduction of routine human coordination.
+- `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md` — forensic snapshot of the scientific organ at exact HEAD `f0c98ca1af756273f14a7fae65fafa9bd69a3a30`; static evidence only; first open edge is experiment outcome/recommendation → downstream consumer → next hypothesis/experiment.
