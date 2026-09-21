@@ -442,3 +442,5 @@ IABV has substantial substrate organs and causal selector-level learning evidenc
 ## DEVELOPMENT CONTROL TOWER — 2026-09-21
 
 `DEVELOPMENT-CONTROL-TOWER-2026-09-21.md` — consolidated operational map for the user's global development objective, track states, pending tasks, evidence precedence and next actor. Use this before broad cross-track work.
+
+- `BIO-R13-DEVIN-HANDOFF-2026-09-21.md` — bounded test-only handoff to determine causal sensitivity from prior scientific outcome to next proposal/experiment.
