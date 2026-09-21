@@ -866,3 +866,11 @@ Still open is the stronger causal proposition:
 `different prior outcome → different next proposal/experiment`
 
 The next discriminating experiment is BIO-R13: matched control/treatment outcome perturbation with the same subject/objective/candidate universe and observation of the next recommendation/proposal/sandbox choice.
+
+## 2026-09-21 BIO-R13 — BLOCKED / NEXT FRONTIER BIO-R14
+
+BIO-R13 did not execute. The executor reported a missing practical deterministic runtime harness for the full `ToolEvolutionMonitor.build_status()` path.
+
+No CONTROL/TREATMENT evidence was produced, so causal outcome→next-experiment status remains **NOT PROVEN**, not false.
+
+The next step is BIO-R14: identify the smallest real-code deterministic seam capable of discriminating outcome sensitivity before considering a full harness.
