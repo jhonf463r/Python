@@ -416,3 +416,36 @@ When a future audit proves, refutes, supersedes or materially changes any part o
 2. update routing/current-state records that reference it;
 3. preserve the historical claim and provenance rather than silently replacing history;
 4. prefer direct source/runtime evidence over prior AI assertions.
+
+## 2026-09-20/21 SYSTEMIC LESSON — SELF-ASSESSMENT MUST BE CHANGE-SURFACE AWARE
+
+P041-R7/R8 provides a concrete systemic-integrity pattern:
+
+`local predicate change → classification → metadata → response routing → UI/guidance → downstream behavior`.
+
+A self-assessment mechanism should therefore not stop at the edited symbol. It should inspect:
+- consumers;
+- alternative producers;
+- fallbacks;
+- contracts;
+- negative controls;
+- temporal/semantic neighbors;
+- affected UI/runtime routes.
+
+This supports the existing systemic rule:
+
+`leading gap = composition of existing verification organs`, not an automatic need for a new coordinator.
+
+### Observation versus mutation
+
+The metacognitive self-assessment path must keep observation separate from mutation. Any auto-fetch, branch switching, hard reset, cleanup or auto-correction must be explicitly classified as action, authorized independently, and prevented from silently contaminating the state being measured.
+
+### New reusable invariants
+
+`changed producer != full system effect understood`
+
+`local green tests != changed-surface safety`
+
+`self-analysis that mutates state != pure observation`.
+
+
