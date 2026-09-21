@@ -572,3 +572,81 @@ No se reabre la decisión de ownership. Se reabre únicamente la verificación d
 Devin reported a bounded fix for the reachable `target` NameError: `target_assistant=target` → `target_assistant=target_assistant_normalized`, with a unit test covering a non-null approval-ledger path. However, the reported branch `devin/i0-external-route-target-fix-2026-09-20` and abbreviated SHA `b3e211fbb` are not currently readable through GitHub search/read-back. Therefore the fix is **reported only, not yet remotely verified**.
 
 The next action is not another runtime experiment: Devin must publish/read-back the branch and exact full commit SHA, then the diff and regression test can be independently audited. Do not claim the runtime route is repaired until remote provenance is established.
+
+## 2026-09-20/21 METACOGNITIVE SELF-USE RECONCILIATION
+
+The newly absorbed chat analysis changes the strategic interpretation of the current project. The highest-value missing capability is no longer assumed to be another external-agent connector or another orchestration organ. The material unresolved question is whether existing IABV organs can be composed into an observable, governed and causally traceable self-assessment cycle.
+
+### Current truth
+
+IABV already contains substantial self-observation and metacognitive organs, including WorldModel, EnvironmentSelfModel/self-awareness, SelfAudit, OSES, self-code analysis, holistic metacognition, CodeAuditTrail, ExperimentLab, StrategySelector, AdaptiveWeightLayer, validation and PortableContext.
+
+What is NOT PROVEN is that these organs form a general causal circuit:
+
+`IABV observes → identifies uncertainty → introspects code/architecture → identifies first broken edge → creates discriminating experiment → verifies → persists Knowledge Delta → changes a future decision`.
+
+Therefore:
+
+`organ exists != integrated cognitive circuit`.
+
+### Deep-self-assessment semantic contract
+
+Treat a request equivalent to “analyze the current state of IABV” as potentially deeper than physical/runtime health.
+
+Required semantic distinction:
+
+`system.self_awareness` = current state/health/tools/environment/architecture description.
+
+`system.metacognition` = causal explanation, uncertainty, changed surface, likely downstream failure, evidence gaps and discriminating next experiment.
+
+Do not create a third intent or parallel brain to express this.
+
+### Systemic change-surface rule
+
+When a symbol, predicate or contract changes, future analysis should inspect its change surface across producers, consumers, routes, metadata, fallbacks, tests and UI behavior.
+
+P041-R7/R8 demonstrates the need for adversarial neighboring cases rather than only positive cases.
+
+### Observation/mutation separation
+
+Deep self-analysis must distinguish:
+
+`OBSERVE → REASON → HYPOTHESIZE → EXPERIMENT → VERIFY → AUTHORIZE → CHANGE → REVERIFY → LEARN`.
+
+Existing auto-analysis behavior that can mutate branches/worktrees or apply corrections must not be silently treated as pure observation.
+
+### I0 correction
+
+Remote source verification now establishes that commit `b3e211fbbe001d6c360071c04a83ea40cff48071` contains the intended production source fix for the `worker_health_gate()` undefined-`target` defect. The previous main-memory note saying the fix was not remotely readable is therefore superseded.
+
+However, the supplied independent audit found the regression test may not exercise the exact production branch causally. Keep that test-quality finding open until directly re-audited.
+
+### P041-R8
+
+Remote commit `879605b4e17b6194868f0e4bc39a014994dc0a83` is an experimental branch change with static/unit evidence. Its runtime Windows, response-routing runtime and UI-guidance runtime remain unproven.
+
+### Current strategic gate
+
+The project should begin using IABV itself as the **primary analyzer** for deep self-assessment, while retaining external independent verification for critical claims.
+
+The immediate high-information action is an IABV-native deep self-assessment preflight on an explicitly pinned runtime/repository state. This preflight should return:
+- current truth;
+- first open causal edge;
+- evidence states;
+- changed surface;
+- uncertainty classes;
+- adversarial hypotheses;
+- smallest discriminating experiment;
+- proposed capability/actor routing;
+- Knowledge Delta candidate.
+
+Do not treat this preflight as proof of its own correctness until independently verified.
+
+### Development-inflection metric
+
+The desired inflection remains:
+
+`verified experience → reusable knowledge → changed future decision → reduced routine human coordination → more efficient experimentation`.
+
+Code volume, number of tests, or number of connected AIs are not substitute metrics.
+
