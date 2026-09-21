@@ -695,3 +695,18 @@ It is the consolidated map of:
 - current actor routing.
 
 Use it as the first cross-domain reconciliation layer, then drill into the specific source records.
+
+## 2026-09-21 SCIENTIFIC CAUSAL REFINEMENT — ROUTING
+
+For scientific-loop objectives, do not stop at “does Recommendation have a consumer?”.
+
+The current source already shows:
+
+`ExperimentRun → Recommendation → ToolEvolutionMonitor → Proposal → AutonomousValidationCycle → SandboxExperiment`.
+
+Route next work to the first uncertainty that remains: whether outcome differences causally alter the next proposal/experiment. Use BIO-R13 before creating new architecture.
+
+Relevant records:
+- `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md`
+- `DEVELOPMENT-CONTROL-TOWER-2026-09-21.md`
+- `UNRESOLVED-KNOWLEDGE.md` UK-BIO-13
