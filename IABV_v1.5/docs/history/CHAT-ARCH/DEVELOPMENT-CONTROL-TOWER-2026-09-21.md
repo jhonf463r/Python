@@ -151,3 +151,27 @@ Evidence must outrank narrative at every boundary.
 5. Historical report or implementer claim.
 
 Older current-status entries are historical when a later canonical addendum supersedes them.
+
+## 2026-09-21 SCIENTIFIC CAUSAL REFINEMENT — EXISTING AUTO-EXPERIMENT CHAIN
+
+A deeper current-source reconciliation found that the earlier statement “ExperimentRecommendation has no downstream consumer” is too broad.
+
+Observed current-source chain:
+
+`ExperimentRun → ExperimentLab.record_outcome/run_experiment → ExperimentRecommendation → ToolDiscoveryService/ToolEvolutionMonitor → ToolEvolutionProposal → AutonomousValidationCycleService → SandboxExperimentService.validate_recommendation → ExperimentLab.record_outcome`.
+
+Additionally, `ExperimentRecommendation` is consumed directly by `ToolTeachService._preferred_external_tool_id()` and can change external assistant routing.
+
+This establishes **CODE/WIRED/INVOKED paths toward later decisions and later sandbox experiments**.
+
+It does NOT yet prove the stronger causal claim:
+
+`different scientific outcome → different next hypothesis/experiment`
+
+The existing `ToolEvolutionMonitor._proposal_for_subject()` derives proposals from grouped historical runs, profiles, ranking and the current recommendation. The next required evidence is therefore a controlled outcome perturbation showing that changing the prior outcome while holding the rest of the subject context constant causes a different next proposal/experiment.
+
+Important distinction:
+
+`automatic next experiment path exists ≠ scientific outcome causally determines next experiment`.
+
+This refinement supersedes only the broad wording of the earlier “no consumer” hypothesis; the forensic snapshot at `f0c98ca1af756273f14a7fae65fafa9bd69a3a30` remains historical evidence.
