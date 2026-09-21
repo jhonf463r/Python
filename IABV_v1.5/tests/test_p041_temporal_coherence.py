@@ -614,3 +614,294 @@ class TestP041R3EmissionApplicationRace:
         assert vm._contextual_suggestions == initial_suggestions, "Result A should not modify B's suggestions"
         vm._chat_interaction_lifecycle.mark_phase.assert_not_called()
 
+
+class TestP041R4FailureIdentityGuard:
+    """P041-R4: Test that taskFailed payload includes origin identity and guard protects against stale failures."""
+
+    def test_task_failed_signal_supports_payload(self):
+        """STATIC_SOURCE_CHECK: Verify taskFailed signal is Signal(str, object) to support context."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel)
+        
+        # Verify signal declaration
+        assert 'taskFailed = Signal(str, object)' in source, "taskFailed should be Signal(str, object)"
+
+    def test_apply_task_failure_accepts_payload(self):
+        """STATIC_SOURCE_CHECK: Verify _apply_task_failure signature accepts object payload."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel._apply_task_failure)
+        
+        # Verify signature accepts object
+        assert 'def _apply_task_failure(self, task_name: str, payload)' in source, "_apply_task_failure should accept object payload"
+
+    def test_chat_failure_includes_origin_ids(self):
+        """STATIC_SOURCE_CHECK: Verify chat worker emits failure with origin IDs."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel.sendChat)
+        
+        # Verify failure payload includes origin IDs
+        assert 'origin_interaction_id' in source, "Chat failure should include origin_interaction_id"
+        assert 'origin_dispatch_id' in source, "Chat failure should include origin_dispatch_id"
+
+    def test_stale_failure_does_not_modify_turn_b(self):
+        """UNIT_BEHAVIOR: Test that stale failure from A doesn't modify Turn B."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-002'  # Turn B is active
+        vm._active_dispatch_ids = {'chat': 'dispatch-002'}
+        vm._working = False
+        vm._current_turn_status = 'idle'
+        vm._live_status = 'idle'
+        vm._contextual_suggestions = [{'text': 'Suggestion B', 'action': 'test'}]
+        vm._assistant_guidance_mode = None
+        vm._assistant_guidance_text = ''
+        vm._latest_response_text = 'Response B'
+        vm._latest_response_meta = 'Meta B'
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._chat_interaction_lifecycle = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate stale failure from Turn A
+        payload = {
+            'message': 'Error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Mismatch with active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        initial_suggestions = vm._contextual_suggestions.copy()
+        initial_status = vm._current_turn_status
+        initial_working = vm._working
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'chat', payload)
+        
+        # Verify B remains completely intact
+        assert vm._current_turn_status == initial_status, "Stale failure should not modify turn status"
+        assert vm._working == initial_working, "Stale failure should not modify working state"
+        assert vm._contextual_suggestions == initial_suggestions, "Stale failure should not modify suggestions"
+        vm._append_message.assert_not_called(), "Stale failure should not append message"
+        vm._chat_interaction_lifecycle.resolve_interaction.assert_not_called()
+
+    def test_legitimate_failure_modifies_turn_a(self):
+        """UNIT_BEHAVIOR: Test that legitimate failure for Turn A modifies Turn A."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'  # Turn A is active
+        vm._active_dispatch_ids = {'chat': 'dispatch-001'}
+        vm._working = True
+        vm._current_turn_status = 'processing'
+        vm._live_status = 'processing'
+        vm._contextual_suggestions = [{'text': 'Suggestion A', 'action': 'test'}]
+        vm._assistant_guidance_mode = None
+        vm._assistant_guidance_text = ''
+        vm._latest_response_text = ''
+        vm._latest_response_meta = ''
+        vm._interaction_has_pending_followup = False
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._chat_interaction_lifecycle = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        vm._busy_label = ''
+        vm._diagnostic_text = ''
+        vm._clear_autonomy_activity_override = MagicMock()
+        vm._humanize_task_failure = Mock(return_value=('Visible error', 'error_meta'))
+        vm._last_user_goal = 'Turn A goal'
+        vm._resolve_active_interaction = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate legitimate failure for Turn A
+        payload = {
+            'message': 'Error from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Matches active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'chat', payload)
+        
+        # Verify failure was applied
+        vm._append_message.assert_called_once(), "Legitimate failure should append message"
+        vm._resolve_active_interaction.assert_called_once_with(outcome='failed')
+        assert vm._working == False, "Legitimate failure should set working=False"
+
+    def test_watchdog_timeout_includes_origin_interaction(self):
+        """STATIC_SOURCE_CHECK: Verify watchdog timeout accepts origin_interaction_id."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        import inspect
+        
+        source = inspect.getsource(ControlCenterViewModel._schedule_worker_timeout)
+        
+        # Verify signature includes origin_interaction_id
+        assert 'origin_interaction_id: str' in source, "Watchdog should accept origin_interaction_id"
+
+    def test_stale_timeout_does_not_modify_turn_b(self):
+        """UNIT_BEHAVIOR: Test that stale timeout from A doesn't modify Turn B."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock, patch
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-002'  # Turn B is active
+        vm._active_dispatch_ids = {'chat': 'dispatch-002'}
+        vm._working = False
+        vm._current_turn_status = 'idle'
+        vm._live_status = 'idle'
+        vm._contextual_suggestions = [{'text': 'Suggestion B', 'action': 'test'}]
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._chat_interaction_lifecycle = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate stale timeout from Turn A
+        payload = {
+            'message': 'Timeout from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Mismatch with active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        initial_suggestions = vm._contextual_suggestions.copy()
+        initial_status = vm._current_turn_status
+        
+        # Apply the timeout failure
+        ControlCenterViewModel._apply_task_failure(vm, 'chat', payload)
+        
+        # Verify B remains completely intact
+        assert vm._current_turn_status == initial_status, "Stale timeout should not modify turn status"
+        assert vm._contextual_suggestions == initial_suggestions, "Stale timeout should not modify suggestions"
+        vm._append_message.assert_not_called(), "Stale timeout should not append message"
+
+    def test_legitimate_timeout_modifies_turn_a(self):
+        """UNIT_BEHAVIOR: Test that legitimate timeout for Turn A modifies Turn A."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'  # Turn A is active
+        vm._active_dispatch_ids = {'chat': 'dispatch-001'}
+        vm._working = True
+        vm._current_turn_status = 'processing'
+        vm._live_status = 'processing'
+        vm._contextual_suggestions = [{'text': 'Suggestion A', 'action': 'test'}]
+        vm._interaction_has_pending_followup = False
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._chat_interaction_lifecycle = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        vm._busy_label = ''
+        vm._diagnostic_text = ''
+        vm._clear_autonomy_activity_override = MagicMock()
+        vm._humanize_task_failure = Mock(return_value=('Visible timeout', 'timeout_meta'))
+        vm._last_user_goal = 'Turn A goal'
+        vm._resolve_active_interaction = MagicMock()
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate legitimate timeout for Turn A
+        payload = {
+            'message': 'Timeout from Turn A',
+            'origin_interaction_id': 'interaction-001',  # Matches active
+            'origin_dispatch_id': 'dispatch-001',
+        }
+        
+        # Apply the timeout failure
+        ControlCenterViewModel._apply_task_failure(vm, 'chat', payload)
+        
+        # Verify timeout was applied
+        vm._append_message.assert_called_once(), "Legitimate timeout should append message"
+        vm._resolve_active_interaction.assert_called_once_with(outcome='failed')
+        assert vm._working == False, "Legitimate timeout should set working=False"
+
+    def test_failure_payload_backward_compatibility(self):
+        """UNIT_BEHAVIOR: Test that _apply_task_failure handles legacy string messages."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'
+        vm._working = True
+        vm._current_turn_status = 'processing'
+        vm._live_status = 'processing'
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._chat_interaction_lifecycle = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        vm._busy_label = ''
+        vm._diagnostic_text = ''
+        vm._clear_autonomy_activity_override = MagicMock()
+        vm._humanize_task_failure = Mock(return_value=('Visible error', 'error_meta'))
+        vm._last_user_goal = 'Turn A goal'
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate legacy string message (no origin IDs)
+        legacy_message = 'Legacy error message'
+        
+        # Apply the legacy failure
+        ControlCenterViewModel._apply_task_failure(vm, 'chat', legacy_message)
+        
+        # Verify legacy message is handled
+        vm._append_message.assert_called_once(), "Legacy string message should be handled"
+
+    def test_non_chat_failure_no_identity_guard(self):
+        """UNIT_BEHAVIOR: Test that non-chat failures (e.g., provider_health) bypass identity guard."""
+        from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
+        from unittest.mock import MagicMock, Mock
+        
+        # Create a mock instance
+        vm = MagicMock()
+        vm._active_interaction_id = 'interaction-001'
+        vm._working = True
+        vm._provider_refreshing = True
+        vm._ui_state_lock = MagicMock()
+        vm.liveStatusChanged = MagicMock()
+        vm._append_message = MagicMock()
+        vm.dataChanged = MagicMock()
+        vm._busy_label = ''
+        vm._diagnostic_text = ''
+        vm._clear_autonomy_activity_override = MagicMock()
+        vm._humanize_task_failure = Mock(return_value=('Visible error', 'error_meta'))
+        
+        vm._ui_state_lock.__enter__ = Mock(return_value=None)
+        vm._ui_state_lock.__exit__ = Mock(return_value=None)
+        
+        # Simulate provider_health failure (no origin IDs)
+        payload = {
+            'message': 'Provider health error',
+        }
+        
+        # Apply the failure
+        ControlCenterViewModel._apply_task_failure(vm, 'provider_health', payload)
+        
+        # Verify failure was applied (no identity guard for non-chat tasks)
+        assert vm._provider_refreshing == False, "Provider health failure should set refreshing=False"
+

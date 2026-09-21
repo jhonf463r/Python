@@ -83,7 +83,7 @@ class ControlCenterViewModel(QObject):
 
     dataChanged = Signal()
     taskResolved = Signal(str, object)
-    taskFailed = Signal(str, str)
+    taskFailed = Signal(str, object)  # P041-R4: Changed from Signal(str, str) to Signal(str, object) to support origin identity context
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -8581,6 +8581,7 @@ class ControlCenterViewModel(QObject):
         task_name: str,
         timeout_s: float,
         dispatch_id: str = '',
+        origin_interaction_id: str = '',  # P041-R4: Capture interaction identity for timeout
     ) -> None:
         """Fire taskFailed if *done_event* is not set within *timeout_s*.
 
@@ -8590,6 +8591,9 @@ class ControlCenterViewModel(QObject):
 
         When *dispatch_id* is provided the watchdog also invalidates it
         so that a late-finishing worker with the same id will be discarded.
+        
+        P041-R4: When *origin_interaction_id* is provided, the timeout payload
+        includes this identity so stale timeouts cannot contaminate the active turn.
         """
         def _watchdog() -> None:
             if done_event.wait(timeout=timeout_s):
@@ -8606,11 +8610,16 @@ class ControlCenterViewModel(QObject):
                 terminal_state='timeout',
                 reason=f'watchdog fired after {int(timeout_s)}s',
             )
-            self.taskFailed.emit(
-                task_name,
-                f'La operacion ({task_name}) supero el tiempo maximo de {int(timeout_s)}s. '
-                'Puedes intentar de nuevo o verificar que las herramientas esten accesibles.',
-            )
+            # P041-R4: Emit timeout with origin identity context
+            timeout_payload = {
+                'message': f'La operacion ({task_name}) supero el tiempo maximo de {int(timeout_s)}s. '
+                          'Puedes intentar de nuevo o verificar que las herramientas esten accesibles.',
+            }
+            if origin_interaction_id:
+                timeout_payload['origin_interaction_id'] = origin_interaction_id
+            if dispatch_id:
+                timeout_payload['origin_dispatch_id'] = dispatch_id
+            self.taskFailed.emit(task_name, timeout_payload)
 
         threading.Thread(target=_watchdog, daemon=True, name=f'{task_name}-timeout').start()
 
@@ -11973,6 +11982,8 @@ class ControlCenterViewModel(QObject):
 
         _ext_done = threading.Event()
         _dispatch_id = self._new_dispatch_id('external_consultation')
+        # P041-R4: External consultation may have interaction context if it belongs to a chat turn
+        _origin_interaction_id = getattr(self, '_active_interaction_id', None)
         self._trace_dispatch_started(
             task_name='external_consultation',
             dispatch_id=_dispatch_id,
@@ -12051,7 +12062,14 @@ class ControlCenterViewModel(QObject):
                     }
                     self.taskResolved.emit('external_consultation', security_result)
                 else:
-                    self.taskFailed.emit('external_consultation', f'No pude completar la consulta externa guiada: {exc}')
+                    # P041-R4: Emit failure with origin identity context
+                    failure_payload = {
+                        'message': f'No pude completar la consulta externa guiada: {exc}',
+                    }
+                    if _origin_interaction_id:
+                        failure_payload['origin_interaction_id'] = _origin_interaction_id
+                    failure_payload['origin_dispatch_id'] = _dispatch_id
+                    self.taskFailed.emit('external_consultation', failure_payload)
             finally:
                 _ext_done.set()
 
@@ -12061,6 +12079,7 @@ class ControlCenterViewModel(QObject):
             task_name='external_consultation',
             timeout_s=self._EXTERNAL_WORKER_TIMEOUT_S,
             dispatch_id=_dispatch_id,
+            origin_interaction_id=_origin_interaction_id,  # P041-R4: Pass interaction identity to watchdog
         )
         return True
 
@@ -14205,7 +14224,13 @@ class ControlCenterViewModel(QObject):
                         user_visible_message=False,
                     )
                     return
-                self.taskFailed.emit('chat', f'No pude completar la consulta local: {exc}')
+                # P041-R4: Emit failure with origin identity context
+                failure_payload = {
+                    'message': f'No pude completar la consulta local: {exc}',
+                    'origin_interaction_id': origin_interaction_id,
+                    'origin_dispatch_id': origin_dispatch_id,
+                }
+                self.taskFailed.emit('chat', failure_payload)
             finally:
                 _worker_done.set()
 
@@ -14215,6 +14240,7 @@ class ControlCenterViewModel(QObject):
             task_name='chat',
             timeout_s=self._CHAT_WORKER_TIMEOUT_S,
             dispatch_id=_dispatch_id,
+            origin_interaction_id=origin_interaction_id,  # P041-R4: Pass interaction identity to watchdog
         )
 
     def _role_title_from_task(self, role: TaskRole) -> str:
@@ -14230,6 +14256,8 @@ class ControlCenterViewModel(QObject):
 
         _aa_done = threading.Event()
         _dispatch_id = self._new_dispatch_id('adaptive_action')
+        # P041-R4: Adaptive actions may have interaction context if they belong to a chat turn
+        _origin_interaction_id = getattr(self, '_active_interaction_id', None)
         self._trace_dispatch_started(
             task_name='adaptive_action',
             dispatch_id=_dispatch_id,
@@ -14271,7 +14299,14 @@ class ControlCenterViewModel(QObject):
                         user_visible_message=False,
                     )
                     return
-                self.taskFailed.emit('adaptive_action', f'No pude completar la accion adaptativa: {exc}')
+                # P041-R4: Emit failure with origin identity context
+                failure_payload = {
+                    'message': f'No pude completar la accion adaptativa: {exc}',
+                }
+                if _origin_interaction_id:
+                    failure_payload['origin_interaction_id'] = _origin_interaction_id
+                failure_payload['origin_dispatch_id'] = _dispatch_id
+                self.taskFailed.emit('adaptive_action', failure_payload)
             finally:
                 _aa_done.set()
 
@@ -14281,6 +14316,7 @@ class ControlCenterViewModel(QObject):
             task_name='adaptive_action',
             timeout_s=self._CHAT_WORKER_TIMEOUT_S,
             dispatch_id=_dispatch_id,
+            origin_interaction_id=_origin_interaction_id,  # P041-R4: Pass interaction identity to watchdog
         )
 
     @Slot(str)
@@ -14908,8 +14944,58 @@ class ControlCenterViewModel(QObject):
             self._refresh_autonomy_dock()
         self.dataChanged.emit()
 
-    @Slot(str, str)
-    def _apply_task_failure(self, task_name: str, message: str) -> None:
+    @Slot(str, object)
+    def _apply_task_failure(self, task_name: str, payload) -> None:
+        # P041-R4: Handle both simple string messages (legacy) and context payloads
+        if isinstance(payload, str):
+            message = payload
+            origin_interaction_id = None
+            origin_dispatch_id = None
+        else:
+            # Payload is a dict with context
+            message = payload.get('message', str(payload))
+            origin_interaction_id = payload.get('origin_interaction_id')
+            origin_dispatch_id = payload.get('origin_dispatch_id')
+        
+        # P041-R4: Identity guard for turn-bound tasks
+        if origin_interaction_id is not None:
+            active_interaction_id = getattr(self, '_active_interaction_id', None)
+            active_dispatch_id = self._active_dispatch_ids.get(task_name, '')
+            
+            # Validate interaction_id
+            if origin_interaction_id != active_interaction_id:
+                # Stale failure: do not apply to current turn
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    tracer = get_runtime_tracer()
+                    tracer.trace(
+                        'stale_chat_failure_discarded',
+                        origin_interaction_id=origin_interaction_id,
+                        active_interaction_id=active_interaction_id,
+                        origin_dispatch_id=origin_dispatch_id,
+                        active_dispatch_id=active_dispatch_id,
+                        task_name=task_name,
+                    )
+                except Exception:
+                    pass
+                return
+            
+            # Validate dispatch_id
+            if origin_dispatch_id and origin_dispatch_id != active_dispatch_id:
+                # Dispatch mismatch: failure is stale
+                try:
+                    from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
+                    tracer = get_runtime_tracer()
+                    tracer.trace(
+                        'stale_chat_failure_dispatch_mismatch',
+                        origin_dispatch_id=origin_dispatch_id,
+                        active_dispatch_id=active_dispatch_id,
+                        task_name=task_name,
+                    )
+                except Exception:
+                    pass
+                return
+        
         if task_name == 'security_retest':
             self._append_message(
                 'assistant', 'IABV',
