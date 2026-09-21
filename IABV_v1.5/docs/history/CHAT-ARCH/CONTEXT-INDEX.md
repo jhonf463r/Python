@@ -502,3 +502,45 @@ After minimal repair and a production-path regression test, SONNET must independ
 ## 2026-09-20 ROUTING — I0 TARGET FIX PROVENANCE
 
 The reported `target` NameError fix is not yet remotely readable. Route next to **DEVIN** only for publication/read-back of the exact implementation branch and full commit SHA; after remote verification, route to **SONNET** for independent code/test audit. Do not run another external runtime probe yet.
+
+## 2026-09-20/21 ROUTING — METACOGNITIVE SELF-USE
+
+For objectives equivalent to “analyze the current state of IABV”, “why is IABV behaving this way?”, “what could this change break next?”, or “what does IABV currently know about its own architecture?”, activate:
+
+`M0/M1/M2`
+→ `M3 SYMBIOSIS`
+→ `M4 UNRESOLVED`
+→ `M7 SYSTEMIC INTEGRITY`
+→ `BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION`
+→ current repository/runtime evidence.
+
+Preferred first action:
+
+`IABV-native deep self-assessment preflight`.
+
+Required output:
+`CURRENT_TRUTH`
+`FIRST_OPEN_CAUSAL_EDGE`
+`EVIDENCE_STATE`
+`CHANGE_SURFACE`
+`UNCERTAINTIES`
+`ADVERSARIAL_HYPOTHESES`
+`SMALLEST_DISCRIMINATING_EXPERIMENT`
+`CAPABILITY/ACTOR ROUTING`
+`KNOWLEDGE_DELTA CANDIDATE`.
+
+Do not promote the self-assessment merely because IABV generated it. Critical claims still require independent verification.
+
+### I0 current routing correction
+
+The source fix commit `b3e211fbbe001d6c360071c04a83ea40cff48071` is remotely verified. The remaining issue is the causal sufficiency of its regression test, as reported by the supplied independent audit.
+
+Therefore:
+`re-audit/correct test coverage → then resume exact runtime/credential boundary`.
+
+Do not reopen canonical assistant↔tool ownership.
+
+### P041-R8
+
+Experimental commit `879605b4e17b6194868f0e4bc39a014994dc0a83` remains static/unit evidence pending independent audit/runtime.
+
