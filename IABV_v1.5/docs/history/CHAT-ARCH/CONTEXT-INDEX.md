@@ -710,3 +710,5 @@ Relevant records:
 - `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md`
 - `DEVELOPMENT-CONTROL-TOWER-2026-09-21.md`
 - `UNRESOLVED-KNOWLEDGE.md` UK-BIO-13
+
+For the current scientific/developmental frontier, after the reader/consumer reconciliation, activate `BIO-R13-DEVIN-HANDOFF-2026-09-21.md`. This is a bounded test-only task; use Devin first, then Sonnet for independent verification.
