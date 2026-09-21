@@ -43,6 +43,19 @@ class NullOperationalExecutor:
         )
 
     def execute(self, session: AdaptiveSession) -> OperationalExecutorResult:
+        # P041-R7: Only produce operational fallback if there's a real execute step (operational task without executor)
+        # Conversational sessions without playbook/execute_step should not produce operational next_actions
+        execute_step = next((item for item in session.playbook.steps if item.phase_key == 'execute'), None) if session.playbook else None
+        if execute_step is None:
+            # No operational task defined - this is likely a conversational session
+            return OperationalExecutorResult(
+                executed=False,
+                status=RunStatus.SUCCESS,
+                summary='Conversacion completada sin requerir ejecucion operativa.',
+                next_actions=[],
+                metadata={'mode': 'conversational'},
+            )
+        # Operational task exists but executor is missing - produce fallback
         return OperationalExecutorResult(
             executed=False,
             status=RunStatus.PARTIAL,

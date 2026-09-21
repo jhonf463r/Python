@@ -330,3 +330,165 @@ def test_intent_learning_layer_records_failure_and_decays() -> None:
     assert record is not None
     assert record['confirmations'] == 2  # was 3, decayed to 2
     assert record['confidence'] < 0.8   # 0.8 * 0.7 = 0.56
+
+
+# ---------------------------------------------------------------------------
+# P041-R7: Semantic coherence - analysis of system state should not fall to general.assistance
+# ---------------------------------------------------------------------------
+
+
+def test_p041_r7_analiza_estado_iabv_not_general_assistance() -> None:
+    """P041-R7: Verify that 'Analiza el estado actual de IABV' is classified as system.self_awareness, not general.assistance."""
+    service = IntentUnderstandingService()
+
+    intent, hypotheses = service.classify(
+        InferenceRequest(user_goal='Analiza el estado actual de IABV')
+    )
+
+    assert intent.intent_key == 'system.self_awareness', f"Expected system.self_awareness, got {intent.intent_key}"
+    assert intent.detected_role == TaskRole.KNOWLEDGE
+    assert intent.disposition.value == 'answer_now'
+    assert intent.metadata.get('self_awareness_prompt') is True
+
+
+def test_p041_r7_revisa_estado_iabv_not_general_assistance() -> None:
+    """P041-R7: Verify that 'Revisa el estado actual de IABV' is classified correctly."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='Revisa el estado actual de IABV')
+    )
+
+    assert intent.intent_key == 'system.self_awareness', f"Expected system.self_awareness, got {intent.intent_key}"
+
+
+def test_p041_r7_diagnostica_estado_iabv_not_general_assistance() -> None:
+    """P041-R7: Verify that 'Diagnostica el estado de IABV' is classified correctly."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='Diagnostica el estado de IABV')
+    )
+
+    assert intent.intent_key == 'system.self_awareness', f"Expected system.self_awareness, got {intent.intent_key}"
+
+
+def test_p041_r7_evalua_como_esta_iabv_not_general_assistance() -> None:
+    """P041-R7: Verify that 'Evalúa cómo está IABV' is classified correctly (self_awareness or metacognition, not general)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='Evalúa cómo está IABV')
+    )
+
+    assert intent.intent_key in {'system.self_awareness', 'system.metacognition'}, f"Expected system intent, got {intent.intent_key}"
+    assert intent.intent_key != 'general.assistance', f"Should not fall to general.assistance"
+
+
+def test_p041_r7_que_pasa_con_iabv_not_general_assistance() -> None:
+    """P041-R7: Verify that 'Qué está pasando con IABV' is classified correctly (self_awareness or metacognition, not general)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='Qué está pasando con IABV')
+    )
+
+    assert intent.intent_key in {'system.self_awareness', 'system.metacognition'}, f"Expected system intent, got {intent.intent_key}"
+    assert intent.intent_key != 'general.assistance', f"Should not fall to general.assistance"
+
+
+def test_p041_r7_revisa_como_esta_sistema_not_general_assistance() -> None:
+    """P041-R7: Verify that 'Revisa cómo está el sistema' is classified correctly (self_awareness or metacognition, not general)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='Revisa cómo está el sistema')
+    )
+
+    assert intent.intent_key in {'system.self_awareness', 'system.metacognition'}, f"Expected system intent, got {intent.intent_key}"
+    assert intent.intent_key != 'general.assistance', f"Should not fall to general.assistance"
+
+
+def test_p041_r7_haz_autodiagnostico_iabv_not_general_assistance() -> None:
+    """P041-R7: Verify that 'Haz un autodiagnóstico de IABV' is classified correctly (self_awareness or metacognition, not general)."""
+    service = IntentUnderstandingService()
+
+    intent, _ = service.classify(
+        InferenceRequest(user_goal='Haz un autodiagnóstico de IABV')
+    )
+
+    assert intent.intent_key in {'system.self_awareness', 'system.metacognition'}, f"Expected system intent, got {intent.intent_key}"
+    assert intent.intent_key != 'general.assistance', f"Should not fall to general.assistance"
+
+
+# ---------------------------------------------------------------------------
+# P041-R7: Guidance tests - NullOperationalExecutor should not produce operational fallback for conversational sessions
+# ---------------------------------------------------------------------------
+
+
+def test_p041_r7_null_executor_conversational_session_no_operational_fallback() -> None:
+    """P041-R7: Verify that NullOperationalExecutor produces no next_actions for conversational sessions (no execute step)."""
+    from iabv_v15.services.adaptive.execution_playbook_service import NullOperationalExecutor
+    from iabv_v15.domain.models import AdaptiveSession, TaskIntent
+
+    # Conversational session - no playbook/execute step
+    session = AdaptiveSession(
+        adaptive_session_id='test_session',
+        user_goal='Analiza el estado actual de IABV',
+        intent=TaskIntent(
+            intent_id='test_intent',
+            intent_key='system.self_awareness',
+            title='Test',
+            summary='Test',
+            detected_role='knowledge',
+        ),
+        playbook=None,  # No playbook = conversational
+    )
+
+    executor = NullOperationalExecutor()
+    result = executor.execute(session)
+
+    # Conversational sessions should get empty next_actions, not operational fallback
+    assert result.next_actions == [], f"Expected empty next_actions for conversational session, got {result.next_actions}"
+    assert result.metadata.get('mode') == 'conversational', f"Expected mode='conversational', got {result.metadata.get('mode')}"
+
+
+def test_p041_r7_null_executor_operational_session_with_execute_step_produces_fallback() -> None:
+    """P041-R7: Verify that NullOperationalExecutor DOES produce operational fallback when there's a real execute step."""
+    from iabv_v15.services.adaptive.execution_playbook_service import NullOperationalExecutor
+    from iabv_v15.domain.models import AdaptiveSession, AdaptiveSessionStatus
+    from iabv_v15.domain.models import ExecutionPlaybook, PlaybookStep, TaskIntent
+
+    # Operational session - has playbook with execute step
+    playbook = ExecutionPlaybook(
+        status=AdaptiveSessionStatus.READY_TO_EXECUTE,
+        goal='Execute operational task',
+        pack_id='test_pack',
+        steps=[
+            PlaybookStep(
+                phase_key='execute',
+                title='Execute operational task',
+                description='Execute this task',
+            )
+        ],
+    )
+    session = AdaptiveSession(
+        adaptive_session_id='test_session',
+        user_goal='Ejecuta tarea operativa',
+        intent=TaskIntent(
+            intent_id='test_intent',
+            intent_key='general.assistance',
+            title='Test',
+            summary='Test',
+            detected_role='knowledge',
+        ),
+        playbook=playbook,
+        chosen_pack_title='Test Pack',
+    )
+
+    executor = NullOperationalExecutor()
+    result = executor.execute(session)
+
+    # Operational sessions should get the fallback next_actions
+    assert result.next_actions == ['Simular', 'Ver evolutivo', 'Preparar Codex'], f"Expected operational fallback, got {result.next_actions}"
+    assert result.metadata.get('mode') == 'adapter_missing', f"Expected mode='adapter_missing', got {result.metadata.get('mode')}"

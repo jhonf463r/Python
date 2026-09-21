@@ -1657,6 +1657,38 @@ class IntentUnderstandingService:
             'como te sientes', 'que problemas', 'que desajustes',
             'detectas', 'funcionando', 'tu propio',
         ))
+        # P041-R7: Recognize analysis/diagnosis verbs + system state concepts + system reference
+        # Covers phrases like "analiza el estado actual de IABV", "diagnostica el estado del sistema"
+        normalized = text.lower()
+        # Direct phrase matching for common analysis patterns (tokenizer breaks accents)
+        direct_analysis_phrases = (
+            'analiza el estado actual de iabv',
+            'revisa el estado actual de iabv',
+            'diagnostica el estado de iabv',
+            'evalua como esta iabv',
+            'evalúa cómo está iabv',
+            'revisa como esta el sistema',
+            'revisa cómo está el sistema',
+            'que pasa con iabv',
+            'qué pasa con iabv',
+            'qu pasa con iabv',  # tokenizer breaks "qué" to "qu"
+            'qu est pasando con iabv',  # tokenizer breaks both
+            'pasando con iabv',  # encoding-safe pattern
+            'haz un autodiagnostico de iabv',
+            'haz un autodiagnóstico de iabv',
+        )
+        if any(phrase in normalized for phrase in direct_analysis_phrases):
+            return True
+        # General pattern for analysis verbs + system reference
+        asks_analysis = any(token in normalized for token in ('analiza', 'analizar', 'revisa', 'revisar', 'diagnostica', 'diagnosticar', 'evalua', 'evaluar', 'examina', 'examinar'))
+        has_state_concept = any(token in word_tokens for token in ('estado', 'situacion', 'condicion', 'salud', 'funcionamiento', 'como esta', 'como esta', 'como est', 'cómo está', 'cómo est', 'como va', 'cómo va'))
+        has_system_reference = any(token in word_tokens for token in ('iabv', 'sistema', 'sistema mismo', 'propio sistema', 'tu sistema'))
+        # P041-R7: Be more flexible - recognize analysis verb + system reference as sufficient for state inquiry
+        if asks_analysis and has_system_reference:
+            return True
+        # P041-R7: Also recognize when asking "what's happening" without explicit "estado"
+        if asks_analysis and ('que pasa' in normalized or 'qué pasa' in normalized) and has_system_reference:
+            return True
         return asks_system_state and asks_directly
 
     def _is_evolution_status_prompt(self, text: str) -> bool:
