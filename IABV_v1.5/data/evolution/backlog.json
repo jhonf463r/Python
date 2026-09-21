@@ -439,5 +439,100 @@
       "cable-a-startup-timeline-portable-context-oses"
     ],
     "owner": "devin"
+  },
+  {
+    "id": "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2101",
+    "title": "IABV-native deep self-assessment preflight — primer circuito metacognitivo propio",
+    "area": "metacognition",
+    "priority": "critical",
+    "status": "pending",
+    "source": "chat_reconciliation_2026-09-21",
+    "created_at": "2026-09-21T03:15:00+00:00",
+    "completed_at": null,
+    "evidence": "El sistema ya dispone de SelfAudit, WorldModel, EnvironmentSelfModel, self_code_analysis, holistic_metacognition, OSES, CodeAuditTrail, PortableContext, ExperimentLab y validación; falta demostrar que puede utilizarlos como una cadena para producir current truth, first open causal edge, change-surface, hypotheses y next discriminating experiment.",
+    "depends_on": []
+  },
+  {
+    "id": "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2102",
+    "title": "Contrato de evidencia para autodiagnóstico: estado por edge + provenance + first broken edge",
+    "area": "metacognition",
+    "priority": "critical",
+    "status": "pending",
+    "source": "chat_reconciliation_2026-09-21",
+    "created_at": "2026-09-21T03:15:00+00:00",
+    "completed_at": null,
+    "evidence": "El deep self-assessment debe producir estados explícitos DEFINED/WIRED/INVOKED/OBSERVED/CAUSED o NOT PROVEN/CONTRADICTED y atar cada afirmación a revisión de repositorio/runtime. Sin este contrato, el análisis propio podría repetir implemented=proven.",
+    "depends_on": [
+      "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2101"
+    ]
+  },
+  {
+    "id": "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2103",
+    "title": "Change-Surface Analysis universal: symbol → callers → producers → consumers → contracts → fallbacks → negatives → downstream",
+    "area": "systemic_integrity",
+    "priority": "high",
+    "status": "pending",
+    "source": "chat_reconciliation_2026-09-21",
+    "created_at": "2026-09-21T03:15:00+00:00",
+    "completed_at": null,
+    "evidence": "P041-R7/R8 mostró que un cambio local de predicado puede alterar intent, metadata, routing, UI y guidance. IABV debe poder anticipar esa cadena antes de la modificación.",
+    "depends_on": [
+      "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2101"
+    ]
+  },
+  {
+    "id": "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2104",
+    "title": "Separar observación metacognitiva de mutación: OBSERVE → REASON → HYPOTHESIZE → EXPERIMENT → VERIFY → AUTHORIZE → CHANGE → REVERIFY",
+    "area": "metacognition",
+    "priority": "high",
+    "status": "pending",
+    "source": "chat_reconciliation_2026-09-21",
+    "created_at": "2026-09-21T03:15:00+00:00",
+    "completed_at": null,
+    "evidence": "El autoanálisis actual puede ejecutar operaciones sobre branches/worktrees y auto-correcciones. Debe quedar explícito qué parte es observación y qué parte es acción autorizable, para no contaminar el estado observado.",
+    "depends_on": [
+      "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2101"
+    ]
+  },
+  {
+    "id": "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2105",
+    "title": "Cerrar el puente metacognición → memoria → Experimento → decisión futura",
+    "area": "learning",
+    "priority": "high",
+    "status": "pending",
+    "source": "chat_reconciliation_2026-09-21",
+    "created_at": "2026-09-21T03:15:00+00:00",
+    "completed_at": null,
+    "evidence": "Existe persistencia de auditorías, OSES, PortableContext, ExperimentLab y AdaptiveWeightLayer, pero no está probado el circuito self-assessment → Knowledge Delta → recuperación → cambio de decisión futura.",
+    "depends_on": [
+      "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2101",
+      "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2102"
+    ]
+  },
+  {
+    "id": "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2106",
+    "title": "Medir inflexión de desarrollo: experiencia verificada → conocimiento reusable → cambio de decisión → menor coordinación humana",
+    "area": "development_inflection",
+    "priority": "medium",
+    "status": "pending",
+    "source": "chat_reconciliation_2026-09-21",
+    "created_at": "2026-09-21T03:15:00+00:00",
+    "completed_at": null,
+    "evidence": "La inflexión no debe medirse por volumen de código, tests o número de IAs. Hace falta observar longitudinalmente si el conocimiento verificado cambia decisiones y reduce transporte humano rutinario.",
+    "depends_on": [
+      "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2105"
+    ]
+  },
+  {
+    "id": "6f6a9a7d-1f4a-4b2c-9c20-6f7e0d4a2107",
+    "title": "I0 regression-test causal coverage audit for AccountApprovalLedger path",
+    "area": "i0_runtime",
+    "priority": "high",
+    "status": "pending",
+    "source": "chat_reconciliation_2026-09-21",
+    "created_at": "2026-09-21T03:15:00+00:00",
+    "completed_at": null,
+    "evidence": "Source fix b3e211fbbe001d6c360071c04a83ea40cff48071 is remotely verified, but the supplied independent audit reports the regression fixture may bypass the exact historically failing branch. Direct re-audit is required before resuming the real credential/authentication boundary.",
+    "depends_on": []
   }
 ]
