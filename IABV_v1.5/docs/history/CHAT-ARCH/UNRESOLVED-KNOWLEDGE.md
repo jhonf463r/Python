@@ -580,3 +580,25 @@ Status:
 ### Negative knowledge preserved
 
 Do not re-audit cited commit SHAs that are not remotely resolvable unless new evidence supplies a different exact object. The durable lesson is the provenance failure mode, not a conclusion about why the object was absent.
+
+## 2026-09-21 — I0 M3 LINEAGE BOUNDARY
+
+### UK-I0-LINEAGE-01 — Historical baseline drift inside experimental branch
+
+The M3 test commit `7753ce563...` has direct parent `6c8be71c...`, while the narrative historical comparison often names `64260e424...` as the prior test correction.
+
+GitHub shows eight commits between `64260...` and `7753...`, including production changes and added I0 tests. Therefore any claim about "production unchanged since 64260" is over-broad.
+
+Required future practice:
+- state the exact tested revision;
+- state its direct parent;
+- state the named historical baseline separately;
+- compare both immediate and cumulative lineage when baseline identity matters.
+
+### UK-I0-M3-02 — Raw independent audit artifact not separately preserved
+
+The independent auditor reports a detached-worktree execution, traceback and working-tree hash, but this transcript itself is not yet a separately preserved runtime artifact in GitHub.
+
+Therefore the M3 causal verdict may be recorded as independently reported/reproduced, while the raw execution record remains second-order evidence until a preserved artifact exists.
+
+Do not downgrade the source/test conclusion, but do not invent a remotely preserved runtime trace that does not exist.
