@@ -555,3 +555,47 @@ First discriminating action:
 
 Then use independent external verification when the result makes a critical claim. Do not bypass the persistent evolution backlog.
 
+## 2026-09-21 ROUTING OVERRIDE — IABV SELF-USE + PROVENANCE-GATED HANDOFF
+
+For objectives involving:
+- IABV self-analysis/self-development;
+- biosofía artificial;
+- metacognition or systemic integrity;
+- actor handoff/provenance;
+- I0 credential seam;
+
+activate the 2026-09-21 source record:
+`CHAT-ARCH-2026-09-21-008-metacognitive-self-use-provenance-gate.md`
+
+Then reconcile with:
+`CURRENT-STATE.md`
+`MEMORY-OPERATING-PROTOCOL.md`
+`SYMBIOSIS-MAP.md`
+`UNRESOLVED-KNOWLEDGE.md`
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+and the exact active branch/SHA.
+
+### Deep self-assessment routing
+
+Preferred first action:
+`IABV-native deep self-assessment preflight`.
+
+Required outputs:
+current truth, relevant organ map, evidence states, change surface, uncertainty classes, first open causal edge, adversarial neighboring hypothesis, smallest discriminating experiment, capability-fit routing and Knowledge Delta candidate.
+
+### Modification-handoff routing
+
+Before sending a reported implementation result to an auditor, require:
+`artifact identity → exact SHA → remote read-back → claimed content`.
+
+If the artifact is absent or unresolvable:
+`no implementation claim → no audit claim → preserve discrepancy → reacquire exact artifact`.
+
+### Current I0 M3 route
+
+For `7753ce5632370b2a03726aeff63dbcd1ac7afc42`:
+`SONNET` = next independent M3 audit.
+If M3 survives:
+`DEVIN` = real Windows/runtime phase.
+Then:
+`SONNET` = independent runtime audit.
