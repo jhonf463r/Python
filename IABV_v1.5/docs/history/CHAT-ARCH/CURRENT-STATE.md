@@ -667,3 +667,30 @@ Canonical roadmap:
 
 Current strategic priority is META-01: use the existing IABV organs as the first analyzer for a deep self-assessment, with independent verification retained for critical claims. Do not add new architecture before this composition experiment establishes the actual missing edge.
 
+## 2026-09-21 LIVE ADDENDUM — METACOGNITIVE SELF-USE + I0 PROVENANCE GATE
+
+The 2026-09-20/21 reconciliation adds two current strategic rules.
+
+### IABV as primary deep self-assessor
+
+For a deep objective about IABV's own current state, first use the existing IABV self-observation/metacognitive organs rather than immediately outsourcing the entire analysis.
+
+Required first-pass chain:
+`objective → relevant memory → exact current state → self/architecture introspection → uncertainty → first open causal edge → smallest discriminating experiment → capability-fit routing`.
+
+This is not evidence that the internal circuit is already causally closed.
+
+### Remote provenance gate
+
+No actor-reported modification may advance to independent audit as an implementation claim until the following are verified:
+
+`REPORT → ARTIFACT → branch/ref → exact SHA → working-tree provenance when relevant → remote read-back → claimed content present → runtime provenance when relevant`.
+
+The new I0 experimental artifact establishes a concrete positive example:
+- branch `devin/i0-credential-get-coverage-2026-09-21`;
+- remote commit `7753ce5632370b2a03726aeff63dbcd1ac7afc42`;
+- direct GitHub commit/read-back confirms the GET assertion and polling path.
+
+The M3 mutation result remains implementer-reported pending independent Sonnet audit. Windows runtime and full I0 closure remain unproven.
+
+Do not confuse this experimental branch with current main I0 runtime state. The metacognitive track and I0 operational track must remain separate.
