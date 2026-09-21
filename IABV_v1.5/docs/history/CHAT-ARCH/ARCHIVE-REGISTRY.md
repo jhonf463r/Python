@@ -351,3 +351,26 @@ State:
 Purpose:
 Persist and prioritize the material ideas from the 2026-09-20/21 self-use analysis so future IABV cycles can select work from a durable queue rather than from transcript memory.
 
+## 2026-09-21 REGISTRATION — METACOGNITIVE SELF-USE / PROVENANCE GATE
+
+Canonical source:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-21-008-metacognitive-self-use-provenance-gate.md`
+
+Type:
+`SYNTHESIS / ADDENDUM`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Purpose:
+preserve the 2026-09-21 methodological transition toward IABV-native deep self-assessment, the distinction between self-awareness and metacognition, change-surface introspection, observation/mutation separation, dynamic capability routing and the enforceable remote-provenance gate for actor handoffs.
+
+Routing:
+activate for objectives touching IABV self-analysis, biosofía artificial, metacognitive development, cross-IA handoff provenance, I0 M3 credential-seam verification, or development-inflection experiments.
+
+Related experimental artifact:
+`7753ce5632370b2a03726aeff63dbcd1ac7afc42`
+on
+`devin/i0-credential-get-coverage-2026-09-21`.
+
+The artifact is remotely verifiable; independent M3 audit and Windows runtime remain pending.
