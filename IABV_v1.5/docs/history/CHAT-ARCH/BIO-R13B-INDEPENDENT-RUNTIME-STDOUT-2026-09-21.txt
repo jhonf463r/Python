@@ -1,0 +1,317 @@
+{
+  "alternative": "ollama",
+  "baseline": "codex",
+  "profiles": {
+    "chatgpt": {
+      "adaptive_weight": 0.26,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 0.96
+    },
+    "codex": {
+      "adaptive_weight": 0.248,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 1.098
+    },
+    "ollama": {
+      "adaptive_weight": 0.2333,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 1.0733
+    }
+  },
+  "proposal": {
+    "candidate_assistant_kind": "ollama",
+    "candidate_config_signature": "test_config_v1",
+    "candidate_route": "local",
+    "comparison_scope_keys": [
+      "bio_r13b_independent_2026_09_21"
+    ],
+    "confidence": 0.63,
+    "created_at_utc": "2026-09-21T23:03:31.449010Z",
+    "current_assistant_kind": "codex",
+    "current_config_signature": "test_config_v1",
+    "current_route": "cloud",
+    "domain": "cloud_reasoning",
+    "evidence_refs": [
+      "A-codex",
+      "B-ollama"
+    ],
+    "metadata": {
+      "alternative_weighted_score": 1.0733,
+      "baseline_degraded": true,
+      "baseline_profile": {
+        "adaptive_weight": 0.248,
+        "average_latency_ms": 0,
+        "average_score": 0.85,
+        "blocked_rate": 0.0,
+        "failure_rate": 0.0,
+        "fallback_rate": 1.0,
+        "reasons": [
+          "historial de exito 100%",
+          "reutilizacion alta 100%",
+          "fallback recurrente 100%"
+        ],
+        "recency_score": 0.85,
+        "reuse_ratio": 1.0,
+        "sample_count": 1,
+        "success_rate": 1.0,
+        "time_bucket_latency_cap": 0.12,
+        "top_environment_signatures": null,
+        "top_time_buckets": null,
+        "trend_score": 0.0,
+        "weighted_score": 1.098
+      },
+      "baseline_weighted_score": 1.098,
+      "candidate_profile": {
+        "adaptive_weight": 0.2333,
+        "average_latency_ms": 1000,
+        "average_score": 0.84,
+        "blocked_rate": 0.0,
+        "failure_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ],
+        "recency_score": 1.0,
+        "reuse_ratio": 0.0,
+        "sample_count": 1,
+        "success_rate": 1.0,
+        "time_bucket_latency_cap": 0.12,
+        "top_environment_signatures": null,
+        "top_time_buckets": null,
+        "trend_score": 0.0,
+        "weighted_score": 1.0733
+      },
+      "degradation_reasons": [
+        "fallback recurrente 100%"
+      ],
+      "local_first_candidate": true,
+      "next_action": "validate_in_sandbox",
+      "ranked_configurations": [
+        {
+          "assistant_kind": "codex",
+          "config_signature": "test_config_v1",
+          "route": "cloud",
+          "samples": 1,
+          "score": 0.85,
+          "weighted_score": 1.098
+        },
+        {
+          "assistant_kind": "ollama",
+          "config_signature": "test_config_v1",
+          "route": "local",
+          "samples": 1,
+          "score": 0.84,
+          "weighted_score": 1.0733
+        }
+      ],
+      "score_margin": -0.0247
+    },
+    "proposal_id": "5c9a1610-a9d3-422a-b14a-06e75d3a5c98",
+    "proposal_key": "bio_r13b_independent_2026_09_21|validate_local_first|cloud|codex|test_config_v1|local|ollama|test_config_v1",
+    "proposal_kind": "validate_local_first",
+    "rationale": "Si la alternativa local mantiene resultado comparable, conviene reducir dependencia externa.",
+    "status": "pending",
+    "subject_key": "bio_r13b_independent_2026_09_21",
+    "summary": "La alternativa local ollama esta lo bastante cerca del baseline como para justificar un experimento local-first.",
+    "title": "Validar ruta local primero para bio_r13b_independent_2026_09_21"
+  },
+  "rank": {
+    "chatgpt": 3,
+    "codex": 1,
+    "ollama": 2
+  },
+  "recommendation": {
+    "adaptive_weight": 0.248,
+    "recommended_assistant_kind": "codex",
+    "recommended_route": "cloud",
+    "sample_count": 1,
+    "weighted_score": 1.098
+  },
+  "successful_keys": [
+    "chatgpt",
+    "codex",
+    "ollama"
+  ]
+}
+{
+  "alternative": "chatgpt",
+  "baseline": "ollama",
+  "profiles": {
+    "chatgpt": {
+      "adaptive_weight": 0.26,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 0.96
+    },
+    "codex": {
+      "adaptive_weight": -0.248,
+      "eligible": false,
+      "sample_count": 1,
+      "weighted_score": 0.602
+    },
+    "ollama": {
+      "adaptive_weight": 0.2333,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 1.0733
+    }
+  },
+  "proposal": null,
+  "rank": {
+    "chatgpt": 2,
+    "codex": 3,
+    "ollama": 1
+  },
+  "recommendation": {
+    "adaptive_weight": 0.2333,
+    "recommended_assistant_kind": "ollama",
+    "recommended_route": "local",
+    "sample_count": 1,
+    "weighted_score": 1.0733
+  },
+  "successful_keys": [
+    "chatgpt",
+    "ollama"
+  ]
+}
+{
+  "alternative": "ollama",
+  "baseline": "codex",
+  "profiles": {
+    "chatgpt": {
+      "adaptive_weight": 0.26,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 0.96
+    },
+    "codex": {
+      "adaptive_weight": 0.248,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 1.098
+    },
+    "ollama": {
+      "adaptive_weight": 0.2333,
+      "eligible": true,
+      "sample_count": 1,
+      "weighted_score": 1.0733
+    }
+  },
+  "proposal": {
+    "candidate_assistant_kind": "ollama",
+    "candidate_config_signature": "test_config_v1",
+    "candidate_route": "local",
+    "comparison_scope_keys": [
+      "bio_r13b_independent_2026_09_21"
+    ],
+    "confidence": 0.63,
+    "created_at_utc": "2026-09-21T23:03:32.486196Z",
+    "current_assistant_kind": "codex",
+    "current_config_signature": "test_config_v1",
+    "current_route": "cloud",
+    "domain": "cloud_reasoning",
+    "evidence_refs": [
+      "A-codex",
+      "B-ollama"
+    ],
+    "metadata": {
+      "alternative_weighted_score": 1.0733,
+      "baseline_degraded": true,
+      "baseline_profile": {
+        "adaptive_weight": 0.248,
+        "average_latency_ms": 0,
+        "average_score": 0.85,
+        "blocked_rate": 0.0,
+        "failure_rate": 0.0,
+        "fallback_rate": 1.0,
+        "reasons": [
+          "historial de exito 100%",
+          "reutilizacion alta 100%",
+          "fallback recurrente 100%"
+        ],
+        "recency_score": 0.85,
+        "reuse_ratio": 1.0,
+        "sample_count": 1,
+        "success_rate": 1.0,
+        "time_bucket_latency_cap": 0.12,
+        "top_environment_signatures": null,
+        "top_time_buckets": null,
+        "trend_score": 0.0,
+        "weighted_score": 1.098
+      },
+      "baseline_weighted_score": 1.098,
+      "candidate_profile": {
+        "adaptive_weight": 0.2333,
+        "average_latency_ms": 1000,
+        "average_score": 0.84,
+        "blocked_rate": 0.0,
+        "failure_rate": 0.0,
+        "fallback_rate": 0.0,
+        "reasons": [
+          "historial de exito 100%"
+        ],
+        "recency_score": 1.0,
+        "reuse_ratio": 0.0,
+        "sample_count": 1,
+        "success_rate": 1.0,
+        "time_bucket_latency_cap": 0.12,
+        "top_environment_signatures": null,
+        "top_time_buckets": null,
+        "trend_score": 0.0,
+        "weighted_score": 1.0733
+      },
+      "degradation_reasons": [
+        "fallback recurrente 100%"
+      ],
+      "local_first_candidate": true,
+      "next_action": "validate_in_sandbox",
+      "ranked_configurations": [
+        {
+          "assistant_kind": "codex",
+          "config_signature": "test_config_v1",
+          "route": "cloud",
+          "samples": 1,
+          "score": 0.85,
+          "weighted_score": 1.098
+        },
+        {
+          "assistant_kind": "ollama",
+          "config_signature": "test_config_v1",
+          "route": "local",
+          "samples": 1,
+          "score": 0.84,
+          "weighted_score": 1.0733
+        }
+      ],
+      "score_margin": -0.0247
+    },
+    "proposal_id": "d3305852-865a-4fe9-b8f1-e92605fc7352",
+    "proposal_key": "bio_r13b_independent_2026_09_21|validate_local_first|cloud|codex|test_config_v1|local|ollama|test_config_v1",
+    "proposal_kind": "validate_local_first",
+    "rationale": "Si la alternativa local mantiene resultado comparable, conviene reducir dependencia externa.",
+    "status": "pending",
+    "subject_key": "bio_r13b_independent_2026_09_21",
+    "summary": "La alternativa local ollama esta lo bastante cerca del baseline como para justificar un experimento local-first.",
+    "title": "Validar ruta local primero para bio_r13b_independent_2026_09_21"
+  },
+  "rank": {
+    "chatgpt": 3,
+    "codex": 1,
+    "ollama": 2
+  },
+  "recommendation": {
+    "adaptive_weight": 0.248,
+    "recommended_assistant_kind": "codex",
+    "recommended_route": "cloud",
+    "sample_count": 1,
+    "weighted_score": 1.098
+  },
+  "successful_keys": [
+    "chatgpt",
+    "codex",
+    "ollama"
+  ]
+}
