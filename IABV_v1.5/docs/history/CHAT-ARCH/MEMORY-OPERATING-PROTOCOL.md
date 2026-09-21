@@ -595,3 +595,73 @@ Future prompts must distinguish at least:
 `CONTRADICTED`
 
 Do not use vague closure language such as “basically proven”.
+
+## 2026-09-20/21 PROTOCOL AMENDMENT — METACOGNITIVE SELF-USE
+
+### A. Use IABV itself as the first analyzer for deep self-assessment
+
+When the objective is self-state, architecture, metacognition, causal diagnosis or development acceleration, retrieve the relevant memory and invoke the existing IABV self-observation/metacognition organs before routing immediately to an external AI.
+
+This is not a claim that IABV is correct. It is a deliberate experiment to make IABV a participant in its own method.
+
+### B. Deep self-assessment contract
+
+A valid preflight should attempt:
+
+`objective`
+→ depth
+→ current reality
+→ architecture/code introspection
+→ change-surface analysis
+→ uncertainty
+→ hypotheses
+→ discriminating experiment
+→ verification boundary
+→ first broken edge
+→ Knowledge Delta.
+
+### C. Maintain independent verification
+
+For critical claims:
+
+`IABV self-assessment = producer`
+and
+`independent external audit = verifier`.
+
+Do not allow the self-auditing system to become its own sole evidence authority.
+
+### D. Separate observe from mutate
+
+Preserve:
+
+`OBSERVE → REASON → HYPOTHESIZE → EXPERIMENT → VERIFY → AUTHORIZE → CHANGE → REVERIFY → LEARN`.
+
+Any mutation performed during analysis must be represented as an explicit action and excluded from the pure observation claim.
+
+### E. Add changed-surface analysis
+
+For any material change, search beyond the modified function/file:
+
+`symbol → callers → producers → consumers → contracts → fallbacks → alternate routes → negative cases → downstream effects`.
+
+### F. Distinguish health from metacognition
+
+`system.self_awareness` may report how IABV is doing.
+
+`system.metacognition` should explain why, what is unknown, what changed, what may fail next and what experiment best distinguishes hypotheses.
+
+Do not introduce another brain or intent merely to represent this.
+
+### G. Development-inflection test
+
+The method should only be considered to accelerate when verified experience produces reusable knowledge and a later observable decision/strategy change while routine human coordination decreases.
+
+### H. Cross-IA knowledge transfer
+
+Preserve:
+
+`SOURCE_AI → INTERPRETATION → CHALLENGER → CONTRADICTION/SUPPORT → IMPLEMENTER → OBSERVATION → RECONCILIATION → NEW INVARIANT → METHOD CHANGE`.
+
+The durable object is the changed method, not the agreement or prestige of any model.
+
+
