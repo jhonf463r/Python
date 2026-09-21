@@ -228,6 +228,8 @@ class ControlCenterViewModel(QObject):
         self._attached_files: list[dict[str, Any]] = []
         self._live_status: str = 'idle'
         self._contextual_suggestions: list[dict[str, Any]] = []
+        self._suggestions_interaction_id: str | None = None  # P041: bind suggestions to interaction_id
+        self._current_turn_status: str = 'idle'  # P041: explicit turn status linked to interaction_id
         self._chat_search_query: str = ''
         self._pbt_state: dict[str, Any] = {}
         self._pbt_candidates: list[dict[str, Any]] = []
@@ -468,7 +470,7 @@ class ControlCenterViewModel(QObject):
             trace_metadata=trace_metadata,
         )
         self._last_reasoning_path = ''
-        self._refresh_contextual_suggestions()
+        self._refresh_contextual_suggestions(interaction_id=getattr(self, '_active_interaction_id', None))
         self._validate_ui_reflects_reality()
 
     def _persist_chat_message(
@@ -2071,14 +2073,22 @@ class ControlCenterViewModel(QObject):
         return f'{numeric:.0f}%'
 
     def _self_awareness_focus(self, message: str) -> str:
+        """Determine the focus of a self-awareness question using token matching.
+
+        P041: Changed from substring matching to token matching to avoid false positives
+        (e.g., 'ia' as substring in 'diagonal' should not trigger 'assistants' focus).
+        """
         normalized = self._normalized_command_text(message)
-        if any(token in normalized for token in ('herramienta', 'herramientas')):
+        tokens = set(normalized.split())
+        
+        # Token-based matching (must match whole tokens, not substrings)
+        if tokens.intersection({'herramienta', 'herramientas'}):
             return 'tools'
-        if any(token in normalized for token in ('ias', 'ia', 'conectas', 'asistentes')):
+        if tokens.intersection({'ias', 'ia', 'conectas', 'asistentes'}):
             return 'assistants'
-        if any(token in normalized for token in ('que tan bien', 'qué tan bien', 'como estas', 'cómo estás', 'estado', 'salud')):
+        if tokens.intersection({'que', 'tan', 'bien', 'como', 'estas', 'estado', 'salud'}):
             return 'health'
-        if 'arquitectura' in normalized:
+        if 'arquitectura' in tokens:
             return 'architecture'
         return 'environment'
 
@@ -3240,7 +3250,7 @@ class ControlCenterViewModel(QObject):
         self._latest_response_text = reply
         self._latest_response_meta = meta
         self._working = False
-        self._set_live_status('idle')
+        self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
         self._busy_label = 'Respuesta lista.'
         self.dataChanged.emit()
 
@@ -4374,7 +4384,7 @@ class ControlCenterViewModel(QObject):
             'assistant', 'IABV', msg,
             'shared_reality_followup',
         )
-        self._set_live_status('idle')
+        self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
         return True
 
     # -- P0.16: explain recent external failure without heavy local inference --
@@ -4632,7 +4642,7 @@ class ControlCenterViewModel(QObject):
             reasoning_path='structured_self_audit',
             evidence_tag=evidence_tag,
         )
-        self._set_live_status('idle')
+        self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
         self._clear_autonomy_activity_override()
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -4745,7 +4755,7 @@ class ControlCenterViewModel(QObject):
             reasoning_path=followup_path,
             evidence_tag='observed',
         )
-        self._set_live_status('idle')
+        self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
         self._clear_autonomy_activity_override()
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -5111,7 +5121,7 @@ class ControlCenterViewModel(QObject):
                 reasoning_path='semantic_external_action_binding',
                 evidence_tag='observed',
             )
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             self._clear_autonomy_activity_override()
             try:
                 if tracer:
@@ -5376,7 +5386,7 @@ class ControlCenterViewModel(QObject):
             reasoning_path='user_browser_manual_handoff',
             evidence_tag='observed',
         )
-        self._set_live_status('idle')
+        self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
         self._clear_autonomy_activity_override()
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
@@ -5705,7 +5715,7 @@ class ControlCenterViewModel(QObject):
                 self._resolve_incident_frame('resolved')
             except Exception:
                 pass
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             try:
                 self.dataChanged.emit()
             except Exception:
@@ -5741,7 +5751,7 @@ class ControlCenterViewModel(QObject):
                     'unresolved_fields': visible_capture.get('unresolved_fields', []),
                 },
             )
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             try:
                 self.dataChanged.emit()
             except Exception:
@@ -5754,7 +5764,7 @@ class ControlCenterViewModel(QObject):
                 'Para intentar otra vez, selecciona otro perfil de navegador o reinicia la sesion.',
                 'security_retest_already_done',
             )
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             return True
         self._security_retest_done = True
         try:
@@ -7073,7 +7083,7 @@ class ControlCenterViewModel(QObject):
                 reasoning_path=f'incident_followup_{intent}',
                 evidence_tag='observed',
             )
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             self._clear_autonomy_activity_override()
             try:
                 self.dataChanged.emit()
@@ -8485,7 +8495,7 @@ class ControlCenterViewModel(QObject):
             if watchdog is not None:
                 watchdog.set_query_pending(False)
                 watchdog.set_active_interaction(None)
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             self._promote_metacognition_after_resolution()
 
     # ── Dispatch-id helpers (stale-result guard) ────────────────
@@ -11916,7 +11926,7 @@ class ControlCenterViewModel(QObject):
                     reasoning_path='capability_readiness',
                     evidence_tag='observed',
                 )
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             try:
                 self.dataChanged.emit()
             except Exception:
@@ -12363,7 +12373,7 @@ class ControlCenterViewModel(QObject):
         )
         if any(phrase in lower for phrase in explicit_permission_phrases):
             self._grant_pending_observation_permission(announce=True)
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             self.dataChanged.emit()
             return True
 
@@ -12378,7 +12388,7 @@ class ControlCenterViewModel(QObject):
             last_guidance = str(getattr(self, '_last_guidance_action', '') or '').lower()
             if last_guidance == 'approve_observation_permission':
                 self._grant_pending_observation_permission(announce=True)
-                self._set_live_status('idle')
+                self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
                 self.dataChanged.emit()
                 return True
 
@@ -13185,7 +13195,7 @@ class ControlCenterViewModel(QObject):
                     error_detail=str(exc)[:200],
                 )
             finally:
-                self._set_live_status('idle')
+                self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
                 self.dataChanged.emit()
 
         threading.Thread(target=_worker, daemon=True).start()
@@ -13292,17 +13302,39 @@ class ControlCenterViewModel(QObject):
         with self._ui_state_lock:
             return self._live_status
 
+    @Property(str, notify=dataChanged)
+    def currentTurnStatus(self) -> str:
+        """P041: Explicit status of the current turn linked to interaction_id."""
+        with self._ui_state_lock:
+            return self._current_turn_status
+
     # P0.23 Task F: threshold (seconds) above which a task result is
     # considered "heavy" and the subsequent _set_live_status('idle')
     # should defer its dataChanged.emit to avoid a UI stall.
     _HEAVY_RESULT_THRESHOLD_S: float = 10.0
 
-    def _set_live_status(self, status: str) -> None:
+    def _set_live_status(self, status: str, interaction_id: str | None = None) -> None:
+        """Set live status and current turn status linked to interaction_id.
+
+        P041: The current turn status is now explicitly linked to the active interaction_id
+        to prevent stale status from appearing as current context when a new turn starts.
+        """
         with self._ui_state_lock:
             previous = self._live_status
             if previous == status:
                 return
             self._live_status = status
+            
+            # Update current turn status only if it belongs to the active interaction
+            if interaction_id is None:
+                interaction_id = getattr(self, '_active_interaction_id', None)
+            
+            if interaction_id is not None and interaction_id == getattr(self, '_active_interaction_id', None):
+                self._current_turn_status = status
+            elif interaction_id is None:
+                # No interaction_id provided, update general live status
+                self._current_turn_status = status
+                
         self.liveStatusChanged.emit(status)
         # P0.23 Task F: if we are transitioning to idle right after a heavy
         # task result, defer the dataChanged.emit so the main thread is not
@@ -13411,8 +13443,27 @@ class ControlCenterViewModel(QObject):
         except Exception:
             return {}
 
-    def _refresh_contextual_suggestions(self) -> None:
+    def _refresh_contextual_suggestions(self, interaction_id: str | None = None) -> None:
+        """Refresh contextual suggestions bound to the current interaction_id.
+
+        P041: Each suggestion is now associated with an interaction_id to prevent
+        stale suggestions from appearing as current context when a new turn starts.
+        """
+        # If interaction_id is provided and differs from cached, invalidate old suggestions
+        if interaction_id is not None:
+            if self._suggestions_interaction_id != interaction_id:
+                self._suggestions_interaction_id = interaction_id
+                # Clear old suggestions - they belong to a different turn
+                self._contextual_suggestions = []
+
         suggestions: list[dict[str, Any]] = []
+        
+        # Add interaction_id to each suggestion for tracking
+        suggestion_context = {
+            'interaction_id': self._suggestions_interaction_id,
+            'adaptive_session_id': self._adaptive_session_id if self._adaptive_session_id else None,
+        }
+        
         if hasattr(self, '_efficiency_audit_service'):
             suggestions.append({
                 'text': 'Ejecutar auditoria de eficiencia',
@@ -13420,6 +13471,7 @@ class ControlCenterViewModel(QObject):
                 'icon': '\U0001f50d',
                 'action': 'run_efficiency_audit',
                 'priority': 3,
+                **suggestion_context,
             })
         if self._chat_messages and len(self._chat_messages) > 2:
             suggestions.append({
@@ -13428,6 +13480,7 @@ class ControlCenterViewModel(QObject):
                 'icon': '\U0001f9e0',
                 'action': 'show_self_examination',
                 'priority': 2,
+                **suggestion_context,
             })
         suggestions.append({
             'text': 'Mostrar estado del mundo',
@@ -13435,6 +13488,7 @@ class ControlCenterViewModel(QObject):
             'icon': '\U0001f30d',
             'action': 'world_model',
             'priority': 1,
+            **suggestion_context,
         })
         suggestions.append({
             'text': 'Ver evolucion del sistema',
@@ -13442,6 +13496,7 @@ class ControlCenterViewModel(QObject):
             'icon': '\U0001f4c8',
             'action': 'show_evolution',
             'priority': 1,
+            **suggestion_context,
         })
         if self._attached_files:
             suggestions.append({
@@ -13450,6 +13505,7 @@ class ControlCenterViewModel(QObject):
                 'icon': '\U0001f4ce',
                 'action': 'process_attachments',
                 'priority': 5,
+                **suggestion_context,
             })
         self._contextual_suggestions = suggestions
         self.contextualSuggestionsChanged.emit(suggestions)
@@ -13666,7 +13722,7 @@ class ControlCenterViewModel(QObject):
                 'description': 'ViewModel._working=False pero _live_status=processing — desincronizado',
                 'auto_fix': 'applied',
             })
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
         
         # Verificar que attached_files es consistente
         if self._attached_files:
@@ -13703,6 +13759,21 @@ class ControlCenterViewModel(QObject):
             return
         # --- Open canonical interaction episode ---
         self._interaction_has_pending_followup = False
+        
+        # P041: Invalidate stale turn state when a new turn starts
+        previous_interaction_id = getattr(self, '_active_interaction_id', None)
+        if previous_interaction_id is not None:
+            # Clear suggestions from previous turn
+            self._suggestions_interaction_id = None
+            self._contextual_suggestions = []
+            self.contextualSuggestionsChanged.emit([])
+            # Reset turn status to idle until new turn is active
+            self._current_turn_status = 'idle'
+            # Don't reset guidance if it's still actively needed (e.g., pending approval)
+            # Only reset if it belongs to the previous interaction
+            if self._assistant_guidance_mode != 'need_approval':
+                self._reset_assistant_guidance()
+        
         lifecycle = getattr(self, '_chat_interaction_lifecycle', None)
         interaction_id: str | None = None
         if lifecycle is not None:
@@ -13720,6 +13791,9 @@ class ControlCenterViewModel(QObject):
                     initial_window_visible=initial_window_visible,
                 )
                 self._active_interaction_id = interaction_id
+                # P041: Bind new turn state to new interaction_id
+                self._suggestions_interaction_id = interaction_id
+                self._current_turn_status = 'accepted'
                 if watchdog is not None:
                     watchdog.set_query_pending(True)
                     watchdog.set_active_interaction(interaction_id)
@@ -13785,14 +13859,14 @@ class ControlCenterViewModel(QObject):
                         pass
                     self._working = False
                     self._busy_label = ''
-                    self._set_live_status('idle')
+                    self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
                     self._clear_autonomy_activity_override()
                 else:
                     self._resolve_active_interaction(outcome='abandoned')
                     return
             # Reset forzado: _working stuck por mas de 60 segundos
             self._working = False
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             self._clear_autonomy_activity_override()
         user_attachments = list(self._attached_files) if self._attached_files else None
         self._append_message('user', 'Tu', message, self._routing_mode_label(),
@@ -13859,7 +13933,7 @@ class ControlCenterViewModel(QObject):
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         if self._try_handle_continuity_message(message):
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             self._resolve_active_interaction(outcome='resolved', provider='local')
             return
         # P0.40 Task A: External Intent Sovereignty — any message with
@@ -14546,7 +14620,7 @@ class ControlCenterViewModel(QObject):
                     'Queda UNRESOLVED — prueba con otro perfil de navegador o reinicia la sesion del navegador.',
                     'security_retest_still_blocked',
                 )
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
         elif task_name == 'pbt':
             self._pbt_state = dict(payload)
             self._pbt_candidates = list(payload.get('candidates', []))[:4]
@@ -14707,7 +14781,7 @@ class ControlCenterViewModel(QObject):
                 'security_retest_error',
             )
             self._working = False
-            self._set_live_status('idle')
+            self._set_live_status('idle', interaction_id=getattr(self, '_active_interaction_id', None))
             self.dataChanged.emit()
             return
         title = 'IABV' if task_name == 'chat' else task_name.upper()
