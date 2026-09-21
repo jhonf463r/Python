@@ -793,3 +793,36 @@ This question is now canonically represented in:
 
 No promotion is made for self-reproduction, autonomy, life, consciousness or open-ended evolution. Each requires separate causal evidence.
 
+## 2026-09-21 GLOBAL DEVELOPMENT NORTH STAR — CURRENT STRATEGIC STATE
+
+The canonical strategic entrypoint for the long-horizon user objective is:
+
+`00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`
+
+This entrypoint must be activated by future chats touching biosofía artificial, autonomous development, scientific self-analysis, developmental acceleration, or removal of routine human coordination.
+
+### Current interpretation
+
+IABV already contains substantial candidate organs for self-observation, experimentation, verification, learning, orchestration and resource selection. The main bottleneck is not simply missing code; it is proving causal composition across organs.
+
+Persistent rule:
+
+`organ exists ≠ organ integrated ≠ organ causally useful for the next developmental cycle`
+
+The intended development inflection is:
+
+`verified experience → reusable knowledge → future decision change → lower routine human coordination → more efficient experimentation → new verified capability`
+
+The phrase “exponential development” is a research hypothesis and must be earned by longitudinal measurement.
+
+For deep IABV self-assessment, use IABV-native introspection/metacognition first; use external AIs by current capability/access/evidence fit as independent verifiers or specialists.
+
+### Scientific-organ checkpoint
+
+`BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md` preserves the static audit at `f0c98ca1af756273f14a7fae65fafa9bd69a3a30`.
+
+Its first open edge is:
+
+`ExperimentRun / ExperimentRecommendation → reader → next hypothesis / next experiment`
+
+The audit is static; current runtime/branch must be freshly reconciled before operational claims.
