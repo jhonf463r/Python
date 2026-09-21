@@ -535,5 +535,13 @@ Next useful action is direct re-audit/correction of the test fixture, not blind 
 ### Strategic next discriminating action
 
 Run one IABV-native deep self-assessment experiment on an explicitly pinned code/runtime state, then have Sonnet independently audit the resulting artifact and claim boundary.
+## 2026-09-21 — METACOGNITIVE EXECUTION BACKLOG MATERIALIZED
 
+The previously conversational ideas around biosophia/metacognition are now persistent execution items in `IABV_v1.5/data/evolution/backlog.json` and prioritized in:
+`BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`.
+
+Highest-priority unresolved chain:
+`IABV-native deep self-assessment → evidence-qualified first open causal edge → discriminating experiment → Knowledge Delta → future decision change`.
+
+This keeps proposed capabilities visible even when they are not yet implemented and prevents the current chat from becoming the sole storage location for strategic ideas.
 
