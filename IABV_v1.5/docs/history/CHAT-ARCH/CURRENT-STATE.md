@@ -649,4 +649,21 @@ The desired inflection remains:
 `verified experience → reusable knowledge → changed future decision → reduced routine human coordination → more efficient experimentation`.
 
 Code volume, number of tests, or number of connected AIs are not substitute metrics.
+## 2026-09-21 METACOGNITIVE SELF-USE — PRIORITIZED EXECUTION STATE
+
+The latest source analysis identifies a strategic transition: IABV already contains a substantial set of self-observation, introspection, integrity, experimentation and learning organs, but their complete causal composition is not proven.
+
+The persistent execution backlog now records the material work rather than leaving it in chat:
+- META-01 IABV-native deep self-assessment preflight — CRITICAL;
+- META-02 evidence/provenance contract — CRITICAL;
+- META-03 universal change-surface analysis — HIGH;
+- META-04 observation/mutation separation — HIGH;
+- META-05 metacognition → memory → experiment → future decision — HIGH;
+- META-06 longitudinal development-inflection measurement — MEDIUM;
+- I0 regression-test causal coverage audit — HIGH.
+
+Canonical roadmap:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`.
+
+Current strategic priority is META-01: use the existing IABV organs as the first analyzer for a deep self-assessment, with independent verification retained for critical claims. Do not add new architecture before this composition experiment establishes the actual missing edge.
 
