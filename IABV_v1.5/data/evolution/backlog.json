@@ -650,10 +650,25 @@
     "title": "Auditoría y cierre del circuito científico interno de IABV",
     "area": "scientific_metacognition",
     "priority": "critical",
-    "status": "pending",
+    "status": "partial",
     "source": "chat_reconciliation_2026-09-21",
     "created_at": "2026-09-21T00:00:00+00:00",
-    "evidence": "IABV already implements scientific_proxy_engine, ExperimentLab, SandboxExperimentService, PlatformLearningOrchestrator, reproducibility validation, prediction/calibration and research-gap backlog; the missing question is whether these form a causal scientific circuit from question/hypothesis/prediction through experiment, independent verification, knowledge/model update and next experiment/developmental decision.",
-    "depends_on": []
+    "evidence": "Initial forensic audit completed at exact HEAD f0c98ca1af756273f14a7fae65fafa9bd69a3a30. Scientific machinery is substantial and distributed, but the full causal circuit is not closed. First open edge identified: ExperimentRun / ExperimentRecommendation → downstream reader → next hypothesis/next experiment. Prediction, explicit falsification/qualification, independent reproduction and model/theory update ownership also remain open.",
+    "depends_on": [],
+    "completed_at": null
+  },
+  {
+    "id": "BIO-R12",
+    "title": "Barrido exhaustivo de consumidores del circuito científico: ExperimentRun/Recommendation → siguiente experimento",
+    "area": "scientific_metacognition",
+    "priority": "critical",
+    "status": "pending",
+    "source": "meta_bio_r01_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "completed_at": null,
+    "evidence": "Trace every repository reader/consumer of ExperimentRun, ExperimentRecommendation, worker_recommendation and related scientific outputs. Determine whether an existing consumer generates or selects the next hypothesis/experiment/developmental decision. Do not implement architecture during the audit.",
+    "depends_on": [
+      "BIO-R11"
+    ]
   }
 ]
