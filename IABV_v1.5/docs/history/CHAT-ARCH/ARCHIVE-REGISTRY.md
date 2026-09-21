@@ -337,5 +337,17 @@ Key transferred knowledge:
 - development inflection is verified experience changing future decisions and reducing routine human coordination;
 - I0 source fix is remotely verified at `b3e211fbbe001d6c360071c04a83ea40cff48071`, while regression-test causal coverage remains open;
 - P041-R8 remains static/unit evidence only.
+## 2026-09-21 REGISTRATION — BIOSOFIA METACOGNITIVE EXECUTION ROADMAP
 
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`
+
+Type:
+`STRATEGIC ROADMAP / EVOLUTION BACKLOG SYNTHESIS`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Purpose:
+Persist and prioritize the material ideas from the 2026-09-20/21 self-use analysis so future IABV cycles can select work from a durable queue rather than from transcript memory.
 
