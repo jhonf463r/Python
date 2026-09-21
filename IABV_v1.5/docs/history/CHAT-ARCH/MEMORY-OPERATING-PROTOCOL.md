@@ -724,3 +724,24 @@ then:
 `independent verification`.
 
 Do not restart earlier archaeology or conflate unit/mutation evidence with runtime evidence.
+
+## 2026-09-21 PROTOCOL ADDENDUM — LINEAGE-SCOPE RECONCILIATION
+
+For every material commit used as evidence, distinguish two scopes:
+
+1. **Immediate commit scope**
+`direct parent → target commit`
+
+2. **Narrative/historical scope**
+`named baseline → target commit`
+
+Both must be reconciled when the claim depends on continuity from the older baseline.
+
+Promotion rule:
+- If immediate scope is test-only but cumulative scope contains production changes, state both facts.
+- Never use a commit message such as "production source unchanged" as proof of ancestry-wide immutability.
+- If a test is independently valid at the exact target SHA, it may close the tested property at that SHA even when the branch lineage is not minimal relative to an older baseline.
+- Generalization across revisions requires additional evidence.
+
+This becomes part of the evidence promotion gate:
+`claim → target SHA → direct parent → historical baseline → cumulative diff → exact source/test at target`.
