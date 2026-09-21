@@ -545,3 +545,38 @@ Highest-priority unresolved chain:
 
 This keeps proposed capabilities visible even when they are not yet implemented and prevents the current chat from becoming the sole storage location for strategic ideas.
 
+## 2026-09-21 — NEW UNRESOLVED BOUNDARIES
+
+### UK-META-03 — Internal metacognitive composition is not causally closed
+
+IABV has many relevant organs, but no current evidence proves the end-to-end loop:
+`self-observe → uncertainty → introspection → first broken edge → experiment → verify → Knowledge Delta → future decision change`.
+
+Required experiment:
+IABV-native deep self-assessment preflight on an explicitly pinned repository/runtime state, followed by independent verification.
+
+### UK-PROV-01 — Provenance gate must become enforceable, not merely documented
+
+The project now has a concrete protocol:
+`report → artifact → branch/ref → SHA → working tree → remote read-back → content → runtime provenance → independent verification`.
+
+Open question:
+Can IABV itself enforce this gate automatically at actor handoff time, preventing unanchored implementation claims from entering the next reasoning stage?
+
+Do not solve by adding a parallel coordinator before existing orchestration/governance contracts are inspected.
+
+### UK-I0-M3-01 — GET credential propagation independent verification
+
+Remote artifact:
+`7753ce5632370b2a03726aeff63dbcd1ac7afc42`
+Branch:
+`devin/i0-credential-get-coverage-2026-09-21`
+
+Remote content is verified. The remaining uncertainty is whether the mutation result is independently reproducible and whether the runtime implementation later propagates the invocation credential across real Windows execution.
+
+Status:
+`REMOTE-ARTIFACT-VERIFIED / INDEPENDENT-M3-AUDIT-PENDING / WINDOWS-RUNTIME-NOT-PROVEN`.
+
+### Negative knowledge preserved
+
+Do not re-audit cited commit SHAs that are not remotely resolvable unless new evidence supplies a different exact object. The durable lesson is the provenance failure mode, not a conclusion about why the object was absent.
