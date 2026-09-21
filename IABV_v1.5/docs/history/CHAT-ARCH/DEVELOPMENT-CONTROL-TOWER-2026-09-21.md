@@ -175,3 +175,5 @@ Important distinction:
 `automatic next experiment path exists ≠ scientific outcome causally determines next experiment`.
 
 This refinement supersedes only the broad wording of the earlier “no consumer” hypothesis; the forensic snapshot at `f0c98ca1af756273f14a7fae65fafa9bd69a3a30` remains historical evidence.
+
+`BIO-R13` is now the next bounded scientific/developmental experiment: prove or falsify whether changing a prior ExperimentRun outcome, under matched conditions, changes the subsequent ExperimentRecommendation → ToolEvolutionProposal → SandboxExperiment path. Next actor: DEVIN for test-only execution; then SONNET for independent audit. The broader architecture remains unchanged.
