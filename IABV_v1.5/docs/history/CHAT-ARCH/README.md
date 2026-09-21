@@ -236,3 +236,13 @@ The durable method is:
 `objective → boundary → relevant memory → current read-back → capability/access fit → smallest discriminating experiment → independent verification → knowledge delta → writeback`
 
 END OF LATEST OVERLAY
+
+## PRIMARY STRATEGIC ENTRYPOINT — BIOSOFÍA / DEVELOPMENT
+
+For future chats about biosofía artificial, self-use of IABV, autonomous development, scientific development loops, developmental acceleration, or reducing routine human coordination, start with:
+
+`00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`
+
+Then follow `MEMORY-OPERATING-PROTOCOL.md` and `CONTEXT-INDEX.md` to activate only the relevant knowledge.
+
+This entrypoint is strategic/research direction, not proof of achieved autonomy, consciousness, evolution or open-ended development.
