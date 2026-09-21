@@ -509,3 +509,31 @@ Agreement is still insufficient. Durable symbiosis requires an observable change
 `ΔK / Δπ / ΔB / ΔY`.
 
 The new provenance gate is itself a method change (`Δπ`) but has not yet been shown to alter an IABV future decision causally.
+
+## 2026-09-21 TRANSFER 19 — INDEPENDENT CAUSAL AUDIT REVEALS LINEAGE SCOPE
+
+M3 is now stronger than "implementer says mutation failed".
+
+The independent auditor reports:
+`source reconstruction → direct test execution → discriminating mutation → exact failing assertion → false-positive checks → persistence check`.
+
+This is a genuine forensic challenge, not model agreement.
+
+New reusable symbiosis lesson:
+`independent challenge → causal reproduction → provenance refinement → narrower claim`
+is more valuable than:
+`agent A conclusion → agent B agreement`.
+
+### New Git provenance rule
+
+Always distinguish:
+`parent → head` from `named historical baseline → head`.
+
+A commit can be test-only relative to its direct parent while its branch has materially changed production code relative to the historical baseline used in the narrative.
+
+New invariants:
+- `commit-local diff scope != cumulative branch lineage scope`;
+- `direct parent != named historical baseline`;
+- `commit message claim != ancestry-wide invariant`.
+
+The I0 M3 artifact at `7753ce563...` demonstrates remote artifact provenance and independently reported mutation sensitivity. It does not close Windows runtime or I0.
