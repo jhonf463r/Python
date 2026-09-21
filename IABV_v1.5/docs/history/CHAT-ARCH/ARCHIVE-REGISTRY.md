@@ -399,3 +399,38 @@ M3 status:
 
 Current I0 runtime status:
 `WINDOWS RUNTIME NOT PROVEN`.
+
+
+
+## 2026-09-21 REGISTRATION — BIOSOFÍA ARTIFICIAL / DEVELOPMENTAL AUTOPOIETIC THESIS
+
+Canonical source:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIOSOFIA-ARTIFICIAL-DEVELOPMENTAL-AUTOPOIETIC-THESIS-2026-09-21.md`
+
+Type:
+`STRATEGIC RESEARCH THESIS / ARTIFICIAL LIFE / DEVELOPMENT / AUTOPOIETIC MODEL / EXPERIMENT DESIGN`
+
+Commit:
+`1141d79994d95e08e68132eb69ce9dcd8fd9425a`
+
+Purpose:
+Preserve the long-horizon user thesis that the project should identify and experimentally build the minimum computational substrate from which an artificial intelligence can progressively acquire, compose, differentiate, verify, preserve and potentially inherit new capabilities.
+
+Research status:
+`WORKING THESIS / NOT PROVEN`
+
+Core methodological correction:
+The biological analogy is a hypothesis generator. No claim of biological life, consciousness, or completed self-construction is promoted from it.
+
+Activate this record for objectives involving:
+biosofía artificial, autoconstrucción, autoevolución, digital organisms, developmental robotics, Artificial Life, generational learning, self-directed development, open-ended evolution, or recursive capability growth.
+
+Related canonical records:
+- `BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+- `BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`
+- `SYMBIOSIS-MAP.md`
+- `UNRESOLVED-KNOWLEDGE.md`
+
+Current evidence boundary:
+IABV has substantial substrate organs and causal selector-level learning evidence; recursive developmental closure, heredity, generational evolution and open-endedness remain open.
+
