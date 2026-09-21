@@ -726,3 +726,45 @@ New invariant:
 
 Do not reopen M3. The next edge remains:
 `exact implementation revision → real Windows credential binding/execution → observed behavior → independent runtime verification`.
+
+
+## 2026-09-21 ROUTING RECONCILIATION — STRATEGIC PRIORITY VS I0 LOCAL FRONTIER
+
+A current objective must distinguish two simultaneous but separate tracks.
+
+### Strategic IABV-development priority
+
+The highest-value global priority remains **META-01 — IABV-native deep self-assessment preflight**. This follows the 2026-09-21 metacognitive roadmap: existing IABV self-observation/introspection/metacognition organs should be used as the first analyzer for questions about IABV itself, before adding architecture or outsourcing the whole diagnosis.
+
+Required chain:
+`objective → relevant memory → exact current state → native self/architecture introspection → uncertainty → first open causal edge → smallest discriminating experiment → capability-fit routing`.
+
+META-01 is not self-validating and remains subject to independent verification.
+
+### I0 M3 local causal frontier
+
+For the specific I0 M3 experiment, the independent audit has closed the unit/mutation edge. The next local causal edge remains:
+
+`exact implementation revision → real Windows credential binding/execution → observed behavior → independent runtime verification`.
+
+Target runtime revision:
+`7753ce5632370b2a03726aeff63dbcd1ac7afc42`.
+
+This SHA is a descendant of the credential-seam implementation:
+`51047cc18b4f3d178e6eb7fa2f5127049d778192 → ... → 7753ce563...`.
+
+Therefore no M3 re-integration is required.
+
+### Practical prerequisite routing
+
+The Windows runtime experiment must not be repeated blindly. Before Devin runtime execution, verify whether the real Devin credential prerequisite has changed in the effective Windows process environment. If the credential is still absent, the next practical action is the already-supported IABV credential-provisioning UI flow; only after secure non-secret credential presence is established should Devin execute the real runtime experiment.
+
+### Dynamic routing rule
+
+The two tracks do not imply a fixed actor sequence. Actor choice remains capability-fit based:
+- IABV-native organs for deep self-assessment;
+- Devin for controlled Windows/runtime execution;
+- Sonnet for independent critical verification;
+- Opus 5 only for genuine architecture/policy/higher-order causal contradictions.
+
+Do not let a historical 'next actor' entry override the newer objective-conditioned routing state.
