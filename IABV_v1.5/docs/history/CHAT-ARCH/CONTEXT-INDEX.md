@@ -647,3 +647,35 @@ but the evidence model remains:
 Do not treat biological analogy as evidence.
 Do not treat the existence of many IABV services as proof of organism-level organization.
 
+## 2026-09-21 GLOBAL DEVELOPMENT NORTH STAR — PRIMARY ROUTING
+
+For objectives involving biosofía artificial, autonomous development, self-analysis, scientific self-development, exponential/developmental acceleration, or reducing routine human coordination, activate first:
+
+- `00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`
+- `BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+- `BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`
+- `BIOSOFIA-ARTIFICIAL-DEVELOPMENTAL-AUTOPOIETIC-THESIS-2026-09-21.md`
+- `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md`
+
+The global objective is compounding verified capability while reducing routine human transport/coordination. Do not equate code volume, memory volume, number of AIs, or number of services with development.
+
+### Strategic separation
+
+- **Scientific circuit:** question → hypothesis → prediction → experiment → analysis → verification → knowledge/model update → next experiment.
+- **Symbiosis:** objective → capability-fit actor/resource → governed execution → observation → verification → learning.
+- **Development:** deficit → variation → experiment → verified new capability → governed incorporation → reuse.
+- **Evolution:** repeated variation + selection + viability + heredity/lineage.
+
+Do not collapse these tracks.
+
+### Current scientific gate
+
+The forensic snapshot `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md` identifies the first open causal edge as:
+
+`ExperimentRun / ExperimentRecommendation → downstream consumer → next hypothesis / next experiment`
+
+Before new architecture, exhaustively trace existing readers/consumers.
+
+### Development-inflection gate
+
+The target is a longitudinal decrease in routine human coordination together with increased verified reusable capability per unit of human coordination. “Exponential” remains a hypothesis until the measured series supports it.
