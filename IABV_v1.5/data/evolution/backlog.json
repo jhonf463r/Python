@@ -706,11 +706,11 @@
     "title": "Causalidad recommendation → ToolEvolutionProposal",
     "area": "scientific_metacognition",
     "priority": "critical",
-    "status": "completed",
+    "status": "pending_independent_audit",
     "source": "BIO-R13B-RUNTIME-EVIDENCE-2026-09-21",
     "created_at": "2026-09-21T00:00:00+00:00",
-    "completed_at": "2026-09-21T21:00:00+00:00",
-    "evidence": "Runtime control/treatment confirmed that changing only codex.success from True to False changed recommendation codex→ollama and proposal validate_local_first→None. See CHAT-ARCH/BIO-R13B-RUNTIME-EVIDENCE-2026-09-21.md.",
+    "completed_at": null,
+    "evidence": "Runtime control/treatment was executed and reported by Devin on branch devin/i0-external-route-target-fix-2026-09-20, HEAD f0c98ca1af756273f14a7fae65fafa9bd69a3a30, Python 3.14.4 win32, command python temp_bio_r13b_recommendation_to_proposal.py. CONTROL recommendation=codex, proposal=validate_local_first. TREATMENT changed only codex.success=False, recommendation=ollama, proposal=None. The causal chain is coherent and source-consistent, but no raw runtime artifact/hash was separately preserved; therefore independent Sonnet verification is still required before epistemic closure.",
     "depends_on": [
       "BIO-R13"
     ]
