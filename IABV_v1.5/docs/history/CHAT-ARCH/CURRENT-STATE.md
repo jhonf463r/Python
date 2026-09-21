@@ -846,3 +846,23 @@ Important precedence:
 
 Current scientific next edge:
 `ExperimentRun / ExperimentRecommendation → reader → next hypothesis / next experiment`.
+
+## 2026-09-21 SCIENTIFIC CAUSAL REFINEMENT — CURRENT FRONTIER
+
+The previous broad statement that ExperimentRecommendation lacked a downstream consumer is superseded in scope.
+
+Current source reconciliation establishes a real automatic chain:
+
+`ExperimentRun → ExperimentRecommendation → ToolEvolutionMonitor → ToolEvolutionProposal → AutonomousValidationCycle → SandboxExperiment → ExperimentLab.record_outcome`
+
+and a direct decision path:
+
+`ExperimentRecommendation → ToolTeachService._preferred_external_tool_id() → external assistant routing`.
+
+Therefore the scientific/development organ already has a **later-experiment path** and a **real routing consumer**.
+
+Still open is the stronger causal proposition:
+
+`different prior outcome → different next proposal/experiment`
+
+The next discriminating experiment is BIO-R13: matched control/treatment outcome perturbation with the same subject/objective/candidate universe and observation of the next recommendation/proposal/sandbox choice.
