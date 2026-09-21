@@ -314,3 +314,28 @@ Classification: **B — PARTIALLY VERIFIED**.
 The preserved R2 artifact, lineage, hash and source consistency are verified. Runtime environment truth remains self-attested; real credential availability/authentication/external effect remain open.
 
 Routing: DEVIN next for controlled Windows credential/execution boundary; SONNET for independent audit afterward.
+
+## 2026-09-20/21 REGISTRATION — METACOGNITIVE SELF-USE SOURCE
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-20-007-metacognitive-self-use-and-development-inflection.md`
+
+Type:
+`RECONCILIATION / SYMBIOSIS / METACOGNITIVE-DESIGN / DEVELOPMENT-INFLECTION`
+
+State:
+`DIRECT_SOURCE_FROM_USER_CHAT_EXPORT=YES / CANONICAL_ABSORPTION=YES / CURRENT-CODE-CLAIMS_REQUIRE_RECONCILIATION`
+
+Purpose:
+Preserve the material method change that IABV should begin using its existing metacognitive/self-audit/code-analysis organs as the primary analyzer for deep self-assessment, while retaining independent external verification for critical claims.
+
+Key transferred knowledge:
+- external symbiosis is operationally effective;
+- internal metacognitive composition is not causally proven;
+- deep self-assessment must inspect changed surfaces and downstream consumers;
+- observation must be separated from mutation;
+- development inflection is verified experience changing future decisions and reducing routine human coordination;
+- I0 source fix is remotely verified at `b3e211fbbe001d6c360071c04a83ea40cff48071`, while regression-test causal coverage remains open;
+- P041-R8 remains static/unit evidence only.
+
+
