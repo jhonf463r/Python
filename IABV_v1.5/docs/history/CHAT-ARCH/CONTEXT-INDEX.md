@@ -599,3 +599,22 @@ If M3 survives:
 `DEVIN` = real Windows/runtime phase.
 Then:
 `SONNET` = independent runtime audit.
+
+## 2026-09-21 ROUTING — I0 M3 AFTER INDEPENDENT AUDIT
+
+For the exact M3 artifact:
+`7753ce5632370b2a03726aeff63dbcd1ac7afc42`
+
+Route:
+`SONNET independent audit = completed/reported`
+→ `DEVIN controlled Windows runtime`
+→ `SONNET independent runtime audit`
+→ `ChatGPT reconciliation/writeback`.
+
+When auditing any commit, retrieve both:
+`direct parent → head`
+and
+`historical baseline → head`
+when the narrative claims continuity from an older baseline.
+
+A test-only immediate diff must not be mistaken for ancestry-wide production immutability.
