@@ -177,3 +177,23 @@ Important distinction:
 This refinement supersedes only the broad wording of the earlier “no consumer” hypothesis; the forensic snapshot at `f0c98ca1af756273f14a7fae65fafa9bd69a3a30` remains historical evidence.
 
 `BIO-R13` is now the next bounded scientific/developmental experiment: prove or falsify whether changing a prior ExperimentRun outcome, under matched conditions, changes the subsequent ExperimentRecommendation → ToolEvolutionProposal → SandboxExperiment path. Next actor: DEVIN for test-only execution; then SONNET for independent audit. The broader architecture remains unchanged.
+
+## 2026-09-21 BIO-R13 RESULT — BLOCKED, FRONTIER NARROWED
+
+BIO-R13 execution did **not** run CONTROL/TREATMENT. Provenance reported by the executor:
+- branch: `devin/i0-external-route-target-fix-2026-09-20`
+- HEAD: `f0c98ca1af756273f14a7fae65fafa9bd69a3a30`
+- working tree: 5738 untracked files
+- runtime: Python 3.14.4 win32
+- no test artifact, commit, command execution, negative control or cold restart
+
+Verdict: **BLOCKED**.
+
+The exact blocker is the absence of a practical deterministic runtime harness for `ToolEvolutionMonitor.build_status()` while controlling repository, storage, AdaptiveWeightLayer state and all relevant variables.
+
+This does **not** prove the causal hypothesis false. It does not prove learning absent.
+
+New first question:
+`Can outcome→next-proposal causality be isolated at a smaller deterministic seam before building a full runtime harness?`
+
+New next task: **BIO-R14** — audit the narrowest causal seam. First inspect whether existing functions such as grouping, adaptive-weight suggestion, ranking and proposal construction can be exercised with matched synthetic/persisted run sets using the real code path or existing fixtures.
