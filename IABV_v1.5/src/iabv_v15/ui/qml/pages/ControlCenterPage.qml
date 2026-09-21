@@ -64,6 +64,7 @@ Item {
     // ── Propiedades avanzadas del chat ──
     property int attachedFileCountValue: controlCenterViewModel ? controlCenterViewModel.attachedFileCount : 0
     property string liveStatusValue: controlCenterViewModel ? controlCenterViewModel.liveStatus : "idle"
+    property string currentTurnStatusValue: controlCenterViewModel ? controlCenterViewModel.currentTurnStatus : "idle"
     property var contextualSuggestionsModel: controlCenterViewModel ? controlCenterViewModel.contextualSuggestions : []
     property var attachedFilesModel: controlCenterViewModel ? controlCenterViewModel.attachedFiles : []
 
@@ -430,7 +431,7 @@ Item {
                         codeMode: false
                         canAttach: true
                         attachedCount: attachedFileCountValue
-                        systemStatus: liveStatusValue === "idle" ? "idle" : (liveStatusValue === "error" ? "error" : "processing")
+                        systemStatus: currentTurnStatusValue === "idle" ? "idle" : (currentTurnStatusValue === "error" ? "error" : (currentTurnStatusValue === "processing" ? "processing" : (currentTurnStatusValue === "accepted" ? "processing" : "idle")))
                         onAttachClicked: {
                             if (controlCenterViewModel) controlCenterViewModel.attachFile("test.txt", "C:/tmp/test.txt", 1024, "text/plain")
                         }
