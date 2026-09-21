@@ -68,7 +68,7 @@ def test_backward_compatibility():
 
 
 def test_per_invocation_override():
-    """Test B: per-invocation override - invocation key dominates."""
+    """Test B: per-invocation override - invocation key dominates both POST and GET."""
     print("\nTest B: Per-invocation override")
     
     adapter = DevinApiToolAdapter(
@@ -84,21 +84,35 @@ def test_per_invocation_override():
         mock_httpx.post = mock_post
         mock_httpx.get = mock_get
         
+        # POST creates session in 'running' state to trigger polling
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {
             'session_id': 'test-session',
             'url': 'https://test.com/session',
+            'status': 'running',
+            'structured_output': ''
+        }
+        
+        # GET returns finished state
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
             'status': 'finished',
             'structured_output': 'test output'
         }
         
         result = adapter.run(card, task, api_key='invocation-key')
         
-        # Verify invocation key was used
+        # Verify invocation key was used in POST (create session)
         assert mock_post.called
-        call_headers = mock_post.call_args[1]['headers']
-        assert 'Bearer invocation-key' in call_headers['Authorization']
-        print("  PASS: Invocation key used when provided")
+        post_headers = mock_post.call_args[1]['headers']
+        assert 'Bearer invocation-key' in post_headers['Authorization']
+        
+        # Verify invocation key was used in GET (poll session)
+        assert mock_get.called
+        get_headers = mock_get.call_args[1]['headers']
+        assert 'Bearer invocation-key' in get_headers['Authorization']
+        
+        print("  PASS: Invocation key used in both POST and GET")
 
 
 def test_no_mutation():
