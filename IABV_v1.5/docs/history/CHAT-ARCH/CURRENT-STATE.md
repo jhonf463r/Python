@@ -867,13 +867,17 @@ Still open is the stronger causal proposition:
 
 The next discriminating experiment is BIO-R13: matched control/treatment outcome perturbation with the same subject/objective/candidate universe and observation of the next recommendation/proposal/sandbox choice.
 
-## 2026-09-21 BIO-R13 — BLOCKED / NEXT FRONTIER BIO-R14
+## 2026-09-21 BIO-R13A/B — CAUSAL RUNTIME PARTIAL → CONFIRMED
 
-BIO-R13 did not execute. The executor reported a missing practical deterministic runtime harness for the full `ToolEvolutionMonitor.build_status()` path.
+BIO-R13A runtime-confirmed that changing `ExperimentRun.success` can causally change `ExperimentRecommendation` through eligibility/ranking. BIO-R13B then runtime-confirmed that the changed recommendation changes `ToolEvolutionProposal`: control `validate_local_first`; treatment `None`. Evidence is preserved in `CHAT-ARCH/BIO-R13B-RUNTIME-EVIDENCE-2026-09-21.md` (runtime branch/HEAD recorded there).
 
-No CONTROL/TREATMENT evidence was produced, so causal outcome→next-experiment status remains **NOT PROVEN**, not false.
+The previous BIO-R13 harness blocker is therefore obsolete for the minimal causal seam. The remaining scientific boundary is `ToolEvolutionProposal → real experiment execution → observed outcome`.
 
-The next step is BIO-R14: identify the smallest real-code deterministic seam capable of discriminating outcome sensitivity before considering a full harness.
+## BIO-R14 — COMPLETED
 
-### BIO-R14 — NEXT FRONTIER
-BIO-R13 is blocked before execution, not disproven. The next action is a Sonnet forensic decomposition to identify the smallest deterministic seam capable of testing outcome→later proposal/experiment without constructing the full runtime harness.
+The forensic seam audit established that `ToolEvolutionMonitor._proposal_for_subject()` can be exercised without the full `build_status()` dependency graph. No new coordinator or architecture was required.
+
+## NEXT FRONTIER — BIO-R13C
+
+Determine whether an actionable proposal reaches a real executable sandbox operation. Distinguish:
+`proposal → validation-call`, `validation-call → experiment object`, `experiment object → actual execution`, and `execution → independently observed outcome`.
