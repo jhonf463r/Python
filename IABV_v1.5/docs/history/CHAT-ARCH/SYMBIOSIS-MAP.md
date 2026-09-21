@@ -474,3 +474,38 @@ These are capability hypotheses, not fixed order or rankings.
 
 The next meaningful acceleration is not “connect more AIs”. It is “make IABV capable of finding its own next smallest discriminating experiment, then prove that the result changes a later decision.”
 
+## 2026-09-21 TRANSFER 18 — SELF-USE + PROVENANCE-GATED HANDOFFS
+
+The symbiosis method now has an explicit two-level use.
+
+### Level 1 — IABV as subject
+
+When the objective is a deep assessment of IABV itself, prefer:
+`IABV native perception/self-model/introspection/metacognition → uncertainty → discriminating experiment`
+before external delegation.
+
+External AIs remain independent verifiers or specialists rather than automatic substitutes for IABV's own self-model.
+
+### Level 2 — IABV as control plane
+
+The target loop remains:
+`objective → IABV context/memory → uncertainty → capability fit → actor/tool/resource → governed execution → observation → independent verification → Knowledge Delta → later decision`.
+
+### Provenance as a symbiosis boundary
+
+A cross-AI handoff is not complete merely because the implementer reports a result.
+
+New reusable invariant:
+`actor report != transferable evidence until artifact identity and remote content are verified`.
+
+Required handoff gate:
+`report → artifact → branch/ref → SHA → remote read-back → content check → independent verification`.
+
+The I0 M3 artifact at `7753ce5632370b2a03726aeff63dbcd1ac7afc42` is the current positive example of this gate being crossed. Its claimed mutation result is still pending independent reproduction.
+
+### Symbiosis measurement
+
+Agreement is still insufficient. Durable symbiosis requires an observable change in:
+`ΔK / Δπ / ΔB / ΔY`.
+
+The new provenance gate is itself a method change (`Δπ`) but has not yet been shown to alter an IABV future decision causally.
