@@ -675,3 +675,52 @@ Persist it in the appropriate canonical layer:
 
 A task entering the backlog is not evidence that its premise is proven. The backlog records an actionable hypothesis or known gap and must retain its evidence basis.
 
+## 2026-09-21 PROTOCOL ADDENDUM — SELF-ASSESSMENT MODE
+
+When the objective is to understand IABV itself, the default reasoning mode becomes:
+
+`objective → selective memory activation → exact repository/runtime reconciliation → native self-assessment → uncertainty map → code/architecture introspection → first open causal edge → smallest discriminating experiment → capability-fit routing → independent verification → Knowledge Delta`.
+
+Do not treat IABV's own report as self-verifying.
+
+Preserve:
+`self-awareness ≠ systemic metacognition`
+`organ exists ≠ integrated circuit`
+`deep introspection ≠ causal learning`
+`metacognitive report ≠ future decision change`.
+
+## 2026-09-21 PROTOCOL ADDENDUM — REMOTE PROVENANCE GATE
+
+For every external-agent report that claims a material modification, require before auditor handoff:
+
+`REPORT → ARTIFACT → exact branch/ref → exact SHA → relevant working-tree provenance → remote read-back → claimed content present → runtime provenance when applicable → independent verification`.
+
+Minimum remote gate:
+1. SHA resolves remotely;
+2. branch/ref contains that SHA;
+3. changed file exists in the remote tree;
+4. remote content contains the claimed change;
+5. any claimed runtime artifact is tied to the exact tested revision.
+
+If any gate fails:
+- do not promote the implementation claim;
+- do not ask another actor to audit a nonexistent object;
+- preserve the provenance contradiction as negative knowledge;
+- route only to artifact recovery/publication.
+
+A successfully published artifact closes provenance identity, not runtime truth or causal closure.
+
+## 2026-09-21 PROTOCOL ADDENDUM — FIRST OPEN EDGE DISCIPLINE
+
+Once a claim reaches a stronger evidence state, advance only to the first still-open causal edge.
+
+For I0 M3 this currently means:
+`remote artifact verified → independent M3 audit`
+then, only if valid:
+`real Windows runtime`
+then:
+`observed external behavior`
+then:
+`independent verification`.
+
+Do not restart earlier archaeology or conflate unit/mutation evidence with runtime evidence.
