@@ -14255,7 +14255,7 @@ class ControlCenterViewModel(QObject):
             task_name='chat',
             timeout_s=self._CHAT_WORKER_TIMEOUT_S,
             dispatch_id=_dispatch_id,
-            origin_interaction_id=origin_interaction_id,  # P041-R4: Pass interaction identity to watchdog
+            origin_interaction_id=interaction_id,  # P041-R4: Pass interaction identity to watchdog
         )
 
     def _role_title_from_task(self, role: TaskRole) -> str:
