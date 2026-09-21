@@ -761,7 +761,7 @@ Current source proves an automatic path exists:
 
 `ExperimentRun → ExperimentRecommendation → ToolEvolutionMonitor → ToolEvolutionProposal → AutonomousValidationCycle → SandboxExperiment`.
 
-What remains unproven is whether a controlled change in the prior scientific outcome causes a different next proposal/experiment under otherwise matched conditions.
+BIO-R13A/B now provide runtime evidence that a controlled prior outcome change causes a different recommendation and ToolEvolutionProposal under matched conditions. What remains unproven is whether the resulting proposal causes a real executable experiment and observed outcome.
 
 Required experiment:
 - identical subject/objective/context;
@@ -775,7 +775,7 @@ Required experiment:
 ## UK-BIO-14 — Narrow causal seam before full harness
 **Status:** OPEN
 
-BIO-R13 was blocked before execution because a full deterministic runtime harness for `ToolEvolutionMonitor.build_status()` was not available.
+BIO-R13 execution is no longer blocked at the minimal seam: BIO-R13A and BIO-R13B have runtime-confirmed outcome→recommendation→proposal propagation. The remaining unresolved boundary is proposal→real experiment execution and independently observed outcome.
 
 The correct next question is not “build the full harness” but:
 
