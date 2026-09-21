@@ -537,3 +537,39 @@ New invariants:
 - `commit message claim != ancestry-wide invariant`.
 
 The I0 M3 artifact at `7753ce563...` demonstrates remote artifact provenance and independently reported mutation sensitivity. It does not close Windows runtime or I0.
+
+
+
+## 2026-09-21 TRANSFER 20 — BIOSOFÍA ARTIFICIAL AS DEVELOPMENTAL ORGANIZATION
+
+The collaboration model is now extended from AI-to-AI symbiosis to **developmental organization**.
+
+New strategic distinction:
+
+`symbiosis = coordination/knowledge transfer among actors`
+`development = causal acquisition of new reusable capability`
+`evolution = repeated generational variation + selection with heritable state`
+
+The target is to make existing IABV organs behave as a developmental substrate without prematurely creating a parallel brain.
+
+Candidate mapping:
+- environment coupling → EnvironmentSelfAwareness / WorldModel / Perception;
+- identity/boundary → SystemIdentityRegistry / OrganismStateSnapshot / governance;
+- memory/heredity substrate → InteractionLearning / ExperimentLab / PortableContext / provenance;
+- action → ToolRegistry / ToolCard / adapters / orchestration;
+- viability/control → SelfAudit / OSES / governance / authority;
+- selection → InteractionModeSelector / CapabilityReadiness / StrategySelector / AdaptiveWeightLayer;
+- experimentation → ExperimentLab / SandboxExperimentService / validation;
+- lineage → Git + evidence/provenance + future developmental lineage model.
+
+The new knowledge is not "these organs already form a digital organism". The knowledge is that they provide candidate substrate functions whose **causal composition** can now be tested.
+
+Persistent invariant:
+`organ exists != organ integrated into developmental circuit`
+
+New developmental invariant:
+`verified result → reusable capability → ability to participate in the next developmental cycle`
+
+The next important cross-IA transfer is therefore not another architecture report. It is evidence about whether IABV can use one verified capability to construct or enable another capability.
+
+
