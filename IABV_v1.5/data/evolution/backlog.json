@@ -534,5 +534,115 @@
     "completed_at": null,
     "evidence": "Source fix b3e211fbbe001d6c360071c04a83ea40cff48071 is remotely verified, but the supplied independent audit reports the regression fixture may bypass the exact historically failing branch. Direct re-audit is required before resuming the real credential/authentication boundary.",
     "depends_on": []
+  },
+  {
+    "id": "BIO-R01",
+    "title": "Formalizar sustrato mínimo desarrollativo artificial",
+    "area": "research",
+    "priority": "critical",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Define and test the minimal set of identity, environment coupling, state, action, viability, verification, variation, selection, construction and lineage properties required for cumulative artificial development.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R02",
+    "title": "Modelo de genotipo/fenotipo digital y heredabilidad",
+    "area": "research",
+    "priority": "high",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Determine what persistent developmental description can reconstruct a capability/organization and how it maps to observable phenotype; do not equate persistence with heredity.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R03",
+    "title": "Unidad desarrollativa reutilizando órganos existentes",
+    "area": "architecture",
+    "priority": "high",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Identify whether existing IABV contracts can express a bounded developmental unit before introducing any new constructor service.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R04",
+    "title": "Experimento déficit → variación → nueva capacidad verificada",
+    "area": "learning",
+    "priority": "critical",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Demonstrate that IABV can detect a capability deficit, propose a minimal variation, sandbox it, independently verify it and preserve the accepted result for later reuse.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R05",
+    "title": "Lineage parent → child y reconstrucción en cold restart",
+    "area": "learning",
+    "priority": "high",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Demonstrate reconstructible lineage and heredability of an accepted capability from a persisted developmental description.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R06",
+    "title": "Diferenciación y transición a unidad de nivel superior",
+    "area": "artificial_life",
+    "priority": "high",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Test specialization, communication, cooperation and mutual dependence among capability units and determine whether a higher-level capability emerges without manual central design.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R07",
+    "title": "Benchmark de evolución abierta",
+    "area": "artificial_life",
+    "priority": "high",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Apply novelty, change, complexity and ecological-potential metrics to determine whether repeated development remains generative rather than saturating.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R08",
+    "title": "Métrica longitudinal de desarrollo e interacción humana",
+    "area": "development_inflection",
+    "priority": "medium",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Measure verified reusable capability gained versus routine human coordination required across repeated developmental cycles.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R09",
+    "title": "Gobernanza, sandbox, rollback y límites de autodesarrollo",
+    "area": "governance",
+    "priority": "critical",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Formalize safety/provenance boundaries for self-development so observation, experiment, authorization and mutation remain causally separated.",
+    "depends_on": []
+  },
+  {
+    "id": "BIO-R10",
+    "title": "Metacognición propia como motor desarrollativo",
+    "area": "metacognition",
+    "priority": "critical",
+    "status": "pending",
+    "source": "biosofia_thesis_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "evidence": "Prove self-observation → deficit → hypothesis → experiment → independent verification → Knowledge Delta → future developmental decision.",
+    "depends_on": []
   }
 ]
