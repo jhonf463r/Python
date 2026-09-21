@@ -676,14 +676,29 @@
     "title": "Demostrar causalidad outcome científico → siguiente propuesta/experimento",
     "area": "scientific_metacognition",
     "priority": "critical",
-    "status": "pending",
+    "status": "blocked",
     "source": "current_source_reconciliation_2026-09-21",
     "created_at": "2026-09-21T00:00:00+00:00",
     "completed_at": null,
-    "evidence": "Current source contains an automatic ExperimentRun → ExperimentRecommendation → ToolEvolutionMonitor → ToolEvolutionProposal → AutonomousValidationCycle → SandboxExperiment path. Need a controlled outcome perturbation proving that different prior outcomes cause a different next proposal/experiment under matched conditions.",
+    "evidence": "Current source contains an automatic ExperimentRun → ExperimentRecommendation → ToolEvolutionMonitor → ToolEvolutionProposal → AutonomousValidationCycle → SandboxExperiment path. Need a controlled outcome perturbation proving that different prior outcomes cause a different next proposal/experiment under matched conditions. BIO-R13 execution report: branch devin/i0-external-route-target-fix-2026-09-20; HEAD f0c98ca1af756273f14a7fae65fafa9bd69a3a30; working tree had 5738 untracked files; Python 3.14.4 win32; no test/artifact/command executed. Verdict BLOCKED; no causal conclusion.",
     "depends_on": [
       "BIO-R11",
       "BIO-R12"
+    ],
+    "block_reason": "Deterministic runtime harness for ToolEvolutionMonitor.build_status() with complete control over repository/storage/adaptive-weight state was not available in this run. No CONTROL/TREATMENT execution occurred."
+  },
+  {
+    "id": "BIO-R14",
+    "title": "Auditar la arista causal mínima outcome → perfil/ranking/propuesta sin harness completo",
+    "area": "scientific_metacognition",
+    "priority": "critical",
+    "status": "pending",
+    "source": "bio_r13_blocked_2026-09-21",
+    "created_at": "2026-09-21T00:00:00+00:00",
+    "completed_at": null,
+    "evidence": "Find the narrowest existing deterministic seam that can discriminate whether a changed prior ExperimentRun outcome changes recommendation/profile/ranking/proposal, using existing pure-ish functions and test fixtures where possible. Avoid constructing the full ToolEvolutionMonitor runtime harness until the seam audit proves it is necessary.",
+    "depends_on": [
+      "BIO-R13"
     ]
   }
 ]
