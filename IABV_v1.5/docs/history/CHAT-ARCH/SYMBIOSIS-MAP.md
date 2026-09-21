@@ -416,3 +416,61 @@ This is a reusable architectural lesson for future assistants/tools, not a Devin
 Canonical adjudication:
 `CHAT-ARCH-2026-09-20-001-canonical-tool-owner-adjudication.md`
 
+## 2026-09-20/21 TRANSFER 17 — IABV MUST BEGIN USING ITS OWN SYMBIOTIC ORGANS
+
+The latest absorbed analysis adds a material methodological transition.
+
+### External versus internal symbiosis
+
+External symbiosis is operationally effective as a collaboration method:
+
+`ChatGPT ↔ GitHub ↔ Devin ↔ Sonnet ↔ runtime`.
+
+Internal symbiosis is only partially composed. IABV has the required organs, but a general causal circuit is not proven.
+
+### Reusable target circuit
+
+`objective → IABV self-assessment → uncertainty → capability-fit → actor/tool/resource → governed execution → observation → independent verification → Knowledge Delta → future selection`.
+
+The human should increasingly stop serving as the routine transport layer for context, prompt packaging, actor selection, result transport, routine verification routing and memory writeback. Human authority remains appropriate for permissions, security boundaries, substantive contradictions and insufficient evidence.
+
+### New capability-use rule
+
+When the user requests a deep current-state assessment of IABV, prefer the native IABV metacognitive organs as the **first analyzer** rather than immediately outsourcing the analysis to another AI.
+
+External AIs remain:
+- independent verifiers;
+- architectural adjudicators;
+- bounded implementers;
+- runtime observers;
+- narrow technical specialists.
+
+### New verification rule
+
+`AI agreement != symbiosis learning`.
+
+A cross-IA collaboration becomes durable knowledge only when it creates a demonstrable delta in:
+- `ΔK` knowledge;
+- `Δπ` method/policy;
+- `ΔB` observable behavior;
+- `ΔY` observable outcome.
+
+### P041 systemic lesson
+
+A local predicate change can alter classification, metadata, response routing, UI and guidance. Therefore self-assessment should include changed-surface and adversarial-neighbor analysis.
+
+### Role hypothesis update
+
+Keep the current capability model:
+- ChatGPT = synthesis/reconciliation/writeback;
+- Sonnet = independent audit;
+- Devin = bounded implementation/runtime;
+- Codex = difficult technical seam;
+- Opus 5 = genuine architecture/ownership contradiction.
+
+These are capability hypotheses, not fixed order or rankings.
+
+### Strategic inflection
+
+The next meaningful acceleration is not “connect more AIs”. It is “make IABV capable of finding its own next smallest discriminating experiment, then prove that the result changes a later decision.”
+
