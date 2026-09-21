@@ -602,3 +602,45 @@ The independent auditor reports a detached-worktree execution, traceback and wor
 Therefore the M3 causal verdict may be recorded as independently reported/reproduced, while the raw execution record remains second-order evidence until a preserved artifact exists.
 
 Do not downgrade the source/test conclusion, but do not invent a remotely preserved runtime trace that does not exist.
+
+
+## 2026-09-21 META-01 RECONCILIATION — REPORTED FIRST BREAK REQUIRES CORRECTION
+
+The Devin META-01 report classified the first causal break as:
+`PortableContext → Orchestrator consumption chain = CONSUMPTION_UNCLEAR`
+based on a simple bootstrap string check.
+
+Direct source read-back at the reported runtime HEAD
+`f0c98ca1af756273f14a7fae65fafa9bd69a3a30` refutes that classification as a valid causal break.
+
+Observed source chain:
+`bootstrap.PortableContextService`
+→ `TaskContextAssembler(... portable_context_service=self.portable_context_service)`
+→ `TaskContextAssembler._portable_context_summary()`
+→ `PortableContextPackage/current_package()`
+→ `TaskContext.metadata['portable_context_summary']`
+→ `AdaptiveTaskOrchestrator`
+→ `PerceptionSnapshot`
+→ `_build_decision_context()`
+→ `DecisionContext.metadata['portable_context_summary']`.
+
+Therefore:
+`PortableContext wired/propagated = OBSERVED`.
+
+However:
+`PortableContext summary → governance/routing causal influence = NOT PROVEN`.
+
+The current `AdaptiveTaskOrchestrator._build_governance()` signature does not consume `portable_context_summary` directly; it consumes live_audit, assistant_guidance, capability_snapshot, goal_context, intent, environment self-model, world model and related governance inputs. Portable context is then retained as DecisionContext metadata.
+
+Consequently the actual unresolved question is narrower and stronger:
+`PortableContext observed/propagated → decision-consumer causal influence`.
+
+Do not replace the report's first-break label with a new causal claim until an independent auditor traces the complete producer → consumer → decision path.
+
+This is a negative knowledge item:
+`simple string absence/presence check != causal consumption proof`.
+
+Required next action:
+independent Sonnet audit of META-01 at exact revision `f0c98ca1af756273f14a7fae65fafa9bd69a3a30`, explicitly challenging the reported first break and identifying the first actually unproven edge in the self-assessment-to-decision circuit.
+
+Do not instrument or modify production until this independent audit establishes the exact missing edge.
