@@ -663,5 +663,15 @@ Preserve:
 `SOURCE_AI → INTERPRETATION → CHALLENGER → CONTRADICTION/SUPPORT → IMPLEMENTER → OBSERVATION → RECONCILIATION → NEW INVARIANT → METHOD CHANGE`.
 
 The durable object is the changed method, not the agreement or prestige of any model.
+## 2026-09-21 PROTOCOL ADDENDUM — STRATEGIC IDEAS MUST BECOME RETRIEVABLE WORK
 
+When a conversation identifies a material unimplemented capability that can advance the project objective, do not leave it only in the transcript.
+
+Persist it in the appropriate canonical layer:
+- `UNRESOLVED-KNOWLEDGE.md` for the reasoning and uncertainty;
+- `data/evolution/backlog.json` for an executable pending task with priority and dependencies;
+- `CONTEXT-INDEX.md` when retrieval/routing changes;
+- a dated roadmap when multiple pending ideas require dependency-aware prioritization.
+
+A task entering the backlog is not evidence that its premise is proven. The backlog records an actionable hypothesis or known gap and must retain its evidence basis.
 
