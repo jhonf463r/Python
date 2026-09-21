@@ -644,3 +644,80 @@ Required next action:
 independent Sonnet audit of META-01 at exact revision `f0c98ca1af756273f14a7fae65fafa9bd69a3a30`, explicitly challenging the reported first break and identifying the first actually unproven edge in the self-assessment-to-decision circuit.
 
 Do not instrument or modify production until this independent audit establishes the exact missing edge.
+
+
+
+## 2026-09-21 — BIOSOFÍA ARTIFICIAL: NEW RESEARCH FRONTIER
+
+### UK-BIO-01 — Minimal developmental substrate is not yet formally identified
+
+The project now has a canonical thesis for an artificial developmental substrate:
+
+`identity/boundary + environment coupling + state/memory + action + viability + verification + variation + selection + construction/recombination + lineage/heredity`
+
+This is a research hypothesis, not a proven minimal set.
+
+Required next work is scientific comparison and ablation-style analysis to determine which properties are necessary, sufficient, or merely convenient for developmental behavior.
+
+### UK-BIO-02 — Developmental transition is not the same as learning
+
+Current evidence shows an experience can influence later tool/mode selection. That closes part of:
+
+`experience → memory → decision`
+
+It does not prove:
+
+`deficit → generated variation → verified new capability → inherited/reusable developmental unit`
+
+This distinction is now a permanent boundary.
+
+### UK-BIO-03 — Digital genotype/phenotype remains undefined
+
+A future developmental system needs a testable distinction between:
+- a persistent description capable of reconstructing a capability/organization;
+- the executable phenotype observed in an environment;
+- the lineage connecting parent and child.
+
+Do not call any current JSON, database row, commit or snapshot a genome merely because it persists.
+
+### UK-BIO-04 — Higher-order organization requires transition criteria
+
+Existing IABV organs must not be treated as a digital organism simply because there are many of them.
+
+Future experiments must test specialization, cooperation, communication, mutual dependence, shared viability and emergent higher-level capability.
+
+### UK-BIO-05 — Open-ended development is not yet demonstrated
+
+Long-running adaptation is not sufficient to establish open-ended evolution. Future longitudinal experiments must measure novelty/change/complexity/ecological potential and distinguish sustained developmental expansion from saturation or parameter tuning.
+
+### UK-BIO-06 — Metacognitive development remains open
+
+The strategic target is:
+
+`self-observation → deficit → hypothesis → experiment → independent verification → Knowledge Delta → future development decision`
+
+The full loop is not yet proven.
+
+### UK-BIO-07 — Research program should precede new architecture
+
+The new thesis identifies a major conceptual frontier. Before creating a new developmental constructor/genome manager/organism coordinator, perform architecture archaeology and capability-fit analysis against existing IABV organs.
+
+Negative knowledge:
+`new concept != new service`
+
+### BIO research task families
+
+Keep visible in the evolution backlog:
+- autopoiesis / organizational closure;
+- minimal developmental substrate;
+- digital genotype/phenotype;
+- developmental units;
+- lineage/heredability;
+- variation/selection/viability;
+- differentiation/major transitions;
+- synthetic transitions;
+- open-endedness metrics;
+- causal developmental experiments;
+- longitudinal development and human coordination;
+- governance of self-development.
+
