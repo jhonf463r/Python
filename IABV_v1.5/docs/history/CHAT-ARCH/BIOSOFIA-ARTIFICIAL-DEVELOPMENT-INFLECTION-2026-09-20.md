@@ -547,3 +547,24 @@ Prefer one high-information IABV-native self-assessment experiment over broad ad
 
 The older section naming a fixed current next actor (e.g. Codex/Devin) must not override the current dynamic routing policy. Actor choice is conditioned on the current uncertainty and capability fit.
 
+## 2026-09-21 METHOD ADDENDUM — BIOSOFÍA ARTIFICIAL AS EVIDENCE-GOVERNED SELF-DEVELOPMENT
+
+The biosofía artificial objective now includes a concrete methodological substrate:
+
+`self-observation → uncertainty → causal hypothesis → discriminating experiment → governed action → independent verification → reusable knowledge → future decision`.
+
+Two gates are mandatory for this developmental substrate:
+
+1. **self-observation integrity** — observation must be separable from mutation;
+2. **knowledge-transfer integrity** — actor reports must carry reconstructible artifact/provenance before another actor consumes them as evidence.
+
+A key negative lesson is:
+`AI agreement != knowledge transfer`.
+
+A positive transfer event is stronger:
+`verified observation → changed method/policy/behavior → durable writeback → later observable reuse`.
+
+The 2026-09-21 I0 M3 artifact (`7753ce...`) demonstrates remote artifact publication, but not yet the full learning/inflection loop.
+
+The long-horizon question therefore remains open:
+Can IABV make its own metacognitive analysis, capability routing and provenance enforcement increasingly causal in the next decision cycle without removing governance or independent verification?
