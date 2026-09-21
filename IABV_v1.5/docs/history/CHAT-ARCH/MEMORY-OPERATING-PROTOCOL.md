@@ -802,3 +802,16 @@ report
 
 The development target is not uncontrolled self-modification. It is governed, observable, reversible acquisition and organization of new capabilities.
 
+## 2026-09-21 PROTOCOL ADDENDUM — GLOBAL DEVELOPMENT CONTINUITY
+
+For objectives involving biosofía artificial, autonomous development, scientific self-analysis, developmental acceleration, or reduction of routine human coordination, activate first:
+
+`00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`
+
+Then reconcile `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `SYMBIOSIS-MAP.md`, `UNRESOLVED-KNOWLEDGE.md`, the relevant biosofía thesis/roadmap, and the exact current branch/SHA/runtime.
+
+The strategic objective is not unrestricted autonomy. It is to make verified experience causally reusable while progressively removing routine human transport from the loop and preserving governance, security and independent verification.
+
+Scientific-organ rule: do not create a new coordinator merely because scientific functions are distributed. First trace existing producer→consumer edges and determine whether the missing boundary is ownership, wiring, invocation, observation or causal effect.
+
+Development-inflection rule: “exponential” is a research hypothesis. Promote it only after longitudinal evidence of compounding verified capability generation per unit of routine human coordination.
