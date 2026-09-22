@@ -1,0 +1,6 @@
+BIO-R15E artifact SHA-256 (hex, UTF-8/LF bytes as committed)
+5445DE02BF8D82CEBE916143C506AA9C1113C4AFBA191E4F265D38C7FB1415CE  IABV_v1.5/tests/experiments/test_bio_r15e_learned_preference_to_toolcard_adapter.py
+40637CDF3668E10A8F60B40011C5944B17B3AF60459C0C30997D8A1928AA4A7E  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-TOOLCARD-ADAPTER-STDOUT-2026-09-22.txt
+BF4E1B05CA068F9E607A944CDCDDC70EB42342F6D607C49A6865F0615675D85F  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-TOOLCARD-ADAPTER-EVIDENCE-2026-09-22.md
+
+The manifest cannot include its own SHA-256 without self-reference. Its SHA-256 and Git blob ID are recorded alongside the other three artifacts in the final provenance report and are reproducible from the committed bytes.
