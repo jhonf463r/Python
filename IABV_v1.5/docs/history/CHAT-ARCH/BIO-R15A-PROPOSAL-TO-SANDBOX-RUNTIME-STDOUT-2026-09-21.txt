@@ -1,0 +1,51 @@
+{
+  "control": {
+    "proposal": {
+      "candidate_assistant_kind": "codex",
+      "candidate_route": "code_agent",
+      "current_assistant_kind": "chatgpt",
+      "current_route": "language_understanding",
+      "proposal_id": "bio-r15a-proposal-control",
+      "proposal_key": "bio-r15a:proposal-to-sandbox|validate_replacement|language_understanding|chatgpt|chatgpt-browser|code_agent|codex|codex-plan",
+      "proposal_kind": "validate_replacement",
+      "subject_key": "bio-r15a:proposal-to-sandbox"
+    },
+    "recommendation": {
+      "confidence": 0.84,
+      "proposal_key": "bio-r15a:proposal-to-sandbox|validate_replacement|language_understanding|chatgpt|chatgpt-browser|code_agent|codex|codex-plan",
+      "reason": "bio-r15a-control:validate_replacement",
+      "recommended_assistant_kind": "chatgpt",
+      "recommended_config_signature": "chatgpt-browser",
+      "recommended_route": "language_understanding",
+      "score": 0.42
+    },
+    "sandbox_experiment": {
+      "baseline_assistant_kind": "chatgpt",
+      "candidate_assistant_kind": "codex",
+      "evidence_strength": 0.658,
+      "experiment_id": "c6eab636-8218-4749-97b6-fe1c07c7a538",
+      "promote_to_primary": false,
+      "sandbox_subject_key": "sandbox:bio-r15a:proposal-to-sandbox",
+      "status": "observed",
+      "verdict": "doubtful"
+    },
+    "snapshot": {
+      "inertia_reason": "",
+      "last_experiment_id": "c6eab636-8218-4749-97b6-fe1c07c7a538",
+      "paused_reason": "",
+      "status": "deferred"
+    }
+  },
+  "treatment": {
+    "proposal_available": false,
+    "sandbox_experiments_returned": 0,
+    "snapshot": {
+      "inertia_reason": "not_evaluated_no_candidate",
+      "paused_reason": "",
+      "status": "idle_empty"
+    },
+    "validate_recommendation_calls": 0
+  }
+}
+.
+1 passed in 1.96s
