@@ -1,0 +1,5 @@
+BIO-R15F SHA-256 manifest (manifest does not hash itself)
+
+92811f536555ece18e0f06112d03ef04af862c6ef413b0bb0a0af727fa4b6293  IABV_v1.5/tests/experiments/test_bio_r15f_approved_adapter_body_runtime.py
+7d941c6441d545fa39aff26e3632e4e58e938afcc941bff346cefb4a5ffbf614  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15F-APPROVED-ADAPTER-BODY-STDOUT-2026-09-22.txt
+30da439144c61a9aa7b26f2f8e908645b60fb39bc1305dcea6771e99f3816275  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15F-APPROVED-ADAPTER-BODY-EVIDENCE-2026-09-22.md

@@ -1,0 +1,25 @@
+BIO-R15F — execution transcript
+Date: 2026-09-22 (America/Bogota)
+Repository base: 23f17bd2a1895fe12412f20884951cc0b5ccebfa
+Branch: codex/bio-r15f-approved-adapter-body-runtime-2026-09-22
+Worktree: C:\Users\faber\.codex\worktrees\bio-r15f-approved-adapter-body-runtime\Python
+Project: C:\Users\faber\.codex\worktrees\bio-r15f-approved-adapter-body-runtime\Python\IABV_v1.5
+
+Attempt 1 (draft later removed; collection failure only):
+$env:PYTHONPATH=(Join-Path (Get-Location) 'IABV_v1.5\src'); & 'C:\Users\faber\miniconda3\python.exe' -m pytest -p no:cacheprovider 'IABV_v1.5\tests\experiments\test_bio_r15f_approved_adapter_body_runtime.py' -q -s
+Observed output: ERROR collecting test_bio_r15f_approved_adapter_body_runtime.py; ModuleNotFoundError: No module named 'test_bio_r15e_learned_preference_to_toolcard_adapter'.
+Exit code: 1. No test body ran; no runtime experiment occurred. The invalid cross-worktree import draft was removed.
+
+Admission check (current committed harness):
+$env:PYTHONPATH=(Join-Path (Get-Location) 'IABV_v1.5\src'); & 'C:\Users\faber\miniconda3\python.exe' -m pytest -p no:cacheprovider 'IABV_v1.5\tests\experiments\test_bio_r15f_approved_adapter_body_runtime.py' -q -s
+Observed result: 1 passed. This test asserts only that the required R15E harness file is absent at the required base. It is not a runtime test.
+
+Runtime facts:
+- Exact R15E fixture at this base: absent.
+- Manually constructed replacement ToolTask: no.
+- execute_task(approved=True, launch_dry_run=False): not invoked.
+- Synthetic runner invocations: 0.
+- Browser/app/process/clipboard/HTTP/credentials/prompt/external effects: none.
+- R15D/R15E reruns: no.
+
+Conclusion: R15F requested runtime boundary remains OPEN at approval -> ExternalAssistantToolAdapter.run(sandbox=False). Result classification PARTIAL; no causal closure claimed.
