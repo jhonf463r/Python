@@ -76,6 +76,13 @@ class AutonomousEvolutionService:
 
     def plan_or_execute(self, *, adaptive_payload: dict[str, Any], user_goal: str, source: str, decision_context: DecisionContext | dict[str, Any] | None = None) -> dict[str, Any]:
         payload = dict(adaptive_payload or {})
+        # Extract portable_context_summary from decision_context for external context path
+        portable_context_summary = {}
+        if decision_context is not None:
+            if isinstance(decision_context, dict):
+                portable_context_summary = dict(decision_context.get('metadata', {}).get('portable_context_summary') or {})
+            else:
+                portable_context_summary = dict(decision_context.metadata.get('portable_context_summary') or {})
         assessment = self._assessment_from_decision_context(decision_context) or self._assess(payload=payload, user_goal=user_goal)
         if assessment.get('action') == 'request_observation_permission' and not assessment.get('should_consult'):
             permission = self._request_observation_permission(
@@ -127,6 +134,7 @@ class AutonomousEvolutionService:
             user_goal=user_goal,
             pending_issue_id=pending_issue.issue_id if pending_issue is not None else '',
             query=query,
+            portable_context_summary=portable_context_summary,
         )
         # autonomous_external_launch controla el modo de ejecución (dry-run vs real)
         # NO controla governance approval. Son conceptos distintos.
@@ -365,6 +373,13 @@ class AutonomousEvolutionService:
 
     def preview_plan(self, *, adaptive_payload: dict[str, Any], user_goal: str, source: str, decision_context: DecisionContext | dict[str, Any] | None = None) -> dict[str, Any]:
         payload = dict(adaptive_payload or {})
+        # Extract portable_context_summary from decision_context for external context path
+        portable_context_summary = {}
+        if decision_context is not None:
+            if isinstance(decision_context, dict):
+                portable_context_summary = dict(decision_context.get('metadata', {}).get('portable_context_summary') or {})
+            else:
+                portable_context_summary = dict(decision_context.metadata.get('portable_context_summary') or {})
         assessment = self._assessment_from_decision_context(decision_context) or self._assess(payload=payload, user_goal=user_goal)
         requested_assistant_kind = str(assessment.get('assistant_kind') or '')
         live_audit = self._live_audit(payload)
@@ -397,6 +412,7 @@ class AutonomousEvolutionService:
             user_goal=user_goal,
             pending_issue_id=pending_issue_id,
             query=query,
+            portable_context_summary=portable_context_summary,
         )
         preview = self.tool_teach_service.preview_external_consultation(
             user_goal=user_goal,
@@ -1036,6 +1052,7 @@ class AutonomousEvolutionService:
         user_goal: str,
         pending_issue_id: str,
         query: IncidentQuery,
+        portable_context_summary: dict[str, Any] | None = None,
     ) -> str:
         packet = self.incident_packet_service.build_codex_packet_for_issue(query)
         live_audit = self._live_audit(payload)
@@ -1052,6 +1069,16 @@ class AutonomousEvolutionService:
             lines.append(f'Sitio: {self._site_id(payload)}')
         if live_audit.get('summary'):
             lines.append(f"Auditoria viva: {live_audit.get('summary')}")
+        # Include ControlMaster work queue state from portable_context_summary
+        if portable_context_summary:
+            work_queue = portable_context_summary.get('canonical_work_queue', {})
+            if work_queue.get('items'):
+                lines.append(f"Cola de trabajo prioritaria: {work_queue.get('summary', '')}")
+                critical_items = [item for item in work_queue.get('items', []) if item.get('priority_label') in {'CRITICAL', 'HIGH'}]
+                if critical_items:
+                    lines.append(f"Items criticos: {len(critical_items)}")
+                    for item in critical_items[:2]:
+                        lines.append(f"  - {item.get('title', '')} (prioridad: {item.get('priority_label', '')})")
         if assistant_kind in {'chatgpt', 'claude'}:
             lines.append('Objetivo de la consulta: explicar el bloqueo, contrastar el siguiente paso seguro y no mezclar esta consulta con un hilo de otro asistente.')
         elif assistant_kind == 'ollama':
