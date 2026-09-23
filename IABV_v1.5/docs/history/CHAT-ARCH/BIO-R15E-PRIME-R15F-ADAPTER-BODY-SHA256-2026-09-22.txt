@@ -1,0 +1,11 @@
+BIO-R15E′ + R15F SHA-256 manifest; this manifest does not hash itself.
+All fixture files are retained under IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-RUNTIME-2026-09-22/control/.
+
+54b2071494644f006c978e04d5371021e1a5ec6b1848dc744b8dfcb83247fbc3  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-RUNTIME-2026-09-22/control/environment.json
+9555ea72813766644d1f25b0d7c0fb64c0ce1a15edc2d2d7e6d6cf42e9ba653a  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-RUNTIME-2026-09-22/control/app.sqlite
+aa4d924a2bd891be1dc3ce73a73e3cf894a29cf228801308bc42e411110f628c  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-RUNTIME-2026-09-22/control/tool_teaching/tasks/8c1413f6-e3ce-46dc-9cd1-4da2ae4a94d3.json
+87cb9191291cc5052af49b4c60cc51154d4bc5f3f9de614bc080545f6a4b9259  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-RUNTIME-2026-09-22/control/tool_teaching/cards/chatgpt_web_assisted.json
+208012163e94180a861df2f10d8d3f84f6d27e0dda0d9b1958a339bfd7b4152a  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-RUNTIME-2026-09-22/control/fixture.json
+9f9ecc423cd1bb3c4aea4df610a73152841ab8e3f9b7e8c83d8ff3a29683e729  IABV_v1.5/tests/experiments/test_bio_r15e_prime_to_r15f_adapter_body_runtime.py
+291c5dce7aaf6b965f19a2d18af9af340e6e5a0a07eb36658c9684fe8bd4be8b  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-R15F-ADAPTER-BODY-STDOUT-2026-09-22.txt
+888464b132746f34bc3d882b7ee7ce0baea844a0a4cab57d2c36606e4698b59c  IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-R15F-ADAPTER-BODY-EVIDENCE-2026-09-22.md

@@ -1,0 +1,58 @@
+{
+  "tool_id": "gh_cli",
+  "title": "GitHub CLI",
+  "tool_type": "shell",
+  "description": "CLI oficial de GitHub para operar auth, repos, PRs e issues desde linea de comandos. Observacion read-only por default; escritura real queda detras de ToolApprovalPolicy.",
+  "adapter_key": "local_cli",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": false,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "check_version",
+    "check_auth_status",
+    "inspect_repo",
+    "list_prs",
+    "list_issues"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "tool_family": "github",
+    "launch_mode": "local_cli",
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "command_name": "gh",
+    "command_aliases": [
+      "gh.exe"
+    ],
+    "windows_default_paths": [
+      "{userprofile}\\.iabv\\tools\\gh\\bin\\gh.exe",
+      "{userprofile}\\.iabv\\tools\\gh\\gh_*_windows_amd64\\bin\\gh.exe",
+      "{programfiles}\\GitHub CLI\\gh.exe",
+      "{programfiles}\\GitHub CLI\\bin\\gh.exe"
+    ],
+    "version_command": "--version",
+    "allowed_verbs": [
+      "--version",
+      "version",
+      "auth",
+      "api",
+      "repo",
+      "pr",
+      "issue",
+      "release",
+      "run",
+      "status",
+      "search",
+      "browse"
+    ],
+    "notes": "Escritura (gh repo create, gh pr merge, gh release create) requiere approval via ToolApprovalPolicy.",
+    "updated_at_utc": "2026-09-23T01:04:13.042957+00:00"
+  }
+}

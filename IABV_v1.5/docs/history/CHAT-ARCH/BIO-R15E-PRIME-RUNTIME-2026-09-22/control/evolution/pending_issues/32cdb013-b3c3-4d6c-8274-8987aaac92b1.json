@@ -1,0 +1,28 @@
+{
+  "issue_id": "32cdb013-b3c3-4d6c-8274-8987aaac92b1",
+  "created_at_utc": "2026-09-23T01:04:12.959654Z",
+  "status": "needs_fix",
+  "scenario_id": "",
+  "goal": "code bio r15d learned preference tooltask",
+  "category": "need_codex_fix",
+  "summary": "matched technical trigger",
+  "probable_cause": "matched technical consultation trigger El historico reciente favorece chatgpt.",
+  "unresolved_reason": "matched technical consultation trigger El historico reciente favorece chatgpt.",
+  "run_id": null,
+  "episode_id": null,
+  "session_id": null,
+  "evidence_refs": [],
+  "runtime_adjustments": [],
+  "recommended_change": "matched technical consultation trigger El historico reciente favorece chatgpt.",
+  "suggested_tests": [
+    "code bio r15d learned preference tooltask",
+    "Revisar Centro Evolutivo"
+  ],
+  "metadata": {
+    "autonomous_evolution": true,
+    "assistant_kind": "chatgpt",
+    "source": "bio-r15e-prime",
+    "site_id": "",
+    "intent_key": ""
+  }
+}

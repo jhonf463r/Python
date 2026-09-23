@@ -1,0 +1,25 @@
+{
+  "tool_id": "mcp_client",
+  "title": "MCP client",
+  "tool_type": "mcp_client",
+  "description": "Cliente MCP para auto-inspeccion y conectores externos.",
+  "adapter_key": "mcp",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": true,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "mcp_call"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "server_url": "http://127.0.0.1:8000",
+    "updated_at_utc": "2026-09-23T01:04:13.194353+00:00"
+  }
+}

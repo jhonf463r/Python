@@ -1,0 +1,45 @@
+{
+  "tool_id": "github_api",
+  "title": "GitHub (REST + GraphQL)",
+  "tool_type": "mcp_client",
+  "description": "Operaciones nativas sobre GitHub (PRs, issues, auto-merge) via API REST y GraphQL sin navegador.",
+  "adapter_key": "github_api",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": true,
+  "supports_write": true,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "github_read_pr",
+    "github_create_pr",
+    "github_merge_pr",
+    "github_enable_auto_merge",
+    "github_comment_issue",
+    "github_list_issues",
+    "github_list_prs"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "tool_family": "github",
+    "launch_mode": "api",
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "session_scope": "api_call",
+    "mutates_remote_state": true,
+    "supported_actions": [
+      "read_pr",
+      "create_pr",
+      "merge_pr",
+      "enable_auto_merge",
+      "comment_issue",
+      "list_issues",
+      "list_prs"
+    ],
+    "updated_at_utc": "2026-09-23T01:04:13.112914+00:00"
+  }
+}

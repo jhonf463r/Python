@@ -1,0 +1,62 @@
+{
+  "tool_id": "git_cli",
+  "title": "Git CLI",
+  "tool_type": "shell",
+  "description": "CLI de git para inspeccion local (status, log, diff, remote, rev-parse). Operaciones destructivas (reset --hard, push --force) quedan bloqueadas por BLOCKED_TOKENS.",
+  "adapter_key": "local_cli",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": false,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "check_version",
+    "status",
+    "log",
+    "diff",
+    "remote",
+    "branch_list",
+    "rev_parse"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "tool_family": "git",
+    "launch_mode": "local_cli",
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "command_name": "git",
+    "command_aliases": [
+      "git.exe"
+    ],
+    "windows_default_paths": [
+      "{programfiles}\\Git\\cmd\\git.exe",
+      "{programfiles}\\Git\\bin\\git.exe",
+      "{programfilesx86}\\Git\\cmd\\git.exe"
+    ],
+    "version_command": "--version",
+    "allowed_verbs": [
+      "--version",
+      "version",
+      "status",
+      "log",
+      "diff",
+      "remote",
+      "branch",
+      "rev-parse",
+      "show",
+      "config",
+      "describe",
+      "ls-files",
+      "ls-remote",
+      "shortlog",
+      "tag"
+    ],
+    "notes": "Commits, pushes y rebase quedan fuera del allowlist; pasan por ToolApprovalPolicy o por el flow manual del usuario.",
+    "updated_at_utc": "2026-09-23T01:04:13.026126+00:00"
+  }
+}

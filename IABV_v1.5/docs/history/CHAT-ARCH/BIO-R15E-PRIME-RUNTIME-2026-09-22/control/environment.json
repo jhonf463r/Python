@@ -1,0 +1,17 @@
+{
+  "base_sha": "23f17bd2a1895fe12412f20884951cc0b5ccebfa",
+  "branch": "codex/bio-r15e-prime-r15f-adapter-body-runtime-2026-09-22",
+  "os": "Windows 11 build 10.0.26200.0",
+  "python": "3.13.2 | packaged by Anaconda, Inc. | 64-bit AMD64",
+  "pytest_command": "$env:PYTHONPATH=(Join-Path (Get-Location) 'IABV_v1.5\\src'); & 'C:\\Users\\faber\\miniconda3\\python.exe' -m pytest -p no:cacheprovider 'IABV_v1.5\\tests\\experiments\\test_bio_r15e_prime_to_r15f_adapter_body_runtime.py' -q -s",
+  "r15e_prime_exit_code": 0,
+  "r15e_prime_duration_seconds": 4.61,
+  "r15e_prime_runtime_executions": 1,
+  "r15f_approved_resume_invocations": 0,
+  "runner_invocations": 0,
+  "stdout_preservation": "initial R15E-prime pytest stdout was not redirected; later report-only fixture readback stdout is preserved separately",
+  "stderr_preservation": "no distinct stderr artifact was captured",
+  "source_r15e_commit": "7093802c141e46cecba2cebbb44d6ab966538d7d",
+  "source_r15e_harness_blob": "463c8b0b9bf00488948d4d3cf4ef8e2b9bf9e6e1",
+  "fixture_root": "IABV_v1.5/docs/history/CHAT-ARCH/BIO-R15E-PRIME-RUNTIME-2026-09-22/control"
+}

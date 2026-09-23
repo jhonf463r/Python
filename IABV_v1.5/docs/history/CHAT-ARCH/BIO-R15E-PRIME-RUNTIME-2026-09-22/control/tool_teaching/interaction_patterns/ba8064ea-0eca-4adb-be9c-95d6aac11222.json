@@ -1,0 +1,63 @@
+{
+  "pattern_id": "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+  "signature": "6a57800cf23c742e7666f595842f5aed87279ff6",
+  "title": "Consultar ChatGPT",
+  "channel": "ui",
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "site_id": null,
+  "operations": [
+    {
+      "step_id": "5aba9bf7-a18a-4df3-b8c6-8b1189fa3583",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false
+      }
+    },
+    {
+      "step_id": "5cafb0d2-62ea-49b3-bb23-789f13fd5ec9",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false
+      }
+    }
+  ],
+  "reusable": true,
+  "success_count": 1,
+  "failure_count": 0,
+  "last_task_id": "8c1413f6-e3ce-46dc-9cd1-4da2ae4a94d3",
+  "last_result_id": "1984ee0d-e91d-4a20-9e06-9af111b1716c",
+  "created_at_utc": "2026-09-23T01:04:13.874525Z",
+  "updated_at_utc": "2026-09-23T01:04:13.874525Z",
+  "metadata": {
+    "objective_excerpt": "Consultar ChatGPT sobre: code bio r15d learned preference tooltask",
+    "execution_scope": "read_only",
+    "approval_decision": "pending",
+    "last_validation_status": "sandbox_pass",
+    "last_execution_state": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "last_interaction_episode_id": "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20"
+  }
+}

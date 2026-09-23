@@ -1,0 +1,610 @@
+{
+  "interaction_episode_id": "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20",
+  "objective": "Consultar ChatGPT sobre: code bio r15d learned preference tooltask",
+  "mode_used": "ui",
+  "environment": {
+    "tool_id": "chatgpt_web_assisted",
+    "tool_type": "llm_web_ui",
+    "adapter_key": "external_assistant",
+    "site_id": "",
+    "execution_scope": "read_only"
+  },
+  "captured_metadata": {
+    "task_metadata": {
+      "goal_parameters": {
+        "objective_id": "",
+        "objective_title": "",
+        "project_id": "",
+        "project_title": "",
+        "task_id": "",
+        "task_title": "",
+        "goal_status": "",
+        "goal_progress": 0.0,
+        "goal_blocker": "",
+        "goal_confidence": 0.0,
+        "assistant_preference": "chatgpt",
+        "assistant_kind": "chatgpt",
+        "explicit_external_consultation": false,
+        "reingest_existing_response": false,
+        "tool_id": "chatgpt_web_assisted",
+        "allowed_tool_ids": [
+          "chatgpt_installed",
+          "chatgpt_web_assisted",
+          "ollama_llm"
+        ],
+        "title": "Consultar ChatGPT",
+        "expected_outcome": "Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+        "context_pack": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nObjetivo: code bio r15d learned preference tooltask\nAsistente elegido: chatgpt\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nIABV_QUERY_ID: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nObjetivo de la consulta: explicar el bloqueo, contrastar el siguiente paso seguro y no mezclar esta consulta con un hilo de otro asistente.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas sugeridas: <1 a 3 pruebas cortas separadas por coma>\nfile_scope: <rutas src/tests si aplica; si no aplica, escribe n/a>\nResumen estructurado del caso:\nDiagnostico actual: matched technical trigger\nIncidente dominante: n/d\nEvidencia util: sin evidencia adicional\nSi identificas que este caso ya requiere parche tecnico o cambio de repo, dilo explicitamente en el cambio recomendado.\nPaquete tecnico complementario:\nPaquete para Codex - Pendiente Self-Teacher IABV v1.5\n\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nEscenario: \nRun: n/d\nEpisode: n/d\nSession: n/d\n\nDiagnostico breve:\nmatched technical trigger\n\nCausa raiz probable:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nEvidencia referenciada:\n- sin evidencia adicional\n\nAjustes runtime intentados:\nsin tuning runtime previo\n\nCambio vertical recomendado:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nPruebas sugeridas:\ncode bio r15d learned preference tooltask, Revisar Centro Evolutivo\n\nRiesgos o tradeoffs:\nSeguir solo con tuning runtime puede ocultar el problema real; conviene corregir la integracion de fondo.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask\nIABV_THREAD_TITLE: IABV ChatGPT | code bio r15d learned preference tooltask\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "consultation_scope": "external_assistant",
+        "response_capture_mode": "dom_capture",
+        "requires_manual_pasteback": false,
+        "prompt_template_id": "chatgpt_web_consult_v1",
+        "execution_scope": "read_only",
+        "diagnostic_category": "need_codex_fix",
+        "incident_kind": "",
+        "site_id": "",
+        "lab_recommendation": {},
+        "dry_run_launch": true,
+        "allow_local_automatic_consultation": true,
+        "session_scope": "program_chat",
+        "isolated_session_required": true,
+        "session_label": "ChatGPT especial de IABV",
+        "thread_key": "iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask",
+        "thread_title": "IABV ChatGPT | code bio r15d learned preference tooltask",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      },
+      "created_at_utc": "2026-09-23T01:04:13.797743+00:00",
+      "updated_at_utc": "2026-09-23T01:04:13.797743+00:00",
+      "mode_selection": {
+        "decision_id": "01afb15a-2f05-47da-8337-53f8817516e2",
+        "selector_name": "universal_mode_selector",
+        "selected_mode": "ui",
+        "selected_tool_id": "chatgpt_web_assisted",
+        "selected_tool_type": "llm_web_ui",
+        "adapter_exists": true,
+        "available": true,
+        "fallback_used": false,
+        "already_resolved": false,
+        "equivalent_pattern_exists": false,
+        "improvement_already_implemented": false,
+        "reusable_pattern_id": null,
+        "reusable_episode_id": null,
+        "scores": {
+          "availability": 1.0,
+          "adapter_exists": 1.0,
+          "desired_match": 1.0,
+          "suggested_match": 1.0,
+          "automatic_capture": 1.0,
+          "total": 5.0
+        },
+        "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+        "metadata": {
+          "desired_modes": [
+            "background",
+            "ui"
+          ],
+          "candidate_ranking": [
+            {
+              "tool_id": "chatgpt_web_assisted",
+              "mode": "ui",
+              "score": 5.0
+            }
+          ],
+          "selection_policy": "preferred_external_tool"
+        }
+      },
+      "synaptic_routing_decision": {},
+      "synaptic_preferred_assistant_kind": "",
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reuse_guard_active": false,
+      "reused_pattern_id": "",
+      "reused_episode_id": "",
+      "adapter_exists": true,
+      "selected_mode": "ui",
+      "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "requested_tool_id": "chatgpt_web_assisted",
+      "reused_actions_from_pattern": false,
+      "requested_assistant_kind": "chatgpt",
+      "assistant_kind": "chatgpt",
+      "actual_assistant_kind": "chatgpt",
+      "consultation_scope": "external_assistant",
+      "response_capture_mode": "dom_capture",
+      "requires_manual_pasteback": false,
+      "diagnostic_category": "need_codex_fix",
+      "incident_kind": "",
+      "dry_run_launch": true,
+      "lab_recommendation": {},
+      "context_pack": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nObjetivo: code bio r15d learned preference tooltask\nAsistente elegido: chatgpt\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nIABV_QUERY_ID: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nObjetivo de la consulta: explicar el bloqueo, contrastar el siguiente paso seguro y no mezclar esta consulta con un hilo de otro asistente.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas sugeridas: <1 a 3 pruebas cortas separadas por coma>\nfile_scope: <rutas src/tests si aplica; si no aplica, escribe n/a>\nResumen estructurado del caso:\nDiagnostico actual: matched technical trigger\nIncidente dominante: n/d\nEvidencia util: sin evidencia adicional\nSi identificas que este caso ya requiere parche tecnico o cambio de repo, dilo explicitamente en el cambio recomendado.\nPaquete tecnico complementario:\nPaquete para Codex - Pendiente Self-Teacher IABV v1.5\n\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nEscenario: \nRun: n/d\nEpisode: n/d\nSession: n/d\n\nDiagnostico breve:\nmatched technical trigger\n\nCausa raiz probable:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nEvidencia referenciada:\n- sin evidencia adicional\n\nAjustes runtime intentados:\nsin tuning runtime previo\n\nCambio vertical recomendado:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nPruebas sugeridas:\ncode bio r15d learned preference tooltask, Revisar Centro Evolutivo\n\nRiesgos o tradeoffs:\nSeguir solo con tuning runtime puede ocultar el problema real; conviene corregir la integracion de fondo.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask\nIABV_THREAD_TITLE: IABV ChatGPT | code bio r15d learned preference tooltask\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "comparison_scope_key": "general:consultar-chatgpt-sobre-code-bio-r15d-learned-preference-tooltask",
+      "source_trace_ids": [],
+      "proposal_summary": "Consulta autonoma IABV v1.5 Workspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control Objetivo: code bio r15d learned preference too",
+      "thread_key": "iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask",
+      "thread_title": "IABV ChatGPT | code bio r15d learned preference tooltask",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile",
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session_required": true,
+      "background_capture_mode": "browser_dom",
+      "assistant_configuration": {
+        "planning_mode": "without_plan",
+        "attachments_mode": "without_files",
+        "reasoning_level": "extended",
+        "context_mode": "long",
+        "tools_mode": "with_tools",
+        "browser_mode": "with_browser",
+        "assistant_mode": "code",
+        "origin_mode": "external",
+        "unresolved_fields": [
+          "attachments_mode"
+        ],
+        "metadata": {
+          "assistant_kind": "chatgpt",
+          "tool_id": "chatgpt_web_assisted",
+          "attachments_support": "UNRESOLVED",
+          "context_pack_length": 2277
+        }
+      },
+      "config_signature": "without_plan|without_files|extended|long|with_tools|with_browser|code|external",
+      "ia_trace_entry": {
+        "trace_id": "6fd37754-3340-40e3-bff3-4d033abdd7e6",
+        "created_at_utc": "2026-09-23T01:04:13.800641Z",
+        "assistant_kind": "chatgpt",
+        "requested_assistant_kind": "chatgpt",
+        "actual_assistant_kind": "chatgpt",
+        "assistant_configuration": {
+          "planning_mode": "without_plan",
+          "attachments_mode": "without_files",
+          "reasoning_level": "extended",
+          "context_mode": "long",
+          "tools_mode": "with_tools",
+          "browser_mode": "with_browser",
+          "assistant_mode": "code",
+          "origin_mode": "external",
+          "unresolved_fields": [
+            "attachments_mode"
+          ],
+          "metadata": {
+            "assistant_kind": "chatgpt",
+            "tool_id": "chatgpt_web_assisted",
+            "attachments_support": "UNRESOLVED",
+            "context_pack_length": 2277
+          }
+        },
+        "config_signature": "without_plan|without_files|extended|long|with_tools|with_browser|code|external",
+        "comparison_scope_key": "general:consultar-chatgpt-sobre-code-bio-r15d-learned-preference-tooltask",
+        "source_trace_ids": [],
+        "route": "ui",
+        "tool_id": "chatgpt_web_assisted",
+        "task_id": "8c1413f6-e3ce-46dc-9cd1-4da2ae4a94d3",
+        "result_id": "",
+        "session_scope": "program_chat",
+        "thread_key": "iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask",
+        "thread_title": "IABV ChatGPT | code bio r15d learned preference tooltask",
+        "capture_lane": "background",
+        "state": "pending",
+        "detail": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "proposal_summary": "Consulta autonoma IABV v1.5 Workspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control Objetivo: code bio r15d learned preference too",
+        "outcome_summary": "",
+        "result_label": "Consultar ChatGPT",
+        "success": false,
+        "execution_ms": 0,
+        "confidence": 0.0,
+        "evidence_refs": [
+          "8c1413f6-e3ce-46dc-9cd1-4da2ae4a94d3"
+        ],
+        "reused_later": false,
+        "verdict": "",
+        "coherence_flags": [],
+        "external_state_flags": [],
+        "metadata": {
+          "response_capture_mode": "dom_capture",
+          "background_capture_mode": "browser_dom",
+          "comparison_scope_key": "general:consultar-chatgpt-sobre-code-bio-r15d-learned-preference-tooltask"
+        }
+      },
+      "background_headless": true,
+      "approval_required": true,
+      "destructive": false
+    },
+    "execution_metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nObjetivo: code bio r15d learned preference tooltask\nAsistente elegido: chatgpt\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nIABV_QUERY_ID: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nObjetivo de la consulta: explicar el bloqueo, contrastar el siguiente paso seguro y no mezclar esta consulta con un hilo de otro asistente.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas sugeridas: <1 a 3 pruebas cortas separadas por coma>\nfile_scope: <rutas src/tests si aplica; si no aplica, escribe n/a>\nResumen estructurado del caso:\nDiagnostico actual: matched technical trigger\nIncidente dominante: n/d\nEvidencia util: sin evidencia adicional\nSi identificas que este caso ya requiere parche tecnico o cambio de repo, dilo explicitamente en el cambio recomendado.\nPaquete tecnico complementario:\nPaquete para Codex - Pendiente Self-Teacher IABV v1.5\n\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nEscenario: \nRun: n/d\nEpisode: n/d\nSession: n/d\n\nDiagnostico breve:\nmatched technical trigger\n\nCausa raiz probable:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nEvidencia referenciada:\n- sin evidencia adicional\n\nAjustes runtime intentados:\nsin tuning runtime previo\n\nCambio vertical recomendado:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nPruebas sugeridas:\ncode bio r15d learned preference tooltask, Revisar Centro Evolutivo\n\nRiesgos o tradeoffs:\nSeguir solo con tuning runtime puede ocultar el problema real; conviene corregir la integracion de fondo.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask\nIABV_THREAD_TITLE: IABV ChatGPT | code bio r15d learned preference tooltask\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask",
+      "thread_title": "IABV ChatGPT | code bio r15d learned preference tooltask",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-09-23T01:04:13.811252+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    },
+    "result_metadata": {
+      "sandbox": true,
+      "objective_id": "",
+      "project_id": "",
+      "task_goal_id": "",
+      "goal_progress": 0.0,
+      "goal_status": ""
+    }
+  },
+  "actions": [
+    {
+      "step_id": "e7ce0473-4c0c-4f90-873b-17a2d8cebee7",
+      "channel": "ui",
+      "operation": "launch_app",
+      "target": "",
+      "value_hint": "<launch_app>",
+      "expected_signal": "",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Abrir asistente externo",
+        "requires_approval": true,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "26e4fcb4-b1a6-4ff1-8a14-019d1c65d039",
+      "started_at_utc": "2026-09-23T01:04:13.874525Z",
+      "finished_at_utc": "2026-09-23T01:04:13.874525Z",
+      "destructive": false,
+      "requires_approval": true
+    },
+    {
+      "step_id": "9c65fd9b-01d2-4ed8-bfe7-447f3ddebbf0",
+      "channel": "ui",
+      "operation": "llm_query",
+      "target": "",
+      "value_hint": "<llm_query>",
+      "expected_signal": "tool_result",
+      "confidence": 0.9,
+      "metadata": {
+        "label": "Contexto redactado",
+        "requires_approval": false,
+        "destructive": false,
+        "parameters": {}
+      },
+      "action_id": "d970d375-5f87-460b-a37a-42713f0e3eec",
+      "started_at_utc": "2026-09-23T01:04:13.874525Z",
+      "finished_at_utc": "2026-09-23T01:04:13.874525Z",
+      "destructive": false,
+      "requires_approval": false
+    }
+  ],
+  "result": {
+    "interaction_result_id": "a85724b9-2a28-4506-afb4-88eee1773e0f",
+    "success": true,
+    "execution_state": {
+      "state": "sandbox_pass",
+      "detail": "Sandbox local de herramienta ejecutado.",
+      "executor_name": "external_assistant",
+      "sandboxed": true,
+      "validated": true,
+      "approval_decision": "pending",
+      "destructive_blocked": false,
+      "metadata": {
+        "sandbox": true,
+        "assistant_kind": "chatgpt",
+        "launch_mode": "web_assisted",
+        "launch_target": "https://chatgpt.com/",
+        "response_capture_mode": "dom_capture",
+        "manual_pasteback_required": false,
+        "prepared_prompt": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nObjetivo: code bio r15d learned preference tooltask\nAsistente elegido: chatgpt\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nIABV_QUERY_ID: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nObjetivo de la consulta: explicar el bloqueo, contrastar el siguiente paso seguro y no mezclar esta consulta con un hilo de otro asistente.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas sugeridas: <1 a 3 pruebas cortas separadas por coma>\nfile_scope: <rutas src/tests si aplica; si no aplica, escribe n/a>\nResumen estructurado del caso:\nDiagnostico actual: matched technical trigger\nIncidente dominante: n/d\nEvidencia util: sin evidencia adicional\nSi identificas que este caso ya requiere parche tecnico o cambio de repo, dilo explicitamente en el cambio recomendado.\nPaquete tecnico complementario:\nPaquete para Codex - Pendiente Self-Teacher IABV v1.5\n\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nEscenario: \nRun: n/d\nEpisode: n/d\nSession: n/d\n\nDiagnostico breve:\nmatched technical trigger\n\nCausa raiz probable:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nEvidencia referenciada:\n- sin evidencia adicional\n\nAjustes runtime intentados:\nsin tuning runtime previo\n\nCambio vertical recomendado:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nPruebas sugeridas:\ncode bio r15d learned preference tooltask, Revisar Centro Evolutivo\n\nRiesgos o tradeoffs:\nSeguir solo con tuning runtime puede ocultar el problema real; conviene corregir la integracion de fondo.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask\nIABV_THREAD_TITLE: IABV ChatGPT | code bio r15d learned preference tooltask\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+        "response_captured": false,
+        "session_scope": "program_chat",
+        "session_label": "ChatGPT especial de IABV",
+        "isolated_session": true,
+        "thread_key": "iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask",
+        "thread_title": "IABV ChatGPT | code bio r15d learned preference tooltask",
+        "capture_lane": "background",
+        "lane_priority": [
+          "background",
+          "app",
+          "manual"
+        ],
+        "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+        "last_capture_attempt_utc": "2026-09-23T01:04:13.811252+00:00",
+        "reused_thread": false,
+        "session_profile_dir": "C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+      }
+    },
+    "summary": "Asistente externo listo para consulta guiada.",
+    "errors": [],
+    "confidence": 0.78,
+    "execution_ms": 0,
+    "rollback_state": null,
+    "extracted_data": {
+      "assistant_kind": "chatgpt",
+      "launch_target": "https://chatgpt.com/"
+    },
+    "artifacts": [],
+    "metadata": {
+      "validation_status": "sandbox_pass",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": "",
+      "live_audit": {
+        "audit_snapshot_id": "0b45f309-b141-4c3b-9570-bd70f3d9de08",
+        "objective": "Consultar ChatGPT sobre: code bio r15d learned preference tooltask",
+        "session_or_episode_id": "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20",
+        "mode_used": "ui",
+        "evidence": [
+          "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+          "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20"
+        ],
+        "findings": [],
+        "decision": {
+          "decision_id": "64e85e85-9228-4160-8167-c8529d96c93e",
+          "action": "stop_and_wait_user",
+          "rationale": "La sandbox fue valida, pero se requiere aprobacion humana antes de salir del modo seguro.",
+          "confidence": 0.92,
+          "recommended_tool_id": "chatgpt_web_assisted",
+          "approval_required": true,
+          "metadata": {}
+        },
+        "confidence": 0.96,
+        "auto_safe_action": "run_safe_tool_sandbox",
+        "human_approval": true,
+        "reused_pattern": false,
+        "metrics": {
+          "semantic_action_alignment": 1.0,
+          "target_element_alignment": 1.0,
+          "progress_visibility_score": 0.85,
+          "bridge_drain_health": 1.0,
+          "observer_agreement_score": 0.9625,
+          "learning_consolidation_score": 0.9625,
+          "lab_precision": 0.1781,
+          "lab_robustness": 0.4,
+          "lab_reuse_score": 0.0,
+          "lab_total_score": 0.3503,
+          "lab_recommended_route_score": 0.0
+        },
+        "metadata": {
+          "mirror_mode": "tool_execution",
+          "tool_id": "chatgpt_web_assisted",
+          "tool_type": "llm_web_ui",
+          "selector_name": "universal_mode_selector",
+          "goal_context": {
+            "objective_id": "",
+            "status": "",
+            "progress": 0.0,
+            "blocker": ""
+          }
+        }
+      },
+      "audit_snapshot_id": "0b45f309-b141-4c3b-9570-bd70f3d9de08"
+    }
+  },
+  "errors": [],
+  "evidence": [
+    {
+      "evidence_id": "68fd7204-0b92-411f-9388-853eeae3b71c",
+      "kind": "log",
+      "label": "Dato extraido: assistant_kind",
+      "ref_id": "1984ee0d-e91d-4a20-9e06-9af111b1716c:assistant_kind",
+      "path": null,
+      "metadata": {
+        "key": "assistant_kind"
+      },
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "7644d564-10da-4738-a9b8-0af5486be9d9",
+      "kind": "log",
+      "label": "Dato extraido: launch_target",
+      "ref_id": "1984ee0d-e91d-4a20-9e06-9af111b1716c:launch_target",
+      "path": null,
+      "metadata": {
+        "key": "launch_target"
+      },
+      "confidence": 0.7
+    }
+  ],
+  "learning_signals": [
+    {
+      "signal_id": "ef186699-4d8c-499b-86e7-718614d298ee",
+      "label": "pattern:ui:chatgpt_web_assisted",
+      "channel": "ui",
+      "signal_type": "pattern_reuse",
+      "confidence": 0.78,
+      "source": "interaction_learning_service",
+      "evidence_refs": [
+        "1984ee0d-e91d-4a20-9e06-9af111b1716c:assistant_kind",
+        "1984ee0d-e91d-4a20-9e06-9af111b1716c:launch_target"
+      ],
+      "metadata": {
+        "pattern_id": "ba8064ea-0eca-4adb-be9c-95d6aac11222"
+      }
+    }
+  ],
+  "confidence": 0.78,
+  "human_approval": true,
+  "policy_decision": {
+    "decision_id": "24fa1e9e-edd7-416a-a58a-27735fe77cc9",
+    "requires_human_approval": true,
+    "approval_decision": "pending",
+    "blocked": false,
+    "rationale": "Sandbox local de herramienta ejecutado.",
+    "confidence": 0.78,
+    "metadata": {
+      "execution_scope": "read_only",
+      "objective_id": "",
+      "objective_title": "",
+      "project_id": "",
+      "project_title": "",
+      "task_goal_id": "",
+      "task_goal_title": "",
+      "goal_progress": 0.0,
+      "goal_status": "",
+      "goal_blocker": ""
+    }
+  },
+  "selector_name": "universal_mode_selector",
+  "selector_reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+  "pattern_id": "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+  "reused_pattern": false,
+  "tool_id": "chatgpt_web_assisted",
+  "tool_type": "llm_web_ui",
+  "task_id": "8c1413f6-e3ce-46dc-9cd1-4da2ae4a94d3",
+  "result_id": "1984ee0d-e91d-4a20-9e06-9af111b1716c",
+  "site_id": null,
+  "created_at_utc": "2026-09-23T01:04:13.874525Z",
+  "updated_at_utc": "2026-09-23T01:04:13.874525Z",
+  "metadata": {
+    "learning_signals": [
+      {
+        "signal_id": "ef186699-4d8c-499b-86e7-718614d298ee",
+        "label": "pattern:ui:chatgpt_web_assisted",
+        "channel": "ui",
+        "signal_type": "pattern_reuse",
+        "confidence": 0.78,
+        "source": "interaction_learning_service",
+        "evidence_refs": [
+          "1984ee0d-e91d-4a20-9e06-9af111b1716c:assistant_kind",
+          "1984ee0d-e91d-4a20-9e06-9af111b1716c:launch_target"
+        ],
+        "metadata": {
+          "pattern_id": "ba8064ea-0eca-4adb-be9c-95d6aac11222"
+        }
+      }
+    ],
+    "mode_selection": {
+      "decision_id": "01afb15a-2f05-47da-8337-53f8817516e2",
+      "selector_name": "universal_mode_selector",
+      "selected_mode": "ui",
+      "selected_tool_id": "chatgpt_web_assisted",
+      "selected_tool_type": "llm_web_ui",
+      "adapter_exists": true,
+      "available": true,
+      "fallback_used": false,
+      "already_resolved": false,
+      "equivalent_pattern_exists": false,
+      "improvement_already_implemented": false,
+      "reusable_pattern_id": null,
+      "reusable_episode_id": null,
+      "scores": {
+        "availability": 1.0,
+        "adapter_exists": 1.0,
+        "desired_match": 1.0,
+        "suggested_match": 1.0,
+        "automatic_capture": 1.0,
+        "total": 5.0
+      },
+      "reason": "consulta_externa_preferida | modo=ui | automatica=True | available=True",
+      "metadata": {
+        "desired_modes": [
+          "background",
+          "ui"
+        ],
+        "candidate_ranking": [
+          {
+            "tool_id": "chatgpt_web_assisted",
+            "mode": "ui",
+            "score": 5.0
+          }
+        ],
+        "selection_policy": "preferred_external_tool"
+      }
+    },
+    "selected_mode": "ui",
+    "reusable_pattern_id": "",
+    "reusable_episode_id": "",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "0b45f309-b141-4c3b-9570-bd70f3d9de08",
+      "objective": "Consultar ChatGPT sobre: code bio r15d learned preference tooltask",
+      "session_or_episode_id": "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20",
+      "mode_used": "ui",
+      "evidence": [
+        "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+        "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "64e85e85-9228-4160-8167-c8529d96c93e",
+        "action": "stop_and_wait_user",
+        "rationale": "La sandbox fue valida, pero se requiere aprobacion humana antes de salir del modo seguro.",
+        "confidence": 0.92,
+        "recommended_tool_id": "chatgpt_web_assisted",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "run_safe_tool_sandbox",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.1781,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.3503,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "0b45f309-b141-4c3b-9570-bd70f3d9de08",
+    "audit_summary": "Sin hallazgos relevantes. Decision: stop_and_wait_user. Confianza 0.96."
+  }
+}

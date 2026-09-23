@@ -1,0 +1,79 @@
+{
+  "run_id": "b1d1743d-04f3-45a8-b4d3-a6647add3138",
+  "domain": "language",
+  "suite_name": "text_understanding_suite",
+  "objective": "Consultar ChatGPT sobre: code bio r15d learned preference tooltask",
+  "subject_key": "chatgpt_web_assisted",
+  "comparison_scope_key": "general:consultar-chatgpt-sobre-code-bio-r15d-learned-preference-tooltask",
+  "route": "ui",
+  "assistant_kind": "chatgpt web asistido",
+  "assistant_configuration": {
+    "planning_mode": "without_plan",
+    "attachments_mode": "without_files",
+    "reasoning_level": "normal",
+    "context_mode": "short",
+    "tools_mode": "without_tools",
+    "browser_mode": "without_browser",
+    "assistant_mode": "general",
+    "origin_mode": "external",
+    "unresolved_fields": [],
+    "metadata": {}
+  },
+  "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+  "candidate_id": "0f9fbdbb-b660-4439-ad14-88619702b314",
+  "candidate_label": "ChatGPT web asistido",
+  "success": false,
+  "expected_summary": "text=Consulta externa preparada con captura automatica y aprendizaje reutilizable si la respuesta es util.",
+  "observed_summary": "Asistente externo listo para consulta guiada.",
+  "metrics": {
+    "precision": 0.1780821917808219,
+    "execution_ms": 0,
+    "operational_cost": 0.0,
+    "robustness": 0.4,
+    "reuse_score": 0.0,
+    "user_progress": 0.0,
+    "total_score": 0.3503,
+    "metadata": {
+      "domain": "language",
+      "objective": "Consultar ChatGPT sobre: code bio r15d learned preference tooltask",
+      "candidate_label": "ChatGPT web asistido",
+      "route": "ui",
+      "assistant_kind": "chatgpt web asistido",
+      "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+      "sample_support": 1,
+      "latency_score": 1.0,
+      "cost_score": 1.0,
+      "user_progress_score": 0.0,
+      "relative_vs_same_config": 1.0
+    }
+  },
+  "evidence_refs": [
+    "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+    "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20"
+  ],
+  "reused_later": false,
+  "better_than_previous": false,
+  "metadata": {
+    "source": "live_audit_tool",
+    "user_progress": 0.0,
+    "trace_id": "8c1413f6",
+    "comparison_scope_key": "general:consultar-chatgpt-sobre-code-bio-r15d-learned-preference-tooltask",
+    "source_trace_ids": [
+      "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+      "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20",
+      "8c1413f6"
+    ],
+    "evidence_refs": [
+      "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+      "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20"
+    ],
+    "reused_pattern": false,
+    "suite_name": "text_understanding_suite",
+    "assistant_kind": "chatgpt web asistido",
+    "config_signature": "without_plan|without_files|normal|short|without_tools|without_browser|general|external",
+    "session_id": "",
+    "proposal_summary": "",
+    "outcome_summary": "Asistente externo listo para consulta guiada."
+  },
+  "created_at_utc": "2026-09-23T01:04:14.014961Z"
+}

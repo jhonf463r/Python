@@ -1,0 +1,12 @@
+{
+  "log_id": "c194149f-a76b-4838-a32f-c597e3e854b9",
+  "tool_id": "chatgpt_web_assisted",
+  "task_id": "8c1413f6-e3ce-46dc-9cd1-4da2ae4a94d3",
+  "action_type": "approval_gate",
+  "state": "waiting_approval",
+  "created_at_utc": "2026-09-23T01:04:13.986432+00:00",
+  "payload": {
+    "approval_decision": "pending",
+    "tool_id": "chatgpt_web_assisted"
+  }
+}

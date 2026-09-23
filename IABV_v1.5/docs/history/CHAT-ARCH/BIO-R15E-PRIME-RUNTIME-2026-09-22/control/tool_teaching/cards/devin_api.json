@@ -1,0 +1,46 @@
+{
+  "tool_id": "devin_api",
+  "title": "Devin (Cognition AI)",
+  "tool_type": "mcp_client",
+  "description": "Sesion autonoma via API REST de Devin para tareas de codigo, shell y navegacion.",
+  "adapter_key": "devin_api",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": true,
+  "supports_write": false,
+  "requires_human_approval": false,
+  "supports_rollback": false,
+  "capabilities": [
+    "code_assistance",
+    "shell_execution",
+    "web_browsing",
+    "structured_reasoning"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "assistant_kind": "devin",
+    "task_affinities": [
+      "long_implementation",
+      "pr_creation",
+      "refactor",
+      "test_writing",
+      "ci_fix"
+    ],
+    "interaction_cost": "low",
+    "manual_effort": "none",
+    "long_running_capable": true,
+    "live_desktop_validation_capable": false,
+    "repo_patch_capable": true,
+    "reasoning_synthesis_capable": true,
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "session_scope": "api_session",
+    "background_capture_mode": "devin_api",
+    "launch_mode": "api",
+    "updated_at_utc": "2026-09-23T01:04:13.121283+00:00"
+  }
+}

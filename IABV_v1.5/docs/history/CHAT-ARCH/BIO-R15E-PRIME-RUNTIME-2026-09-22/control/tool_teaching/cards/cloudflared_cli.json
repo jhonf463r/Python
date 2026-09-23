@@ -1,0 +1,49 @@
+{
+  "tool_id": "cloudflared_cli",
+  "title": "Cloudflared CLI",
+  "tool_type": "shell",
+  "description": "CLI de Cloudflare Tunnel para inspeccion (version, tunnels, config). El arranque real del tunnel queda delegado a run_mcp_bridge.ps1.",
+  "adapter_key": "local_cli",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": false,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "check_version",
+    "list_tunnels",
+    "inspect_tunnel",
+    "access_info"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "tool_family": "cloudflared",
+    "launch_mode": "local_cli",
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "command_name": "cloudflared",
+    "command_aliases": [
+      "cloudflared.exe"
+    ],
+    "windows_default_paths": [
+      "{userprofile}\\.iabv\\tools\\cloudflared\\cloudflared.exe",
+      "{programfiles}\\cloudflared\\cloudflared.exe",
+      "{programfilesx86}\\cloudflared\\cloudflared.exe"
+    ],
+    "version_command": "--version",
+    "allowed_verbs": [
+      "--version",
+      "version",
+      "tunnel",
+      "access",
+      "help"
+    ],
+    "notes": "Verbos de inspeccion (tunnel list, tunnel info) quedan permitidos; arranque real del tunnel sigue corriendo via run_mcp_bridge.ps1. `cloudflared update` queda fuera del allowlist por read-only: pasa por ToolApprovalPolicy si hace falta.",
+    "updated_at_utc": "2026-09-23T01:04:13.034801+00:00"
+  }
+}

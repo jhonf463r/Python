@@ -1,0 +1,110 @@
+{
+  "interaction_result_id": "a85724b9-2a28-4506-afb4-88eee1773e0f",
+  "success": true,
+  "execution_state": {
+    "state": "sandbox_pass",
+    "detail": "Sandbox local de herramienta ejecutado.",
+    "executor_name": "external_assistant",
+    "sandboxed": true,
+    "validated": true,
+    "approval_decision": "pending",
+    "destructive_blocked": false,
+    "metadata": {
+      "sandbox": true,
+      "assistant_kind": "chatgpt",
+      "launch_mode": "web_assisted",
+      "launch_target": "https://chatgpt.com/",
+      "response_capture_mode": "dom_capture",
+      "manual_pasteback_required": false,
+      "prepared_prompt": "Consulta autonoma IABV v1.5\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nObjetivo: code bio r15d learned preference tooltask\nAsistente elegido: chatgpt\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nIABV_QUERY_ID: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nObjetivo de la consulta: explicar el bloqueo, contrastar el siguiente paso seguro y no mezclar esta consulta con un hilo de otro asistente.\nFormato de salida obligatorio:\nCausa raiz probable: <una frase concreta>\nCambio vertical recomendado: <siguiente cambio o microajuste>\nPruebas sugeridas: <1 a 3 pruebas cortas separadas por coma>\nfile_scope: <rutas src/tests si aplica; si no aplica, escribe n/a>\nResumen estructurado del caso:\nDiagnostico actual: matched technical trigger\nIncidente dominante: n/d\nEvidencia util: sin evidencia adicional\nSi identificas que este caso ya requiere parche tecnico o cambio de repo, dilo explicitamente en el cambio recomendado.\nPaquete tecnico complementario:\nPaquete para Codex - Pendiente Self-Teacher IABV v1.5\n\nWorkspace: C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\nPending issue: 32cdb013-b3c3-4d6c-8274-8987aaac92b1\nEscenario: \nRun: n/d\nEpisode: n/d\nSession: n/d\n\nDiagnostico breve:\nmatched technical trigger\n\nCausa raiz probable:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nEvidencia referenciada:\n- sin evidencia adicional\n\nAjustes runtime intentados:\nsin tuning runtime previo\n\nCambio vertical recomendado:\nmatched technical consultation trigger El historico reciente favorece chatgpt.\n\nPruebas sugeridas:\ncode bio r15d learned preference tooltask, Revisar Centro Evolutivo\n\nRiesgos o tradeoffs:\nSeguir solo con tuning runtime puede ocultar el problema real; conviene corregir la integracion de fondo.\n\nIABV_THREAD_KEY: iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask\nIABV_THREAD_TITLE: IABV ChatGPT | code bio r15d learned preference tooltask\nIABV_LANE_PRIORITY: background > app > manual\nInstruccion: usa o crea el hilo dedicado de IABV para este asistente y no reutilices un chat ajeno.",
+      "response_captured": false,
+      "session_scope": "program_chat",
+      "session_label": "ChatGPT especial de IABV",
+      "isolated_session": true,
+      "thread_key": "iabv::chatgpt::general::code-bio-r15d-learned-preference-tooltask",
+      "thread_title": "IABV ChatGPT | code bio r15d learned preference tooltask",
+      "capture_lane": "background",
+      "lane_priority": [
+        "background",
+        "app",
+        "manual"
+      ],
+      "awaiting_reason": "Esperando respuesta en la sesion aislada del programa y su chat especial.",
+      "last_capture_attempt_utc": "2026-09-23T01:04:13.811252+00:00",
+      "reused_thread": false,
+      "session_profile_dir": "C:\\Users\\faber\\.codex\\worktrees\\bio-r15e-prime-r15f-adapter-body-runtime\\Python\\IABV_v1.5\\docs\\history\\CHAT-ARCH\\BIO-R15E-PRIME-RUNTIME-2026-09-22\\control\\data\\tool_teaching\\external_assistants\\chatgpt_program_session\\browser_profile"
+    }
+  },
+  "summary": "Asistente externo listo para consulta guiada.",
+  "errors": [],
+  "confidence": 0.78,
+  "execution_ms": 0,
+  "rollback_state": null,
+  "extracted_data": {
+    "assistant_kind": "chatgpt",
+    "launch_target": "https://chatgpt.com/"
+  },
+  "artifacts": [],
+  "metadata": {
+    "validation_status": "sandbox_pass",
+    "objective_id": "",
+    "objective_title": "",
+    "project_id": "",
+    "project_title": "",
+    "task_goal_id": "",
+    "task_goal_title": "",
+    "goal_progress": 0.0,
+    "goal_status": "",
+    "goal_blocker": "",
+    "live_audit": {
+      "audit_snapshot_id": "0b45f309-b141-4c3b-9570-bd70f3d9de08",
+      "objective": "Consultar ChatGPT sobre: code bio r15d learned preference tooltask",
+      "session_or_episode_id": "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20",
+      "mode_used": "ui",
+      "evidence": [
+        "ba8064ea-0eca-4adb-be9c-95d6aac11222",
+        "1bc2e7bf-f431-49e2-b121-3fcd92e3ff20"
+      ],
+      "findings": [],
+      "decision": {
+        "decision_id": "64e85e85-9228-4160-8167-c8529d96c93e",
+        "action": "stop_and_wait_user",
+        "rationale": "La sandbox fue valida, pero se requiere aprobacion humana antes de salir del modo seguro.",
+        "confidence": 0.92,
+        "recommended_tool_id": "chatgpt_web_assisted",
+        "approval_required": true,
+        "metadata": {}
+      },
+      "confidence": 0.96,
+      "auto_safe_action": "run_safe_tool_sandbox",
+      "human_approval": true,
+      "reused_pattern": false,
+      "metrics": {
+        "semantic_action_alignment": 1.0,
+        "target_element_alignment": 1.0,
+        "progress_visibility_score": 0.85,
+        "bridge_drain_health": 1.0,
+        "observer_agreement_score": 0.9625,
+        "learning_consolidation_score": 0.9625,
+        "lab_precision": 0.1781,
+        "lab_robustness": 0.4,
+        "lab_reuse_score": 0.0,
+        "lab_total_score": 0.3503,
+        "lab_recommended_route_score": 0.0
+      },
+      "metadata": {
+        "mirror_mode": "tool_execution",
+        "tool_id": "chatgpt_web_assisted",
+        "tool_type": "llm_web_ui",
+        "selector_name": "universal_mode_selector",
+        "goal_context": {
+          "objective_id": "",
+          "status": "",
+          "progress": 0.0,
+          "blocker": ""
+        }
+      }
+    },
+    "audit_snapshot_id": "0b45f309-b141-4c3b-9570-bd70f3d9de08"
+  }
+}

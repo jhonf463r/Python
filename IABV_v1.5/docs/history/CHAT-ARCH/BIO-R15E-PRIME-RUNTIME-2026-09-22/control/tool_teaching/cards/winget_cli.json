@@ -1,0 +1,52 @@
+{
+  "tool_id": "winget_cli",
+  "title": "Winget",
+  "tool_type": "shell",
+  "description": "Gestor de paquetes Windows read-only: list, search, show, version. Install/uninstall/upgrade requieren approval explicita.",
+  "adapter_key": "local_cli",
+  "validation_status": "unvalidated",
+  "local_first": true,
+  "available": false,
+  "supports_sandbox": false,
+  "supports_write": false,
+  "requires_human_approval": true,
+  "supports_rollback": false,
+  "capabilities": [
+    "check_version",
+    "list_packages",
+    "search_package",
+    "show_package",
+    "source_list"
+  ],
+  "success_count": 0,
+  "failure_count": 0,
+  "last_result_id": null,
+  "last_validated_at_utc": null,
+  "metadata": {
+    "tool_family": "winget",
+    "launch_mode": "local_cli",
+    "response_capture_mode": "tool_result",
+    "requires_manual_pasteback": false,
+    "command_name": "winget",
+    "command_aliases": [
+      "winget.exe"
+    ],
+    "windows_default_paths": [
+      "{localappdata}\\Microsoft\\WindowsApps\\winget.exe"
+    ],
+    "version_command": "--version",
+    "allowed_verbs": [
+      "--version",
+      "version",
+      "list",
+      "search",
+      "show",
+      "source",
+      "hash",
+      "features",
+      "help"
+    ],
+    "notes": "winget install, upgrade y uninstall mutan estado del sistema; requieren aprobacion humana explicita antes del subprocess.",
+    "updated_at_utc": "2026-09-23T01:04:13.018214+00:00"
+  }
+}
