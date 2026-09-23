@@ -499,7 +499,17 @@ class TaskContextAssembler:
                 world_model=world_model,
             )
             summary = service.package_summary(package)
-            return dict(summary or {})
+            result = dict(summary or {})
+            # Extract canonical_work_queue section for external context path
+            sections = {section.section_id: section for section in package.sections}
+            work_queue_section = sections.get('canonical_work_queue')
+            if work_queue_section is not None:
+                result['canonical_work_queue'] = {
+                    'summary': work_queue_section.summary,
+                    'items': list(work_queue_section.items or [])[:5],
+                    'confidence': float(work_queue_section.confidence or 0.0),
+                }
+            return result
         except Exception:
             return {}
 
