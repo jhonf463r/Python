@@ -262,6 +262,10 @@ class TestControlMasterRealImplementationToContextPack:
             )
 
             # Verify: Production DecisionContext contains portable_context_summary with marker
+            # NOTE: PerceptionSnapshot also has a metadata field (parallel duplication in production),
+            # but plan_or_execute() receives decision_context directly, not PerceptionSnapshot.
+            # This test verifies the decision_context.metadata channel which is the causal path
+            # to context_pack in the current flow.
             decision_context = snapshot.decision_context
             assert decision_context is not None, "build_perception_snapshot() must produce DecisionContext"
             assert 'portable_context_summary' in decision_context.metadata, \
