@@ -36,7 +36,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import Future, TimeoutError as FutureTimeoutError
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, field
 from typing import Callable, Mapping, Optional, Protocol
 
 
@@ -109,6 +109,7 @@ class ApprovalResult:
     auto_resolved: bool = False
     payload_keys: tuple[str, ...] = ()
     payload: Optional[Mapping[str, str]] = None
+    scope: Mapping[str, str] = field(default_factory=dict)
 
     def is_resolved(self) -> bool:
         return self.approved or self.rejected or self.timed_out or self.cancelled
@@ -241,6 +242,7 @@ class HumanApprovalBroker:
                 request_id=request.request_id,
                 approved=False,
                 timed_out=True,
+                scope=request.scope,
             )
 
         try:
@@ -262,6 +264,7 @@ class HumanApprovalBroker:
                 request_id=request.request_id,
                 approved=False,
                 timed_out=True,
+                scope=request.scope,
             )
 
         self._dispatch_post_resolve(request, result)
@@ -336,6 +339,7 @@ class HumanApprovalBroker:
                 request_id=request.request_id,
                 approved=False,
                 timed_out=True,
+                scope=request.scope,
             )
             with self._lock:
                 self._resolved_requests[request.request_id] = result
@@ -404,6 +408,7 @@ class HumanApprovalBroker:
             request_id=request_id,
             approved=False,
             rejected=True,
+            scope=entry.request.scope,
         )
         entry.future.set_result(result)
         return True
@@ -418,6 +423,7 @@ class HumanApprovalBroker:
             request_id=request_id,
             approved=False,
             cancelled=True,
+            scope=entry.request.scope,
         )
         entry.future.set_result(result)
         return True
@@ -471,6 +477,7 @@ class HumanApprovalBroker:
             approved=approved,
             payload=normalised_payload,
             payload_keys=payload_keys,
+            scope=request.scope,
         )
 
     def _capture_ui_snapshot(self, request: ApprovalRequest) -> None:

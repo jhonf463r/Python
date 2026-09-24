@@ -1871,16 +1871,28 @@ class DevinApiToolAdapter:
 
         P0-B Trust Root: sandbox=False requiere autorización externa válida.
         """
-        if self._external_authorization is None:
+        return self._check_external_authorization_impl(task, prompt, self._external_authorization)
+
+    def _check_external_authorization_impl(
+        self,
+        task: ToolTask,
+        prompt: str,
+        external_authorization: Any | None,
+    ) -> bool:
+        """Verifica que existe una autorización externa válida para esta ejecución.
+
+        P0-B Trust Root: sandbox=False requiere autorización externa válida.
+        """
+        if external_authorization is None:
             return False
         
         try:
             from iabv_v15.domain.models import ExternalActionAuthorization
             
-            if not isinstance(self._external_authorization, ExternalActionAuthorization):
+            if not isinstance(external_authorization, ExternalActionAuthorization):
                 return False
             
-            auth = self._external_authorization
+            auth = external_authorization
             
             # Verificar estado
             if not auth.is_valid():
@@ -1922,8 +1934,11 @@ class DevinApiToolAdapter:
         except Exception:
             return False
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any = None) -> dict[str, Any]:
         start = time.perf_counter()
+        
+        # Use per-call authorization if provided, otherwise use instance-level
+        effective_authorization = external_authorization if external_authorization is not None else self._external_authorization
         
         # FAIL-CLOSED: sandbox=True significa NO external HTTP, NO remote side effect
         if sandbox:
@@ -1947,7 +1962,7 @@ class DevinApiToolAdapter:
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        if not self._check_external_authorization(task, task.objective):
+        if not self._check_external_authorization_impl(task, task.objective, effective_authorization):
             return {
                 'success': False,
                 'output_text': '',

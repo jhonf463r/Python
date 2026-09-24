@@ -11,6 +11,8 @@ from iabv_v15.domain.models import (
     AssistantConfigurationSnapshot,
     ApprovalDecision,
     ExecutionState,
+    ExternalActionAuthorization,
+    ExternalActionAuthorizationStatus,
     ExternalStateFlag,
     EvaluationRoute,
     ExperimentDomain,
@@ -891,7 +893,15 @@ class ToolTeachService:
         # autonomous_external_launch=True → launch_dry_run=False → sandbox=False (external HTTP permitido)
         # Esto es distinto de governance approval (approved parameter)
         sandbox_mode = launch_dry_run
-        payload = adapter.run(card, task, sandbox=sandbox_mode)
+        
+        # Pass external_authorization if present in task metadata (from resume_approved_task)
+        # Only pass it if the adapter accepts it (DevinApiToolAdapter)
+        external_authorization = task.metadata.get('external_authorization') if task.metadata else None
+        sig = inspect.signature(adapter.run)
+        if 'external_authorization' in sig.parameters:
+            payload = adapter.run(card, task, sandbox=sandbox_mode, external_authorization=external_authorization)
+        else:
+            payload = adapter.run(card, task, sandbox=sandbox_mode)
         payload_metadata = dict(payload.get('metadata') or {})
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
@@ -1012,7 +1022,7 @@ class ToolTeachService:
             result = ToolResult(
                 task_id=task_id,
                 tool_id='unknown',
-                tool_type='unknown',
+                tool_type='shell',  # Use valid enum value
                 success=False,
                 validation_status=ToolValidationStatus.BLOCKED,
                 execution_state=ExecutionState(
@@ -1029,7 +1039,7 @@ class ToolTeachService:
             result = ToolResult(
                 task_id=task_id,
                 tool_id=task.tool_id,
-                tool_type='unknown',
+                tool_type='shell',  # Use valid enum value
                 success=False,
                 validation_status=ToolValidationStatus.BLOCKED,
                 execution_state=ExecutionState(
@@ -1054,6 +1064,24 @@ class ToolTeachService:
                     detail='HumanApprovalBroker not configured',
                 ),
                 error_message='no_approval_broker',
+            )
+            self.memory.repository.save_result(result)
+            return result
+
+        # Verify persisted approval_request_id matches
+        persisted_approval_request_id = task.metadata.get('approval_request_id')
+        if persisted_approval_request_id != approval_request_id:
+            result = ToolResult(
+                task_id=task_id,
+                tool_id=task.tool_id,
+                tool_type='shell',
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='approval_request_mismatch',
+                    detail=f'Persisted approval_request_id {persisted_approval_request_id} does not match provided {approval_request_id}',
+                ),
+                error_message='approval_request_mismatch',
             )
             self.memory.repository.save_result(result)
             return result
@@ -1087,6 +1115,40 @@ class ToolTeachService:
                     detail=f'Approval request {approval_request_id} was not approved (rejected={approval_result.rejected}, timed_out={approval_result.timed_out}, cancelled={approval_result.cancelled})',
                 ),
                 error_message='approval_rejected',
+            )
+            self.memory.repository.save_result(result)
+            return result
+
+        # Reject auto-resolved approvals for human-governance path
+        if approval_result.auto_resolved:
+            result = ToolResult(
+                task_id=task_id,
+                tool_id=task.tool_id,
+                tool_type='shell',
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='approval_auto_resolved',
+                    detail='Auto-resolved approval not accepted for human-governance path',
+                ),
+                error_message='approval_auto_resolved',
+            )
+            self.memory.repository.save_result(result)
+            return result
+
+        # Verify ApprovalResult.request_id matches
+        if approval_result.request_id != approval_request_id:
+            result = ToolResult(
+                task_id=task_id,
+                tool_id=task.tool_id,
+                tool_type='shell',
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='approval_result_mismatch',
+                    detail=f'ApprovalResult.request_id {approval_result.request_id} does not match {approval_request_id}',
+                ),
+                error_message='approval_result_mismatch',
             )
             self.memory.repository.save_result(result)
             return result
@@ -1129,7 +1191,6 @@ class ToolTeachService:
 
         # 5) Create ExternalActionAuthorization for this execution
         # This reuses the existing authorization model for provenance
-        from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
         card = self.registry.get_card(task.tool_id)
         if card is None:
             result = ToolResult(
@@ -1147,11 +1208,22 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
             return result
 
+        # Compute real prompt digest for binding
+        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+        prompt = str(task.objective or '')
+        if context_pack:
+            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+        
+        # Use the same digest algorithm as DevinApiToolAdapter
+        import hashlib
+        prompt_digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+
         authorization = ExternalActionAuthorization(
             task_id=task_id,
             tool_id=task.tool_id,
             adapter_key=card.adapter_key,
             assistant_kind=str(task.metadata.get('assistant_kind') or ''),
+            prompt_digest=prompt_digest,
             status=ExternalActionAuthorizationStatus.VALIDATED,
             approved_by='human_approval_broker',
             reason=f'Human approval via request {approval_request_id}',
@@ -1161,25 +1233,34 @@ class ToolTeachService:
             },
         )
 
-        # 6) Execute the SAME task with approved=True
+        # 6) Transition task to EXECUTING and persist
+        task = task.model_copy(
+            update={
+                'status': ToolTaskStatus.EXECUTING,
+                'metadata': {
+                    **dict(task.metadata or {}),
+                    'external_authorization': authorization,  # Carry authorization to execution
+                },
+            }
+        )
+        self.memory.remember_task(task)
+
+        # 7) Execute the SAME task with approved=True
         # This preserves: task_id, tool_id, assistant_kind, context_pack, metadata
+        # The authorization is passed via task.metadata['external_authorization']
         result = self.execute_task(task, approved=True, launch_dry_run=launch_dry_run)
 
-        # 7) Consume authorization after execution (single-use)
-        if result.success:
+        # 8) No authorization consumption here - adapter consumes it at the real gate
+        # The adapter._check_external_authorization_impl() calls auth.consume()
+        # We only consume if the adapter failed to do so (edge case)
+        if result.success and authorization.status != ExternalActionAuthorizationStatus.CONSUMED:
             try:
                 authorization.consume()
             except ValueError:
-                # Authorization already consumed - this shouldn't happen but handle gracefully
-                self.memory.audit_event(
-                    tool_id=task.tool_id,
-                    task_id=task_id,
-                    action_type='authorization_already_consumed',
-                    state='warning',
-                    payload={'authorization_id': authorization.authorization_id},
-                )
+                # Authorization already consumed by adapter
+                pass
 
-        # 8) Verify result.task_id matches original task_id (identity invariant)
+        # 9) Verify result.task_id matches original task_id (identity invariant)
         if result.task_id != task_id:
             # This should never happen if execute_task preserves task_id
             # Log as audit event if it does
