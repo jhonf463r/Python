@@ -934,6 +934,13 @@ class ToolTeachService:
                 'config_signature': str(task.metadata.get('config_signature') or ''),
             },
         )
+        
+        # Terminal lifecycle transition: update task status based on result
+        # This preserves task identity while recording terminal state
+        from iabv_v15.domain.models import ToolTaskStatus
+        terminal_status = ToolTaskStatus.COMPLETED if result.success else ToolTaskStatus.FAILED
+        task = task.model_copy(update={'status': terminal_status})
+        self.memory.remember_task(task)
         if bool(payload_metadata.get('capture_unverified')) or str(payload_metadata.get('thread_verification') or '').strip().lower() == 'wrong_thread':
             result = result.model_copy(
                 update={

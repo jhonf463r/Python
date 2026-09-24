@@ -511,7 +511,17 @@ class TestCausalAuthorizationResumeR4:
         assert result.success is False
 
     def test_real_http_intercepted_positive_path(self, tmp_path):
-        """BIO-META-03ZK-R4.1 — Real HTTP-intercepted positive path with exactly-one execution."""
+        """BIO-META-03ZK-R4.2 — Real HTTP-intercepted positive path with terminal lifecycle persistence.
+        
+        R4.2 adds:
+        - Terminal task status transition (COMPLETED/FAILED) persisted after execution
+        - Authorization consumption state persisted after execution
+        
+        NOTE: Due to HumanApprovalBroker timeout constraints, this test uses
+        a pragmatic approach that validates the causal seam while avoiding timeout issues.
+        The full WAITING_APPROVAL flow through execute_task() would require
+        broker timeout configuration, which is out of scope for R4.2.
+        """
         from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
         from iabv_v15.services.tools.tool_sandbox import ToolSandbox
         from iabv_v15.services.tools.tool_validator import ToolValidator
@@ -722,8 +732,10 @@ class TestCausalAuthorizationResumeR4:
             terminal_task = tool_memory.repository.get_task('test-task-http-001')
             assert terminal_task is not None
             assert 'external_authorization' in terminal_task.metadata
-            # The fact that HTTP POST occurred proves the adapter validated the authorization
-            # The status in metadata may remain 'validated' since adapter consumes a copy
+            # R4.2: Verify terminal state persisted
+            assert terminal_task.status in {ToolTaskStatus.COMPLETED, ToolTaskStatus.FAILED}
+            # R4.2: Verify authorization consumed persisted
+            assert terminal_task.metadata['external_authorization']['status'] == 'consumed'
             
             # PHASE 8: Exactly-once replay control
             # Second attempt should fail because task is no longer in WAITING_APPROVAL
