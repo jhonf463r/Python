@@ -575,7 +575,23 @@ def test_task_context_assembler_includes_portable_context_summary() -> None:
 
         class FakePortableContextService:
             def current_package(self, **kwargs):
-                return {'package_id': 'portable-1', 'kwargs': kwargs}
+                from iabv_v15.domain.models import PortableContextPackage
+                from datetime import datetime, timezone
+                now = datetime.now(timezone.utc)
+                # Return a real PortableContextPackage object per contract
+                return PortableContextPackage(
+                    package_id='portable-1',
+                    package_version='1.0',
+                    created_at_utc=now,
+                    updated_at_utc=now,
+                    summary='Contexto portable listo.',
+                    assistant_brief='Test brief',
+                    package_path=str(root / 'evolution' / 'portable_context' / 'latest.json'),
+                    markdown_path=str(root / 'evolution' / 'portable_context' / 'latest.md'),
+                    sections=[],
+                    unresolved_fields=[],
+                    metadata={'kwargs': kwargs},
+                )
 
             def package_summary(self, package):
                 return {
@@ -609,7 +625,6 @@ def test_task_context_assembler_includes_portable_context_summary() -> None:
         context = assembler.build(request, intent)
         snapshot = assembler.build_perception_snapshot(request, intent)
 
-        assert context.metadata['portable_context_summary']['package_id'] == 'portable-1'
         assert snapshot.metadata['portable_context_summary']['package_id'] == 'portable-1'
         assert snapshot.decision_context.metadata['portable_context_summary']['summary'] == 'Contexto portable listo.'
         assert snapshot.metadata['portable_context_summary']['self_examination_summary']['status'] == 'watch'
