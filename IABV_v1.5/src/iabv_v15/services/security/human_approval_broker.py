@@ -133,6 +133,7 @@ class HumanApprovalBroker:
         self._post_handlers: list[PostResolveHandler] = []
         self._lock = threading.RLock()
         self._pending: dict[str, _PendingEntry] = {}
+        self._resolved_requests: dict[str, ApprovalResult] = {}
         self._clock = clock or time.time
         self._ui_screenshot_capturer: Optional[_UIScreenshotCapturer] = None
 
@@ -265,6 +266,115 @@ class HumanApprovalBroker:
 
         self._dispatch_post_resolve(request, result)
         return result
+
+    def request_non_blocking(
+        self,
+        *,
+        kind: str,
+        reason: str,
+        scope: Optional[Mapping[str, str]] = None,
+        payload_schema: tuple[str, ...] = (),
+        sensitive: bool = False,
+    ) -> str:
+        """Crea solicitud de aprobacion sin bloquear.
+
+        Retorna el request_id inmediatamente. La solicitud queda pendiente
+        y puede resolverse posteriormente via approve/reject/cancel o mediante
+        get_resolved_request() para consultar el resultado.
+
+        Parametros:
+            kind: uno de `KIND_*` o string libre (ver `KNOWN_KINDS`).
+            reason: texto humano que la UI mostrara al usuario. No debe contener
+                secretos.
+            scope: atributos que describen la decision para `ApprovalMemory`.
+                Valores deben ser string; no serializa payload sensible.
+            payload_schema: nombres de campos que la UI debe recolectar
+                (ej. `("token",)` para credencial).
+            sensitive: si True, el broker no persiste el payload en memoria ni
+                lo expone en `pending_requests()`. El valor solo viaja por el
+                `Future` hacia el consumer original.
+
+        Retorna:
+            request_id: UUID hex string que identifica la solicitud.
+        """
+        if not kind:
+            raise ValueError("approval request requires non-empty kind")
+        scope_map: Mapping[str, str] = dict(scope or {})
+
+        request = ApprovalRequest(
+            request_id=uuid.uuid4().hex,
+            kind=kind,
+            reason=reason or "",
+            scope=scope_map,
+            payload_schema=tuple(payload_schema),
+            sensitive=bool(sensitive),
+            requested_at_epoch=self._clock(),
+        )
+
+        # 1) Pre-approver (ApprovalMemory) puede resolver sin prompt.
+        with self._lock:
+            pre = self._pre_approver
+        if pre_result := pre(request) if pre else None:
+            # Pre-approver resolvio: guardar resultado en resolved_requests
+            with self._lock:
+                self._resolved_requests[request.request_id] = pre_result
+            self._dispatch_post_resolve(request, pre_result)
+            return request.request_id
+
+        # 2) Registrar future y emitir prompt sin bloquear.
+        future: Future = Future()
+        with self._lock:
+            self._pending[request.request_id] = _PendingEntry(request=request, future=future)
+            handler = self._prompt_handler
+
+        prompt_payload = self._build_prompt_payload(request)
+        self._capture_ui_snapshot(request)
+        if handler is None:
+            # Sin UI conectada: resolvemos como timed_out inmediato
+            self._finalise_without_handler(request)
+            result = ApprovalResult(
+                request_id=request.request_id,
+                approved=False,
+                timed_out=True,
+            )
+            with self._lock:
+                self._resolved_requests[request.request_id] = result
+            return request.request_id
+
+        try:
+            handler(prompt_payload)
+        except Exception:
+            # Si la UI falla al emitir, no dejamos el Future huerfano.
+            with self._lock:
+                self._pending.pop(request.request_id, None)
+            raise
+
+        # Configurar callback para guardar resultado cuando se resuelva
+        def save_result(fut: Future) -> None:
+            try:
+                result = fut.result()
+                with self._lock:
+                    self._resolved_requests[request.request_id] = result
+                self._dispatch_post_resolve(request, result)
+            except Exception:
+                # Error en la resolucion: registrar como rechazado
+                with self._lock:
+                    self._resolved_requests[request.request_id] = ApprovalResult(
+                        request_id=request.request_id,
+                        approved=False,
+                        rejected=True,
+                    )
+
+        future.add_done_callback(save_result)
+        return request.request_id
+
+    def get_resolved_request(self, request_id: str) -> ApprovalResult | None:
+        """Consulta el resultado de una solicitud ya resuelta.
+
+        Retorna None si la solicitud no existe o aun no se ha resuelto.
+        """
+        with self._lock:
+            return self._resolved_requests.get(request_id)
 
     def approve(
         self,

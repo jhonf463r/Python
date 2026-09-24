@@ -834,6 +834,7 @@ class AppBootstrap:
             experiment_lab=self.experiment_lab,
             live_audit_supervisor=self.live_audit_supervisor,
             synaptic_router=self.synaptic_router,
+            human_approval_broker=self.human_approval_broker,
         )
         self.embedding_service = EmbeddingIndexService(
             base_url=self.config.ollama_base_url,

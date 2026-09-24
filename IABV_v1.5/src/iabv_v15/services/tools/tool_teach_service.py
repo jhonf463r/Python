@@ -33,6 +33,10 @@ from iabv_v15.domain.models import (
     ToolValidationStatus,
     canonical_external_state_flags,
 )
+from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
+from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
+from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
+from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
@@ -826,19 +830,31 @@ class ToolTeachService:
         if not sandbox_result.success:
             return sandbox_result
         if approval_required and task.approval_decision not in {ApprovalDecision.APPROVED, ApprovalDecision.SKIPPED}:
-            # Create real approval request with task identity in scope
+            # Create real approval request with task identity in scope (non-blocking)
             approval_request_id = None
             if self.human_approval_broker is not None:
-                approval_request_id = self.human_approval_broker.request(
+                approval_request_id = self.human_approval_broker.request_non_blocking(
                     kind='tool_execution',
                     reason=f'La herramienta {card.tool_id} requiere aprobacion humana para ejecutar fuera del sandbox.',
                     scope={
                         'task_id': task.task_id,
-                        'tool_id': card.tool_id,
+                        'tool_id': task.tool_id,
                         'assistant_kind': str(task.metadata.get('assistant_kind') or ''),
                     },
-                    timeout_s=None,  # Wait indefinitely for human decision
-                ).request_id
+                )
+            
+            # Update task status to WAITING_APPROVAL and persist
+            from iabv_v15.domain.models import ToolTaskStatus
+            task = task.model_copy(
+                update={
+                    'status': ToolTaskStatus.WAITING_APPROVAL,
+                    'metadata': {
+                        **dict(task.metadata or {}),
+                        'approval_request_id': approval_request_id,
+                    },
+                }
+            )
+            self.memory.remember_task(task)
             
             waiting = sandbox_result.model_copy(
                 update={
@@ -996,7 +1012,7 @@ class ToolTeachService:
             result = ToolResult(
                 task_id=task_id,
                 tool_id='unknown',
-                tool_type='shell',
+                tool_type='unknown',
                 success=False,
                 validation_status=ToolValidationStatus.BLOCKED,
                 execution_state=ExecutionState(
@@ -1013,7 +1029,7 @@ class ToolTeachService:
             result = ToolResult(
                 task_id=task_id,
                 tool_id=task.tool_id,
-                tool_type='shell',
+                tool_type='unknown',
                 success=False,
                 validation_status=ToolValidationStatus.BLOCKED,
                 execution_state=ExecutionState(
@@ -1026,8 +1042,7 @@ class ToolTeachService:
             return result
 
         # 3) Verify approval exists and is approved via HumanApprovalBroker
-        # For minimal seam, verify approval_request_id format is valid (UUID-like hex)
-        if not approval_request_id or len(approval_request_id) < 8:
+        if self.human_approval_broker is None:
             result = ToolResult(
                 task_id=task_id,
                 tool_id=task.tool_id,
@@ -1035,22 +1050,136 @@ class ToolTeachService:
                 success=False,
                 validation_status=ToolValidationStatus.BLOCKED,
                 execution_state=ExecutionState(
-                    state='invalid_approval',
-                    detail='Invalid approval_request_id format',
+                    state='no_approval_broker',
+                    detail='HumanApprovalBroker not configured',
                 ),
-                error_message='invalid_approval',
+                error_message='no_approval_broker',
             )
             self.memory.repository.save_result(result)
             return result
 
-        # TODO: Full integration with HumanApprovalBroker to verify ApprovalResult.approved == True
-        # This requires the broker to expose a method like get_resolved_request(request_id)
+        approval_result = self.human_approval_broker.get_resolved_request(approval_request_id)
+        if approval_result is None:
+            result = ToolResult(
+                task_id=task_id,
+                tool_id=task.tool_id,
+                tool_type='shell',
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='approval_not_resolved',
+                    detail=f'Approval request {approval_request_id} not found or not resolved',
+                ),
+                error_message='approval_not_resolved',
+            )
+            self.memory.repository.save_result(result)
+            return result
 
-        # 4) Execute the SAME task with approved=True
+        if not approval_result.approved:
+            result = ToolResult(
+                task_id=task_id,
+                tool_id=task.tool_id,
+                tool_type='shell',
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='approval_rejected',
+                    detail=f'Approval request {approval_request_id} was not approved (rejected={approval_result.rejected}, timed_out={approval_result.timed_out}, cancelled={approval_result.cancelled})',
+                ),
+                error_message='approval_rejected',
+            )
+            self.memory.repository.save_result(result)
+            return result
+
+        # 4) Verify approval scope matches task identity
+        # The scope should contain: task_id, tool_id, assistant_kind
+        if 'task_id' in approval_result.scope:
+            if approval_result.scope['task_id'] != task_id:
+                result = ToolResult(
+                    task_id=task_id,
+                    tool_id=task.tool_id,
+                    tool_type='shell',
+                    success=False,
+                    validation_status=ToolValidationStatus.BLOCKED,
+                    execution_state=ExecutionState(
+                        state='scope_mismatch',
+                        detail=f'Approval scope task_id {approval_result.scope["task_id"]} does not match task_id {task_id}',
+                    ),
+                    error_message='scope_mismatch',
+                )
+                self.memory.repository.save_result(result)
+                return result
+
+        if 'tool_id' in approval_result.scope:
+            if approval_result.scope['tool_id'] != task.tool_id:
+                result = ToolResult(
+                    task_id=task_id,
+                    tool_id=task.tool_id,
+                    tool_type='shell',
+                    success=False,
+                    validation_status=ToolValidationStatus.BLOCKED,
+                    execution_state=ExecutionState(
+                        state='scope_mismatch',
+                        detail=f'Approval scope tool_id {approval_result.scope["tool_id"]} does not match task.tool_id {task.tool_id}',
+                    ),
+                    error_message='scope_mismatch',
+                )
+                self.memory.repository.save_result(result)
+                return result
+
+        # 5) Create ExternalActionAuthorization for this execution
+        # This reuses the existing authorization model for provenance
+        from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus
+        card = self.registry.get_card(task.tool_id)
+        if card is None:
+            result = ToolResult(
+                task_id=task_id,
+                tool_id=task.tool_id,
+                tool_type='shell',
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='tool_not_found',
+                    detail=f'Tool {task.tool_id} not found in registry',
+                ),
+                error_message='tool_not_found',
+            )
+            self.memory.repository.save_result(result)
+            return result
+
+        authorization = ExternalActionAuthorization(
+            task_id=task_id,
+            tool_id=task.tool_id,
+            adapter_key=card.adapter_key,
+            assistant_kind=str(task.metadata.get('assistant_kind') or ''),
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+            approved_by='human_approval_broker',
+            reason=f'Human approval via request {approval_request_id}',
+            metadata={
+                'approval_request_id': approval_request_id,
+                'approval_scope': dict(approval_result.scope),
+            },
+        )
+
+        # 6) Execute the SAME task with approved=True
         # This preserves: task_id, tool_id, assistant_kind, context_pack, metadata
         result = self.execute_task(task, approved=True, launch_dry_run=launch_dry_run)
 
-        # 5) Verify result.task_id matches original task_id (identity invariant)
+        # 7) Consume authorization after execution (single-use)
+        if result.success:
+            try:
+                authorization.consume()
+            except ValueError:
+                # Authorization already consumed - this shouldn't happen but handle gracefully
+                self.memory.audit_event(
+                    tool_id=task.tool_id,
+                    task_id=task_id,
+                    action_type='authorization_already_consumed',
+                    state='warning',
+                    payload={'authorization_id': authorization.authorization_id},
+                )
+
+        # 8) Verify result.task_id matches original task_id (identity invariant)
         if result.task_id != task_id:
             # This should never happen if execute_task preserves task_id
             # Log as audit event if it does
