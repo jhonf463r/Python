@@ -1074,7 +1074,8 @@ class AutonomousEvolutionService:
             work_queue = portable_context_summary.get('canonical_work_queue', {})
             if work_queue.get('items'):
                 lines.append(f"Cola de trabajo prioritaria: {work_queue.get('summary', '')}")
-                critical_items = [item for item in work_queue.get('items', []) if item.get('priority_label') in {'CRITICAL', 'HIGH'}]
+                # Normalize priority_label to lowercase for comparison (ControlMaster canonical format)
+                critical_items = [item for item in work_queue.get('items', []) if str(item.get('priority_label', '')).lower() in {'critical', 'high'}]
                 if critical_items:
                     lines.append(f"Items criticos: {len(critical_items)}")
                     for item in critical_items[:2]:
