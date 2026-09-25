@@ -855,6 +855,7 @@ class TestCausalAuthorizationResumeR4:
         original_run = devin_adapter.run
         original_check_auth = devin_adapter._check_external_authorization_impl
         original_compute_digest = devin_adapter._compute_prompt_digest
+        original_build_prompt = devin_adapter.build_effective_prompt
         adapter_run_called = False
         gate_called = False
         gate_result = None
@@ -863,6 +864,21 @@ class TestCausalAuthorizationResumeR4:
         gate_computed_prompt_digest = None
         binding_prompt = None
         binding_digest = None
+        post_prompt = None
+        build_prompt_calls = []
+        build_prompt_counter = [0]
+        
+        def spy_build_prompt(task):
+            result = original_build_prompt(task)
+            build_prompt_counter[0] += 1
+            call_num = build_prompt_counter[0]
+            # First call is during binding (in resume_approved_task)
+            # Second call is during gate (in adapter.run)
+            # Third call is during POST (in adapter.run)
+            phase = 'BINDING' if call_num == 1 else ('GATE' if call_num == 2 else 'POST')
+            build_prompt_calls.append((phase, result))
+            print(f"[SPY build_prompt] call={call_num}, phase={phase}, prompt={result[:50] if result else 'None'}...", file=sys.stderr, flush=True)
+            return result
         
         def spy_check_auth_impl(task, prompt, external_authorization):
             nonlocal gate_called, gate_result, gate_prompt, gate_auth_prompt_digest, gate_computed_prompt_digest
@@ -895,10 +911,14 @@ class TestCausalAuthorizationResumeR4:
         
         def spy_compute_digest(prompt):
             nonlocal binding_prompt, binding_digest
-            binding_prompt = prompt
+            # First digest call is during binding
+            if build_prompt_counter[0] == 1:
+                binding_prompt = prompt
             binding_digest = original_compute_digest(prompt)
+            print(f"[SPY compute_digest] call={build_prompt_counter[0]}, digest={binding_digest}", file=sys.stderr, flush=True)
             return binding_digest
         
+        devin_adapter.build_effective_prompt = spy_build_prompt
         devin_adapter._compute_prompt_digest = spy_compute_digest
         devin_adapter._check_external_authorization_impl = spy_check_auth_impl
         devin_adapter.run = spy_run
@@ -1075,20 +1095,30 @@ class TestCausalAuthorizationResumeR4:
         print(f"[STATE] gate_auth_prompt_digest={gate_auth_prompt_digest}", file=sys.stderr, flush=True)
         print(f"[STATE] gate_computed_prompt_digest={gate_computed_prompt_digest}", file=sys.stderr, flush=True)
         print(f"[STATE] post_digest={post_digest}", file=sys.stderr, flush=True)
+        print(f"[STATE] build_prompt_calls={len(build_prompt_calls)}", file=sys.stderr, flush=True)
+        for i, (phase, prompt) in enumerate(build_prompt_calls):
+            print(f"[STATE] build_prompt_call_{i+1}: phase={phase}, prompt={prompt[:50] if prompt else 'None'}...", file=sys.stderr, flush=True)
         
-        # D8.2 explicit prompt equality assertions
+        # D8.3 explicit prompt equality assertions with phase tracking
         assert binding_prompt is not None, "Binding prompt must be captured"
         assert gate_prompt is not None, "Gate prompt must be captured"
         assert post_prompt is not None, "POST prompt must be captured"
         assert binding_prompt == gate_prompt, "Binding prompt must equal gate prompt"
         assert gate_prompt == post_prompt, "Gate prompt must equal POST prompt"
         
-        # D8.2 explicit digest equality assertions
+        # D8.3 explicit digest equality assertions
         assert binding_digest is not None, "Binding digest must be captured"
         assert gate_auth_prompt_digest is not None, "Gate auth digest must be captured"
         assert post_digest is not None, "POST digest must be captured"
         assert binding_digest == gate_auth_prompt_digest, "Binding digest must equal gate auth digest"
         assert gate_auth_prompt_digest == post_digest, "Gate auth digest must equal POST digest"
+        
+        # D8.3 prove binding source was adapter.build_effective_prompt
+        assert len(build_prompt_calls) >= 1, "build_effective_prompt must be called"
+        assert build_prompt_calls[0][0] == 'BINDING', "First call must be in BINDING phase"
+        # Check that GATE phase exists
+        gate_calls = [c for c in build_prompt_calls if c[0] == 'GATE']
+        assert len(gate_calls) >= 1, "At least one GATE phase call must exist"
         
         # Assertions for D8.1
         assert len(fake_httpx.post_calls) == 1, "Exactly one POST should occur"
@@ -1125,6 +1155,10 @@ class TestCausalAuthorizationResumeR4:
         
         # Restore
         tool_adapters.httpx = original_httpx
+        devin_adapter.build_effective_prompt = original_build_prompt
+        devin_adapter._compute_prompt_digest = original_compute_digest
+        devin_adapter._check_external_authorization_impl = original_check_auth
+        devin_adapter.run = original_run
         
         # Final report
         print(f"\n=== FORENSIC EVENT SEQUENCE ===", file=sys.stderr, flush=True)

@@ -1215,15 +1215,33 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
             return result
 
-        # Compute real prompt digest for binding
-        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
-        prompt = str(task.objective or '')
-        if context_pack:
-            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+        # Use adapter's canonical effective prompt for binding
+        adapter = self.adapters.get(card.adapter_key)
+        if adapter is None:
+            result = ToolResult(
+                task_id=task_id,
+                tool_id=task.tool_id,
+                tool_type='shell',
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='adapter_not_found',
+                    detail=f'Adapter {card.adapter_key} not found',
+                ),
+                error_message='adapter_not_found',
+            )
+            self.memory.repository.save_result(result)
+            return result
+
+        # Canonical effective prompt - single source of truth from adapter
+        effective_prompt = adapter.build_effective_prompt(task) if hasattr(adapter, 'build_effective_prompt') else str(task.objective or '')
         
-        # Use the same digest algorithm as DevinApiToolAdapter
-        import hashlib
-        prompt_digest = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
+        # Compute prompt digest using the adapter's method for consistency
+        if hasattr(adapter, '_compute_prompt_digest'):
+            prompt_digest = adapter._compute_prompt_digest(effective_prompt)
+        else:
+            import hashlib
+            prompt_digest = hashlib.sha256(effective_prompt.encode('utf-8')).hexdigest()[:16]
 
         authorization = ExternalActionAuthorization(
             task_id=task_id,
