@@ -854,12 +854,15 @@ class TestCausalAuthorizationResumeR4:
         # Spy on adapter.run and also on the authorization gate check
         original_run = devin_adapter.run
         original_check_auth = devin_adapter._check_external_authorization_impl
+        original_compute_digest = devin_adapter._compute_prompt_digest
         adapter_run_called = False
         gate_called = False
         gate_result = None
         gate_prompt = None
         gate_auth_prompt_digest = None
         gate_computed_prompt_digest = None
+        binding_prompt = None
+        binding_digest = None
         
         def spy_check_auth_impl(task, prompt, external_authorization):
             nonlocal gate_called, gate_result, gate_prompt, gate_auth_prompt_digest, gate_computed_prompt_digest
@@ -867,6 +870,7 @@ class TestCausalAuthorizationResumeR4:
             record("T28_authorization_gate_enter")
             print(f"[SPY] _check_external_authorization_impl called", file=sys.stderr, flush=True)
             print(f"[SPY] prompt={prompt[:50] if prompt else 'None'}...", file=sys.stderr, flush=True)
+            gate_prompt = prompt  # Capture exact gate prompt
             if external_authorization:
                 gate_auth_prompt_digest = external_authorization.prompt_digest
                 print(f"[SPY] gate_auth_prompt_digest={gate_auth_prompt_digest}", file=sys.stderr, flush=True)
@@ -889,6 +893,13 @@ class TestCausalAuthorizationResumeR4:
             record("T34_result_created")
             return result
         
+        def spy_compute_digest(prompt):
+            nonlocal binding_prompt, binding_digest
+            binding_prompt = prompt
+            binding_digest = original_compute_digest(prompt)
+            return binding_digest
+        
+        devin_adapter._compute_prompt_digest = spy_compute_digest
         devin_adapter._check_external_authorization_impl = spy_check_auth_impl
         devin_adapter.run = spy_run
         
@@ -1049,6 +1060,35 @@ class TestCausalAuthorizationResumeR4:
         # Final HTTP counts
         print(f"[STATE] fake_httpx.get_calls = {len(fake_httpx.get_calls)}", file=sys.stderr, flush=True)
         print(f"[STATE] fake_httpx.post_calls = {len(fake_httpx.post_calls)}", file=sys.stderr, flush=True)
+        
+        # Restore original _compute_prompt_digest for POST digest calculation
+        devin_adapter._compute_prompt_digest = original_compute_digest
+        
+        # Extract POST prompt
+        post_prompt = fake_httpx.post_calls[0]['json']['prompt'] if fake_httpx.post_calls else None
+        post_digest = devin_adapter._compute_prompt_digest(post_prompt) if post_prompt else None
+        
+        print(f"[STATE] binding_prompt={binding_prompt[:50] if binding_prompt else 'None'}...", file=sys.stderr, flush=True)
+        print(f"[STATE] gate_prompt={gate_prompt[:50] if gate_prompt else 'None'}...", file=sys.stderr, flush=True)
+        print(f"[STATE] post_prompt={post_prompt[:50] if post_prompt else 'None'}...", file=sys.stderr, flush=True)
+        print(f"[STATE] binding_digest={binding_digest}", file=sys.stderr, flush=True)
+        print(f"[STATE] gate_auth_prompt_digest={gate_auth_prompt_digest}", file=sys.stderr, flush=True)
+        print(f"[STATE] gate_computed_prompt_digest={gate_computed_prompt_digest}", file=sys.stderr, flush=True)
+        print(f"[STATE] post_digest={post_digest}", file=sys.stderr, flush=True)
+        
+        # D8.2 explicit prompt equality assertions
+        assert binding_prompt is not None, "Binding prompt must be captured"
+        assert gate_prompt is not None, "Gate prompt must be captured"
+        assert post_prompt is not None, "POST prompt must be captured"
+        assert binding_prompt == gate_prompt, "Binding prompt must equal gate prompt"
+        assert gate_prompt == post_prompt, "Gate prompt must equal POST prompt"
+        
+        # D8.2 explicit digest equality assertions
+        assert binding_digest is not None, "Binding digest must be captured"
+        assert gate_auth_prompt_digest is not None, "Gate auth digest must be captured"
+        assert post_digest is not None, "POST digest must be captured"
+        assert binding_digest == gate_auth_prompt_digest, "Binding digest must equal gate auth digest"
+        assert gate_auth_prompt_digest == post_digest, "Gate auth digest must equal POST digest"
         
         # Assertions for D8.1
         assert len(fake_httpx.post_calls) == 1, "Exactly one POST should occur"
