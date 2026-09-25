@@ -754,3 +754,56 @@ class TestCausalAuthorizationResumeR4:
             
         finally:
             tool_adapters.httpx = original_httpx
+
+    def test_canonical_effective_prompt_d8(self):
+        """BIO-META-03ZK-R4.3-D8 — Test canonical effective prompt construction."""
+        from iabv_v15.services.tools.tool_adapters import DevinApiToolAdapter
+        from iabv_v15.domain.models import ToolTask, ToolAction, ToolActionType, ApprovalDecision, ToolTaskStatus
+        import hashlib
+        
+        # Create adapter
+        devin_adapter = DevinApiToolAdapter(api_key='test-key-r4.3-d8', org_id='test-org')
+        
+        # Create task with context_pack
+        task = ToolTask(
+            task_id='test-task-r4.3-d8',
+            tool_id='devin_api',
+            title='Test HTTP Task',
+            objective='Execute a test task',
+            execution_scope='write',
+            approval_decision=ApprovalDecision.PENDING,
+            status=ToolTaskStatus.READY,
+            metadata={
+                'assistant_kind': 'devin',
+                'context_pack': 'R4.3-D8 deterministic context',
+            },
+            actions=[
+                ToolAction(
+                    action_type=ToolActionType.LAUNCH_APP,
+                    label='Test action',
+                    target='test',
+                    requires_approval=True,
+                )
+            ],
+        )
+        
+        # Test canonical effective prompt
+        effective_prompt = devin_adapter.build_effective_prompt(task)
+        
+        # Verify it includes context_pack
+        assert 'R4.3-D8 deterministic context' in effective_prompt
+        assert '--- context ---' in effective_prompt
+        assert 'Execute a test task' in effective_prompt
+        
+        # Verify digest computation
+        digest = hashlib.sha256(effective_prompt.encode('utf-8')).hexdigest()[:16]
+        
+        # Test that adapter uses same digest algorithm
+        adapter_digest = devin_adapter._compute_prompt_digest(effective_prompt)
+        assert adapter_digest == digest, "Adapter digest must match manual computation"
+        
+        # Test that task without context_pack works
+        task_no_context = task.model_copy(update={'metadata': {'assistant_kind': 'devin'}})
+        prompt_no_context = devin_adapter.build_effective_prompt(task_no_context)
+        assert prompt_no_context == 'Execute a test task'
+        assert '--- context ---' not in prompt_no_context

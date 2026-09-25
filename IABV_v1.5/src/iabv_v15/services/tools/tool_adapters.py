@@ -1862,6 +1862,24 @@ class DevinApiToolAdapter:
         import hashlib
         return hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]
 
+    def build_effective_prompt(self, task: ToolTask) -> str:
+        """Construye el prompt efectivo canónico para autorización y ejecución.
+        
+        Este método es la única fuente de verdad para el prompt efectivo
+        que se usa en:
+        - Authorization binding (resume_approved_task)
+        - Authorization gate (_check_external_authorization_impl)
+        - External HTTP POST (run)
+        
+        El prompt efectivo incluye el context_pack cuando está presente:
+        objective + "\n\n--- context ---\n" + context_pack
+        """
+        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
+        prompt = str(task.objective or '')
+        if context_pack:
+            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+        return prompt
+
     def _check_external_authorization(
         self,
         task: ToolTask,
@@ -1962,7 +1980,9 @@ class DevinApiToolAdapter:
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        if not self._check_external_authorization_impl(task, task.objective, effective_authorization):
+        # Use canonical effective prompt for authorization gate
+        effective_prompt = self.build_effective_prompt(task)
+        if not self._check_external_authorization_impl(task, effective_prompt, effective_authorization):
             return {
                 'success': False,
                 'output_text': '',
@@ -1998,10 +2018,8 @@ class DevinApiToolAdapter:
                 'metadata': {'sandbox': sandbox, 'tool_id': card.tool_id},
             }
 
-        context_pack = str(task.metadata.get('context_pack') or '') if task.metadata else ''
-        prompt = str(task.objective or '')
-        if context_pack:
-            prompt = f'{prompt}\n\n--- context ---\n{context_pack}'
+        # Use canonical effective prompt for both authorization and POST
+        prompt = self.build_effective_prompt(task)
 
         session_id = ''
         session_url = ''
