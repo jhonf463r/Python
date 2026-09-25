@@ -808,7 +808,7 @@ class TestCausalAuthorizationResumeR4:
         assert prompt_no_context == 'Execute a test task'
         assert '--- context ---' not in prompt_no_context
 
-    def test_e2e_hang_diagnosis_d8_1(self, tmp_path):
+    def test_e2e_hang_diagnosis_d8_1(self, tmp_path, monkeypatch):
         """BIO-META-03ZK-R4.3-D8.1 — Forensic hang diagnosis of E2E approval flow.
         
         This test adds timestamped forensic events to identify exactly where the flow hangs.
@@ -918,10 +918,10 @@ class TestCausalAuthorizationResumeR4:
             print(f"[SPY compute_digest] call={build_prompt_counter[0]}, digest={binding_digest}", file=sys.stderr, flush=True)
             return binding_digest
         
-        devin_adapter.build_effective_prompt = spy_build_prompt
-        devin_adapter._compute_prompt_digest = spy_compute_digest
-        devin_adapter._check_external_authorization_impl = spy_check_auth_impl
-        devin_adapter.run = spy_run
+        monkeypatch.setattr(devin_adapter, "build_effective_prompt", spy_build_prompt)
+        monkeypatch.setattr(devin_adapter, "_compute_prompt_digest", spy_compute_digest)
+        monkeypatch.setattr(devin_adapter, "_check_external_authorization_impl", spy_check_auth_impl)
+        monkeypatch.setattr(devin_adapter, "run", spy_run)
         
         adapters = {'devin_api': devin_adapter}
         tool_registry = ToolRegistry(repository=repository, adapters=adapters)
@@ -978,8 +978,7 @@ class TestCausalAuthorizationResumeR4:
         fake_httpx = FakeHttpx()
         
         # Patch HTTP
-        original_httpx = tool_adapters.httpx
-        tool_adapters.httpx = fake_httpx
+        monkeypatch.setattr(tool_adapters, "httpx", fake_httpx)
         record("T02_http_interceptor_installed")
         
         # Broker handler
@@ -1081,12 +1080,9 @@ class TestCausalAuthorizationResumeR4:
         print(f"[STATE] fake_httpx.get_calls = {len(fake_httpx.get_calls)}", file=sys.stderr, flush=True)
         print(f"[STATE] fake_httpx.post_calls = {len(fake_httpx.post_calls)}", file=sys.stderr, flush=True)
         
-        # Restore original _compute_prompt_digest for POST digest calculation
-        devin_adapter._compute_prompt_digest = original_compute_digest
-        
         # Extract POST prompt
         post_prompt = fake_httpx.post_calls[0]['json']['prompt'] if fake_httpx.post_calls else None
-        post_digest = devin_adapter._compute_prompt_digest(post_prompt) if post_prompt else None
+        post_digest = original_compute_digest(post_prompt) if post_prompt else None
         
         print(f"[STATE] binding_prompt={binding_prompt[:50] if binding_prompt else 'None'}...", file=sys.stderr, flush=True)
         print(f"[STATE] gate_prompt={gate_prompt[:50] if gate_prompt else 'None'}...", file=sys.stderr, flush=True)
@@ -1152,13 +1148,6 @@ class TestCausalAuthorizationResumeR4:
         
         # If we got here without hanging, report
         print(f"[DIAGNOSIS] Events recorded: {list(events.keys())}", file=sys.stderr, flush=True)
-        
-        # Restore
-        tool_adapters.httpx = original_httpx
-        devin_adapter.build_effective_prompt = original_build_prompt
-        devin_adapter._compute_prompt_digest = original_compute_digest
-        devin_adapter._check_external_authorization_impl = original_check_auth
-        devin_adapter.run = original_run
         
         # Final report
         print(f"\n=== FORENSIC EVENT SEQUENCE ===", file=sys.stderr, flush=True)
