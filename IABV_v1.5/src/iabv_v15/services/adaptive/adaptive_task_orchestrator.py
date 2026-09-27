@@ -3005,6 +3005,12 @@ class AdaptiveTaskOrchestrator:
             if perception_snapshot is not None
             else dict(session.context.metadata.get('portable_context_summary') or {})
         )
+        # BIO-UNIVERSAL-08: Preserve current discernment summary in rebuilt DecisionContext
+        discernment_frame_summary = (
+            dict((perception_snapshot.metadata or {}).get('discernment_frame_summary') or {})
+            if perception_snapshot is not None
+            else dict(session.context.metadata.get('discernment_frame_summary') or {})
+        )
         return DecisionContext(
             user_goal=request.user_goal,
             intent=session.intent,
@@ -3041,6 +3047,7 @@ class AdaptiveTaskOrchestrator:
                 'environment_risk_signals': [item.model_dump(mode='json') for item in environment_self_model.risk_signals],
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'discernment_frame_summary': discernment_frame_summary,
             },
         )
 

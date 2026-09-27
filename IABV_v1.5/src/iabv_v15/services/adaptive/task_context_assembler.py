@@ -150,6 +150,7 @@ class TaskContextAssembler:
         
         # Build discernment frame from current task evidence
         current_frame = None
+        discernment_summary = {'status': 'current_frame_unavailable'}
         if self.discernment_frame_service is not None:
             try:
                 # Adapt visual semantic evidence from VisualSignalSnapshot.metadata
@@ -176,9 +177,18 @@ class TaskContextAssembler:
                     environment_self_model=environment_self_model.model_dump() if environment_self_model else None,
                     concept_weight_evidence=concept_weight_evidence,
                 )
+                # Build summary from current frame
+                discernment_summary = self._discernment_frame_summary(current_frame)
             except Exception:
                 # Frame construction failed - continue without frame
                 current_frame = None
+                discernment_summary = {'status': 'current_frame_unavailable'}
+        
+        # BIO-UNIVERSAL-08: Inject current discernment summary into TaskContext.metadata
+        # This makes the frame available to CapabilityReadinessService.evaluate()
+        if task_context.metadata is None:
+            task_context.metadata = {}
+        task_context.metadata['discernment_frame_summary'] = discernment_summary
         
         decision_context = DecisionContext(
             user_goal=request.user_goal,
