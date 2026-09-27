@@ -807,3 +807,22 @@ Acceptance requires using real production functions/fixtures where possible and 
 **First discriminating experiment:** use an unfamiliar controlled web application and test the same semantic loop for login/authentication, identifier field, secret field, submit operation, account-switch candidate and authenticated-session transition; repeat on a second unrelated application without adding provider-specific semantic classes.
 
 **Stop condition:** no implementation of a giant ontology/universal brain/central router until existing contracts are traced and the smallest missing semantic edge is proven.
+
+### UK-UNIVERSAL-EXPERIMENTAL-REALITY — Experimental interpretation of unfamiliar environments
+
+**Status:** OPEN RESEARCH / NEXT SEMANTIC FRONTIER  
+**Introduced:** 2026-09-26  
+**Source:** `UNIVERSAL-EXPERIMENTAL-REALITY-LOOP-2026-09-26.md`
+
+**Question:** Can IABV use its existing perception, world/self-model, discernment, browser/runtime, human and external-AI resources as an experimental system for learning what unfamiliar environmental objects, relations, states and transitions mean?
+
+**Core hypothesis:**  
+objective → uncertainty → observe → concept candidates → relation hypotheses → information-gain experiment → capability-fit actor/resource → governed action → before/after observation → independent verification → semantic update → decision → outcome → reusable knowledge → later decision.
+
+**Important distinction:** the human and external IAs are not part of the semantic truth automatically. They are heterogeneous evidence/action resources with different authority, cost, independence and capabilities.
+
+**First open causal edge:** normalized observation → reusable semantic interpretation → verified state/relation → capability inference → existing decision.
+
+**Discriminating experiment:** a controlled unfamiliar web application, then a second unrelated application, testing whether the same semantic algorithm can recognize authentication flow, identity/session transitions, available actions and uncertainty without provider-specific cognitive classes.
+
+**Stop condition:** no broad new ontology/brain/router. First exhaust existing organ composition and identify the smallest actual missing semantic contract or causal edge.
