@@ -788,3 +788,24 @@ Candidate seams:
 - recommendation → `ToolTeachService._preferred_external_tool_id()`.
 
 Acceptance requires using real production functions/fixtures where possible and explicitly stating when a lower-level result is only partial evidence for the end-to-end claim.
+
+### UK-UNIVERSAL-ENV-SEMANTICS — General environmental semantics / entity-relation inference
+
+**Status:** OPEN RESEARCH / ARCHITECTURAL FRONTIER  
+**Introduced:** 2026-09-26  
+**Source:** `UNIVERSAL-ENVIRONMENTAL-SEMANTICS-2026-09-26.md`  
+**Current inspected revision:** `0785531851c86d072e2c8cdb8fc5b85255b441c8`
+
+**Question:** Can IABV learn and apply a provider-agnostic semantic method for understanding environmental objects, relationships, states, capabilities and transitions across browsers, APIs, applications, devices and operating systems?
+
+**Reconciled current truth:** observation substrate already exists: AccountInventory, browser/account/session scanners, UniversalPerceptionService, WorldModel/EnvironmentSelfModel, DiscernmentFrameService, CommonSenseEngine, CapabilityReadiness, PortableContext and ControlMaster. The missing proof is not raw observation; it is the general bridge from normalized observations to reusable entity/relation/state knowledge and then to existing decision use.
+
+**Core hypothesis:**  
+observe → normalize → identify candidates → relate/hypothesize → disambiguate → verify → update semantic state → derive capabilities/affordances → select channel → act → observe outcome → learn → reuse.
+
+**Important negative knowledge:**  
+Do not treat email as a unique account or identity. Do not treat browser profile as account identity. Do not treat session as permanent account identity. Do not treat credential discovery as authorization. Do not create provider-specific semantic classes merely because a new provider is encountered.
+
+**First discriminating experiment:** use an unfamiliar controlled web application and test the same semantic loop for login/authentication, identifier field, secret field, submit operation, account-switch candidate and authenticated-session transition; repeat on a second unrelated application without adding provider-specific semantic classes.
+
+**Stop condition:** no implementation of a giant ontology/universal brain/central router until existing contracts are traced and the smallest missing semantic edge is proven.

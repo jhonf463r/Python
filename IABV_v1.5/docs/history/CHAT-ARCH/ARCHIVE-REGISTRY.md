@@ -446,3 +446,12 @@ IABV has substantial substrate organs and causal selector-level learning evidenc
 - `BIO-R13-DEVIN-HANDOFF-2026-09-21.md` — bounded test-only handoff to determine causal sensitivity from prior scientific outcome to next proposal/experiment.
 
 - `BIO-R14-SONNET-HANDOFF-2026-09-21.md` — forensic handoff to locate the smallest deterministic causal seam for outcome→later proposal/experiment after BIO-R13 was blocked.
+
+
+## 2026-09-26 REGISTRATION — UNIVERSAL ENVIRONMENTAL SEMANTICS
+
+- `UNIVERSAL-ENVIRONMENTAL-SEMANTICS-2026-09-26.md` — canonical research record for the newly reconciled universal environmental reasoning frontier.
+- Purpose: preserve the distinction between existing perception/account/browser inventory substrate and the still-unproven generic semantic bridge from observation → entity/relation/state → capability → decision.
+- Key deduction: universal cognition means transferable semantic reasoning above platform-specific adapters, not elimination of all OS/browser/provider adapters.
+- Critical examples preserved: email as identity signal rather than unique identity; human/account/organization/credential/channel/session as distinct many-to-many concepts; browser actions as semantic affordances; unfamiliar-provider discovery through observation, hypothesis and verification.
+- No implementation is authorized by this record; the first discriminating experiment is a provider-agnostic login/session semantic test on unfamiliar applications.
