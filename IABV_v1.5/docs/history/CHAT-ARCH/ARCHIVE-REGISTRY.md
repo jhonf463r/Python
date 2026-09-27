@@ -462,3 +462,11 @@ IABV has substantial substrate organs and causal selector-level learning evidenc
 - Core hypothesis: observe → interpret → hypothesize → select information-gain experiment → capability-fit actor/resource → governed action → observe transition → verify → update semantic model → decision → outcome → reusable knowledge.
 - First open causal edge: normalized observation → reusable semantic interpretation → verified relation/state → capability inference → existing decision.
 - No implementation authorization; first next step is independent forensic/architectural audit, followed only if justified by runtime experimentation.
+
+## 2026-09-26 REGISTRATION — BIO-UNIVERSAL-01 SONNET HANDOFF
+
+- `BIO-UNIVERSAL-01-SONNET-HANDOFF-2026-09-26.md` — independent forensic/architectural handoff to determine the smallest existing-organ composition capable of universal experimental reality interpretation.
+- Objective: distinguish missing semantic mechanism from missing wiring/verification and design the minimum discriminating browser experiment.
+- Actor: **SONNET**.
+- Mode: read-only; no implementation, no mutation, no broad ontology/brain/router.
+- Follow-up only after Sonnet identifies the first open edge: **Devin** for Windows/browser runtime experiment if runtime execution is the required capability; **Sonnet** then independently verifies the resulting evidence.
