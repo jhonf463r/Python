@@ -3294,4 +3294,74 @@ class ExternalActionAuthorization(BaseModel):
         if self.status == ExternalActionAuthorizationStatus.CONSUMED:
             raise ValueError("Authorization already consumed")
         self.status = ExternalActionAuthorizationStatus.CONSUMED
-        self.consumed_at = utc_now()
+
+
+# ===== Devin Account & Credential Management =====
+
+class IdentitySource(str, Enum):
+    """Source of account identity information."""
+    USER_CONFIRMED_BROWSER = "user_confirmed_browser"
+    PROVIDER_RETURNED = "provider_returned"
+    USER_PROVIDED = "user_provided"
+    INFERRED = "inferred"
+    UNKNOWN = "unknown"
+
+
+class CredentialType(str, Enum):
+    """Type of API credential."""
+    APK_USER = "apk_user"  # v1/v2 legacy personal API key
+    APK = "apk"  # v1/v2 API key
+    COG = "cog"  # v3 service user token
+    UNKNOWN = "unknown"
+
+
+class ApiVersion(str, Enum):
+    """API version."""
+    V1 = "v1"
+    V2 = "v2"
+    V3 = "v3"
+    UNKNOWN = "unknown"
+
+
+class ValidationStatus(str, Enum):
+    """Validation status of a credential."""
+    READY = "ready"
+    DEGRADED = "degraded"
+    BLOCKED = "blocked"
+    UNVERIFIED = "unverified"
+    ERROR = "error"
+
+
+class DevinAccount(BaseModel):
+    """Registry entry for a Devin account."""
+    account_id: str = Field(default_factory=lambda: str(uuid4()))
+    provider: str = "devin"
+    display_label: str  # User-provided label (e.g., "devin_personal", "devin_work")
+    email: str | None = None  # Masked email from browser/API
+    organization_id: str | None = None  # From API or browser
+    organization_label: str | None = None  # User-provided org label
+    plan: str | None = None  # From browser (self-serve, Enterprise, etc.)
+    browser_profile_id: str | None = None  # BrowserProfileConfig.profile_id if applicable
+    identity_source: IdentitySource = IdentitySource.UNKNOWN
+    identity_verified: bool = False
+    created_at_utc: datetime = Field(default_factory=utc_now)
+    updated_at_utc: datetime = Field(default_factory=utc_now)
+
+
+class DevinCredential(BaseModel):
+    """Registry entry for a Devin API credential."""
+    credential_id: str = Field(default_factory=lambda: str(uuid4()))
+    account_id: str  # Reference to DevinAccount.account_id
+    secret_reference: SecretReference  # Reference to SecretVault (raw secret in keyring)
+    fingerprint: str  # Truncated SHA-256 digest (non-reversible)
+    credential_type: CredentialType = CredentialType.UNKNOWN
+    api_version: ApiVersion = ApiVersion.UNKNOWN
+    source: str = "legacy"  # "legacy" (existing), "browser", "user_provided", etc.
+    validation_status: ValidationStatus = ValidationStatus.UNVERIFIED
+    last_validated_at: datetime | None = None
+    last_http_status: int | None = None
+    last_error_code: str | None = None
+    last_error_summary: str | None = None
+    capabilities: dict[str, Any] = Field(default_factory=dict)  # "session_create": bool, "quota_available": bool, etc.
+    created_at_utc: datetime = Field(default_factory=utc_now)
+    updated_at_utc: datetime = Field(default_factory=utc_now)
