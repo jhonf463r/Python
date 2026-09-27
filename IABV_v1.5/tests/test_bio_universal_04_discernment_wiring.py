@@ -276,7 +276,7 @@ def test_safety_graceful_degradation():
         # Should report unavailable status
         summary = assembler._discernment_frame_summary()
         assert summary is not None
-        assert summary.get('status') == 'unavailable'
+        assert summary.get('status') == 'current_frame_unavailable'
 
 
 def test_safety_build_frame_no_actions():

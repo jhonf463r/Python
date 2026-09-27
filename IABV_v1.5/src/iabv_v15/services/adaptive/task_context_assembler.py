@@ -550,9 +550,13 @@ class TaskContextAssembler:
 
     def _discernment_frame_summary(self, frame: Any | None = None) -> dict[str, Any]:
         """P0.69/P0.70: compact discernment frame summary for perception metadata.
-        
-        If a frame is provided, use its summary. Otherwise, attempt to get
-        the latest frame from the injected DiscernmentFrameService.
+
+        If a frame is provided, use its summary. If frame is None, return
+        explicit current-frame-unavailable status. Do NOT silently fall back
+        to historical frame to prevent contamination of current task metadata.
+
+        BIO-UNIVERSAL-06: Prevents historical frame from being injected into
+        current task when frame construction fails.
         """
         if frame is not None:
             # Use the provided frame directly
@@ -560,14 +564,9 @@ class TaskContextAssembler:
                 return self.discernment_frame_service.discernment_frame_summary(frame)
             return {'status': 'frame_provided_but_service_unavailable'}
         
-        # No frame provided - try to get latest from service
-        if self.discernment_frame_service is not None:
-            try:
-                return self.discernment_frame_service.discernment_frame_summary()
-            except Exception:
-                return {'status': 'service_error'}
-        
-        return {'status': 'unavailable'}
+        # No frame provided - explicit unavailable status
+        # Do NOT fall back to latest_frame() to prevent historical contamination
+        return {'status': 'current_frame_unavailable'}
 
     def _tool_world_summary(self, tool: Any) -> dict[str, Any]:
         return {
