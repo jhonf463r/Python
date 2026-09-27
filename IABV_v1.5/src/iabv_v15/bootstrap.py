@@ -318,6 +318,7 @@ from iabv_v15.services.evolution.intent_scoped_briefing_service import (
 )
 from iabv_v15.services.evolution.portable_context_service import PortableContextService
 from iabv_v15.services.evolution.resource_metacognition_service import ResourceMetacognitionService
+from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 from iabv_v15.services.evolution.token_rotation_ledger import TokenRotationLedger
 from iabv_v15.services.evolution.session_start_briefing_service import (
@@ -927,6 +928,12 @@ class AppBootstrap:
 
         self._tracer.trace('phase_oses_done')
         self._timeline.mark('phase_oses_done', rss_mb=_rss_mb())
+        
+        # DiscernmentFrameService: shared discernment frame construction for task path
+        self.discernment_frame_service = DiscernmentFrameService(
+            workspace_root=self.config.workspace_root
+        )
+        
         # Autonomy cycle: central service for pending queue, resume hints,
         # capability discovery, and OSES→queue bridge.  Replaces the
         # scattered Fix 18b/18d/18e patches with one coherent module.
@@ -1391,6 +1398,7 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             portable_context_service=self.portable_context_service,
+            discernment_frame_service=self.discernment_frame_service,
         )
         self.capability_readiness_service = CapabilityReadinessService(self.capability_repository, self.tool_record_repository)
         self.strategy_pack_registry = StrategyPackRegistry(self.strategy_pack_repository)

@@ -63,6 +63,7 @@ class TaskContextAssembler:
         world_model_service: Any | None = None,
         autonomous_validation_cycle: Any | None = None,
         portable_context_service: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.episode_repository = episode_repository
         self.knowledge_repository = knowledge_repository
@@ -82,6 +83,7 @@ class TaskContextAssembler:
         self.world_model_service = world_model_service
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.portable_context_service = portable_context_service
+        self.discernment_frame_service = discernment_frame_service
         self._teaching_visual_summary_builder = BrowserLearningAssembler()
 
     def build(self, request: InferenceRequest, intent: TaskIntent) -> TaskContext:
@@ -145,6 +147,39 @@ class TaskContextAssembler:
             world_model=world_model,
         )
         conversation_analysis = dict(intent.metadata.get('conversation_analysis') or {})
+        
+        # Build discernment frame from current task evidence
+        current_frame = None
+        if self.discernment_frame_service is not None:
+            try:
+                # Adapt visual semantic evidence from VisualSignalSnapshot.metadata
+                concept_weight_evidence = None
+                if resolved_visual_signal and hasattr(resolved_visual_signal, 'metadata'):
+                    visual_metadata = dict(resolved_visual_signal.metadata or {})
+                    concept_weight_evidence = {
+                        "concepts": list(visual_metadata.get("visual_concepts") or []),
+                        "weights": dict(visual_metadata.get("concept_weights") or {}),
+                        "sources": list(visual_metadata.get("semantic_sources") or []),
+                    }
+                    # Add missing semantic sources if available
+                    if visual_metadata.get("missing_semantic_sources"):
+                        concept_weight_evidence["missing_semantic_sources"] = list(
+                            visual_metadata.get("missing_semantic_sources")
+                        )
+                
+                # Build frame for current task
+                current_frame = self.discernment_frame_service.build_frame(
+                    phase='observe',
+                    trigger_source='task_context_assembler',
+                    raw_inputs=[request.user_goal or intent.intent_key],
+                    world_model=world_model.model_dump() if world_model else None,
+                    environment_self_model=environment_self_model.model_dump() if environment_self_model else None,
+                    concept_weight_evidence=concept_weight_evidence,
+                )
+            except Exception:
+                # Frame construction failed - continue without frame
+                current_frame = None
+        
         decision_context = DecisionContext(
             user_goal=request.user_goal,
             intent=intent,
@@ -178,7 +213,7 @@ class TaskContextAssembler:
                 'validation_learning_summary': validation_learning_summary,
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
-                'discernment_frame_summary': self._discernment_frame_summary(),
+                'discernment_frame_summary': self._discernment_frame_summary(current_frame),
                 'evidence_basis': self._classify_evidence_basis(
                     has_world_model=not self._world_model_unresolved(world_model),
                     has_environment=bool(str(environment_self_model.environment_id or '').strip()),
@@ -229,7 +264,7 @@ class TaskContextAssembler:
                 'environment_notifications': list(environment_self_model.notifications or []),
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
-                'discernment_frame_summary': self._discernment_frame_summary(),
+                'discernment_frame_summary': self._discernment_frame_summary(current_frame),
                 'evidence_basis': self._classify_evidence_basis(
                     has_world_model=not self._world_model_unresolved(world_model),
                     has_environment=bool(str(environment_self_model.environment_id or '').strip()),
@@ -513,14 +548,26 @@ class TaskContextAssembler:
         except Exception:
             return {}
 
-    def _discernment_frame_summary(self) -> dict[str, Any]:
-        """P0.69/P0.70: compact discernment frame summary for perception metadata."""
-        try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
-            return svc.discernment_frame_summary()
-        except Exception:
-            return {'status': 'unavailable'}
+    def _discernment_frame_summary(self, frame: Any | None = None) -> dict[str, Any]:
+        """P0.69/P0.70: compact discernment frame summary for perception metadata.
+        
+        If a frame is provided, use its summary. Otherwise, attempt to get
+        the latest frame from the injected DiscernmentFrameService.
+        """
+        if frame is not None:
+            # Use the provided frame directly
+            if self.discernment_frame_service is not None:
+                return self.discernment_frame_service.discernment_frame_summary(frame)
+            return {'status': 'frame_provided_but_service_unavailable'}
+        
+        # No frame provided - try to get latest from service
+        if self.discernment_frame_service is not None:
+            try:
+                return self.discernment_frame_service.discernment_frame_summary()
+            except Exception:
+                return {'status': 'service_error'}
+        
+        return {'status': 'unavailable'}
 
     def _tool_world_summary(self, tool: Any) -> dict[str, Any]:
         return {
