@@ -454,3 +454,11 @@ IABV has substantial substrate organs and causal selector-level learning evidenc
 - Key correction: current IABV already has significant account/browser/session observation substrate; the open frontier is the generic semantic bridge from observation to reusable relational knowledge and future decision use.
 - Key principle: platform-specific adapters are allowed at the boundary; the semantic reasoning method must be transferable.
 - No implementation is authorized by the record.
+
+## 2026-09-26 REGISTRATION — UNIVERSAL EXPERIMENTAL REALITY LOOP
+
+- `UNIVERSAL-EXPERIMENTAL-REALITY-LOOP-2026-09-26.md` — canonical research record for using IABV itself as an experimental interpreter of unfamiliar environments.
+- Scope includes the laptop/device/OS/browser/software/social-digital environment plus the human and external AIs as heterogeneous evidence/action resources.
+- Core hypothesis: observe → interpret → hypothesize → select information-gain experiment → capability-fit actor/resource → governed action → observe transition → verify → update semantic model → decision → outcome → reusable knowledge.
+- First open causal edge: normalized observation → reusable semantic interpretation → verified relation/state → capability inference → existing decision.
+- No implementation authorization; first next step is independent forensic/architectural audit, followed only if justified by runtime experimentation.
