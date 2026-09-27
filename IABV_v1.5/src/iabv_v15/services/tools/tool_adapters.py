@@ -39,6 +39,17 @@ class ToolAdapter:
         # contratos para adapters que nunca tocan credenciales.
         self.credential_broker: Any = None
 
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
+        """Execute tool adapter. Subclasses must override.
+
+        Args:
+            card: Tool card configuration
+            task: Task to execute
+            sandbox: If True, execute in sandbox mode (no external effects)
+            external_authorization: Optional execution-bound authorization for external tools
+        """
+        raise NotImplementedError("Subclasses must implement run()")
+
     def _resolve_credential_domain(self, card: ToolCard) -> str:
         """Dominio preferido para asociar credenciales de un asistente externo."""
         explicit = str(card.metadata.get('credential_domain') or '').strip().lower()
@@ -595,7 +606,7 @@ class ToolAdapter:
                 return True
         return False
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
         assistant_kind = str(card.metadata.get('assistant_kind') or card.tool_id)
@@ -1427,7 +1438,7 @@ class PlaywrightToolAdapter:
     def is_available(self, card: ToolCard) -> bool:
         return sync_playwright is not None
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         artifacts: list[str] = []
         extracted: dict[str, Any] = {}
@@ -1514,7 +1525,7 @@ class AiderToolAdapter:
             return ['aider']
         return [sys.executable, '-m', 'aider']
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         base_cmd = self._aider_command()
         try:
@@ -1592,7 +1603,7 @@ class MCPToolAdapter:
         except Exception:
             return False
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         server_url = str(card.metadata.get('server_url') or '')
         if not server_url:
@@ -1663,7 +1674,7 @@ class OllamaToolAdapter:
         health = self.provider.health_check()
         return bool(health.available)
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         prompt_text = next(
             (
@@ -1738,7 +1749,7 @@ class ShellToolAdapter:
     def is_available(self, card: ToolCard) -> bool:
         return True
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         command = next((action.value or action.target for action in task.actions if action.action_type == ToolActionType.RUN_COMMAND), '')
         if not command:
@@ -1787,14 +1798,14 @@ class DesktopHumanToolAdapter:
     def is_available(self, card: ToolCard) -> bool:
         return self.runner.is_available()
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         return self.runner.run(card, task, sandbox=sandbox)
 
 
 class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         result = super().run(card, task, sandbox=sandbox)
         if sandbox:
             return result
@@ -1866,39 +1877,45 @@ class DevinApiToolAdapter:
         self,
         task: ToolTask,
         prompt: str,
+        external_authorization: Any | None = None,
     ) -> bool:
         """Verifica que existe una autorización externa válida para esta ejecución.
 
         P0-B Trust Root: sandbox=False requiere autorización externa válida.
+
+        Args:
+            task: Task to execute
+            prompt: Prompt text for digest computation
+            external_authorization: Optional execution-bound authorization (takes precedence over constructor-injected)
         """
-        if self._external_authorization is None:
+        # Use execution-bound authorization if provided, otherwise fall back to constructor-injected
+        auth = external_authorization or self._external_authorization
+        if auth is None:
             return False
-        
+
         try:
             from iabv_v15.domain.models import ExternalActionAuthorization
-            
-            if not isinstance(self._external_authorization, ExternalActionAuthorization):
+
+            if not isinstance(auth, ExternalActionAuthorization):
                 return False
-            
-            auth = self._external_authorization
-            
+
             # Verificar estado
             if not auth.is_valid():
                 return False
-            
-            # Verificar binding
+
+            # Verificar binding against actual adapter_key
             prompt_digest = self._compute_prompt_digest(prompt)
             if not auth.validate_binding(
                 task_id=task.task_id,
                 tool_id=task.tool_id,
-                adapter_key=auth.adapter_key,
+                adapter_key='devin_api',  # Consumer's actual adapter_key
                 prompt_digest=prompt_digest,
             ):
                 return False
-            
+
             # Consumir autorización (single-use)
             auth.consume()
-            
+
             return True
         except Exception:
             return False
@@ -1922,7 +1939,7 @@ class DevinApiToolAdapter:
         except Exception:
             return False
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         
         # FAIL-CLOSED: sandbox=True significa NO external HTTP, NO remote side effect
@@ -1947,7 +1964,7 @@ class DevinApiToolAdapter:
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        if not self._check_external_authorization(task, task.objective):
+        if not self._check_external_authorization(task, task.objective, external_authorization):
             return {
                 'success': False,
                 'output_text': '',
@@ -2180,7 +2197,7 @@ class GitHubApiToolAdapter:
             },
         }
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         try:
             return self._run_action(card, task, sandbox=sandbox, start=start)
@@ -2524,7 +2541,7 @@ class SiteExplorerToolAdapter:
         checker = getattr(self.service, 'is_available', None)
         return bool(checker()) if callable(checker) else True
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         start_url = ''
         max_pages: int | None = None
@@ -2647,7 +2664,7 @@ class LocalCliToolAdapter:
     def is_available(self, card: ToolCard) -> bool:
         return bool(self._resolve_executable(card))
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False, external_authorization: Any | None = None) -> dict[str, Any]:
         start = time.perf_counter()
         executable = self._resolve_executable(card)
         if not executable:

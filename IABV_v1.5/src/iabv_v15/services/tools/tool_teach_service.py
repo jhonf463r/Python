@@ -746,7 +746,7 @@ class ToolTeachService:
         stored_task = self.memory.repository.get_task(task.task_id) or task
         return stored_task, result, preview
 
-    def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
+    def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False, external_authorization: Any | None = None) -> ToolResult:
         card = self.registry.pick_card_for_task(
             task,
             preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
@@ -851,7 +851,7 @@ class ToolTeachService:
         # autonomous_external_launch=True → launch_dry_run=False → sandbox=False (external HTTP permitido)
         # Esto es distinto de governance approval (approved parameter)
         sandbox_mode = launch_dry_run
-        payload = adapter.run(card, task, sandbox=sandbox_mode)
+        payload = adapter.run(card, task, sandbox=sandbox_mode, external_authorization=external_authorization)
         payload_metadata = dict(payload.get('metadata') or {})
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')

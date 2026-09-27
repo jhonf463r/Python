@@ -1,6 +1,16 @@
 ﻿from __future__ import annotations
 
-from iabv_v15.domain.models import AdaptiveSession, ApprovalDecision, RunStatus, TaskRole
+import hashlib
+from datetime import datetime, timezone
+
+from iabv_v15.domain.models import (
+    AdaptiveSession,
+    ApprovalDecision,
+    ExternalActionAuthorization,
+    ExternalActionAuthorizationStatus,
+    RunStatus,
+    TaskRole,
+)
 from iabv_v15.services.adaptive.execution_playbook_service import OperationalExecutorResult
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
@@ -39,7 +49,42 @@ class ToolOperationalExecutor:
             return OperationalExecutorResult(executed=False, status=RunStatus.PARTIAL, summary=self.describe(session), next_actions=['Simular', 'Preparar Codex'], metadata={'mode': 'adapter_missing'})
         task = self.tool_teach_service.build_task_for_session(session)
         approved = not any(item.decision == ApprovalDecision.PENDING for item in session.approval_checkpoints)
-        result = self.tool_teach_service.execute_task(task, approved=approved)
+
+        # Issue execution-bound ExternalActionAuthorization when approved
+        external_authorization = None
+        if approved:
+            card = self.tool_teach_service.registry.pick_card_for_task(task)
+            if card is not None:
+                # Find the approved checkpoint for provenance
+                approved_checkpoint = None
+                for checkpoint in session.approval_checkpoints:
+                    if checkpoint.decision == ApprovalDecision.APPROVED:
+                        approved_checkpoint = checkpoint
+                        break
+
+                # Build prompt digest using same formula as consumer
+                prompt_digest = hashlib.sha256(task.objective.encode('utf-8')).hexdigest()[:16]
+
+                # Create authorization with VALIDATED status (approval already verified)
+                external_authorization = ExternalActionAuthorization(
+                    task_id=task.task_id,
+                    tool_id=card.tool_id,
+                    adapter_key=card.adapter_key,
+                    assistant_kind=str(task.metadata.get('assistant_kind') or ''),
+                    endpoint='',  # No canonical source in ToolCard
+                    action='',  # No canonical source in ToolCard
+                    prompt_digest=prompt_digest,
+                    status=ExternalActionAuthorizationStatus.VALIDATED,
+                    reason=approved_checkpoint.reason if approved_checkpoint else 'Approved via checkpoint',
+                    metadata={
+                        'session_id': session.session_id,
+                        'checkpoint_id': approved_checkpoint.checkpoint_id if approved_checkpoint else None,
+                        'phase_key': approved_checkpoint.phase_key if approved_checkpoint else None,
+                        'risk_level': str(approved_checkpoint.risk_level) if approved_checkpoint else None,
+                    },
+                )
+
+        result = self.tool_teach_service.execute_task(task, approved=approved, external_authorization=external_authorization)
         metadata = {
             'mode': result.execution_state.state,
             'tool_id': result.tool_id,
