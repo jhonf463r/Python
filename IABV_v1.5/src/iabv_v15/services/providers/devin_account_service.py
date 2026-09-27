@@ -5,6 +5,7 @@ This service manages:
 - Credential registration (secure storage via SecretVault)
 - Credential validation (READ-ONLY health checks)
 - Account-credential association with explicit identity sources
+- Persistent storage via DevinAccountRepository
 
 This does NOT implement automatic multi-account routing.
 It only provides the registry and validation foundation.
@@ -26,6 +27,7 @@ from iabv_v15.domain.models import (
     SecretReference,
     ValidationStatus,
 )
+from iabv_v15.infra.persistence.devin_account_repository import DevinAccountRepository
 from iabv_v15.services.capture.secret_vault import SecretVault
 
 logger = logging.getLogger(__name__)
@@ -68,11 +70,42 @@ def classify_api_version(secret: str) -> ApiVersion:
 class DevinAccountService:
     """Registry and validation service for Devin accounts and credentials."""
 
-    def __init__(self, *, secret_vault: SecretVault) -> None:
+    def __init__(self, *, secret_vault: SecretVault, repository: DevinAccountRepository | None = None) -> None:
         self._vault = secret_vault
+        self._repository = repository
         self._accounts: dict[str, DevinAccount] = {}  # account_id -> account
         self._credentials: dict[str, DevinCredential] = {}  # credential_id -> credential
         self._account_credentials: dict[str, list[str]] = {}  # account_id -> [credential_ids]
+
+        # Load from repository if available
+        if self._repository is not None:
+            self._load_from_repository()
+
+    def _load_from_repository(self) -> None:
+        """Load accounts and credentials from repository."""
+        try:
+            # Load accounts
+            accounts = self._repository.list_accounts()
+            for account in accounts:
+                self._accounts[account.account_id] = account
+                self._account_credentials[account.account_id] = []
+
+            # Load credentials
+            credentials = self._repository.list_credentials()
+            for credential in credentials:
+                self._credentials[credential.credential_id] = credential
+                if credential.account_id in self._account_credentials:
+                    self._account_credentials[credential.account_id].append(credential.credential_id)
+                else:
+                    self._account_credentials[credential.account_id] = [credential.credential_id]
+
+            logger.info(
+                'DevinAccountService: loaded %d accounts and %d credentials from repository',
+                len(accounts),
+                len(credentials),
+            )
+        except Exception as e:
+            logger.error('DevinAccountService: failed to load from repository: %s', e)
 
     # ===== Account Registration =====
 
@@ -113,6 +146,11 @@ class DevinAccountService:
         self._accounts[account.account_id] = account
         self._account_credentials[account.account_id] = []
         logger.info('DevinAccountService: registered account %s (%s)', account.account_id, display_label)
+
+        # Persist to repository if available
+        if self._repository is not None:
+            self._repository.save_account(account)
+
         return account
 
     def get_account(self, account_id: str) -> DevinAccount | None:
@@ -188,6 +226,11 @@ class DevinAccountService:
             api_version.value,
             fingerprint,
         )
+
+        # Persist to repository if available
+        if self._repository is not None:
+            self._repository.save_credential(credential)
+
         return credential
 
     def get_credential(self, credential_id: str) -> DevinCredential | None:
@@ -311,6 +354,10 @@ class DevinAccountService:
             credential.last_error_summary = error_summary
             credential.updated_at_utc = datetime.now(timezone.utc)
 
+            # Persist updated credential metadata
+            if self._repository is not None:
+                self._repository.save_credential(credential)
+
             return {
                 'valid': valid,
                 'http_status': response.status_code,
@@ -329,6 +376,10 @@ class DevinAccountService:
             credential.last_error_code = 'VALIDATION_EXCEPTION'
             credential.last_error_summary = str(e)
             credential.updated_at_utc = datetime.now(timezone.utc)
+
+            # Persist updated credential metadata
+            if self._repository is not None:
+                self._repository.save_credential(credential)
 
             return {
                 'valid': False,

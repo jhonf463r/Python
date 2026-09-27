@@ -357,6 +357,41 @@ class AppDatabase:
                     created_at_utc TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS devin_accounts (
+                    account_id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL,
+                    display_label TEXT NOT NULL,
+                    email TEXT,
+                    organization_id TEXT,
+                    organization_label TEXT,
+                    plan TEXT,
+                    browser_profile_id TEXT,
+                    identity_source TEXT NOT NULL,
+                    identity_verified INTEGER NOT NULL DEFAULT 0,
+                    account_json TEXT NOT NULL,
+                    created_at_utc TEXT NOT NULL,
+                    updated_at_utc TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS devin_credentials (
+                    credential_id TEXT PRIMARY KEY,
+                    account_id TEXT NOT NULL,
+                    secret_ref_id TEXT NOT NULL,
+                    fingerprint TEXT NOT NULL,
+                    credential_type TEXT NOT NULL,
+                    api_version TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    validation_status TEXT NOT NULL,
+                    last_validated_at TEXT,
+                    last_http_status INTEGER,
+                    last_error_code TEXT,
+                    last_error_summary TEXT,
+                    capabilities_json TEXT NOT NULL DEFAULT '{}',
+                    credential_json TEXT NOT NULL,
+                    created_at_utc TEXT NOT NULL,
+                    updated_at_utc TEXT NOT NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_episodes_updated
                 ON episodes (updated_at_utc DESC);
 
@@ -482,6 +517,21 @@ class AppDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_interaction_patterns_channel
                 ON interaction_patterns (channel, updated_at_utc DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_devin_accounts_provider
+                ON devin_accounts (provider, updated_at_utc);
+
+                CREATE INDEX IF NOT EXISTS idx_devin_accounts_email
+                ON devin_accounts (email, updated_at_utc);
+
+                CREATE INDEX IF NOT EXISTS idx_devin_credentials_account
+                ON devin_credentials (account_id, updated_at_utc);
+
+                CREATE INDEX IF NOT EXISTS idx_devin_credentials_fingerprint
+                ON devin_credentials (fingerprint, updated_at_utc);
+
+                CREATE INDEX IF NOT EXISTS idx_devin_credentials_status
+                ON devin_credentials (validation_status, updated_at_utc);
 
                 CREATE INDEX IF NOT EXISTS idx_interaction_patterns_tool
                 ON interaction_patterns (tool_id, updated_at_utc DESC);
