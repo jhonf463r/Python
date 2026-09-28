@@ -1071,3 +1071,21 @@ This sharpens the symbiosis principle:
 
 Current method:
 `observe runtime metadata → reconcile semantic ownership → independent architecture challenge → smallest contract decision → implementation only if justified`.
+
+## 2026-09-28 — R32-G2 v2 Sonnet contract archaeology
+
+Sonnet added a useful semantic discriminator to the symbiosis method:
+
+- a carrier field is not necessarily the semantic identity it carries;
+- `worker_telemetry` as a metadata dictionary does not establish that a worker executed;
+- contract ownership must be reconciled before repairing a missing causal edge;
+- a local provider should not be relabeled as an external worker merely to make an existing consumer fire.
+
+Updated method:
+`runtime observation → semantic ownership archaeology → preserve domain-specific gates → identify generic consumer gap → choose smallest existing-organ intervention → runtime proof`.
+
+Additional evidence discipline:
+`N rows != N independent experiences`. When one execution fans out into multiple subject-key ExperimentRuns, calibration experiments must use canonical execution identity as the causal unit or explicitly justify another unit.
+
+Capability routing after this finding:
+**DEVIN** for Windows/read-only operational inventory; **SONNET** for independent verification; no implementation until the runtime evidence is reconciled.
