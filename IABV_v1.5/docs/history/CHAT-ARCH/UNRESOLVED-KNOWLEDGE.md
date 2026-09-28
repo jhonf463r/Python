@@ -1329,3 +1329,7 @@ The remaining corrected contract constraints are:
 - isolate AdaptiveWeightLayer persistence in new tests.
 
 NEXT ACTOR: **DEVIN** for bounded implementation and Windows/runtime proof. No further Sonnet confirmation of the threshold is required.
+
+### UK-R32-G2V2-8 — Direct test compatibility seam
+
+Before implementation, preserve one test-contract fact: the current suite has a direct underconfidence test invocation of `_task_packet_pattern_findings()`. Once the metacognitive block is extracted, that test must be retargeted to the new generic ExperimentRun consumer (or full `build_review()`). Existing worker/task-packet method tests must remain worker-only.
