@@ -773,3 +773,32 @@ Only after successful remote read-back:
 **SONNET** → independent verification of the fresh execution.
 
 Do not promote R32-G to PROVEN before Sonnet's independent verification.
+
+
+
+## 2026-09-28 ROUTING OVERRIDE — R32-G REMOTE PUBLICATION CLOSED
+
+R32-G remote publication has been independently reconciled at the Git layer.
+
+Current evidence head:
+`devin/bio-universal-09-11-r32g-evidence-2026-09-28`
+@`4c56d2ca439e277c86de701e7aff9ed93a0bd89c`
+
+Baseline:
+`707388053dcc760dbcec017357f1b6001994bd57`
+
+Closed edge:
+`artifact → commit → branch → remote read-back`
+
+Still open:
+`remote-published artifact → independent runtime/production-path verification`
+
+Important artifact finding:
+the test imports `LocalRoleRouter` but does not use it and manually constructs the objects later consumed by `TaskOutcomeRecorder`. Therefore do not describe this artifact as proof of the complete `InferenceService → AdaptiveTaskOrchestrator → TaskOutcomeRecorder` productive route.
+
+Next actor: **SONNET**.
+
+Sonnet must audit the exact remote artifact without mutation, determine the maximum justified claim, and isolate the first open causal edge. The fresh runtime remains report-backed until independently reproduced/observed. Historical R32-G execution remains REPORTED_ONLY.
+
+Preserve:
+`publication proven ≠ runtime proven ≠ production-path proven`.
