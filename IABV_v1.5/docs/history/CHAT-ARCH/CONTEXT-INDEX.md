@@ -1201,3 +1201,26 @@ Preserve:
 The implementation/contract seam is closed. **DEVIN** is next for the smallest real Windows/Ollama production-path experiment. **SONNET** follows for independent runtime verification.
 
 Do not reopen the worker-kind contract or threshold dispute. Do not rerun earlier R32-G2 v2 solely to validate this new seam.
+
+
+## 2026-09-28 — R32-G2-V3 ATTRIBUTION HOLD
+
+V3 artifact/report:
+`IABV_v1.5/R32-G2-V3-PRODUCTION-RUNTIME-DISCRIMINATING-EXPERIMENT-RESULT-2026-09-28.md`
+
+V3 branch:
+`devin/r32g2-v3-production-runtime-discriminating-2026-09-28`
+
+V3 HEAD:
+`d611eefb8eb76578a84880ed27184d32ab4248a3`
+
+Pre-Sonnet reconciliation:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V3-CHATGPT-PRE-SONNET-RECONCILIATION-2026-09-28.md`
+
+Retrieval rule for R32-G2 V3:
+activate V3 report + runtime harness + TaskOutcomeRecorder._record_learning/_extract_prediction semantics before accepting the claimed metacognitive_evaluation provenance.
+
+Current status:
+**PENDING SONNET ATTRIBUTION VERIFICATION**.
+
+Do not propagate the report's `FIRST_OPEN_CAUSAL_EDGE = adjustment → future decision influence` until a real OSES finding and AdaptiveWeightLayer adjustment have been observed.
