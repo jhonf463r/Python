@@ -1344,3 +1344,29 @@ Then:
 **SONNET** independently verifies the runtime evidence.
 
 No new architecture. No production modifications during the archaeology phase.
+
+
+## 2026-09-28 R32-G2A — SONNET SOURCE ARCHAEOLOGY CLOSED THE BOOTSTRAP UNCERTAINTY
+
+R32-G2A is **PROVEN at source level** as a bootstrap-seam identification, not as runtime proof.
+
+Smallest existing production seam:
+`AppBootstrap(<isolated workspace>) → bootstrap.inference_service.infer_task(request)`
+
+Verified at baseline `707388053dcc760dbcec017357f1b6001994bd57`:
+- `AppBootstrap.__init__` with default `_defer_services=False` calls `_wire_services()`;
+- `_wire_services()` constructs `ExperimentLab`, `AdaptiveWeightLayer`, `LocalRoleRouter`, `TaskOutcomeRecorder`, `AdaptiveTaskOrchestrator`, and `InferenceService`;
+- `InferenceService) receives the adaptive orchestrator;
+- `_build_ui_objects()` is not required for the inference/lifecycle path;
+- existing repository tests already use `AppBootstrap(workspace)` followed by `bootstrap.inference_service.infer_task(...)`.
+
+Important refinement: the adaptive path does not call `OllamaExpertProvider.infer_task()` directly. The local model evidence must come from the production `general_provider.answer_user()` path and the resulting `raw_output['local_chat_llm']` evidence. `RunStatus.SUCCESS` alone is insufficient to prove Ollama execution.
+
+The effective AdaptiveWeightLayer isolation is AppBootstrap's explicit workspace-derived `persistence_path`, not post-construction assignment. A fresh workspace is therefore the correct isolation boundary.
+
+R32-G2 remains **BLOCKED BEFORE EXECUTION**. The architecture blocker is narrowed to a Windows runtime experiment using the identified seam; no full 4000+ line AppBootstrap redesign/archaeology is required.
+
+Next actor by capability-fit: **DEVIN** for the real Windows/Ollama production-path execution and provenance-preserving publication.
+After publication: **SONNET** for independent runtime verification.
+
+Do not reopen R28 or R34. The separate `b3e211fb` audit remains a distinct gate.
