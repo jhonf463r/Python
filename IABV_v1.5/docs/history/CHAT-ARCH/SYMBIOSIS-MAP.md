@@ -740,3 +740,23 @@ and
 
 OSES remains downstream:
 `metacognitive_evaluation ≠ OSES finding ≠ AdaptiveWeightLayer adjustment`.
+
+
+## 2026-09-28 TRANSFER 20 — R32-G FRESH EXECUTION / PUBLICATION IS THE CURRENT OPEN EDGE
+
+Devin's latest report materially improves the local evidence: the historical test artifact was recovered from the local worktree and a fresh R32-G execution is reported with real Ollama, RunRecord, metacognitive evaluation and persistence/read-back.
+
+However, the independent GitHub check did not find the claimed fresh-execution branch or commit. The reported abbreviated SHA also does not resolve.
+
+Therefore the method is refined again:
+
+`fresh execution reported → do not immediately audit → first require remote artifact/commit publication and read-back`.
+
+Reusable invariant:
+`local provenance-preserved claim ≠ remotely attributable evidence until publication/read-back succeeds`.
+
+Current capability-fit:
+**DEVIN** = publication/artifact recovery or provenance-safe re-execution;
+**SONNET** = independent verification only after the artifact is remotely readable.
+
+Do not treat the inability to find the branch as evidence that the runtime did not occur. Treat it as a blocking provenance gap.
