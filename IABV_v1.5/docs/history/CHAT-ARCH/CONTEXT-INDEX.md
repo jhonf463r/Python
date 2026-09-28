@@ -1248,3 +1248,20 @@ Next open causal edge:
 `real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
 
 Next actor: **DEVIN** after independent source reconciliation, followed by **SONNET**.
+
+
+## 2026-09-28 — R32-G2-V3 SUBJECT-KEY ATTRIBUTION CORRECTION
+
+The decisive source reconciliation:
+- `AdaptiveSession` has no top-level `subject_keys`;
+- V3 harness therefore incorrectly observed `[]`;
+- `TaskOutcomeRecorder._subject_keys()` computes the real learning keys;
+- those keys are recorded under `session.metadata['adaptive_learning']['subject_keys']`;
+- `general` is always one of the computed keys;
+- warm-up finalization therefore can create the `general` recommendation consumed by target execution;
+- the V3 three metacognitive evaluations are source-consistent.
+
+Strict independent runtime attribution remains limited because raw V3 runtime evidence was not published and Sonnet's pass was incomplete.
+
+Current first open edge:
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
