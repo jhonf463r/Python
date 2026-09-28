@@ -1265,3 +1265,33 @@ Strict independent runtime attribution remains limited because raw V3 runtime ev
 
 Current first open edge:
 `real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+## 2026-09-28 — R32-G2-V4 SEMANTIC CONTRACT INDEX
+
+Canonical report:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V4-SEMANTIC-CONTRACT-ADJUDICATION-2026-09-28.md`
+
+Retrieve this report whenever a new chat touches R32-G2 V4 or the provider-failure/OSES threshold route.
+
+Key facts:
+- V4 HEAD: `e67a78a9be4b16718caaa5b04c112c5fbfc8c5f2`.
+- V4 is documentation/harness-only relative to implementation ancestor `79bdd8ab47206e9f5a07fdc2151923f934da474a`.
+- Nonexistent-model 404 is a valid negative runtime finding: adaptive recovery converted the event to SUCCESS.
+- `actual_success = RunStatus.SUCCESS` remains canonical.
+- `used_fallback` is degraded recovery semantics.
+- Semantic model selected: `3` (separate task outcome from provider-health/recovery cause while preserving SUCCESS/PARTIAL/FAILED).
+
+Current first open edge:
+`llm_chat[error] → InferenceResult degradation signal in _build_result()`.
+
+Next proof sequence, only after legitimate contract consistency is established:
+`real degraded/failure event → RunStatus != SUCCESS → actual_success=False → finalized ExperimentRun → metacognitive_evaluation → OSES threshold → finding → AWL adjustment`.
+
+Do not jump to future decision influence before finding→adjustment is observed.
+
+Preserve:
+`provider failure != task failure in every context`
+`metacognitive_evaluation != OSES finding`
+`OSES finding != AWL adjustment`
+`AWL adjustment != future decision influence`
+`N subject-key ExperimentRuns != N independent experiences`.
