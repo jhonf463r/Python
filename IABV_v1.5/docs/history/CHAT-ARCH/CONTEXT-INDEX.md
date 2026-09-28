@@ -753,3 +753,23 @@ with
 `OSES finding`
 or
 `AdaptiveWeightLayer adjustment`.
+
+
+## 2026-09-28 ROUTING OVERRIDE — R32-G AFTER DEVIN FRESH EXECUTION REPORT
+
+For BIO-UNIVERSAL-09.11 R32-G:
+- Sonnet's prior forensic audit is complete.
+- Devin now reports a fresh provenance-preserved execution.
+- Independent GitHub reconciliation still cannot resolve the reported evidence branch/commit.
+- Therefore the active blocker is **remote publication/read-back**, not implementation and not another forensic interpretation pass.
+
+Next actor:
+**DEVIN**
+
+Required action:
+`publish exact evidence branch + exact commit + artifact/provenance records → remote read-back`.
+
+Only after successful remote read-back:
+**SONNET** → independent verification of the fresh execution.
+
+Do not promote R32-G to PROVEN before Sonnet's independent verification.
