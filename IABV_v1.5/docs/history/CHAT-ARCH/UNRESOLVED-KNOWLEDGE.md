@@ -1243,3 +1243,20 @@ If present:
 
 Do not add a synthetic telemetry field just to satisfy the gate.
 
+
+### UK-R32-G2V2-3 — Local metacognition vs ExternalWorkerTelemetry ownership
+
+REPORT-BACKED OBSERVATION:
+All three R32-G2 v2 target ExperimentRuns contain `worker_telemetry` but lack non-empty `worker_kind`; OSES task-packet `wt_total` is therefore 0 against threshold 3.
+
+SOURCE CONTRACT:
+`ExternalWorkerTelemetry` is documented as external-worker execution telemetry, and concrete `worker_kind` population occurs in tool-adapter execution. `TaskOutcomeRecorder` propagates telemetry; it does not establish external-worker identity for local chat.
+
+OPEN CONTRACT QUESTION:
+Should generic `metacognitive_evaluation` flow into a general OSES calibration consumer independent of external-worker telemetry, while task-packet telemetry findings remain external-worker-specific?
+
+NEGATIVE KNOWLEDGE:
+Do not synthesize `worker_kind='ollama'` merely to satisfy the OSES gate. That would change the semantic category of the run rather than demonstrate a legitimate connection.
+
+NEXT DISCRIMINATING ACTION:
+Independent contract/ownership archaeology by Sonnet, including existing tests and historical design intent. No implementation until ownership is reconciled.
