@@ -688,3 +688,24 @@ R34 is a concrete `ΔB`/continuity-system result only at the level of reduced ro
 R34 also reinforces:
 `important cross-IA result → canonical reconciliation`
 rather than leaving the result only in conversational history.
+
+## 2026-09-28 TRANSFER 18 — R32-G DEVIN REPORT / PROVENANCE-GATED HANDOFF
+
+Devin's runtime report claims:
+`real Ollama → RunRecord → TaskOutcomeRecorder → metacognitive_evaluation → persistence/read-back`.
+
+Knowledge transfer currently accepted only at the **reported-result** level, because independent verification is pending.
+
+New reusable rule reinforced:
+`reported runtime result + local worktree != remotely attributable evidence`.
+
+A material runtime result must pass:
+`report → artifact → branch/ref → exact SHA → remote read-back → runtime provenance → independent verification`
+before changing a technical gate from UNRESOLVED to PROVEN.
+
+The current GitHub state exposed a concrete provenance gap: the reported branch `bio-universal-09.11-r22b-runtime` is not currently remotely resolvable, and the reported test script is absent at the pinned SHA. This is itself a Knowledge Delta and must change the next audit method.
+
+The technical hypothesis remains:
+`real productive experience → metacognitive_evaluation` may now be operationally viable, but it is not yet canonically proven.
+
+Next actor by capability-fit: **SONNET**, for independent forensic/runtime and provenance verification.
