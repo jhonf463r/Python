@@ -1468,3 +1468,26 @@ Do not infer the exact text source from `RunStatus.SUCCESS`.
 
 Next discriminating action:
 read the existing V4 persisted RunRecord/runtime workspace only; no rerun and no mutation.
+
+### UK-R32-G2V4-4 — Approved minimal degradation propagation patch
+
+STATUS: IMPLEMENTATION PENDING.
+
+Independent Codex decision: APPROVE minimal Option 1 patch.
+
+Condition:
+`llm_chat != None` AND normalized LLM summary empty AND final substitute summary non-empty.
+
+Effect:
+set existing `InferenceResult.used_fallback=True` only when the substitute is actually used. Preserve `actual_success = status == SUCCESS`.
+
+Do not add `fallback_reason`; existing `raw_output.local_chat_llm` already preserves causal detail for this seam. Do not change OSES thresholds, TaskOutcomeRecorder semantics, or model fields.
+
+Required tests:
+- provider/error with usable substitute → PARTIAL;
+- empty provider summary with usable substitute → PARTIAL;
+- `llm_chat is None` → normal SUCCESS/no fallback;
+- production runtime through isolated AppBootstrap/Inferenceservice with real V4 failure setup.
+
+Next open edge after successful runtime proof:
+`actual_success=False → metacognitive_evaluation` for a target that has a real prior production-generated recommendation.
