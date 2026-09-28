@@ -1057,3 +1057,17 @@ Newly sharpened causal boundary:
 Therefore the immediate method is:
 `observe actual metadata → reconcile gate → only then design the smallest causal OSES/AWL runtime experiment`.
 
+
+## 2026-09-28 — R32-G2 v2 worker telemetry gate reconciliation
+
+Devin observed in the original isolated workspace:
+`worker_telemetry = dict`, `worker_kind` missing/empty for all three target ExperimentRuns, `wt_total=0`.
+
+The source audit additionally establishes a semantic distinction:
+`ExternalWorkerTelemetry` is an external-worker contract; local-chat `metacognitive_evaluation` is produced by the adaptive production path without necessarily being an external-worker execution.
+
+This sharpens the symbiosis principle:
+**never repair a missing causal edge by manufacturing a field whose semantic ownership belongs to another organ/domain.**
+
+Current method:
+`observe runtime metadata → reconcile semantic ownership → independent architecture challenge → smallest contract decision → implementation only if justified`.
