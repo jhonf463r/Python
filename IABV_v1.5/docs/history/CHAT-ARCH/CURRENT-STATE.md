@@ -1172,3 +1172,27 @@ OSES remains a downstream gate and must not be conflated with R32-G:
 
 The current source requires multiple valid metacognitive evaluations for the relevant OSES calibration path; one run alone is insufficient.
 
+
+
+### 2026-09-28 R32-G — DEVIN RECOVERY / FRESH EXECUTION REPORTED, REMOTE PUBLICATION STILL OPEN
+
+Devin reported that the historical `test_r32_g_local_experience.py` was recovered from the local worktree and that a fresh R32-G execution was completed with real Ollama, a real RunRecord, metacognitive evaluation and persistence/read-back.
+
+Independent GitHub reconciliation after receipt of the report found:
+- claimed fresh-execution branch `devin/bio-universal-09-11-r32g-fresh-execution-2026-09-28` is not remotely resolvable;
+- alternate punctuated branch `devin/bio-universal-09.11-r32g-fresh-execution-2026-09-28` is also not remotely resolvable;
+- claimed evidence commit `94e0788ff73fb5ff3a336a9b72ddbd9f5ce2208f` is not remotely resolvable;
+- reported abbreviated SHA `724a1af9e` is not a resolvable GitHub commit;
+- reported artifact/evidence files are not currently remotely readable.
+
+Therefore the local fresh-execution claim remains **REPORTED ONLY / NOT PROVEN** under the canonical provenance chain.
+
+This is a new provenance state, distinct from the prior missing-artifact state:
+- historical artifact: reported recovered locally;
+- historical execution data: not preserved;
+- fresh execution: reported completed;
+- fresh execution publication/read-back: **OPEN**.
+
+Current next actor remains **DEVIN**, specifically to publish the exact evidence artifact/branch/commit and obtain remote read-back. After remote publication is verified, route to **SONNET** for independent forensic/runtime verification.
+
+R32-G must not be promoted to PROVEN before that independent verification.
