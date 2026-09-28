@@ -1806,3 +1806,31 @@ Before any production change, reconcile whether the V4 404 actually returned the
 
 ### Do not conclude
 V4 did not prove a threshold-crossing metacognitive population, OSES finding, AdaptiveWeightLayer adjustment, or future decision influence.
+
+## 2026-09-28 — R32-G2-V4 USER-FACING SUBSTITUTE STATIC CONFIRMATION
+
+Claude/Sonnet independently inspected the V4 HEAD `e67a78a9be4b16718caaa5b04c112c5fbfc8c5f2` and confirmed statically/deterministically:
+
+- provider HTTP 404 becomes `ProviderUnavailableError`;
+- `_maybe_invoke_local_chat_llm()` catches the error and returns an error-bearing dict with empty `summary`;
+- `_build_result()` falls through to `assistant_guidance.prompt` or `_render_summary()`;
+- `InferenceResult.used_fallback` and `error_summary` are not populated from that error;
+- `InferenceService` therefore classifies the resulting RunRecord as SUCCESS;
+- the V4 harness did not capture `result.summary`, `raw_output['local_chat_llm']`, or `used_fallback`, so the substitute text was not runtime-observed in the published evidence.
+
+Canonical status:
+`V4_USER_FACING_SUBSTITUTE = CONFIRMED` at STATIC-DETERMINISTIC level, not OBSERVED runtime level.
+`SUBSTITUTE_SOURCE = UNKNOWN` between `assistant_guidance.prompt` and `_render_summary()`.
+`LLM_ERROR_PROPAGATES_TO_DEGRADATION = NO`.
+`CURRENT_SUCCESS_CLASSIFICATION = CONTRACT_GAP`.
+`IMPLEMENTATION_CHANGE_JUSTIFIED = CONDITIONAL`.
+
+The remaining smallest discriminating action is a READ-ONLY forensic read-back of the existing V4 persisted RunRecord/runtime workspace. Do not rerun.
+
+Current first open causal edge:
+`existing V4 persisted RunRecord.result.summary + raw_output.local_chat_llm.error → confirm exact substitute source`.
+
+After that observation, and only if substitution is confirmed, the legitimate implementation seam is:
+`llm_chat error → explicit degraded InferenceResult signal → existing used_fallback → PARTIAL → actual_success=False`.
+
+Do not change `actual_success`, OSES thresholds, or create synthetic metacognition.
