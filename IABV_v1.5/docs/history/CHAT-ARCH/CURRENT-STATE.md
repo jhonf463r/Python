@@ -5,7 +5,7 @@
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
 
 #
-## ACTIVE BIO-UNIVERSAL-09.11 STATE — 2026-09-27
+## ACTIVE BIO-UNIVERSAL-09.11 STATE — 2026-09-28
 
 **READ THIS ACTIVE OVERLAY BEFORE OLDER DATED SECTIONS.**
 
@@ -13,29 +13,30 @@ Technical investigation anchor:
 
 - technical investigation branch: `bio-universal-09.11-r20-clean`
 - pinned R28–R32 code/runtime baseline: `707388053dcc760dbcec017357f1b6001994bd57`
-- current branch tip (documentation-only continuity commit): `fc141596bfc46c644568e5c39bf72e325fcd375b`
-- last verified main HEAD at this continuity writeback: `470bddca370b94442be8991e658101418f6b66e8` (re-check at use time; main is mutable)
+- current memory writeback tip: `a5d3897ac72705cb8ac6a7d358e5ff6174f699d8`
+- last verified main HEAD at this continuity writeback: `a5d3897ac72705cb8ac6a7d358e5ff6174f699d8` (re-check at use time; main is mutable)
 - substantive R28–R33 canonical continuity writeback: main commit `025e2604edbc50a4cac96c1d14477099e77d792d`
-- latest current-state front-load at inspection time: main commit `38385136c9ab810b54594178749063e554d22a51`
+- latest active-state reconciliation at inspection time: main commit `29b9222de617f476678ce4a8f4deb17aaecf69ee`
 - R28–R33 continuity state is canonically absorbed into the main memory layer; the technical baseline remains separately pinned above.
 
 ### Current proven / open edges
-### R32-G2 runtime state
-
-- **R32-G2 ATTEMPTED / BLOCKED AFTER EXECUTION ATTEMPT:** isolated `AppBootstrap` construction and the production `InferenceService.infer_task()` → `AdaptiveTaskOrchestrator` path were reportedly entered, but the real Ollama call for `phi3:latest` exceeded the configured 30-second timeout.
-- The reported runtime is not remotely attributable yet: the supplied branch/ref and short SHA `6ed48b8c6` did not resolve during GitHub read-back.
-- No RunRecord, system-generated recommendation, production finalization or metacognitive evaluation was observed in this attempt.
-- Do not reinterpret the timeout as evidence that the downstream learning path is broken; the run did not cross that causal boundary.
-
 
 - **R28-A PROVEN:** metacognitive adjustment → weighted-score change → decision flip → persistence → reload → reuse.
 - **R28 boundary:** synthetic adjustment; not experience-driven learning.
-- **R29-D / R30-F / R31-E / R32-G:** the experience→metacognitive-evaluation path remains open.
-- **R33-E historical finding:** the memory layer was stale relative to R28–R32. That gap now has canonical writeback; blind reconstruction after writeback remains an empirical test.
+- **R29-D / R30-F / R31-E:** experience→metacognition subpaths remain open.
+- **R32-G:** NOT PROVEN as end-to-end production experiment; earlier published artifact was independently found to bypass the canonical production seam.
+- **R32-G2:** **PARTIALLY PROVEN / PENDING RUNTIME ATTRIBUTION.** Git provenance, artifact identity and source production path are independently established. The reported successful Windows/Ollama execution remains report-backed because independent Windows/Ollama execution was unavailable to Sonnet.
+- Effective Ollama model remains **UNKNOWN**: artifact configuration defaults to `gemma3:1b` only when `IABV_OLLAMA_MODEL` is absent; RunRecord `executor_model=qwen3:8b` does not observe the HTTP payload model; `local_chat_llm.provider_model` is empty.
+- Exact recommendation consumption remains **PARTIALLY PROVEN**: production source uses `latest_recommendation()` across multiple subject keys, while the evaluation stores no recommendation ID and the harness does not bind the target evaluation to a specific warm-up recommendation instance.
+- Do not promote R32-G2 to final PROVEN status until the Windows runtime evidence resolves exact model identity and recommendation identity/subject-key binding.
 
 ### First open causal edge
 
-`real Ollama completion under production timeout → production RunRecord → finalize_with_run() → TaskOutcomeRecorder.record() → _record_learning() → prior recommendation lookup → prediction → metacognitive_evaluation`
+`exact Ollama model attribution + exact warm-up recommendation identity/target consumption → independently verified production metacognitive_evaluation`
+
+### Downstream edge after R32-G2 closure
+
+`metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment → future decision influence`
 
 Do not reopen the already-proven R28 adjustment→decision edge without contradictory evidence.
 
