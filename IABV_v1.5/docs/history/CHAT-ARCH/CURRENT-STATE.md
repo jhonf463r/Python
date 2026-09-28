@@ -1196,3 +1196,36 @@ This is a new provenance state, distinct from the prior missing-artifact state:
 Current next actor remains **DEVIN**, specifically to publish the exact evidence artifact/branch/commit and obtain remote read-back. After remote publication is verified, route to **SONNET** for independent forensic/runtime verification.
 
 R32-G must not be promoted to PROVEN before that independent verification.
+
+
+
+### 2026-09-28 R32-G — REMOTE PUBLICATION CLOSED / FULL CAUSAL CLAIM STILL OPEN
+
+Remote GitHub reconciliation closed the publication/provenance transport gate:
+
+- evidence branch `devin/bio-universal-09-11-r32g-evidence-2026-09-28` exists;
+- evidence head `4c56d2ca439e277c86de701e7aff9ed93a0bd89c` resolves remotely;
+- baseline `707388053dcc760dbcec017357f1b6001994bd57` is the ancestry root;
+- compare establishes `707... → 3c8b32a4d... → e99fade37 → 4c56d2ca4...`;
+- test artifact, provenance manifest and fresh-execution report are remotely readable.
+
+However the evidence documents contain inconsistent human-authored commit labels: the fresh report names `e99fade37` as “Evidence Commit SHA” and the provenance chain names `3c8b32a4d...`, while the actual evidence-branch head is `4c56d2ca4...`. Use the full remote head SHA as authoritative and preserve 3c/e99 as intermediate commits.
+
+More importantly, the published test artifact does not traverse the full production route claimed by its header. It imports `LocalRoleRouter` but directly invokes `OllamaExpertProvider.infer_task()`, manually constructs the `RunRecord` and `AdaptiveSession`, then directly invokes `TaskOutcomeRecorder.record()`. Thus:
+
+`real provider → lower-layer RunRecord/learning path`
+
+has evidence, but
+
+`InferenceService → AdaptiveTaskOrchestrator → production session/run → finalize_with_run → TaskOutcomeRecorder`
+
+is not yet proven by this artifact.
+
+The fresh runtime IDs and persistence/read-back remain report-backed until independently verified; publishing the report is not itself independent runtime observation.
+
+R32-G therefore remains **NOT PROVEN** at the end-to-end production-path level.
+
+Next actor by capability-fit: **SONNET**, for read-only forensic verification of the exact remote artifact, runtime attribution/reproducibility, production-path coverage, and the prediction/extraction anomaly.
+
+Do not conflate:
+`artifact proof ≠ runtime proof ≠ production-path proof ≠ metacognitive-evaluation proof ≠ OSES finding ≠ AdaptiveWeightLayer adjustment`.
