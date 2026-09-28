@@ -1117,22 +1117,58 @@ After continuity writeback, return to the smallest experiment that can close:
 
 without creating a new brain, router, memory or evolution coordinator.
 
-### 2026-09-28 R32-G — DEVIN REPORT RECEIVED / INDEPENDENT VERIFICATION PENDING
+### 2026-09-28 R32-G — DEVIN REPORT / SONNET INDEPENDENT AUDIT COMPLETE
 
 Devin reported a real Windows runtime execution on technical baseline `707388053dcc760dbcec017357f1b6001994bd57` using `ollama_local` / `phi3:latest`, producing RunRecord `6556c7fc-cedd-4f28-b1a0-0125950c2d5e` and ExperimentRun `46a47e94-2bbf-472d-afe3-601851f064f7` with persisted `metacognitive_evaluation`.
 
-Reported evaluation:
-`predicted_outcome=failure`, `actual_outcome=success`, `false_negative=true`, `calibration_error=1.0`.
+Independent Sonnet audit completed the provenance/runtime adjudication.
 
-Important provenance boundary:
-- the reported runtime branch was `bio-universal-09.11-r22b-runtime`;
-- direct GitHub branch lookup currently does not resolve that branch;
-- the reported validation script `test_r32_g_local_experience.py` is not present at the pinned SHA on GitHub;
-- therefore the result is **REPORTED / NOT YET INDEPENDENTLY VERIFIED**, not PROVEN.
+### R32-G RESULT — NOT PROVEN
 
-The reported result does not change the active gate yet. Required next action is independent forensic/runtime verification of the artifact, executed path, real Ollama participation, RunRecord provenance, metacognitive_evaluation derivation, and persistence/read-back.
+**Status: NOT PROVEN.**
 
-Also note: current OSES code aggregates `metacognitive_evaluation` across ExperimentRuns and requires multiple evaluations before emitting the relevant calibration findings. Therefore the next independent audit must distinguish:
-`evaluation exists` from `OSES finding exists` and from `AdaptiveWeightLayer adjustment exists`.
+Verified at source level:
+- `707388053dcc760dbcec017357f1b6001994bd57` exists as a real Git commit on `bio-universal-09.11-r20-clean`;
+- required production components and source path exist at that SHA;
+- `TaskOutcomeRecorder.record()`, `_record_learning()`, `_evaluate_prediction()`, `AdaptiveTaskOrchestrator.finalize_with_run()`, `InferenceService._execute()`, ExperimentLab, OSES metacognitive processing, and the Ollama/local provider are defined.
 
-Recommended verifier: **SONNET**.
+Not independently verified for Devin's claimed execution:
+- reported branch `bio-universal-09.11-r22b-runtime` does not exist remotely;
+- reported artifact `IABV_v1.5/test_r32_g_local_experience.py` is not present at the declared SHA and was not recovered anywhere in repository history;
+- reported Ollama call, RunRecord, ExperimentRun and persistence/read-back have no preserved independently inspectable artifact tying them to the declared SHA;
+- working-tree provenance is therefore not reconstructable.
+
+Therefore:
+`DEFINED = YES`
+but
+`INVOKED / OBSERVED / CAUSALLY ESTABLISHED = NOT PROVEN`
+for the reported run.
+
+Evidence source:
+`BIO-UNIVERSAL-09.11-R32-G-SONNET-RESULT-2026-09-27.md`
+
+The report remains useful as a **runtime claim**, but it cannot promote R32-G under the canonical provenance chain.
+
+### Routing change after independent audit
+
+The independent-verification gate is complete.
+
+The next uncertainty is no longer “can Sonnet audit the report?” It is:
+**can the exact runtime artifact be recovered/published, or can the experiment be re-executed with complete artifact/runtime provenance?**
+
+Next actor by capability-fit: **DEVIN**.
+
+Required next action:
+`recover/publish exact artifact → exact branch/ref → exact SHA → working-tree provenance → runtime evidence → persisted artifact → read-back`
+
+If the original runtime artifact cannot be recovered, Devin may perform a fresh bounded R32-G execution, but the new execution must explicitly preserve the exact test artifact and provenance before claiming closure.
+
+After a verifiable artifact/runtime chain exists, route back to **SONNET** for independent verification.
+
+OSES remains a downstream gate and must not be conflated with R32-G:
+`metacognitive_evaluation`
+`≠ OSES finding`
+`≠ AdaptiveWeightLayer adjustment`.
+
+The current source requires multiple valid metacognitive evaluations for the relevant OSES calibration path; one run alone is insufficient.
+
