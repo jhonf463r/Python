@@ -995,3 +995,19 @@ Next actor: **SONNET** for independent verification. Do not modify production co
 
 Potential downstream edge after closure:
 `metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment → future decision influence`.
+
+
+## 2026-09-28 TRANSFER 23 — R32-G2 PARTIAL PROOF / ATTRIBUTE THE EXPERIENCE BEFORE PROMOTION
+
+Sonnet's independent verification adds a reusable forensic rule: a production result can be source-consistent and publication-proven while remaining runtime-attribution incomplete.
+
+New distinctions reinforced:
+
+`configured model ≠ effective HTTP model`
+`RunRecord.executor_model ≠ provider payload observation`
+`recommendation exists ≠ exact recommendation consumed`
+`same-process read-back ≠ independent runtime attribution`
+
+The production recommendation→prediction→metacognitive evaluation mechanism is source-proven, but the exact runtime instance still requires Windows evidence.
+
+Routing: **DEVIN** for bounded Windows/Ollama evidence capture; then **SONNET** for independent re-verification. Do not modify learning semantics or move to OSES/AdaptiveWeightLayer until R32-G2 closes.
