@@ -1146,3 +1146,17 @@ Use:
 Observe whether the real production local-chat ExperimentRun reaches `_experiment_run_metacognitive_findings()` and produces the expected OSES finding without seeded ExperimentRuns or synthetic worker telemetry.
 
 This is a runtime-discrimination experiment, not an implementation task.
+
+
+## 2026-09-28 — R32-G2-V3 ROUTING CORRECTION
+
+V3 appears to have reached the real production bootstrap/inference/OSES path, but an attribution inconsistency prevents immediate advancement.
+
+Actor routing:
+- **SONNET**: independently reconcile V3 provenance and explain the origin of the three target `metacognitive_evaluation` records despite the report's empty warm-up recommendation claim.
+- **DEVIN**: only after reconciliation, run the smallest threshold-crossing production experiment if needed.
+- **CHATGPT**: adjudicate evidence and write back the corrected Knowledge Delta.
+- **OPUS 5**: not warranted.
+
+Do not reuse V3 as proof of `finding → adjustment` because no finding was emitted.
+Do not jump to `adjustment → future decision influence`.
