@@ -881,3 +881,43 @@ SONNET is the independent verifier only after that evidence exists.
 Do not modify `_extract_prediction()` merely to make R32-G pass. First test the actual contract as implemented. A repair can be considered only if the production-generated recommendation demonstrably violates the intended contract.
 
 Do not reopen R28 or R34.
+
+
+## 2026-09-28 R32-G2 — BLOCKED BEFORE EXECUTION / ROUTING REFINED
+
+Devin did not execute R32-G2. No warm-up, no target execution, no production-path runtime observation, and no experiment artifact were produced.
+
+Important reconciliation:
+- reported `EXACT_EVIDENCE_HEAD=e8e056986` does **not** resolve remotely;
+- reported evidence branch `devin/bio-universal-09-11-r32g2-production-runtime-2026-09-28` is not present remotely;
+- therefore no R32-G2 publication/read-back edge exists to verify.
+
+R32-G2 remains **BLOCKED**, not failed and not disproven.
+
+The claim that the 4000+ line `AppBootstrap` requires whole-file analysis is too broad for the next action. Repository archaeology already shows existing production-bootstrap usage patterns:
+- `scripts/run_self_audit.py` constructs `AppBootstrap(workspace_root=...)`;
+- `tests/test_self_teach_orchestrator.py` constructs `AppBootstrap(str(workspace))` and directly calls `bootstrap.inference_service.infer_task(...)`;
+- multiple existing tests use isolated workspaces with `AppBootstrap(str(workspace))`.
+
+Therefore the first open uncertainty should be narrowed to:
+
+`smallest existing real bootstrap seam → production InferenceService → real provider → learning/finalization`
+
+rather than “understand all of AppBootstrap”.
+
+### Routing
+
+Next actor: **SONNET**.
+
+Capability required:
+- architecture archaeology of the existing bootstrap graph;
+- identify the smallest real-code production seam already exercised by repository tests;
+- determine exact construction prerequisites and isolation mechanism;
+- design the minimum discriminating R32-G2 runtime harness without implementing it.
+
+After Sonnet identifies a viable seam:
+**DEVIN** performs the real Windows/Ollama execution and provenance-preserving publication.
+Then:
+**SONNET** independently verifies the runtime evidence.
+
+No new architecture. No production modifications during the archaeology phase.
