@@ -1114,3 +1114,9 @@ New symbiosis lesson: distinguish a **measurement-unit change** from a **consume
 Also preserve semantic method identity: an existing `_metacognitive_calibration_findings()` that calibrates OSES against prior reviews is not the same organ function as raw ExperimentRun metacognitive evidence consumption. A new seam must have an unambiguous name.
 
 Test-isolation lesson: a green test suite can still write persistent adaptive state outside its intended workspace when a service is instantiated without explicit persistence_path. This must be treated as test-harness state leakage, not automatically as production state contamination.
+
+## 2026-09-28 — Handoff audit reconciliation
+
+The implementation handoff introduced a false-negative source reading: it overlooked the OSES constant `_TP_MIN_RUNS = 5` and its `if total < self._TP_MIN_RUNS: return []` gate. Lesson: before escalating a source discrepancy to another actor, reconcile the exact control-flow predicate, not only the downstream `wt_total` branch.
+
+This closes the threshold ambiguity without another actor. Remaining implementation routing is now capability-fit: Devin for bounded code/tests/Windows proof; Sonnet afterward for independent verification.
