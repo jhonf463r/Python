@@ -1125,3 +1125,18 @@ Required observation:
 - existing OSES read-only output: `total`, `wt_total`, calibration sample size, average calibration error, FP/FN and categories.
 
 Do not rerun, mutate, inject telemetry, patch `worker_kind`, or change OSES thresholds. Publish exact evidence for remote read-back, then route to **SONNET**.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 OPERATIONAL GATE CLOSED
+
+Devin's operational inventory independently read back the persisted workspace evidence:
+- eligible OSES runs = 6, so the initial `total >= 5` gate is satisfied;
+- non-empty external `worker_kind` = 0, so `wt_total >= 3` is not satisfied;
+- the three target ExperimentRuns are multiple lanes of one execution/session.
+
+The prior contract archaeology is now operationally corroborated. Do not return to the question of inventing `worker_kind='ollama'`.
+
+### Current gate
+`generic ExperimentRun.metacognitive_evaluation → OSES generic consumer` remains open.
+
+### Next actor
+**SONNET** for a read-only implementation-contract specification of the smallest OSES change using existing organs only, preserving worker/task-packet semantics and current thresholds. No implementation. After reconciliation, route to **DEVIN** for bounded implementation/runtime proof.
