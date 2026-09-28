@@ -974,3 +974,78 @@ Remote provenance and fresh-execution reports are readable.
 **SONNET** must independently audit the remote artifact and determine the maximum justified claim, explicitly separating artifact, runtime, production-path, metacognitive-evaluation, OSES and adaptive-weight evidence.
 
 Historical execution remains **REPORTED_ONLY**.
+
+
+## 2026-09-28 R32-G — SONNET INDEPENDENT AUDIT RECONCILIATION
+
+Sonnet's read-only audit is independently consistent with the repository evidence.
+
+### Adjudication
+
+**R32-G remains NOT PROVEN as an end-to-end production-path experiment.**
+
+The published artifact proves a narrower proposition:
+
+`real provider call → manually constructed RunRecord → direct TaskOutcomeRecorder.record() → _record_learning() → metacognitive_evaluation → persistence`
+
+It does not prove:
+
+`InferenceService → AdaptiveTaskOrchestrator.handle_request() → production RunRecord/session → finalize_with_run() → TaskOutcomeRecorder`.
+
+### Confirmed source findings
+
+At technical baseline `707388053dcc760dbcec017357f1b6001994bd57`:
+
+- `TaskOutcomeRecorder._extract_prediction()` reads `previous_recommendation.confidence` from the real top-level model field.
+- The published test put `confidence=0.8` only in `metadata` and supplied unsupported extra fields such as `success`, `objective`, `route`, and `candidate_label`; `ExperimentRecommendation` does not define those fields.
+- Consequently the test's effective `confidence` remained `0.0`, yielding predicted failure and `false_negative=true`.
+- The same logic with a real top-level `confidence=0.8` produces success prediction and calibration error `0.2`; therefore the original false negative is a test/schema construction artifact.
+- `AdaptiveWeightLayer` stores its persistence location in the private `_weights_path`; assigning `persistence_path` after construction does not isolate storage. The published test therefore cannot substantiate its claim of isolated adaptive-weight persistence.
+- The test's `duration_ms=0` and `RunStatus.SUCCESS` are manually fixed rather than derived by `InferenceService._execute()`.
+- Production session linkage/finalization and associated metadata are bypassed.
+
+### Runtime epistemic state
+
+Sonnet did not have access to the claimed Windows/Ollama runtime. Its re-execution substituted a synthetic `InferenceResult`, which successfully verifies recorder semantics but not the historical/fresh Ollama execution.
+
+Therefore:
+
+`runtime execution = REPORT-BACKED`
+
+not:
+
+`RUNTIME-PROVEN`.
+
+### Persistence boundary
+
+Persistence/reload was reproduced, but this proves data persistence only. It does not independently prove that the upstream reported runtime event produced that record.
+
+### OSES boundary
+
+The single R32-G evaluation cannot satisfy the OSES metacognitive aggregation thresholds. Do not promote it to an OSES finding or adaptive metacognitive adjustment.
+
+### Negative knowledge added
+
+- A published execution report can remain auto-attested even after artifact publication.
+- A direct lower-level invocation can reproduce a learning subgraph while bypassing the canonical production route.
+- Model/schema defaults can silently convert an intended prediction into another prediction.
+- Post-construction mutation of a similarly named public-looking attribute does not prove actual isolation when the implementation stores state elsewhere.
+- `metacognitive_evaluation` can be reproducible without carrying causal information from the external/model output.
+
+### New first open causal edge
+
+The first discriminating edge is now:
+
+`system-generated prior recommendation → full production execution → production finalization → real RunRecord → TaskOutcomeRecorder._record_learning() → valid prediction extraction → metacognitive_evaluation`
+
+The prior recommendation must be produced by IABV itself, not seeded by the test.
+
+### Routing
+
+**Next actor: DEVIN**, because the unresolved capability is now a real Windows/Ollama execution through the existing production orchestration/bootstrap path.
+
+SONNET is the independent verifier only after that evidence exists.
+
+Do not modify `_extract_prediction()` merely to make R32-G pass. First test the actual contract as implemented. A repair can be considered only if the production-generated recommendation demonstrably violates the intended contract.
+
+Do not reopen R28 or R34.
