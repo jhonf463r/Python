@@ -1455,3 +1455,16 @@ Legitimate candidate seam: when `llm_chat` fails and the system actually substit
 Remaining empirical question: did the V4 404 target actually return a templated substitute to the user-facing boundary? If yes, the missing degradation signal is a contract-consistency issue; if no, the outcome needs separate classification.
 
 Do not change production solely to force an OSES threshold.
+
+### UK-R32-G2V4-3 — Exact V4 substitute source remains runtime-unobserved
+
+STATUS: STATIC-DETERMINISTIC / RUNTIME READ-BACK OPEN.
+
+Claude/Sonnet confirmed by source tracing that the V4 404 path returns an empty LLM summary and `_build_result()` deterministically substitutes `assistant_guidance.prompt` or `_render_summary()`, while leaving `used_fallback=False`.
+
+The V4 harness did not capture the final `InferenceResult.summary` or `raw_output['local_chat_llm']`, and the published GitHub branch does not contain the Windows runtime evidence. Therefore the exact substitute source is not independently runtime-observed.
+
+Do not infer the exact text source from `RunStatus.SUCCESS`.
+
+Next discriminating action:
+read the existing V4 persisted RunRecord/runtime workspace only; no rerun and no mutation.
