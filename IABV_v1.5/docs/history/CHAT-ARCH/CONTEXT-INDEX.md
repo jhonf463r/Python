@@ -991,3 +991,23 @@ Critical verifier targets:
 Do not route to implementation yet. Do not jump to OSES/AdaptiveWeightLayer before R32-G2 is independently closed.
 
 **NEXT ACTOR: SONNET.**
+
+
+## 2026-09-28 ROUTING — R32-G2 PARTIALLY PROVEN / RUNTIME ATTRIBUTION OPEN
+
+Current state:
+- Git/artifact/source path: **independently established**;
+- runtime invocation: **REPORT-BACKED**;
+- effective Ollama model: **UNKNOWN**;
+- exact recommendation consumed by target: **NOT ESTABLISHED**;
+- metacognitive evaluation derivation: **source-proven**;
+- final R32-G2 causal status: **PARTIALLY PROVEN / PENDING RUNTIME ATTRIBUTION**.
+
+Next actor: **DEVIN**.
+
+Required evidence:
+`actual Ollama model` + `target-side latest_recommendation() per subject key` + `ExperimentRun subject_key for metacognitive_evaluation` + `fresh repository-instance reload`.
+
+After publication: **SONNET** independent re-verification.
+
+Do not route to OSES/AdaptiveWeightLayer yet.
