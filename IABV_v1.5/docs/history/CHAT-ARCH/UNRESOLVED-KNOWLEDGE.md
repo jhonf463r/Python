@@ -1151,3 +1151,23 @@ The next successful run must independently establish:
 `system-generated warm-up recommendation → target consumes same logical recommendation → production RunRecord → finalize_with_run() → TaskOutcomeRecorder._record_learning() → valid prediction extraction → metacognitive_evaluation`.
 
 One successful evaluation still does not by itself establish OSES aggregation or AdaptiveWeightLayer causal adjustment.
+
+
+## 2026-09-28 UK-R32-G2 — SUCCESS REPORTED / INDEPENDENT VERIFICATION PENDING
+
+R32-G2 now has a remotely preserved production artifact and result report at head `13c7f31425fb9055d9e4be4957bb7e497a9d171e`, with baseline→head verified as a 3-commit delta. Git/source reconciliation supports the claimed production call graph and confirms the harness avoids manual RunRecord/session/recommendation construction.
+
+The runtime success remains **REPORT-BACKED** until Sonnet independently verifies the exact runtime. Two critical uncertainties remain:
+- the report says `gemma3:1b` was configured while production RunRecord records `qwen3:8b`; the artifact does not force gemma3 and `local_chat_llm.provider_model` is empty;
+- the harness reads the first recommendation matching the warm-up subject key rather than asserting exact supporting-run provenance.
+
+Knowledge Delta:
+- effective runtime configuration must be treated as authoritative over intended configuration labels;
+- remote artifact publication is now distinct from runtime attribution and causal proof;
+- temporal read-before-target is present, but recommendation identity binding still needs independent verification.
+
+Next actor: **SONNET**. Next open verification edge:
+`exact warm-up recommendation attribution → target latest_recommendation lookup → prediction → metacognitive_evaluation`.
+
+After R32-G2 independent closure, investigate:
+`metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment → future decision influence`.
