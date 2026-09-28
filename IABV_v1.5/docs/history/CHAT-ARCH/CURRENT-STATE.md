@@ -13,103 +13,79 @@ Technical investigation anchor:
 
 - technical investigation branch: `bio-universal-09.11-r20-clean`
 - pinned R28–R32 code/runtime baseline: `707388053dcc760dbcec017357f1b6001994bd57`
-- latest remotely resolved R32-G2 v2 evidence head: `108c8e71b37591c4979b10b29e164679ba14ec69`
-- current `main` is mutable and must be re-checked at use time.
-- R32-G2 v2 artifact: `IABV_v1.5/test_r32g2_production_runtime_v2.py`
+- R32-G2 v2 remote evidence head: `108c8e71b37591c4979b10b29e164679ba14ec69`
+- R32-G2 v2 evidence artifact: `IABV_v1.5/test_r32g2_production_runtime_v2.py`
 - R32-G2 v2 attribution report: `IABV_v1.5/R32-G2-RUNTIME-ATTRIBUTION-RESULT-2026-09-28.md`
+- current `main` is mutable and must be re-checked at use time.
 
-### R32-G2 v2 reconciliation state
+### R32-G2 v2 — independently reconciled state
 
-**Adjudicated status: RUNTIME EVIDENCE STRONGLY ESTABLISHED; INDEPENDENT FINAL VERIFICATION STILL REQUIRED.**
+**Adjudicated status: PARTIALLY PROVEN.**
 
-Remote evidence confirms the v2 artifact and report are published on the named branch, and compare from the pinned baseline reports **5 commits ahead / 0 behind**. The remote head resolves as `108c8e71...`.
+Independent forensic verification confirms:
+- branch/head/artifact are remotely attributable;
+- production path is real in source and the v2 harness does not fabricate RunRecord, AdaptiveSession or ExperimentRecommendation;
+- model intent converges to `gemma3:1b` at env/config/provider level and the report claims `/api/ps` also showed `gemma3:1b`;
+- target ExperimentRuns are filtered by `linked_run_id` and carry explicit subject keys plus `metacognitive_evaluation`;
+- calibration arithmetic is correct.
 
-The v2 runtime report establishes, by report-backed Windows/Ollama evidence:
+The following remain report-backed or inferred:
+- Windows/Ollama runtime itself has no raw log artifact in the repository;
+- exact request-level HTTP model is not directly observed;
+- exact target recommendation consumption is inferred from the production lookup order plus the pre-target snapshot; the consumed recommendation ID is not persisted into ExperimentRun metadata;
+- the v2 persistence check is a same-process/same-repository reread, not a fresh repository-instance reload.
 
-- `IABV_OLLAMA_MODEL=gemma3:1b` was set before `AppBootstrap`;
-- `bootstrap.general_provider.config.model=gemma3:1b`;
-- Ollama `/api/tags` contained `gemma3:1b`;
-- Ollama `/api/ps` after warm-up and target showed `gemma3:1b` with digest `8648f39d...`;
-- warm-up produced three recommendations, one per observed subject key;
-- a pre-target snapshot found the same recommendation IDs for those subject keys;
-- target produced three `ExperimentRun` records carrying `linked_run_id=target_run_id`, explicit subject keys and `metacognitive_evaluation`;
-- each evaluation carried confidence `0.7008`, actual `success`, and calibration error `0.2992`;
-- `0.2992 = |0.7008-1.0|` for successful outcomes;
-- the ExperimentRun JSON persistence path can be reread successfully.
+### Provenance correction
 
-These close the prior **effective-model attribution** uncertainty substantially.
+The actual R32-G2 v2 evidence commit is:
 
-### Evidence-boundary corrections
+`108c8e71b37591c4979b10b29e164679ba14ec69`
 
-Do **not** overstate two v2 claims:
+The report's embedded:
+`FULL_EVIDENCE_HEAD=9a68004958c...`
+was malformed. The actual commit is:
 
-1. **Exact recommendation consumption is still inferred, not directly recorded at the lookup seam.**
-   Production `TaskOutcomeRecorder._record_learning()` calls `latest_recommendation(domain, subject_key)` immediately before `record_outcome()`, and v2 proves the pre-target latest recommendation remained unchanged. However, the production call does not persist the consumed recommendation ID into `ExperimentRun.metadata`; v2 therefore establishes identity by subject key + stable pre-target snapshot, not by a direct target-side consumption event.
+`9a68004953ac891b19551ca9f56761089b652159`
 
-2. **“Persistence reload” in v2 is readability/persistence verification, not a fresh repository-instance proof.**
-   The artifact itself states that a real close/reopen was not performed and calls `experiment_lab.repository.list_runs()` again on the same repository instance. Treat this as **persisted-and-reread**, not independent-process reload.
+which is a real remote commit and the direct predecessor in the v2 evidence chain.
 
-### Provenance discrepancy to preserve
+The report's embedded `REMOTE_READBACK=PENDIENTE` is historical text drift; current remote read-back is available.
 
-The report committed at `108c8e71...` contains stale internal provenance fields:
+### Next source-level boundary
 
-- `FULL_EVIDENCE_HEAD=9a68004958...`
-- `PARENT_SHA=13c7f314...`
-- report text still says `REMOTE_READBACK=PENDIENTE`
-
-The remote branch/head itself is resolved, and compare proves the branch endpoint is five commits ahead of the baseline, but the embedded `9a68004958...` value does not resolve through the available remote commit read-back. Do not treat the report's internal parent-chain text as authoritative when it conflicts with the actual remote ref/read-back.
-
-### Source-level discovery of the next edge
-
-The next edge is narrower and more concrete than “does OSES have any metacognitive code?”
-
-Source audit at the pinned baseline shows:
+The important OSES seam is now narrower:
 
 `ExperimentRun.metadata['metacognitive_evaluation']`
-→ OSES recent ExperimentRun scan
-→ `task_packet_metacognitive_miscalibration` / overconfidence / underconfidence finding
+→ `_task_packet_pattern_findings()`
+→ `wt_total >= 3`
+→ metacognitive finding thresholds
 → `_apply_metacognitive_feedback()`
 → `AdaptiveWeightLayer.apply_metacognitive_adjustment()`
-→ persisted `metacognitive_adjustments`
-→ future score calculation via `AdaptiveWeightLayer._metacognitive_adjustment_for_runs()`.
+→ persistence
+→ later scoring.
 
-Important constraint: the successful R32-G2 v2 evaluation has calibration error `0.2992` and zero false-positive/false-negative counts. OSES' relevant threshold for a miscalibration finding is `avg_calibration_error > 0.4`; therefore this successful v2 run is **not expected to trigger an OSES miscalibration finding or an adaptive-weight correction by itself**.
+The key gate is not simply “metacognitive_evaluation exists”.
 
-So the next discriminating runtime experiment should not merely rerun R32-G2. It must produce a legitimate production-path metacognitive error signal (for example, a controlled successful-prediction/actual-failure case) and then observe:
+OSES increments `wt_total` only when an ExperimentRun has `metadata['worker_telemetry']` with a non-empty `worker_kind`. R32-G2 v2 used the local chat `answer_user()` path. Existing source search shows the primary `worker_telemetry` writer in this baseline is the external tool-adapter execution path, while `TaskOutcomeRecorder` merely copies telemetry already present in the session.
 
-`ExperimentRun metadata → OSES finding → AdaptiveWeightLayer adjustment → persisted adjustment → later decision/scoring effect`.
+Therefore the first runtime-discriminating question is:
 
-### Current closed/open map
+**Do the actual R32-G2 v2 local-chat ExperimentRuns contain `worker_telemetry.worker_kind`?**
 
-- **R28-A PROVEN:** synthetic metacognitive adjustment → weighted-score change → decision flip → persistence → reload → reuse.
-- **R34-A PROVEN:** bounded blind continuity reconstruction from canonical GitHub memory.
-- **R32-G:** NOT PROVEN end-to-end; prior artifact bypassed production seam.
-- **R32-G2A:** PROVEN at source-level seam identification.
-- **R32-G2 v2:** runtime evidence strongly establishes production execution, effective model convergence, recommendation persistence by subject key and linked target ExperimentRuns; final independent verifier gate remains open for exact consumption/persistence attribution.
-- **R32-G2 v2 next causal frontier:** `metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment → future decision influence`.
+This must be observed before designing any deliberate false-positive/miscalibration run.
 
-### Immediate routing
+### Current routing
 
-**Independent verifier: SONNET.**
-
-Required verification:
-- remote head/artifact identity;
-- embedded provenance discrepancies;
-- model convergence and limits of `/api/ps` attribution;
-- recommendation identity/consumption boundary;
-- ExperimentRun linkage and evaluation mapping;
-- persistence claim boundary.
-
-After independent verification, **DEVIN** is capability-fit for a Windows runtime experiment that intentionally exercises the OSES/AWL edge without changing production semantics.
-
-Do not reopen R28/R34 without contradictory evidence. Do not use Opus for this bounded verification/runtime work.
+- **SONNET verification gate: completed.**
+- **DEVIN:** next actor, because the remaining smallest action is a Windows/workspace observation unavailable to Sonnet.
+- The first Devin action must be read-only: inspect the isolated R32-G2 v2 ExperimentRuns' `metadata.keys()` and specifically `worker_telemetry.worker_kind`, without rerunning or mutating production.
+- Only if the gate is satisfied should the next experiment deliberately create an OSES-eligible metacognitive mismatch.
+- If the gate is absent, stop and escalate the decision as an ownership/contract question; do not patch production merely to make the test pass.
+- Opus and Codex remain unnecessary for this bounded diagnostic.
 
 ### Continuity contract
 
-Every material cycle must preserve:
-
 `OBJECTIVE → CURRENT_TRUTH → CLOSED_EDGES → FIRST_OPEN_CAUSAL_EDGE → REQUIRED_CAPABILITY → SELECTED_ACTOR → ACTOR_REASON → INDEPENDENT_VERIFIER → EVIDENCE → RESULT → KNOWLEDGE_DELTA → NEXT_GATE`
-
 
 # REPOSITORY ANCHOR
 
