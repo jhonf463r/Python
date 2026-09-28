@@ -1383,3 +1383,19 @@ Current first open edge:
 `reported metacognitive_evaluation → actual prior recommendation/prediction provenance`.
 
 Do not mark `adjustment → future decision influence` as open until `finding → adjustment` has first been observed in a real threshold-crossing production run.
+
+
+## 2026-09-28 — R32-G2-V3 SOURCE RECONCILIATION OF SUBJECT-KEY APPARENT GAP
+
+Resolved: the V3 harness's `adaptive_session.subject_keys` observation was reading a non-existent top-level AdaptiveSession field. Actual learning subject keys are computed by `TaskOutcomeRecorder._subject_keys()` and stored in `session.metadata['adaptive_learning']['subject_keys']`.
+
+Consequences:
+- `warm-up subject_keys=[]` is invalid negative knowledge;
+- `warm-up recommendations=[]` is also invalid as an absence claim because the harness queried recommendations only for the incorrectly obtained empty key list;
+- the three target `metacognitive_evaluation` records are now source-consistent with the production learning path;
+- exact target-side recommendation IDs remain unverified without raw persisted runtime evidence.
+
+Current V3 unresolved edge:
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+No `worker_kind`, threshold, or production source change is justified by this finding.
