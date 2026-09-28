@@ -1011,3 +1011,29 @@ New distinctions reinforced:
 The production recommendation→prediction→metacognitive evaluation mechanism is source-proven, but the exact runtime instance still requires Windows evidence.
 
 Routing: **DEVIN** for bounded Windows/Ollama evidence capture; then **SONNET** for independent re-verification. Do not modify learning semantics or move to OSES/AdaptiveWeightLayer until R32-G2 closes.
+
+    
+## 2026-09-28 — R32-G2 v2 RUNTIME ATTRIBUTION RECONCILIATION
+
+R32-G2 v2 materially reduced the runtime-attribution uncertainty, but the canonical method requires preserving the remaining evidence boundary.
+
+### What changed in the working model
+
+- `configured model` can be strengthened to `configured + provider-configured + runtime-loaded` for the observed v2 execution: `gemma3:1b`.
+- Recommendation identity is now observable for all three subject keys and remains stable across the pre-target boundary.
+- The target-side ExperimentRuns are directly attributable to the target RunRecord by `metadata['linked_run_id']`.
+- The metacognitive evaluation values and calibration arithmetic are directly readable from the resulting ExperimentRuns.
+
+### What did not become proven
+
+- Exact recommendation consumption is still reconstructed through the production `latest_recommendation()` contract plus unchanged pre-target IDs; the consumed ID is not persisted in the ExperimentRun record.
+- The artifact's “reload” is same-instance reread rather than a fresh repository/process reconstruction.
+- The R32-G2 v2 success case does not exercise OSES feedback because its 0.2992 calibration error is below the OSES >0.4 miscalibration threshold and has no false positives/negatives.
+- Therefore the first open causal edge is now an **existing-organ composition/runtime effect**, not evidence of a missing OSES or AdaptiveWeightLayer component.
+
+### Active symbiosis routing
+
+`objective → uncertainty/boundary → required capability → actor fit → smallest discriminating action → execution/observation → independent verification → reconciliation → Knowledge Delta → next decision/writeback`
+
+For the immediate gate, Sonnet is the independent forensic verifier; after that, Devin is the runtime executor for the OSES/AWL experiment if needed. Opus remains reserved for genuine architectural contradiction.
+
