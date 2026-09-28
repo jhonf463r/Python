@@ -826,3 +826,42 @@ objective → uncertainty → observe → concept candidates → relation hypoth
 **Discriminating experiment:** a controlled unfamiliar web application, then a second unrelated application, testing whether the same semantic algorithm can recognize authentication flow, identity/session transitions, available actions and uncertainty without provider-specific cognitive classes.
 
 **Stop condition:** no broad new ontology/brain/router. First exhaust existing organ composition and identify the smallest actual missing semantic contract or causal edge.
+
+## 2026-09-27 UK-16 — Cross-IA active-state continuity freshness
+
+QUESTION: Can a genuinely new agent reconstruct the latest BIO-UNIVERSAL objective/state and route correctly without the human re-pasting R28–R33?
+
+CURRENT STATUS: **PARTIALLY ADDRESSED / BLIND RECONSTRUCTION STILL REQUIRES PERIODIC VALIDATION.**
+
+R33 demonstrated that the prior canonical layer became stale because material R28–R32 results were not written back. The minimum correction is to keep `CURRENT-STATE.md` as the active bridge and preserve cross-IA method changes in `SYMBIOSIS-MAP.md`.
+
+REQUIRED LOOP:
+
+`new objective → canonical memory → current-state overlay → closed/open edges → actor capability-fit → work → independent verification → knowledge delta → canonical writeback`
+
+SUCCESS CONDITION:
+
+A new agent can reconstruct the active objective, latest verified state, negative knowledge, first open edge, actor reason and stop condition without relying on the original chat transcript.
+
+This remains an empirical continuity test, not a documentation assumption.
+
+## 2026-09-27 UK-17 — Experience-driven metacognitive learning seam
+
+QUESTION: Can a real productive IABV experience create `metacognitive_evaluation`, feed OSES, and produce an adaptive adjustment without synthetic injection?
+
+CURRENT STATUS: **OPEN — R32-G.**
+
+PROVEN PRECONDITIONS:
+
+- R28: metacognitive adjustment → decision flip → persistence/reuse.
+- R27: OSES → AdaptiveWeightLayer → StrategySelector mechanism exists and is real within its domain.
+- R32: local Ollama runtime is available, but productive orchestration still requires full bootstrap.
+
+NEXT DISCRIMINATING EXPERIMENT:
+
+Close the smallest real edge:
+
+`local productive execution → RunRecord → metacognitive_evaluation`
+
+without introducing a new cognitive organ or modifying the adaptive algorithm itself.
+
