@@ -760,3 +760,49 @@ Current capability-fit:
 **SONNET** = independent verification only after the artifact is remotely readable.
 
 Do not treat the inability to find the branch as evidence that the runtime did not occur. Treat it as a blocking provenance gap.
+
+
+
+## 2026-09-28 R32-G — ROUTING AFTER REMOTE PUBLICATION
+
+The publication edge is now closed at the Git layer.
+
+### Verified transport edge
+
+`local evidence → exact artifact → exact commit → remote branch → remote read-back`
+
+is now **PROVEN** for the published test/provenance documents.
+
+Authoritative remote evidence head:
+`4c56d2ca439e277c86de701e7aff9ed93a0bd89c`
+
+Baseline:
+`707388053dcc760dbcec017357f1b6001994bd57`
+
+### Causal boundary
+
+The published test itself bypasses the strongest production seam:
+
+`LocalRoleRouter` is imported but unused;
+`OllamaExpertProvider.infer_task()` is invoked directly;
+`RunRecord` and `AdaptiveSession` are manually constructed;
+`TaskOutcomeRecorder.record()` is directly invoked.
+
+Therefore the evidence currently supports a lower-layer route, not yet:
+
+`InferenceService._execute → AdaptiveTaskOrchestrator → finalize_with_run → TaskOutcomeRecorder._record_learning`.
+
+### Actor routing
+
+**SONNET** = independent verifier.
+
+Required capability:
+- forensic code-path tracing;
+- exact artifact/commit verification;
+- runtime reproducibility or independent runtime attribution;
+- prediction extraction semantics audit;
+- explicit epistemic separation.
+
+After Sonnet, ChatGPT performs reconciliation/writeback. Devin should not modify implementation unless the independent audit identifies a concrete bounded defect whose smallest repair is necessary.
+
+Do not reopen completed continuity work R34 or R28 decision-plasticity.
