@@ -1434,3 +1434,24 @@ Do not reuse the nonexistent-model strategy as evidence for `actual_success=Fals
 The separate LocalRoleRouter general→visual fallback is not the adaptive `infer_task` route. The outer `InferenceService._execute()` can create `RunStatus.FAILED` only when an exception escapes the adaptive path.
 
 The nonexistent-model case is better classified as request/configuration failure than as generic provider-outage evidence.
+
+### UK-R32-G2V4-2 — Outcome/degradation semantic contract
+
+STATUS: SOURCE-ADJUDICATED / IMPLEMENTATION DECISION OPEN.
+
+`SEMANTIC_MODEL = 3`.
+
+Canonical semantics:
+- `RunStatus.SUCCESS` = non-degraded completion of the predicted production route.
+- `RunStatus.PARTIAL` = usable result through explicit degraded fallback/recovery.
+- `RunStatus.FAILED` = no usable result and failure escapes to the execution boundary.
+- `used_fallback` = degraded recovery, not generic provider failure.
+- `actual_success = (status == SUCCESS)` remains unchanged.
+
+Do not redefine `actual_success` merely to create OSES threshold-crossing data.
+
+Legitimate candidate seam: when `llm_chat` fails and the system actually substitutes `assistant_guidance`/rendered output, propagate explicit degraded-route semantics at the `llm_chat → InferenceResult` boundary and preserve the existing `used_fallback → PARTIAL` contract. A `fallback_reason` should distinguish request/configuration failure, provider unavailability, and empty response.
+
+Remaining empirical question: did the V4 404 target actually return a templated substitute to the user-facing boundary? If yes, the missing degradation signal is a contract-consistency issue; if no, the outcome needs separate classification.
+
+Do not change production solely to force an OSES threshold.
