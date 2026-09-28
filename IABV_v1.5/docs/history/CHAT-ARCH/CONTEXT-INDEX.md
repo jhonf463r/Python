@@ -1153,3 +1153,18 @@ Before implementation, activate this correction:
 ### Next actor
 
 **SONNET** — delta-only correction of the implementation-contract specification. No implementation.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 IMPLEMENTATION READY
+
+The reported `total >= 5` discrepancy is resolved as a false audit finding. Baseline source explicitly contains `_TP_MIN_RUNS = 5` and the `if total < self._TP_MIN_RUNS: return []` gate. Do not reopen this threshold question.
+
+Current implementation contract:
+- new consumer must have a distinct name from existing `_metacognitive_calibration_findings`;
+- no linked_run_id collapse in the minimal seam;
+- preserve the structural `evidence_basis is not None` predicate;
+- preserve worker semantics, existing category names and thresholds;
+- isolate AdaptiveWeightLayer persistence in tests.
+
+### Next actor
+
+**DEVIN** — bounded implementation, regression tests, and Windows/runtime proof. After implementation/publication, route to **SONNET** for independent verification.
