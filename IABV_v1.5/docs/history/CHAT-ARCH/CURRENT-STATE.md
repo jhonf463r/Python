@@ -65,22 +65,50 @@ Two additional gates matter for any future runtime proof:
 
 The three R32-G2 v2 target ExperimentRuns are three subject-key lanes from one target execution, not three independent experiences.
 
-### Immediate routing
+### Contract closure and next routing
 
-**DEVIN** is the next actor for a read-only Windows/runtime evidence capture.
+The R32-G2 v2 contract question is now **reconciled at source/architecture level** and operationally corroborated.
 
-Required output:
-- count eligible OSES runs and real non-empty `worker_kind` observations;
-- report whether the worker gate is operationally reachable in persisted real data;
-- report the canonical execution/run identity versus subject-key multiplicity for R32-G2 v2;
-- invoke the existing OSES method read-only and return `total`, `wt_total`, calibration sample count, average error, FP/FN and categories.
+Canonical interpretation remains **B + C**:
+- `ExternalWorkerTelemetry` and `worker_kind` remain external-worker-only.
+- `metacognitive_evaluation` is generic ExperimentRun-level evidence.
+- `_task_packet_pattern_findings()` remains task-packet/worker-scoped.
+- local Ollama must not be relabeled as an external worker merely to satisfy `wt_total`.
 
-Do not rerun R32-G2 v2.
-Do not mutate production.
-Do not inject telemetry.
-Do not patch `worker_kind`.
-Do not change OSES thresholds/gates.
-After Devin publication, route to **SONNET** for independent verification.
+Devin's operational gate inventory independently read back six persisted ExperimentRun JSON files:
+- OSES eligible-run gate: `total=6 >= 5` SATISFIED.
+- External-worker telemetry gate: `wt_total=0 < 3` NOT SATISFIED.
+- all three target lanes share one target execution/session.
+- OSES metacognitive branch is therefore NOT REACHED for this local-chat case.
+
+Remote provenance is independently verified:
+- branch: `devin/r32g2-v2-worker-telemetry-gate-2026-09-28`
+- branch HEAD: `4eb945a4f8ad2fc83ba82f16d6154e9248c19eb3`
+- artifact blob: `c3062d58057c6066801a54cfae7bd9a4ec0ca1c1`
+- `4eb945a4` is exactly one commit ahead of `d34f24c6` and adds that artifact.
+
+Evidence boundary:
+- remote publication/read-back = PROVEN;
+- Windows runtime observations inside the report = still REPORT-BACKED;
+- the artifact's embedded HEAD `d34f24c6` is the pre-publication workspace commit, while `4eb945a4` is the publication commit. Preserve this distinction.
+
+### Next action
+
+The contract boundary is sufficiently reconciled. Do **not** reopen the `worker_kind='ollama'` question and do not rerun R32-G2 v2.
+
+Next actor by capability-fit: **SONNET** for a read-only implementation-contract specification of the smallest existing-organ OSES change that can consume generic `metacognitive_evaluation` without depending on external-worker telemetry.
+
+Required result:
+- exact proposed OSES seam;
+- whether existing category names/feedback path can be reused without semantic contamination;
+- exact call-site(s) in `build_review()` / review assembly and feedback application;
+- unchanged worker-specific behavior;
+- unchanged current thresholds unless independently justified;
+- minimal regression-test set;
+- first causal edge after the proposed change.
+
+No implementation or threshold change in this step.
+Then **DEVIN** for bounded implementation and Windows/runtime proof only after Sonnet's specification is reconciled.
 ### Immediate routing
 
 **SONNET** is the next actor for independent contract/architecture archaeology.
