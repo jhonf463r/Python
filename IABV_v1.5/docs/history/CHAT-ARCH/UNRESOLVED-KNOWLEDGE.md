@@ -1260,3 +1260,20 @@ Do not synthesize `worker_kind='ollama'` merely to satisfy the OSES gate. That w
 
 NEXT DISCRIMINATING ACTION:
 Independent contract/ownership archaeology by Sonnet, including existing tests and historical design intent. No implementation until ownership is reconciled.
+
+### UK-R32-G2V2-4 — Post-archaeology operational gate and observation-unit check
+
+STATUS: OPEN / runtime discriminant after contract ownership closure.
+
+Sonnet independently closed the ownership ambiguity at source level: `ExternalWorkerTelemetry`/`worker_kind` remain external-worker-specific; `metacognitive_evaluation` is generic ExperimentRun evidence; `_task_packet_pattern_findings()` is the worker/task-packet consumer and should not be made to accept local chat by manufacturing worker identity.
+
+Newly preserved hidden gates:
+- OSES task-packet analysis returns no findings when fewer than 5 eligible runs with `evidence_basis` are available.
+- Metacognitive calibration additionally requires >=3 calibration errors and average error >0.4; over/under-confidence use the existing FP/FN thresholds.
+
+Observation-unit boundary:
+The three R32-G2 v2 target ExperimentRuns are subject-key lanes from one target execution. They are not three independent experiences. Future causal calibration evidence must use multiple distinct production executions or explicitly declare another valid statistical unit.
+
+NEXT ACTOR: **DEVIN** for a read-only Windows inventory of persisted ExperimentRuns and the existing OSES method. Capture total eligible runs, worker-kind population, R32-G2 v2 run identity/subject multiplicity, and returned OSES metrics. No rerun, mutation, telemetry injection or threshold changes.
+
+After remote publication: **SONNET** independently verifies the runtime artifact.
