@@ -1218,3 +1218,20 @@ Actor routing:
 - **OPUS 5**: unavailable; no further Opus escalation is assumed.
 
 Do not reopen the already closed R28/R34 edges, worker-telemetry ownership, or the V3 subject-key accessor correction.
+
+## 2026-09-28 — R32-G2-V4 OBSERVATION-BEFORE-IMPLEMENTATION ROUTING
+
+The static contradiction is resolved. The code contract is internally coherent except for one propagation seam: an actually substituted response is not reflected in the existing degraded-status channel.
+
+Method refinement:
+`static deterministic path → existing-runtime read-back → semantic confirmation → minimal implementation → runtime proof`.
+
+Capability routing:
+- **DEVIN** now has the best fit for a read-only Windows/runtime workspace read-back of the existing V4 run.
+- **CODEX** should be used next for bounded patch review/implementation-contract review once the runtime substitution is confirmed.
+- **SONNET** remains the independent verifier after implementation/runtime evidence.
+- **CHATGPT** reconciles provenance and causal frontier.
+- **OPUS 5** is unavailable and not required.
+
+Do not rerun V4 merely to recover observability that may already exist. First inspect the existing persisted RunRecord.
+
