@@ -1097,3 +1097,31 @@ Decision needed:
 whether local `metacognitive_evaluation` should use an existing generic OSES path, or whether task-packet metacognitive findings are intentionally external-worker-only.
 
 No implementation before this decision.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 CONTRACT CLOSED
+
+Sonnet's independent archaeology closes the contract/ownership question at source level.
+
+Canonical contract:
+- `ExternalWorkerTelemetry` + `worker_kind` = external-worker domain.
+- `metacognitive_evaluation` = generic ExperimentRun evidence.
+- `_task_packet_pattern_findings()` = task-packet/worker analysis; do not relabel local Ollama as a worker.
+- no already-existing generic OSES consumer for raw `metacognitive_evaluation` was found.
+
+Important execution gates to carry forward:
+- OSES task-packet method requires at least 5 eligible `evidence_basis` runs before returning findings.
+- metacognitive calibration needs >=3 observations and its existing error/FP/FN thresholds.
+- multiple subject-key ExperimentRuns from one execution are not automatically independent observations.
+
+### Next actor
+
+**DEVIN** — read-only Windows/runtime inventory.
+
+Required observation:
+- eligible-run total;
+- real non-empty external `worker_kind` count;
+- whether `wt_total >= 3` is reached in persisted operational data;
+- R32-G2 v2 canonical execution/run identity versus subject-key multiplicity;
+- existing OSES read-only output: `total`, `wt_total`, calibration sample size, average calibration error, FP/FN and categories.
+
+Do not rerun, mutate, inject telemetry, patch `worker_kind`, or change OSES thresholds. Publish exact evidence for remote read-back, then route to **SONNET**.
