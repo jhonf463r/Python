@@ -1120,3 +1120,7 @@ Test-isolation lesson: a green test suite can still write persistent adaptive st
 The implementation handoff introduced a false-negative source reading: it overlooked the OSES constant `_TP_MIN_RUNS = 5` and its `if total < self._TP_MIN_RUNS: return []` gate. Lesson: before escalating a source discrepancy to another actor, reconcile the exact control-flow predicate, not only the downstream `wt_total` branch.
 
 This closes the threshold ambiguity without another actor. Remaining implementation routing is now capability-fit: Devin for bounded code/tests/Windows proof; Sonnet afterward for independent verification.
+
+## 2026-09-28 — Test contract as part of causal seam migration
+
+A consumer extraction is not complete when production call sites are migrated but direct test call sites still encode the old ownership contract. The underconfidence test directly invokes `_task_packet_pattern_findings()`; it must follow the new generic consumer seam so tests do not preserve the very cross-domain coupling being removed.
