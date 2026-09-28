@@ -1091,6 +1091,24 @@ R34 is the current empirical validation of the continuity repair, distinct from 
 - current technical frontier remains R32-G; R34 does not close or replace it
 - R34 result is not yet known; do not pre-classify it as proven
 
+### R34 RESULT — BLIND CONTINUITY PROVEN
+
+R34-A is now adjudicated as **PROVEN at the bounded blind-reconstruction level**.
+
+Independent Sonnet reconstruction started from GitHub/current repository state and reconstructed the active objective, R28–R33 status, negative knowledge, routing precedence, technical baseline and R32-G first open causal edge without receiving the original chat history.
+
+Proven boundary:
+`new objective → canonical memory → current-state overlay → closed/open edges → capability-fit routing → correct next gate`
+
+Evidence source:
+- user-supplied Sonnet result artifact SHA-256: `b28637e369e9038ceddc2f5bba35f72e286795adfb8d32e7ca1d02ac11eadf2e`
+- current main HEAD observed during the R34 run: `82de379703c2a6a09bf5c08cee109f5f23581180`
+
+Boundary of claim:
+R34 does not prove indefinite freshness, exhaustive verification of every historical file, or general technical closure. Sonnet reported that its read of SYMBIOSIS-MAP and UNRESOLVED-KNOWLEDGE was directed rather than line-by-line; the core state remained recoverable from the active canonical overlay.
+
+R34 closes the empirical continuity gate while leaving the technical R32-G learning edge active.
+
 ### Current next technical gate
 
 After continuity writeback, return to the smallest experiment that can close:
