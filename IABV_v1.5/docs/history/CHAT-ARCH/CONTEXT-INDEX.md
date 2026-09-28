@@ -1224,3 +1224,27 @@ Current status:
 **PENDING SONNET ATTRIBUTION VERIFICATION**.
 
 Do not propagate the report's `FIRST_OPEN_CAUSAL_EDGE = adjustment → future decision influence` until a real OSES finding and AdaptiveWeightLayer adjustment have been observed.
+
+
+## 2026-09-28 — R32-G2-V3 ATTRIBUTION CORRECTION INDEX
+
+V3 source-level attribution correction:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V3-ATTRIBUTION-RECONCILIATION-2026-09-28.md`
+
+Key correction:
+V3's harness queried the nonexistent `AdaptiveSession.subject_keys` field. Actual production learning keys are computed by `TaskOutcomeRecorder._subject_keys()` and stored under `session.metadata['adaptive_learning']['subject_keys']`.
+
+Therefore:
+`reported warm-up subject_keys=[]` ≠ `observed absence of subject keys`.
+
+Current evidence boundary:
+- V3 provenance = confirmed;
+- runtime production path = report-backed/source-consistent;
+- exact recommendation identity = not independently proven;
+- threshold = naturally not crossed;
+- finding/AWL adjustment = not observed.
+
+Next open causal edge:
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+Next actor: **DEVIN** after independent source reconciliation, followed by **SONNET**.
