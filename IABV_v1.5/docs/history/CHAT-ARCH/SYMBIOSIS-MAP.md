@@ -947,3 +947,32 @@ Next actor by capability-fit: **DEVIN** for the real Windows/Ollama production-p
 After publication: **SONNET** for independent runtime verification.
 
 Do not reopen R28 or R34. The separate `b3e211fb` audit remains a distinct gate.
+
+
+## 2026-09-28 TRANSFER 21 — R32-G2 RUNTIME BLOCKER REFINEMENT
+
+R32-G2 adds a useful operational distinction to the shared method.
+
+The reported run crossed more of the real production boundary than the earlier manual R32-G artifact:
+
+`isolated AppBootstrap → InferenceService.infer_task() → AdaptiveTaskOrchestrator → real Ollama attempt`
+
+but stopped before completion because the selected model exceeded the configured provider timeout.
+
+### New reusable knowledge
+
+- `model available` is not equivalent to `model completes within production timeout`;
+- `production path entered` is not equivalent to `production RunRecord produced`;
+- an upstream runtime timeout should not trigger speculative redesign of downstream learning contracts;
+- instrumentation defects and production runtime defects must remain separate causal edges;
+- a runtime report remains report-backed until branch/SHA/artifact publication and remote read-back are independently established.
+
+### Routing consequence
+
+The architecture uncertainty is already sufficiently narrowed. The capability-fit actor is **DEVIN** for a bounded Windows/Ollama runtime intervention. The smallest discriminating action is to vary only the actually installed Ollama model before bootstrap while preserving the production 30-second timeout contract and the same two-phase warm-up/target harness.
+
+After attributable publication, **SONNET** independently verifies the exact runtime path and recommendation→prediction→metacognitive evaluation causal edge.
+
+Persistent invariant reinforced:
+
+`runtime blocker at edge N ≠ evidence about edges N+1...`
