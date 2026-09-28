@@ -1171,3 +1171,24 @@ Next actor: **SONNET**. Next open verification edge:
 
 After R32-G2 independent closure, investigate:
 `metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment → future decision influence`.
+
+
+## 2026-09-28 UK-R32-G2 — SONNET PARTIAL PROOF / RUNTIME ATTRIBUTION GAP
+
+Sonnet's independent audit classifies R32-G2 as **PARTIALLY PROVEN / PENDING RUNTIME ATTRIBUTION**.
+
+Source-level production path and prediction/evaluation derivation are independently confirmed. Git provenance and artifact identity are independently confirmed. Runtime invocation itself remains report-backed because independent Windows/Ollama execution was unavailable.
+
+Two concrete attribution gaps remain:
+
+1. **Effective model unknown.** The artifact preserves an existing `IABV_OLLAMA_MODEL` when present; `gemma3:1b` is only a fallback default. The RunRecord's `executor_model=qwen3:8b` is not sufficient to observe the HTTP payload model, and `local_chat_llm.provider_model` is empty.
+2. **Exact recommendation consumption unknown.** The target executes against a recorder that queries multiple subject keys through `latest_recommendation()`. The harness selects the first matching recommendation and the evaluation has no recommendation ID.
+
+Next discriminating runtime action:
+- observe the actual Ollama model via runtime evidence;
+- capture every target-side `latest_recommendation()` result immediately before target;
+- record the `subject_key` of each ExperimentRun carrying `metacognitive_evaluation`;
+- verify the mapping to the warm-up recommendation;
+- perform a fresh repository-instance reload.
+
+Next actor: **DEVIN**. Then **SONNET** for independent re-verification.
