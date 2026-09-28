@@ -1221,3 +1221,25 @@ NEGATIVE KNOWLEDGE:
 NEXT DISCRIMINATING EXPERIMENT:
 Use a real production `InferenceService.infer_task()` path with an existing system recommendation, then create a controlled actual outcome mismatch sufficient to produce calibration error >0.4 while preserving provenance. Invoke/read back OSES using the resulting ExperimentRuns, verify the emitted finding, verify the persisted AdaptiveWeightLayer adjustment in a fresh object, and finally run a controlled later selection/scoring comparison where that persisted adjustment is the only changed adaptive input.
 
+
+
+### UK-R32-G2V2-2 — OSES worker-telemetry gate
+
+STATUS: OPEN / first runtime discriminant.
+
+R32-G2 v2 established production-path `metacognitive_evaluation`, but OSES `_task_packet_pattern_findings()` only increments `wt_total` when `ExperimentRun.metadata['worker_telemetry']` is a dict with non-empty `worker_kind`. The local chat target uses `provider.answer_user()`; `TaskOutcomeRecorder` copies session telemetry but does not create it.
+
+FIRST DISCRIMINATING OBSERVATION:
+
+`actual R32-G2 v2 ExperimentRun.metadata.worker_telemetry.worker_kind`
+
+If absent for all three local-chat ExperimentRuns:
+- the relevant OSES metacognitive finding path is not merely untriggered; its current gate is unsatisfied for these runs;
+- changing the gate becomes an architecture/contract decision, not a test repair.
+
+If present:
+- run a bounded OSES experiment using a legitimate mismatch sufficient to cross the existing thresholds;
+- observe finding → AWL adjustment → persistence → later scoring effect.
+
+Do not add a synthetic telemetry field just to satisfy the gate.
+
