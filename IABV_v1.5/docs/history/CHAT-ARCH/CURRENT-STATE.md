@@ -1600,3 +1600,67 @@ The proposed R-1 linked-run collapse remains excluded from the minimal seam; ind
 Source/test archaeology found one concrete compatibility impact omitted from the handoff: `tests/test_scientific_proxy_engine.py` has a direct call to `_task_packet_pattern_findings(experiment_runs=...)` in the underconfidence test (while the other metacognitive tests use `build_review()`). After extracting the raw-run metacognitive block, that direct test must target the new `_experiment_run_metacognitive_findings()` seam or the full `build_review()` path. The worker/task-packet method must no longer be expected to emit metacognitive categories by itself.
 
 This is a bounded test-contract update, not a production semantic change.
+
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 POST-IMPLEMENTATION VERIFICATION CLOSED
+
+R32-G2 v2 generic metacognitive seam is now independently verified at source/contract/test level.
+
+### Provenance correction
+
+Verified implementation lineage:
+`707388053dcc760dbcec017357f1b6001994bd57`
+→ `d34f24c639f15c4a4a2127421cea6c2c3592c0bb`
+→ `4eb945a4f8ad2fc83ba82f16d6154e9248c19eb3`
+→ `87ae24b73964bf208b82d6b15fa7924c6dd6e7bc` (implementation)
+→ `79bdd8ab47206e9f5a07fdc2151923f934da474a` (report/publication)
+
+The SHA `87ae24b73b95c8eb2b9c0c70444bbfa2b7c8f3ef` printed in the Devin report does not exist. This is a provenance typo, not a code contradiction. Preserve `implementation commit != report commit != branch HEAD`.
+
+### Independent verification result
+
+Sonnet confirmed:
+- `_task_packet_pattern_findings()` no longer emits generic metacognitive findings;
+- `_experiment_run_metacognitive_findings()` consumes generic `ExperimentRun.metadata.metacognitive_evaluation` without worker telemetry/worker_kind gating;
+- `build_review()` wires the consumer after task-packet findings and before dedupe/feedback processing;
+- `evidence_basis is not None` remains a structural eligibility predicate;
+- all frozen thresholds and category names remain unchanged;
+- existing `_metacognitive_calibration_findings()` remains distinct and untouched;
+- no `linked_run_id` collapse and no synthetic local `worker_kind`;
+- targeted tests genuinely exercise bootstrap/repository production code paths and feedback reaches the bootstrap-scoped AdaptiveWeightLayer.
+
+### Evidence boundary
+
+The new seam is:
+- source-wired;
+- test-proven;
+- independently verified.
+
+It is **not yet runtime-proven on a genuine local-chat production execution**. The earlier R32-G2 v2 runtime occurred before this seam was implemented and must not be reused as proof of the new runtime edge.
+
+Full-suite/CI regression proof is not established by this reconciliation; targeted tests are targeted evidence.
+
+### First open causal edge
+
+`real production local-chat ExperimentRun → generic OSES consumer → finding`
+
+After that:
+`finding → AdaptiveWeightLayer adjustment`
+is test-proven but needs production runtime observation in this seam.
+
+Final adaptive frontier remains:
+`adjustment → future decision influence`
+= NOT PROVEN.
+
+### Routing
+
+Next actor: **DEVIN**.
+
+Perform the smallest real Windows/Ollama runtime experiment using:
+`AppBootstrap(<fresh isolated workspace>) → inference_service.infer_task(...)`
+and then the real OSES review over the persisted production ExperimentRun.
+
+Do not seed ExperimentRuns, manually construct RunRecord/recorder objects, inject worker_kind, change thresholds, or redesign OSES.
+
+After publication: **SONNET** independently verifies the runtime evidence.
+
