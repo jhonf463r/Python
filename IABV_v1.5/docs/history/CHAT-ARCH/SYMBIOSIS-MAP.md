@@ -709,3 +709,34 @@ The technical hypothesis remains:
 `real productive experience → metacognitive_evaluation` may now be operationally viable, but it is not yet canonically proven.
 
 Next actor by capability-fit: **SONNET**, for independent forensic/runtime and provenance verification.
+
+
+## 2026-09-28 TRANSFER 19 — R32-G SONNET AUDIT / ARTIFACT RECOVERY ROUTING
+
+Sonnet independently audited Devin's reported R32-G result.
+
+Adjudication:
+`R32-G = NOT PROVEN`.
+
+Source-level path is confirmed at the technical SHA, but the reported execution is not attributable to a preserved artifact:
+- reported branch `bio-universal-09.11-r22b-runtime` is not remotely resolvable;
+- reported `test_r32_g_local_experience.py` is absent from the SHA and not recovered in repository history;
+- reported Ollama, RunRecord, ExperimentRun and persistence/read-back therefore remain report-only.
+
+Reusable method refinement:
+`independent audit complete + artifact absent → recover/publish exact artifact`
+rather than
+`independent audit complete → redesign/reimplement`.
+
+Routing consequence:
+**DEVIN** is now the capability-fit actor because the open uncertainty is mechanical artifact/runtime provenance recovery or provenance-safe re-execution on Windows.
+
+After a verifiable artifact/runtime chain exists, route back to **SONNET** for independent verification.
+
+Preserve the distinction:
+`reported execution ≠ proven execution`
+and
+`source path exists ≠ specific runtime invocation proven`.
+
+OSES remains downstream:
+`metacognitive_evaluation ≠ OSES finding ≠ AdaptiveWeightLayer adjustment`.
