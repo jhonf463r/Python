@@ -1172,3 +1172,32 @@ Current implementation contract:
 ## 2026-09-28 LIVE ROUTING ADDITION — R32-G2 V2 TEST SEAM
 
 Implementation must include migration of the direct underconfidence test that currently calls `_task_packet_pattern_findings()`. Do not preserve a test expectation that the worker/task-packet method emits generic metacognitive categories after extraction.
+
+
+## 2026-09-28 — R32-G2-V2 POST-IMPLEMENTATION CONTINUITY INDEX
+
+### Canonical evidence
+
+- implementation branch: `devin/r32g2-v2-generic-metacognitive-seam-2026-09-28`
+- implementation commit: `87ae24b73964bf208b82d6b15fa7924c6dd6e7bc`
+- report/publication commit: `79bdd8ab47206e9f5a07fdc2151923f934da474a`
+- post-implementation independent verification report:
+  `IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V2-POST-IMPLEMENTATION-INDEPENDENT-VERIFICATION-RECONCILIATION-2026-09-28.md`
+
+### Retrieval rule
+
+When a new chat touches R32-G2, retrieve:
+`CURRENT-STATE → UNRESOLVED-KNOWLEDGE → SYMBIOSIS-MAP → R32-G2-V2 post-implementation verification report → implementation branch/source`.
+
+Preserve:
+`implementation commit != report commit != branch HEAD`
+`test-proven != runtime-proven`
+`metacognitive_evaluation != OSES finding`
+`OSES finding != adaptive adjustment`
+`adaptive adjustment != future decision influence`.
+
+### Active routing
+
+The implementation/contract seam is closed. **DEVIN** is next for the smallest real Windows/Ollama production-path experiment. **SONNET** follows for independent runtime verification.
+
+Do not reopen the worker-kind contract or threshold dispute. Do not rerun earlier R32-G2 v2 solely to validate this new seam.
