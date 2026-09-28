@@ -1037,3 +1037,23 @@ R32-G2 v2 materially reduced the runtime-attribution uncertainty, but the canoni
 
 For the immediate gate, Sonnet is the independent forensic verifier; after that, Devin is the runtime executor for the OSES/AWL experiment if needed. Opus remains reserved for genuine architectural contradiction.
 
+
+
+## 2026-09-28 — R32-G2 v2 Sonnet reconciliation
+
+Sonnet independently adjudicated R32-G2 v2 as **PARTIALLY PROVEN**.
+
+Accepted corrections:
+- malformed embedded SHA is provenance drift, not authoritative remote identity;
+- exact recommendation consumption remains inferred rather than directly recorded;
+- same-process/same-repository reread is not independent repository reload;
+- three subject-key ExperimentRuns from the same target request are replicated lanes, not three independent observations;
+- script success/printed checks do not equal assertion-backed verification;
+- runtime report without raw logs remains report-backed for execution facts.
+
+Newly sharpened causal boundary:
+`metacognitive_evaluation → OSES` is itself gated by `worker_telemetry.worker_kind` through `wt_total >= 3` in `_task_packet_pattern_findings()`.
+
+Therefore the immediate method is:
+`observe actual metadata → reconcile gate → only then design the smallest causal OSES/AWL runtime experiment`.
+
