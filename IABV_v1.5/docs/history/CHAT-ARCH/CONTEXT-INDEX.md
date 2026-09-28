@@ -1168,3 +1168,7 @@ Current implementation contract:
 ### Next actor
 
 **DEVIN** — bounded implementation, regression tests, and Windows/runtime proof. After implementation/publication, route to **SONNET** for independent verification.
+
+## 2026-09-28 LIVE ROUTING ADDITION — R32-G2 V2 TEST SEAM
+
+Implementation must include migration of the direct underconfidence test that currently calls `_task_packet_pattern_findings()`. Do not preserve a test expectation that the worker/task-packet method emits generic metacognitive categories after extraction.
