@@ -20,6 +20,13 @@ Technical investigation anchor:
 - R28–R33 continuity state is canonically absorbed into the main memory layer; the technical baseline remains separately pinned above.
 
 ### Current proven / open edges
+### R32-G2 runtime state
+
+- **R32-G2 ATTEMPTED / BLOCKED AFTER EXECUTION ATTEMPT:** isolated `AppBootstrap` construction and the production `InferenceService.infer_task()` → `AdaptiveTaskOrchestrator` path were reportedly entered, but the real Ollama call for `phi3:latest` exceeded the configured 30-second timeout.
+- The reported runtime is not remotely attributable yet: the supplied branch/ref and short SHA `6ed48b8c6` did not resolve during GitHub read-back.
+- No RunRecord, system-generated recommendation, production finalization or metacognitive evaluation was observed in this attempt.
+- Do not reinterpret the timeout as evidence that the downstream learning path is broken; the run did not cross that causal boundary.
+
 
 - **R28-A PROVEN:** metacognitive adjustment → weighted-score change → decision flip → persistence → reload → reuse.
 - **R28 boundary:** synthetic adjustment; not experience-driven learning.
@@ -28,7 +35,7 @@ Technical investigation anchor:
 
 ### First open causal edge
 
-`full productive orchestration → real local operational experience → RunRecord → metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment`
+`real Ollama completion under production timeout → production RunRecord → finalize_with_run() → TaskOutcomeRecorder.record() → _record_learning() → prior recommendation lookup → prediction → metacognitive_evaluation`
 
 Do not reopen the already-proven R28 adjustment→decision edge without contradictory evidence.
 
@@ -1370,3 +1377,38 @@ Next actor by capability-fit: **DEVIN** for the real Windows/Ollama production-p
 After publication: **SONNET** for independent runtime verification.
 
 Do not reopen R28 or R34. The separate `b3e211fb` audit remains a distinct gate.
+
+
+## 2026-09-28 R32-G2 — PRODUCTION RUNTIME ATTEMPT / OLLAMA TIMEOUT
+
+The latest supplied runtime report materially narrows the open gate.
+
+### Reconciled status
+
+**R32-G2 = BLOCKED AFTER EXECUTION ATTEMPT.**
+
+This is stronger than the previous "blocked before execution" state: the isolated production bootstrap was reportedly constructed, `InferenceService.infer_task()` was invoked and the real Ollama path was entered. The run stopped before successful inference completion because `phi3:latest` exceeded the configured 30-second provider timeout.
+
+However, the specific runtime is still **REPORT-BACKED**, not remotely proven: GitHub read-back could not resolve the supplied branch `devin/bio-universal-09-11-r32g2-production-runtime-2026-09-28` or short SHA `6ed48b8c6`.
+
+### What the attempt actually teaches
+
+- isolated AppBootstrap construction is no longer only source-level knowledge; it has a reported runtime observation;
+- model availability via `/api/tags` is insufficient to establish successful production inference within the provider timeout;
+- the timeout is a runtime throughput/configuration blocker, not evidence of a downstream TaskOutcomeRecorder defect;
+- the script encoding defect is orthogonal and should be corrected before the next run;
+- because no production RunRecord was created, the prior recommendation → prediction → metacognitive-evaluation edge remains completely open.
+
+### Updated first open edge
+
+``real Ollama completion under production timeout → production RunRecord → finalize_with_run() → TaskOutcomeRecorder.record() → _record_learning() → prior recommendation lookup → prediction → metacognitive_evaluation``
+
+### Updated routing
+
+**Next actor: DEVIN** for the smallest runtime intervention: inventory installed Ollama models, select a model that demonstrably completes within the existing 30-second timeout, correct UTF-8-safe reporting, rerun the exact same production harness, and publish exact evidence for remote read-back.
+
+Do not change learning semantics or production timeout behavior yet. First test whether the existing production contract can complete using an actually available faster model.
+
+After attributable publication, **SONNET** is the independent verifier.
+
+Do not reopen R28, R34, or the already-closed R32-G publication/audit edges.
