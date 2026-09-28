@@ -877,3 +877,162 @@ The next step is BIO-R14: identify the smallest real-code deterministic seam cap
 
 ### BIO-R14 — NEXT FRONTIER
 BIO-R13 is blocked before execution, not disproven. The next action is a Sonnet forensic decomposition to identify the smallest deterministic seam capable of testing outcome→later proposal/experiment without constructing the full runtime harness.
+
+## 2026-09-27 BIO-UNIVERSAL R28–R33 — ACTIVE CONTINUITY / ADAPTATION CHECKPOINT
+
+This append-only overlay supersedes older dated routing/state entries for the BIO-UNIVERSAL-09.11 track when they conflict with the current evidence.
+
+### Exact current technical anchor
+
+The active BIO-UNIVERSAL-09.11 code/runtime investigation is pinned to:
+
+- repository: `jhonf463r/Python`
+- branch: `bio-universal-09.11-r20-clean`
+- HEAD: `707388053dcc760dbcec017357f1b6001994bd57`
+- Windows worktree used by R28–R32: `C:/IABV_WORKTREES/bio-universal-09.11-r22b-runtime/IABV_v1.5`
+- source path: `C:/IABV_WORKTREES/bio-universal-09.11-r22b-runtime/IABV_v1.5/src`
+
+### R27 — adaptive nucleus
+
+**R27-B — real but specialized plasticity.**
+
+The path:
+
+`OperationalSelfExaminationService → AdaptiveWeightLayer.apply_metacognitive_adjustment() → StrategySelector scoring`
+
+is real and domain-agnostic within its route/assistant/config key space, but its connection to `SelfAuditSnapshot` is not proven.
+
+### R28 — decision plasticity
+
+**R28-A — PROVEN.**
+
+Runtime control/treatment demonstrated:
+
+`metacognitive adjustment → weighted_score → ranking change → Claude→Codex decision flip`
+
+with:
+
+- Claude: `1.0009`
+- Codex: `0.9428`
+- adjustment: `+0.08` on `cloud|codex`
+- after: Codex `1.0228`, Claude `1.0009`
+- persistence: YES
+- fresh-instance reload: YES
+- future selection reuse: YES
+
+Boundary:
+
+the R28 finding/adjustment was synthetic. R28 proves the effectiveness of adaptation once an adjustment exists, not experience-driven learning.
+
+### R29 — real experience feeding metacognition
+
+**R29-D — NOT CLOSED.**
+
+No usable real `ExperimentRun` containing `metacognitive_evaluation` was found in the inspected operational data.
+
+### R30 — safe productive route
+
+**R30-F — NOT CLOSED.**
+
+No sandbox/dry-run route was found that passed through the real learning path:
+
+`AdaptiveTaskOrchestrator → TaskOutcomeRecorder._record_learning() → metacognitive_evaluation`
+
+without real operational execution.
+
+### R31 — local provider availability
+
+**R31-E — NOT CLOSED.**
+
+`ollama_local` exists in source but was not operational in the tested environment at that stage.
+
+### R32 — local provider available, orchestration still coupled
+
+**R32-G — CURRENT BLOCKER.**
+
+Ollama was subsequently verified operational on loopback:
+
+`127.0.0.1:11434`
+
+with a locally available model and HTTP success.
+
+However, the productive learning path remains coupled to full `AdaptiveTaskOrchestrator` bootstrap. No lightweight productive route to `TaskOutcomeRecorder._record_learning()` was demonstrated.
+
+### R28–R32 causal frontier
+
+The active unresolved chain is:
+
+`full productive orchestration → real local operational experience → RunRecord → metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment`
+
+Do not reopen R28. Its adjustment→decision→persistence→reuse edge is already runtime-proven.
+
+### R33 — cross-IA continuity audit
+
+**R33-E — PROVENANCE GAP / PARTIAL CONTINUITY.**
+
+Independent Sonnet audit established:
+
+- canonical memory architecture exists and is substantive;
+- global objective and universal-reasoning principles are recoverable;
+- dynamic actor-selection principles exist;
+- protections against fixed actor routing exist;
+- `CURRENT-STATE.md` was stale relative to the BIO-UNIVERSAL-09.11 track;
+- R28–R32 were absent from canonical `CHAT-ARCH`;
+- blind reconstruction from GitHub therefore stopped at the older 2026-09-21 state;
+- `IABV_v1.5/AGENTS.md` was ambiguously titled for Codex despite containing cross-agent rules;
+- no separate new memory organ is justified.
+
+### Canonical continuity rule from R33
+
+For future BIO-UNIVERSAL-09.11 work:
+
+`objective → relevant canonical memory → exact current SHA/runtime → closed edges → first open causal edge → required capability → capability-fit actor → independent verifier → experiment → evidence → knowledge delta → writeback`
+
+Actor choice is dynamic, not a fixed sequence.
+
+A historical "next actor" is never an active routing command merely because it appears in an older section.
+
+### Current non-reopening gates
+
+Unless contradictory evidence appears, do NOT reopen:
+
+- R28 adjustment→decision causal edge;
+- R33 finding that the existing memory architecture has the required representational capacity;
+- ToolCard/ToolRegistry ownership closure;
+- independently verified L5 selector-level learning.
+
+### Current active continuity requirement
+
+Every material BIO-UNIVERSAL cycle must canonically record:
+
+`OBJECTIVE`
+`CURRENT_TRUTH`
+`CLOSED_EDGES`
+`FIRST_OPEN_CAUSAL_EDGE`
+`REQUIRED_CAPABILITY`
+`SELECTED_ACTOR`
+`ACTOR_SELECTION_REASON`
+`INDEPENDENT_VERIFIER`
+`EVIDENCE_REQUIRED`
+`RESULT`
+`KNOWLEDGE_DELTA`
+`NEXT_GATE`
+
+A report remains a report until the material result is reconciled and written into canonical memory.
+
+### Current strategic question
+
+The project is testing whether existing IABV organs can form a progressively more universal, experience-driven control loop:
+
+`observe → interpret/hypothesize → govern → select capability/actor → execute → verify → learn → reuse`
+
+This remains a research hypothesis. Do not promote it to a proven general intelligence architecture.
+
+### Current next technical gate
+
+After continuity writeback, return to the smallest experiment that can close:
+
+`productive local experience → TaskOutcomeRecorder → metacognitive_evaluation`
+
+without creating a new brain, router, memory or evolution coordinator.
+
