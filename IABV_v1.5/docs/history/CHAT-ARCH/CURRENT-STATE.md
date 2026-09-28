@@ -1594,3 +1594,9 @@ The proposed R-1 linked-run collapse remains excluded from the minimal seam; ind
 ### Immediate routing
 
 **DEVIN** is now the implementation actor, because the ownership contract and implementation seam are reconciled and the remaining task is bounded code/test work plus Windows/runtime proof.
+
+### Final pre-implementation correction — direct test call site
+
+Source/test archaeology found one concrete compatibility impact omitted from the handoff: `tests/test_scientific_proxy_engine.py` has a direct call to `_task_packet_pattern_findings(experiment_runs=...)` in the underconfidence test (while the other metacognitive tests use `build_review()`). After extracting the raw-run metacognitive block, that direct test must target the new `_experiment_run_metacognitive_findings()` seam or the full `build_review()` path. The worker/task-packet method must no longer be expected to emit metacognitive categories by itself.
+
+This is a bounded test-contract update, not a production semantic change.
