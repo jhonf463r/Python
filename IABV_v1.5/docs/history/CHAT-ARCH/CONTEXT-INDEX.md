@@ -971,3 +971,23 @@ Smallest action: inventory actually installed Ollama models, select a model that
 After remote evidence publication and read-back: **SONNET** for independent runtime verification.
 
 Do not reopen R28, R34 or the already reconciled R32-G publication/audit edges.
+
+
+## 2026-09-28 ROUTING — R32-G2 PRODUCTION SUCCESS AWAITING INDEPENDENT VERIFICATION
+
+Current R32-G2 state:
+- remote artifact/branch/head: **VERIFIED**;
+- source call graph: **CONSISTENT**;
+- runtime success: **REPORT-BACKED**;
+- final causal status: **PENDING SONNET**.
+
+Critical verifier targets:
+1. resolve effective Ollama model identity from runtime evidence;
+2. verify exact warm-up recommendation identity and supporting ExperimentRun;
+3. verify target-side `latest_recommendation()` consumes that recommendation before `record_outcome()`;
+4. verify resulting `metacognitive_evaluation` is attached to the target ExperimentRun and reloadable;
+5. verify absence of manual/synthetic shortcuts.
+
+Do not route to implementation yet. Do not jump to OSES/AdaptiveWeightLayer before R32-G2 is independently closed.
+
+**NEXT ACTOR: SONNET.**
