@@ -47,17 +47,40 @@ is gated by an external-worker-specific telemetry contract.
 
 Do NOT resolve this by inventing `worker_kind='ollama'` merely to satisfy the gate.
 
-### Current unresolved decision
+### Current contract state
 
-The correct ownership question is now:
+Sonnet's contract/ownership archaeology closes the semantic ambiguity.
 
-**Should OSES metacognitive calibration of generic ExperimentRuns be owned by a consumer that does not require external-worker telemetry, while `_task_packet_pattern_findings()` remains external-worker/task-packet-specific?**
+Canonical interpretation:
+- `ExternalWorkerTelemetry` and `worker_kind` remain external-worker-only.
+- `metacognitive_evaluation` is generic ExperimentRun-level evidence.
+- `_task_packet_pattern_findings()` remains task-packet/worker-scoped and its `wt_total >= 3` gate must not be satisfied by relabeling local Ollama as a worker.
+- No already-existing generic OSES consumer for raw `metacognitive_evaluation` was found in the inspected source.
 
-Alternative hypothesis:
-- `worker_kind` is intentionally external-only and the OSES task-packet gate is not intended to consume local-chat metacognition.
+This is a cross-organ composition defect. It is not established as a missing-data defect and should not be repaired by inventing worker identity.
 
-This is a contract/ownership decision, not yet an implementation task.
+Two additional gates matter for any future runtime proof:
+- `_task_packet_pattern_findings()` returns no findings when fewer than 5 eligible `evidence_basis` runs exist.
+- The metacognitive branch then requires at least 3 calibration observations and its existing FP/FN/average-error thresholds.
 
+The three R32-G2 v2 target ExperimentRuns are three subject-key lanes from one target execution, not three independent experiences.
+
+### Immediate routing
+
+**DEVIN** is the next actor for a read-only Windows/runtime evidence capture.
+
+Required output:
+- count eligible OSES runs and real non-empty `worker_kind` observations;
+- report whether the worker gate is operationally reachable in persisted real data;
+- report the canonical execution/run identity versus subject-key multiplicity for R32-G2 v2;
+- invoke the existing OSES method read-only and return `total`, `wt_total`, calibration sample count, average error, FP/FN and categories.
+
+Do not rerun R32-G2 v2.
+Do not mutate production.
+Do not inject telemetry.
+Do not patch `worker_kind`.
+Do not change OSES thresholds/gates.
+After Devin publication, route to **SONNET** for independent verification.
 ### Immediate routing
 
 **SONNET** is the next actor for independent contract/architecture archaeology.
