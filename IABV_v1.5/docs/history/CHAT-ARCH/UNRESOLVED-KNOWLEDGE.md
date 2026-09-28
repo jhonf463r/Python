@@ -921,3 +921,19 @@ Required preservation:
 
 Do not reinterpret the report as false; classify it as **NOT PROVEN due to missing attributable evidence**.
 
+
+
+## 2026-09-28 R32-G — FRESH EXECUTION REPORTED / PUBLICATION NOT YET VERIFIED
+
+Devin reports a provenance-preserved fresh R32-G execution using the recovered test artifact and real Ollama. Reported outputs include RunRecord `63e5075b-3413-46f9-93de-bd5c555df9dc`, ExperimentRun `f1791232-c430-4e3a-98a5-9c83c0e84346`, and successful persistence/read-back.
+
+Current independent status remains **REPORTED ONLY / NOT PROVEN** because the claimed fresh evidence branch and commit are not remotely resolvable:
+- claimed branch `devin/bio-universal-09-11-r32g-fresh-execution-2026-09-28` = not found;
+- claimed commit `94e0788ff73fb5ff3a336a9b72ddbd9f5ce2208f` = not found;
+- reported abbreviated `724a1af9e` = not resolvable.
+
+The next discriminating action is therefore not another implementation or broad audit. It is:
+`publish exact evidence artifact → exact branch/ref → exact commit → remote read-back`.
+
+After successful publication, route back to **SONNET** for independent verification.
+
