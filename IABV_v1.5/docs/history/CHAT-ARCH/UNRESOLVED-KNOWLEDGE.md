@@ -1419,3 +1419,18 @@ Sonnet independent verification is partial, not complete.
 
 Immediate causal frontier:
 `threshold-crossing real metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+### UK-R32-G2V4-1 — Adaptive provider/request failure is absorbed as SUCCESS
+
+STATUS: CLOSED NEGATIVE FINDING.
+
+V4 used `request.metadata.override_model` with a nonexistent Ollama model and observed a real HTTP 404, but target ExperimentRuns still recorded `success=True`, `actual_outcome=success`, `false_positive=False`, and `false_negative=False`.
+
+Canonical negative knowledge:
+`provider/request failure → adaptive recovery → SUCCESS` can occur in the adaptive local-chat path.
+
+Do not reuse the nonexistent-model strategy as evidence for `actual_success=False`.
+
+The separate LocalRoleRouter general→visual fallback is not the adaptive `infer_task` route. The outer `InferenceService._execute()` can create `RunStatus.FAILED` only when an exception escapes the adaptive path.
+
+The nonexistent-model case is better classified as request/configuration failure than as generic provider-outage evidence.
