@@ -937,3 +937,40 @@ The next discriminating action is therefore not another implementation or broad 
 
 After successful publication, route back to **SONNET** for independent verification.
 
+
+
+
+## 2026-09-28 R32-G — REMOTE PUBLICATION RECONCILIATION
+
+**Publication gate: PROVEN. Full R32-G causal claim: NOT PROVEN.**
+
+Remote evidence branch:
+`devin/bio-universal-09-11-r32g-evidence-2026-09-28`
+
+Authoritative remote head:
+`4c56d2ca439e277c86de701e7aff9ed93a0bd89c`
+
+Baseline:
+`707388053dcc760dbcec017357f1b6001994bd57`
+
+Verified ancestry:
+`707... → 3c8b32a4d... → e99fade37 → 4c56d2ca4...`
+
+Remote artifact:
+`IABV_v1.5/test_r32_g_local_experience.py`
+
+Remote provenance and fresh-execution reports are readable.
+
+### Remaining uncertainties
+
+1. The published script imports `LocalRoleRouter` but does not use it. It directly calls `OllamaExpertProvider.infer_task()`, manually creates `RunRecord` and `AdaptiveSession`, and directly calls `TaskOutcomeRecorder.record()`. This is lower-layer evidence, not full production-orchestration proof.
+2. The fresh runtime IDs/persistence are described in a committed report but are not themselves independently persisted as runtime artifacts in the repository.
+3. The report has inconsistent internal commit labels (`3c8...`, `e99...`, versus actual branch head `4c56...`).
+4. The test creates a recommendation with `success=True` and metadata confidence `0.8`, yet records `predicted_outcome=failure`, `confidence=0.0`, `calibration_error=1.0`. The exact extraction semantics and whether this is a defect must be independently established.
+5. One `metacognitive_evaluation` does not prove the downstream OSES multi-observation calibration finding or AdaptiveWeightLayer feedback.
+
+### Next discriminating action
+
+**SONNET** must independently audit the remote artifact and determine the maximum justified claim, explicitly separating artifact, runtime, production-path, metacognitive-evaluation, OSES and adaptive-weight evidence.
+
+Historical execution remains **REPORTED_ONLY**.
