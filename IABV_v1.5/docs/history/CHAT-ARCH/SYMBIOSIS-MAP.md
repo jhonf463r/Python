@@ -1189,3 +1189,32 @@ Next capability sequence:
 - **DEVIN**: threshold-crossing production runtime experiment with genuine success/failure outcomes;
 - **CHATGPT**: evidence reconciliation and causal frontier/writeback;
 - **OPUS 5**: not warranted.
+
+## 2026-09-28 — R32-G2-V4 SYMBIOSIS RECONCILIATION
+
+V4 demonstrates a new method boundary: a real provider/request error is not automatically an actual task failure because adaptive recovery can absorb it before `InferenceService` status classification.
+
+Preserve the distinction:
+`provider execution failure` ≠ `task outcome` ≠ `metacognitive actual outcome`.
+
+Canonical semantic contract:
+- `used_fallback` is a degraded-route signal.
+- `RunStatus.SUCCESS/PARTIAL/FAILED` is the graduated task-outcome channel.
+- `actual_success` continues to read the RunStatus channel.
+- provider-health/request-cause should be carried separately when needed.
+
+New symbiosis lesson:
+`real failure observed → identify where its semantic signal is consumed → verify whether recovery erased or preserved the intended outcome → only then choose implementation/runtime actor`.
+
+Do not select a runtime failure mechanism merely because it can cross OSES thresholds. The failure must be semantically valid for the prediction being evaluated.
+
+Current causal frontier:
+`llm_chat[error] → InferenceResult degradation signal → RunStatus.PARTIAL/FAILED → actual_success=False → metacognitive evaluation → OSES threshold → finding → AWL adjustment`.
+
+Actor routing:
+- **SONNET**: independent contract/forensic verification of the final user-facing V4 substitution fact if needed.
+- **DEVIN**: bounded implementation and Windows runtime only after contract-consistency decision is finalized.
+- **CHATGPT**: reconcile provenance, causal frontier and writeback.
+- **OPUS 5**: unavailable; no further Opus escalation is assumed.
+
+Do not reopen the already closed R28/R34 edges, worker-telemetry ownership, or the V3 subject-key accessor correction.
