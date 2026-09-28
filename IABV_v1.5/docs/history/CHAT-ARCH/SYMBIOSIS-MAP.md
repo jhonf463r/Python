@@ -1089,3 +1089,20 @@ Additional evidence discipline:
 
 Capability routing after this finding:
 **DEVIN** for Windows/read-only operational inventory; **SONNET** for independent verification; no implementation until the runtime evidence is reconciled.
+
+## 2026-09-28 — R32-G2 v2 operational gate closes the ownership question
+
+Devin's read-only inventory provided the missing operational discriminant after Sonnet's source archaeology:
+
+`total=6 >= 5` shows the general OSES eligible-run gate is reachable in the actual persisted workspace, while `wt_total=0 < 3` shows the worker-specific gate is the limiting edge for the local-chat execution. This prevents misclassifying the problem as a global lack of OSES data.
+
+New method lesson:
+`generic evidence exists + generic gate reachable + domain-specific gate unreachable` is evidence for **cross-domain composition mismatch**, not for missing upstream data.
+
+Provenance lesson:
+`artifact embedded HEAD != publication HEAD` must be preserved when a report is committed after runtime capture. Here `d34f24c6` is the captured workspace commit and `4eb945a4` is the publication commit; they form a verified one-commit chain.
+
+Observation-unit lesson remains active:
+`3 ExperimentRuns sharing one execution/session != 3 independent experiences`.
+
+Routing: Sonnet specifies the smallest existing-organ OSES seam; Devin implements only after that specification is reconciled.
