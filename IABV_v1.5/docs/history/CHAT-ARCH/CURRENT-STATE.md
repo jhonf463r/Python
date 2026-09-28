@@ -14,7 +14,7 @@ Technical investigation anchor:
 - technical investigation branch: `bio-universal-09.11-r20-clean`
 - pinned R28–R32 code/runtime baseline: `707388053dcc760dbcec017357f1b6001994bd57`
 - current branch tip (documentation-only continuity commit): `fc141596bfc46c644568e5c39bf72e325fcd375b`
-- current main HEAD (remote verified): `38385136c9ab810b54594178749063e554d22a51`
+- last verified main HEAD at this continuity writeback: `470bddca370b94442be8991e658101418f6b66e8` (re-check at use time; main is mutable)
 - substantive R28–R33 canonical continuity writeback: main commit `025e2604edbc50a4cac96c1d14477099e77d792d`
 - latest current-state front-load at inspection time: main commit `38385136c9ab810b54594178749063e554d22a51`
 - R28–R33 continuity state is canonically absorbed into the main memory layer; the technical baseline remains separately pinned above.
