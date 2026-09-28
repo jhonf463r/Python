@@ -976,3 +976,22 @@ After attributable publication, **SONNET** independently verifies the exact runt
 Persistent invariant reinforced:
 
 `runtime blocker at edge N ≠ evidence about edges N+1...`
+
+
+## 2026-09-28 TRANSFER 22 — R32-G2 PRODUCTION SUCCESS REPORTED / VERIFICATION GATE
+
+R32-G2 materially advances the production experience→metacognition path. Remote Git reconciliation confirms the evidence branch/head and artifact publication, while source reconciliation confirms that the production recorder looks up a previous recommendation before generating the new outcome/evaluation.
+
+However, independent runtime verification remains mandatory because:
+- the supplied report's intended model label (`gemma3:1b`) conflicts with the effective RunRecord model (`qwen3:8b`);
+- the runtime payload does not record `provider_model`;
+- the harness selects a first matching recommendation rather than proving exact supporting-run identity.
+
+Reusable invariant reinforced:
+`intended configuration ≠ effective configuration` and
+`remote publication ≠ runtime attribution ≠ causal closure`.
+
+Next actor: **SONNET** for independent verification. Do not modify production code during this verification phase.
+
+Potential downstream edge after closure:
+`metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment → future decision influence`.
