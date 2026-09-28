@@ -1115,3 +1115,39 @@ Next actor by capability-fit: **DEVIN** for the real Windows/Ollama production-p
 After publication: **SONNET** for independent runtime verification.
 
 Do not reopen R28 or R34. The separate `b3e211fb` audit remains a distinct gate.
+
+
+## 2026-09-28 UK-R32-G2 — PRODUCTION RUNTIME TIMEOUT
+
+### Status
+
+**R32-G2 = BLOCKED AFTER EXECUTION ATTEMPT; runtime completion remains UNPROVEN.**
+
+### Reconciled evidence
+
+The supplied report describes a real Windows attempt from the source-identified production seam:
+
+`AppBootstrap(isolated workspace) → InferenceService.infer_task() → AdaptiveTaskOrchestrator.handle_request() → real Ollama inference`
+
+The reported Ollama model `phi3:latest` was available according to `/api/tags`, but the response took about 54 seconds while the provider timeout is 30 seconds. Therefore the attempt stopped before production RunRecord generation and downstream finalization.
+
+GitHub reconciliation could not resolve the supplied branch/head, so the runtime is retained as **report-backed** rather than **runtime-proven**.
+
+### Knowledge Delta
+
+- `provider_available = true` and `provider_completes_within_timeout = false` are now distinct runtime predicates.
+- A blocked upstream provider call gives no evidence either for or against downstream recorder wiring.
+- The correct next intervention is runtime-model selection within the existing contract, not an immediate redesign of learning semantics.
+- UTF-8 reporting is an instrumentation defect separate from the Ollama timeout.
+
+### Next discriminating action
+
+Use Devin to inventory the actually installed Ollama models, choose an installed model capable of completing within the current 30-second timeout, set `IABV_OLLAMA_MODEL` before bootstrap, fix UTF-8-safe output, repeat the same production harness, then publish exact artifact/commit/runtime provenance.
+
+### Verification boundary
+
+The next successful run must independently establish:
+
+`system-generated warm-up recommendation → target consumes same logical recommendation → production RunRecord → finalize_with_run() → TaskOutcomeRecorder._record_learning() → valid prediction extraction → metacognitive_evaluation`.
+
+One successful evaluation still does not by itself establish OSES aggregation or AdaptiveWeightLayer causal adjustment.
