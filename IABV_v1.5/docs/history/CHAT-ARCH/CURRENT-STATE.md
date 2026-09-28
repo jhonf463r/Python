@@ -1720,3 +1720,53 @@ The reported three target metacognitive evaluations are source-consistent: the w
 `real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
 
 Do not jump directly to `adjustment → future decision influence` because the adjustment has not yet been observed in production.
+
+
+## 2026-09-28 LIVE ROUTING CORRECTION — R32-G2 V3 HARNESS SUBJECT-KEY BUG FULLY RECONCILED
+
+The V3 apparent contradiction is now resolved at source level.
+
+Sonnet's limited pass confirmed the V3 Git lineage only. A separate direct source reconciliation established that the V3 harness queried the nonexistent field `AdaptiveSession.subject_keys`. `AdaptiveSession` has no such top-level field.
+
+Actual production learning keys are computed by `TaskOutcomeRecorder._subject_keys()`, which derives up to three keys and always includes `general`. During `finalize_with_run()`, `TaskOutcomeRecorder._record_learning()` iterates those keys, creates/records ExperimentRun outcomes, and persists new recommendations. The keys are exposed in `session.metadata['adaptive_learning']['subject_keys']`.
+
+Therefore:
+- the V3 harness's `warmup_subject_keys=[]` is an accessor artifact;
+- `warmup_recommendations=[]` is not evidence of absence, because the harness only queried recommendations for that incorrectly empty list;
+- six production executions × three computed subject-key lanes explains the reported 18 ExperimentRuns;
+- each target can legitimately produce a metacognitive evaluation on the shared `general` lane because the preceding warm-up can create a `general` recommendation;
+- the absence of metacognitive evaluations on the other target lanes is source-consistent because their subject keys differ from the warm-up comparison-scope keys.
+
+### Strict evidence boundary
+
+The exact recommendation IDs consumed by each target are still not independently read back because V3 did not publish raw `evidence.json`. Therefore this is a source-level causal explanation, not independent runtime attribution of each recommendation ID.
+
+Sonnet's independent verification remains **PARTIAL** due its explicit capacity limit; do not relabel it as a full independent runtime audit.
+
+### Correct V3 causal status
+
+V3 legitimately reached the generic consumer on a real production review according to the published report, and the reported threshold result is source-consistent:
+- 18 eligible runs;
+- 3 metacognitive evaluations;
+- calibration errors 0.2992, 0.0976, 0.0;
+- avg 0.1323;
+- FP 0;
+- FN 0;
+- no finding;
+- no AWL adjustment.
+
+The first open causal edge is therefore NOT `adjustment → future decision influence`.
+
+It is:
+
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+After a real adjustment is observed, the subsequent edge becomes:
+
+`adjustment → future decision influence`.
+
+### Next routing
+
+Strict independent verification of this V3 source reconciliation can be reduced to a small Sonnet check rather than a full audit.
+
+After that, **DEVIN** should run a controlled but fully production-path threshold-crossing experiment using genuine execution outcomes, with no synthetic `metacognitive_evaluation` or `worker_kind`.
