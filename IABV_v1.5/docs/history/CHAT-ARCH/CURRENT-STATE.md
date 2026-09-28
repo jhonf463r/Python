@@ -1770,3 +1770,39 @@ After a real adjustment is observed, the subsequent edge becomes:
 Strict independent verification of this V3 source reconciliation can be reduced to a small Sonnet check rather than a full audit.
 
 After that, **DEVIN** should run a controlled but fully production-path threshold-crossing experiment using genuine execution outcomes, with no synthetic `metacognitive_evaluation` or `worker_kind`.
+
+## 2026-09-28 — R32-G2-V4 SEMANTIC CONTRACT ADJUDICATION
+
+Canonical reconciliation after V4 and independent static adjudication.
+
+### Provenance
+- V4 branch: `devin/r32g2-v4-threshold-crossing-2026-09-28`
+- V4 HEAD: `e67a78a9be4b16718caaa5b04c112c5fbfc8c5f2`
+- Implementation ancestor: `79bdd8ab47206e9f5a07fdc2151923f934da474a`
+- GitHub compare confirms the V4 commit added only documentation/harness artifacts; no production source changed relative to the implementation ancestor.
+- Canonical adjudication report: `IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V4-SEMANTIC-CONTRACT-ADJUDICATION-2026-09-28.md`
+
+### Closed
+- A nonexistent Ollama model caused a real provider/request error, but adaptive local-chat recovery produced SUCCESS.
+- `actual_success` remains `run_record.status == RunStatus.SUCCESS`.
+- `used_fallback` means degraded production-route recovery, not generic provider failure.
+- LocalRoleRouter general→visual fallback is a different path from adaptive `infer_task`.
+
+### Semantic model
+`SEMANTIC_MODEL = 3`: keep task outcome and provider-health/recovery cause conceptually separate while preserving the existing graduated `SUCCESS/PARTIAL/FAILED` contract.
+
+Canonical interpretation:
+- `SUCCESS` = non-degraded completion of the predicted production route.
+- `PARTIAL` = usable result through explicit degraded recovery.
+- `FAILED` = no usable result when the exception escapes the execution boundary.
+- Do not redefine `actual_success` to make an experiment cross an OSES threshold.
+
+### Current first open causal edge
+`llm_chat[error] → InferenceResult degradation signal in _build_result()`
+
+The error is currently retained in `raw_output['local_chat_llm']` but does not enter the status/degradation channel consumed by `InferenceService`.
+
+Before any production change, reconcile whether the V4 404 actually returned the templated `assistant_guidance` response. If so, the missing signal is a real contract-consistency gap; if not, the semantic classification must be reconsidered.
+
+### Do not conclude
+V4 did not prove a threshold-crossing metacognitive population, OSES finding, AdaptiveWeightLayer adjustment, or future decision influence.
