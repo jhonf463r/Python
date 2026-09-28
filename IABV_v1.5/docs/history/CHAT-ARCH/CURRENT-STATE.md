@@ -1685,3 +1685,38 @@ After attribution is reconciled, the next experimental edge is:
 `real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`
 
 Do not advance yet to `adjustment → future decision influence`.
+
+
+## 2026-09-28 LIVE ROUTING CORRECTION — R32-G2 V3 ATTRIBUTION RESOLVED AT SOURCE LEVEL
+
+The apparent V3 contradiction is resolved.
+
+The V3 harness read:
+`warmup_result.result.raw_output['adaptive_session']['subject_keys']`.
+The source-verified `AdaptiveSession` model has no top-level `subject_keys` field.
+
+Actual production learning keys are computed by `TaskOutcomeRecorder._subject_keys()` and retained in:
+`session.metadata['adaptive_learning']['subject_keys']`.
+
+That method always includes `general` among its candidate keys, and during `finalize_with_run()` the real `TaskOutcomeRecorder._record_learning()` iterates those keys, consumes `latest_recommendation()`, and `ExperimentLab.record_outcome()` saves recommendations.
+
+Therefore V3's reported `warm-up subject_keys=[]` and `warm-up recommendations=[]` were harness-observability artifacts, not evidence that the warm-up lacked keys/recommendations.
+
+The reported three target metacognitive evaluations are source-consistent: the warm-up can create a `general` recommendation, and targets also include `general`. The exact consumed recommendation IDs remain unverified because raw `evidence.json` was not published.
+
+### Corrected V3 state
+
+- provenance = remotely confirmed;
+- production path = report-backed and source-consistent;
+- metacognitive attribution = SOURCE-EXPLAINED; exact recommendation-ID attribution not independently proven;
+- generic consumer = invoked by real OSES review according to the report; raw runtime read-back unavailable;
+- threshold = NOT-CROSSED (18 eligible runs, 3 metacognitive evaluations, avg CE 0.1323, FP 0, FN 0);
+- real OSES finding = NOT OBSERVED;
+- real AWL adjustment = NOT OBSERVED;
+- `adjustment → future decision influence` = NOT PROVEN.
+
+### First open causal edge
+
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+Do not jump directly to `adjustment → future decision influence` because the adjustment has not yet been observed in production.
