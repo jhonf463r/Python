@@ -831,21 +831,25 @@ objective → uncertainty → observe → concept candidates → relation hypoth
 
 QUESTION: Can a genuinely new agent reconstruct the latest BIO-UNIVERSAL objective/state and route correctly without the human re-pasting R28–R33?
 
-CURRENT STATUS: **PARTIALLY ADDRESSED / BLIND RECONSTRUCTION STILL REQUIRES PERIODIC VALIDATION.**
+CURRENT STATUS: **R34-A PROVEN — BOUNDED BLIND RECONSTRUCTION.**
 
-R33 demonstrated that the prior canonical layer became stale because material R28–R32 results were not written back. The minimum correction is to keep `CURRENT-STATE.md` as the active bridge and preserve cross-IA method changes in `SYMBIOSIS-MAP.md`.
+R33 demonstrated that the prior canonical layer became stale because material R28–R32 results were not written back. The minimum correction was to keep `CURRENT-STATE.md` as the active bridge and preserve cross-IA method changes in `SYMBIOSIS-MAP.md`.
 
-REQUIRED LOOP:
+R34 then executed the empirical test: a genuinely new Sonnet run reconstructed the current objective, technical baseline, R28–R33 status, negative knowledge, dynamic routing rule, provenance distinction and R32-G first open edge from GitHub without receiving the original chat history.
 
-`new objective → canonical memory → current-state overlay → closed/open edges → actor capability-fit → work → independent verification → knowledge delta → canonical writeback`
+PROVEN CONDITION:
 
-SUCCESS CONDITION:
+`new objective → canonical memory → current-state overlay → closed/open edges → capability-fit routing → correct next gate`
 
-A new agent can reconstruct the active objective, latest verified state, negative knowledge, first open edge, actor reason and stop condition without relying on the original chat transcript.
+BOUNDARY:
 
-This remains an empirical continuity test, not a documentation assumption.
+R34 proves the bounded blind-reconstruction property at this point in time. It does not prove indefinite freshness, immunity to future stale writes, or the correctness of every historical document. Periodic blind reconstruction remains a useful regression test.
 
-Current validation handoff: `BIO-UNIVERSAL-09.11-R34-SONNET-HANDOFF-2026-09-27.md` (read-only blind reconstruction). R34 has no result yet and must not be pre-promoted to PASS.
+EVIDENCE SOURCE:
+
+`BIO-UNIVERSAL-09.11-R34-SONNET-RESULT-2026-09-27.md`
+
+## 2026-09-27 UK-17 — Experience-driven metacognitive learning seam
 
 ## 2026-09-27 UK-17 — Experience-driven metacognitive learning seam
 
