@@ -895,3 +895,29 @@ Therefore the report cannot yet be promoted to PROVEN under the canonical proven
 
 Next discriminating action:
 independently verify the executed artifact/path, real Ollama call, RunRecord provenance, `TaskOutcomeRecorder._record_learning()`, derived `metacognitive_evaluation`, persistence/read-back, and determine exactly which downstream OSES condition is still open.
+
+
+## 2026-09-28 R32-G — SONNET INDEPENDENT AUDIT / ROUTING UPDATE
+
+The independent Sonnet audit completed the requested forensic verification of Devin's R32-G report.
+
+**CURRENT STATUS: NOT PROVEN.**
+
+Confirmed:
+- technical SHA `707388053dcc760dbcec017357f1b6001994bd57` exists;
+- source-level components required by the claimed route exist at that SHA;
+- the reported branch `bio-universal-09.11-r22b-runtime` is not remotely resolvable;
+- `IABV_v1.5/test_r32_g_local_experience.py` is not present at the SHA and was not recovered in repository history;
+- reported Ollama/RunRecord/ExperimentRun/read-back evidence therefore remains report-only.
+
+New routing state:
+- the independent audit uncertainty is resolved;
+- the artifact/runtime provenance uncertainty is the active blocker;
+- next actor = **DEVIN** for exact artifact recovery/publication or provenance-safe fresh execution;
+- after a verifiable artifact exists, return to **SONNET** for independent verification.
+
+Required preservation:
+`report → artifact → branch/ref → exact SHA → working-tree provenance → runtime evidence → persisted artifact → read-back → independent verification`.
+
+Do not reinterpret the report as false; classify it as **NOT PROVEN due to missing attributable evidence**.
+
