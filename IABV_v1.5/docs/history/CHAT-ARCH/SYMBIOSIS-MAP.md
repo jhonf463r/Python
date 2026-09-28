@@ -1106,3 +1106,11 @@ Observation-unit lesson remains active:
 `3 ExperimentRuns sharing one execution/session != 3 independent experiences`.
 
 Routing: Sonnet specifies the smallest existing-organ OSES seam; Devin implements only after that specification is reconciled.
+
+## 2026-09-28 — R32-G2 v2 implementation-contract correction
+
+New symbiosis lesson: distinguish a **measurement-unit change** from a **consumer-seam change**. A minimal causal repair should not silently collapse subject-key ExperimentRuns into linked execution IDs merely because the latter is the better unit for later statistical proof.
+
+Also preserve semantic method identity: an existing `_metacognitive_calibration_findings()` that calibrates OSES against prior reviews is not the same organ function as raw ExperimentRun metacognitive evidence consumption. A new seam must have an unambiguous name.
+
+Test-isolation lesson: a green test suite can still write persistent adaptive state outside its intended workspace when a service is instantiated without explicit persistence_path. This must be treated as test-harness state leakage, not automatically as production state contamination.
