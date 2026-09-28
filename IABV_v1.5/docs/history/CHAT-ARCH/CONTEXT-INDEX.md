@@ -1073,3 +1073,27 @@ Routing consequence:
 - telemetry present → next OSES/AWL causal runtime experiment;
 - telemetry absent → stop and escalate gate ownership/contract semantics before any implementation change.
 
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 WORKER TELEMETRY
+
+R32-G2 v2 runtime observation is report-backed:
+- three target ExperimentRuns found;
+- `worker_telemetry` exists;
+- `worker_telemetry.worker_kind` absent/empty in all three;
+- OSES task-packet `wt_total=0 < 3`.
+
+### First open contract boundary
+
+Do not add `worker_kind` to local chat yet.
+
+Activate:
+`ExternalWorkerTelemetry` → tool-adapter producers → `TaskOutcomeRecorder` propagation → OSES `_task_packet_pattern_findings()` → existing generic OSES metacognition consumers/tests.
+
+### Next actor
+
+**SONNET** — independent contract/ownership archaeology.
+
+Decision needed:
+whether local `metacognitive_evaluation` should use an existing generic OSES path, or whether task-packet metacognitive findings are intentionally external-worker-only.
+
+No implementation before this decision.
