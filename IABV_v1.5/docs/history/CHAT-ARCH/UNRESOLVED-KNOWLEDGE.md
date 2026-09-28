@@ -1399,3 +1399,23 @@ Current V3 unresolved edge:
 `real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
 
 No `worker_kind`, threshold, or production source change is justified by this finding.
+
+
+## 2026-09-28 — R32-G2-V3 FINAL SOURCE ATTRIBUTION CORRECTION
+
+Resolved source discrepancy:
+`AdaptiveSession.subject_keys` does not exist. The V3 harness read a nonexistent field and defaulted to `[]`.
+
+Actual subject keys:
+`TaskOutcomeRecorder._subject_keys()`
+→ persisted under `session.metadata['adaptive_learning']['subject_keys']`.
+
+Thus the reported empty warm-up list did not imply no keys or no recommendations. The 18-run / 3-metacog pattern is source-consistent.
+
+Remaining limitation:
+exact target-side recommendation identity is not independently read back from raw runtime evidence.
+
+Sonnet independent verification is partial, not complete.
+
+Immediate causal frontier:
+`threshold-crossing real metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
