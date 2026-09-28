@@ -716,3 +716,40 @@ Relevant records:
 For the current scientific/developmental frontier, after the reader/consumer reconciliation, activate `BIO-R13-DEVIN-HANDOFF-2026-09-21.md`. This is a bounded test-only task; use Devin first, then Sonnet for independent verification.
 
 For the blocked BIO-R13 frontier, use `BIO-R14-SONNET-HANDOFF-2026-09-21.md`: identify the smallest deterministic real-code causal seam before any full harness construction. NEXT ACTOR = SONNET.
+
+
+## 2026-09-28 ROUTING OVERRIDE — BIO-UNIVERSAL R32-G AFTER SONNET AUDIT
+
+For the active BIO-UNIVERSAL-09.11 R32-G objective:
+
+Current state:
+- R32-G = **NOT PROVEN**;
+- independent Sonnet audit = completed;
+- source-level route = confirmed at technical SHA;
+- execution artifact/provenance = unresolved;
+- reported branch `bio-universal-09.11-r22b-runtime` = not remotely resolvable;
+- reported `test_r32_g_local_experience.py` = not recovered in repository history.
+
+Therefore next actor:
+**DEVIN**
+
+Required capability:
+exact Windows/runtime artifact recovery/publication or provenance-safe fresh execution.
+
+Do not route to another broad audit before an attributable artifact exists.
+Once a verifiable artifact/runtime chain exists, route to **SONNET** for independent verification.
+
+Required method:
+`objective → uncertainty → capability-fit → smallest discriminating action → execution/observation → independent verification → reconciliation → writeback`.
+
+Do not conflate:
+`source-level wiring`
+with
+`specific runtime proof`.
+
+Do not conflate:
+`metacognitive_evaluation`
+with
+`OSES finding`
+or
+`AdaptiveWeightLayer adjustment`.
