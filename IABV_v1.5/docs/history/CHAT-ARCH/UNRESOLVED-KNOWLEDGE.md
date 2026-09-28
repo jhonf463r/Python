@@ -845,6 +845,8 @@ A new agent can reconstruct the active objective, latest verified state, negativ
 
 This remains an empirical continuity test, not a documentation assumption.
 
+Current validation handoff: `BIO-UNIVERSAL-09.11-R34-SONNET-HANDOFF-2026-09-27.md` (read-only blind reconstruction). R34 has no result yet and must not be pre-promoted to PASS.
+
 ## 2026-09-27 UK-17 — Experience-driven metacognitive learning seam
 
 QUESTION: Can a real productive IABV experience create `metacognitive_evaluation`, feed OSES, and produce an adaptive adjustment without synthetic injection?
