@@ -1578,3 +1578,19 @@ Independent Linux reproduction passed 11 tests and created a cwd-level AdaptiveW
 ### Immediate routing
 
 **SONNET** is next for a delta-only correction of the implementation-contract specification: distinct method name, no implicit linked_run_id collapse, structural evidence_basis wording, and test-isolation requirement. No implementation yet.
+
+### R32-G2 v2 — Audit correction before implementation
+
+The subsequent handoff audit contained one false discrepancy that is now reconciled against the pinned baseline `707388053dcc760dbcec017357f1b6001994bd57`.
+
+The `total >= 5` gate DOES exist in the baseline OSES task-packet method: `_TP_MIN_RUNS = 5` and `if total < self._TP_MIN_RUNS: return []`; `total` is incremented only after `evidence_basis is not None`. Therefore the contract's preservation of the numeric threshold `5` is source-consistent. No actor confirmation of this number is required.
+
+Separate existing method identity remains the only naming correction:
+- existing `_metacognitive_calibration_findings(previous_review, experiment_runs)` at the baseline remains untouched;
+- the extracted raw ExperimentRun consumer must use a distinct name such as `_experiment_run_metacognitive_findings`.
+
+The proposed R-1 linked-run collapse remains excluded from the minimal seam; independent runtime replication must use distinct production executions rather than treating subject-key lanes as independent experiences.
+
+### Immediate routing
+
+**DEVIN** is now the implementation actor, because the ownership contract and implementation seam are reconciled and the remaining task is bounded code/test work plus Windows/runtime proof.
