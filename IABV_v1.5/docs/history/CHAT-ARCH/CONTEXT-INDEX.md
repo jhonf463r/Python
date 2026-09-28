@@ -943,3 +943,31 @@ Next actor by capability-fit: **DEVIN** for the real Windows/Ollama production-p
 After publication: **SONNET** for independent runtime verification.
 
 Do not reopen R28 or R34. The separate `b3e211fb` audit remains a distinct gate.
+
+
+## 2026-09-28 ROUTING — R32-G2 PRODUCTION TIMEOUT AFTER ATTEMPT
+
+For the active BIO-UNIVERSAL-09.11 R32-G2 gate:
+
+- Current status: **BLOCKED AFTER EXECUTION ATTEMPT**;
+- isolated `AppBootstrap` construction was reported successful;
+- `InferenceService.infer_task()` and `AdaptiveTaskOrchestrator.handle_request()` were entered;
+- real Ollama `phi3:latest` exceeded the configured 30-second timeout (~54s reported);
+- no production `RunRecord`, target execution or `metacognitive_evaluation` was produced;
+- supplied branch/head remain unverified remotely.
+
+### First open causal edge
+
+`real Ollama completion under production timeout → production RunRecord → finalize_with_run() → TaskOutcomeRecorder.record() → _record_learning() → recommendation lookup → prediction → metacognitive_evaluation`
+
+### Next actor
+
+**DEVIN**
+
+Required capability: Windows/Ollama runtime execution with a bounded environment/configuration intervention.
+
+Smallest action: inventory actually installed Ollama models, select a model that completes within the current 30-second timeout, set `IABV_OLLAMA_MODEL` before `AppBootstrap`, correct UTF-8-safe reporting, and repeat the same R32-G2 production harness without manually constructing RunRecord/session/recommendation/recorder objects.
+
+After remote evidence publication and read-back: **SONNET** for independent runtime verification.
+
+Do not reopen R28, R34 or the already reconciled R32-G publication/audit edges.
