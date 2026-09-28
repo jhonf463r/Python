@@ -1664,3 +1664,24 @@ Do not seed ExperimentRuns, manually construct RunRecord/recorder objects, injec
 
 After publication: **SONNET** independently verifies the runtime evidence.
 
+
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V3 PRE-VERIFICATION
+
+V3 production runtime attempt is published at branch `devin/r32g2-v3-production-runtime-discriminating-2026-09-28`, HEAD `d611eefb8eb76578a84880ed27184d32ab4248a3`, five commits ahead of baseline `707388053dcc760dbcec017357f1b6001994bd57`.
+
+V3 genuinely exercises the existing bootstrap/inference path in the added runtime harness and calls real OSES review over persisted ExperimentRuns. However, the V3 report has incorrect provenance fields: it names the V2 branch and V2 implementation/report SHAs instead of the actual V3 branch/HEAD.
+
+More importantly, the report states warm-up `subject_keys=[]` and `warmup_recommendations=[]`, while also reporting three target `metacognitive_evaluation` objects. Source semantics show `TaskOutcomeRecorder._record_learning()` obtains the previous recommendation and `_evaluate_prediction()` cannot produce a metacognitive result from an empty prediction. Therefore the origin of the three reported metacognitive evaluations is not yet reconciled.
+
+V3 must remain **REPORT-BACKED / PENDING INDEPENDENT VERIFICATION**, not accepted as fully closed.
+
+### First open attribution edge
+
+`reported target metacognitive_evaluation → actual prior recommendation / prediction source`
+
+After attribution is reconciled, the next experimental edge is:
+
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`
+
+Do not advance yet to `adjustment → future decision influence`.
