@@ -1314,3 +1314,18 @@ The OSES `evidence_basis is not None` gate is structural because TaskOutcomeReco
 The 11-test Linux reproduction also exposed test isolation drift: standalone AdaptiveWeightLayer() defaults to cwd persistence, while AppBootstrap uses workspace-scoped persistence. New regression tests must explicitly isolate persistence.
 
 NEXT ACTOR: **SONNET** for a delta-only specification correction. Then **DEVIN** for bounded implementation only after reconciliation.
+
+### UK-R32-G2V2-7 — Handoff audit false discrepancy resolved
+
+STATUS: IMPLEMENTATION CONTRACT READY.
+
+A subsequent audit incorrectly claimed that the baseline lacked the `total >= 5` gate. Direct source reconciliation shows the gate is present through `_TP_MIN_RUNS = 5` and `if total < self._TP_MIN_RUNS: return []` in `_task_packet_pattern_findings()`. The contract is therefore source-consistent on this threshold.
+
+The remaining corrected contract constraints are:
+- distinct method name for the new raw ExperimentRun consumer;
+- no linked_run_id collapse in the first implementation;
+- preserve `evidence_basis is not None` as the existing structural eligibility predicate;
+- preserve worker semantics and existing category names/thresholds;
+- isolate AdaptiveWeightLayer persistence in new tests.
+
+NEXT ACTOR: **DEVIN** for bounded implementation and Windows/runtime proof. No further Sonnet confirmation of the threshold is required.
