@@ -1051,3 +1051,25 @@ Preserve these distinctions:
 `OSES finding != adaptive adjustment`
 `adaptive adjustment != future decision influence`.
 
+
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — POST-SONNET R32-G2 V2
+
+R32-G2 v2 = **PARTIALLY PROVEN** after independent forensic verification.
+
+First open runtime observation:
+`actual R32-G2 v2 ExperimentRun.metadata.worker_telemetry.worker_kind`
+
+Required actor: **DEVIN** (Windows/runtime workspace access).
+
+Action:
+- inspect the already-produced isolated v2 ExperimentRuns;
+- print only the relevant metadata keys and `worker_telemetry.worker_kind`;
+- do not rerun;
+- do not mutate production;
+- do not invent telemetry.
+
+Routing consequence:
+- telemetry present → next OSES/AWL causal runtime experiment;
+- telemetry absent → stop and escalate gate ownership/contract semantics before any implementation change.
+
