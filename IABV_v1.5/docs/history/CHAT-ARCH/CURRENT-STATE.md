@@ -1412,3 +1412,47 @@ Do not change learning semantics or production timeout behavior yet. First test 
 After attributable publication, **SONNET** is the independent verifier.
 
 Do not reopen R28, R34, or the already-closed R32-G publication/audit edges.
+
+
+## 2026-09-28 R32-G2 — SUCCESS REPORT RECONCILIATION / INDEPENDENT VERIFICATION PENDING
+
+The latest Devin result materially advances R32-G2, but the causal gate is not promoted unconditionally until independent verification.
+
+### Remote publication
+
+GitHub directly verifies:
+- branch: `devin/bio-universal-09-11-r32g2-production-runtime-2026-09-28`;
+- head: `13c7f31425fb9055d9e4be4957bb7e497a9d171e`;
+- baseline: `707388053dcc760dbcec017357f1b6001994bd57`;
+- baseline→head: exactly 3 commits ahead, no behind divergence;
+- evidence delta includes the R32-G2 production artifact and result documents.
+
+Publication/provenance is therefore **PROVEN at the Git layer**.
+
+### Runtime adjudication
+
+The supplied execution claims production completion through `RunRecord → finalize_with_run → TaskOutcomeRecorder → _record_learning → metacognitive_evaluation`, with a system-generated warm-up recommendation consumed by target.
+
+The source path is consistent with that claim, but the runtime itself remains **REPORT-BACKED until Sonnet independently verifies it**.
+
+### Critical discrepancies
+
+1. The artifact inherits `IABV_OLLAMA_MODEL` from the process environment rather than forcing `gemma3:1b`. The report calls gemma3:1b the configured model but records qwen3:8b as the effective RunRecord model. The local_chat_llm evidence leaves `provider_model` empty. Therefore the specific claim that gemma3:1b solved the timeout is not established.
+2. The remote result document contains stale provenance labels (`FULL_EVIDENCE_HEAD=4fb...`, `PARENT_SHA=707...`, `REMOTE_READBACK=PENDIENTE`) even though the actual branch head is `13c7...` and the remote compare is complete. Git graph/read-back is authoritative.
+3. The harness proves temporal read-before-target, but selects the first recommendation matching a subject key rather than asserting exact supporting-run identity. The production recorder itself uses `latest_recommendation()`; Sonnet must verify that this lookup resolves to the warm-up recommendation.
+
+### Current status
+
+**R32-G2 = STRONG REPORT-BACKED / PENDING INDEPENDENT RUNTIME VERIFICATION.**
+
+Do not yet promote to final PROVEN status.
+
+### First open verification edge
+
+`exact warm-up recommendation attribution → target latest_recommendation lookup → prediction → metacognitive_evaluation`
+
+### Next actor
+
+**SONNET** for independent forensic/runtime verification. No implementation changes during verification.
+
+Do not reopen R28, R34 or R32-G publication. The post-R32-G2 frontier remains downstream OSES/AdaptiveWeightLayer only after R32-G2 is independently closed.
