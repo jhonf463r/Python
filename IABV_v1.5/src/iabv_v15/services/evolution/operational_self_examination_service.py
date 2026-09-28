@@ -820,6 +820,12 @@ class OperationalSelfExaminationService:
             experiment_runs=experiment_runs,
         ))
 
+        # Generic ExperimentRun metacognitive findings: consume run-level
+        # metacognitive_evaluation evidence independent of worker telemetry.
+        findings.extend(self._experiment_run_metacognitive_findings(
+            experiment_runs=experiment_runs,
+        ))
+
         # Adaptive threshold N_c shift detection (Brecha 3.3)
         findings.extend(self._adaptive_threshold_shift_findings(
             previous_review=previous_review,
@@ -7813,98 +7819,135 @@ class OperationalSelfExaminationService:
             except Exception:
                 pass
 
+        return results
+
+    # ------------------------------------------------------------------
+    # Generic ExperimentRun metacognitive findings (run-level evidence)
+    # ------------------------------------------------------------------
+
+    def _experiment_run_metacognitive_findings(
+        self,
+        *,
+        experiment_runs: list[Any],
+    ) -> list[SelfExaminationFinding]:
+        """
+        Extract metacognitive calibration findings from generic ExperimentRun
+        evidence, independent of worker telemetry. This method consumes
+        ExperimentRun-level metacognitive_evaluation data without requiring
+        worker_kind or external-worker telemetry.
+
+        Eligibility:
+        - Structural: total >= 5 (evidence_basis is not None)
+        - Metacognitive: len(mc_cal_errors) >= 3
+        - Thresholds: avg_ce > 0.4, mc_fp >= 2 and mc_fp > mc_fn, mc_fn >= 2 and mc_fn > mc_fp
+
+        This is distinct from _metacognitive_calibration_findings() which evaluates
+        OSES's own previous-review/ledger calibration behavior.
+        """
+        total = 0
+        for run in experiment_runs:
+            meta = getattr(run, 'metadata', None) or {}
+            eb = meta.get('evidence_basis')
+            if eb is None:
+                continue
+            total += 1
+
+        if total < self._TP_MIN_RUNS:
+            return []
+
+        results: list[SelfExaminationFinding] = []
+
         # --- Metacognitive calibration findings ---
-        if wt_total >= 3:
-            mc_cal_errors: list[float] = []
-            mc_fp = 0
-            mc_fn = 0
-            for run in experiment_runs:
-                mc = (run.metadata or {}).get('metacognitive_evaluation')
-                if not isinstance(mc, dict):
-                    continue
-                ce = mc.get('calibration_error')
-                if isinstance(ce, (int, float)):
-                    mc_cal_errors.append(float(ce))
-                if mc.get('false_positive'):
-                    mc_fp += 1
-                if mc.get('false_negative'):
-                    mc_fn += 1
+        mc_cal_errors: list[float] = []
+        mc_fp = 0
+        mc_fn = 0
+        for run in experiment_runs:
+            mc = (run.metadata or {}).get('metacognitive_evaluation')
+            if not isinstance(mc, dict):
+                continue
+            ce = mc.get('calibration_error')
+            if isinstance(ce, (int, float)):
+                mc_cal_errors.append(float(ce))
+            if mc.get('false_positive'):
+                mc_fp += 1
+            if mc.get('false_negative'):
+                mc_fn += 1
 
-            if len(mc_cal_errors) >= 3:
-                avg_ce = sum(mc_cal_errors) / len(mc_cal_errors)
-                if avg_ce > 0.4:
-                    results.append(SelfExaminationFinding(
-                        category='task_packet_metacognitive_miscalibration',
-                        severity=IssueSeverity.MEDIUM,
-                        title=f'Mala calibracion metacognitiva ({avg_ce:.2f} avg)',
-                        summary=(
-                            f'El error de calibracion promedio es {avg_ce:.2f} '
-                            f'sobre {len(mc_cal_errors)} evaluaciones. '
-                            f'Falsos positivos: {mc_fp}, falsos negativos: {mc_fn}. '
-                            f'El sistema no predice bien sus propios resultados.'
-                        ),
-                        confidence=min(0.6 + avg_ce * 0.3, 0.9),
-                        recommendation=(
-                            'Revisar la calidad de las recomendaciones de '
-                            'StrategySelector. Considerar ajustar pesos '
-                            'adaptativos o agregar mas evidencia antes de '
-                            'recomendar.'
-                        ),
-                        source_refs=['ExperimentRun.metadata.metacognitive_evaluation.calibration_error'],
-                        metadata={
-                            'pattern': 'metacognitive_miscalibration',
-                            'avg_calibration_error': round(avg_ce, 4),
-                            'false_positive_count': mc_fp,
-                            'false_negative_count': mc_fn,
-                            'evaluations_count': len(mc_cal_errors),
-                        },
-                    ))
+        if len(mc_cal_errors) >= 3:
+            avg_ce = sum(mc_cal_errors) / len(mc_cal_errors)
+            if avg_ce > 0.4:
+                results.append(SelfExaminationFinding(
+                    category='task_packet_metacognitive_miscalibration',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'Mala calibracion metacognitiva ({avg_ce:.2f} avg)',
+                    summary=(
+                        f'El error de calibracion promedio es {avg_ce:.2f} '
+                        f'sobre {len(mc_cal_errors)} evaluaciones. '
+                        f'Falsos positivos: {mc_fp}, falsos negativos: {mc_fn}. '
+                        f'El sistema no predice bien sus propios resultados.'
+                    ),
+                    confidence=min(0.6 + avg_ce * 0.3, 0.9),
+                    recommendation=(
+                        'Revisar la calidad de las recomendaciones de '
+                        'StrategySelector. Considerar ajustar pesos '
+                        'adaptativos o agregar mas evidencia antes de '
+                        'recomendar.'
+                    ),
+                    source_refs=['ExperimentRun.metadata.metacognitive_evaluation.calibration_error'],
+                    metadata={
+                        'pattern': 'metacognitive_miscalibration',
+                        'avg_calibration_error': round(avg_ce, 4),
+                        'false_positive_count': mc_fp,
+                        'false_negative_count': mc_fn,
+                        'evaluations_count': len(mc_cal_errors),
+                    },
+                ))
 
-                if mc_fp >= 2 and mc_fp > mc_fn:
-                    results.append(SelfExaminationFinding(
-                        category='task_packet_metacognitive_overconfidence',
-                        severity=IssueSeverity.MEDIUM,
-                        title=f'Sobreconfianza recurrente ({mc_fp} falsos positivos)',
-                        summary=(
-                            f'El sistema predijo exito {mc_fp} veces cuando realmente '
-                            f'fallo. Esto indica sobreconfianza sistematica en las '
-                            f'recomendaciones de ruta/worker.'
-                        ),
-                        confidence=min(0.6 + mc_fp * 0.1, 0.9),
-                        recommendation=(
-                            'Bajar el umbral de confianza en StrategySelector '
-                            'o requerir mas evidencia antes de predecir exito.'
-                        ),
-                        source_refs=['ExperimentRun.metadata.metacognitive_evaluation.false_positive'],
-                        metadata={
-                            'pattern': 'overconfidence',
-                            'false_positive_count': mc_fp,
-                            'false_negative_count': mc_fn,
-                        },
-                    ))
+            if mc_fp >= 2 and mc_fp > mc_fn:
+                results.append(SelfExaminationFinding(
+                    category='task_packet_metacognitive_overconfidence',
+                    severity=IssueSeverity.MEDIUM,
+                    title=f'Sobreconfianza recurrente ({mc_fp} falsos positivos)',
+                    summary=(
+                        f'El sistema predijo exito {mc_fp} veces cuando realmente '
+                        f'fallo. Esto indica sobreconfianza sistematica en las '
+                        f'recomendaciones de ruta/worker.'
+                    ),
+                    confidence=min(0.6 + mc_fp * 0.1, 0.9),
+                    recommendation=(
+                        'Bajar el umbral de confianza en StrategySelector '
+                        'o requerir mas evidencia antes de predecir exito.'
+                    ),
+                    source_refs=['ExperimentRun.metadata.metacognitive_evaluation.false_positive'],
+                    metadata={
+                        'pattern': 'overconfidence',
+                        'false_positive_count': mc_fp,
+                        'false_negative_count': mc_fn,
+                    },
+                ))
 
-                if mc_fn >= 2 and mc_fn > mc_fp:
-                    results.append(SelfExaminationFinding(
-                        category='task_packet_metacognitive_underconfidence',
-                        severity=IssueSeverity.LOW,
-                        title=f'Infraconfianza recurrente ({mc_fn} falsos negativos)',
-                        summary=(
-                            f'El sistema predijo fallo {mc_fn} veces cuando realmente '
-                            f'tuvo exito. Esto indica infraconfianza sistematica.'
-                        ),
-                        confidence=min(0.5 + mc_fn * 0.1, 0.85),
-                        recommendation=(
-                            'El sistema subestima sus capacidades. Considerar '
-                            'ajustar pesos adaptativos al alza o expandir '
-                            'la evidencia de rutas exitosas.'
-                        ),
-                        source_refs=['ExperimentRun.metadata.metacognitive_evaluation.false_negative'],
-                        metadata={
-                            'pattern': 'underconfidence',
-                            'false_positive_count': mc_fp,
-                            'false_negative_count': mc_fn,
-                        },
-                    ))
+            if mc_fn >= 2 and mc_fn > mc_fp:
+                results.append(SelfExaminationFinding(
+                    category='task_packet_metacognitive_underconfidence',
+                    severity=IssueSeverity.LOW,
+                    title=f'Infraconfianza recurrente ({mc_fn} falsos negativos)',
+                    summary=(
+                        f'El sistema predijo fallo {mc_fn} veces cuando realmente '
+                        f'tuvo exito. Esto indica infraconfianza sistematica.'
+                    ),
+                    confidence=min(0.5 + mc_fn * 0.1, 0.85),
+                    recommendation=(
+                        'El sistema subestima sus capacidades. Considerar '
+                        'ajustar pesos adaptativos al alza o expandir '
+                        'la evidencia de rutas exitosas.'
+                    ),
+                    source_refs=['ExperimentRun.metadata.metacognitive_evaluation.false_negative'],
+                    metadata={
+                        'pattern': 'underconfidence',
+                        'false_positive_count': mc_fp,
+                        'false_negative_count': mc_fn,
+                    },
+                ))
 
         return results
 
