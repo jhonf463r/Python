@@ -1277,3 +1277,24 @@ The three R32-G2 v2 target ExperimentRuns are subject-key lanes from one target 
 NEXT ACTOR: **DEVIN** for a read-only Windows inventory of persisted ExperimentRuns and the existing OSES method. Capture total eligible runs, worker-kind population, R32-G2 v2 run identity/subject multiplicity, and returned OSES metrics. No rerun, mutation, telemetry injection or threshold changes.
 
 After remote publication: **SONNET** independently verifies the runtime artifact.
+
+### UK-R32-G2V2-5 — Operational gate read-back closes contract ambiguity
+
+STATUS: CONTRACT RECONCILED / IMPLEMENTATION SPECIFICATION OPEN.
+
+Independent GitHub read-back verified Devin's branch `devin/r32g2-v2-worker-telemetry-gate-2026-09-28` at HEAD `4eb945a4f8ad2fc83ba82f16d6154e9248c19eb3`. Git compare confirms this commit is exactly one commit ahead of `d34f24c639f15c4a4a2127421cea6c2c3592c0bb` and adds the operational inventory artifact.
+
+Operational observation in that artifact:
+- 6 persisted ExperimentRuns satisfy OSES's initial `total >= 5` gate.
+- 0 of the 6 have non-empty `worker_kind`; `wt_total=0<3`.
+- 3 target ExperimentRuns share one target execution/session and are therefore multiple subject-key lanes, not three independent executions.
+- The metacognitive OSES branch is not reached for the local target.
+
+Interpretation now closes the ownership ambiguity:
+- `ExternalWorkerTelemetry` + `worker_kind` remain external-worker domain.
+- generic `metacognitive_evaluation` must not be routed through external-worker identity merely to activate OSES.
+- The remaining implementation problem is an existing-organ OSES consumer/seam question, not a worker telemetry repair.
+
+Evidence boundary remains explicit: remote artifact publication/read-back is verified; the underlying Windows runtime observations remain report-backed because no independent Windows execution occurred in this reconciliation.
+
+NEXT ACTOR: **SONNET** for read-only implementation-contract specification of the smallest OSES seam. No code changes. After specification reconciliation, **DEVIN** can implement and produce runtime proof.
