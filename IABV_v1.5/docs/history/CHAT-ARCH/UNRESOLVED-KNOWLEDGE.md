@@ -1365,3 +1365,21 @@ Subsequent edges remain:
 ### Experimental rule
 
 Do not manufacture metacognitive metadata, worker identity, thresholds, or independent experiences. Multiple subject-key lanes from one execution remain one observation unit. Future adaptive-causality proof requires distinct production executions with distinct `linked_run_id` values.
+
+
+## 2026-09-28 — R32-G2-V3 ATTRIBUTION GAP
+
+V3 reached the real bootstrap/inference path and invoked OSES review, but its causal attribution is not yet independently accepted.
+
+Material discrepancy:
+- V3 report says each warm-up had empty `subject_keys` and no warm-up recommendations.
+- Source semantics require a non-empty prior recommendation/prediction for `metacognitive_evaluation` to be generated.
+- V3 nevertheless reports one metacognitive evaluation per target in `general`.
+- Raw `evidence.json` was referenced locally but not published in the V3 commit.
+
+This is not evidence of fabrication. It is an unresolved provenance/causal attribution gap.
+
+Current first open edge:
+`reported metacognitive_evaluation → actual prior recommendation/prediction provenance`.
+
+Do not mark `adjustment → future decision influence` as open until `finding → adjustment` has first been observed in a real threshold-crossing production run.
