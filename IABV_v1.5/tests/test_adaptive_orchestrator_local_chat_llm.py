@@ -415,3 +415,77 @@ def test_small_local_model_receives_compact_system_prompt() -> None:
     prompt = provider.answer_user_calls[0].metadata['system_prompt_override']
     assert 'PERMISOS OPERATIVOS' in prompt
     assert 'Contrato de razonamiento compacto' in prompt
+
+
+def test_provider_error_with_substitute_sets_used_fallback_true() -> None:
+    """Test that provider error + substitute response sets used_fallback=True."""
+    class _ErrorProvider(_RecordingProvider):
+        def answer_user(self, request: InferenceRequest) -> InferenceResult:
+            self.answer_user_calls.append(request)
+            raise RuntimeError('simulated provider error')
+
+    provider = _ErrorProvider(name='Ollama', answer='unused', available=True)
+    orchestrator = _build_orchestrator(
+        _workspace('adaptive_fallback_provider_error'),
+        general_provider=provider,
+    )
+    request = InferenceRequest(
+        user_goal='explicame que es neuroplasticidad',
+        auto_route=True,
+    )
+
+    _, result, _ = orchestrator.handle_request(request)
+
+    assert len(provider.answer_user_calls) == 1
+    assert result.used_fallback is True
+    local_chat_llm = result.raw_output.get('local_chat_llm') or {}
+    assert local_chat_llm.get('error') == 'simulated provider error'
+    assert local_chat_llm.get('summary') == ''
+    assert result.summary  # substitute summary should be non-empty
+
+
+def test_llm_not_invoked_sets_used_fallback_false() -> None:
+    """Test that when LLM is not invoked, used_fallback=False."""
+    provider = _RecordingProvider(
+        name='Ollama',
+        answer='should not be used',
+        available=True,
+    )
+    orchestrator = _build_orchestrator(
+        _workspace('adaptive_fallback_llm_not_invoked'),
+        general_provider=provider,
+    )
+    request = InferenceRequest(
+        user_goal='abre Wplay e inicia sesion',
+        auto_route=True,
+        enable_planning=True,
+        site_hint='wplay',
+    )
+
+    _, result, _ = orchestrator.handle_request(request)
+
+    assert provider.answer_user_calls == []
+    assert result.used_fallback is False
+
+
+def test_successful_llm_sets_used_fallback_false() -> None:
+    """Test that successful LLM response sets used_fallback=False."""
+    provider = _RecordingProvider(
+        name='Ollama',
+        answer='La neuroplasticidad ajusta rutas con evidencia.',
+        available=True,
+    )
+    orchestrator = _build_orchestrator(
+        _workspace('adaptive_fallback_llm_success'),
+        general_provider=provider,
+    )
+    request = InferenceRequest(
+        user_goal='explicame que es neuroplasticidad',
+        auto_route=True,
+    )
+
+    _, result, _ = orchestrator.handle_request(request)
+
+    assert len(provider.answer_user_calls) == 1
+    assert result.used_fallback is False
+    assert result.summary == 'La neuroplasticidad ajusta rutas con evidencia.'

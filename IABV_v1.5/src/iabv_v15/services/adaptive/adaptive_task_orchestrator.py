@@ -2641,7 +2641,14 @@ class AdaptiveTaskOrchestrator:
         assistant_guidance = dict(session.metadata.get('assistant_guidance') or decision_context_payload.get('assistant_guidance') or self._build_assistant_guidance(session, pack))
         llm_chat = self._maybe_invoke_local_chat_llm(session=session, request=request)
         llm_summary = llm_chat.get('summary') if llm_chat else ''
-        summary = str(llm_summary or assistant_guidance.get('prompt') or self._render_summary(session))
+        llm_summary_normalized = str(llm_summary).strip() if llm_summary else ''
+        substitute_summary = str(assistant_guidance.get('prompt') or self._render_summary(session)).strip()
+        summary = str(llm_summary_normalized or substitute_summary)
+        used_fallback = (
+            llm_chat is not None
+            and not llm_summary_normalized
+            and bool(substitute_summary)
+        )
         role_profile = next((item for item in self.role_router.role_profiles if item.role == session.intent.detected_role), self.role_router.role_profiles[0])
         report_kind = self._report_kind_for_role(session.intent.detected_role)
         guidance_checks = {
@@ -2660,6 +2667,7 @@ class AdaptiveTaskOrchestrator:
             summary=summary,
             inferred_task=session.intent.title,
             confidence=session.intent.confidence,
+            used_fallback=used_fallback,
             clarifications=clarifications,
             used_tools=list(dict.fromkeys(list(role_profile.default_tools) + list(route.tool_chain))),
             sources=session.evidence_refs[:6],
