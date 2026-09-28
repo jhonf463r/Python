@@ -1564,3 +1564,17 @@ R32-G2 is not promoted to unconditional PROVEN. The next discriminating runtime 
 After that evidence is published, return to **SONNET** for independent verification.
 
 Do not begin OSES/AdaptiveWeightLayer investigation before R32-G2 is independently closed.
+
+### R32-G2 v2 — Implementation-contract reconciliation correction
+
+Sonnet's contract specification is substantively accepted as B+C, but implementation is paused for two semantic corrections and one evidence note:
+
+1. The proposed name `_metacognitive_calibration_findings()` collides with an existing OSES method at the pinned baseline. That existing method compares previous OSES findings/ledger state with post-review outcomes and must remain unchanged. The extracted raw ExperimentRun consumer needs a distinct name, preferably `_experiment_run_metacognitive_findings()`.
+2. R-1 linked-run collapse must not be silently included in the first minimal seam. TaskOutcomeRecorder creates one ExperimentRun per subject_key; collapsing by linked_run_id would change measurement semantics and discard subject-specific evaluations. Preserve ExperimentRun-level consumption for now. Use distinct linked_run_id executions when later proving >=3 independent observations.
+3. OSES `evidence_basis is not None` is a structural eligibility predicate. TaskOutcomeRecorder constructs a dict fallback (including `{}`), so this gate is not evidence-quality proof. Keep the predicate unchanged in the minimal seam.
+
+Independent Linux reproduction passed 11 tests and created a cwd-level AdaptiveWeightLayer persistence file because standalone tests instantiate `AdaptiveWeightLayer()` without an explicit persistence path. AppBootstrap itself supplies a workspace-scoped path. New tests must be isolated; this is test hygiene, not established production contamination.
+
+### Immediate routing
+
+**SONNET** is next for a delta-only correction of the implementation-contract specification: distinct method name, no implicit linked_run_id collapse, structural evidence_basis wording, and test-isolation requirement. No implementation yet.
