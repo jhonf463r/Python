@@ -1116,3 +1116,23 @@ After continuity writeback, return to the smallest experiment that can close:
 `productive local experience → TaskOutcomeRecorder → metacognitive_evaluation`
 
 without creating a new brain, router, memory or evolution coordinator.
+
+### 2026-09-28 R32-G — DEVIN REPORT RECEIVED / INDEPENDENT VERIFICATION PENDING
+
+Devin reported a real Windows runtime execution on technical baseline `707388053dcc760dbcec017357f1b6001994bd57` using `ollama_local` / `phi3:latest`, producing RunRecord `6556c7fc-cedd-4f28-b1a0-0125950c2d5e` and ExperimentRun `46a47e94-2bbf-472d-afe3-601851f064f7` with persisted `metacognitive_evaluation`.
+
+Reported evaluation:
+`predicted_outcome=failure`, `actual_outcome=success`, `false_negative=true`, `calibration_error=1.0`.
+
+Important provenance boundary:
+- the reported runtime branch was `bio-universal-09.11-r22b-runtime`;
+- direct GitHub branch lookup currently does not resolve that branch;
+- the reported validation script `test_r32_g_local_experience.py` is not present at the pinned SHA on GitHub;
+- therefore the result is **REPORTED / NOT YET INDEPENDENTLY VERIFIED**, not PROVEN.
+
+The reported result does not change the active gate yet. Required next action is independent forensic/runtime verification of the artifact, executed path, real Ollama participation, RunRecord provenance, metacognitive_evaluation derivation, and persistence/read-back.
+
+Also note: current OSES code aggregates `metacognitive_evaluation` across ExperimentRuns and requires multiple evaluations before emitting the relevant calibration findings. Therefore the next independent audit must distinguish:
+`evaluation exists` from `OSES finding exists` and from `AdaptiveWeightLayer adjustment exists`.
+
+Recommended verifier: **SONNET**.
