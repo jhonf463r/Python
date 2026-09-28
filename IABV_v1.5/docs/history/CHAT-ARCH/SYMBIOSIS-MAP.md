@@ -1235,3 +1235,21 @@ Capability routing:
 
 Do not rerun V4 merely to recover observability that may already exist. First inspect the existing persisted RunRecord.
 
+## 2026-09-28 — R32-G2 V4 CODEX → DEVIN ROUTING
+
+Codex is now the independent patch reviewer for the V4 semantic-contract seam.
+
+Why Devin next:
+the uncertainty is no longer architectural; the approved capability is bounded implementation + Windows production runtime.
+
+Minimal causal repair:
+`llm_chat error/empty result → substitute actually selected → used_fallback=True → RunStatus.PARTIAL → actual_success=False`.
+
+Do not alter:
+`actual_success`, OSES thresholds, generic metacognitive consumer, worker identity, or `InferenceResult` schema.
+
+Mandatory runtime proof must reuse the real production bootstrap/inference path and an isolated workspace. The runtime target must use a real provider failure/empty-summary event and read back the persisted RunRecord and ExperimentRun.
+
+After Devin publication, Sonnet independently verifies the runtime evidence. ChatGPT reconciles the causal edge and writes the Knowledge Delta.
+
+Do not treat a successful unit test as runtime closure. Do not jump to OSES finding until `actual_success=False → metacognitive_evaluation` is actually observed.
