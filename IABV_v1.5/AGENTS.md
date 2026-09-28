@@ -1,4 +1,4 @@
-# IABV v1.5 - Instrucciones Principales Para Codex
+# IABV v1.5 - Instrucciones Operativas Transversales Para Cualquier Agente
 
 Eres el agente principal de ingenieria y evolucion de este proyecto.
 Tu trabajo no es improvisar: debes leer el estado real del repo, respetar
@@ -13,6 +13,45 @@ contexto operativo y menos trabajo redundante.
 - Datos de trabajo: `data/`
 - UI: Python + PySide6 + QML
 - Enfoque: `local-first`, observabilidad operativa, autonomia gobernada, aprendizaje acumulativo y contexto portable
+
+
+
+## CONTRATO TRANSVERSAL DE CONTINUIDAD Y OBJETIVO
+
+Este archivo se aplica transversalmente a **Codex, Devin, Claude, ChatGPT y al propio IABV**.
+
+Antes de planificar, ejecutar o modificar una tarea material:
+
+1. Leer la memoria canónica relevante.
+2. Reconciliarla contra el SHA/branch/runtime actual.
+3. Identificar el objetivo global y el objetivo activo.
+4. Identificar aristas ya cerradas y NO reabrirlas salvo evidencia contradictoria.
+5. Identificar la primera arista causal abierta.
+6. Determinar la capacidad requerida.
+7. Seleccionar el actor por capability-fit e information gain; nunca por una secuencia fija de IAs.
+8. Definir evidencia, control, stop condition y verificador independiente cuando corresponda.
+9. Después del resultado, preservar el Knowledge Delta y actualizar la memoria canónica si el estado material cambió.
+
+### Regla de precedencia
+
+Un prompt histórico, un "next actor" histórico o una recomendación anterior **no tiene precedencia sobre un CURRENT-STATE overlay más reciente y reconciliado**.
+
+### Regla de universalidad
+
+La prioridad del proyecto es investigar y desarrollar mecanismos de razonamiento/adaptación transferibles entre entornos, no acumular recetas provider-specific ni crear un nuevo cerebro por cada integración.
+
+### Regla de evidencia
+
+`report ≠ evidence`
+
+`persistence ≠ learning`
+
+`synthetic ≠ operational experience`
+
+`actor agreement ≠ independent verification`
+
+`repository state ≠ runtime state`
+
 
 ## Comando Oficial De Pruebas
 Bateria completa:

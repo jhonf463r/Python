@@ -591,3 +591,73 @@ Do not confuse:
 - persistence with future decision influence.
 
 The global entrypoint is `00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`.
+
+## 2026-09-27 TRANSFER 16 — R28–R33 CONTINUITY / ADAPTATION
+
+The BIO-UNIVERSAL-09.11 sequence establishes a reusable cross-IA method:
+
+`reported result → provenance reconciliation → causal status → closed/open edge → future routing`
+
+### R28 transfer
+
+Devin runtime evidence showed that an existing metacognitive adjustment can causally change a future selector decision and survive reload/reuse.
+
+Reusable method change:
+
+`adjustment→decision` must be runtime-tested with control/treatment when the claim is causal.
+
+Boundary preserved:
+
+synthetic adjustment ≠ experience-driven learning.
+
+### R29–R32 transfer
+
+Repeated attempts to close the experience→metacognition edge demonstrated why capability existence is insufficient:
+
+`ExperimentRun exists ≠ metacognitive_evaluation exists ≠ OSES finding exists ≠ adaptive feedback exists`
+
+Negative knowledge:
+
+- sandbox ExperimentLab is not automatically the productive learning path;
+- a local provider being supported in code is not the same as it being operational;
+- an operational provider is not the same as a complete orchestrator path;
+- a report that a route is blocked does not by itself prove that no other safe route exists.
+
+### R33 transfer
+
+Independent continuity audit established a new operational requirement:
+
+**canonical memory freshness is itself an experimental/control variable.**
+
+If the latest material result is absent from the canonical continuity layer, a future agent can correctly read the archive yet still make the wrong next decision because it is working from an obsolete state.
+
+Therefore:
+
+`current_state freshness → agent routing correctness`
+
+is now a first-class continuity requirement.
+
+### Cross-IA routing rule
+
+The participating AIs remain capability resources, not a fixed pipeline:
+
+- ChatGPT: reconciliation, adjudication, evidence boundary, canonical writeback.
+- Sonnet: independent forensic challenge/audit.
+- Devin: Windows/runtime execution and bounded implementation.
+- Codex: provenance archaeology or implementation that exceeds the bounded runtime task.
+- Opus 5: only for genuine higher-order architectural contradiction when available.
+
+The next actor must always be recalculated from:
+
+`objective → uncertainty → required capability → available evidence of fit → intervention cost`
+
+This rule supersedes any historical fixed sequence.
+
+### New invariant
+
+`important cross-IA result → canonical reconciliation`
+
+not merely:
+
+`important cross-IA result → chat history`
+
