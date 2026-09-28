@@ -1160,3 +1160,19 @@ Actor routing:
 
 Do not reuse V3 as proof of `finding → adjustment` because no finding was emitted.
 Do not jump to `adjustment → future decision influence`.
+
+
+## 2026-09-28 — R32-G2-V3 ROUTING AFTER SOURCE ATTRIBUTION RECONCILIATION
+
+The V3 attribution gap caused by the harness subject-key accessor is resolved at source level. No new architecture is needed.
+
+Capability routing now:
+- **DEVIN**: produce a legitimate threshold-crossing production population and capture the actual target-side recommendation/ExperimentRun linkage.
+- **SONNET**: independently verify that runtime artifact after publication.
+- **CHATGPT**: reconcile provenance, threshold behavior, causal frontier and Knowledge Delta.
+- **OPUS 5**: not warranted.
+
+Required runtime observation for the next experiment:
+`session.metadata['adaptive_learning']['subject_keys']` or persisted ExperimentRun/recommendation repository, not `adaptive_session.subject_keys`.
+
+Do not treat V3's empty warm-up accessor result as negative system knowledge.
