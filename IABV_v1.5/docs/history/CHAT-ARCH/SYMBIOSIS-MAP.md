@@ -1176,3 +1176,16 @@ Required runtime observation for the next experiment:
 `session.metadata['adaptive_learning']['subject_keys']` or persisted ExperimentRun/recommendation repository, not `adaptive_session.subject_keys`.
 
 Do not treat V3's empty warm-up accessor result as negative system knowledge.
+
+
+## 2026-09-28 — R32-G2-V3 SOURCE RECONCILIATION ROUTING
+
+The V3 subject-key contradiction was resolved by direct source archaeology: the harness queried an absent `AdaptiveSession.subject_keys` field while production learning computes and stores the real keys in `session.metadata['adaptive_learning']['subject_keys']`.
+
+Therefore no architecture change is indicated.
+
+Next capability sequence:
+- **SONNET**: narrow independent confirmation of the exact subject-key storage/accessor discrepancy;
+- **DEVIN**: threshold-crossing production runtime experiment with genuine success/failure outcomes;
+- **CHATGPT**: evidence reconciliation and causal frontier/writeback;
+- **OPUS 5**: not warranted.
