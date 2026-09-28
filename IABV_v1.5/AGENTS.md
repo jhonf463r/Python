@@ -53,6 +53,20 @@ La prioridad del proyecto es investigar y desarrollar mecanismos de razonamiento
 `repository state ≠ runtime state`
 
 
+
+### Current evidence boundaries for adaptive/self-examination claims
+
+The closed P2/P4 entries below refer only to the specific operational nuclei they name. They do not mean that experience-driven metacognitive learning, general SelfAudit→OSES interpretation, or full system-level autonomous learning has been proven.
+
+Current BIO-UNIVERSAL evidence must preserve:
+
+`adjustment→decision` proven in R28
+
+versus
+
+`operational experience→metacognitive_evaluation→finding→adjustment` still open.
+
+
 ## Comando Oficial De Pruebas
 Bateria completa:
 

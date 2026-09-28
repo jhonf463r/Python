@@ -4,7 +4,55 @@
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
 
-## REPOSITORY ANCHOR
+#
+## ACTIVE BIO-UNIVERSAL-09.11 STATE — 2026-09-27
+
+**READ THIS ACTIVE OVERLAY BEFORE OLDER DATED SECTIONS.**
+
+Technical investigation anchor:
+
+- branch: `bio-universal-09.11-r20-clean`
+- code HEAD: `707388053dcc760dbcec017357f1b6001994bd57`
+- latest continuity writeback: main commit `025e2604edbc50a4cac96c1d14477099e77d792d`
+- R28–R33 continuity state is now canonically absorbed into the main memory layer.
+
+### Current proven / open edges
+
+- **R28-A PROVEN:** metacognitive adjustment → weighted-score change → decision flip → persistence → reload → reuse.
+- **R28 boundary:** synthetic adjustment; not experience-driven learning.
+- **R29-D / R30-F / R31-E / R32-G:** the experience→metacognitive-evaluation path remains open.
+- **R33-E historical finding:** the memory layer was stale relative to R28–R32. That gap now has canonical writeback; blind reconstruction after writeback remains an empirical test.
+
+### First open causal edge
+
+`full productive orchestration → real local operational experience → RunRecord → metacognitive_evaluation → OSES finding → AdaptiveWeightLayer adjustment`
+
+Do not reopen the already-proven R28 adjustment→decision edge without contradictory evidence.
+
+### Current routing rule
+
+Actor selection is dynamic:
+
+`objective → uncertainty → required capability → capability-fit actor → independent verifier`
+
+No historical actor sequence is an active command.
+
+### Universal development objective
+
+The project remains a research program for transferable, evidence-driven mechanisms:
+
+`observe → interpret/hypothesize → govern → select → execute → verify → learn → reuse`
+
+Do not substitute provider-specific recipes or a new monolithic brain for this objective.
+
+### Continuity contract
+
+Every material cycle must preserve:
+
+`OBJECTIVE → CURRENT_TRUTH → CLOSED_EDGES → FIRST_OPEN_CAUSAL_EDGE → REQUIRED_CAPABILITY → SELECTED_ACTOR → ACTOR_REASON → INDEPENDENT_VERIFIER → EVIDENCE → RESULT → KNOWLEDGE_DELTA → NEXT_GATE`
+
+
+# REPOSITORY ANCHOR
 
 Repository: `jhonf463r/Python`
 Default branch: `main`
@@ -1035,4 +1083,3 @@ After continuity writeback, return to the smallest experiment that can close:
 `productive local experience → TaskOutcomeRecorder → metacognitive_evaluation`
 
 without creating a new brain, router, memory or evolution coordinator.
-
