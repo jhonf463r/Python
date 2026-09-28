@@ -1333,3 +1333,35 @@ NEXT ACTOR: **DEVIN** for bounded implementation and Windows/runtime proof. No f
 ### UK-R32-G2V2-8 — Direct test compatibility seam
 
 Before implementation, preserve one test-contract fact: the current suite has a direct underconfidence test invocation of `_task_packet_pattern_findings()`. Once the metacognitive block is extracted, that test must be retargeted to the new generic ExperimentRun consumer (or full `build_review()`). Existing worker/task-packet method tests must remain worker-only.
+
+
+## 2026-09-28 — R32-G2-V2 POST-IMPLEMENTATION FRONTIER
+
+### Closed by independent verification
+
+The generic ExperimentRun metacognitive seam is source- and test-verified:
+`metacognitive_evaluation → _experiment_run_metacognitive_findings() → finding`.
+
+Worker identity remains external-worker-only; no synthetic local `worker_kind` is permitted. Existing `_metacognitive_calibration_findings()` remains a separate OSES mechanism. Frozen thresholds, category names, structural `evidence_basis is not None` eligibility, and no-`linked_run_id`-collapse semantics are preserved.
+
+### Provenance correction
+
+The implementation commit is `87ae24b73964bf208b82d6b15fa7924c6dd6e7bc`. The report/publication commit is `79bdd8ab47206e9f5a07fdc2151923f934da474a`. The SHA `87ae24b73b95c8eb2b9c0c70444bbfa2b7c8f3ef` in the Devin report is nonexistent and must not be reused.
+
+### Open knowledge
+
+The next unresolved causal edge is:
+
+`real production local-chat ExperimentRun → generic OSES consumer → finding`
+
+The existing R32-G2 v2 runtime evidence cannot close this edge because it predates the seam and therefore did not execute it. Test execution through AppBootstrap/repositories is not equivalent to genuine production local-chat execution.
+
+Subsequent edges remain:
+
+`finding → AdaptiveWeightLayer adjustment` = test-proven
+
+`adjustment → future decision influence` = not proven
+
+### Experimental rule
+
+Do not manufacture metacognitive metadata, worker identity, thresholds, or independent experiences. Multiple subject-key lanes from one execution remain one observation unit. Future adaptive-causality proof requires distinct production executions with distinct `linked_run_id` values.
