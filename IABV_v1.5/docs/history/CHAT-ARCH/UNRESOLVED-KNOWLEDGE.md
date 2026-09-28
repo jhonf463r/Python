@@ -1298,3 +1298,19 @@ Interpretation now closes the ownership ambiguity:
 Evidence boundary remains explicit: remote artifact publication/read-back is verified; the underlying Windows runtime observations remain report-backed because no independent Windows execution occurred in this reconciliation.
 
 NEXT ACTOR: **SONNET** for read-only implementation-contract specification of the smallest OSES seam. No code changes. After specification reconciliation, **DEVIN** can implement and produce runtime proof.
+
+### UK-R32-G2V2-6 — Implementation contract correction before coding
+
+STATUS: OPEN / specification correction.
+
+The B+C contract is accepted, but the proposed method name `_metacognitive_calibration_findings` collides with an existing OSES method that already owns previous-review/ledger calibration logic. Do not overwrite, rename, or duplicate that existing mechanism.
+
+Preferred new seam name: `_experiment_run_metacognitive_findings(*, experiment_runs)`.
+
+R-1 linked_run_id collapse is separated from the minimal seam. ExperimentRun-level evidence should remain intact until a dedicated observation-unit contract is established. The next causal runtime proof should use multiple distinct linked_run_id executions rather than treating the three subject-key lanes from R32-G2 v2 as independent observations.
+
+The OSES `evidence_basis is not None` gate is structural because TaskOutcomeRecorder can materialize an empty dict fallback. Preserve it without presenting it as evidence-quality validation.
+
+The 11-test Linux reproduction also exposed test isolation drift: standalone AdaptiveWeightLayer() defaults to cwd persistence, while AppBootstrap uses workspace-scoped persistence. New regression tests must explicitly isolate persistence.
+
+NEXT ACTOR: **SONNET** for a delta-only specification correction. Then **DEVIN** for bounded implementation only after reconciliation.
