@@ -1834,3 +1834,36 @@ After that observation, and only if substitution is confirmed, the legitimate im
 `llm_chat error → explicit degraded InferenceResult signal → existing used_fallback → PARTIAL → actual_success=False`.
 
 Do not change `actual_success`, OSES thresholds, or create synthetic metacognition.
+
+## 2026-09-28 — R32-G2 V4 CODEX PATCH ADJUDICATION
+
+Codex independently reviewed the minimal production change after the V4 runtime observation.
+
+Decision: `PATCH_DECISION = APPROVE`.
+
+Canonical patch scope:
+- primary file: `IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py`
+- condition in `_build_result()`: `llm_chat is not None` AND normalized LLM summary is empty AND the selected substitute summary is non-empty;
+- set existing `InferenceResult.used_fallback=True` only when the substitute is actually used;
+- do not change `InferenceService`, `TaskOutcomeRecorder.actual_success`, OSES thresholds, or domain ownership;
+- no new `InferenceResult` field and no `fallback_reason` required for the minimal patch;
+- add unit coverage for error/empty-summary substitution, `llm_chat is None`, and usable response behavior;
+- add mandatory isolated production runtime proof using the real V4 failure setup.
+
+Semantic distinction:
+- `used_fallback` = degradation signal, not generic provider failure;
+- V4 nonexistent-model event = request/configuration failure plus observed degraded response;
+- `actual_success = RunStatus.SUCCESS` remains unchanged.
+
+Risk: MEDIUM because changing `used_fallback` activates existing downstream behavior in TaskOutcomeRecorder/ExperimentLab/fallback metrics/OSES, but no new consumer semantics are introduced.
+
+First edge closed by patch:
+`llm_chat without usable response → actual substitute used → used_fallback=True → PARTIAL → actual_success=False`.
+
+First open edge after patch:
+`actual_success=False → real metacognitive_evaluation persisted`, conditional on a prior production-generated recommendation.
+
+Important provenance boundary:
+Codex reviewed V4 at the reported HEAD `5a3bb0bdf2d244750846d9df8d3afe82886ef89e`. The generic semantic adjudication document is canonical memory on `main`; it was not present in that V4 branch and must not be treated as evidence from that branch. The observational V4 report and source archaeology remain the evidence for V4.
+
+Next actor by capability-fit: **DEVIN** for bounded implementation plus mandatory isolated production runtime proof. After publication: **SONNET** for independent verification.
