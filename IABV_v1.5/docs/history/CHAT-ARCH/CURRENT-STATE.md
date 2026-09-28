@@ -11,10 +11,13 @@ This document is the compact current-state bridge between historical knowledge a
 
 Technical investigation anchor:
 
-- branch: `bio-universal-09.11-r20-clean`
-- code HEAD: `707388053dcc760dbcec017357f1b6001994bd57`
-- latest continuity writeback: main commit `025e2604edbc50a4cac96c1d14477099e77d792d`
-- R28–R33 continuity state is now canonically absorbed into the main memory layer.
+- technical investigation branch: `bio-universal-09.11-r20-clean`
+- pinned R28–R32 code/runtime baseline: `707388053dcc760dbcec017357f1b6001994bd57`
+- current branch tip (documentation-only continuity commit): `fc141596bfc46c644568e5c39bf72e325fcd375b`
+- current main HEAD (remote verified): `38385136c9ab810b54594178749063e554d22a51`
+- substantive R28–R33 canonical continuity writeback: main commit `025e2604edbc50a4cac96c1d14477099e77d792d`
+- latest current-state front-load at inspection time: main commit `38385136c9ab810b54594178749063e554d22a51`
+- R28–R33 continuity state is canonically absorbed into the main memory layer; the technical baseline remains separately pinned above.
 
 ### Current proven / open edges
 
@@ -1075,6 +1078,18 @@ The project is testing whether existing IABV organs can form a progressively mor
 `observe → interpret/hypothesize → govern → select capability/actor → execute → verify → learn → reuse`
 
 This remains a research hypothesis. Do not promote it to a proven general intelligence architecture.
+
+
+### Active continuity validation gate — BIO-UNIVERSAL-09.11-R34
+R34 is the current empirical validation of the continuity repair, distinct from the underlying R32-G technical learning frontier.
+
+- handoff: BIO-UNIVERSAL-09.11-R34-SONNET-HANDOFF-2026-09-27.md
+- actor: SONNET
+- mode: READ-ONLY / BLIND CONTINUITY RECONSTRUCTION
+- objective: verify whether a new agent can reconstruct the current objective, state, closed/open edges, negative knowledge, capability-fit routing and next experiment from canonical GitHub memory alone
+- forbidden: implementation, code mutation, new architecture, history supplied from the chat
+- current technical frontier remains R32-G; R34 does not close or replace it
+- R34 result is not yet known; do not pre-classify it as proven
 
 ### Current next technical gate
 
