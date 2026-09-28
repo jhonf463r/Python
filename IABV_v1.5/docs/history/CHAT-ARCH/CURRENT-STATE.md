@@ -1456,3 +1456,44 @@ Do not yet promote to final PROVEN status.
 **SONNET** for independent forensic/runtime verification. No implementation changes during verification.
 
 Do not reopen R28, R34 or R32-G publication. The post-R32-G2 frontier remains downstream OSES/AdaptiveWeightLayer only after R32-G2 is independently closed.
+
+
+## 2026-09-28 R32-G2 — SONNET INDEPENDENT VERIFICATION / PARTIAL PROOF
+
+Sonnet independently audited the remotely published R32-G2 artifact and pinned-baseline source. Because the verification environment lacked Windows/Ollama, runtime-specific claims remain **REPORT-BACKED**.
+
+### Adjudication
+
+**R32-G2 = PARTIALLY PROVEN / PENDING RUNTIME ATTRIBUTION.**
+
+### Independently established
+
+- Git provenance: baseline `707388053dcc760dbcec017357f1b6001994bd57` → head `13c7f31425fb9055d9e4be4957bb7e497a9d171e`, exactly 3 commits ahead, no divergence, evidence-only files.
+- Artifact identity: no manual RunRecord/AdaptiveSession/ExperimentRecommendation, no direct TaskOutcomeRecorder call, no injected metacognitive evaluation, no synthetic inference.
+- Source production path: `InferenceService.infer_task → _execute → AdaptiveTaskOrchestrator.handle_request → local provider → RunRecord → finalize_with_run → TaskOutcomeRecorder.record → _record_learning`.
+- Recommendation mechanism and prediction extraction are source-proven.
+- Metacognitive evaluation derivation is source-proven.
+
+### Critical unresolved runtime attribution
+
+The effective Ollama model is unknown. The artifact defaults `IABV_OLLAMA_MODEL` to `gemma3:1b` only when the variable is absent, while the production RunRecord records `qwen3:8b`. Source tracing shows that `executor_model` is not sufficient to identify the HTTP model, and `local_chat_llm.provider_model` is empty.
+
+The exact recommendation consumed by target is also not proven. The recorder evaluates multiple subject keys using `latest_recommendation()`, while the harness only selects the first matching recommendation and the stored evaluation contains no recommendation ID.
+
+### Updated status
+
+R32-G2 is not promoted to unconditional PROVEN. The next discriminating runtime evidence must resolve:
+
+`exact Ollama model`
+`+`
+`exact target-side recommendation ID per subject key`
+`+`
+`exact ExperimentRun subject_key carrying the evaluation`
+
+### Next actor
+
+**DEVIN** — Windows/Ollama bounded re-execution/evidence capture.
+
+After that evidence is published, return to **SONNET** for independent verification.
+
+Do not begin OSES/AdaptiveWeightLayer investigation before R32-G2 is independently closed.
