@@ -1011,3 +1011,43 @@ Required evidence:
 After publication: **SONNET** independent re-verification.
 
 Do not route to OSES/AdaptiveWeightLayer yet.
+
+    
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2
+
+### Current gate
+
+R32-G2 v2 has strong runtime evidence, but its final status is **pending independent verification** because:
+- embedded report provenance contains stale/unresolvable SHA text;
+- exact target-side recommendation consumption is inferred rather than directly recorded;
+- “persistence reload” is same-instance reread.
+
+### Required verifier
+
+**SONNET** — independent forensic verification of the v2 branch/artifact/report and these exact evidence boundaries.
+
+### Next runtime actor after verification
+
+**DEVIN** — bounded Windows runtime experiment for:
+
+`production metacognitive_evaluation`
+→ `OSES finding`
+→ `AdaptiveWeightLayer.apply_metacognitive_adjustment()`
+→ persisted adjustment
+→ controlled future scoring/decision effect.
+
+The next experiment should deliberately cross the OSES metacognitive-miscalibration threshold (>0.4 average calibration error or the false-positive/false-negative thresholds), because the successful R32-G2 v2 case (0.2992, FP=0, FN=0) does not invoke the feedback path.
+
+### Retrieval instruction
+
+When a new chat touches R32-G2, activate:
+`CURRENT-STATE.md` → `SYMBIOSIS-MAP.md` → `UNRESOLVED-KNOWLEDGE.md` → v2 attribution artifact/report → OSES/AWL source seam.
+
+Preserve these distinctions:
+`runtime-loaded model != request-level model proof`
+`pre-target persistence != direct consumption event`
+`same-instance reread != independent reload`
+`metacognitive_evaluation != OSES finding`
+`OSES finding != adaptive adjustment`
+`adaptive adjustment != future decision influence`.
+
