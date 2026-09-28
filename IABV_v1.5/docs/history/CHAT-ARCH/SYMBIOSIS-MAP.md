@@ -1124,3 +1124,25 @@ This closes the threshold ambiguity without another actor. Remaining implementat
 ## 2026-09-28 — Test contract as part of causal seam migration
 
 A consumer extraction is not complete when production call sites are migrated but direct test call sites still encode the old ownership contract. The underconfidence test directly invokes `_task_packet_pattern_findings()`; it must follow the new generic consumer seam so tests do not preserve the very cross-domain coupling being removed.
+
+
+## 2026-09-28 — R32-G2-V2 ROUTING DELTA
+
+### Capability routing
+
+Contract/architecture ambiguity is closed. Implementation is complete and independently verified. The remaining uncertainty is empirical runtime causality, so routing now selects a Windows/runtime actor rather than another architecture-archaeology pass.
+
+Current actor fit:
+- **DEVIN**: execute the real Windows/Ollama production bootstrap/inference seam in a fresh isolated workspace and publish provenance-preserving runtime evidence.
+- **SONNET**: independently verify the resulting runtime artifact/report after publication.
+- **CHATGPT**: reconcile evidence, maintain the causal frontier and write back the Knowledge Delta.
+- **OPUS 5**: not warranted; there is no remaining architecture contradiction.
+
+### Next discriminating action
+
+Use:
+`fresh isolated workspace → AppBootstrap → inference_service.infer_task() → production RunRecord/finalization → TaskOutcomeRecorder → persisted ExperimentRun → OperationalSelfExaminationService.current_review(refresh=True)`.
+
+Observe whether the real production local-chat ExperimentRun reaches `_experiment_run_metacognitive_findings()` and produces the expected OSES finding without seeded ExperimentRuns or synthetic worker telemetry.
+
+This is a runtime-discrimination experiment, not an implementation task.
