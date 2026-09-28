@@ -14,74 +14,65 @@ Technical investigation anchor:
 - technical investigation branch: `bio-universal-09.11-r20-clean`
 - pinned R28–R32 code/runtime baseline: `707388053dcc760dbcec017357f1b6001994bd57`
 - R32-G2 v2 remote evidence head: `108c8e71b37591c4979b10b29e164679ba14ec69`
-- R32-G2 v2 evidence artifact: `IABV_v1.5/test_r32g2_production_runtime_v2.py`
-- R32-G2 v2 attribution report: `IABV_v1.5/R32-G2-RUNTIME-ATTRIBUTION-RESULT-2026-09-28.md`
+- R32-G2 v2 artifact: `IABV_v1.5/test_r32g2_production_runtime_v2.py`
 - current `main` is mutable and must be re-checked at use time.
 
-### R32-G2 v2 — independently reconciled state
+### R32-G2 v2 state
 
-**Adjudicated status: PARTIALLY PROVEN.**
+**PARTIALLY PROVEN.** Sonnet independently confirmed provenance/source semantics and Devin then performed the requested read-only runtime observation in the original Windows workspace.
 
-Independent forensic verification confirms:
-- branch/head/artifact are remotely attributable;
-- production path is real in source and the v2 harness does not fabricate RunRecord, AdaptiveSession or ExperimentRecommendation;
-- model intent converges to `gemma3:1b` at env/config/provider level and the report claims `/api/ps` also showed `gemma3:1b`;
-- target ExperimentRuns are filtered by `linked_run_id` and carry explicit subject keys plus `metacognitive_evaluation`;
-- calibration arithmetic is correct.
+Report-backed runtime observation from Devin:
+- all 3 target ExperimentRuns for `ab50c755-e197-464f-99e6-17b8fb97095b` contain `worker_telemetry` as a dict;
+- all 3 have `metacognitive_evaluation`;
+- all 3 have **no non-empty `worker_telemetry.worker_kind`**;
+- therefore `wt_total=0` for the OSES task-packet gate whose threshold is 3.
 
-The following remain report-backed or inferred:
-- Windows/Ollama runtime itself has no raw log artifact in the repository;
-- exact request-level HTTP model is not directly observed;
-- exact target recommendation consumption is inferred from the production lookup order plus the pre-target snapshot; the consumed recommendation ID is not persisted into ExperimentRun metadata;
-- the v2 persistence check is a same-process/same-repository reread, not a fresh repository-instance reload.
+No remote gate-result artifact was found yet, so this new runtime observation remains **report-backed**, not remotely re-read evidence.
 
-### Provenance correction
+### Contract finding
 
-The actual R32-G2 v2 evidence commit is:
+Pinned source archaeology shows:
+- `ExternalWorkerTelemetry` is explicitly documented as the contract for **external worker execution**;
+- the concrete telemetry producer is the tool-adapter path, where `worker_kind` is supplied from the external tool/adapter identity;
+- `TaskOutcomeRecorder` propagates existing telemetry and adds metacognitive fields, but does not originate `worker_kind`;
+- `metacognitive_evaluation` is produced for the production adaptive target independently of external-worker telemetry;
+- OSES `_task_packet_pattern_findings()` combines its metacognitive checks with the `wt_total >= 3` task-packet gate.
 
-`108c8e71b37591c4979b10b29e164679ba14ec69`
+Therefore the current evidence indicates a **semantic contract mismatch / cross-organ discontinuity**:
 
-The report's embedded:
-`FULL_EVIDENCE_HEAD=9a68004958c...`
-was malformed. The actual commit is:
+`local production metacognitive_evaluation`
+→ `OSES task-packet metacognitive consumer`
 
-`9a68004953ac891b19551ca9f56761089b652159`
+is gated by an external-worker-specific telemetry contract.
 
-which is a real remote commit and the direct predecessor in the v2 evidence chain.
+Do NOT resolve this by inventing `worker_kind='ollama'` merely to satisfy the gate.
 
-The report's embedded `REMOTE_READBACK=PENDIENTE` is historical text drift; current remote read-back is available.
+### Current unresolved decision
 
-### Next source-level boundary
+The correct ownership question is now:
 
-The important OSES seam is now narrower:
+**Should OSES metacognitive calibration of generic ExperimentRuns be owned by a consumer that does not require external-worker telemetry, while `_task_packet_pattern_findings()` remains external-worker/task-packet-specific?**
 
-`ExperimentRun.metadata['metacognitive_evaluation']`
-→ `_task_packet_pattern_findings()`
-→ `wt_total >= 3`
-→ metacognitive finding thresholds
-→ `_apply_metacognitive_feedback()`
-→ `AdaptiveWeightLayer.apply_metacognitive_adjustment()`
-→ persistence
-→ later scoring.
+Alternative hypothesis:
+- `worker_kind` is intentionally external-only and the OSES task-packet gate is not intended to consume local-chat metacognition.
 
-The key gate is not simply “metacognitive_evaluation exists”.
+This is a contract/ownership decision, not yet an implementation task.
 
-OSES increments `wt_total` only when an ExperimentRun has `metadata['worker_telemetry']` with a non-empty `worker_kind`. R32-G2 v2 used the local chat `answer_user()` path. Existing source search shows the primary `worker_telemetry` writer in this baseline is the external tool-adapter execution path, while `TaskOutcomeRecorder` merely copies telemetry already present in the session.
+### Immediate routing
 
-Therefore the first runtime-discriminating question is:
+**SONNET** is the next actor for independent contract/architecture archaeology.
 
-**Do the actual R32-G2 v2 local-chat ExperimentRuns contain `worker_telemetry.worker_kind`?**
+Required outcome:
+- determine semantic ownership of `metacognitive_evaluation`;
+- determine whether OSES has an already-existing generic consumer suitable for local runs;
+- determine whether `_task_packet_pattern_findings()` is intentionally external-worker scoped;
+- inspect historical design/tests for intended domain;
+- identify the smallest contract boundary decision without implementing it.
 
-This must be observed before designing any deliberate false-positive/miscalibration run.
-
-### Current routing
-
-- **SONNET verification gate: completed.**
-- **DEVIN:** next actor, because the remaining smallest action is a Windows/workspace observation unavailable to Sonnet.
-- The first Devin action must be read-only: inspect the isolated R32-G2 v2 ExperimentRuns' `metadata.keys()` and specifically `worker_telemetry.worker_kind`, without rerunning or mutating production.
-- Only if the gate is satisfied should the next experiment deliberately create an OSES-eligible metacognitive mismatch.
-- If the gate is absent, stop and escalate the decision as an ownership/contract question; do not patch production merely to make the test pass.
-- Opus and Codex remain unnecessary for this bounded diagnostic.
+Do not use Devin for implementation yet.
+Do not patch `worker_kind`.
+Do not change OSES thresholds/gates.
+Do not use Opus.
 
 ### Continuity contract
 
