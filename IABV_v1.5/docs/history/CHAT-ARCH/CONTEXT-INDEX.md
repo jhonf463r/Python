@@ -1140,3 +1140,16 @@ The prior contract archaeology is now operationally corroborated. Do not return 
 
 ### Next actor
 **SONNET** for a read-only implementation-contract specification of the smallest OSES change using existing organs only, preserving worker/task-packet semantics and current thresholds. No implementation. After reconciliation, route to **DEVIN** for bounded implementation/runtime proof.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 CONTRACT SPEC CORRECTION
+
+Before implementation, activate this correction:
+- Existing OSES `_metacognitive_calibration_findings(previous_review, experiment_runs)` is a different metacognitive mechanism and must remain intact.
+- New generic run-level consumer should use a distinct name such as `_experiment_run_metacognitive_findings`.
+- Do not silently collapse ExperimentRuns by linked_run_id in the minimal seam; preserve current measurement semantics and reserve independent-execution requirements for the runtime proof.
+- Treat `evidence_basis is not None` as a structural gate, not evidence-quality proof.
+- New tests must isolate AdaptiveWeightLayer persistence.
+
+### Next actor
+
+**SONNET** — delta-only correction of the implementation-contract specification. No implementation.
