@@ -1491,3 +1491,41 @@ Required tests:
 
 Next open edge after successful runtime proof:
 `actual_success=False → metacognitive_evaluation` for a target that has a real prior production-generated recommendation.
+
+
+
+## 2026-09-28 META-01-E2a — IMPLEMENTATION REPORTED, PROVENANCE/VERIFICATION OPEN
+
+Devin reports a completed implementation of the discernment-frame wiring from base SHA `8fe2b94f66e10d2379945754ea58dd7e92626c60`, including shared AppBootstrap ownership, RLock/atomic publication, consumer injection, 46/46 focal tests, and a Windows birth-frame observation.
+
+Reported runtime identity:
+`frame_id=aab27b63-8715-44fc-b30b-f84dbd54dd78`
+`phase=birth`
+`trigger_source=startup`
+`grounding_status=insufficient`
+
+Reported consumers: OSES, TaskContextAssembler, PortableContext read the same frame_id.
+
+### Critical unresolved provenance
+
+The reported branch `feature/discernment-frame-seam` was not found on GitHub at reconciliation time. Reported HEAD is identical to the base SHA while the worktree is MODIFIED. Therefore no implementation commit or remote source read-back currently anchors the patch.
+
+Current classification:
+**IMPLEMENTATION REPORT-BACKED / LOCAL ONLY / NOT REMOTELY ATTRIBUTABLE / PENDING INDEPENDENT VERIFICATION**.
+
+This is not evidence of fabrication; it is an attribution/evidence gap.
+
+### Semantic downstream edge
+
+The implementation report names:
+`frame → epistemic unresolved knowledge → hypothesis → prediction → experiment`
+
+as the next technical frontier. Preserve this as the **semantic** next edge, but do not activate implementation/research on it until the provenance/verification gate for E2a is closed.
+
+### Negative knowledge
+
+- A correct-looking implementation response must not advance the causal frontier before source/runtime provenance is anchored.
+- A local branch name is not evidence of a remote branch.
+- Same HEAD as base plus MODIFIED worktree means the implementation is outside the reported commit.
+- Focal test success does not substitute for independent runtime verification.
+- Same frame_id reported by several consumers is the correct identity predicate but remains report-backed until independently verified.
