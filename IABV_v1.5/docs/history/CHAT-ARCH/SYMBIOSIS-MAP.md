@@ -1253,3 +1253,64 @@ Mandatory runtime proof must reuse the real production bootstrap/inference path 
 After Devin publication, Sonnet independently verifies the runtime evidence. ChatGPT reconciles the causal edge and writes the Knowledge Delta.
 
 Do not treat a successful unit test as runtime closure. Do not jump to OSES finding until `actual_success=False → metacognitive_evaluation` is actually observed.
+
+
+
+## 2026-09-28 TRANSFER 18 — META-01-E2a IMPLEMENTATION MUST NOT OUTRUN PROVENANCE
+
+META-01-E2a added a reusable routing/provenance rule.
+
+### Objective
+Close the first real discernment-frame seam without confusing implementation claims with verified causal state.
+
+### Evidence-derived actor transition
+
+`Codex`
+→ architecture seam resolved
+→ `Devin`
+→ bounded implementation + Windows runtime report
+→ **publication/read-back gate**
+→ `Sonnet`
+→ independent verification
+→ ChatGPT reconciliation/writeback
+→ semantic E2b investigation.
+
+### New routing rule
+
+Actor selection follows the **current evidence frontier**, not simply the previous actor's claimed next edge.
+
+After an implementation actor reports completion, determine first:
+
+`report → artifact → branch/ref → SHA → working-tree provenance → remote read-back → runtime provenance → independent verification`.
+
+Only then use the implementation actor's named "first open edge" as the next semantic frontier.
+
+### META-01-E2a current state
+
+Devin reports:
+- 46/46 focal tests passed;
+- birth frame created at runtime;
+- shared frame_id observed across OSES/TCA/PCS;
+- RLock/atomic publication implemented.
+
+But GitHub does not currently contain the reported implementation branch, and the reported HEAD equals the base SHA while the worktree is MODIFIED.
+
+Therefore the correct state is:
+
+**IMPLEMENTED REPORT-BACKED; CANONICALITY AND INDEPENDENT VERIFICATION OPEN.**
+
+### Methodological delta
+
+Do not let a previous actor's response collapse:
+
+`technical completion`
+with
+`evidence closure`
+
+or:
+
+`semantic next edge`
+with
+`next actionable edge`.
+
+This prevents “response-continuation drift”, where a later chat follows the actor's proposed next step while skipping unresolved provenance in space/time.
