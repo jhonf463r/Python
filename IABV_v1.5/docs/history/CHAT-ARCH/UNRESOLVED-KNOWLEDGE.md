@@ -1529,3 +1529,24 @@ as the next technical frontier. Preserve this as the **semantic** next edge, but
 - Same HEAD as base plus MODIFIED worktree means the implementation is outside the reported commit.
 - Focal test success does not substitute for independent runtime verification.
 - Same frame_id reported by several consumers is the correct identity predicate but remains report-backed until independently verified.
+
+
+
+## 2026-09-28 META-01-E2a — REMOTE SOURCE VERIFIED, INTEGRATION RUNTIME STILL OPEN
+
+The implementation commit is now remotely attributable:
+`475c033630bc6285fa39206a0c6294a5ad8fb7b0` ← parent `8fe2b94f66e10d2379945754ea58dd7e92626c60`.
+
+Independent source reconciliation found these unresolved questions:
+
+1. The report claims a `_publish_frame()` helper that is not present in the source read-back.
+2. The report shows two distinct runtime frame IDs and does not establish one continuous execution identity.
+3. The displayed runtime shared-identity result omits TCA even though TCA is source-wired.
+4. The focal shared-identity test directly exercises the service, not all three production consumers.
+5. The runtime report's OSES missing-frame finding cannot distinguish absence of a task-context execution from a real consumer-propagation failure.
+6. The stale PortableContext persistence artifact does not independently prove fresh PCS consumption.
+
+These are not evidence of fabrication. They are explicit attribution/coverage boundaries for independent verification.
+
+Semantic E2b remains behind the gate:
+`frame grounding/unresolved → genuine epistemic uncertainty → hypothesis → prediction → experiment`.
