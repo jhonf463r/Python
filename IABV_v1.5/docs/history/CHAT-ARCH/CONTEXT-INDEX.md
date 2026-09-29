@@ -1295,3 +1295,45 @@ Preserve:
 `OSES finding != AWL adjustment`
 `AWL adjustment != future decision influence`
 `N subject-key ExperimentRuns != N independent experiences`.
+
+
+
+## 2026-09-28 META-01-E2a CONTINUITY INDEX
+
+Primary reconciliation:
+`META-01-E2a-POST-IMPLEMENTATION-RECONCILIATION-2026-09-28.md`
+
+### Activation order
+
+When a new chat touches META-01 / DiscernmentFrame, activate in this order:
+
+`META-01-E2a post-implementation reconciliation`
+→ `CURRENT-STATE.md`
+→ `UNRESOLVED-KNOWLEDGE.md`
+→ `SYMBIOSIS-MAP.md`
+→ exact implementation commit/artifact once published
+→ Sonnet independent verification.
+
+### Current evidence state
+
+Devin's implementation report is **not yet canonical evidence**. Reported local branch:
+`feature/discernment-frame-seam`
+
+Reported base/HEAD:
+`8fe2b94f66e10d2379945754ea58dd7e92626c60`
+
+GitHub branch read-back at reconciliation: **NOT FOUND**.
+
+Therefore first open edge is:
+
+`local modified worktree → commit → remote read-back → independent verification`.
+
+Do not route directly to semantic:
+
+`grounding/unresolved → epistemic uncertainty → hypothesis → prediction → experiment`
+
+until the implementation provenance gate closes.
+
+Preserve:
+
+`report != artifact != SHA != runtime proof != independent verification`.
