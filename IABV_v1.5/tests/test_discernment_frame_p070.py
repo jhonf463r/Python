@@ -132,7 +132,7 @@ class TestOSESDetectsFrameMissingInContext(unittest.TestCase):
             _discernment_frame_findings_impl,
         )
 
-        mock_self = SimpleNamespace(workspace_root='')
+        mock_self = SimpleNamespace(workspace_root='', discernment_frame_service=None)
         findings = _discernment_frame_findings_impl(mock_self)
         categories = [f.category for f in findings]
         self.assertIn('discernment_frame_missing_in_task_context', categories)
@@ -155,20 +155,10 @@ class TestOSESDetectsStaleOverride(unittest.TestCase):
         )
         frame.selected_action = 'execute_task'
 
-        mock_self = SimpleNamespace(workspace_root='')
-        original_init = DiscernmentFrameService.__init__
-
-        def patched_init(self_inner, *, workspace_root=''):
-            self_inner._workspace_root = workspace_root
-            self_inner._frame_history = svc._frame_history
-
-        DiscernmentFrameService.__init__ = patched_init
-        try:
-            findings = _discernment_frame_findings_impl(mock_self)
-            categories = [f.category for f in findings]
-            self.assertIn('stale_external_data_overrode_live_world_model', categories)
-        finally:
-            DiscernmentFrameService.__init__ = original_init
+        mock_self = SimpleNamespace(workspace_root='', discernment_frame_service=svc)
+        findings = _discernment_frame_findings_impl(mock_self)
+        categories = [f.category for f in findings]
+        self.assertIn('stale_external_data_overrode_live_world_model', categories)
 
 
 class TestRoadmapQuestionDetection(unittest.TestCase):

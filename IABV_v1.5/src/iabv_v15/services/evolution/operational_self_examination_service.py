@@ -65,6 +65,7 @@ class OperationalSelfExaminationService:
         autonomous_validation_cycle: Any | None = None,
         adaptive_weight_layer: Any | None = None,
         token_rotation_ledger: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self._created_at = time.time()
@@ -77,6 +78,7 @@ class OperationalSelfExaminationService:
         self.world_model_service = world_model_service
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.adaptive_weight_layer = adaptive_weight_layer
+        self.discernment_frame_service = discernment_frame_service
         # Capa 2.2 — dep opcional. Si se pasa un ``TokenRotationLedger``,
         # ``_token_rotation_findings`` produce hallazgos proactivos sobre
         # PATs de GitHub / Devin API a punto de expirar. Es lo unico que
@@ -9733,8 +9735,11 @@ def _discernment_frame_findings_impl(self) -> list:
     """
     findings: list = []
     try:
-        from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-        svc = DiscernmentFrameService(workspace_root=getattr(self, 'workspace_root', ''))
+        svc = self.discernment_frame_service
+        if svc is None:
+            # Fallback for tests/isolated usage without bootstrap wiring
+            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+            svc = DiscernmentFrameService(workspace_root=getattr(self, 'workspace_root', ''))
         frames = svc.recent_frames(limit=10)
     except Exception:
         return findings

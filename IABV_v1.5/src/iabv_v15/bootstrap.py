@@ -294,6 +294,7 @@ from iabv_v15.services.development.development_assist_service import Development
 from iabv_v15.services.evolution.autonomy_activity_projector import AutonomyActivityProjector
 from iabv_v15.services.evolution.environment_self_awareness_service import EnvironmentSelfAwarenessService
 from iabv_v15.services.evolution.world_model_service import WorldModelService
+from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
 from iabv_v15.services.evolution.execution_dossier_service import ExecutionDossierService
 from iabv_v15.services.audit.audit_teach_verification_service import AuditTeachVerificationService
 from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
@@ -726,6 +727,10 @@ class AppBootstrap:
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
         self._tracer.trace('phase_world_model_done')
+        # DiscernmentFrameService: shared instance for birth frame and downstream consumers
+        self.discernment_frame_service = DiscernmentFrameService(
+            workspace_root=self.config.workspace_root,
+        )
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
         self.tool_memory = ToolMemory(self.tool_record_repository, self.interaction_learning_service)
@@ -921,6 +926,7 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             adaptive_weight_layer=self.adaptive_weight_layer,
+            discernment_frame_service=self.discernment_frame_service,
             token_rotation_ledger=self.token_rotation_ledger,
         )
 
@@ -1095,6 +1101,7 @@ class AppBootstrap:
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
             platform_pending_queue=self.platform_pending_queue,
+            discernment_frame_service=self.discernment_frame_service,
         )
         # Wire FreezeIncidentReporter into PortableContext for promotion.
         self.portable_context_service.freeze_incident_reporter = (
@@ -1390,6 +1397,7 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             portable_context_service=self.portable_context_service,
+            discernment_frame_service=self.discernment_frame_service,
         )
         self.capability_readiness_service = CapabilityReadinessService(self.capability_repository, self.tool_record_repository)
         self.strategy_pack_registry = StrategyPackRegistry(self.strategy_pack_repository)
@@ -3151,6 +3159,63 @@ class AppBootstrap:
                     )
             except Exception as exc:
                 logger.debug('startup_health_findings: skipped (%s)', exc)
+
+        # Birth frame: publish the first discernment frame from startup state
+        # This must happen before OSES build_review() or PortableContext export
+        # can reasonably consume the frame.
+        discernment_svc = getattr(self, 'discernment_frame_service', None)
+        if discernment_svc is not None:
+            try:
+                # Collect startup state for the birth frame
+                startup_events = []
+                try:
+                    from iabv_v15.infra.startup_timeline import get_global_timeline
+                    timeline = get_global_timeline()
+                    if timeline:
+                        startup_events = timeline.to_dict().get('events', [])
+                except Exception:
+                    pass
+
+                world_model_dict = None
+                if hasattr(self, 'world_model_service'):
+                    try:
+                        wm = self.world_model_service.latest_snapshot()
+                        if wm:
+                            world_model_dict = wm.model_dump(mode='json')
+                    except Exception:
+                        pass
+
+                env_model_dict = None
+                if hasattr(self, 'environment_self_awareness_service'):
+                    try:
+                        esm = self.environment_self_awareness_service.current_snapshot()
+                        if esm:
+                            env_model_dict = esm.model_dump(mode='json')
+                    except Exception:
+                        pass
+
+                freeze_reports = []
+                if hasattr(self, 'freeze_incident_reporter'):
+                    try:
+                        freeze_reports = self.freeze_incident_reporter.recent_reports(limit=5)
+                    except Exception:
+                        pass
+
+                # Build and publish the birth frame atomically
+                birth_frame = discernment_svc.build_birth_frame(
+                    startup_events=startup_events,
+                    environment_self_model=env_model_dict,
+                    world_model=world_model_dict,
+                    freeze_reports=freeze_reports,
+                )
+                logger.info(
+                    'startup_birth_frame: frame_id=%s phase=%s grounding=%s',
+                    birth_frame.frame_id,
+                    birth_frame.phase,
+                    birth_frame.grounding_status,
+                )
+            except Exception as exc:
+                logger.debug('startup_birth_frame: skipped (%s)', exc)
 
         # Log actionable resume hints and pending tasks so the next
         # session (or agent) knows exactly what was left incomplete.

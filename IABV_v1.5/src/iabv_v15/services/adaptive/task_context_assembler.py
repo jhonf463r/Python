@@ -63,6 +63,7 @@ class TaskContextAssembler:
         world_model_service: Any | None = None,
         autonomous_validation_cycle: Any | None = None,
         portable_context_service: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.episode_repository = episode_repository
         self.knowledge_repository = knowledge_repository
@@ -82,6 +83,7 @@ class TaskContextAssembler:
         self.world_model_service = world_model_service
         self.autonomous_validation_cycle = autonomous_validation_cycle
         self.portable_context_service = portable_context_service
+        self.discernment_frame_service = discernment_frame_service
         self._teaching_visual_summary_builder = BrowserLearningAssembler()
 
     def build(self, request: InferenceRequest, intent: TaskIntent) -> TaskContext:
@@ -506,8 +508,11 @@ class TaskContextAssembler:
     def _discernment_frame_summary(self) -> dict[str, Any]:
         """P0.69/P0.70: compact discernment frame summary for perception metadata."""
         try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
+            svc = self.discernment_frame_service
+            if svc is None:
+                # Fallback for tests/isolated usage without bootstrap wiring
+                from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+                svc = DiscernmentFrameService()
             return svc.discernment_frame_summary()
         except Exception:
             return {'status': 'unavailable'}

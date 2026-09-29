@@ -21,8 +21,10 @@ import json
 import logging
 import time
 from collections import deque
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from iabv_v15.domain.models import MetacognitiveDiscernmentFrame
@@ -38,6 +40,7 @@ class DiscernmentFrameService:
     def __init__(self, *, workspace_root: str = '') -> None:
         self._workspace_root = workspace_root
         self._frame_history: deque[MetacognitiveDiscernmentFrame] = deque(maxlen=_MAX_FRAME_HISTORY)
+        self._lock = RLock()
 
     def build_frame(
         self,
@@ -52,8 +55,14 @@ class DiscernmentFrameService:
         startup_events: list[dict[str, Any]] | None = None,
         freeze_reports: list[dict[str, Any]] | None = None,
         concept_weight_evidence: dict[str, Any] | None = None,
+        _publish: bool = True,
     ) -> MetacognitiveDiscernmentFrame:
-        """Build a new discernment frame from available state."""
+        """Build a new discernment frame from available state.
+
+        Args:
+            _publish: If True (default), atomically publish to history after completion.
+                    Internal parameter for build_birth_frame to control timing.
+        """
         frame = MetacognitiveDiscernmentFrame(
             phase=phase,
             trigger_source=trigger_source,
@@ -106,7 +115,11 @@ class DiscernmentFrameService:
             if f not in frame.unresolved_fields
         )
 
-        self._frame_history.append(frame)
+        # Atomic publication (default behavior)
+        if _publish:
+            with self._lock:
+                self._frame_history.append(frame)
+
         return frame
 
     def build_birth_frame(
@@ -117,12 +130,39 @@ class DiscernmentFrameService:
         world_model: dict[str, Any] | None = None,
         freeze_reports: list[dict[str, Any]] | None = None,
     ) -> MetacognitiveDiscernmentFrame:
-        """Build a genesis/birth frame from startup data."""
+        """Build a genesis/birth frame from startup data and publish atomically.
+
+        Atomic publication contract: all critical fields (grounding, contradictions,
+        bias_risks, unresolved_fields) are completed before the frame is visible
+        to readers. Birth-specific metadata is added before publication.
+        """
         raw_inputs: list[str] = []
         if startup_events:
             phases = [e.get('phase', '') for e in startup_events[:10]]
             raw_inputs = [f'startup_phase:{p}' for p in phases if p]
 
+        # Prepare birth-specific metadata BEFORE building
+        birth_metadata = {}
+        if environment_self_model:
+            env_risks = []
+            for risk in environment_self_model.get('risk_signals', []):
+                if isinstance(risk, dict):
+                    env_risks.append(risk.get('category', ''))
+                else:
+                    env_risks.append(str(getattr(risk, 'category', '')))
+            if env_risks:
+                birth_metadata['birth_env_risks'] = env_risks
+
+        # Prepare birth-specific bias risks BEFORE building
+        birth_bias_risks = []
+        if freeze_reports:
+            birth_bias_risks.append({
+                'type': 'birth_with_freeze_history',
+                'detail': f'{len(freeze_reports)} recent freeze reports — defer heavy cognition',
+                'severity': 'high',
+            })
+
+        # Build frame WITHOUT publishing yet
         frame = self.build_frame(
             phase='birth',
             trigger_source='startup',
@@ -131,36 +171,34 @@ class DiscernmentFrameService:
             environment_self_model=environment_self_model,
             startup_events=startup_events,
             freeze_reports=freeze_reports,
+            _publish=False,  # Don't publish yet
         )
 
-        # Birth-specific: don't allow deep cognition
+        # Add birth-specific fields BEFORE publication
+        if birth_metadata:
+            frame.metadata.update(birth_metadata)
+        for risk in birth_bias_risks:
+            frame.bias_risks.append(risk)
         if freeze_reports:
-            frame.bias_risks.append({
-                'type': 'birth_with_freeze_history',
-                'detail': f'{len(freeze_reports)} recent freeze reports — defer heavy cognition',
-                'severity': 'high',
-            })
             frame.next_observation = 'stabilize_ui_before_deep_cognition'
 
-        env_risks = []
-        if environment_self_model:
-            for risk in environment_self_model.get('risk_signals', []):
-                if isinstance(risk, dict):
-                    env_risks.append(risk.get('category', ''))
-                else:
-                    env_risks.append(str(getattr(risk, 'category', '')))
-        if env_risks:
-            frame.metadata['birth_env_risks'] = env_risks
+        # NOW publish atomically with all birth-specific fields complete
+        with self._lock:
+            self._frame_history.append(frame)
 
         return frame
 
     def recent_frames(self, limit: int = 5) -> list[MetacognitiveDiscernmentFrame]:
-        """Return most recent frames for OSES review."""
-        return list(self._frame_history)[-limit:]
+        """Return most recent frames for OSES review (thread-safe stable copies)."""
+        with self._lock:
+            return [deepcopy(f) for f in list(self._frame_history)[-limit:]]
 
     def latest_frame(self) -> MetacognitiveDiscernmentFrame | None:
-        """Return the most recent frame, or None."""
-        return self._frame_history[-1] if self._frame_history else None
+        """Return the most recent frame, or None (thread-safe stable copy)."""
+        with self._lock:
+            if not self._frame_history:
+                return None
+            return deepcopy(self._frame_history[-1])
 
     def human_summary(self, frame: MetacognitiveDiscernmentFrame | None = None) -> dict[str, str]:
         """Build human-readable summary from a frame.

@@ -49,6 +49,7 @@ class PortableContextService:
         adaptive_task_orchestrator: Any | None = None,
         adaptive_session_repository: Any | None = None,
         platform_pending_queue: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -66,6 +67,7 @@ class PortableContextService:
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
         self.platform_pending_queue = platform_pending_queue
+        self.discernment_frame_service = discernment_frame_service
         self.control_master_service: Any | None = None
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
@@ -4022,8 +4024,11 @@ class PortableContextService:
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
         try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
+            svc = self.discernment_frame_service
+            if svc is None:
+                # Fallback for tests/isolated usage without bootstrap wiring
+                from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+                svc = DiscernmentFrameService()
             export = svc.compact_export()
             if export.get('status') == 'no_frame':
                 items.append({'status': 'no_frame_yet'})
@@ -4107,8 +4112,11 @@ class PortableContextService:
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
         try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
+            svc = self.discernment_frame_service
+            if svc is None:
+                # Fallback for tests/isolated usage without bootstrap wiring
+                from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+                svc = DiscernmentFrameService()
             frame = svc.latest_frame()
             if frame and frame.unresolved_fields:
                 items.append({
