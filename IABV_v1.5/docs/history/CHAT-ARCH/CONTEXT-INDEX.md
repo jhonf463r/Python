@@ -1337,3 +1337,27 @@ until the implementation provenance gate closes.
 Preserve:
 
 `report != artifact != SHA != runtime proof != independent verification`.
+
+
+
+## 2026-09-28 META-01-E2a REMOTE RECONCILIATION INDEX
+
+Primary records:
+- `META-01-E2a-POST-IMPLEMENTATION-RECONCILIATION-2026-09-28.md`
+- `META-01-E2a-REMOTE-RECONCILIATION-PRE-SONNET-2026-09-28.md`
+
+Implementation commit:
+`475c033630bc6285fa39206a0c6294a5ad8fb7b0`
+
+Parent:
+`8fe2b94f66e10d2379945754ea58dd7e92626c60`
+
+Remote branch:
+`feature/discernment-frame-seam`
+
+Current gate:
+**SONNET INDEPENDENT VERIFICATION PENDING**.
+
+Known verification targets include runtime TCA propagation, fresh PCS export, task-context/OSES behavior, runtime frame-ID attribution, actual concurrency behavior, and distinction between source wiring and effective production consumption.
+
+Do not activate E2b from Devin's report alone.
