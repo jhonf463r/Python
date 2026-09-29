@@ -1867,3 +1867,50 @@ Important provenance boundary:
 Codex reviewed V4 at the reported HEAD `5a3bb0bdf2d244750846d9df8d3afe82886ef89e`. The generic semantic adjudication document is canonical memory on `main`; it was not present in that V4 branch and must not be treated as evidence from that branch. The observational V4 report and source archaeology remain the evidence for V4.
 
 Next actor by capability-fit: **DEVIN** for bounded implementation plus mandatory isolated production runtime proof. After publication: **SONNET** for independent verification.
+
+
+
+## 2026-09-28 META-01-E2a — DEVIN IMPLEMENTATION / PROVENANCE GATE STILL OPEN
+
+Canonical reconciliation: `IABV_v1.5/docs/history/CHAT-ARCH/META-01-E2a-POST-IMPLEMENTATION-RECONCILIATION-2026-09-28.md`.
+
+Devin reports that the META-01-E2a discernment-frame seam was implemented locally from technical baseline `8fe2b94f66e10d2379945754ea58dd7e92626c60`:
+
+- local branch: `feature/discernment-frame-seam`;
+- reported HEAD remains exactly the base SHA;
+- working tree is MODIFIED;
+- focal tests reported 46/46 passed;
+- Windows runtime reported a birth frame with frame_id `aab27b63-8715-44fc-b30b-f84dbd54dd78`, phase `birth`, trigger_source `startup`, grounding `insufficient`;
+- OSES, TaskContextAssembler and PortableContext reportedly observed the same frame_id.
+
+### Evidence boundary
+
+GitHub direct branch search found **no remote branch** named `feature/discernment-frame-seam` at reconciliation time.
+
+Therefore the implementation remains:
+
+**REPORT-BACKED / LOCAL MODIFIED WORKTREE / NOT CANONICAL / NOT INDEPENDENTLY VERIFIED**.
+
+Do not interpret `reported HEAD == base SHA` as implementation publication. The implementation is not contained in that SHA unless the working-tree changes are committed and the resulting object is remotely read back.
+
+### Active edge ordering
+
+The next edge is NOT yet semantic E2b. First close:
+
+`local implementation → commit → remote branch/ref → remote source read-back → independent verification`.
+
+Only after that evidence gate closes does the semantic frontier advance to:
+
+`DiscernmentFrame.grounding/unresolved → epistemic uncertainty → hypothesis → prediction → experiment`.
+
+### Required verifier
+
+**SONNET**, using the attributable implementation commit/worktree and exact runtime artifacts. Verify source, ordering, atomic publication, shared frame identity, Windows production behavior and absence of the stale local-instance finding. Do not advance to hypothesis/prediction research before this verification.
+
+Preserve:
+
+`report != artifact`
+`local worktree != committed object`
+`committed object != remote evidence`
+`runtime report != independent runtime proof`
+`test success != causal closure`
