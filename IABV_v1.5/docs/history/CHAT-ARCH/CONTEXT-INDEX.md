@@ -1395,3 +1395,23 @@ Current action:
 **DEVIN — retry Windows production verification in a new detached worktree.**
 
 Do not clean/delete the existing `feature/discernment-frame-seam` worktree. Do not modify source or tests. Do not advance to E2b until the Windows production edge is independently observed.
+
+
+## 2026-09-29 — DEVELOPMENT IDEAS / RESTRUCTURING BACKLOG
+
+New canonical retrieval resource:
+IABV_v1.5/docs/history/CHAT-ARCH/DEVELOPMENT-IDEAS-AND-RESTRUCTURING-BACKLOG-2026-09-29.md
+
+Purpose:
+Preserve useful hypotheses and future architectural/developmental ideas without prematurely converting them into implementation work.
+
+Use this backlog whenever a new idea concerns reusable semantic/state flow across organs or devices; portable experience/rehydration; lineage-preserving memory transfer; biological analogies such as cell, neuron, homeostasis or evolution as functional audit lenses; IABV using its own self-observation to select future experiments; future learning-to-routing causality; or cross-organ semantic contract/restructuring audits.
+
+Retrieval rule:
+idea → activation condition → relevant existing organs → minimal experiment/audit → evidence → Knowledge Delta → implementation decision.
+
+Do not treat backlog entries as current capabilities, architecture commitments or proof claims.
+
+Current backlog IDs: MB-01, UI-01, UFS-01, UFS-02, UFS-03, BIO-01, BIO-02, BIO-03, INT-01.
+
+For any future restructuring audit, inspect the backlog before proposing a new service or universal entity.
