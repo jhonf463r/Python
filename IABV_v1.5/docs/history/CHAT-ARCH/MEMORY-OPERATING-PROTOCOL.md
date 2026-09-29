@@ -871,3 +871,23 @@ After publication, the next verifier must test whether the implementation actual
 `one runtime frame ID ≠ another runtime frame ID`
 
 A verifier must reconcile code, tests and runtime evidence in temporal order and keep separate execution identities unless provenance explicitly joins them.
+
+
+
+## 2026-09-29 — INTEGRATION-FRONTIER ROUTING RULE
+
+When an independent verifier closes source/object-level evidence but cannot execute the target environment, route the next action to the actor with the missing environmental capability.
+
+Do not:
+- repeat the same lower-level verification;
+- treat an unavailable target environment as closure;
+- follow the previous implementation actor's semantic next edge prematurely.
+
+For META-01-E2a:
+
+`Sonnet object-level verification`
+→ `Devin Windows production verification`
+→ `ChatGPT reconciliation`
+→ `E2b semantic investigation`.
+
+This preserves capability-fit and the spatial/temporal provenance chain.
