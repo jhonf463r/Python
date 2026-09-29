@@ -856,3 +856,18 @@ For META-01-E2a this means:
 not:
 
 `Devin implementation report → immediately investigate hypothesis/prediction`.
+
+
+
+## 2026-09-28 — POST-COMMIT COVERAGE RULE
+
+Remote commit attribution closes only the **artifact identity** edge.
+
+After publication, the next verifier must test whether the implementation actually covers the claim:
+
+`source wiring ≠ effective consumer behavior`
+`helper-level identity ≠ production-consumer identity`
+`runtime creation ≠ runtime consumption`
+`one runtime frame ID ≠ another runtime frame ID`
+
+A verifier must reconcile code, tests and runtime evidence in temporal order and keep separate execution identities unless provenance explicitly joins them.
