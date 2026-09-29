@@ -1380,3 +1380,18 @@ Next actor:
 
 Activation rule:
 verify real Windows AppBootstrap + deferred metacognition + fresh PCS consumption before any E2b semantic investigation.
+
+
+
+## 2026-09-28 META-01-E2a WINDOWS VERIFICATION RETRY INDEX
+
+Primary interruption record:
+`META-01-E2a-DEVIN-WINDOWS-RUNTIME-ATTEMPT-BLOCK-2026-09-28.md`
+
+Current exact target:
+`475c033630bc6285fa39206a0c6294a5ad8fb7b0`
+
+Current action:
+**DEVIN — retry Windows production verification in a new detached worktree.**
+
+Do not clean/delete the existing `feature/discernment-frame-seam` worktree. Do not modify source or tests. Do not advance to E2b until the Windows production edge is independently observed.
