@@ -1361,3 +1361,22 @@ Current gate:
 Known verification targets include runtime TCA propagation, fresh PCS export, task-context/OSES behavior, runtime frame-ID attribution, actual concurrency behavior, and distinction between source wiring and effective production consumption.
 
 Do not activate E2b from Devin's report alone.
+
+
+
+## 2026-09-29 META-01-E2a POST-SONNET CONTINUITY
+
+Primary record:
+`META-01-E2a-POST-SONNET-RECONCILIATION-2026-09-29.md`
+
+Implementation:
+`feature/discernment-frame-seam @ 475c033630bc6285fa39206a0c6294a5ad8fb7b0`
+
+Status:
+**PARTIALLY PROVEN / WINDOWS PRODUCTION VERIFICATION OPEN**.
+
+Next actor:
+**DEVIN**.
+
+Activation rule:
+verify real Windows AppBootstrap + deferred metacognition + fresh PCS consumption before any E2b semantic investigation.
