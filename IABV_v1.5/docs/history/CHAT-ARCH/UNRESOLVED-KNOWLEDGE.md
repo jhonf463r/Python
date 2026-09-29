@@ -1550,3 +1550,22 @@ These are not evidence of fabrication. They are explicit attribution/coverage bo
 
 Semantic E2b remains behind the gate:
 `frame grounding/unresolved → genuine epistemic uncertainty → hypothesis → prediction → experiment`.
+
+
+
+## 2026-09-29 META-01-E2a — SONNET VERIFIED CORE, WINDOWS PRODUCTION EDGE OPEN
+
+Sonnet's independent verification confirms the shared DiscernmentFrame mechanism at source and object-graph level, including real OSES/TCA/PCS consumers and independent 46/46 test execution on Linux.
+
+Current unresolved production questions:
+
+1. Full Windows `AppBootstrap.__init__` / deferred-metacognition execution was not independently run.
+2. Real Windows startup/deferred thread scheduling has not been observed independently.
+3. Fresh PortableContext export/persistence carrying the current birth frame has not been independently observed.
+4. Real UI/main-thread versus background-thread concurrent `build_review()` behavior remains untested independently.
+5. Existing canonical test `TestSharedIdentity` does not instantiate all three real consumers with a shared service; this gap is covered only by Sonnet's out-of-repo reproduction.
+
+Current state:
+**PARTIALLY PROVEN**.
+
+Do not advance to E2b until the Windows production edge is independently verified.
