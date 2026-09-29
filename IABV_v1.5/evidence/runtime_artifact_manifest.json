@@ -1,0 +1,68 @@
+{
+  "artifacts": [
+    {
+      "name": "startup_log",
+      "path": "evidence/artifacts/iabv_v15.log",
+      "original_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+      "sha256": "7709b8f31cd7917f420dc1ce3bb6847cf6fdc04d1569488a2324e4a8748b66df",
+      "execution_association": "E2a-Windows-Clean-20260929022122",
+      "notes": "Contains startup_birth_frame log entry for frame 15916fa0-0154-4ccf-a054-364689938fd1"
+    },
+    {
+      "name": "startup_timeline",
+      "path": "evidence/artifacts/startup_timeline.jsonl",
+      "original_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\startup_timeline.jsonl",
+      "sha256": "f92f9b4a4ed62acc993232df89ef4ef467a84a1d3c25a5ba908672c656d73cf5",
+      "execution_association": "E2a-Windows-Clean-20260929022122",
+      "notes": "Contains deferred_metacognition_start and deferred_metacognition_done entries"
+    },
+    {
+      "name": "runtime_audit",
+      "path": "evidence/artifacts/runtime_audit.jsonl",
+      "original_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\runtime_audit.jsonl",
+      "sha256": "d0898113a7e46039458446c7b90a9f9866b1d918ab5893f6ebb060466c635aba",
+      "execution_association": "E2a-Windows-Clean-20260929022122",
+      "notes": "Runtime audit trail from execution"
+    },
+    {
+      "name": "oses_latest",
+      "path": "evidence/artifacts/latest.json",
+      "original_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\evolution\\self_examination\\latest.json",
+      "sha256": "d7fdda58a149505404f7315447d41c4dd91a3be6afe9a20d1faafc78314f9433",
+      "execution_association": "E2a-Windows-Clean-20260929022122",
+      "notes": "OSES latest snapshot containing discernment frame findings"
+    },
+    {
+      "name": "freeze_report",
+      "path": "evidence/artifacts/freeze_20260929_021957_515799.json",
+      "original_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\evolution\\incident_reports\\freeze_20260929_021957_515799.json",
+      "sha256": "2185531b4d8f3a6a8f8c1359af48356b04525d70190fea639242a4fa153ca55a",
+      "execution_association": "E2a-Windows-Clean-20260929022122",
+      "notes": "Freeze incident report from execution"
+    },
+    {
+      "name": "verifier_script",
+      "path": "evidence/verify_windows_bootstrap_clean.py",
+      "original_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\verify_windows_bootstrap_clean.py",
+      "sha256": "4a3b643561c9b9c2b2ce37202160bcb33c19cfe903b010fe6ae33c720edec7ee",
+      "execution_association": "E2a-Windows-Clean-20260929022122",
+      "notes": "Clean verification script that invoked _run_deferred_metacognition_scan() after bootstrap"
+    },
+    {
+      "name": "pcs_import_inspector",
+      "path": "evidence/inspect_pcs_import.py",
+      "original_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\inspect_pcs_import.py",
+      "sha256": "NOT_CALCULATED",
+      "execution_association": "Post-execution inspection",
+      "notes": "Script to verify PCS import provenance and available methods"
+    }
+  ],
+  "portable_context_latest": {
+    "path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\evolution\\portable_context\\latest.json",
+    "mtime": "2026-09-28T20:40:34.114819100-05:00",
+    "package_id": "bdd623c2-6e6a-4373-a590-5a1281b75da2",
+    "updated_at_utc": "2026-04-18T16:43:21.614937Z",
+    "fresh": false,
+    "notes": "Stale artifact from April 2026 - NOT attributed to this execution"
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "report_version": "1.0",
+  "timestamp": "2026-09-29T02:19:57.515+00:00",
+  "trigger": "auto_startup_freeze",
+  "user_description": "Auto-detected startup freeze: Bootstrap init lento: 27520ms",
+  "resources": {
+    "ram_total_mb": 16088,
+    "ram_available_mb": 439,
+    "ram_used_pct": 97.3,
+    "cpu_load": 4.48,
+    "cpu_count": 16,
+    "heavy_processes": [
+      {
+        "pid": "18912",
+        "mem_mb": 1588,
+        "command": "llama-server"
+      },
+      {
+        "pid": "22020",
+        "mem_mb": 976,
+        "command": "Devin"
+      },
+      {
+        "pid": "3440",
+        "mem_mb": 255,
+        "command": "Memory Compression"
+      },
+      {
+        "pid": "8380",
+        "mem_mb": 205,
+        "command": "Devin"
+      },
+      {
+        "pid": "4688",
+        "mem_mb": 193,
+        "command": "MsMpEng"
+      }
+    ]
+  },
+  "threads": [
+    {
+      "name": "MainThread",
+      "daemon": false,
+      "alive": true,
+      "ident": 17316
+    },
+    {
+      "name": "iabv-environment-self-awareness",
+      "daemon": true,
+      "alive": true,
+      "ident": 27164
+    },
+    {
+      "name": "iabv-world-model",
+      "daemon": true,
+      "alive": true,
+      "ident": 8984
+    },
+    {
+      "name": "iabv-autonomous-validation",
+      "daemon": true,
+      "alive": true,
+      "ident": 7772
+    }
+  ],
+  "sqlite": {
+    "status": "ok",
+    "path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\app.sqlite",
+    "journal_mode": "wal",
+    "busy_timeout": 500
+  },
+  "startup_timeline": [],
+  "monitor_history": {},
+  "environment": {},
+  "pending_queue": {},
+  "oses_findings": [],
+  "process": {
+    "pid": 12960,
+    "python_version": "3.14.4 (tags/v3.14.4:23116f9, Apr  7 2026, 14:10:54) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "win32",
+    "cwd": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033"
+  },
+  "runtime_audit_context": {
+    "recent_events": [
+      {
+        "ts": "2026-09-29T02:19:27.967+00:00",
+        "elapsed_ms": 2.3,
+        "kind": "boot_start",
+        "data": {
+          "workspace": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5"
+        },
+        "seq": 1
+      },
+      {
+        "ts": "2026-09-29T02:19:28.119+00:00",
+        "elapsed_ms": 154.6,
+        "kind": "runtime_build_fingerprint",
+        "data": {
+          "branch": "HEAD",
+          "head": "475c033630bc6285fa39206a0c6294a5ad8fb7b0",
+          "dirty": true,
+          "git_status": "dirty",
+          "origin_main_head": "03ce80fcc9cd54b270a8aa3245352b3fbfed6386",
+          "workspace": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5",
+          "feature_markers": {
+            "has_post_remediation_recapture": true,
+            "has_post_recapture_response_retry": true,
+            "has_shared_reality_handoff": true,
+            "has_dispatch_lifecycle_tracing": true,
+            "has_p022_consultation_state": true,
+            "has_p023_external_intent_security": true
+          },
+          "stale": false,
+          "missing_markers": [],
+          "elapsed_ms": 151.9
+        },
+        "seq": 2
+      },
+      {
+        "ts": "2026-09-29T02:19:28.120+00:00",
+        "elapsed_ms": 156.1,
+        "kind": "wire_services_start",
+        "seq": 3
+      },
+      {
+        "ts": "2026-09-29T02:19:28.124+00:00",
+        "elapsed_ms": 160.1,
+        "kind": "phase_tools_adapters_done",
+        "seq": 4
+      },
+      {
+        "ts": "2026-09-29T02:19:28.154+00:00",
+        "elapsed_ms": 190.0,
+        "kind": "phase_tool_registry_done",
+        "seq": 5
+      },
+      {
+        "ts": "2026-09-29T02:19:54.883+00:00",
+        "elapsed_ms": 26919.0,
+        "kind": "phase_world_model_done",
+        "seq": 6
+      },
+      {
+        "ts": "2026-09-29T02:19:54.893+00:00",
+        "elapsed_ms": 26928.6,
+        "kind": "phase_oses_done",
+        "seq": 7
+      }
+    ],
+    "latest_dispatch_lifecycle": {},
+    "last_heavy_refresh": {},
+    "recent_stall_count": 0
+  },
+  "ui_bridge_state": {
+    "bridge_reachable": false,
+    "control_vm_bound": false,
+    "chat_ready": false,
+    "capture_ms": 154.7
+  },
+  "extra": {
+    "incident_type": "startup_freeze",
+    "severity": "IssueSeverity.HIGH",
+    "dominant_phase": "bootstrap_init",
+    "dominant_phase_ms": 27519.7,
+    "threshold_ms": 4000.0,
+    "findings_count": 1,
+    "finding_titles": [
+      "Bootstrap init lento: 27520ms"
+    ],
+    "finding_categories": [
+      "startup_degradation"
+    ]
+  }
+}

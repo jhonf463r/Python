@@ -1,0 +1,677 @@
+{
+  "review_id": "88c488f7-6158-4e42-a747-232967f29678",
+  "created_at_utc": "2026-09-29T02:19:57.484928Z",
+  "updated_at_utc": "2026-09-29T02:19:57.484928Z",
+  "package_version": "self_examination.v1",
+  "summary": "Autoexaminacion needs_attention: 17 hallazgos activos. Lo mas fuerte ahora es multi_source_disagreement repetido en logs. Mejoras validadas: 1 | issues recurrentes: 5.",
+  "status": "needs_attention",
+  "assistant_brief": "# IABV v1.5 - Operational Self Examination\n\nGenerado: 2026-09-29T02:19:57.484928+00:00\nResumen: Autoexaminacion needs_attention: 17 hallazgos activos. Lo mas fuerte ahora es multi_source_disagreement repetido en logs. Mejoras validadas: 1 | issues recurrentes: 5.\n\nUsa esta revision para entender que esta fallando, que se repite y que ajustes conviene hacer antes de tocar la arquitectura.\n\n## Hallazgos\n- multi_source_disagreement repetido en logs: Detectadas 13 ocurrencias de \"multi_source_disagreement\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-09-28 21:15:05,709 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: windsurf_installed — positives=['process'] negatives=['filesystem', 'window'] | La herramienta exist | recomendacion: El cache de 300s puede no ser suficiente o el MCP polling recrea instancias que pierden el cache. Considerar aumentar TTL o mover cache a nivel de clase persistente. | confianza 0.90\n- Ruido excesivo de logs HTTP (httpx): Detectadas 140 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\" | recomendacion: Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral. | confianza 0.90\n- Bootstrap init lento: 27520ms: El paso bootstrap_init_start->bootstrap_init_done duro 27520ms (umbral 4000ms). Esto retiene el GUI thread antes de que aparezca el splash.  [observado: 27519.7ms, umbral: 4000.0ms] | recomendacion: Diferir scans de cuentas, instalacion de mcp_client y probes de proveedores de bootstrap.__init__ a un QTimer post-show. Patron ya aplicado a _log_tool_availability en PR #257. | confianza 0.90\n- iabv_window_missing: No se detecta ninguna ventana IABV entre las 15 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible. | recomendacion: Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar. | confianza 0.80\n- RAM critica: 1.2GB libre de 15.7GB: Solo 1.2GB de RAM disponible. Modelos Ollama grandes no caben. Se recomienda liberar RAM cerrando procesos innecesarios. | recomendacion: Ejecutar liberacion automatica de RAM | confianza 0.95\n- 4 cloud providers not configured: Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up. | recomendacion: Run auto_provision_missing_secrets() | confianza 0.90\n\n## Ajustes recomendados\n- multi_source_disagreement repetido en logs: El cache de 300s puede no ser suficiente o el MCP polling recrea instancias que pierden el cache. Considerar aumentar TTL o mover cache a nivel de clase persistente. | fuente runtime_log, C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log\n- Ruido excesivo de logs HTTP (httpx): Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral. | fuente runtime_log, C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log\n- Bootstrap init lento: 27520ms: Diferir scans de cuentas, instalacion de mcp_client y probes de proveedores de bootstrap.__init__ a un QTimer post-show. Patron ya aplicado a _log_tool_availability en PR #257. | fuente data/logs/startup_timeline.jsonl, iabv_v15.infra.startup_timeline\n- iabv_window_missing: Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar. | fuente WorldModelSnapshot.active_windows\n- RAM critica: 1.2GB libre de 15.7GB: Ejecutar liberacion automatica de RAM | fuente n/d\n- 4 cloud providers not configured: Run auto_provision_missing_secrets() | fuente n/d\n\n## Mejoras validadas\n- Promocion validada en sandbox: La validacion autonoma se pauso porque el entorno no esta en condiciones seguras para validar. | confianza 0.82\n\n## Retroalimentacion de ajustes\n- multi_source_disagreement repetido en logs: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Ruido excesivo de logs HTTP (httpx): no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- Bootstrap init lento: 25593ms: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n- iabv_window_missing: no_evidence | Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no. | siguiente paso: Mantenerla en observacion hasta tener mas corridas comparables.\n\nUNRESOLVED: UNRESOLVED:claude_content_probe, UNRESOLVED:gpu_process_usage, autonomy_score, UNRESOLVED:experiment_history, UNRESOLVED:adaptive_sessions",
+  "findings": [
+    {
+      "finding_id": "3c0a7dc8-d908-451d-9945-f96df6c2e495",
+      "category": "runtime_noise",
+      "title": "multi_source_disagreement repetido en logs",
+      "summary": "Detectadas 13 ocurrencias de \"multi_source_disagreement\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-09-28 21:15:05,709 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: windsurf_installed — positives=['process'] negatives=['filesystem', 'window'] | La herramienta exist",
+      "severity": "high",
+      "confidence": 0.9,
+      "recommendation": "El cache de 300s puede no ser suficiente o el MCP polling recrea instancias que pierden el cache. Considerar aumentar TTL o mover cache a nivel de clase persistente.",
+      "evidence_refs": [
+        "log_occurrences=13",
+        "2026-09-28 21:15:03,463 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: chatgpt_installed — ",
+        "2026-09-28 21:15:03,477 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: claude_installed — p",
+        "2026-09-28 21:15:05,709 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: windsurf_installed —"
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "pattern": "multi_source_disagreement",
+        "occurrences": 13,
+        "log_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      }
+    },
+    {
+      "finding_id": "dbd5fe36-e716-47e7-9a65-6d3864897145",
+      "category": "http_noise",
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "summary": "Detectadas 140 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+      "severity": "high",
+      "confidence": 0.9,
+      "recommendation": "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral.",
+      "evidence_refs": [
+        "log_occurrences=140",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "pattern": "HTTP Request:",
+        "occurrences": 140,
+        "log_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      }
+    },
+    {
+      "finding_id": "94ea249d-0537-4d7c-b01b-79659662c882",
+      "category": "startup_degradation",
+      "title": "Bootstrap init lento: 27520ms",
+      "summary": "El paso bootstrap_init_start->bootstrap_init_done duro 27520ms (umbral 4000ms). Esto retiene el GUI thread antes de que aparezca el splash.",
+      "severity": "high",
+      "confidence": 0.9,
+      "recommendation": "Diferir scans de cuentas, instalacion de mcp_client y probes de proveedores de bootstrap.__init__ a un QTimer post-show. Patron ya aplicado a _log_tool_availability en PR #257.",
+      "evidence_refs": [],
+      "source_refs": [
+        "data/logs/startup_timeline.jsonl",
+        "iabv_v15.infra.startup_timeline"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "phase": "bootstrap_init",
+        "observed_ms": 27519.7,
+        "threshold_ms": 4000.0,
+        "phases_seen": [
+          "bootstrap_init_start",
+          "wire_services_start",
+          "phase_tools_adapters_done",
+          "phase_oses_done",
+          "wire_services_done",
+          "bootstrap_init_done",
+          "deferred_metacognition_start",
+          "deferred_metacognition_done"
+        ]
+      }
+    },
+    {
+      "finding_id": "26b17f95-3894-49a0-ac31-0d1db5d1265a",
+      "category": "ui_self_awareness",
+      "title": "iabv_window_missing",
+      "summary": "No se detecta ninguna ventana IABV entre las 15 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible.",
+      "severity": "high",
+      "confidence": 0.8,
+      "recommendation": "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar.",
+      "evidence_refs": [
+        "total_windows:15",
+        "early_startup:False"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {}
+    },
+    {
+      "finding_id": "b97fcbb9-b6de-4c4e-80d1-b30709460731",
+      "category": "resource_metacognition",
+      "title": "RAM critica: 1.2GB libre de 15.7GB",
+      "summary": "Solo 1.2GB de RAM disponible. Modelos Ollama grandes no caben. Se recomienda liberar RAM cerrando procesos innecesarios.",
+      "severity": "medium",
+      "confidence": 0.95,
+      "recommendation": "Ejecutar liberacion automatica de RAM",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "ram_free_gb": 1.2280769348144531,
+        "ram_total_gb": 15.710453033447266,
+        "actionable": true
+      }
+    },
+    {
+      "finding_id": "e3883d67-cbac-412f-846e-fbe929ba4130",
+      "category": "metacognition_evolution",
+      "title": "4 cloud providers not configured",
+      "summary": "Missing API keys: OpenAI (ChatGPT), Google Gemini (AI Studio), OpenRouter, Together AI. Auto-provisioning can set these up.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Run auto_provision_missing_secrets()",
+      "evidence_refs": [],
+      "source_refs": [],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "missing_providers": [
+          "openai",
+          "gemini",
+          "openrouter",
+          "together"
+        ],
+        "actionable": true
+      }
+    },
+    {
+      "finding_id": "c28ded49-50ad-49d8-9a79-7d47e344e09d",
+      "category": "windows_integration_gaps",
+      "title": "1 capacidades Windows nativas faltantes",
+      "summary": "El sistema detecta 1 capacidades de la plataforma Windows que no estan disponibles o tienen dependencias faltantes: Notificaciones Windows.",
+      "severity": "medium",
+      "confidence": 0.9,
+      "recommendation": "Revisar la cola de pendientes de plataforma en data/evolution/platform_pending/. Cada capacidad faltante tiene next_action y dependency_missing documentados para continuacion por agente o usuario.",
+      "evidence_refs": [],
+      "source_refs": [
+        "iabv_v15.services.evolution.environment_self_awareness_service._windows_platform_capabilities",
+        "data/evolution/platform_pending/"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "phase": "windows_integration",
+        "missing_capability_ids": [
+          "platform.notifications"
+        ],
+        "missing_count": 1,
+        "total_platform_caps": 8,
+        "coverage_ratio": 0.88
+      }
+    },
+    {
+      "finding_id": "83c6473c-c0b4-4d6d-846f-a54e5e9caf4b",
+      "category": "startup_priority_inversion",
+      "title": "Metacognicion diferida corrio antes del canal de chat",
+      "summary": "deferred_metacognition_start ocurrio antes de que el startup_chat_bridge_ready quedara evidenciado. Esto invierte la prioridad: el sistema piensa antes de poder explicarse al usuario.",
+      "severity": "medium",
+      "confidence": 0.85,
+      "recommendation": "Mantener el chat/bridge como contrato de nacimiento y mover auto-install, cloud health y self-examination al presupuesto idle posterior.",
+      "evidence_refs": [],
+      "source_refs": [
+        "data/logs/startup_timeline.jsonl",
+        "iabv_v15.bootstrap"
+      ],
+      "linked_run_ids": [],
+      "status": "observed",
+      "unresolved_fields": [],
+      "metadata": {
+        "phase": "startup_priority_inversion",
+        "deferred_metacognition_start_ms": 27533.4,
+        "startup_chat_bridge_ready_ms": null,
+        "phases_seen": [
+          "bootstrap_init_start",
+          "wire_services_start",
+          "phase_tools_adapters_done",
+          "phase_oses_done",
+          "wire_services_done",
+          "bootstrap_init_done",
+          "deferred_metacognition_start",
+          "deferred_metacognition_done"
+        ]
+      }
+    }
+  ],
+  "recurring_issues": [
+    {
+      "title": "multi_source_disagreement repetido en logs",
+      "category": "runtime_noise",
+      "summary": "Detectadas 13 ocurrencias de \"multi_source_disagreement\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-09-28 21:15:05,709 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: windsurf_installed — positives=['process'] negatives=['filesystem', 'window'] | La herramienta exist",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=13",
+        "2026-09-28 21:15:03,463 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: chatgpt_installed — ",
+        "2026-09-28 21:15:03,477 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: claude_installed — p",
+        "2026-09-28 21:15:05,709 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: windsurf_installed —"
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ]
+    },
+    {
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "category": "http_noise",
+      "summary": "Detectadas 140 ocurrencias de \"HTTP Request:\" en las ultimas 500 lineas del log. Ejemplo reciente: 2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=140",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ]
+    },
+    {
+      "title": "Bootstrap init lento: 27520ms",
+      "category": "startup_degradation",
+      "summary": "El paso bootstrap_init_start->bootstrap_init_done duro 27520ms (umbral 4000ms). Esto retiene el GUI thread antes de que aparezca el splash.",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "data/logs/startup_timeline.jsonl",
+        "iabv_v15.infra.startup_timeline"
+      ]
+    },
+    {
+      "title": "iabv_window_missing",
+      "category": "ui_self_awareness",
+      "summary": "No se detecta ninguna ventana IABV entre las 15 ventanas activas. La UI puede no haberse iniciado, el titulo no coincide con los marcadores conocidos, o el scan corrio antes de que la ventana fuera visible.",
+      "severity": "high",
+      "confidence": 0.8,
+      "evidence_refs": [
+        "total_windows:15",
+        "early_startup:False"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ]
+    },
+    {
+      "title": "RAM critica: 1.2GB libre de 15.7GB",
+      "category": "resource_metacognition",
+      "summary": "Solo 1.2GB de RAM disponible. Modelos Ollama grandes no caben. Se recomienda liberar RAM cerrando procesos innecesarios.",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": []
+    }
+  ],
+  "recommended_adjustments": [
+    {
+      "title": "multi_source_disagreement repetido en logs",
+      "recommended_change": "El cache de 300s puede no ser suficiente o el MCP polling recrea instancias que pierden el cache. Considerar aumentar TTL o mover cache a nivel de clase persistente.",
+      "category": "runtime_noise",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=13",
+        "2026-09-28 21:15:03,463 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: chatgpt_installed — ",
+        "2026-09-28 21:15:03,477 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: claude_installed — p",
+        "2026-09-28 21:15:05,709 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: windsurf_installed —"
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "metadata": {
+        "pattern": "multi_source_disagreement",
+        "occurrences": 13,
+        "log_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "El cache de 300s puede no ser suficiente o el MCP polling recrea instancias que pierden el cache. Considerar aumentar TTL o mover cache a nivel de clase persistente."
+        ]
+      },
+      "feedback_key": "runtime_noise:multi_source_disagreement repetido en logs",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Ruido excesivo de logs HTTP (httpx)",
+      "recommended_change": "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral.",
+      "category": "http_noise",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [
+        "log_occurrences=140",
+        "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:04,739 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\"",
+        "2026-04-18 11:44:07,156 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+      ],
+      "source_refs": [
+        "runtime_log",
+        "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log"
+      ],
+      "metadata": {
+        "pattern": "HTTP Request:",
+        "occurrences": 140,
+        "log_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Demasiadas lineas de httpx poluciona el log y dificulta encontrar hallazgos importantes. Auto-suprimir httpx a WARNING cuando exceda el umbral."
+        ]
+      },
+      "feedback_key": "http_noise:ruido excesivo de logs http (httpx)",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "Bootstrap init lento: 27520ms",
+      "recommended_change": "Diferir scans de cuentas, instalacion de mcp_client y probes de proveedores de bootstrap.__init__ a un QTimer post-show. Patron ya aplicado a _log_tool_availability en PR #257.",
+      "category": "startup_degradation",
+      "severity": "high",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [
+        "data/logs/startup_timeline.jsonl",
+        "iabv_v15.infra.startup_timeline"
+      ],
+      "metadata": {
+        "phase": "bootstrap_init",
+        "observed_ms": 27519.7,
+        "threshold_ms": 4000.0,
+        "phases_seen": [
+          "bootstrap_init_start",
+          "wire_services_start",
+          "phase_tools_adapters_done",
+          "phase_oses_done",
+          "wire_services_done",
+          "bootstrap_init_done",
+          "deferred_metacognition_start",
+          "deferred_metacognition_done"
+        ],
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Diferir scans de cuentas, instalacion de mcp_client y probes de proveedores de bootstrap.__init__ a un QTimer post-show. Patron ya aplicado a _log_tool_availability en PR #257."
+        ]
+      },
+      "feedback_key": "startup_degradation:bootstrap init lento: 27520ms"
+    },
+    {
+      "title": "iabv_window_missing",
+      "recommended_change": "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar.",
+      "category": "ui_self_awareness",
+      "severity": "high",
+      "confidence": 0.8,
+      "evidence_refs": [
+        "total_windows:15",
+        "early_startup:False"
+      ],
+      "source_refs": [
+        "WorldModelSnapshot.active_windows"
+      ],
+      "metadata": {
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Verificar que el proceso UI (python -m iabv_v15 app) esta corriendo y que la ventana es visible para Win32 (MainWindowHandle != 0). Si el MCP acaba de arrancar, esperar al siguiente sync_pulse para re-evaluar."
+        ]
+      },
+      "feedback_key": "ui_self_awareness:iabv_window_missing",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    },
+    {
+      "title": "RAM critica: 1.2GB libre de 15.7GB",
+      "recommended_change": "Ejecutar liberacion automatica de RAM",
+      "category": "resource_metacognition",
+      "severity": "medium",
+      "confidence": 0.95,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "ram_free_gb": 1.2280769348144531,
+        "ram_total_gb": 15.710453033447266,
+        "actionable": true,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Ejecutar liberacion automatica de RAM"
+        ]
+      },
+      "feedback_key": "resource_metacognition:ram critica: 1.2gb libre de 15.7gb"
+    },
+    {
+      "title": "4 cloud providers not configured",
+      "recommended_change": "Run auto_provision_missing_secrets()",
+      "category": "metacognition_evolution",
+      "severity": "medium",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "source_refs": [],
+      "metadata": {
+        "missing_providers": [
+          "openai",
+          "gemini",
+          "openrouter",
+          "together"
+        ],
+        "actionable": true,
+        "duplicate_count": 1,
+        "duplicate_variants": [
+          "Run auto_provision_missing_secrets()"
+        ]
+      },
+      "feedback_key": "metacognition_evolution:4 cloud providers not configured",
+      "last_feedback_status": "no_evidence",
+      "repeat_policy": "pending_evidence",
+      "feedback_note": "Mantenerla en observacion hasta tener mas corridas comparables."
+    }
+  ],
+  "validated_improvements": [
+    {
+      "title": "Promocion validada en sandbox",
+      "summary": "La validacion autonoma se pauso porque el entorno no esta en condiciones seguras para validar.",
+      "subject_key": "",
+      "recommended_assistant_kind": "",
+      "recommended_route": "",
+      "confidence": 0.82,
+      "score": 0.74,
+      "reasons": [
+        "La validacion autonoma se pauso porque el entorno no esta en condiciones seguras para validar."
+      ],
+      "source_refs": [
+        "AutonomousValidationSnapshot"
+      ],
+      "evidence_refs": [],
+      "feedback_key": "validation:promocion validada en sandbox"
+    }
+  ],
+  "unresolved_risks": [
+    "UNRESOLVED:claude_content_probe",
+    "UNRESOLVED:gpu_process_usage",
+    "autonomy_score",
+    "UNRESOLVED:experiment_history",
+    "UNRESOLVED:adaptive_sessions"
+  ],
+  "package_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\evolution\\self_examination\\latest.json",
+  "markdown_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\evolution\\self_examination\\latest.md",
+  "metadata": {
+    "recommendation_feedback": [
+      {
+        "title": "multi_source_disagreement repetido en logs",
+        "category": "runtime_noise",
+        "feedback_key": "runtime_noise:multi_source_disagreement repetido en logs",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "log_occurrences=13",
+          "2026-09-28 21:15:03,463 | INFO | iabv_v15.services.tools.tool_adapters | multi_source_disagreement: chatgpt_installed — "
+        ],
+        "source_refs": [
+          "runtime_log",
+          "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-29T02:21:22.227348+00:00"
+      },
+      {
+        "title": "Ruido excesivo de logs HTTP (httpx)",
+        "category": "http_noise",
+        "feedback_key": "http_noise:ruido excesivo de logs http (httpx)",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "log_occurrences=160",
+          "2026-04-18 11:44:04,550 | INFO | httpx | HTTP Request: GET http://127.0.0.1:11434/v1/models \"HTTP/1.1 200 OK\""
+        ],
+        "source_refs": [
+          "runtime_log",
+          "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\logs\\iabv_v15.log",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-29T02:21:22.227375+00:00"
+      },
+      {
+        "title": "Bootstrap init lento: 25593ms",
+        "category": "startup_degradation",
+        "feedback_key": "startup_degradation:bootstrap init lento: 25593ms",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "data/logs/startup_timeline.jsonl",
+          "iabv_v15.infra.startup_timeline",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-29T02:21:22.227387+00:00"
+      },
+      {
+        "title": "iabv_window_missing",
+        "category": "ui_self_awareness",
+        "feedback_key": "ui_self_awareness:iabv_window_missing",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [
+          "total_windows:15",
+          "early_startup:False"
+        ],
+        "source_refs": [
+          "WorldModelSnapshot.active_windows",
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-29T02:21:22.227397+00:00"
+      },
+      {
+        "title": "RAM critica: 1.0GB libre de 15.7GB",
+        "category": "resource_metacognition",
+        "feedback_key": "resource_metacognition:ram critica: 1.0gb libre de 15.7gb",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.52,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": false,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-29T02:21:22.227405+00:00"
+      },
+      {
+        "title": "4 cloud providers not configured",
+        "category": "metacognition_evolution",
+        "feedback_key": "metacognition_evolution:4 cloud providers not configured",
+        "status": "no_evidence",
+        "summary": "Todavia no hay suficiente evidencia posterior para juzgar si esta recomendacion sirvio o no.",
+        "next_step": "Mantenerla en observacion hasta tener mas corridas comparables.",
+        "confidence": 0.6,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "source_refs": [
+          "OperationalSelfExaminationService",
+          "ExperimentLab",
+          "AutonomousValidationSnapshot"
+        ],
+        "profile": {
+          "sample_count": 0,
+          "success_rate": 0.0,
+          "blocked_rate": 0.0,
+          "fallback_rate": 0.0,
+          "trend_score": 0.0
+        },
+        "current_issue_still_active": true,
+        "repeat_recommendation": true,
+        "updated_at_utc": "2026-09-29T02:21:22.227413+00:00"
+      }
+    ],
+    "feedback_summary": {
+      "total_reviewed": 6,
+      "validated_improvement": 0,
+      "valid_adjustment": 0,
+      "false_improvement": 0,
+      "no_evidence": 6
+    },
+    "solution_proposals": [],
+    "adaptive_threshold_nc": 3,
+    "workspace_root": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5",
+    "source_refs": [
+      "RunRepository",
+      "AdaptiveSessionRepository",
+      "ExperimentLab",
+      "EvolutionReviewService",
+      "WorldModelSnapshot",
+      "AutonomousValidationSnapshot"
+    ],
+    "embodiment_violations": [],
+    "pending_auto_probes": [],
+    "archive_json_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\evolution\\self_examination\\history\\88c488f7-6158-4e42-a747-232967f29678.json",
+    "archive_markdown_path": "C:\\Python\\IABV_E2a_WINDOWS_VERIFY_475c033\\IABV_v1.5\\data\\evolution\\self_examination\\history\\88c488f7-6158-4e42-a747-232967f29678.md"
+  }
+}
