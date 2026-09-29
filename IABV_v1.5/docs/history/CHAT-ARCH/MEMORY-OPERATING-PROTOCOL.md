@@ -815,3 +815,44 @@ The strategic objective is not unrestricted autonomy. It is to make verified exp
 Scientific-organ rule: do not create a new coordinator merely because scientific functions are distributed. First trace existing producer→consumer edges and determine whether the missing boundary is ownership, wiring, invocation, observation or causal effect.
 
 Development-inflection rule: “exponential” is a research hypothesis. Promote it only after longitudinal evidence of compounding verified capability generation per unit of routine human coordination.
+
+
+
+## 2026-09-28 — REPORT-CONTINUATION / SPACE-TIME PROVENANCE RULE
+
+A previous actor's final response is an **observation/report**, not automatically the current causal frontier.
+
+Before continuing its suggested next step, reconcile the response against the full provenance chain:
+
+`report → artifact → branch/ref → SHA → working-tree provenance → remote read-back → runtime provenance → independent verification → reconciliation → Knowledge Delta → next decision/writeback`.
+
+Maintain separate statuses for:
+
+- implementation claimed;
+- implementation locally present;
+- implementation committed;
+- implementation remotely attributable;
+- runtime reported;
+- runtime independently verified;
+- causal edge closed.
+
+Special failure pattern:
+
+**response-continuation drift** = following the previous actor's proposed next edge while skipping an unresolved provenance/evidence edge.
+
+Required behavior:
+
+1. Re-anchor to the exact objective and technical baseline.
+2. Verify whether the reported branch/ref/SHA is actually resolvable.
+3. Determine whether the implementation is committed or only in a modified worktree.
+4. Verify artifact/source read-back before treating implementation as canonical.
+5. Route to an independent verifier only after an attributable artifact exists.
+6. Do not advance semantic research merely because the implementation actor named it as the “first open edge”.
+
+For META-01-E2a this means:
+
+`Devin implementation report → publication/read-back → Sonnet verification → semantic E2b`
+
+not:
+
+`Devin implementation report → immediately investigate hypothesis/prediction`.
