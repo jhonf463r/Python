@@ -1914,3 +1914,28 @@ Preserve:
 `committed object != remote evidence`
 `runtime report != independent runtime proof`
 `test success != causal closure`
+
+
+
+## 2026-09-28 META-01-E2a — REMOTE COMMIT VERIFIED / SONNET VERIFICATION GATE
+
+Remote reconciliation now confirms implementation commit `475c033630bc6285fa39206a0c6294a5ad8fb7b0` is a direct one-commit child of baseline `8fe2b94f66e10d2379945754ea58dd7e92626c60` on remote branch `feature/discernment-frame-seam`. Compare: ahead=1, behind=0; exact changed-file set=8; no CI statuses reported.
+
+Source read-back confirms the intended shared-service wiring and atomic publication design. However, independent E2a closure remains OPEN because the committed Devin report contains evidence gaps requiring adversarial verification:
+- report says `_publish_frame()` helper exists, but source uses direct locked append; terminology mismatch only unless semantics fail;
+- report contains two runtime frame IDs (`aab27b63-8715-44fc-b30b-f84dbd54dd78` and `59629825-db9b-4dd3-9a5f-44a631ce0602`), not one clearly attributable execution;
+- displayed runtime verification proves OSES + PCS identity but does not visibly show TCA observation;
+- `TestSharedIdentity` tests the shared service directly rather than actual OSES/TCA/PCS instances;
+- OSES missing-frame finding remains in the report because no real task-context execution occurred;
+- persisted PortableContext artifact is stale (April 2026) and therefore does not prove a fresh PCS export consumed the birth frame;
+- committed report provenance text is historical (pre-commit HEAD/base and MODIFIED worktree), not the final canonical commit state.
+
+### Current state
+
+**CANONICAL SOURCE: VERIFIED**
+**SOURCE ARCHITECTURE: STRONGLY SUPPORTED**
+**46/46 TESTS: REPORT-BACKED**
+**WINDOWS RUNTIME: REPORT-BACKED**
+**E2a CAUSAL CLOSURE: OPEN PENDING SONNET**
+
+Next actor: **SONNET**. Do not advance to E2b until the independent verification gate resolves these discrepancies.
