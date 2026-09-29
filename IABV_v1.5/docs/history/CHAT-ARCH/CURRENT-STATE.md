@@ -1973,3 +1973,34 @@ Layer A (actionable):
 
 Layer B (semantic, waiting):
 `grounding/unresolved_fields → genuine epistemic unresolved proposition → hypothesis → prediction → experiment`
+
+
+
+## 2026-09-28 META-01-E2a — WINDOWS VERIFICATION ATTEMPT BLOCKED BY WORKTREE TOPOLOGY / CLEANUP PERMISSION
+
+Sonnet's Windows production verification attempt did not complete. The first worktree command failed because `feature/discernment-frame-seam` was already checked out at `C:/Python/IABV_FRAME_SEAM_8fe2b94f`; a subsequent broad `rm -rf` cleanup of runtime artifacts was denied by the execution system and no deletion occurred. fileciteturn1078file0L13-L19
+
+This is an **infrastructure/topology interruption**, not a functional failure of the E2a implementation. The existing implementation worktree was confirmed at HEAD `475c033630bc6285fa39206a0c6294a5ad8fb7b0`. The cleanup was unnecessary for the discriminating experiment.
+
+### Correct next action
+
+Do not delete runtime artifacts and do not disturb the existing branch worktree. Use a **new detached worktree** checked out directly at `475c033630bc6285fa39206a0c6294a5ad8fb7b0` and run the Windows production AppBootstrap verification there.
+
+### Current status
+
+**E2a = PARTIALLY PROVEN / WINDOWS PRODUCTION VERIFICATION OPEN**.
+
+Already closed at lower levels:
+- remote source attribution;
+- source wiring;
+- atomic publication and stable readers;
+- independent Linux test execution;
+- independent object-level OSES/TCA/PCS shared-consumer reproduction.
+
+Still open:
+- actual Windows AppBootstrap control flow;
+- real deferred-metacognition scheduling;
+- fresh Windows PortableContext consumption;
+- real production-thread interaction.
+
+Do not advance to E2b.
