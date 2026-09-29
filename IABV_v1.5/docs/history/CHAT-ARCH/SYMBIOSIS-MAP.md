@@ -1383,3 +1383,23 @@ Likewise:
 `frame consumed in persisted production context`.
 
 Current E2a state: **PARTIALLY PROVEN**.
+
+
+
+## 2026-09-28 TRANSFER 20 — ENVIRONMENT CONSTRAINTS MUST NOT REDEFINE THE CAUSAL FRONTIER
+
+META-01-E2a adds a routing rule for blocked verification experiments.
+
+When an independent verifier is blocked by worktree topology or destructive-command permissions, do not reinterpret the block as a software failure and do not weaken provenance requirements.
+
+The correct adaptation is to preserve the objective and choose a non-destructive isolation mechanism that supplies the same capability.
+
+For E2a:
+
+`Windows production verification`
+→ blocked because branch is already checked out
+→ broad cleanup denied
+→ **new detached worktree at exact implementation SHA**
+→ resume same experiment
+
+Actor remains **DEVIN** because the unresolved capability is real Windows production execution. This is capability-fit continuation, not actor cycling.
