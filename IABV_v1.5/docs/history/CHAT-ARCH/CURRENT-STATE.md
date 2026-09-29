@@ -1939,3 +1939,37 @@ Source read-back confirms the intended shared-service wiring and atomic publicat
 **E2a CAUSAL CLOSURE: OPEN PENDING SONNET**
 
 Next actor: **SONNET**. Do not advance to E2b until the independent verification gate resolves these discrepancies.
+
+
+
+## 2026-09-29 META-01-E2a — POST-SONNET: PARTIALLY PROVEN
+
+Sonnet independently verified commit `475c033630bc6285fa39206a0c6294a5ad8fb7b0` and ran the discernment test family independently on Linux: 46/46 passed across p069+p070+seam. It also instantiated the real OSES/TCA/PCS classes with one shared DiscernmentFrameService and independently observed consumer behavior around a fresh frame_id `3460156c-8403-44ca-a695-ea793b4a3e16`.
+
+Independent findings:
+- shared AppBootstrap ownership/wiring is source-proven;
+- birth producer exists in deferred metacognition;
+- atomic publication and stable-copy readers are source-proven;
+- OSES missing-frame finding appears before publication and disappears after publication on the same shared instance;
+- TCA and PCS consume the same current frame in the object-level reproduction;
+- user-question path remains locally isolated.
+
+E2a is **PARTIALLY PROVEN**, not CLOSED, because Sonnet could not execute the real Windows AppBootstrap end-to-end. Remaining production-runtime questions are actual Windows deferred-thread scheduling, real WorldModel/EnvironmentSelfModel inputs, fresh PortableContext persistence/export, real UI/main-thread concurrency, and production bootstrap consumption.
+
+Important corrections preserved:
+- Devin's explanation that OSES missing-frame required a real task was imprecise; frame publication itself controls that finding.
+- The committed TestSharedIdentity is service-level, not three-consumer integration evidence.
+- Devin's two runtime frame IDs and Sonnet's independent ID are three distinct executions and must not be merged.
+- `_publish_frame()` is inaccurate report/commit-message terminology; actual source uses `_publish=False` plus locked append.
+
+### Immediate next actor
+
+**DEVIN** for a read-only Windows production-bootstrap verification on the published commit. Do not implement. Do not modify source/tests. Do not advance to E2b.
+
+### Frontier
+
+Layer A (actionable):
+`published implementation → real Windows AppBootstrap → deferred producer → shared identity → OSES/TCA/PCS production consumption → fresh PCS observation`
+
+Layer B (semantic, waiting):
+`grounding/unresolved_fields → genuine epistemic unresolved proposition → hypothesis → prediction → experiment`
