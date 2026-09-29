@@ -1351,3 +1351,35 @@ Current routing:
 → **Sonnet independent source/runtime verification**
 → ChatGPT reconciliation
 → only then E2b.
+
+
+
+## 2026-09-29 TRANSFER 20 — INDEPENDENT VERIFICATION MUST FOLLOW THE INTEGRATION FRONTIER
+
+META-01-E2a demonstrates a second-order routing rule:
+
+After independent verification confirms a seam at source and object-graph level, the next actor should be selected by the **remaining integration boundary**, not by repeating the verifier or by following the semantic edge named in the implementation report.
+
+For E2a:
+
+`Codex architecture`
+→ `Devin implementation/publication`
+→ `ChatGPT remote reconciliation`
+→ `Sonnet source + independent object/test verification`
+→ **Devin Windows production verification**
+→ ChatGPT reconciliation
+→ only then semantic E2b.
+
+New evidence distinction:
+
+`object-level runtime proof`
+≠
+`production bootstrap runtime proof`.
+
+Likewise:
+
+`frame created`
+≠
+`frame consumed in persisted production context`.
+
+Current E2a state: **PARTIALLY PROVEN**.
