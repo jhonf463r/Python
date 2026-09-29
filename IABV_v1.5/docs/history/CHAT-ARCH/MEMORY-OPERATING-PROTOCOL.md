@@ -891,3 +891,17 @@ For META-01-E2a:
 → `E2b semantic investigation`.
 
 This preserves capability-fit and the spatial/temporal provenance chain.
+
+
+
+## 2026-09-28 — NON-DESTRUCTIVE RETRY RULE FOR BLOCKED VERIFICATION
+
+When a verification actor is blocked by repository/worktree topology or command permissions, adapt the experimental environment without changing the epistemic target.
+
+Prefer:
+`new detached worktree at exact target SHA`
+
+over:
+`destructive cleanup of an existing verification worktree`.
+
+Classify infrastructure interruption separately from software evidence. Never treat an aborted runtime attempt as a negative software result.
