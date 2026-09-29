@@ -1403,3 +1403,40 @@ For E2a:
 → resume same experiment
 
 Actor remains **DEVIN** because the unresolved capability is real Windows production execution. This is capability-fit continuation, not actor cycling.
+
+
+## 2026-09-29 TRANSFER 21 — GOOD IDEAS BECOME TRACEABLE DORMANT TASKS
+
+A useful symbiosis/developmental idea should not remain only in conversational context.
+
+New operational rule:
+idea → explicit hypothesis → activation condition → candidate existing organs → minimal discriminating audit/experiment → evidence → Knowledge Delta → implementation decision.
+
+This prevents two opposite failures:
+
+good idea → forgotten
+
+good idea → premature architecture
+
+The canonical holding area is:
+DEVELOPMENT-IDEAS-AND-RESTRUCTURING-BACKLOG-2026-09-29.md
+
+New developmental hypothesis preserved there:
+IABV may eventually be better understood as a network of bounded functional units exchanging evidence-bearing state, events, experience and knowledge, rather than as a collection of isolated services. Biological terms such as cell, membrane, neuron, metabolism, homeostasis and heredity are retained only as functional audit analogies until source/runtime evidence justifies stronger abstractions.
+
+Important constraint:
+Do not create a UniversalEntity, CellEntity, NeuronEntity, universal brain or new synchronization organ merely to embody the analogy. First audit whether existing DiscernmentFrame, PerceptionSnapshot, TaskContext, ExperimentRun, PortableContextPackage, claims and verification records already provide the required semantics.
+
+A future restructuring audit should evaluate:
+bounded responsibility; interface/contract; state ownership; signal/event flow; feedback; provenance; persistence; rehydration; failure containment; cross-device portability.
+
+This is a hypothesis about a reusable substrate, not evidence that such a substrate is already proven.
+
+### E2a routing correction — 2026-09-29
+
+The latest audit downgraded the six new Birth Frame executions to REPORT-ONLY because their frame IDs were not published as repository artifacts. The older Windows evidence package 8ee5bec... remains artifact-backed, while E2a as a whole remains PARTIALLY PROVEN.
+
+Current next operational edge:
+fresh DiscernmentFrame → public portable_context_get(refresh=True) → build_package → fresh latest.json → read-back.
+
+GUI same-frame continuity is separated as an environmental sub-experiment rather than being used to hold the entire development track.
