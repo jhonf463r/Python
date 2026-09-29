@@ -1314,3 +1314,40 @@ with
 `next actionable edge`.
 
 This prevents “response-continuation drift”, where a later chat follows the actor's proposed next step while skipping unresolved provenance in space/time.
+
+
+
+## 2026-09-28 TRANSFER 19 — POST-COMMIT VERIFICATION MUST CHALLENGE COVERAGE, NOT JUST EXISTENCE
+
+META-01-E2a produced a useful methodological refinement.
+
+After a patch becomes remotely attributable, independent verification must challenge **coverage of the claimed causal seam**, not merely existence of the changed code.
+
+For E2a, distinguish:
+
+`service-level shared identity`
+from
+`actual consumer-level identity`
+
+and:
+
+`runtime birth-frame creation`
+from
+`fresh runtime consumption by OSES/TCA/PCS`.
+
+A single frame_id in a helper test can establish the former but not automatically the latter.
+
+Also preserve temporal identity:
+
+`frame_id A in startup log` 
+!=
+`frame_id B in a later verification script`
+
+unless a shared execution/session provenance explicitly connects them.
+
+Current routing:
+
+`Devin published commit 475c033...`
+→ **Sonnet independent source/runtime verification**
+→ ChatGPT reconciliation
+→ only then E2b.
