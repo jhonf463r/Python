@@ -2160,3 +2160,27 @@ Scientific observability is now an explicit developmental requirement. Candidate
 
 Do not build a PlasticityEngine, KnowledgeBrain or SuperConsciousnessEngine before existing-organ convergence and a discriminating experiment demonstrate a true responsibility gap.
 
+
+
+## 2026-09-30 EMERGING SELF-KNOWLEDGE RETRIEVAL FRONTIER
+
+A new architectural gap has been reconciled from current code and operational-memory evidence:
+
+**IABV has distributed memory, diagnostic, capability, world/self, governance and evidence organs, but a verified objective-conditioned retrieval fabric across the total self-architecture is not yet demonstrated.**
+
+Primary research record:
+`CHAT-ARCH-2026-09-30-001-resonant-self-knowledge-retrieval-fabric.md`
+
+Current candidate composition:
+`CONTEXT-INDEX + MEMORY-OPERATING-PROTOCOL + EmbeddingIndexService + self_code_analysis + registries + capability/tool discovery + WorldModel/EnvironmentSelfModel + OSES/SelfAudit + provenance/evidence`.
+
+Important implementation fact:
+`EmbeddingIndexService.search()` currently operates over caller-supplied documents and uses lexical token-overlap scoring; this is not yet a verified whole-codebase semantic index.
+
+Current status:
+`HYPOTHESIS / READ-ONLY COMPOSITION AUDIT PENDING`.
+
+First open edge:
+`objective → distributed self-knowledge candidate retrieval`.
+
+Do not create a new retrieval/synapse/knowledge-brain service before the existing-organ composition audit `RSK-01-A` demonstrates an irreducible semantic ownership gap.
