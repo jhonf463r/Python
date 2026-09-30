@@ -996,6 +996,17 @@ experience → verified evidence → representation change → future decision c
 Do not add a plasticity engine or consciousness layer before convergence/anti-duplication and a discriminating experiment show that existing organs cannot express the required responsibility.
 
 
+
+For material changes originating from human intuition, correction or conceptual synthesis, use:
+`HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md`.
+
+The shared field must preserve three distinct layers:
+`HUMAN INTENT / HYPOTHESIS`
+`AI INTERPRETATION / EXPERIENCE`
+`VERIFIED IABV STATE / EVIDENCE`.
+
+These layers can influence one another through experiments and reconciliation, but must never be silently collapsed into one claim.
+
 ## 2026-09-30 — SHARED RESONANCE / CROSS-IA ACTIVATION PROTOCOL
 
 The self-knowledge retrieval hypothesis is also a cooperative cognition protocol for participating AIs. It does not require the final retrieval implementation to exist before AIs can begin using the shared field.
