@@ -492,3 +492,23 @@ CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md
 Important:
 This is knowledge continuity, not technical task closure. BIO-04 remains P2 maximum on the audited route; META-01-E2a remains PARTIALLY PROVEN.
 
+
+
+## 2026-09-30 — RESONANT SELF-KNOWLEDGE RETRIEVAL RECORD
+
+Source record:
+`CHAT-ARCH-2026-09-30-001-resonant-self-knowledge-retrieval-fabric.md`
+
+Purpose:
+Preserve the new architectural hypothesis that IABV needs a distributed, objective-conditioned self-knowledge activation fabric spanning memory, source, relations, capabilities, evidence and runtime currentness.
+
+Status:
+`HYPOTHESIS / ARCHITECTURAL AUDIT TARGET / NO NEW SERVICE AUTHORIZED`
+
+Key correction:
+The desired "frequency/synapse" behavior is modeled as relevance/activation potential plus typed relation propagation, not as a literal physical-frequency mechanism.
+
+Required first action:
+`RSK-01-A` existing-organ composition and coverage audit.
+
+The record explicitly forbids premature creation of a `ResonanceEngine`, `SynapticEngine`, `KnowledgeBrain` or duplicate retrieval service.
