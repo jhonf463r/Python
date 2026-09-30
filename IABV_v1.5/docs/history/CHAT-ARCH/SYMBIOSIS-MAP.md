@@ -1587,3 +1587,52 @@ The desired developmental property is:
 `experience → verified change → better organization → better activation → better next action`
 
 not mere accumulation of transcripts.
+
+
+## 2026-09-30 TRANSFER — DEEP-RESEARCH EXECUTION SEAM / ACTOR-FIT CORRECTION
+
+### What was learned
+
+Deep Research must be treated as a **capability/resource** rather than an epistemic authority.
+
+The observed failure sequence does not justify:
+`bad report → replace actor`.
+
+Instead:
+`current truth → uncertainty/boundary → required capability → capability-fit actor → smallest discriminating action`.
+
+The failure classes now operationally distinguished are:
+`object failure`,
+`input/delivery failure`,
+`execution-selection failure`,
+`source-access failure`,
+`research capability failure`,
+`result-quality failure`.
+
+The repeated object-echo returns established a useful boundary:
+
+`object preservation can be demonstrated even when repository context is inaccessible`.
+
+That means the external scientific task can be self-contained, while IABV repository context is reserved for later reconciliation.
+
+### Actor capability state
+
+For the current frontier:
+
+**ChatGPT Deep Research** = required primary capability for external scientific literature synthesis and source audit.
+
+**Sonnet/Claude-class independent verifier** = later verification capability if the returned scientific result contains claims requiring adversarial source checking beyond the initial run.
+
+**Codex / Devin** = not selected at the current frontier because the open edge is not code archaeology or Windows runtime execution.
+
+**Opus 5** = not selected; no genuine architectural contradiction has been established.
+
+These are current capability observations, not a permanent sequence.
+
+### Reusable rule
+
+Do not launch another diagnostic once the relevant interface property has been provisionally demonstrated. Move to the smallest remaining discriminating execution.
+
+For this case:
+`object preservation → actual self-contained scientific execution`.
+
