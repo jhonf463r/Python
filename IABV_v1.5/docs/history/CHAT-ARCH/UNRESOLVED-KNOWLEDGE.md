@@ -1700,3 +1700,46 @@ Required conceptual operations:
 
 Structural risks identified in code archaeology are not proof of actual data corruption; future experiments must distinguish accumulation risk from observed failure.
 
+
+
+## 2026-09-29 SECOND-ORDER PLASTICITY / SCIENTIFIC-LEARNING FRONTIER
+
+### Working hypothesis
+
+A developmental IABV should eventually be able to use verified experience to modify reusable knowledge and relationships rather than merely accumulate records or change routing scores.
+
+### Current evidence ceiling
+
+BIO-04 audited route: P2 score/preference adaptation.
+
+Not promoted without direct evidence:
+P3 knowledge update;
+P4 supersession/conflict resolution;
+P5 merge/split/contextualization;
+P6 relationship reorganization;
+P7 controlled causal future-decision change;
+P8 recursive developmental architecture change.
+
+### Open scientific questions
+
+Can an existing representation be revised rather than appended?
+Can revision remain scoped to the context that generated it?
+Can contradictory evidence distinguish invalidation from exception, specialization, outage, degradation or bad evidence?
+Can relation topology change without destroying provenance and lineage?
+Can the revised representation change a later decision under controlled conditions?
+Can IABV generate and test a hypothesis from its own observations rather than only executing human hypotheses?
+
+### Candidate scientific telemetry
+
+Measure before/after knowledge, weights, relations, context, decisions and behavior together with objective, provenance, evidence and verified outcome.
+
+This is a research telemetry program, not yet a verified runtime contract.
+
+### Falsification boundary
+
+Do not call score change, persistence, retrieval, self-description or complex behavior proof of learning, understanding, autonomy or consciousness without the downstream evidence required for the specific claim.
+
+### Build restraint
+
+Do not create a PlasticityEngine, KnowledgeBrain or SuperConsciousnessEngine until existing-organ convergence fails to cover the required responsibility.
+
