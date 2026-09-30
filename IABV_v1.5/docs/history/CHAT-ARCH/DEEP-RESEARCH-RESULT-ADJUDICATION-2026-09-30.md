@@ -1101,3 +1101,91 @@ The next run must not depend on attachments or GitHub access to know the scienti
 Repository-context access becomes an auxiliary evidence channel for Stage B and for contextualization, not a prerequisite for identifying the external research object.
 
 END OF DIAGNOSTIC RESULT
+
+
+## 2026-09-30 FOLLOW-UP RESULT — DIAGNOSTIC REPLAY / PHASE 2A.3 NOT EXECUTED
+
+A further material was received with the same diagnostic structure as the previous object-echo test:
+- INPUT RECEIPT;
+- repository/ref;
+- zero accessible repository files;
+- correct scientific object description;
+- task/object distinction;
+- FAIL/NO-RESEARCH assertion;
+- echo token `IABV-OBJ-ECHO-20260930-7Q4`.
+
+### Adjudication
+
+STATUS: **REJECTED AS PHASE 2A.3 / DIAGNOSTIC REPLAY**
+
+This material is not a scientific literature result. It explicitly states:
+
+`NO SCIENTIFIC RESEARCH EXECUTED IN THIS DIAGNOSTIC.`
+
+Therefore it provides no new evidence about:
+- continual/lifelong learning;
+- knowledge/belief revision;
+- contextualization/relation reorganization;
+- causal learning;
+- metacognitive control;
+- self-modeling;
+- self-directed scientific experimentation;
+- machine-consciousness indicators.
+
+### What it does and does not prove
+
+It again supports:
+
+`explicit task object → object wording can be reproduced correctly`.
+
+It does NOT prove:
+`repository context ingestion`.
+
+It does NOT prove:
+`scientific research execution`.
+
+It does NOT prove:
+`source-level scientific evidence collection`.
+
+It does NOT prove:
+`Phase 2A.3 prompt was actually the executed input`.
+
+Because the response is structurally a diagnostic replay, the input/execution provenance for Phase 2A.3 remains unresolved.
+
+### Critical interpretation
+
+Do not count this as another independent failed scientific research run.
+
+The immediate problem is now likely at the **execution handoff/input-selection seam**:
+
+`canonical scientific prompt created → which prompt actually launched in Deep Research → diagnostic vs scientific execution`.
+
+This must be distinguished from actor capability.
+
+### Current routing correction
+
+Do not issue another diagnostic.
+
+Do not change research actor based on this result.
+
+The next action is to execute the **self-contained scientific prompt**:
+
+`DEEP-RESEARCH-PHASE-2A3-SELF-CONTAINED-SCIENCE-2026-09-30.md`
+
+with no dependency on GitHub or attachments.
+
+The expected result must contain actual scientific literature synthesis and MUST NOT contain the diagnostic headings A–G or the echo token as its principal output.
+
+### Current frontier
+
+`EXECUTED-PROMPT PROVENANCE`
+
+→ **PHASE 2A.3 SELF-CONTAINED SCIENTIFIC EXECUTION**
+
+→ `SOURCE/EVIDENCE ADJUDICATION`
+
+→ `IABV STAGE B RECONCILIATION`
+
+→ `SMALLEST DISCRIMINATING EXPERIMENT`.
+
+END OF FOLLOW-UP RESULT ADJUDICATION
