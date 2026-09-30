@@ -1740,6 +1740,26 @@ BUILD RESTRAINT:
 Do not create `ResonanceEngine`, `SynapticEngine`, `KnowledgeBrain`, `SuperConsciousnessEngine`, `UniversalEntity` or another generic retrieval brain until the composition audit demonstrates a semantic ownership gap that existing organs cannot cover.
 
 
+### UK-17 — External-AI IABV frame entry
+
+QUESTION: Can a participating external AI reliably enter the canonical IABV frame of reality before materially reasoning about an IABV-coupled objective, while preserving its independent reasoning and then returning verified experience to the shared field?
+
+CURRENT STATUS: **ARCHITECTURAL TARGET / END-TO-END CAUSAL PROOF NOT ESTABLISHED.**
+
+Required distinction:
+`context delivery != frame entry != causal influence != learning`.
+
+Target loop:
+`AI-local frame → IABV canonical frame → relevant activation field → AI reasoning/action → observation → verification → IABV reconciliation → Knowledge/Relation/Routing Delta → next AI reactivation`.
+
+The 2026-09-11 cognitive-control-plane record is the historical antecedent for this requirement. RSK-01 extends it by requiring the canonical frame to activate a distributed self-knowledge neighborhood rather than merely supply a static briefing.
+
+Minimum experiment:
+two materially equivalent AI interactions with the same task/resource, one receiving only ordinary task context and one entering a versioned IABV frame, with fixed provenance and an objective-specific verification contract. Measure whether the frame changes the reasoning/action and whether the resulting verified experience produces a reusable downstream change.
+
+Do not claim cognition or learning from prompt receipt, frame serialization, HTTP transport, or textual agreement alone.
+
+
 ## 2026-09-29 SECOND-ORDER PLASTICITY / SCIENTIFIC-LEARNING FRONTIER
 
 ### Working hypothesis
