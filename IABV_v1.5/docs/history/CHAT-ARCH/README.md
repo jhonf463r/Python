@@ -261,3 +261,23 @@ CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md
 
 The operational lesson is that IABV should be born with observable state/provenance sufficient to measure whether verified experience changes reusable knowledge, relationships, decisions and later outcomes. “Superconsciousness” remains a falsifiable research hypothesis, not an achieved property.
 
+
+
+## 2026-09-30 RESONANT SELF-KNOWLEDGE RETRIEVAL FRONTIER
+
+Latest architectural research record:
+`CHAT-ARCH-2026-09-30-001-resonant-self-knowledge-retrieval-fabric.md`
+
+Use it when the objective concerns:
+- whole-system self-knowledge discovery;
+- objective-conditioned retrieval across code + memory + runtime + evidence;
+- similarity/resonance or synaptic activation as a retrieval metaphor;
+- fractal/self-describing organ structure;
+- unified capability/architecture discovery;
+- reducing manual file/organ selection across new chats.
+
+Current status:
+**HYPOTHESIS / AUDIT TARGET / NO NEW RETRIEVAL BRAIN AUTHORIZED.**
+
+First task:
+`RSK-01-A` — prove what existing retrieval/index/registry/graph/self-audit organs can already compose before creating anything new.
