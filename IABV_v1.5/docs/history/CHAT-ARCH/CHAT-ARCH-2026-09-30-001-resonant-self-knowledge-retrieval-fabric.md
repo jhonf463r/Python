@@ -298,6 +298,21 @@ Negative knowledge must be retrievable too:
 
 The absence of proof should therefore be an activatable feature, not an empty search result.
 
+## SHARED CROSS-IA USE
+
+The retrieval fabric is intended to be used by the participating AIs themselves before it is fully automated.
+
+Any AI can act as an activation/observation/update node in the shared field:
+
+`objective → retrieve relevant neighborhood → reason / execute / challenge → observe → verify → write Knowledge Delta + relation/routing delta → next AI reactivates from the updated field`.
+
+This means the system can begin accumulating verified developmental organization now, at the protocol level, rather than waiting for a future search service.
+
+The key reusable object is not transcript volume. It is an experience-bearing transformation:
+
+`what was activated → what was done → what was observed → what was independently established → what changed in the reusable model → what became easier/harder to activate next time`.
+
+This is the operational meaning of "energizing" the field. It is still not evidence of biological life or consciousness.
 ## DEVELOPMENTAL / FRACTAL PROPERTY
 
 A future IABV developmental substrate should allow the same retrieval/activation grammar to operate at multiple scales:
