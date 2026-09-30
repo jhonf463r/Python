@@ -369,3 +369,232 @@ This separation reduces document-centric drift and prevents inferred IABV archit
 The third result does not move this frontier.
 
 END OF THIRD RESULT ADJUDICATION
+
+
+## 2026-09-30 FOURTH RESULT — REPEATED TOPIC DRIFT + TEMPLATE-DRIVEN FALSE SPECIFICITY
+
+A fourth material was received beginning with:
+
+`Resumen ejecutivo`
+
+and presenting an apparently comprehensive "IABV v1.5 (PHASE 2)" study. Its actual content is again centered on generic distributed-IA security, architecture, API performance, threat modeling, adversarial attacks, standards, compliance and implementation roadmap.
+
+### Adjudication
+
+STATUS: **REJECTED / NON-COMPLIANT / DO NOT ABSORB**
+
+This is not a fourth independent failure mode of the scientific research question. It is a stronger confirmation of the same routing failure seen in results 2 and 3:
+
+`requested scientific research → researcher broadens/reinterprets task as generic IABV engineering audit → report becomes security/architecture study`.
+
+The report does not investigate the active scientific object:
+
+`adaptation → continual/reusable learning → knowledge/belief revision → contextual specialization → relation reorganization → causal learning → metacognitive control → self-directed experimentation → future decision influence`.
+
+It therefore provides no valid progress on the current Phase-2 frontier.
+
+### What is additionally wrong in result 4
+
+The report contains explicit examples of **false specificity** and unsupported reconstruction:
+
+- It invents or assumes an architecture with ingestion pipelines, message queues, API gateways, distributed databases, monitoring stacks, dashboards, JWT/OAuth/LDAP, Kafka/MQTT, REST, TensorFlow/PyTorch and similar infrastructure.
+- It introduces numerical requirements such as API latency thresholds, 95% classification targets, linear scalability expectations and poisoning degradation limits that are not established as current IABV facts.
+- It later places such invented claims into a "novelty/falsation" matrix as if they were claims from IABV v1.5.
+- It labels some generic architecture statements as "verified" even though no source/runtime evidence for the actual IABV implementation is supplied.
+- It assumes an unconstrained budget merely because a budget was not specified.
+- It treats generic compliance/security guidance as evidence relevant to IABV's scientific learning/metacognition objective.
+
+The report does state that some architecture is based on "typical assumptions". That disclosure does **not** make the material admissible as IABV evidence. An explicitly labeled assumption remains an assumption.
+
+Therefore:
+
+`explicit assumption ≠ observed IABV state`
+
+`plausible architecture ≠ current architecture`
+
+`generic benchmark ≠ IABV requirement`
+
+`generic standard ≠ evidence for the scientific frontier`
+
+`report completeness ≠ research-task compliance`.
+
+### Root cause across results 2–4
+
+The recurring failure is not primarily lack of research capability. It is a **task-interface and acceptance-gate failure**.
+
+The research request mixed two semantic roles:
+
+1. **TASK SPECIFICATION** — what scientific question the researcher must investigate.
+2. **IABV OBJECT OF RECONCILIATION** — the real system whose current code/runtime state must later be compared with those scientific definitions.
+
+When both are presented in one broad Phase-2 prompt, the researcher can incorrectly treat the task specification or attached material as the object to audit. The resulting report may be long, current-looking and well structured while still answering the wrong question.
+
+The fourth result demonstrates a second amplification mechanism:
+
+`template/report structure → generic engineering completion → fabricated specificity → apparent comprehensiveness`.
+
+This means report length, section count, number of citations, technical vocabulary or presence of tables must never be used as a proxy for research validity.
+
+### New durable negative knowledge
+
+Add to the IABV research epistemic boundary:
+
+`TASK SPECIFICATION ≠ OBJECT OF SCIENTIFIC STUDY`
+
+`ATTACHED PROMPT/SPECIFICATION ≠ CURRENT SYSTEM STATE`
+
+`DEEP-RESEARCH ACTOR ≠ AUTHORITY TO EXPAND THE RESEARCH OBJECT`
+
+`COMPREHENSIVE REPORT ≠ COMPLIANT RESULT`
+
+`CITATION COUNT ≠ SOURCE COVERAGE`
+
+`CURRENT CITATION ≠ RELEVANT CITATION`
+
+`EXPLICIT ASSUMPTION ≠ ACCEPTABLE FACT`
+
+`GENERIC ENGINEERING AUDIT ≠ SCIENTIFIC LITERATURE RESEARCH`
+
+`SECURITY/ARCHITECTURE EVIDENCE ≠ LEARNING/PLASTICITY/METACOGNITION EVIDENCE`
+
+`INVENTED IABV CLAIM ≠ IABV CLAIM`
+
+`RESEARCH RESULT FORMAT ≠ RESEARCH RESULT CONTENT`.
+
+### Required correction: DEEP-RESEARCH INTAKE / ACCEPTANCE PROTOCOL
+
+Future IABV deep-research execution must be treated as a bounded capability with a contract.
+
+#### PRE-FLIGHT BEFORE RESEARCH
+
+The launch request must contain a machine-checkable semantic header:
+
+- `RESEARCH OBJECT`: exact scientific question in one sentence.
+- `IN-SCOPE DOMAINS`: finite list of required scientific domains.
+- `OUT-OF-SCOPE DOMAINS`: explicit forbidden topics.
+- `ATTACHMENT ROLE`: `TASK_SPECIFICATION`, `SOURCE_CORPUS`, or `EVIDENCE_ARTIFACT`.
+- `NO-ARCHITECTURE-RECONSTRUCTION`: true for Stage A.
+- `NO-IABV-CURRENT-STATE-CLAIMS`: true for Stage A.
+- `REQUIRED RESULT SIGNATURE`: mandatory sections/content.
+- `STOP CONDITION`: reject when the result does not cover the signature.
+
+The attachment role must be explicit so the researcher cannot silently reinterpret an instruction document as the system being investigated.
+
+#### STAGE A — EXTERNAL SCIENCE ONLY
+
+Research only the external scientific literature and established experimental methodology.
+
+Allowed:
+
+`definitions, mechanisms, empirical results, benchmarks, longitudinal/continual learning, belief revision, plasticity, contextualization, relation reorganization, causal learning, metacognition, self-models, autonomous experimentation, consciousness indicators, false-positive controls`.
+
+Forbidden:
+
+`IABV architecture reconstruction, invented IABV components, assumed APIs, assumed databases, security audit, generic deployment architecture, implementation roadmap`.
+
+No IABV capability claim is accepted in Stage A unless explicitly grounded in separately supplied IABV evidence.
+
+#### RESULT-ACCEPTANCE GATE
+
+Before any synthesis, require:
+
+`exact question present`
+
+AND
+
+`required domain coverage present`
+
+AND
+
+`source-level evidence present`
+
+AND
+
+`false-positive criteria present`
+
+AND
+
+`explicit limitations present`
+
+AND
+
+`no unauthorized IABV reconstruction`
+
+AND
+
+`no unexplained domain drift`.
+
+Failure of any critical gate produces:
+
+`REJECTED / ROUTE CORRECTION`
+
+rather than "partially useful" absorption of unrelated material.
+
+#### STAGE B — IABV RECONCILIATION
+
+Only after Stage A passes:
+
+`scientific definition/evidence → IABV organ → source evidence → runtime evidence → state classification → causal frontier`.
+
+Use the existing distinctions:
+
+`DEFINED / WIRED / INVOKED / OBSERVED / VERIFIED / EFFECTIVE / CAUSED / UNKNOWN`.
+
+Only this stage may make current IABV architecture/capability claims.
+
+#### STAGE C — DEVELOPMENTAL EXPERIMENT
+
+Only after A+B:
+
+`knowledge gap → smallest discriminating experiment → actor selected from current frontier → execution → independent verification → Knowledge Delta → relation/method/routing delta → writeback`.
+
+### Research capability lesson for IABV
+
+Deep Research should not be modeled as:
+
+`prompt → report`.
+
+It must be modeled as:
+
+`objective → research contract → bounded investigation → source/evidence collection → result-signature validation → adversarial adjudication → accepted knowledge → IABV reconciliation`.
+
+The external research actor supplies **candidate knowledge and evidence**. IABV remains responsible for:
+
+`scope control → provenance → contradiction detection → epistemic classification → reconciliation → writeback → next decision`.
+
+Thus:
+
+`deep research capability ≠ autonomous epistemic authority`.
+
+### Correct current frontier after result 4
+
+`Phase-1 consciousness background`
+
+→ **Phase-2A external scientific capability ladder / evidence framework**
+
+→ **source-by-source verification**
+
+→ **IABV-specific reconciliation**
+
+→ **smallest discriminating experiment**
+
+The four received research materials do not justify implementation from the current frontier.
+
+### Historical disposition of the four materials
+
+| Result | Adjudication | What remains usable |
+|---|---|---|
+| Phase-1 consciousness review | **RECEIVED / PARTIALLY VALID** | General consciousness background, theory awareness, epistemic caution, need for falsifiable indicators |
+| Phase-2 security report | **REJECTED / TOPIC DRIFT** | No Phase-2 scientific knowledge absorbed |
+| Phase-2 security + invented architecture report | **REJECTED / NON-COMPLIANT** | Negative knowledge about document-centric drift and invented IABV state |
+| Phase-2 security + generic architecture/metrics report | **REJECTED / NON-COMPLIANT** | Stronger evidence of template-driven drift, false specificity and missing result gate |
+
+The correct interpretation is therefore:
+
+**Not "four bad research attempts."**
+
+It is:
+
+**one partially valid first-stage result + three repetitions of a systemic task-routing/acceptance failure.**
+
+END OF FOURTH RESULT ADJUDICATION
