@@ -629,3 +629,125 @@ The current frontier is therefore locked to:
 
 Only after a passing Stage-2A result may IABV perform Stage B and recompute the next actor from the actual causal/evidential frontier.
 
+
+
+## 2026-09-30 FIFTH RESULT — META-RESEARCH DRIFT / WRONG RESEARCH OBJECT
+
+A fifth material was received beginning with:
+
+`# Resumen ejecutivo`
+
+and presents a general guide to what "deep research" means: quantitative/qualitative/mixed methods, systematic reviews, meta-analysis, investigative journalism, tools, ethics, quality metrics, project timelines and examples.
+
+### Adjudication
+
+STATUS: **REJECTED FOR PHASE 2A SCIENTIFIC RESULT / META-RESEARCH DRIFT**
+
+This result is not an investigation of the active scientific object. It investigates **research methodology itself**.
+
+The active Phase-2A object remains:
+
+`adaptation → continual/reusable learning → knowledge/belief revision → contextual specialization → relation reorganization → causal learning → metacognitive control → self-modeling → self-directed experimentation → verified future-decision influence`.
+
+The received report does not provide the required evidence ladder, domain-specific literature synthesis, ΔW/ΔM/ΔK/ΔR/ΔC/ΔD/ΔB/ΔO discrimination, falsification framework for the target phenomena, or scientific handoff for Stage B.
+
+Therefore it must not be absorbed as Phase-2 scientific knowledge.
+
+### New failure mode revealed
+
+The previous failures were mainly:
+
+`research request → security/architecture audit`.
+
+This result demonstrates another semantic substitution:
+
+`request for deep research on X → explanation of how deep research is generally performed`.
+
+Thus:
+
+`RESEARCH TOOL / METHOD ≠ RESEARCH OBJECT`
+
+`METHODOLOGY ABOUT RESEARCH ≠ EVIDENCE ABOUT THE TARGET PHENOMENON`.
+
+The wording "investigación profunda" itself can become an attractor that causes the actor to explain the method rather than perform the requested research.
+
+### Material that may be retained — narrowly
+
+The report contains generic methodological ideas that are compatible with IABV's existing epistemic method, including:
+
+- explicit research questions;
+- predefined protocols;
+- source tracking;
+- reproducibility;
+- independent validation;
+- triangulation;
+- risk-of-bias assessment;
+- transparent reporting.
+
+These are **methodological reinforcement only**, not evidence for the scientific capability ladder and not evidence about IABV.
+
+They should not be counted as a successful Phase-2A result.
+
+### New durable negative knowledge
+
+`RESEARCH TOOL NAME ≠ RESEARCH OBJECT`
+
+`DEEP RESEARCH METHODOLOGY ≠ DEEP RESEARCH RESULT`
+
+`HOW TO RESEARCH X ≠ EVIDENCE ABOUT X`
+
+`GENERAL METHODOLOGY GUIDE ≠ DOMAIN LITERATURE SYNTHESIS`
+
+`META-RESEARCH ≠ TARGET RESEARCH`
+
+`METHODOLOGICAL RIGOR ≠ OBJECTIVE COMPLIANCE`.
+
+### Acceptance-gate correction
+
+The next result gate must include an explicit **OBJECT-TARGET TEST** before any quality assessment:
+
+1. Extract the one-sentence research object actually investigated.
+2. Compare it literally with the canonical research object.
+3. Reject if the report's primary object is:
+   - the meaning/method of deep research;
+   - generic research methodology;
+   - the attached prompt;
+   - IABV architecture/security;
+   - another neighboring topic.
+4. Only after object alignment passes should source quality, depth and methodological rigor be evaluated.
+
+The report's first substantive section should answer the target scientific question, not define deep research or research methodology.
+
+### Stronger model of the research capability
+
+The experience now supports:
+
+`human objective → research object → bounded research contract → execution → OBJECT-TARGET TEST → result-signature gate → source/evidence adjudication → accepted knowledge`.
+
+Research quality must therefore be evaluated in this order:
+
+`OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+Do not reverse this order. A highly rigorous report about the wrong object is still a rejected result.
+
+### Current frontier after result 5
+
+Still unchanged:
+
+`Phase-2A external scientific capability ladder / evidence framework`
+
+→ `source-by-source verification`
+
+→ `IABV-specific reconciliation`
+
+→ `smallest discriminating experiment`.
+
+No implementation actor is justified by this result.
+
+### Fifth-result disposition
+
+**Rejected for scientific absorption.**
+
+Retain only the narrow methodological lesson that explicit research contracts, source tracking and independent validation are useful safeguards. The target scientific knowledge was not delivered.
+
+END OF FIFTH RESULT ADJUDICATION
