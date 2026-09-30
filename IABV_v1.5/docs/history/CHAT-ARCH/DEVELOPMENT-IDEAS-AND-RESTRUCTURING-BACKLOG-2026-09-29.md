@@ -431,10 +431,11 @@ Current order is evidence-driven, not a fixed schedule:
 1. MB-01 — fresh PortableContext persistence.
 2. UI-01 — natural GUI continuity, only when graphical control is genuinely available.
 3. Reconcile E2a.
-4. BIO-02 — IABV as its own analyst, once the operational substrate is sufficiently grounded.
-5. UFS-01 / BIO-01 / INT-01 — structural restructuring audit when repeated semantic seams justify it.
-6. UFS-02 / UFS-03 — cross-runtime/device portability after the transferable state contract is evidenced.
-7. BIO-03 — causal learning-to-routing transition after production learning evidence is ready.
+4. RSK-01 — Resonant self-knowledge fabric: existing-organ composition and coverage audit.
+5. BIO-02 — IABV as its own analyst, once the retrieval/operational substrate is sufficiently grounded.
+6. UFS-01 / BIO-01 / INT-01 — structural restructuring audit when repeated semantic seams justify it.
+7. UFS-02 / UFS-03 — cross-runtime/device portability after the transferable state contract is evidenced.
+8. BIO-03 — causal learning-to-routing transition after production learning evidence is ready.
 
 This ordering is provisional and must be reselected from the first open causal edge at each reconciliation.
 
