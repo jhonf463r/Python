@@ -1801,3 +1801,40 @@ Do not call score change, persistence, retrieval, self-description or complex be
 
 Do not create a PlasticityEngine, KnowledgeBrain or SuperConsciousnessEngine until existing-organ convergence fails to cover the required responsibility.
 
+
+## 2026-09-30 OPEN BOUNDARIES — DEEP-RESEARCH EXECUTION
+
+### DR-U1 — Exact research-execution provenance remains open
+
+We have not yet independently established that the canonical Phase-2A3 scientific prompt was the prompt actually launched in the research execution surface.
+
+Required proof:
+`requested prompt + prompt actually submitted (if observable) + unique execution instance + returned result`.
+
+### DR-U2 — Phase-2 scientific capability remains untested by a valid run
+
+The actor has not yet produced a scientifically adjudicable Phase-2 result from the self-contained research contract.
+
+Therefore:
+`scientific capability failure = NOT ESTABLISHED`.
+
+### DR-U3 — Repository context ingestion is a separate property
+
+Repository access failed in the diagnostic runs, but the scientific object was explicit in the self-contained contract.
+
+Therefore:
+`repository-access failure ≠ object-identity failure`.
+
+Repository context remains useful for Stage B, not a prerequisite for Stage-A object identity.
+
+### DR-U4 — Scientific absorption remains blocked
+
+No Phase-2 findings may be promoted into IABV scientific knowledge until:
+`object gate + source audit + evidence classification + contradiction analysis` pass.
+
+### DR-U5 — No new retrieval/knowledge organ is justified by this research seam
+
+The current issue is an external-research execution/traceability boundary, not evidence of an IABV architectural ownership gap.
+
+Do not activate RSK-01 implementation from these results.
+
