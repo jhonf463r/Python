@@ -191,3 +191,88 @@ Capability-fit actor: **ChatGPT Deep Research / equivalent deep-research capabil
 After the Phase-2 result arrives, route by its current frontier; do not inherit a historical actor recommendation.
 
 END OF 2026-09-30 PHASE-1 ADJUDICATION
+
+## 2026-09-30 SECOND RESULT — TOPIC DRIFT / REJECTED FOR PHASE 2
+
+A second research material was received in chat, beginning with:
+
+`# Informe de investigación profunda sobre IABV v1.5`
+
+and focused almost entirely on:
+
+- web/API security;
+- IDOR/RBAC;
+- directory traversal;
+- prompt injection as a security threat;
+- adversarial robustness;
+- penetration testing;
+- AI Act / NIST cybersecurity;
+- security roadmap and vulnerability mitigation.
+
+### Adjudication
+
+STATUS: **REJECTED FOR THE ACTIVE SCIENTIFIC FRONTIER / TOPIC DRIFT**
+
+This material does **not** answer the Phase-2 research objective:
+
+`adaptation → learning → knowledge revision → contextual specialization → relation reorganization → causal learning → metacognitive control → self-directed experimentation → future decision change`.
+
+It does not provide the required scientific capability ladder, evidence matrix, IABV capability-state map, delta model, learning discrimination criteria, metacognition/causality framework, or minimum discriminating developmental experiment.
+
+Therefore:
+
+`security research result != Phase-2 scientific result`.
+
+No claims from this report should be absorbed into the current plasticity/learning/metacognition/consciousness research field merely because it is formatted as a deep-research report.
+
+### Important provenance lesson
+
+The material demonstrates a new failure mode for external research routing:
+
+`research requested in one domain → result produced in a neighboring but unrelated domain`.
+
+A detailed report structure, current citations, technical vocabulary or apparently plausible recommendations do not establish task compliance.
+
+Future deep-research prompts must include a **scope-lock / result-signature gate** near the beginning and require the researcher to demonstrate coverage of the requested domains before developing conclusions.
+
+### Result-signature gate for the next attempt
+
+The next result must explicitly contain, at minimum:
+
+1. the exact Phase-2 central question;
+2. the capability ladder from adaptation through future decision change;
+3. scientific literature on continual/lifelong learning and stability/plasticity;
+4. knowledge/belief revision and non-monotonic reasoning;
+5. contextualization and relation/knowledge-graph reorganization;
+6. causal learning and intervention-based evaluation;
+7. metacognition, prediction and calibration;
+8. self-models and causal self-monitoring;
+9. autonomous/self-directed scientific experimentation;
+10. theory-derived machine-consciousness indicators as a downstream layer;
+11. the `ΔW/ΔM/ΔK/ΔR/ΔC/ΔD/ΔB/ΔO` discrimination;
+12. explicit false-positive controls;
+13. source-by-source citation verification;
+14. an IABV-specific mapping of capability states;
+15. the first open scientific/causal edge and smallest discriminating experiment.
+
+If these are absent, reject the result again rather than trying to salvage unrelated material.
+
+### Current frontier remains unchanged
+
+`PHASE-1 consciousness background`
+
+→
+
+**PHASE-2 operational science of learning/revision/reorganization/metacognitive control/self-directed experimentation**
+
+→
+
+**IABV-specific evidence mapping**
+
+→
+
+**smallest discriminating experiment**
+
+No implementation actor should be selected from this rejected security report.
+
+END OF SECOND RESULT ADJUDICATION
