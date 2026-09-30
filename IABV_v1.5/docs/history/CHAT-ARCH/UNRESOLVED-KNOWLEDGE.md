@@ -1837,4 +1837,21 @@ No Phase-2 findings may be promoted into IABV scientific knowledge until:
 The current issue is an external-research execution/traceability boundary, not evidence of an IABV architectural ownership gap.
 
 Do not activate RSK-01 implementation from these results.
+## 2026-09-30 OPEN DEVELOPMENT BOUNDARY — REAL IABV→DEVIN LOOP
 
+### DEV-U1 — Runtime composition not proven end-to-end
+Existe evidencia de source-level wiring para consulta externa/autonomía, pero todavía no una prueba independiente de un episodio único que vaya desde necesidad observada por IABV hasta Devin real, captura, verificación y cambio downstream.
+
+### DEV-U2 — Devin usability must be measured
+Mantener separadas las capas:
+`registered → installed/accessible → authenticated → authorized → executable → usable`.
+
+### DEV-U3 — External result reuse
+Dispatch/capture no equivale a learning. La cadena fuerte sigue siendo:
+`execution → observation → verification → persistence → Knowledge/Method/Decision Delta → changed future action`.
+
+### DEV-U4 — Biosofía transition remains hypothesis
+Más órganos no significan organismo. Autonomía local no significa self-development. La transición de nivel debe demostrarse mediante organización funcional superior y capacidad nueva verificable.
+
+### DEV-U5 — Next action
+Ejecutar el contrato Codex de super-auditoría. No repetir diagnósticos antiguos salvo que aparezca una incertidumbre nueva y distinta.
