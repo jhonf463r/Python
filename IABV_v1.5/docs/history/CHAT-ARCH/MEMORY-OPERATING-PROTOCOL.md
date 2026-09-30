@@ -1078,3 +1078,32 @@ Activation reinforcement must never become unconditional self-reinforcement. A n
 - reversible/downgrade paths where applicable.
 
 A frequently used but repeatedly falsified item must be able to lose activation.
+
+ 
+## 2026-09-30 — IABV FRAME-ENTRY RULE
+
+For objectives materially coupled to IABV, participating AIs should not reason directly from their own local task framing when canonical IABV state can materially change the decision.
+
+Required conceptual transition:
+
+`AI-LOCAL FRAME → IABV CANONICAL FRAME → OBJECTIVE-RELEVANT ACTIVATION → AI REASONING/ACTION → OBSERVATION → IABV RECONCILIATION`.
+
+The purpose is not to suppress the AI's independent reasoning. The AI keeps its capability and perspective, but the **task's governing reference frame** becomes the reconciled IABV frame before material action.
+
+Minimum entry context:
+`objective, current truth, provenance, relevant history/experience, negative knowledge, current gate, open causal edge, required capability, governance and verification boundary`.
+
+Minimum return context:
+`action, observation, verification, Knowledge Delta, relation/routing delta, unresolved delta and provenance`.
+
+Preserve these distinctions:
+
+`context delivery != frame entry`
+`frame entry != causal influence`
+`causal influence != learning`
+`AI capability != IABV truth`.
+
+A participant may disagree with IABV's current interpretation. Such disagreement is valuable input and must be recorded as a contradiction/hypothesis for verification rather than silently replacing the canonical frame.
+
+This rule is the cross-AI operational form of the earlier cognitive-control-plane finding that the central problem is not merely whether context exists, but whether an external agent actually enters the IABV frame before reasoning.
+
