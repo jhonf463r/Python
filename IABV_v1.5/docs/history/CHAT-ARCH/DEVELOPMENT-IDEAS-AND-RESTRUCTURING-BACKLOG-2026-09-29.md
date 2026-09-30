@@ -327,6 +327,88 @@ Do not create a universal contract coordinator before proving existing compositi
 
 ---
 
+
+## RSK-01 — RESONANT SELF-KNOWLEDGE FABRIC / WHOLE-SYSTEM OBJECTIVE RETRIEVAL
+
+STATUS: **NEAR-ACTIVE / EXISTING-ORGAN COMPOSITION AUDIT REQUIRED**
+
+Question:
+
+Can IABV maintain broad/total indexed coverage of its own distributed structure and, for a new objective, selectively activate the small set of code, memory, capability, relation, evidence, runtime and negative-knowledge units that are most relevant?
+
+User design analogy:
+
+- **frequency / resonance** → time-varying activation potential;
+- **synapse** → typed relation between units;
+- **fractal** → the same self-description/lineage grammar recursively appears at organism → subsystem → organ → method → event → evidence → experience → knowledge;
+- **DNA** → distributed reusable structure/lineage grammar, not a single genome file.
+
+Functional target:
+
+`OBJECTIVE
+→ query/intent expansion
+→ candidate generation (lexical + semantic + objective routing)
+→ structural relation expansion
+→ evidence/currentness/capability re-ranking
+→ canonicalization/deduplication
+→ selective activation
+→ active context packet
+→ smallest discriminating action`
+
+Existing organs to audit first:
+
+`CONTEXT-INDEX
+MEMORY-OPERATING-PROTOCOL
+EmbeddingIndexService
+self_code_analysis
+SystemIdentityRegistry
+knowledge/graph registries
+ToolRegistry / ToolDiscoveryService
+CapabilityReadinessService
+WorldModel / EnvironmentSelfModel
+OSES / SelfAudit
+DecisionAuditTrail
+runtime/provenance records
+tests / experiments / outcomes / negative knowledge`
+
+Minimum discriminating action:
+
+Run a read-only coverage/composition audit and produce:
+- corpus inventory;
+- current index inventory;
+- semantic-search capabilities;
+- relation/graph sources;
+- provenance/currentness support;
+- duplicate/canonicalization mechanisms;
+- learned ranking/relevance mechanisms;
+- exact existing composition path;
+- first irreducible missing contract, if any.
+
+Success condition:
+
+Determine whether RSK-01 can be expressed with existing organs and composition. Only a demonstrated ownership gap can activate implementation of a new component.
+
+Efficiency target:
+
+Totality means total/broad indexed coverage, not a full raw-data scan on every query. Candidate generation should be cheap; deeper relation/evidence expansion should be bounded to the top candidate neighborhood.
+
+Scientific/learning boundary:
+
+Measure `recall@k, precision@k, latency, stale-hit rate, duplicate-hit rate, provenance correctness, graph expansion cost` and downstream usefulness.
+
+Do not interpret repeated retrieval, high frequency, or score reinforcement as learning without a verified representation/decision/outcome chain.
+
+False-positive controls:
+- stale records must not outrank current evidence;
+- duplicate historical records must not multiply activation;
+- semantic similarity must not override evidence/currentness;
+- graph proximity must not substitute for a real semantic relation;
+- caller-supplied document lists must not masquerade as whole-corpus coverage;
+- a search hit must not be treated as proof that the artifact is executed or causally effective.
+
+No implementation is authorized by this backlog item until the read-only audit reconciles current organ ownership.
+
+
 # METHODOLOGICAL RULES RECOVERED FROM CURRENT WORK
 
 1. Report-only runtime claims remain report-only until raw artifacts, SHA and runtime provenance are independently reconstructible.
