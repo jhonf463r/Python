@@ -380,3 +380,71 @@ Critical lesson from the 2026-09-30 failure series:
 - report quality must be evaluated only after object alignment.
 
 Do not treat Deep Research as epistemic authority over IABV. Select/change actors only from the current evidential frontier.
+
+
+## 2026-09-30 LIVE OVERRIDE — DEEP-RESEARCH FRONTIER AFTER DIAGNOSTIC REPLAY
+
+This overlay supersedes earlier README language that merely stated that the substantive result had not arrived.
+
+### Current verified interpretation
+
+The Phase-2 scientific result has **not** passed scientific acceptance.
+
+The received sequence is:
+- one partially valid Phase-1 consciousness background review;
+- multiple Phase-2 non-compliant/topic-drift results;
+- one object-preservation diagnostic that reproduced the scientific object;
+- repeated replay of that same diagnostic instead of the intended scientific execution.
+
+Therefore:
+
+`OBJECT PRESERVATION = PARTIALLY PROVEN`
+
+`REPOSITORY CONTEXT INGESTION = NOT PROVEN`
+
+`SCIENTIFIC PHASE-2 EXECUTION = NOT PROVEN`
+
+This is an **execution/input-selection seam**, not yet evidence of Deep Research scientific-capability failure.
+
+### Canonical next action
+
+The repository now contains:
+
+`DEEP-RESEARCH-PHASE-2A3-SELF-CONTAINED-SCIENCE-2026-09-30.md`
+
+created at commit:
+
+`ee180c02e8e47a61be040090d24fac54173d3115`
+
+This is the next scientific execution contract.
+
+Actor:
+
+**ChatGPT Deep Research / equivalent deep-research capability**
+
+Task type:
+
+**RESEARCH — NOT DIAGNOSTIC**
+
+The run must be self-contained: no GitHub or attachment is required to identify the scientific object.
+
+### Mandatory execution identity
+
+Every launch must preserve:
+
+`EXECUTION_ID + OBJECT_ID + RESEARCH_PHASE + RUN_TIMESTAMP`
+
+and separately preserve:
+
+`requested prompt → prompt actually submitted (if observable) → execution instance → returned result → independent adjudication`.
+
+Do not reuse `IABV-OBJ-ECHO-20260930-7Q4` as the research execution identity.
+
+### Acceptance path
+
+`actual research result → OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY → IABV Stage B → smallest discriminating experiment`.
+
+Do not select an implementation actor from the scientific brief alone.
+
+Do not issue another equivalent diagnostic before the scientific execution is actually attempted and its input provenance is recorded.
+
