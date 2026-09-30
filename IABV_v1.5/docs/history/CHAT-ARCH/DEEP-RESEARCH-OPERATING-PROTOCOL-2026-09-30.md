@@ -389,3 +389,20 @@ Every future Deep Research request should make it possible to answer:
 These are separate questions and must remain separate in the record.
 
 END OF PROTOCOL
+## 2026-09-30 PARALLEL-TRACK RULE — SCIENCE VS REAL SELF-DEVELOPMENT
+
+La pista científica de Deep Research y la pista técnica de IABV self-development son independientes.
+
+### SCIENCE TRACK
+`Deep Research → scientific result → source/evidence adjudication → IABV Stage B`
+
+Purpose: establish external scientific evidence for learning, revision, relation reorganization, metacontrol, self-directed experimentation and higher-order developmental hypotheses.
+
+### ENGINEERING/RUNTIME TRACK
+`IABV self-observation → required capability → actor/resource selection → real Devin execution → observation → independent verification → writeback → changed next action`
+
+Purpose: establish that IABV can actually participate in its own development through the existing control-plane mechanisms.
+
+Do not make the science track a prerequisite for the first real IABV→Devin runtime test.
+Do not use a successful runtime consultation as proof of the scientific developmental hypotheses.
+Treat both tracks as evidence-producing tracks that later converge through reconciliation.
