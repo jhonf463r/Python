@@ -2184,3 +2184,19 @@ First open edge:
 `objective → distributed self-knowledge candidate retrieval`.
 
 Do not create a new retrieval/synapse/knowledge-brain service before the existing-organ composition audit `RSK-01-A` demonstrates an irreducible semantic ownership gap.
+
+## 2026-09-30 SHARED SELF-KNOWLEDGE FIELD
+
+The retrieval hypothesis is now also treated as a cross-IA operating protocol, not only a future software capability.
+
+Participating AIs can already contribute to the field through the canonical memory layer using:
+
+`objective → activation → action/observation → verification → Knowledge Delta → relation/routing writeback → next activation`.
+
+This is the operational interpretation of the user's "energizing" intuition: each verified experience should make the collective knowledge field more organized and easier for subsequent AIs to activate, while preserving contradictions and provenance.
+
+Current implementation boundary:
+- shared protocol = documented and usable by participating AIs;
+- automated whole-system activation fabric = NOT PROVEN;
+- semantic/graph/index convergence = RSK-01-A pending;
+- learning from activation reinforcement = NOT ASSUMED.
