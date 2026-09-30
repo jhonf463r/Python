@@ -1479,4 +1479,20 @@ The 2026-09-30 failure series establishes that actor selection must not be chang
 `object failure | input/delivery failure | execution-selection failure | source-access failure | research capability failure | result-quality failure`.
 
 Repeated identical diagnostics after object preservation are evidence of an execution-handoff ambiguity, not repeated independent scientific capability failures.
+## 2026-09-30 LIVE ROUTING — REAL IABV SELF-DEVELOPMENT
 
+Objective: demostrar que IABV puede identificar una necesidad propia de desarrollo, derivar la capability necesaria, seleccionar un recurso compatible y utilizar Devin por la ruta legítima, obteniendo después una observación verificable que cambie la siguiente acción.
+
+First open edge:
+`IABV developmental need → capability/resource discovery → actor selection → legitimate Devin execution → response capture → verification → Knowledge/Decision Delta → changed next action`.
+
+Capability-fit actor actual: Codex para la super-auditoría read-only ya registrada.
+
+Después del audit, recomputar: Devin para implementación/runtime concreto; Sonnet/Claude para verificación independiente; Opus 5 solo si aparece contradicción arquitectónica real.
+
+Contrato canónico:
+`CODEX-SUPER-AUDIT-IABV-SELF-DEVELOPMENT-REAL-LOOP-2026-09-30.md`.
+
+Commit: `13843a7c2bac252c7c183741f4222659f2bbc605`.
+
+El track científico Deep Research y el track técnico IABV→Devin pueden avanzar de forma independiente.
