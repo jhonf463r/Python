@@ -5,6 +5,99 @@
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
 
 #
+## 2026-09-29 ACTIVE OVERLAY — SYMBIOSIS / PLASTICITY / SCIENTIFIC LEARNING
+
+**READ THIS OVERLAY BEFORE OLDER DATED SECTIONS WHEN THE OBJECTIVE TOUCHES SYMBIOSIS, ACTOR SELECTION, TOOL/RESOURCE DISCOVERY, KNOWLEDGE PLASTICITY, SCIENTIFIC SELF-STUDY OR AUTONOMOUS DEVELOPMENT.**
+
+Canonical absorption record:
+`CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md`
+
+This overlay absorbs a full 5246-line user-provided transcript scan and preserves its material method deltas without promoting its unresolved claims.
+
+### Dynamic prompt-selection protocol
+
+The next actor is **not inherited** from the previous actor's recommendation. Recompute:
+
+`objective → relevant memory → current verified truth → closed edges → first open causal edge → required capability → capability-fit actor → smallest discriminating action → observation → independent verification → reconciliation → Knowledge Delta → writeback`
+
+Historical `NEXT ACTOR` is evidence about the prior state, not current authority.
+
+A semantic next edge is not automatically the next actionable edge. Provenance, publication, runtime access, isolation, GUI activation, contract boundaries and independent verification can be higher-priority edges than the semantic goal named by a prior report.
+
+### META-01-E2a current status
+
+**PARTIALLY PROVEN — do not close globally.**
+
+Proven/reinforced in the absorbed transcript:
+- target implementation `475c033630bc6285fa39206a0c6294a5ad8fb7b0`;
+- Windows AppBootstrap/deferred metacognition produces an automatic birth frame; repeated reported runs reached five independent executions;
+- TCA/OSES/PCS natural trigger locations are source-identified;
+- a fresh PortableContext persistence/read-back result was reported through the public path.
+
+Still open/evidence-bounded:
+- natural GUI trigger activation and same-runtime consumer continuity;
+- consumer observation of the same birth `frame_id`;
+- independent verification of the newest persistence runtime artifact until remote publication/read-back;
+- intentional “on-demand” semantics unless explicitly specified by design.
+
+Continuity criterion:
+`published frame_id + runtime provenance + temporal ordering`, not Python object identity.
+
+### BIO-03 current state
+
+IABV contains partial existing capability across `ToolRegistry`, `ToolCard`, `ToolDiscoveryService`, `AssistantCapabilityRegistry`, `CapabilityReadinessService`, `SynapticRouter`, `InteractionModeSelector`, account/resource scanning, provider diagnostics, governance and adapters.
+
+Current precise gap:
+`required capability → normalized comparable candidates → availability/prerequisites/governance → justified selection` is **PARTIAL / NOT PROVEN** for arbitrary needs.
+
+Preserve:
+`tool exists ≠ tool usable ≠ account available ≠ authenticated ≠ authorized ≠ executable`.
+
+Do not invent a new general discovery organ before convergence over these existing owners. The discriminating fixture is read-only/deterministic, with candidates not named in the prompt and a negative control that removes the apparent best candidate.
+
+### BIO-02 current state
+
+Do not declare `uncertainty → development question` a TRUE GAP merely because no class has that exact name. First compose and inspect existing goal, intent, reasoning, OSES, self-analysis, experiment and decision mechanisms.
+
+Classification remains **partial / integration not proven** unless a concrete responsibility cannot be expressed by existing organs.
+
+### BIO-04 / knowledge plasticity
+
+Maximum code-derived level reported for the audited route:
+**P2 — score/preference adjustment**.
+
+Not proven in the examined general memory route:
+P3 knowledge update; P4 supersession/conflict resolution; P5 merge/split/contextualization; P6 relation reorganization; P7 verified experience changing a future decision under controlled conditions; P8.
+
+Preserve the distinction:
+`memory update ≠ knowledge revision ≠ topology reorganization`.
+
+A future controlled experiment must separate:
+`accumulation / weight adaptation / revision / contextual specialization / relationship reorganization / future decision change / improvement`.
+
+Do not build a “knowledge brain” or “plasticity engine” until existing composition is disproven.
+
+### Scientific development program
+
+Do not treat “superconsciousness” as an established result. Operationalize it as a falsifiable research hypothesis over measurable functional properties.
+
+Potential episode state:
+`objective, environment/self state, context, uncertainty, prediction/confidence, candidate/selected action, actor/tool/resource/capability, authorization, execution, observation, verification, outcome, knowledge before/after, weight before/after, relation before/after, decision before/after, behavior before/after, provenance`.
+
+Potential deltas:
+`ΔW, ΔM, ΔK, ΔR, ΔC, ΔD, ΔB, ΔO`.
+
+Do not infer `ΔW ⇒ learning` or `ΔK ⇒ intelligence` without the downstream evidence required by the claim.
+
+The strongest long-horizon causal target is:
+`experience → verified evidence → representation change → future decision change → behavior/outcome → independent verification → persistence → reuse`.
+
+### Routing implication
+
+ChatGPT remains a synthesis/reconciliation/writeback capability; Sonnet an independent forensic/verifier capability; Devin a bounded Windows/runtime implementation capability; Codex a deep source/provenance/contract archaeology capability; Opus 5 only for genuine higher-order architectural contradiction.
+
+These are capability observations, not a fixed sequence. Recompute the actor after every material reconciliation.
+
 ## ACTIVE BIO-UNIVERSAL-09.11 STATE — 2026-09-28
 
 **READ THIS ACTIVE OVERLAY BEFORE OLDER DATED SECTIONS.**
