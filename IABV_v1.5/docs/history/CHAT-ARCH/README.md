@@ -269,6 +269,16 @@ Participating AIs may use the same field immediately through the shared activati
 
 
 
+## 2026-09-30 DEEP-RESEARCH RESULT GATE
+
+Canonical adjudication:
+`DEEP-RESEARCH-RESULT-ADJUDICATION-2026-09-30.md`
+
+The requested scientific deep-research brief exists in the file record, but the substantive executed result is not yet present. Generic analyses of a document must not be absorbed as scientific findings.
+
+Once the actual result arrives:
+`result → source audit → evidence classification → IABV reconciliation → Knowledge Delta → current frontier → capability-fit routing → writeback`.
+
 ## 2026-09-30 HUMAN-MACHINE SHARED KNOWLEDGE FIELD
 
 Canonical coordination record:
