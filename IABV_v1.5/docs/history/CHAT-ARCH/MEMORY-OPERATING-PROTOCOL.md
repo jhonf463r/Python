@@ -968,3 +968,30 @@ When studying IABV as a developmental/scientific system:
 
 `current frontier → capability-fit actor` supersedes any fixed ChatGPT/Devin/Sonnet/Codex sequence.
 
+
+
+## 2026-09-29 SECOND-ORDER RULES — GENETIC PLASTICITY / SCIENTIFIC OBSERVABILITY
+
+When an objective concerns learning, plasticity, developmental cognition or scientific self-study, treat observability as a first-class constraint. IABV should be designed to expose enough before/after state, provenance and downstream consequence to distinguish real learning from accumulation.
+
+Required prompt derivation:
+CURRENT OBJECTIVE → RELEVANT MEMORY → CURRENT VERIFIED TRUTH → EXACT PROVENANCE → CLOSED EDGES → FIRST OPEN CAUSAL EDGE → UNCERTAINTY/EVIDENCE BOUNDARY → REQUIRED CAPABILITY → CAPABILITY-FIT ACTOR → SMALLEST DISCRIMINATING ACTION → FALSE-POSITIVE CONTROLS → STOP CONDITION → REQUIRED OBSERVATIONS → INDEPENDENT VERIFIER → KNOWLEDGE DELTA → WRITEBACK.
+
+For learning claims, separate:
+memory update;
+score/preference adaptation;
+knowledge revision;
+topology/relationship reorganization;
+future decision change;
+behavioral change;
+measured improvement.
+
+A changing weight is not semantic learning by itself. Persistence is not learning by itself. A new record is not a new concept by itself.
+
+“Genes” is an operational systems metaphor: preserve provenance, context/scope, evidence, revision lineage and downstream reuse from the outset so experience can modify reusable state without destroying historical lineage. Do not interpret this as biological equivalence.
+
+Use the causal target:
+experience → verified evidence → representation change → future decision change → behavior/outcome → independent verification → persistence → reuse.
+
+Do not add a plasticity engine or consciousness layer before convergence/anti-duplication and a discriminating experiment show that existing organs cannot express the required responsibility.
+
