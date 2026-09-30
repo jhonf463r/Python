@@ -1012,3 +1012,92 @@ It must:
 The immediate next capability test is now **input-integrity and semantic object preservation**, not scientific synthesis.
 
 END OF SEVENTH RESULT ADJUDICATION
+
+
+## 2026-09-30 DIAGNOSTIC RESULT — OBJECT PRESERVATION PARTIALLY PROVEN / REPOSITORY ACCESS FAILED
+
+The dedicated input-integrity diagnostic returned the exact echo token:
+
+`IABV-OBJ-ECHO-20260930-7Q4`
+
+It correctly reproduced the intended scientific research object and explicitly excluded:
+- cybersecurity;
+- generic architecture;
+- requirements engineering;
+- generic research methodology;
+- invented IABV current state.
+
+It also explicitly stated:
+`NO SCIENTIFIC RESEARCH EXECUTED IN THIS DIAGNOSTIC.`
+
+### Adjudication
+
+STATUS: **PARTIAL PASS — OBJECT PRESERVATION PROVEN, REPOSITORY-CONTEXT ACCESS NOT PROVEN**
+
+This is materially different from results 2–7.
+
+The actor preserved the scientific object despite failing to access the ten requested repository files. Therefore the current evidence supports:
+
+`prompt → scientific object preservation`
+
+under the diagnostic conditions.
+
+The diagnostic does NOT establish successful repository-context ingestion.
+
+### Important correction inside the diagnostic
+
+The response states that an external attachment is necessary to understand the scientific object because the repository files were inaccessible.
+
+That conclusion is **not fully correct**.
+
+The Phase 2A.1/2A.2 prompt itself explicitly defines the complete scientific object and central question. Therefore:
+
+`repository inaccessible ≠ scientific object unknowable`.
+
+The missing repository context limits IABV-specific contextual understanding, provenance and reconciliation, but it does not block understanding of the self-contained scientific research object.
+
+### New evidence boundary
+
+We now have separate evidence for three distinct properties:
+
+1. **Object preservation:** provisionally demonstrated by correct object echo.
+2. **Repository context ingestion:** failed/not demonstrated.
+3. **Scientific research execution:** intentionally not executed.
+
+Do not conflate these.
+
+### Root-cause hypothesis update
+
+The prior H1/H2 distinction can now be refined.
+
+The object echo shows the external actor can preserve the explicit task object when given a minimal self-contained diagnostic.
+
+Therefore future scientific research should not make repository access a hard prerequisite for object identity.
+
+Repository access remains useful for IABV contextual grounding, but the scientific task must remain self-contained.
+
+### Routing correction
+
+The immediate next scientific run should be a **self-contained external-science execution**, while treating repository access as optional contextual evidence rather than a blocking dependency.
+
+Actor:
+**ChatGPT Deep Research**
+
+Required capability remains:
+primary scientific literature synthesis + source verification + methodological discrimination.
+
+The next run must not depend on attachments or GitHub access to know the scientific object.
+
+### Current frontier
+
+`OBJECT PRESERVATION — PARTIALLY PROVEN`
+
+→ **EXTERNAL SCIENTIFIC LITERATURE EXECUTION**
+
+→ `SOURCE/EVIDENCE ADJUDICATION`
+
+→ `IABV STAGE B RECONCILIATION`
+
+Repository-context access becomes an auxiliary evidence channel for Stage B and for contextualization, not a prerequisite for identifying the external research object.
+
+END OF DIAGNOSTIC RESULT
