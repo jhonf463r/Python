@@ -471,3 +471,24 @@ IABV has substantial substrate organs and causal selector-level learning evidenc
 - Mode: read-only; no implementation, no mutation, no broad ontology/brain/router.
 - Follow-up only after Sonnet identifies the first open edge: **Devin** for Windows/browser runtime experiment if runtime execution is the required capability; **Sonnet** then independently verifies the resulting evidence.
 \n\n## 2026-09-29 — ABSORBED CHAT RECORD\n\n- **Source record:** `CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md`\n- **Origin:** user-provided pasted transcript `Markdown(20260930-023653).md` (5246 lines)\n- **Absorption target:** canonical operational memory on `main`\n- **Material themes:** frontier-driven actor selection; provenance/evidence stratification; META-01-E2a continuity; BIO-03 capability/resource discovery; BIO-02 convergence/anti-duplication; BIO-04 knowledge plasticity; scientific observability; endogenous scientific learning; reduction of routine human coordination.\n- **Preservation rule:** unresolved claims remain unresolved; this record is not technical task closure.\n
+
+## 2026-09-29 — SECOND-ORDER ABSORPTION RECORD
+
+Source record:
+CHAT-ARCH-2026-09-29-003-second-order-genetic-plasticity-scientific-observability.md
+
+Origin:
+user-provided pasted transcript Markdown(20260930-023653).md, 5246 lines.
+
+Purpose:
+Preserve the second-order developmental interpretation that IABV plasticity should be measurable from the beginning, distinguish memory/weights/knowledge/topology changes, establish scientific observability requirements, and formalize the endogenous scientific-learning hypothesis.
+
+Absorption state:
+CANONICALLY ABSORBED / UNRESOLVED CLAIMS PRESERVED.
+
+Related prior record:
+CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md
+
+Important:
+This is knowledge continuity, not technical task closure. BIO-04 remains P2 maximum on the audited route; META-01-E2a remains PARTIALLY PROVEN.
+
