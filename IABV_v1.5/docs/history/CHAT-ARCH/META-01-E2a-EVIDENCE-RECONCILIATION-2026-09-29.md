@@ -103,6 +103,50 @@ The historical report remains truthful about what was observed. The publication 
 
 ---
 
+## BIRTH FRAME EPISTEMIC RECONCILIATION
+
+### Sonnet Audit Finding
+An independent audit by Sonnet identified an inconsistent application of evidence standards in META-01-E2a:
+
+**Inconsistency Identified**:
+- PortableContext persistence was downgraded from PROVEN to REPORT-BACKED because the POST artifact was lost
+- Birth Frame generation remained classified as PROVEN despite the six cited Windows executions also lacking independently verifiable runtime artifacts
+
+**Audit Investigation**:
+- Attempted to locate the six reported frame_ids in repository blobs/commits
+- Attempted to identify recoverable runtime artifacts
+- Attempted to distinguish reports from primary evidence
+- Attempted to detect silent overstatements
+
+**Audit Result**:
+No independently verifiable runtime artifact was found for the six cited Birth Frame executions.
+
+### Epistemic Standard Correction
+To eliminate the double standard, the Birth Frame claim is now separated into:
+
+**A. Birth Frame Production Mechanism = VERIFIED**
+- The production code contains and connects the birth frame mechanism
+- This is established by source code inspection
+- The mechanism exists and is wired in the bootstrap
+
+**B. Birth Frame Runtime Generation = REPORT-BACKED**
+- The six Windows executions are documented in reports
+- The reported frame_ids cannot be independently verified in the repository
+- No recoverable runtime artifacts were found for those executions
+- The evidence is report-backed, not artifact-verified
+
+### Key Distinction
+```
+source mechanism ≠ runtime occurrence
+runtime occurrence ≠ causal proof
+report ≠ artifact
+artifact ≠ independent verification
+```
+
+This correction applies the same evidence standard uniformly across all META-01-E2a claims.
+
+---
+
 ## CANONICAL STATUS
 
 ### META-01-E2a Overall
@@ -112,12 +156,13 @@ The historical report remains truthful about what was observed. The publication 
 
 | Component | Status | Evidence Type |
 |-----------|--------|---------------|
-| Birth Frame generation | **PROVEN** | Runtime (6 independent Windows executions) |
+| Birth Frame production mechanism | **VERIFIED** | Source code inspection |
+| Birth Frame runtime generation | **REPORT-BACKED** | Reports (no independently verifiable artifacts) |
 | Natural trigger existence | **VERIFIED** | Source analysis |
 | PortableContext public path | **VERIFIED** | Source analysis |
 | Fresh persistence | **REPORT-BACKED** | Report data available, artifact lost |
 | POST artifact | **LOST** | Worktree cleanup |
-| Independent verification | **NOT POSSIBLE** | Artifact lost |
+| Independent verification of POST | **NOT POSSIBLE** | Artifact lost |
 | Same-frame continuity | **UNKNOWN** | Requires GUI interaction |
 
 ### MB-01 Status
