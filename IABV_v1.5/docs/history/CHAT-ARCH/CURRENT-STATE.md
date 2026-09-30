@@ -2218,3 +2218,61 @@ automatic IABV runtime mediation of this field remains unproven.
 
 Critical invariant:
 `human hypothesis != AI interpretation != verified IABV truth`.
+
+
+## 2026-09-30 LIVE OVERRIDE — DEEP-RESEARCH EXECUTION FRONTIER
+
+**READ THIS OVERLAY BEFORE OLDER DEEP-RESEARCH ENTRIES.**
+
+The current scientific frontier is **not** “find another research actor.” It is to establish the missing execution edge:
+
+`canonical self-contained scientific prompt → prompt actually launched → real scientific literature execution → result → source/evidence adjudication`.
+
+### Current truth
+
+- Object preservation has been provisionally demonstrated by the object-echo diagnostic.
+- Repository-context ingestion remains unproven; this is not a blocker for a self-contained Stage-A science run.
+- The returned diagnostic replays are **not** scientific failures and are **not** evidence of insufficient literature-research capability.
+- No Phase-2 scientific result has yet passed the acceptance gates.
+- The canonical self-contained Phase-2A.3 prompt now exists at:
+  `IABV_v1.5/docs/history/CHAT-ARCH/DEEP-RESEARCH-PHASE-2A3-SELF-CONTAINED-SCIENCE-2026-09-30.md`
+- Prompt commit:
+  `ee180c02e8e47a61be040090d24fac54173d3115`
+
+### Required actor/capability routing
+
+**Actor:** ChatGPT Deep Research / equivalent deep-research capability.
+
+**Capability:** primary scientific literature synthesis + source verification + methodological discrimination + falsification analysis.
+
+This actor remains selected because the required capability is still scientific literature synthesis, and the observed failures have not yet established an actor-capability bottleneck.
+
+### Hard route constraint
+
+Do **not** run another object-echo or repository-access diagnostic.
+
+Do **not** infer that a diagnostic replay means the scientific actor cannot perform the research.
+
+Do **not** reconstruct IABV architecture in Stage A.
+
+### Next edge
+
+`EXECUTION / INPUT PROVENANCE`
+
+→ `PHASE 2A.3 SELF-CONTAINED SCIENTIFIC EXECUTION`
+
+→ `SOURCE / EVIDENCE ADJUDICATION`
+
+→ `IABV STAGE B RECONCILIATION`
+
+→ `SMALLEST DISCRIMINATING EXPERIMENT`.
+
+### Next-stage scientific acceptance
+
+Require actual literature synthesis covering the capability ladder:
+`adaptation → reusable learning → knowledge/belief revision → contextual specialization → relation reorganization → causal learning → metacognitive control → self-modeling → self-directed experimentation → future-decision influence`.
+
+Use `ΔW/ΔM/ΔK/ΔR/ΔC/ΔD/ΔB/ΔO` and explicit false-positive controls.
+
+No implementation change is authorized from the present evidence.
+
