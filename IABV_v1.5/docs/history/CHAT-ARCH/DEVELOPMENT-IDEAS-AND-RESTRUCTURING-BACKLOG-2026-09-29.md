@@ -376,3 +376,29 @@ OBJECTIVE
 → NEXT ACTIVATION CONDITION
 
 No item becomes "closed" because it is described as designed, implemented, discussed or desirable.
+
+
+## 2026-09-29 MB-01 RESULT — PERSISTENCE REPORT-BACKED / REMOTE READ-BACK REQUIRED
+
+A Windows execution reported successful use of the public bootstrap path:
+
+export_portable_context(refresh=True)
+→ current_package(refresh=True)
+→ build_package()
+→ persistence
+→ read-back.
+
+Reported PRE/POST package identities and hashes indicate a fresh persisted package and matching read-back. However, the new runtime report and raw artifacts have not yet been published to GitHub, so the result remains REPORT-BACKED rather than ARTIFACT-VERIFIED.
+
+Do not rerun the experiment solely to compensate for missing publication.
+
+Required next action:
+report → raw artifacts → execution provenance → publication branch/commit → remote read-back → independent Sonnet audit.
+
+After independent verification:
+- if confirmed, change MB-01 to CLOSED / PROVEN;
+- if discrepancy appears, preserve the discrepancy as a new causal subtask;
+- only then reconsider activation of UFS-02 or BIO-02.
+
+Current strategic consequence:
+The persistence edge is no longer the conceptual bottleneck if the reported evidence survives publication and audit. The next high-value programmatic frontier is BIO-02: IABV-as-its-own-analyst, not another round of low-level wiring tests.
