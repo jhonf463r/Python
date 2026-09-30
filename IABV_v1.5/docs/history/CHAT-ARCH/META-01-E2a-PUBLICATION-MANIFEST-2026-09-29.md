@@ -2,7 +2,7 @@
 
 **Publication Date**: 2026-09-29
 **Publication Branch**: docs/meta-01-e2a-report-backed-persistence-2026-09-29
-**Publication SHA**: TO BE FILLED AFTER FINAL COMMIT (previous value 9d78e8d86 was incorrect)
+**Publication SHA**: 3354fadfb037ab20b616169216df18ccc9163ad9
 
 ---
 
