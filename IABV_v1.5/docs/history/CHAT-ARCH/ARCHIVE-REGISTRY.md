@@ -512,3 +512,21 @@ Required first action:
 `RSK-01-A` existing-organ composition and coverage audit.
 
 The record explicitly forbids premature creation of a `ResonanceEngine`, `SynapticEngine`, `KnowledgeBrain` or duplicate retrieval service.
+
+
+## 2026-09-30 — GITHUB-BACKED AI FRAME-ENTRY PROTOCOL
+
+Canonical record:
+`AI-FRAME-ENTRY-PROTOCOL-2026-09-30.md`
+
+Purpose:
+Provide a temporary IABV cognitive frame to participating AIs while IABV is not yet the continuously active runtime control plane.
+
+Operational transition:
+`AI-local frame → IABV canonical frame → objective activation → work → verification → writeback → next AI reactivation`
+
+Status:
+`DOCUMENTED / USABLE AS A CROSS-CHAT PROTOCOL / LIVE RUNTIME FRAME ENTRY NOT PROVEN`
+
+Relation:
+This protocol is the manual/AI-assisted predecessor to automated RSK-01 retrieval and frame activation.
