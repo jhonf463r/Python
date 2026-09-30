@@ -161,18 +161,22 @@ Worktree cleanup removed the POST artifact before it could be preserved or publi
 ## META-01-E2a STATUS
 
 ### Current Evidence State
-1. ✅ **PROVEN**: Automatic birth frame generation (6 independent Windows executions)
-2. ✅ **VERIFIED**: Natural trigger existence for TCA, OSES, PCS (source analysis)
-3. ✅ **VERIFIED**: PortableContext public path exists (source analysis)
-4. ✅ **REPORT-BACKED**: PortableContext fresh persistence (report data available, artifact lost)
-5. ❌ **UNKNOWN**: Same-frame continuity (requires GUI interaction)
+1. ✅ **VERIFIED**: Birth Frame production mechanism (source code inspection)
+2. ✅ **REPORT-BACKED**: Birth Frame runtime generation (6 Windows executions, no independently verifiable artifacts)
+3. ✅ **VERIFIED**: Natural trigger existence for TCA, OSES, PCS (source analysis)
+4. ✅ **VERIFIED**: PortableContext public path exists (source analysis)
+5. ✅ **REPORT-BACKED**: PortableContext fresh persistence (report data available, artifact lost)
+6. ❌ **UNKNOWN**: Same-frame continuity (requires GUI interaction)
+
+**Note**: Birth Frame classification reconciled via `META-01-E2a-EVIDENCE-RECONCILIATION-2026-09-29.md` to eliminate epistemic double standard. The six Windows executions remain as reported evidence, not as independently verifiable runtime artifacts.
 
 ### Persistence Edge Status
 **REPORT-BACKED** - The persistence edge is reported as successful based on report data, but cannot be independently verified because the POST artifact was lost when the worktree was deleted.
 
 ### Overall E2a Status
 **PARTIALLY PROVEN** - E2a is partially proven:
-- Birth frame automatic generation: PROVEN
+- Birth Frame production mechanism: VERIFIED
+- Birth Frame runtime generation: REPORT-BACKED
 - Triggers existence: VERIFIED
 - PCS persistence: REPORT-BACKED (not artifact-verified)
 - Same-frame continuity: UNKNOWN (requires GUI interaction)
