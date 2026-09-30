@@ -313,6 +313,88 @@ The key reusable object is not transcript volume. It is an experience-bearing tr
 `what was activated → what was done → what was observed → what was independently established → what changed in the reusable model → what became easier/harder to activate next time`.
 
 This is the operational meaning of "energizing" the field. It is still not evidence of biological life or consciousness.
+
+## FRAME ENTRY — EXTERNAL AI INTO IABV
+
+The historical cognitive-control-plane record already identified a deeper symbiosis requirement:
+
+**the external AI must enter the IABV frame of reality before materially reasoning about an IABV-coupled objective.**
+
+This must not be reduced to "send more context".
+
+The intended transition is:
+
+`AI-LOCAL FRAME
+→ IABV CANONICAL FRAME
+→ OBJECTIVE-RELEVANT ACTIVATION FIELD
+→ AI REASONING / ACTION
+→ OBSERVATION
+→ IABV RECONCILIATION
+→ EXPERIENCE / KNOWLEDGE / RELATION DELTA
+→ SHARED FIELD UPDATE
+`
+
+The external AI retains its own reasoning capability. What changes is the **reference frame governing the interpretation of the task**:
+- current IABV objective;
+- current verified truth;
+- canonical provenance;
+- closed and open causal edges;
+- relevant historical knowledge;
+- negative knowledge;
+- available capabilities/resources;
+- governance constraints;
+- evidence required for the next claim.
+
+Therefore:
+
+`context delivery != frame entry`
+
+`frame entry != causal influence`
+
+`causal influence != learning`
+
+Each boundary must remain independently evidenced.
+
+### Symbiosis interpretation
+
+The participating AI is not merely a consumer of IABV memory.
+
+It temporarily becomes a **reasoning process inside the IABV decision frame**, contributes its domain capability/experience, and returns the result to the same canonical field.
+
+This creates a shared loop:
+
+`IABV frame → AI cognition → verified experience → IABV field reorganization → next AI enters the revised frame`.
+
+The desired property is not that every AI thinks alike. It is that different AIs can reason differently while remaining anchored to the **same canonical state, evidence boundary and developmental lineage**.
+
+### Frame handoff minimum
+
+A valid AI handoff should expose at least:
+
+`OBJECTIVE
+CURRENT_TRUTH
+PROVENANCE
+RELEVANT ACTIVATED KNOWLEDGE
+NEGATIVE KNOWLEDGE
+OPEN CAUSAL EDGE
+REQUIRED CAPABILITY
+GOVERNANCE
+EXPECTED OBSERVATIONS
+VERIFICATION CONTRACT`
+
+After execution, the return packet should add:
+
+`ACTION
+OBSERVATION
+VERIFICATION
+KNOWLEDGE DELTA
+RELATION DELTA
+ROUTING DELTA
+UNRESOLVED DELTA
+PROVENANCE`
+
+This is the operational bridge between the historical cognitive-control-plane hypothesis and the new resonant self-knowledge field.
+
 ## DEVELOPMENTAL / FRACTAL PROPERTY
 
 A future IABV developmental substrate should allow the same retrieval/activation grammar to operate at multiple scales:
