@@ -247,3 +247,17 @@ For future chats about biosofía artificial, self-use of IABV, autonomous develo
 Then follow `MEMORY-OPERATING-PROTOCOL.md` and `CONTEXT-INDEX.md` to activate only the relevant knowledge.
 
 This entrypoint is strategic/research direction, not proof of achieved autonomy, consciousness, evolution or open-ended development.
+
+
+## 2026-09-29 LATEST SECOND-ORDER DEVELOPMENTAL ABSORPTION
+
+Latest absorbed record:
+IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-29-003-second-order-genetic-plasticity-scientific-observability.md
+
+Use it for objectives involving intrinsic plasticity, knowledge revision/reorganization, scientific telemetry, endogenous hypothesis generation, developmental autonomy or functional consciousness research.
+
+It refines rather than replaces:
+CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md
+
+The operational lesson is that IABV should be born with observable state/provenance sufficient to measure whether verified experience changes reusable knowledge, relationships, decisions and later outcomes. “Superconsciousness” remains a falsifiable research hypothesis, not an achieved property.
+
