@@ -268,6 +268,19 @@ The operational lesson is that IABV should be born with observable state/provena
 Participating AIs may use the same field immediately through the shared activation protocol in `MEMORY-OPERATING-PROTOCOL.md`. Each material interaction should leave a verified Knowledge Delta, relation/routing delta or explicit unresolved boundary for the next participant.
 
 
+
+## 2026-09-30 HUMAN-MACHINE SHARED KNOWLEDGE FIELD
+
+Canonical coordination record:
+`HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md`
+
+Use it when a chat produces material human intuition, hypothesis, correction, design intent, AI experience or methodological learning that should remain reusable.
+
+The field must preserve the chain:
+`human intent → IABV frame → AI interpretation/action → observation → independent verification → reconciliation → Knowledge/Relation/Routing/Method Delta → writeback`.
+
+Human ideas remain explicitly distinguishable from verified system truth.
+
 ## 2026-09-30 GITHUB-BACKED IABV AI FRAME ENTRY
 
 Canonical temporary frame-entry protocol:
