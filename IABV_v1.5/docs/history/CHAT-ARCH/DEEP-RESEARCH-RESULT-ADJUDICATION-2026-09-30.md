@@ -1242,3 +1242,52 @@ The newly created canonical operating protocol is:
 `DEEP-RESEARCH-OPERATING-PROTOCOL-2026-09-30.md`.
 
 END OF DIAGNOSTIC REPLAY ADJUDICATION
+
+## 2026-09-30 LIVE RECONCILIATION — PHASE 2A.3 ARTIFACT NOW PRESENT
+
+The missing execution artifact identified in the prior replay adjudication has now been created and published:
+
+`DEEP-RESEARCH-PHASE-2A3-SELF-CONTAINED-SCIENCE-2026-09-30.md`
+
+Creation commit:
+`ee180c02e8e47a61be040090d24fac54173d3115`
+
+This closes the **prompt-artifact availability** gap, but does **not** close the execution-provenance gap.
+
+### Current status
+
+`PROMPT ARTIFACT = PROVEN / REMOTELY PRESENT`
+
+`OBJECT PRESERVATION = PROVISIONALLY PROVEN`
+
+`REPOSITORY CONTEXT INGESTION = NOT PROVEN`
+
+`ACTUAL PHASE-2A.3 SCIENTIFIC EXECUTION = NOT YET PROVEN`
+
+`PHASE-2 SCIENTIFIC RESULT ACCEPTANCE = OPEN`
+
+The next evidence must establish the actual launch of the Phase-2A.3 research task and return substantive scientific literature synthesis.
+
+### Required execution identity
+
+`EXECUTION_ID` + `OBJECT_ID` + `RESEARCH_PHASE=PHASE-2A.3` + `RUN_TIMESTAMP`
+
+The diagnostic token `IABV-OBJ-ECHO-20260930-7Q4` must not be reused as the research run identity.
+
+### No more diagnostics
+
+The object-preservation diagnostic has already yielded the relevant information. Another echo/repository diagnostic would be redundant unless a newly observed interface failure creates a genuinely different uncertainty.
+
+### Next acceptance
+
+`actual scientific result`
+→ `OBJECT ALIGNMENT`
+→ `REQUIRED COVERAGE`
+→ `SOURCE SUPPORT`
+→ `EVIDENCE QUALITY`
+→ `METHODOLOGICAL RIGOR`
+→ `SYNTHESIS QUALITY`
+→ `IABV STAGE B RECONCILIATION`.
+
+Do not route to an implementation actor until the scientific result is accepted and the IABV-specific frontier is recomputed.
+
