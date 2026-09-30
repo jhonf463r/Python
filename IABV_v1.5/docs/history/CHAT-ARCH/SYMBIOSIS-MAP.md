@@ -1536,3 +1536,21 @@ from canonical memory, then reconcile against current repository/runtime truth.
 
 The desired property is not perfect historical recall. It is **reconstructable decision-relevant state**.
 
+
+
+## 2026-09-29 SECOND-ORDER SIMBIOSIS — EXPERIENCE → PLASTICITY → FUTURE DECISION
+
+The long-horizon symbiosis target is increasingly endogenous:
+IABV observation → IABV hypothesis → IABV experiment → independent verification → knowledge update → new hypothesis.
+
+External AIs remain capability-specific instruments for scientific synthesis, source archaeology, adversarial verification and bounded runtime execution. Their historical role assignments are capability observations, never a fixed pipeline.
+
+The useful learning unit is contextual:
+actor × tool × capability × resource × environment × context × outcome × time.
+
+The developmental signal is not how many records or scores exist. It is whether verified experience changes reusable representation, changes a later decision or action, produces a measurable consequence, persists appropriately and is reused.
+
+New evidence may confirm, contradict, specialize, generalize, supersede, downgrade, promote, merge, split or contextualize prior knowledge. Contradiction must not automatically become replacement.
+
+The stronger symbiotic objective is to reduce routine human transport of context, prompts, actor names and results while preserving human authority at real governance, authorization, security and high-impact decision boundaries.
+
