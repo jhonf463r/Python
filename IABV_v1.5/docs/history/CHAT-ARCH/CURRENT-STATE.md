@@ -2130,3 +2130,33 @@ META-01-E2a therefore remains PARTIALLY PROVEN pending:
 Do not advance to semantic E2b on the basis of this report alone.
 
 After persistence verification, the preferred high-information strategic frontier is META-01 IABV-native self-assessment rather than additional low-level discernment wiring, unless reconciliation reveals a new causal edge.
+
+
+## 2026-09-29 SECOND-ORDER ACTIVE OVERLAY — GENETIC PLASTICITY / SCIENTIFIC OBSERVABILITY
+
+Primary record:
+IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-29-003-second-order-genetic-plasticity-scientific-observability.md
+
+This overlay refines the 2026-09-29 symbiosis/plasticity state. The developmental thesis is that plasticity should be observable from the system's design primitives, not retrofitted later as a separate organ.
+
+Operational invariant:
+BEFORE STATE → EXPERIENCE → VERIFIED EVIDENCE → AFTER STATE → FUTURE CONSEQUENCE
+
+Preserve separate strata:
+ΔM memory update;
+ΔW score/preference adaptation;
+ΔK knowledge revision;
+ΔR relation/topology reorganization;
+ΔC contextualization;
+ΔD decision change;
+ΔB behavior change;
+ΔO outcome change.
+
+Maximum audited BIO-04 evidence remains P2. P3–P8 require direct causal evidence and are not promoted.
+
+Scientific observability is now an explicit developmental requirement. Candidate telemetry must support reconstructing objective, context, self/environment state, uncertainty/prediction, actor/tool/resource/capability, execution/observation/verification/outcome, before/after knowledge/weights/relations/decision/behavior and provenance. These are candidate measurements, not an automatic implementation mandate.
+
+“Superconsciousness” remains an operational research hypothesis, not an established state. The nearer scientific frontier is measurable knowledge revision, contextualization, relation reorganization, future decision change and endogenous hypothesis→experiment→verification→knowledge cycles.
+
+Do not build a PlasticityEngine, KnowledgeBrain or SuperConsciousnessEngine before existing-organ convergence and a discriminating experiment demonstrate a true responsibility gap.
+
