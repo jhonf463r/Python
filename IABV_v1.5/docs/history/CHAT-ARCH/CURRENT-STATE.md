@@ -2004,3 +2004,36 @@ Still open:
 - real production-thread interaction.
 
 Do not advance to E2b.
+
+
+## 2026-09-29 META-01-E2a — PERSISTENCE EXECUTION REPORTED
+
+A Windows execution reports fresh PortableContext persistence through the public bootstrap path and read-back, using target SHA 475c033630bc6285fa39206a0c6294a5ad8fb7b0.
+
+Reported chain:
+export_portable_context(refresh=True)
+→ current_package(refresh=True)
+→ build_package()
+→ latest.json
+→ read-back.
+
+Reported POST package:
+164019f2-ac3e-49a8-9bf4-65f69f65213c
+
+Reported updated_at_utc:
+2026-09-29T23:56:27.258922Z
+
+The report states returned and persisted package identity/timestamp match and 42 sections match.
+
+Evidence classification at canonical reconciliation:
+REPORT-BACKED / REMOTE READ-BACK PENDING.
+
+Do not promote this new execution to artifact-verified until the report/raw artifacts are published and remotely read back, followed by independent Sonnet verification.
+
+META-01-E2a therefore remains PARTIALLY PROVEN pending:
+1. independent verification of this fresh persistence artifact;
+2. natural GUI same-frame continuity remains a separate environmental sub-experiment.
+
+Do not advance to semantic E2b on the basis of this report alone.
+
+After persistence verification, the preferred high-information strategic frontier is META-01 IABV-native self-assessment rather than additional low-level discernment wiring, unless reconciliation reveals a new causal edge.
