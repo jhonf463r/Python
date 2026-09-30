@@ -360,3 +360,23 @@ Acceptance order:
 `OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
 
 If this exact prompt is verified as delivered and the actor still substitutes another object, do not repeat an equivalent run with the same actor; recompute routing from the observed frontier.
+
+
+## 2026-09-30 DEEP-RESEARCH OPERATING PROTOCOL
+
+Canonical operating protocol:
+`DEEP-RESEARCH-OPERATING-PROTOCOL-2026-09-30.md`
+
+Use this whenever IABV invokes external Deep Research through ChatGPT.
+
+Core control:
+`objective → research contract → execution identity → input/object verification → bounded research → result-signature validation → source/evidence adjudication → accepted knowledge → IABV reconciliation`.
+
+Critical lesson from the 2026-09-30 failure series:
+- object substitution can occur even when the report is coherent;
+- missing inputs can trigger generic fallback completion;
+- a diagnostic can be accidentally relaunched instead of the intended research task;
+- object preservation, repository ingestion and scientific execution are separate evidence claims;
+- report quality must be evaluated only after object alignment.
+
+Do not treat Deep Research as epistemic authority over IABV. Select/change actors only from the current evidential frontier.
