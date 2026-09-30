@@ -911,3 +911,104 @@ Only after this interface/input uncertainty is resolved should another actor or 
 Retain only the methodological lesson that missing inputs require fail-closed behavior rather than generic completion. No claims from this material establish anything about the scientific capability ladder or IABV current state.
 
 END OF SIXTH RESULT ADJUDICATION
+
+
+## 2026-09-30 SEVENTH RESULT — DOCUMENT-CENTRIC DRIFT RECURSION
+
+A seventh material was received beginning with:
+
+`# Resumen Ejecutivo`
+
+and describes itself as an exhaustive analysis of the "Phase 2A.1 specification". It extracts supposed functional/non-functional requirements, invents a generic enterprise information system, proposes software architecture, schedules, risks, technology choices and acceptance tests.
+
+### Adjudication
+
+STATUS: **REJECTED FOR PHASE 2A / DOCUMENT-CENTRIC DRIFT CONFIRMED**
+
+The result again treats the research assignment itself as the object to be analyzed:
+
+`Phase 2A.1 task specification → interpreted as software specification → generic requirements/architecture report`.
+
+This is materially the same semantic substitution already observed in results 3, 4 and 6, but it is important because it occurred after the repository-context-aware research prompt was designed.
+
+The report explicitly invents a generic system and then evaluates it. Examples include:
+- user-management requirements;
+- CRUD requirements;
+- 2-second response targets;
+- 99% uptime;
+- MFA;
+- Windows/Linux/mobile portability;
+- REST/GraphQL/API architecture;
+- relational databases;
+- Docker/Kubernetes;
+- cloud deployment;
+- six-month Gantt schedule;
+- 80% code coverage;
+- security-penetration-test requirements.
+
+None of these establish facts about IABV.
+
+### Critical observation
+
+The seventh result does not merely drift into a neighboring topic. It demonstrates a recurrent parsing behavior:
+
+`document/specification language → "analyze the specification" → generate conventional software-engineering completion`.
+
+The fact that the report is internally coherent does not make its target correct.
+
+New negative knowledge:
+
+`PHASE LABEL ≠ DOCUMENT OBJECT`
+
+`TASK SPECIFICATION WITH "REQUIREMENTS" LANGUAGE ≠ SOFTWARE REQUIREMENTS SPECIFICATION`
+
+`ATTACHED PROMPT ≠ SYSTEM REQUIREMENTS`
+
+`MISSING/AMBIGUOUS DOCUMENT CONTEXT ≠ AUTHORIZATION TO INVENT A GENERIC SYSTEM`.
+
+### Current evidence boundary
+
+This result still does not prove whether the exact Phase 2A.2 canonical prompt was actually delivered intact to the external research actor.
+
+Therefore the prior H1/H2 distinction remains open:
+
+H1 — canonical prompt/context was delivered and the actor substituted the object.
+
+H2 — the interface/input packaging caused a different task representation to reach the actor.
+
+Do not collapse these without an input receipt.
+
+### Immediate routing correction
+
+Do **not** launch another broad scientific Deep Research run now.
+
+The smallest discriminating action is a dedicated input-integrity/object-echo diagnostic:
+
+`DEEP-RESEARCH-INTERFACE-DIAGNOSTIC-OBJECT-ECHO-2026-09-30.md`.
+
+It must:
+- pin the exact repository SHA;
+- read only the canonical context files;
+- reproduce the research object in one sentence;
+- explicitly distinguish TASK SPECIFICATION from OBJECT OF SCIENTIFIC STUDY;
+- list forbidden substitutions;
+- use a unique echo token;
+- execute no scientific research.
+
+### Current frontier after result 7
+
+`INPUT / DELIVERY PROVENANCE`
+
+→ `OBJECT PRESERVATION`
+
+→ `PHASE-2A EXTERNAL SCIENTIFIC RESULT`
+
+→ `SOURCE / EVIDENCE ADJUDICATION`
+
+→ `IABV STAGE B`
+
+→ `SMALLEST DISCRIMINATING EXPERIMENT`.
+
+The immediate next capability test is now **input-integrity and semantic object preservation**, not scientific synthesis.
+
+END OF SEVENTH RESULT ADJUDICATION
