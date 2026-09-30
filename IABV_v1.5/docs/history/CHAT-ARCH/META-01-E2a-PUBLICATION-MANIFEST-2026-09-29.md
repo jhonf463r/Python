@@ -2,7 +2,9 @@
 
 **Publication Date**: 2026-09-29
 **Publication Branch**: docs/meta-01-e2a-report-backed-persistence-2026-09-29
-**Publication SHA**: 3354fadfb037ab20b616169216df18ccc9163ad9
+**Initial Publication Commit**: 931e24e8787a210e92c55af536dd4e794aa5c4a3
+**Manifest Correction Commit**: 44a87f803c98a5dea5716fcc5a1e24caf895bf8a
+**Current Manifest Version**: this file at HEAD of the publication branch
 
 ---
 
