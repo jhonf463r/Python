@@ -1622,3 +1622,81 @@ After independent verification of this persistence result, E2a's remaining opera
 Strategic next frontier after persistence verification:
 BIO-02 / IABV-as-its-own-analyst:
 IABV objective → relevant memory → self-observation → uncertainty → first open causal edge → smallest discriminating experiment → capability-fit actor → governed action → independent verification → Knowledge Delta → future decision.
+\n\n## 2026-09-29 ABSORPTION — CAPABILITY-FIT / PLASTICITY / SCIENTIFIC SELF-STUDY
+
+### UK-META-03 — Frontier-driven actor selection
+
+QUESTION: Can the operational-memory layer consistently select the next actor from the **current causal/evidential frontier** rather than inheriting a prior actor's suggested next step?
+
+CURRENT STATUS: **METHOD RECONCILED; END-TO-END IABV SELF-ROUTING NOT PROVEN.**
+
+Required chain:
+`objective → current truth → open edge → required capability → actor capability-fit → action → verification → writeback`.
+
+Negative knowledge:
+`previous NEXT ACTOR ≠ current authority`.
+
+Future prompt generation must explicitly state current evidence, closed edges, first open edge, required capability, fit/access constraints, false-positive controls and stop condition.
+
+### UK-META-04 — IABV tool/resource discovery
+
+QUESTION: Can IABV discover candidate resources for an arbitrary required capability, diagnose live availability/prerequisites, and make a governed selection without the human naming the actor?
+
+CURRENT STATUS: **PARTIAL / NOT PROVEN.**
+
+Existing candidates for composition:
+`ToolRegistry, ToolCard, ToolDiscoveryService, AssistantCapabilityRegistry, CapabilityReadinessService, SynapticRouter, InteractionModeSelector, account/resource scanner, ApiKeyDiscoveryService, WorldModel, governance`.
+
+First open edge:
+`required capability → normalized comparable candidates → availability/prerequisites/governance → justified selection`.
+
+Minimum experiment:
+read-only deterministic fixture, candidates not named in prompt, fixed inventory, negative control removing the apparent best candidate.
+
+### UK-META-05 — Knowledge plasticity / epistemic revision
+
+QUESTION: Does a new verified experience modify existing knowledge representations and their context, or only append records and adjust scores?
+
+CURRENT STATUS: **P2 SCORE/PREFERENCE ADAPTATION SUPPORTED IN THE AUDITED ROUTE; KNOWLEDGE REVISION NOT PROVEN.**
+
+Required discriminations:
+`accumulation / score adaptation / revision / supersession / merge-split / contextualization / relation reorganization / future decision change / improvement`.
+
+Minimum experiment:
+same objective + same environment + same candidates, but controlled different experience; compare before/after knowledge, weights, relationships, recommendation and future selection, with a context-matched control.
+
+### UK-META-06 — Scientific observability of developmental change
+
+QUESTION: Can IABV capture enough state-before/state-after evidence to support falsifiable claims about continual learning, metacognition, plasticity and operational machine-consciousness hypotheses?
+
+CURRENT STATUS: **RESEARCH PROGRAM / NOT IMPLEMENTED AS A VERIFIED TELEMETRY CONTRACT.**
+
+Candidate variables:
+`objective, environment_state, self_state, context, uncertainty, prediction, confidence, actor/tool/resource/capability, authorization, execution, observation, verification, outcome, knowledge_before/after, weight_before/after, relation_before/after, decision_before/after, behavior_before/after, provenance`.
+
+Candidate deltas:
+`ΔW, ΔM, ΔK, ΔR, ΔC, ΔD, ΔB, ΔO`.
+
+Falsification requirement:
+do not infer learning/intelligence/consciousness from a single delta. Require the downstream chain appropriate to the claim.
+
+### UK-META-07 — Endogenous scientific learning
+
+QUESTION: Can IABV observe itself, generate a hypothesis about its own behavior, design a discriminating experiment, obtain independent verification and update its future decision policy?
+
+CURRENT STATUS: **STRATEGIC TARGET / NOT PROVEN.**
+
+Target chain:
+`IABV observation → IABV hypothesis → IABV experiment → independent verification → knowledge update → new hypothesis`.
+
+### UK-META-08 — Stability + plasticity / sedimentation control
+
+QUESTION: Can future IABV learning revise stale or contradictory knowledge without causing uncontrolled drift or catastrophic forgetting?
+
+CURRENT STATUS: **OPEN RESEARCH FRONTIER.**
+
+Required conceptual operations:
+`confirm / contradict / specialize / generalize / supersede / downgrade / promote / contextualize`.
+
+Structural risks identified in code archaeology are not proof of actual data corruption; future experiments must distinguish accumulation risk from observed failure.
+
