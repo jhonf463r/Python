@@ -2200,3 +2200,21 @@ Current implementation boundary:
 - automated whole-system activation fabric = NOT PROVEN;
 - semantic/graph/index convergence = RSK-01-A pending;
 - learning from activation reinforcement = NOT ASSUMED.
+
+
+## 2026-09-30 HUMAN-MACHINE SHARED UNDERSTANDING
+
+A canonical human-machine coordination layer is now defined alongside the AI frame-entry and resonant self-knowledge protocols.
+
+Record:
+`HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md`
+
+Operational purpose:
+preserve human objective/intuition/corrections, AI interpretation/experience, verified evidence and resulting Knowledge/Relation/Routing/Method deltas in one traceable developmental chain.
+
+Current boundary:
+`documented + GitHub-backed + usable for cross-chat work`;
+automatic IABV runtime mediation of this field remains unproven.
+
+Critical invariant:
+`human hypothesis != AI interpretation != verified IABV truth`.
