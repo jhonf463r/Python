@@ -530,3 +530,18 @@ Status:
 
 Relation:
 This protocol is the manual/AI-assisted predecessor to automated RSK-01 retrieval and frame activation.
+
+
+## 2026-09-30 — HUMAN-MACHINE KNOWLEDGE COORDINATION RECORD
+
+Canonical record:
+`HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md`
+
+Purpose:
+preserve human intent and conceptual discoveries together with AI experience, verification and IABV model changes.
+
+Status:
+`DOCUMENTED / GITHUB-BACKED / CROSS-CHAT USABLE`
+
+Critical distinction:
+human hypothesis, AI interpretation and verified system truth remain separately typed.
