@@ -545,3 +545,28 @@ Status:
 
 Critical distinction:
 human hypothesis, AI interpretation and verified system truth remain separately typed.
+
+
+## 2026-09-30 — PHASE 2A DEEP-RESEARCH EXECUTION PROMPT
+
+Canonical prompt:
+`DEEP-RESEARCH-PHASE-2A-SCIENCE-ONLY-2026-09-30.md`
+
+Purpose:
+Bound the next external scientific research run after repeated Phase-2 topic/document drift.
+
+Capability-fit actor:
+**ChatGPT Deep Research / equivalent deep-research capability**
+
+Scope:
+external scientific literature on adaptation, continual learning, knowledge/belief revision, contextualization, relation reorganization, causal learning, metacognitive control, self-modeling, self-directed scientific experimentation and machine-consciousness indicators.
+
+Explicit separation:
+Stage A does not reconstruct IABV architecture or establish current IABV state. Stage B performs that reconciliation only after Stage A passes the result-signature gate.
+
+Acceptance sequence:
+`research contract → bounded research → result-signature gate → source/evidence adjudication → Stage B reconciliation`.
+
+Related adjudication:
+`DEEP-RESEARCH-RESULT-ADJUDICATION-2026-09-30.md`.
+
