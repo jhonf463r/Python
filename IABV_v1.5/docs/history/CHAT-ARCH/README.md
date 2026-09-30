@@ -321,3 +321,22 @@ Current status:
 
 First task:
 `RSK-01-A` — prove what existing retrieval/index/registry/graph/self-audit organs can already compose before creating anything new.
+
+
+## 2026-09-30 DEEP-RESEARCH PHASE 2A EXECUTION LOCK
+
+Canonical next prompt:
+`DEEP-RESEARCH-PHASE-2A-SCIENCE-ONLY-2026-09-30.md`
+
+Routing:
+**ChatGPT Deep Research / equivalent deep-research capability**
+
+Stage A is external science only. It must not reconstruct current IABV architecture or produce implementation/security audit material.
+
+Acceptance:
+`scope gate → result-signature gate → source/evidence adjudication`.
+
+Only after acceptance:
+`Stage B IABV reconciliation → smallest discriminating experiment → frontier-driven actor selection`.
+
+This lock was created after one partially valid Phase-1 consciousness review and three consecutive non-compliant Phase-2 results that drifted into generic security/architecture analysis.
