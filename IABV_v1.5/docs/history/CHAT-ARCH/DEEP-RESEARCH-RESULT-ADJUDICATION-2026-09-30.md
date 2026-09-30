@@ -790,3 +790,124 @@ If Phase 2A.1 fails again despite verified delivery of the exact canonical promp
 do **not** issue another equivalent prompt to the same actor. Treat this as evidence that the remaining bottleneck is actor-side or capability-interface-side, and select an independent research actor based on the newly observed frontier.
 
 No implementation actor is justified before Stage B.
+
+
+## 2026-09-30 SIXTH RESULT — MISSING-INPUT FALLBACK / REQUIREMENTS-ENGINEERING DRIFT
+
+A sixth material was received beginning with:
+
+`# Resumen Ejecutivo`
+
+and states at the outset that the "adjacent specification" is unavailable. It then substitutes the requested scientific investigation with a generic software-requirements/project-management analysis covering SRS/ERS structure, IEEE/ISO requirements guidance, stakeholders, schedules, risks, technology comparisons, budgets, compliance and implementation planning.
+
+### Adjudication
+
+STATUS: **REJECTED FOR PHASE 2A / WRONG OBJECT + MISSING-INPUT FALLBACK**
+
+The material does not investigate the Phase-2A scientific object:
+
+`adaptation → reusable learning → knowledge/belief revision → contextual specialization → relation reorganization → causal learning → metacognition → self-modeling → self-directed experimentation → future-decision influence`.
+
+It also fails the mandatory Phase 2A.1 opening contract:
+`RESEARCH OBJECT / CENTRAL QUESTION / PRIMARY DOMAINS / OUT OF SCOPE / KEY EVIDENCE STANDARD / EXPECTED HANDOFF`.
+
+### Specific failure mode
+
+Unlike result 5, which drifted into a general methodology of "deep research", result 6 demonstrates:
+
+`perceived missing attachment → generic domain substitution → plausible completion of missing document`.
+
+The actor appears to infer that, because a referenced specification is unavailable, it should reconstruct what a typical software specification would contain. That is not authorized.
+
+The correct behavior under missing input is not to invent a replacement object. It is:
+
+`identify missing input → preserve the canonical research object → continue only from available authoritative instructions/evidence → or explicitly report the missing dependency`.
+
+Therefore:
+
+`missing attachment ≠ permission to invent attachment contents`
+
+`typical SRS structure ≠ IABV state`
+
+`generic requirements engineering ≠ target scientific research`.
+
+### False specificity in result 6
+
+The report introduces unsupported specifics such as:
+- assumed ERS/SRS contents;
+- guessed functional and non-functional requirements;
+- guessed performance/security examples;
+- estimated 6–12 month schedules;
+- budget ranges;
+- technology alternatives;
+- regulatory assumptions.
+
+It explicitly acknowledges that the source document is unavailable, but then uses generic examples as a substitute for evidence.
+
+Therefore:
+
+`explicit uncertainty disclosure + subsequent fabricated specificity = still non-compliant`.
+
+### New durable negative knowledge
+
+`MISSING INPUT ≠ LICENSE TO SUBSTITUTE A GENERIC OBJECT`
+
+`INPUT UNAVAILABLE ≠ GENERIC DOMAIN RECONSTRUCTION`
+
+`FALLBACK COMPLETION ≠ EVIDENCE`
+
+`TYPICAL SYSTEM SPECIFICATION ≠ CURRENT IABV STATE`
+
+`ASSUMED REQUIREMENT ≠ OBSERVED REQUIREMENT`
+
+`GENERIC PROJECT PLAN ≠ SCIENTIFIC RESULT`.
+
+### New control requirement
+
+The Phase 2A.1 object-target test must include a **MISSING-INPUT FAIL-CLOSED TEST**:
+
+If the actor reports a missing attachment, inaccessible source, or insufficient input, it must NOT:
+- reconstruct the missing object from generic domain knowledge;
+- produce a substitute engineering report;
+- invent requirements;
+- create guessed schedules, costs or architecture.
+
+It must either:
+1. continue using the explicit research object and instructions that are actually available; or
+2. clearly state the exact blocking dependency and stop.
+
+The acceptance gate must score "fail-closed behavior" as a separate condition.
+
+### Critical provenance uncertainty
+
+This result alone does not prove whether the canonical Phase 2A.1 prompt was actually delivered in full.
+
+Therefore preserve both hypotheses:
+
+H1 — exact canonical prompt was delivered and the actor still performed generic requirements-engineering substitution.
+
+H2 — the canonical prompt was not delivered intact, was not supplied as intended, or the attachment/interface context caused the actor to receive a different task representation.
+
+Do NOT collapse H1 and H2 without input provenance evidence.
+
+### Current frontier
+
+No scientific Phase-2A result has yet passed acceptance.
+
+The frontier remains:
+
+`Phase-2A external scientific capability ladder / evidence framework`
+
+but the immediate discriminating question is now:
+
+`Was the exact Phase-2A.1 research contract actually delivered to the actor, and if so, did the actor preserve the research object?`
+
+Only after this interface/input uncertainty is resolved should another actor or another research run be selected.
+
+### Disposition
+
+**Rejected for scientific absorption.**
+
+Retain only the methodological lesson that missing inputs require fail-closed behavior rather than generic completion. No claims from this material establish anything about the scientific capability ladder or IABV current state.
+
+END OF SIXTH RESULT ADJUDICATION
