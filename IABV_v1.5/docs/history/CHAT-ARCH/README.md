@@ -447,4 +447,22 @@ Do not reuse `IABV-OBJ-ECHO-20260930-7Q4` as the research execution identity.
 Do not select an implementation actor from the scientific brief alone.
 
 Do not issue another equivalent diagnostic before the scientific execution is actually attempted and its input provenance is recorded.
+## 2026-09-30 LIVE DEVELOPMENT OVERRIDE — REAL IABV→DEVIN LOOP
 
+El objetivo práctico inmediato es demostrar un circuito real y observable en el que IABV participe en su propio desarrollo.
+
+La investigación científica Deep Research permanece abierta, pero no debe bloquear la prueba técnica del control-plane/runtime.
+
+Ruta objetivo:
+`IABV observa necesidad → deriva capability → selecciona actor/recurso → despacha Devin real → observa/captura → verifica → registra Delta → cambia la siguiente acción`.
+
+Se registró el contrato de super-auditoría Codex:
+`CODEX-SUPER-AUDIT-IABV-SELF-DEVELOPMENT-REAL-LOOP-2026-09-30.md`.
+
+Commit del contrato: `13843a7c2bac252c7c183741f4222659f2bbc605`.
+
+La auditoría es inicialmente read-only y debe localizar la primera arista causal rota antes de autorizar cualquier parche.
+
+Después de la auditoría: Devin para el parche/runtime mínimo si la arista es concreta; Sonnet/Claude para verificación independiente; Codex solo de nuevo si surge una ambigüedad de fuente/contrato/provenance; Opus 5 solo ante contradicción arquitectónica genuina.
+
+No existe una secuencia histórica fija de actores.
