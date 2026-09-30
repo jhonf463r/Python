@@ -263,6 +263,10 @@ The operational lesson is that IABV should be born with observable state/provena
 
 
 
+
+
+Participating AIs may use the same field immediately through the shared activation protocol in `MEMORY-OPERATING-PROTOCOL.md`. Each material interaction should leave a verified Knowledge Delta, relation/routing delta or explicit unresolved boundary for the next participant.
+
 ## 2026-09-30 RESONANT SELF-KNOWLEDGE RETRIEVAL FRONTIER
 
 Latest architectural research record:
