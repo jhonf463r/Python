@@ -995,3 +995,86 @@ experience → verified evidence → representation change → future decision c
 
 Do not add a plasticity engine or consciousness layer before convergence/anti-duplication and a discriminating experiment show that existing organs cannot express the required responsibility.
 
+
+## 2026-09-30 — SHARED RESONANCE / CROSS-IA ACTIVATION PROTOCOL
+
+The self-knowledge retrieval hypothesis is also a cooperative cognition protocol for participating AIs. It does not require the final retrieval implementation to exist before AIs can begin using the shared field.
+
+The durable unit is not a copied prompt. It is an experience-bearing activation event:
+
+`OBJECTIVE` → `ACTIVATED KNOWLEDGE FIELD` → `REASON / ACTION` → `OBSERVATION` → `VERIFICATION` → `KNOWLEDGE DELTA` → `RELATION / RELEVANCE UPDATE` → `WRITEBACK` → `NEXT AI REACTIVATION`
+
+### Participant-AI behavior
+
+Any participating AI (ChatGPT, Claude, Codex, Devin or another governed actor) should:
+
+1. use the current objective as the query seed;
+2. activate relevant canonical memory domains;
+3. search for existing organs/capabilities before proposing new ones;
+4. expand from strong candidates through typed relations and prior evidence/failures;
+5. reconcile material claims against current repository/runtime evidence;
+6. act only on the smallest discriminating edge;
+7. record what the experience actually changed;
+8. write back new invariants, contradictions, relations, capability evidence or unresolved boundaries;
+9. leave the next AI an activated, provenance-bearing field rather than a manually reconstructed history.
+
+### Activation state
+
+A useful handoff can be represented as:
+
+```text
+OBJECTIVE
+QUERY / INTENT
+ACTIVATED NODES
+WHY EACH NODE RESONATED
+RELATIONS TRAVERSED
+CURRENT EVIDENCE STATUS
+NEGATIVE KNOWLEDGE
+OPEN CAUSAL EDGE
+REQUIRED CAPABILITY
+ACTION
+OBSERVATION
+VERIFICATION
+KNOWLEDGE DELTA
+RELATION DELTA
+ROUTING DELTA
+WRITEBACK TARGET
+```
+
+This makes different AIs participants in one evolving knowledge process without assuming that any one AI owns the whole model.
+
+### Experience is not transcript volume
+
+A long conversation does not automatically become useful memory.
+
+The high-value reusable unit is:
+
+`experience + evidence + reconciliation + changed representation/method + provenance`.
+
+Therefore, when an AI discovers that an existing route was wrong, the durable writeback should preserve the method correction (for example, a provenance gate or actor-selection rule) rather than merely the conversation that discovered it.
+
+### Shared-field invariant
+
+`NO AI MUST RECONSTRUCT THE WHOLE HISTORY IF THE CURRENT OBJECTIVE CAN ACTIVATE THE RELEVANT KNOWLEDGE NEIGHBORHOOD.`
+
+The current system may require manual/AI-assisted retrieval while the RSK-01 implementation remains unproven. That manual activation is itself useful experimental data for later automation.
+
+### Developmental interpretation
+
+The "moment of life" intuition is operationalized here as a recurring loop:
+
+`activate → experience → verify → modify reusable state → preserve lineage → reactivate`
+
+This is not a claim of biological life or consciousness. It is a proposed computational developmental substrate: each new interaction can become a causally traceable change in what the collective IABV knowledge field makes easier to find and use next time.
+
+### Anti-drift constraint
+
+Activation reinforcement must never become unconditional self-reinforcement. A node's future activation strength must remain bounded by:
+- currentness;
+- evidence;
+- context;
+- contradiction status;
+- independent verification;
+- reversible/downgrade paths where applicable.
+
+A frequently used but repeatedly falsified item must be able to lose activation.
