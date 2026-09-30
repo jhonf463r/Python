@@ -1440,3 +1440,99 @@ Current next operational edge:
 fresh DiscernmentFrame → public portable_context_get(refresh=True) → build_package → fresh latest.json → read-back.
 
 GUI same-frame continuity is separated as an environmental sub-experiment rather than being used to hold the entire development track.
+\n\n## 2026-09-29 TRANSFER 22 — FRONTIER-DRIVEN ACTOR SELECTION
+
+The cross-IA protocol is now explicitly **frontier-driven** rather than sequence-driven.
+
+New method:
+`objective → current truth → uncertainty/boundary → required capability → capability-fit actor → minimum discriminating action → observation → independent verification → reconciliation → Knowledge Delta → writeback`.
+
+A prior actor's recommendation is not authority for the next actor. Recompute the route after every material reconciliation.
+
+`semantic next edge ≠ next actionable edge`.
+
+Provenance, artifact publication, runtime access, isolation and verification may outrank a downstream semantic investigation.
+
+## 2026-09-29 TRANSFER 23 — META-01-E2a EVIDENCE STRATIFICATION
+
+E2a remains **PARTIALLY PROVEN**.
+
+The transcript reinforces:
+`automatic birth-frame generation` and natural trigger locations are stronger than previously unknown, while `trigger activated → consumer invoked → same frame_id` remains an open runtime boundary.
+
+Same-frame continuity must be established by `frame_id + runtime provenance + temporal ordering`, not object identity.
+
+Fresh persistence is a distinct edge:
+`build_package/export → fresh artifact → read-back`.
+
+A report-backed runtime result does not become artifact-verified merely because the report is detailed.
+
+New negative knowledge:
+- repeated producer runs are not a substitute for consumer-causality proof;
+- inability to drive a GUI in an unattended CLI is an experimental limitation, not positive or negative evidence of the software behavior;
+- a legitimate manual UI action through the real production path is valid natural-trigger evidence;
+- private method invocation would manufacture the very edge being tested.
+
+## 2026-09-29 TRANSFER 24 — CAPABILITY DISCOVERY IS A COMPOSITION PROBLEM FIRST
+
+BIO-03 shows that IABV already has many relevant organs:
+`ToolRegistry, ToolCard, ToolDiscoveryService, AssistantCapabilityRegistry, CapabilityReadinessService, SynapticRouter, InteractionModeSelector, account/resource scanner, provider diagnostics, governance`.
+
+The unresolved chain is:
+`required capability → normalized candidates → availability/prerequisites/governance → justified selection`.
+
+Do not create a parallel discovery brain until the existing composition is disproven.
+
+Preserve the state distinctions:
+`registered / installed / authenticated / authorized / available / usable`.
+
+The selection unit is not simply actor name; it is:
+`actor × tool × capability × resource × environment × context × outcome`.
+
+## 2026-09-29 TRANSFER 25 — KNOWLEDGE PLASTICITY IS A DISTINCT LEARNING LAYER
+
+BIO-04 establishes a durable methodological distinction:
+
+`memory accumulation ≠ learning`
+`score adaptation ≠ knowledge revision`
+`new record ≠ new concept`.
+
+Maximum audited plasticity level for the examined route is P2 (score/preference adjustment). P3–P8 remain unproven there.
+
+The desired plastic memory can:
+`ADD / UPDATE / DOWNGRADE / PROMOTE / SUPERSEDE / MERGE / SPLIT / CONTEXTUALIZE / DECAY / REUSE`.
+
+A contradiction must be classified before changing knowledge:
+`contradiction vs specialization vs exception vs outage vs bad evidence`.
+
+The anti-sedimentation object is contextual knowledge:
+`actor × capability × tool × resource × environment × context × outcome`.
+
+## 2026-09-29 TRANSFER 26 — IABV AS SCIENTIFICALLY OBSERVABLE DEVELOPMENTAL SYSTEM
+
+The long-horizon program is to measure how verified experience changes IABV rather than simply counting architecture.
+
+Operationalize:
+`ΔW, ΔM, ΔK, ΔR, ΔC, ΔD, ΔB, ΔO`.
+
+Strong causal target:
+`experience → verified evidence → state/knowledge change → future decision change → behavior/outcome → independent verification → persistence → reuse`.
+
+“Superconsciousness” is retained only as an operational research hypothesis, not a conclusion.
+
+Scientific work must separate:
+`science / theory / hypothesis / engineering / inference / speculation`.
+
+New symbiosis objective:
+the collaboration should increasingly produce reusable capability and reduce routine human context/prompt/result transport while preserving human authority at genuine decision and governance boundaries.
+
+## 2026-09-29 TRANSFER 27 — BLIND CONTINUITY AND MEMORY FRESHNESS
+
+Canonical memory freshness is a control variable for future routing.
+
+A new agent must reconstruct:
+`objective + current state + negative knowledge + active gate + provenance + capability-fit routing`
+from canonical memory, then reconcile against current repository/runtime truth.
+
+The desired property is not perfect historical recall. It is **reconstructable decision-relevant state**.
+
