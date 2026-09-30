@@ -1635,4 +1635,21 @@ Do not launch another diagnostic once the relevant interface property has been p
 
 For this case:
 `object preservation → actual self-contained scientific execution`.
+## 2026-09-30 TRANSFER — FROM ARCHITECTURE TO REAL SELF-DEVELOPMENT
 
+El aprendizaje operativo actual es que ya no basta con demostrar la existencia de órganos de autonomía, aprendizaje y agentes externos. La próxima prueba debe demostrar composición causal en el entorno real.
+
+Ruta reusable:
+`IABV observa déficit → required capability → resource/actor discovery → selection → Devin real → observation/capture → independent verification → Knowledge/Method/Decision Delta → changed next developmental action`.
+
+Regla epistemológica:
+`defined != wired != invoked != observed != verified != effective != caused`.
+
+Actor fit actual:
+Codex = super-audit/source/contract/runtime reconciliation.
+Devin = concrete Windows/API implementation and runtime.
+Sonnet/Claude = independent forensic verification.
+ChatGPT = synthesis/reconciliation/writeback.
+Opus 5 = genuine architecture contradiction only.
+
+Esto es capability routing, no secuencia fija.
