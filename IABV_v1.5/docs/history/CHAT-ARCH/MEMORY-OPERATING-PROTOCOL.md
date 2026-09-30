@@ -1080,6 +1080,12 @@ Activation reinforcement must never become unconditional self-reinforcement. A n
 A frequently used but repeatedly falsified item must be able to lose activation.
 
  
+
+For the executable cross-chat procedure, use:
+`AI-FRAME-ENTRY-PROTOCOL-2026-09-30.md`.
+
+When the IABV runtime is unavailable, GitHub canonical memory is the temporary frame substrate. This permits frame entry without falsely claiming that the AI is observing live IABV runtime state.
+
 ## 2026-09-30 — IABV FRAME-ENTRY RULE
 
 For objectives materially coupled to IABV, participating AIs should not reason directly from their own local task framing when canonical IABV state can materially change the decision.
