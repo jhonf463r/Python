@@ -751,3 +751,42 @@ No implementation actor is justified by this result.
 Retain only the narrow methodological lesson that explicit research contracts, source tracking and independent validation are useful safeguards. The target scientific knowledge was not delivered.
 
 END OF FIFTH RESULT ADJUDICATION
+
+
+## 2026-09-30 NEXT EXPERIMENT — PHASE 2A.1 CONTROLLED OBJECT TEST
+
+The fifth result confirms that another scientific result is still required, because no accepted Phase-2A scientific evidence framework has yet been produced.
+
+However, the next run is **not** another unrestricted broad retry. It is a controlled capability test designed to discriminate whether the recurring failure is caused by:
+- non-preservation of the research object by the external research actor; or
+- incorrect/insufficient delivery of the research contract.
+
+Canonical prompt:
+`DEEP-RESEARCH-PHASE-2A1-CONTROLLED-OBJECT-TEST-2026-09-30.md`
+
+Capability-fit actor:
+**ChatGPT Deep Research**
+
+Primary test:
+**OBJECT-TARGET PRESERVATION**
+
+Required opening fields:
+`RESEARCH OBJECT / CENTRAL QUESTION / PRIMARY DOMAINS / OUT OF SCOPE / KEY EVIDENCE STANDARD / EXPECTED HANDOFF`.
+
+The first substantive content must investigate the target scientific phenomenon, not define deep research or explain research methodology.
+
+The result must be judged in this order:
+
+`OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+Only a passing result may enter Stage B.
+
+### Conditional routing after Phase 2A.1
+
+If Phase 2A.1 passes:
+`Stage B IABV reconciliation`.
+
+If Phase 2A.1 fails again despite verified delivery of the exact canonical prompt:
+do **not** issue another equivalent prompt to the same actor. Treat this as evidence that the remaining bottleneck is actor-side or capability-interface-side, and select an independent research actor based on the newly observed frontier.
+
+No implementation actor is justified before Stage B.
