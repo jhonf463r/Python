@@ -1189,3 +1189,56 @@ The expected result must contain actual scientific literature synthesis and MUST
 → `SMALLEST DISCRIMINATING EXPERIMENT`.
 
 END OF FOLLOW-UP RESULT ADJUDICATION
+
+
+## 2026-09-30 — REPEATED DIAGNOSTIC REPLAY / RESEARCH EXECUTION STILL NOT PROVEN
+
+A further returned material again contains only the object-echo diagnostic:
+- repository receipt;
+- zero accessible repository files;
+- correct scientific object;
+- prohibited substitutions;
+- task/object distinction;
+- no-research assertion;
+- repeated echo token `IABV-OBJ-ECHO-20260930-7Q4`.
+
+STATUS: **REJECTED AS SCIENTIFIC RESULT / DIAGNOSTIC REPLAY**
+
+This is not evidence that the scientific research actor failed at literature synthesis. It is evidence that the execution surface is still returning the diagnostic rather than the scientific research prompt.
+
+The repeated token is no longer sufficient as an execution identity because it was designed for a one-time diagnostic and has now been reused across multiple returned materials.
+
+### New method lesson
+
+IABV must distinguish:
+
+`DIAGNOSTIC PASS`
+
+from:
+
+`RESEARCH EXECUTION`.
+
+Once object preservation was provisionally demonstrated, repeating the same diagnostic produced diminishing information.
+
+The next reusable protocol must therefore require:
+- unique execution identity per run;
+- unique object identity;
+- explicit research phase;
+- explicit expected task type;
+- observed prompt/execution provenance where available;
+- no reuse of a diagnostic token as the sole run identifier.
+
+### Current frontier
+
+`EXECUTION / INPUT PROVENANCE`
+
+→ **actual self-contained scientific execution**
+
+→ `source/evidence adjudication`
+
+→ `IABV Stage B`.
+
+The newly created canonical operating protocol is:
+`DEEP-RESEARCH-OPERATING-PROTOCOL-2026-09-30.md`.
+
+END OF DIAGNOSTIC REPLAY ADJUDICATION
