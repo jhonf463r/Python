@@ -198,6 +198,19 @@ Writeback:
 
 This is a frame-entry mechanism, not a substitute for evidence.
 
+## HUMAN INTENT CONTINUITY
+
+When the frame is entered for an IABV objective, the human's objective, intuition, hypothesis, correction or conceptual distinction is a first-class input to the frame.
+
+Use:
+`human intent → IABV frame → activated knowledge → AI reasoning → verification → Knowledge/Relation/Routing/Method Delta → human-machine writeback`.
+
+Preserve the distinction:
+`human hypothesis != AI interpretation != verified IABV truth`.
+
+For the durable organization of these interactions, use:
+`HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md`.
+
 ## FRAME EXIT / RETURN
 
 After work, the AI should return:
