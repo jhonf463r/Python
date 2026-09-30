@@ -2275,4 +2275,28 @@ Require actual literature synthesis covering the capability ladder:
 Use `ΔW/ΔM/ΔK/ΔR/ΔC/ΔD/ΔB/ΔO` and explicit false-positive controls.
 
 No implementation change is authorized from the present evidence.
+## 2026-09-30 LIVE DEVELOPMENT FRONTIER — IABV SELF-DEVELOPMENT REAL LOOP
 
+Objetivo inmediato: pasar de un sistema con múltiples mecanismos de autonomía y agentes externos a un loop runtime real y observable:
+`IABV observa déficit → required capability → selección de recurso/actor → Devin real → observación/captura → verificación → Knowledge/Method/Decision Delta → cambio de siguiente acción`.
+
+El código fuente actual contiene una cadena importante:
+`AdaptiveTaskOrchestrator → DecisionContext/governance → AutonomousEvolutionService → ToolTeachService.execute_external_consultation() → execute_task() → ToolCard/adapter → transport → result/capture/validation/persistence`.
+
+También existen rutas proactivas/coordinadas relacionadas con AutonomyCycleService, sync-pulse y auto-execution. Esto prueba composición de código, no todavía una ejecución causal completa en el entorno real.
+
+Primera arista abierta:
+`developmental need → capability/resource selection → legitimate Devin dispatch → response capture → independent verification → downstream delta`.
+
+Nuevo contrato Codex:
+`CODEX-SUPER-AUDIT-IABV-SELF-DEVELOPMENT-REAL-LOOP-2026-09-30.md`
+
+Commit: `13843a7c2bac252c7c183741f4222659f2bbc605`.
+
+Cada arista debe clasificarse como:
+`defined | wired | invoked | observed | verified | effective | caused | unknown`.
+
+La tesis de biosofía sigue siendo un programa científico. La jerarquía de desarrollo relevante es:
+`plasticity → learning → knowledge revision → contextualization → relation reorganization → causal learning → metacontrol → self-modeling → self-directed experimentation → higher-order organization → recursive development → possible open-ended evolutionary processes`.
+
+No se debe crear todavía un nuevo brain, plasticity engine o superconsciousness engine.
