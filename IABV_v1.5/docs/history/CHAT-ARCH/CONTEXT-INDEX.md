@@ -1419,3 +1419,29 @@ Do not treat backlog entries as current capabilities, architecture commitments o
 Current backlog IDs: MB-01, UI-01, UFS-01, UFS-02, UFS-03, BIO-01, BIO-02, BIO-03, INT-01.
 
 For any future restructuring audit, inspect the backlog before proposing a new service or universal entity.
+
+
+## 2026-09-29 RETRIEVAL DOMAIN — GENETIC PLASTICITY / SCIENTIFIC SELF-STUDY
+
+Activate:
+IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-29-003-second-order-genetic-plasticity-scientific-observability.md
+
+when the objective touches:
+- learning/plasticity as an intrinsic IABV developmental property;
+- knowledge revision vs accumulation;
+- contextual actor/tool/capability learning;
+- scientific telemetry and before/after state;
+- endogenous hypothesis→experiment→verification loops;
+- functional “superconsciousness” research;
+- autonomous/developmental transition criteria.
+
+Before selecting an actor, reconcile the current frontier. For scientific synthesis use a capability-fit research actor; for source archaeology use a code-archaeology actor; for runtime use a Windows/runtime actor; for adversarial verification use an independent verifier. Historical NEXT ACTOR values are not current authority.
+
+Key retrieval invariants:
+memory update ≠ knowledge revision;
+score adaptation ≠ semantic knowledge revision;
+knowledge revision ≠ topology reorganization;
+persistence ≠ learning;
+actor name ≠ capability-fit;
+source wiring ≠ runtime proof.
+
