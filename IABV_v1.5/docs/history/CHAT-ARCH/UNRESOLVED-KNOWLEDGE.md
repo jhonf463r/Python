@@ -1588,3 +1588,37 @@ The open edge remains Windows production execution, not architecture redesign an
 Recommended isolation:
 `new detached worktree @ 475c033...`
 without deleting the existing implementation worktree or its artifacts.
+
+
+## 2026-09-29 META-01-E2a — PERSISTENCE RESULT BOUNDARY
+
+A Windows runtime execution reports successful fresh PortableContext persistence through the public bootstrap path:
+
+export_portable_context(refresh=True)
+→ current_package(refresh=True)
+→ build_package()
+→ latest.json
+→ read-back.
+
+Reported result:
+- PRE package: bdd623c2-6e6a-4373-a590-5a1281b75da2
+- POST package: 164019f2-ac3e-49a8-9bf4-65f69f65213c
+- POST updated_at_utc: 2026-09-29T23:56:27.258922Z
+- returned/persisted package_id match
+- returned/persisted updated_at match
+- sections match (42)
+- discernment_frame section present in both
+- report classifies persistence and read-back as PROVEN.
+
+Evidence boundary:
+the new report and raw runtime artifacts are not yet remotely published/read back in the canonical repository. Therefore these new execution facts are currently REPORT-BACKED, not ARTIFACT-VERIFIED.
+
+Do not rerun the experiment merely to compensate for absent publication. Next action is provenance publication/read-back, followed by independent Sonnet audit.
+
+The previously artifact-backed Windows execution at commit 8ee5bec remains separate evidence.
+
+After independent verification of this persistence result, E2a's remaining operational sub-experiment is natural GUI same-frame continuity, which is environmental and should not indefinitely block the broader META-01 self-assessment program.
+
+Strategic next frontier after persistence verification:
+BIO-02 / IABV-as-its-own-analyst:
+IABV objective → relevant memory → self-observation → uncertainty → first open causal edge → smallest discriminating experiment → capability-fit actor → governed action → independent verification → Knowledge Delta → future decision.
