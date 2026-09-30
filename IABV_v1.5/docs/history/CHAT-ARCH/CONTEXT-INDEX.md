@@ -1450,3 +1450,33 @@ persistence ≠ learning;
 actor name ≠ capability-fit;
 source wiring ≠ runtime proof.
 
+
+## 2026-09-30 LIVE ROUTING — PHASE 2A.3 SELF-CONTAINED SCIENCE
+
+### Research routing record
+
+**Objective:** obtain externally validated scientific evidence for the capability progression from adaptation through learning, knowledge revision, contextualization, relation reorganization, causal learning, metacognitive control and self-directed experimentation, with machine-consciousness indicators treated only as a downstream research layer.
+
+**Current boundary:** object identity is sufficiently explicit; the scientific execution itself remains unproven.
+
+**First open edge:** `canonical prompt → actual launched prompt/execution instance`.
+
+**Required capability:** primary-source scientific literature synthesis, source verification, methodological discrimination and falsification.
+
+**Capability-fit actor:** **ChatGPT Deep Research / equivalent deep-research capability**.
+
+**Canonical prompt:** `DEEP-RESEARCH-PHASE-2A3-SELF-CONTAINED-SCIENCE-2026-09-30.md`.
+
+**Execution rule:** `TASK_TYPE=RESEARCH`; no diagnostic replay; no GitHub/attachment dependency; unique execution identity.
+
+**Acceptance:** `OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+**After acceptance only:** `Stage B IABV reconciliation → smallest discriminating experiment → frontier-driven actor selection/writeback`.
+
+### Method delta
+
+The 2026-09-30 failure series establishes that actor selection must not be changed merely because a returned report is wrong. First identify whether the defect is:
+`object failure | input/delivery failure | execution-selection failure | source-access failure | research capability failure | result-quality failure`.
+
+Repeated identical diagnostics after object preservation are evidence of an execution-handoff ambiguity, not repeated independent scientific capability failures.
+
