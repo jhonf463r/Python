@@ -24,7 +24,8 @@ Core retrieval:
 6. `UNRESOLVED-KNOWLEDGE.md` — ideas, deductions and unresolved boundaries.
 7. `CANONICAL-ABSORPTION-2026-09-11.md` — source reachability, absorption and deletion-readiness audit.
 8. `ARCHIVE-REGISTRY.md` — source-history locations and identities.
-9. Relevant historical source records selected by the objective.
+9. `CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md` — latest absorbed method delta for frontier-driven actor routing, capability discovery, knowledge plasticity and scientific self-study.
+10. Relevant historical source records selected by the objective.
 
 Do **not** read every historical record by default.
 
