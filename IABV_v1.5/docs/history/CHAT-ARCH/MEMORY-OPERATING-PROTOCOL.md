@@ -905,3 +905,66 @@ over:
 `destructive cleanup of an existing verification worktree`.
 
 Classify infrastructure interruption separately from software evidence. Never treat an aborted runtime attempt as a negative software result.
+\n\n## 2026-09-29 PROMPT-GENERATION / FRONTIER-DRIVEN ACTOR ROUTING
+
+Every new actor prompt must be generated from the **current causal/evidential frontier**, not copied from the previous agent's proposed continuation.
+
+Required derivation:
+
+```
+OBJECTIVE
+→ RELEVANT MEMORY
+→ CURRENT VERIFIED TRUTH
+→ CLOSED EDGES
+→ FIRST OPEN CAUSAL EDGE
+→ UNCERTAINTY / EVIDENCE BOUNDARY
+→ REQUIRED CAPABILITY
+→ CAPABILITY-FIT ACTOR
+→ SMALLEST DISCRIMINATING ACTION
+→ EXECUTION / OBSERVATION
+→ INDEPENDENT VERIFICATION
+→ RECONCILIATION
+→ KNOWLEDGE DELTA
+→ WRITEBACK
+```
+
+A previous `NEXT ACTOR`, `NEXT STEP` or semantic frontier is **historical evidence, not routing authority**. Before delegating, re-evaluate branch/SHA, working-tree/runtime provenance, artifact identity, current gate and the exact evidence still missing.
+
+A semantic edge may remain important while a higher-priority actionable edge is provenance, publication, isolation, environment access, consumer activation or verification. Never skip that upstream gate merely because the prior report named a downstream research question.
+
+### Prompt must encode negative knowledge
+
+State explicitly:
+- what is already closed and must not be repeated;
+- what has only been reported vs independently verified;
+- what methods/actions are forbidden because they would manufacture evidence;
+- the exact stop condition;
+- the required evidence and independent verifier.
+
+### Capability-fit is multidimensional
+
+Actor choice should consider:
+`required capability × current availability/access × evidence of fit × intervention cost × independence requirement`.
+
+Do not route by reputation, historical order or product branding alone.
+
+### Plasticity-aware learning protocol
+
+When an objective concerns learning, memory or adaptation, separate:
+`new record`, `score/preference change`, `knowledge revision`, `contextualization`, `relationship reorganization`, and `future decision change`.
+
+A new record is not automatically a new concept. A score change is not automatically knowledge revision. Persistence is not automatically learning.
+
+### Scientific-self-study protocol
+
+When studying IABV as a developmental/scientific system:
+- begin with IABV-native self-observation when that capability exists;
+- external agents are selected for missing capabilities such as independent audit, execution or falsification;
+- operationalize large concepts such as “superconsciousness” into measurable variables and falsifiable predictions;
+- prefer before/after controlled experiments with fixed objective/environment/candidates and changed experience;
+- require an independent verifier before promoting a causal claim.
+
+### New canonical rule
+
+`current frontier → capability-fit actor` supersedes any fixed ChatGPT/Devin/Sonnet/Codex sequence.
+
