@@ -1702,6 +1702,44 @@ Structural risks identified in code archaeology are not proof of actual data cor
 
 
 
+### UK-16 — Unified self-knowledge retrieval / resonant activation
+
+QUESTION: Can IABV retrieve the relevant portion of its own distributed knowledge — memory, source code, capabilities, relations, evidence, runtime facts and negative knowledge — from a new objective without requiring a human or chat model to manually know which organ/file to inspect?
+
+CURRENT STATUS: **ARCHITECTURAL HYPOTHESIS / NOT PROVEN.**
+
+CURRENT GAP RECONCILIATION:
+- `CONTEXT-INDEX.md` provides objective-driven historical routing.
+- `MEMORY-OPERATING-PROTOCOL.md` provides objective-conditioned activation rules and active context packets.
+- `EmbeddingIndexService` currently provides caller-supplied lexical retrieval and records `index_mode='lexical-fallback'`.
+- `self_code_analysis.py` is diagnostic/health-oriented rather than a total objective→capability retriever.
+- tool/capability registries, world/self models, OSES/self-audit and systemic-integrity records each cover important slices.
+- a verified unified activation fabric spanning these slices is not demonstrated.
+
+DESIGN HYPOTHESIS:
+`objective → lexical/semantic candidate generation → structural relation expansion → evidence/currentness re-ranking → selective activation → active context packet`.
+
+The user's frequency/synapse analogy is formalized as:
+- **activation potential** = relevance/resonance score, not literal physical frequency;
+- **synapse** = typed relation between existing knowledge units;
+- **fractal/ADN** = a reusable descriptive + provenance + lineage grammar present recursively across organs, methods, artifacts, capabilities, evidence, experiences and knowledge.
+
+TARGET QUALITY:
+The corpus should have broad/total index coverage, while each query activates only a small high-value neighborhood. Brute-force rescanning of the full repository on every query is not the target architecture.
+
+MINIMUM REQUIRED EXPERIMENT:
+Audit existing composition before implementation. Establish corpus coverage, current indexes, relation sources, currentness/provenance support, duplicate/canonicalization support and learned-relevance support. Then compare current manual/routing retrieval against a composed objective-conditioned retrieval procedure on a fixed query/corpus fixture.
+
+MEASURE:
+`recall@k, precision@k, latency, stale-hit rate, duplicate-hit rate, provenance correctness, relation-expansion cost, first-context usefulness, avoided routine external coordination`.
+
+LEARNING BOUNDARY:
+Do not equate repeated retrieval or score increase with learning. A stronger claim requires the relevant chain from verified experience to representation/relation change to future decision/behavioral consequence and independent verification.
+
+BUILD RESTRAINT:
+Do not create `ResonanceEngine`, `SynapticEngine`, `KnowledgeBrain`, `SuperConsciousnessEngine`, `UniversalEntity` or another generic retrieval brain until the composition audit demonstrates a semantic ownership gap that existing organs cannot cover.
+
+
 ## 2026-09-29 SECOND-ORDER PLASTICITY / SCIENTIFIC-LEARNING FRONTIER
 
 ### Working hypothesis
