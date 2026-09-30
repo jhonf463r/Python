@@ -276,3 +276,96 @@ If these are absent, reject the result again rather than trying to salvage unrel
 No implementation actor should be selected from this rejected security report.
 
 END OF SECOND RESULT ADJUDICATION
+
+## 2026-09-30 THIRD RESULT — DOCUMENT-CENTRIC DRIFT + INVENTED IABV STATE
+
+A third material was received beginning with:
+
+`# Resumen Ejecutivo`
+
+and claiming to be a “PHASE 2 DEEP RESEARCH” result. Its actual focus is again security architecture, threat modeling, OWASP, pentesting, fuzzing, cryptography and vulnerability mitigation.
+
+### Adjudication
+
+STATUS: **REJECTED / NON-COMPLIANT / DO NOT ABSORB**
+
+The result fails the Phase-2 scope signature. It does not investigate the requested scientific sequence:
+
+`adaptation → learning → knowledge revision → contextual specialization → relation reorganization → causal learning → metacognitive control → self-directed experimentation → future decision change`.
+
+It does not provide the required scientific evidence ladder, delta discrimination, metacognitive/causal methodology, source audit for the requested scientific domains, or IABV-specific learning/development experiment.
+
+### Second-order failure: document-centric interpretation
+
+The result appears to treat the phrase/specification “IABV v1.5 PHASE 2 DEEP RESEARCH” as if it were an engineering system specification to be audited, rather than treating it as the **research assignment**.
+
+This yields a recurring failure mode:
+
+`research instruction → interpreted as target document → generic system audit → unrelated result`.
+
+The researcher must therefore distinguish explicitly:
+
+`TASK SPECIFICATION`
+
+from:
+
+`OBJECT OF SCIENTIFIC STUDY`.
+
+### Third-order failure: invented current system state
+
+The report presents or assumes architectural elements such as:
+
+- TLS 1.3;
+- OAuth2/OpenID Connect/JWT;
+- gRPC;
+- peer-to-peer nodes;
+- distributed identity databases;
+- TPM/HSM/enclaves;
+- specific client/server topology;
+- post-quantum deployment assumptions;
+
+without establishing them from current IABV source/runtime evidence.
+
+These statements cannot be promoted to current IABV truth.
+
+New negative knowledge:
+
+`researcher-inferred architecture ≠ current IABV architecture`
+
+`plausible technology ≠ observed technology`
+
+`specification wording ≠ implementation fact`
+
+`generic security best practice ≠ IABV finding`.
+
+### Routing-method correction
+
+Do not send another broad Phase-2 prompt that simultaneously asks for a large external literature review and a detailed IABV architecture reconstruction.
+
+The next scientific research should be split conceptually:
+
+**Stage A — external science only**
+
+First determine the strongest scientific evidence and operational definitions for the capability ladder.
+
+**Stage B — IABV reconciliation**
+
+Only after the external scientific result is received should the current IABV architecture/capability state be reconciled against those definitions using source/runtime evidence.
+
+This separation reduces document-centric drift and prevents inferred IABV architecture from contaminating the scientific literature review.
+
+### Current frontier
+
+`Phase-1 consciousness background`
+
+→ **Phase-2 external scientific capability ladder and evidence framework**
+
+→ **independent source audit**
+
+→ **IABV-specific reconciliation**
+
+→ **smallest discriminating experiment**
+
+The third result does not move this frontier.
+
+END OF THIRD RESULT ADJUDICATION
