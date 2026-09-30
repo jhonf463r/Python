@@ -594,4 +594,19 @@ This research contract is a **research execution artifact**, not proof that the 
 
 The next evidence must establish:
 `prompt artifact → actual launch → execution instance → scientific result → independent adjudication`.
+## 2026-09-30 REAL SELF-DEVELOPMENT LOOP — CODEX SUPER-AUDIT
 
+Canonical contract:
+`CODEX-SUPER-AUDIT-IABV-SELF-DEVELOPMENT-REAL-LOOP-2026-09-30.md`
+
+Commit introducing contract:
+`13843a7c2bac252c7c183741f4222659f2bbc605`.
+
+Purpose:
+establish the first runtime-proven bridge from IABV observing its own developmental need through capability/resource selection, real Devin execution, response capture, independent verification, writeback and change of the next developmental action.
+
+Status:
+`OPEN — technical runtime composition not yet proven end-to-end`.
+
+Important:
+this track is independent of the still-open Deep Research scientific literature track. The two may proceed in parallel and neither is evidence of closure of the other.
