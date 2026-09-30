@@ -598,3 +598,34 @@ It is:
 **one partially valid first-stage result + three repetitions of a systemic task-routing/acceptance failure.**
 
 END OF FOURTH RESULT ADJUDICATION
+
+
+## 2026-09-30 NEXT EXECUTION LOCKED — PHASE 2A
+
+The next research execution is canonically defined by:
+
+`DEEP-RESEARCH-PHASE-2A-SCIENCE-ONLY-2026-09-30.md`
+
+Capability-fit actor:
+**ChatGPT Deep Research / equivalent deep-research capability**
+
+Stage:
+**2A — EXTERNAL SCIENCE ONLY**
+
+The task is deliberately separated from IABV architecture reconciliation.
+
+Execution contract:
+`research contract → bounded external literature research → result-signature gate → source/evidence adjudication → Stage B IABV reconciliation`.
+
+Stage A must not:
+- reconstruct IABV architecture;
+- assert current IABV capabilities;
+- invent IABV components, technologies or requirements;
+- perform generic security/engineering audit;
+- select an implementation actor.
+
+The current frontier is therefore locked to:
+`Phase-2A external scientific evidence framework`.
+
+Only after a passing Stage-2A result may IABV perform Stage B and recompute the next actor from the actual causal/evidential frontier.
+
