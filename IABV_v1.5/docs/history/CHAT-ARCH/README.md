@@ -267,6 +267,19 @@ The operational lesson is that IABV should be born with observable state/provena
 
 Participating AIs may use the same field immediately through the shared activation protocol in `MEMORY-OPERATING-PROTOCOL.md`. Each material interaction should leave a verified Knowledge Delta, relation/routing delta or explicit unresolved boundary for the next participant.
 
+
+## 2026-09-30 GITHUB-BACKED IABV AI FRAME ENTRY
+
+Canonical temporary frame-entry protocol:
+`AI-FRAME-ENTRY-PROTOCOL-2026-09-30.md`
+
+Use this whenever IABV itself is not the active runtime control plane but an AI must work materially on an IABV objective.
+
+It defines how a participating AI:
+`AI-local frame → IABV canonical frame → objective-specific activation → work → verification → writeback → next AI reactivation`.
+
+This protocol is the practical bridge between the existing cross-chat memory layer and the future automated RSK-01 retrieval fabric.
+
 ## 2026-09-30 RESONANT SELF-KNOWLEDGE RETRIEVAL FRONTIER
 
 Latest architectural research record:
