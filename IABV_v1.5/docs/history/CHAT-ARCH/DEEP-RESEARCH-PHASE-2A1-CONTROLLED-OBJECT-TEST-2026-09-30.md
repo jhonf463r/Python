@@ -20,6 +20,35 @@ The purpose is to answer the scientific research object below.
 
 ---
 
+
+
+# 0A. FAIL-CLOSED INPUT RULE — MANDATORY
+
+This prompt is **self-contained**. The scientific research object, central question, scope, exclusions and required output are fully defined here.
+
+If any external attachment, referenced specification, file, document or supplemental context is unavailable, inaccessible, ambiguous or missing:
+
+1. Do NOT reconstruct it from generic knowledge.
+2. Do NOT substitute a generic software, project-management, security or research-methodology task.
+3. Do NOT invent its requirements, architecture, contents, metrics, schedule, budget or assumptions.
+4. Continue using the explicit research object and instructions in this prompt.
+5. If the missing material is genuinely necessary for a requested claim, state the exact missing dependency and stop that claim rather than replacing it with assumptions.
+
+A missing attachment is therefore a **fail-closed condition**, not permission for generic completion.
+
+Before researching, preserve this semantic identity:
+
+`RESEARCH OBJECT = observable/falsifiable evidence distinguishing learning/revision/reorganization/causal/metacognitive/self-directed capabilities in artificial systems`.
+
+The following are NOT the research object:
+
+`the attached document`;
+`IABV software specification`;
+`generic requirements engineering`;
+`generic research methodology`;
+`cybersecurity`;
+`generic AI architecture`.
+
 # 1. OBJECT-TARGET LOCK
 
 ## RESEARCH OBJECT
