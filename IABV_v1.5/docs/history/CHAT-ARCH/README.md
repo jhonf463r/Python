@@ -340,3 +340,23 @@ Only after acceptance:
 `Stage B IABV reconciliation → smallest discriminating experiment → frontier-driven actor selection`.
 
 This lock was created after one partially valid Phase-1 consciousness review and three consecutive non-compliant Phase-2 results that drifted into generic security/architecture analysis.
+
+
+## 2026-09-30 PHASE 2A.1 CONTROLLED OBJECT TEST
+
+Canonical next prompt:
+`DEEP-RESEARCH-PHASE-2A1-CONTROLLED-OBJECT-TEST-2026-09-30.md`
+
+Actor:
+**ChatGPT Deep Research**
+
+Purpose:
+controlled test of **research-object preservation**, not another unrestricted retry.
+
+The run must prove:
+`requested scientific object = investigated scientific object`.
+
+Acceptance order:
+`OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+If this exact prompt is verified as delivered and the actor still substitutes another object, do not repeat an equivalent run with the same actor; recompute routing from the observed frontier.
