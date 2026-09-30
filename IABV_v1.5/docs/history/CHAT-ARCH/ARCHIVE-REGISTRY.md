@@ -570,3 +570,28 @@ Acceptance sequence:
 Related adjudication:
 `DEEP-RESEARCH-RESULT-ADJUDICATION-2026-09-30.md`.
 
+
+## 2026-09-30 DEEP-RESEARCH EXECUTION CONTRACT REGISTRATION
+
+### Canonical prompt
+
+`IABV_v1.5/docs/history/CHAT-ARCH/DEEP-RESEARCH-PHASE-2A3-SELF-CONTAINED-SCIENCE-2026-09-30.md`
+
+Commit introducing the prompt:
+`ee180c02e8e47a61be040090d24fac54173d3115`
+
+### Canonical operating protocol
+
+`IABV_v1.5/docs/history/CHAT-ARCH/DEEP-RESEARCH-OPERATING-PROTOCOL-2026-09-30.md`
+
+### Canonical adjudication
+
+`IABV_v1.5/docs/history/CHAT-ARCH/DEEP-RESEARCH-RESULT-ADJUDICATION-2026-09-30.md`
+
+### Provenance requirement
+
+This research contract is a **research execution artifact**, not proof that the research was executed.
+
+The next evidence must establish:
+`prompt artifact → actual launch → execution instance → scientific result → independent adjudication`.
+
