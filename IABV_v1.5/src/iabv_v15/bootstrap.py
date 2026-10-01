@@ -693,10 +693,16 @@ class AppBootstrap:
         # ``_run_deferred_post_window_setup`` instead.  Tests / MCP
         # subprocess can opt out via ``IABV_DEFER_TOOL_PROBE=0`` to
         # preserve legacy synchronous behavior.
+        # Runtime isolation: ``IABV_SKIP_TOOL_AVAILABILITY_PROBE=1`` suppresses
+        # the automatic probe entirely (both sync and deferred) for controlled
+        # experiments that need the full application composition without external
+        # HTTP side effects.
         self._tool_availability_logged = False
+        self._skip_tool_availability_probe = os.environ.get('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '0') == '1'
         if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
-            self._log_tool_availability()
-            self._tool_availability_logged = True
+            if not self._skip_tool_availability_probe:
+                self._log_tool_availability()
+                self._tool_availability_logged = True
         self._tracer.trace('phase_tool_registry_done')
         self.universal_perception_service = UniversalPerceptionService(tool_registry=self.tool_registry)
         self.environment_self_awareness_service = EnvironmentSelfAwarenessService(
@@ -1746,8 +1752,15 @@ class AppBootstrap:
         Qt event loop.
 
         Idempotent: a second call is a no-op.
+
+        Runtime isolation: If ``IABV_SKIP_TOOL_AVAILABILITY_PROBE=1`` is set,
+        the entire deferred probe is skipped to prevent external HTTP side effects
+        during controlled experiments.
         """
         if self._tool_availability_logged:
+            return
+        if self._skip_tool_availability_probe:
+            self._tool_availability_logged = True
             return
         self._tool_availability_logged = True
 
@@ -5301,7 +5314,9 @@ class AppBootstrap:
             # install of mcp_client).  The probe now runs in a background
             # thread (never blocks the GUI event loop), but we still
             # delay 3s so the QML shell has time to start incubating.
-            if not self._tool_availability_logged:
+            # Runtime isolation: Skip the deferred probe entirely if
+            # ``IABV_SKIP_TOOL_AVAILABILITY_PROBE=1`` is set.
+            if not self._tool_availability_logged and not self._skip_tool_availability_probe:
                 QTimer.singleShot(3000, self._run_deferred_post_window_setup)
 
             # ``splash.set_ready()`` ya NO se dispara aqui.  Antes era
