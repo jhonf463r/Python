@@ -453,6 +453,7 @@ class AppBootstrap:
         workspace_root: str | None = None,
         *,
         _defer_services: bool = False,
+        effect_bounded: bool = False,
     ) -> None:
         # Startup timeline: anchored on the first call.  Marks 'init_start'
         # before any heavy work so even imports counted before this point
@@ -498,6 +499,9 @@ class AppBootstrap:
 
         self._services_wired = False
         self._defer_services = _defer_services
+        # Opt-in composition for callers that need the real inference graph
+        # while keeping environment/world observers and tool probes inactive.
+        self.effect_bounded = bool(effect_bounded)
 
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
@@ -555,7 +559,7 @@ class AppBootstrap:
         self._timeline.mark('wire_services_start', rss_mb=_rss_mb())
         self._tracer.trace('wire_services_start')
 
-        _defer_scans = self._defer_services
+        _defer_scans = self._defer_services or self.effect_bounded
 
         self.db = AppDatabase(self.config.sqlite_path)
         self.screenshot_storage = ArtifactStorage(self.config.screenshots_dir)
@@ -694,7 +698,7 @@ class AppBootstrap:
         # subprocess can opt out via ``IABV_DEFER_TOOL_PROBE=0`` to
         # preserve legacy synchronous behavior.
         self._tool_availability_logged = False
-        if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
+        if not self.effect_bounded and os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
             self._log_tool_availability()
             self._tool_availability_logged = True
         self._tracer.trace('phase_tool_registry_done')
@@ -704,7 +708,9 @@ class AppBootstrap:
             evolution_dir=self.config.evolution_dir,
             role_router=None,
             tool_registry=self.tool_registry,
+            auto_start=False if self.effect_bounded else None,
             bootstrap_scan=not _defer_scans,
+            refresh_enabled=not self.effect_bounded,
         )
         # The MCP subprocess inherits the persisted world model snapshot from
         # the main UI process.  It doesn't need its own aggressive 18-second
@@ -721,7 +727,9 @@ class AppBootstrap:
             environment_self_awareness_service=self.environment_self_awareness_service,
             universal_perception_service=self.universal_perception_service,
             role_router=None,
+            auto_start=False if self.effect_bounded else None,
             bootstrap_scan=not _is_mcp_sub and not _defer_scans,
+            refresh_enabled=not self.effect_bounded,
             scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
@@ -1747,7 +1755,7 @@ class AppBootstrap:
 
         Idempotent: a second call is a no-op.
         """
-        if self._tool_availability_logged:
+        if self.effect_bounded or self._tool_availability_logged:
             return
         self._tool_availability_logged = True
 

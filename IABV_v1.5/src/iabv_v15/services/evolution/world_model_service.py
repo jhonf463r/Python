@@ -53,6 +53,7 @@ class WorldModelService:
         role_router: Any | None = None,
         auto_start: bool | None = None,
         bootstrap_scan: bool = True,
+        refresh_enabled: bool = True,
         scan_interval_seconds: float = _DEFAULT_SCAN_INTERVAL,
         full_scan_interval_seconds: float = _DEFAULT_FULL_SCAN_INTERVAL,
     ) -> None:
@@ -64,6 +65,7 @@ class WorldModelService:
         self.environment_self_awareness_service = environment_self_awareness_service
         self.universal_perception_service = universal_perception_service
         self.role_router = role_router
+        self.refresh_enabled = bool(refresh_enabled)
         self.scan_interval_seconds = max(float(scan_interval_seconds), 8.0)
         self.full_scan_interval_seconds = max(float(full_scan_interval_seconds), self.scan_interval_seconds)
         self._auto_start = (not self._in_test_mode()) if auto_start is None else bool(auto_start)
@@ -113,6 +115,8 @@ class WorldModelService:
             return self._decorate_snapshot(self._current_snapshot)
 
     def request_refresh(self, *, reason: str = 'manual', full: bool = False) -> WorldModelSnapshot:
+        if not self.refresh_enabled:
+            return self.current_model()
         with self._lock:
             if full:
                 self._pending_full_refresh = True
