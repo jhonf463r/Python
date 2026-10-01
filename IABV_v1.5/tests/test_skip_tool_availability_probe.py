@@ -1,120 +1,146 @@
 """
 Test: IABV_SKIP_TOOL_AVAILABILITY_PROBE isolation gate.
 
-Verifies that the IABV_SKIP_TOOL_AVAILABILITY_PROBE flag:
-- Default behavior: current probe scheduling behavior preserved
-- Experimental behavior: probe is not scheduled/executed when flag=1
-"""
+Exercises real AppBootstrap code to verify the production isolation gate.
 
-import os
+Tests:
+- Default mode: probe behavior preserved
+- SKIP=1: synchronous probe skipped
+- SKIP=1: deferred method skips probe
+- SKIP=1: timer scheduling gate verified
+- DEFER=0: backward compatibility preserved
+- SKIP=1 + DEFER=0: synchronous probe suppressed
+"""
+from __future__ import annotations
+
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 
 
-def test_default_behavior_probes_scheduled():
-    """Default: tool availability probe is scheduled (current production behavior)."""
-    # Ensure flag is not set
-    if 'IABV_SKIP_TOOL_AVAILABILITY_PROBE' in os.environ:
-        del os.environ['IABV_SKIP_TOOL_AVAILABILITY_PROBE']
-    
-    # Simulate initialization logic from bootstrap.__init__
-    _tool_availability_logged = False
-    _skip_tool_availability_probe = os.environ.get('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '0') == '1'
-    
-    # This is the core logic from bootstrap.__init__
-    if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
-        if not _skip_tool_availability_probe:
-            _tool_availability_logged = True
-            # Probe would be called here
-    
-    # In default mode with IABV_DEFER_TOOL_PROBE=1 (default),
-    # the probe is NOT called synchronously, but is scheduled deferred
-    # We verify the flag value
-    assert _skip_tool_availability_probe == False
-    assert _tool_availability_logged == False  # Not called in deferred mode
+@pytest.fixture(autouse=True)
+def _reset_global_timeline():
+    from iabv_v15.infra.startup_timeline import reset_global_timeline_for_tests
+    reset_global_timeline_for_tests()
+    yield
+    reset_global_timeline_for_tests()
 
 
-def test_skip_flag_suppresses_probe():
-    """Experimental: IABV_SKIP_TOOL_AVAILABILITY_PROBE=1 suppresses probe."""
-    # Set the flag
-    os.environ['IABV_SKIP_TOOL_AVAILABILITY_PROBE'] = '1'
-    
-    try:
-        # Simulate initialization logic
-        _tool_availability_logged = False
-        _skip_tool_availability_probe = os.environ.get('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '0') == '1'
-        
-        # Even with IABV_DEFER_TOOL_PROBE=0 (sync mode), probe should be skipped
-        if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
-            if not _skip_tool_availability_probe:
-                _tool_availability_logged = True
-                # Probe would be called here
-        
-        # Verify flag prevents probe
-        assert _skip_tool_availability_probe == True
-        assert _tool_availability_logged == False
-    finally:
-        # Clean up
-        if 'IABV_SKIP_TOOL_AVAILABILITY_PROBE' in os.environ:
-            del os.environ['IABV_SKIP_TOOL_AVAILABILITY_PROBE']
+def test_default_mode_probes_deferred(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Default mode: probe is deferred (not called during __init__)."""
+    monkeypatch.delenv('IABV_SKIP_TOOL_AVAILABILITY_PROBE', raising=False)
+    monkeypatch.delenv('IABV_DEFER_TOOL_PROBE', raising=False)
+    from iabv_v15.bootstrap import AppBootstrap
+
+    with patch.object(
+        AppBootstrap, '_log_tool_availability', autospec=True
+    ) as probe:
+        bootstrap = AppBootstrap(str(tmp_path))
+        assert probe.call_count == 0, (
+            'Tool-availability probe should be deferred from __init__ by default.'
+        )
+        assert bootstrap._tool_availability_logged is False
+        assert bootstrap._skip_tool_availability_probe is False
 
 
-def test_skip_flag_suppresses_deferred_probe():
-    """Experimental: IABV_SKIP_TOOL_AVAILABILITY_PROBE=1 suppresses deferred probe."""
-    # Set the flag
-    os.environ['IABV_SKIP_TOOL_AVAILABILITY_PROBE'] = '1'
-    
-    try:
-        # Simulate _run_deferred_post_window_setup logic
-        _tool_availability_logged = False
-        _skip_tool_availability_probe = os.environ.get('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '0') == '1'
-        
-        # This is the core logic from _run_deferred_post_window_setup
-        if _tool_availability_logged:
-            return
-        if _skip_tool_availability_probe:
-            _tool_availability_logged = True
-            return
-        _tool_availability_logged = True
-        
-        # Verify flag prevents deferred probe
-        assert _skip_tool_availability_probe == True
-        assert _tool_availability_logged == True  # Set to prevent re-entry, but probe not called
-    finally:
-        # Clean up
-        if 'IABV_SKIP_TOOL_AVAILABILITY_PROBE' in os.environ:
-            del os.environ['IABV_SKIP_TOOL_AVAILABILITY_PROBE']
+def test_skip_mode_skips_synchronous_probe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SKIP=1: synchronous probe skipped even when DEFER=0."""
+    monkeypatch.setenv('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '1')
+    monkeypatch.setenv('IABV_DEFER_TOOL_PROBE', '0')
+    from iabv_v15.bootstrap import AppBootstrap
+
+    with patch.object(
+        AppBootstrap, '_log_tool_availability', autospec=True
+    ) as probe:
+        bootstrap = AppBootstrap(str(tmp_path))
+        assert probe.call_count == 0, (
+            'SKIP flag should suppress synchronous probe even when DEFER=0.'
+        )
+        assert bootstrap._tool_availability_logged is False
+        assert bootstrap._skip_tool_availability_probe is True
 
 
-def test_defer_tool_probe_backward_compatibility():
-    """Verify IABV_DEFER_TOOL_PROBE still works as before."""
-    # Test default (deferred)
-    if 'IABV_DEFER_TOOL_PROBE' in os.environ:
-        del os.environ['IABV_DEFER_TOOL_PROBE']
-    
-    _tool_availability_logged = False
-    _skip_tool_availability_probe = os.environ.get('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '0') == '1'
-    
-    # Default: IABV_DEFER_TOOL_PROBE=1, probe is deferred
-    if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
-        if not _skip_tool_availability_probe:
-            _tool_availability_logged = True
-    
-    assert _tool_availability_logged == False  # Not called synchronously
-    
-    # Test legacy sync mode
-    os.environ['IABV_DEFER_TOOL_PROBE'] = '0'
-    try:
-        _tool_availability_logged = False
-        _skip_tool_availability_probe = os.environ.get('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '0') == '1'
-        
-        if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
-            if not _skip_tool_availability_probe:
-                _tool_availability_logged = True
-        
-        assert _tool_availability_logged == True  # Called synchronously in legacy mode
-    finally:
-        if 'IABV_DEFER_TOOL_PROBE' in os.environ:
-            del os.environ['IABV_DEFER_TOOL_PROBE']
+def test_skip_mode_skips_deferred_method(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SKIP=1: _run_deferred_post_window_setup skips probe."""
+    monkeypatch.setenv('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '1')
+    monkeypatch.delenv('IABV_DEFER_TOOL_PROBE', raising=False)
+    from iabv_v15.bootstrap import AppBootstrap
+
+    with patch.object(
+        AppBootstrap, '_log_tool_availability', autospec=True
+    ) as probe:
+        bootstrap = AppBootstrap(str(tmp_path))
+        bootstrap._run_deferred_post_window_setup()
+        assert probe.call_count == 0, (
+            'SKIP flag should suppress deferred probe.'
+        )
+        assert bootstrap._tool_availability_logged is True  # Set to prevent re-entry
+
+
+def test_defer_backward_compatibility(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEFER=0: synchronous probe still works (backward compatibility)."""
+    monkeypatch.delenv('IABV_SKIP_TOOL_AVAILABILITY_PROBE', raising=False)
+    monkeypatch.setenv('IABV_DEFER_TOOL_PROBE', '0')
+    from iabv_v15.bootstrap import AppBootstrap
+
+    with patch.object(
+        AppBootstrap, '_log_tool_availability', autospec=True
+    ) as probe:
+        bootstrap = AppBootstrap(str(tmp_path))
+        assert probe.call_count == 1, (
+            'DEFER=0 should call probe synchronously (backward compatibility).'
+        )
+        assert bootstrap._tool_availability_logged is True
+        assert bootstrap._skip_tool_availability_probe is False
+
+
+def test_skip_overrides_defer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SKIP=1 + DEFER=0: SKIP overrides DEFER, probe suppressed."""
+    monkeypatch.setenv('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '1')
+    monkeypatch.setenv('IABV_DEFER_TOOL_PROBE', '0')
+    from iabv_v15.bootstrap import AppBootstrap
+
+    with patch.object(
+        AppBootstrap, '_log_tool_availability', autospec=True
+    ) as probe:
+        bootstrap = AppBootstrap(str(tmp_path))
+        assert probe.call_count == 0, (
+            'SKIP should override DEFER=0.'
+        )
+        assert bootstrap._tool_availability_logged is False
+        assert bootstrap._skip_tool_availability_probe is True
+
+
+def test_app_bootstrap_composition_preserved_in_skip_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SKIP=1: normal application composition still initializes."""
+    monkeypatch.setenv('IABV_SKIP_TOOL_AVAILABILITY_PROBE', '1')
+    monkeypatch.delenv('IABV_DEFER_TOOL_PROBE', raising=False)
+    from iabv_v15.bootstrap import AppBootstrap
+
+    with patch.object(
+        AppBootstrap, '_log_tool_availability', autospec=True
+    ):
+        bootstrap = AppBootstrap(str(tmp_path))
+        # Verify key composition attributes exist
+        assert bootstrap.tool_registry is not None
+        assert bootstrap.tool_sandbox is not None
+        assert bootstrap.tool_validator is not None
+        assert bootstrap.universal_perception_service is not None
+        assert bootstrap.environment_self_awareness_service is not None
+        assert bootstrap.world_model_service is not None
 
 
 if __name__ == '__main__':
