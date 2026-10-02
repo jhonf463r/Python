@@ -1957,3 +1957,16 @@ Still unresolved:
 - whether any existing facade can accept the fact without becoming decision owner.
 
 Do not assume previously proposed fields that are absent from the target contracts.
+
+## 2026-10-02 — META-RUNTIME-07ZJ
+
+The cross-process producer seam is now identified:
+`start_iabv.ps1 → small Python persistence entrypoint → PlatformPendingQueue.upsert()`.
+
+Remaining contract uncertainty:
+- exact persistence entrypoint shape;
+- stable identity semantics;
+- whether repeated DEFER invocations represent one logical UI intent or distinct requests.
+
+Do not treat `episode_id` as reusable launcher identity.
+Do not choose a date+hostname hash without proving its collision/idempotency semantics.
