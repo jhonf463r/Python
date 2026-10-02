@@ -695,3 +695,12 @@ this track is independent of the still-open Deep Research scientific literature 
 - **Canonical record:** `CHAT-ARCH-2026-10-02-009-meta-runtime-07zl-implementation-report.md`.
 - **Result:** **IMPLEMENTED / report-backed; natural launcher proof OPEN**.
 - **Next:** Codex publication + one bounded natural-DEFER runtime attempt; then Sonnet independent verification.
+
+## 2026-10-02 — META-RUNTIME-07ZM
+
+- **Source:** user-provided Codex publication/runtime report.
+- **Technical baseline:** `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+- **Implementation:** `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2`.
+- **Canonical record:** `CHAT-ARCH-2026-10-02-010-meta-runtime-07zm-publication-and-natural-runtime-boundary.md`.
+- **Result:** **REMOTE-PUBLISHED / natural launcher causality OPEN**.
+- **Next:** bounded debugger-controlled natural-DEFER observation by Codex; then Sonnet independent verification.
