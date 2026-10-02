@@ -2438,3 +2438,17 @@ Primary frontier remains:
 
 Next actor: **CODEX** for source/provenance/ownership archaeology of that natural producer seam. No implementation yet.
 
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZI
+
+07ZI closes producer ownership at source level on technical SHA `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+
+The effective natural DEFER state is owned by `start_iabv.ps1` after interpreting the Python `resource-preflight` JSON. The launcher does not currently persist a semantic StartUI pending task.
+
+Primary seam:
+`start_iabv.ps1` → existing Python persistence API → `PlatformPendingTask` → `PlatformPendingQueue.upsert()`.
+
+Do not yet assume `AutonomyCycleService.startup_summary()` is the semantic owner; it remains generic context/backlog delivery.
+
+Contract gap still open: stable task/event identity and the exact existing PowerShell→Python persistence entrypoint.
+
+Next actor: **Sonnet** for independent contract/ownership verification before implementation.
