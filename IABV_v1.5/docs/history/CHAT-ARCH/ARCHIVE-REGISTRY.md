@@ -704,3 +704,13 @@ this track is independent of the still-open Deep Research scientific literature 
 - **Canonical record:** `CHAT-ARCH-2026-10-02-010-meta-runtime-07zm-publication-and-natural-runtime-boundary.md`.
 - **Result:** **REMOTE-PUBLISHED / natural launcher causality OPEN**.
 - **Next:** bounded debugger-controlled natural-DEFER observation by Codex; then Sonnet independent verification.
+
+## 2026-10-02 — META-RUNTIME-07ZN
+
+- **Source:** user-provided Codex runtime-control report.
+- **Technical baseline:** `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+- **Implementation:** `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2`.
+- **Canonical record:** `CHAT-ARCH-2026-10-02-011-meta-runtime-07zn-runtime-control-result.md`.
+- **Result:** **ENVIRONMENT-BLOCKED / natural DEFER OPEN**.
+- **Method delta:** external breakpoint did not stop the script and is retired.
+- **Next:** bounded supervisor-controlled attempt only if natural DEFER is currently present without artificial pressure.
