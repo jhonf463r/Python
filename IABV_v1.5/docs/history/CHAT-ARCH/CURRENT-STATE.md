@@ -2376,3 +2376,22 @@ Do not replace this with the broader claim “IABV lacks persistence.”
 The existing launch authority remains `start_iabv.ps1`; do not create a second authority.
 
 No scheduler/watcher/daemon/UIResumeService is authorized solely by 07ZD.
+
+
+## 2026-10-02 LATEST RUNTIME OVERLAY — META-RUNTIME-07ZF
+
+Canonical record: CHAT-ARCH-2026-10-01-003-meta-runtime-07zf-observability-and-frame-reconciliation.md
+
+07ZF is COMPLETED / RUNTIME OBSERVATION INCONCLUSIVE.
+
+Proven: isolated manual PlatformPendingQueue injection of category=startui_defer persisted and read back.
+Not proven: natural StartUI DEFER → queue producer; runtime consumer; semantic consumption; task-caused launch; automatic wake/recheck/relaunch; IABV runtime ingestion of the external result.
+
+Critical attribution: the observed UI launch came from explicit -StartUI plus the CONTINUE gate, not the pending task.
+
+Primary frontier remains: StartUI DEFER → durable semantic StartUI intent.
+Secondary diagnostic frontier: injected startui_defer → actual reader → semantic handling.
+
+Routing: CODEX remains the current actor by capability-fit because the next action combines Windows runtime observation, source/provenance reconciliation and inspection of existing IABV self-observation/frame organs. Devin is reserved for a demonstrated capability/access or implementation gap; actor sequence is never fixed.
+
+Symbiosis boundary: GitHub-backed frame entry is a real cross-chat coordination protocol, but shared repository state is not yet proven to be a live IABV runtime bus. A live symbiosis claim requires IABV runtime consumption of the external result followed by a changed next decision in one traceable causal episode.
