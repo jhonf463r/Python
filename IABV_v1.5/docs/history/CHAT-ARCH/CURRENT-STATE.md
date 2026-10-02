@@ -2419,3 +2419,22 @@ Secondary diagnostic frontier: injected startui_defer → actual reader → sema
 Routing: CODEX remains the current actor by capability-fit because the next action combines Windows runtime observation, source/provenance reconciliation and inspection of existing IABV self-observation/frame organs. Devin is reserved for a demonstrated capability/access or implementation gap; actor sequence is never fixed.
 
 Symbiosis boundary: GitHub-backed frame entry is a real cross-chat coordination protocol, but shared repository state is not yet proven to be a live IABV runtime bus. A live symbiosis claim requires IABV runtime consumption of the external result followed by a changed next decision in one traceable causal episode.
+
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZH
+
+07ZH independently verified the downstream consumer boundary at technical SHA `5238e85c014ea6bdda2ffd1a14064883bde559f5`:
+
+- generic pending-task read is confirmed;
+- no Python call-site branches on `category=startui_defer`;
+- `next_action` is descriptive/storage data, not executable dispatch;
+- no pending-task → RuntimeSignal/PerceptionSnapshot/TaskContext/ATO/launcher path was found;
+- the experimental task remains `PENDING`;
+- UI launch remains attributable to explicit `-StartUI` + `CONTINUE`, not the task.
+
+07ZH also exposes an important provenance correction: proposed identifiers `requested_action`, `requested_time`, `source_context`, `expires_at`, `cancelled` were not found in the audited tree and must not be treated as existing schema.
+
+Primary frontier remains:
+`natural StartUI DEFER call-site → durable representation with explicit StartUI semantics`.
+
+Next actor: **CODEX** for source/provenance/ownership archaeology of that natural producer seam. No implementation yet.
+
