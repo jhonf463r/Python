@@ -1970,3 +1970,18 @@ Remaining contract uncertainty:
 
 Do not treat `episode_id` as reusable launcher identity.
 Do not choose a date+hostname hash without proving its collision/idempotency semantics.
+
+## 2026-10-02 — META-RUNTIME-07ZK
+
+Identity/persistence contract is resolved at contract level.
+
+Selected:
+- singleton pending StartUI availability intent per queue/workspace;
+- separate launcher invocation ID for provenance;
+- dedicated `persist-startui-defer` Python entrypoint;
+- JSON UTF-8 stdin;
+- existing `PlatformPendingTask` and `PlatformPendingQueue.upsert()`;
+- `resource-preflight` remains pure.
+
+Still unresolved at runtime:
+natural persistence, retry/idempotency behavior, failure semantics, semantic consumer, wake/recheck, reauthorization, UI outcome.
