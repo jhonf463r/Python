@@ -1737,3 +1737,18 @@ Next actor: **Codex**, selected for the exact natural DEFER call-site and owners
 
 Do not promote external design fields whose identifiers are absent from the target SHA. Cross-AI handoff remains a continuity substrate; it is not runtime ingestion or learning.
 
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZI
+
+07ZI moves the active technical seam from generic consumer archaeology to producer ownership:
+
+`StartUI request → resource preflight → effective DEFER`
+
+is owned by `start_iabv.ps1`.
+
+The candidate minimal composition is:
+
+`start_iabv.ps1 → existing Python persistence boundary → PlatformPendingQueue`.
+
+Independent verification is still required before implementation. Stable identity/idempotency and the exact cross-process handoff remain unresolved.
+
+Routing: **Sonnet now; Devin only after the seam is independently reconciled.**
