@@ -1544,3 +1544,16 @@ Activate this context for objectives involving deferred UI continuity, pending i
 | Cross-AI runtime symbiosis | same record | **NOT PROVEN: external observation → IABV runtime → changed next decision** |
 
 Activate this context for deferred UI continuity, pending intent, wake/recheck, queue consumer semantics or cross-AI causal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZH CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZH independent consumer audit | `CHAT-ARCH-2026-10-02-005-meta-runtime-07zh-verdict-and-producer-frontier.md` | **COMPLETED** |
+| Generic queue read | same record | **CONFIRMED** |
+| Semantic `startui_defer` consumer in Python tree | same record | **NOT PRESENT / NOT SUPPORTED** |
+| Primary producer seam | same record | **OPEN: natural StartUI DEFER → durable semantic StartUI intent** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN: external observation → IABV runtime → changed next decision** |
+
+Activate for deferred UI continuity, pending intent semantics, producer ownership, wake/recheck or cross-AI causal continuity.
+
