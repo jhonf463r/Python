@@ -2452,3 +2452,22 @@ Do not yet assume `AutonomyCycleService.startup_summary()` is the semantic owner
 Contract gap still open: stable task/event identity and the exact existing PowerShell→Python persistence entrypoint.
 
 Next actor: **Sonnet** for independent contract/ownership verification before implementation.
+
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZJ
+
+07ZJ closes the existing-boundary inventory on technical SHA `5238e85c014ea6bdda2ffd1a14064883bde559f5`:
+
+- `resource-preflight` is intentionally stateless and must remain observation/policy only;
+- `app` is full application launch;
+- `cm` has no pending-task persistence command;
+- no existing generic pending-task CLI/API was found;
+- direct PowerShell JSON serialization would duplicate Python-side schema ownership.
+
+Candidate seam:
+`start_iabv.ps1 → small Python persistence entrypoint → PlatformPendingQueue.upsert()`.
+
+However, implementation is not yet authorized because the identity/idempotency contract remains open. No existing launcher invocation identity was found. `episode_id` is semantically unrelated.
+
+Do not use date+hostname hashes as an assumed identity strategy; that can collapse distinct requests.
+
+Next actor: **Codex** for narrow identity/entrypoint contract verification. Devin follows only after this contract is closed.
