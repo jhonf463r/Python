@@ -2471,3 +2471,23 @@ However, implementation is not yet authorized because the identity/idempotency c
 Do not use date+hostname hashes as an assumed identity strategy; that can collapse distinct requests.
 
 Next actor: **Codex** for narrow identity/entrypoint contract verification. Devin follows only after this contract is closed.
+
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZK
+
+07ZK closes the identity/persistence contract at source level.
+
+Selected contract:
+`start_iabv.ps1 DEFER → python -m iabv_v15 persist-startui-defer → PlatformPendingTask → PlatformPendingQueue.upsert()`.
+
+Semantic identity:
+**one pending StartUI availability intent per queue/workspace**.
+
+Separate `launcher_invocation_id` is correlation/provenance only.
+
+Do not use random UUID, PID, learning `episode_id`, or date+hostname hashes as the task identity.
+
+Transport:
+UTF-8 JSON over stdin. The persistence command must remain small and must not contaminate `resource-preflight`.
+
+The contract is sufficiently closed for bounded implementation/runtime work.
+Next actor: **Devin**.
