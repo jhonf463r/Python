@@ -2546,3 +2546,19 @@ Next attempt, if needed: Codex with an external supervisor/watchdog, only after 
 ## 2026-10-02 BIO-04 SCIENTIFIC OVERLAY
 
 The Deep Research result advances BIO-04 to `RESULT AVAILABLE / VERIFICATION OPEN`. It must not yet modify high-confidence scientific knowledge. The next discriminating action is independent source and claim verification, followed by a compact evidence matrix and Knowledge Delta.
+
+## 2026-10-02 ACTIVE OVERLAY — BIO-04 ENGINEERING CAUSAL CORRELATION
+
+At local source base `34a994ee19c27022cfb5d7e40a4ed8a8e0d0b176` (parent `009d614ca385d7cd18c39aff27f86f6524766348`, branch `codex/bio04-verified-outcome-seams-20261002`), the engineering causal-correlation seam is implemented in the current working tree and runtime-demonstrated once on Windows.
+
+Flow observed:
+`AdaptiveTaskOrchestrator.execute_now() → ExecutionPlaybookService → ToolOperationalExecutor actual ToolTask/action IDs → independent WorldModel window observation → PostconditionVerificationService → TaskOutcomeRecorder → ExperimentLab → persisted ExperimentRun`.
+
+The rule is conditional and evidence-backed: valid absent baseline; later independent observation; exactly one matching observation containing the exact declared correlation field/value; and an executor-produced framework manifest tying that marker to action IDs in the actual ToolTask. The verifier preserves `observation.caused_by_execution_id = null`; it does not copy or fabricate observer authority. Missing marker/manifest remains `observation_only`; competing matches remain ambiguous.
+
+Windows runtime receipt: `C:\Users\faber\AppData\Local\Temp\iabv-bio04-causal-final-retry\receipt_before_cleanup.json`. Exact nonce window was observed by the production observer and independently by `user32.EnumWindows`, then closed by posting `WM_CLOSE` to its exact HWND. One ExperimentLab call and a persisted ExperimentRun were observed. This closes the tested causal-verification and outcome-persistence edge for the reversible local-window capability; it does not establish selector adaptation, future-decision influence, general coverage of every observer/capability, autonomous development, or scientific BIO-04 claims.
+
+Implementation changes are local and uncommitted; no implementation SHA or remote publication is claimed. The focused seam tests pass (15). Neighboring regression: 51 passed/6 failed in external-consultation expectations. Official full-suite collection is blocked by `ModuleNotFoundError: tests.test_mcp_server` from `test_embodiment_manifest_tool.py`. These test limitations do not replace or negate the direct runtime receipt and remain to be reconciled separately.
+
+First remaining learning frontier:
+`persisted directly attributable operational outcome → independently verified influence on a later selector/decision`.

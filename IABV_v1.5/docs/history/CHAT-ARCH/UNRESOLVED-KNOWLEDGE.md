@@ -2032,3 +2032,16 @@ Next unresolved scientific edge:
 ## 2026-10-02 — BIO-04 PRELIMINARY KNOWLEDGE BOUNDARY
 
 Research result is available but verification is open. In particular, the following are not yet canonical: mandatory ΔW for learning, mandatory ΔR for knowledge revision, mandatory pre-action decision change for metacognition, categorical equivalence between digital and biological plasticity, or any claim that a component combination constitutes consciousness.
+
+## 2026-10-02 — BIO-04 ENGINEERING CAUSAL CORRELATION
+
+The previously open engineering edge `independent external causal evidence → directly attributable internal verification` is now runtime-demonstrated for one reversible Windows window action. The production verifier used a valid absent baseline, a unique marker declared on the actual ToolTask action and postcondition, a single independent observed match, and the correlated action identity. It returned `verified / directly_attributable` while leaving the observer's `caused_by_execution_id` null. TaskOutcomeRecorder recorded the result through ExperimentLab and one ExperimentRun was persisted.
+
+This does not close learning in the stronger sense of later decision influence. Unresolved:
+- broad capability/observer coverage beyond the demonstrated window observer;
+- adaptation or measurable future-selector influence from this outcome;
+- full regression suite (collection currently fails on missing `tests.test_mcp_server`; a neighboring suite also has six external-consultation failures);
+- separate scientific BIO-04 artifact/claim verification.
+
+Next causal edge:
+`persisted verified outcome → a subsequent selector/decision changes because of that evidence`.

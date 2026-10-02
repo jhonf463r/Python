@@ -1291,6 +1291,7 @@ class ToolAction(BaseModel):
     value: str = ""
     parameters: dict[str, Any] = Field(default_factory=dict)
     expected_signal: str = ""
+    correlation_id: str = ""
     destructive: bool = False
     requires_approval: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -2050,10 +2051,12 @@ class ExperimentRun(BaseModel):
 
 
 class PostconditionExpectation(BaseModel):
-    """Explicit, pre-execution expectation for a visible local window."""
+    """Explicit, pre-execution expectation for an independently observable state."""
 
-    kind: Literal["window_present"] = "window_present"
+    kind: str = "window_present"
     title: str
+    correlation_id: str = ""
+    correlation_field: str = ""
 
 
 class PostconditionObservation(BaseModel):

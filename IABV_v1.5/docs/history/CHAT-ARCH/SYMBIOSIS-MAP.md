@@ -1818,3 +1818,12 @@ The cross-AI cycle now has a clear scientific evidence handoff:
 `Deep Research result → independent source audit → corrected scientific claims → Knowledge Delta → engineering frontier`.
 
 Sonnet/Claude-class is selected for the next BIO-04 step because the missing capability is independence and adversarial claim verification, not implementation or Windows runtime. Codex remains reserved for the separate 07Z runtime frontier.
+
+## 2026-10-02 SYMBIOSIS UPDATE — BIO-04 ENGINEERING CORRELATION
+
+Codex implemented and exercised the missing evidence bridge on the exact Windows checkout: actual task action identity + declared correlation marker → independent postcondition observation → directly attributable verification → TaskOutcomeRecorder → persisted ExperimentRun. This is a bounded runtime result for one reversible desktop capability, not evidence that future routing or decisions changed.
+
+The tested correlation rule stays capability-neutral at the verifier boundary: a capable independent observer must expose one exact correlated match; missing or competing evidence fails closed. No desktop-specific verifier branch was added. `requested_tool_id` remains a preference; `allowed_tool_ids` is the candidate restriction. In the successful run the production selector selected `desktop_human_runner` from the allowed candidate set.
+
+Next frontier:
+`verified persisted outcome → measurable influence on a subsequent selector/decision`, requiring separate evidence and independent verification. Keep scientific BIO-04 claim verification separate from this engineering/runtime track.

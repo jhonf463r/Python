@@ -61,6 +61,7 @@ class PostconditionVerificationService:
         expectation: PostconditionExpectation,
         baseline: PostconditionObservation,
         evidence_prefix: str = "",
+        causal_correlation: Any | None = None,
     ) -> PostconditionVerification:
         observed = self.observer.observe(expectation, execution_id=execution_id)
         prefix = evidence_prefix or f"postcondition-execution:{execution_id}"
@@ -68,10 +69,19 @@ class PostconditionVerificationService:
             f"{prefix}:baseline",
             f"{prefix}:observation",
         ]
+        refs.extend(
+            ref for ref in (baseline.evidence_ref, observed.evidence_ref)
+            if ref and ref not in refs
+        )
+        correlated_refs = self._correlation_evidence_refs(
+            expectation=expectation,
+            observed=observed,
+            causal_correlation=causal_correlation,
+        )
         if baseline.source in {"observer_error", "observer_unavailable"}:
             verdict, attribution = "not_verified", "not_attributable"
             reason = "No se obtuvo un baseline independiente válido antes de la acción."
-        elif baseline.satisfied:
+        elif baseline.satisfied or self._contains_expected_correlation(baseline, expectation):
             verdict, attribution = "not_verified", "not_attributable"
             reason = "La expectativa ya se cumplía en el baseline; no se demuestra una transición nueva."
         elif observed.observed_at_utc <= baseline.observed_at_utc:
@@ -80,15 +90,19 @@ class PostconditionVerificationService:
         elif not observed.satisfied:
             verdict, attribution = "not_verified", "not_attributable"
             reason = "La observación posterior no encontró el estado esperado."
-        elif observed.caused_by_execution_id == execution_id:
-            verdict, attribution = "verified", "directly_attributable"
-            reason = "La fuente independiente vinculó el estado observado con esta ejecución."
         elif len(observed.matches) > 1:
             verdict, attribution = "ambiguous", "ambiguous_due_to_competing_causes"
             reason = "Se observaron múltiples entidades que satisfacen la expectativa y no hay vínculo causal."
+        elif observed.caused_by_execution_id == execution_id:
+            verdict, attribution = "verified", "directly_attributable"
+            reason = "La fuente independiente vinculó el estado observado con esta ejecución."
+        elif correlated_refs:
+            verdict, attribution = "verified", "directly_attributable"
+            reason = "La única coincidencia observada contiene el correlador declarado por una acción de la tarea ejecutada."
         else:
             verdict, attribution = "observation_only", "temporally_associated"
             reason = "El estado apareció después de la acción, pero la fuente no lo atribuye a esta ejecución."
+        refs.extend(ref for ref in correlated_refs if ref not in refs)
         return PostconditionVerification(
             execution_id=execution_id,
             expectation=expectation,
@@ -98,4 +112,58 @@ class PostconditionVerificationService:
             attribution=attribution,
             reason=reason,
             evidence_refs=refs,
+        )
+
+    @staticmethod
+    def _correlation_evidence_refs(
+        *,
+        expectation: PostconditionExpectation,
+        observed: PostconditionObservation,
+        causal_correlation: Any | None,
+    ) -> list[str]:
+        """Return a task/action provenance ref only for a unique exact match.
+
+        The algorithm is field- and capability-neutral: observers expose
+        their independently observed match fields, while the executed task
+        supplies action identities carrying the same declared correlation ID.
+        """
+        if not isinstance(causal_correlation, dict):
+            return []
+        correlation_id = str(expectation.correlation_id or '').strip()
+        correlation_field = str(expectation.correlation_field or '').strip()
+        if not correlation_id or not correlation_field:
+            return []
+        if str(causal_correlation.get('correlation_id') or '').strip() != correlation_id:
+            return []
+        if str(causal_correlation.get('correlation_field') or '').strip() != correlation_field:
+            return []
+        task_id = str(causal_correlation.get('task_id') or '').strip()
+        action_ids = causal_correlation.get('action_ids')
+        if not task_id or not isinstance(action_ids, list) or not action_ids:
+            return []
+        if len(observed.matches) != 1:
+            return []
+        match = observed.matches[0]
+        if not isinstance(match, dict) or str(match.get(correlation_field) or '').strip() != correlation_id:
+            return []
+        action_ref = ','.join(str(item).strip() for item in action_ids if str(item).strip())
+        if not action_ref:
+            return []
+        return [f'causal-correlation:{task_id}:{action_ref}:{correlation_field}:{correlation_id}']
+
+    @staticmethod
+    def _contains_expected_correlation(
+        observation: PostconditionObservation,
+        expectation: PostconditionExpectation,
+    ) -> bool:
+        correlation_id = str(expectation.correlation_id or '').strip()
+        correlation_field = str(expectation.correlation_field or '').strip()
+        return bool(
+            correlation_id
+            and correlation_field
+            and any(
+                isinstance(match, dict)
+                and str(match.get(correlation_field) or '').strip() == correlation_id
+                for match in observation.matches
+            )
         )

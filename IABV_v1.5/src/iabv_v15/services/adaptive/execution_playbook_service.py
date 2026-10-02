@@ -232,6 +232,7 @@ class ExecutionPlaybookService:
                             expectation=execute_step.postcondition,
                             baseline=baseline,
                             evidence_prefix=f'adaptive-session:{session.session_id}:postcondition:{execution_id}',
+                            causal_correlation=result.metadata.get('causal_correlation'),
                         )
                     except Exception as exc:  # noqa: BLE001 - preserve execution while recording unknown verification
                         verification_error = type(exc).__name__

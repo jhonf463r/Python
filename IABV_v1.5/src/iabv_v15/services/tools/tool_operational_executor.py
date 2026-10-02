@@ -38,6 +38,7 @@ class ToolOperationalExecutor:
         if not self.supports(session):
             return OperationalExecutorResult(executed=False, status=RunStatus.PARTIAL, summary=self.describe(session), next_actions=['Simular', 'Preparar Codex'], metadata={'mode': 'adapter_missing'})
         task = self.tool_teach_service.build_task_for_session(session)
+        causal_correlation = self._causal_correlation_manifest(task=task, session=session)
         approved = not any(item.decision == ApprovalDecision.PENDING for item in session.approval_checkpoints)
         result = self.tool_teach_service.execute_task(task, approved=approved)
         metadata = {
@@ -48,6 +49,8 @@ class ToolOperationalExecutor:
             'rollback_state': result.rollback_state.state if result.rollback_state is not None else '',
             'rollback_detail': result.rollback_state.detail if result.rollback_state is not None else '',
         }
+        if causal_correlation is not None:
+            metadata['causal_correlation'] = causal_correlation
         next_actions = ['Ver evolutivo']
         if result.execution_state.state == 'waiting_approval':
             next_actions = ['Aprobar estrategia', 'Aprobar fase siguiente']
@@ -64,4 +67,37 @@ class ToolOperationalExecutor:
             next_actions=next_actions,
             metadata=metadata,
         )
+
+    @staticmethod
+    def _causal_correlation_manifest(*, task, session: AdaptiveSession) -> dict[str, object] | None:
+        """Bind a declared observable marker to the actual task action IDs.
+
+        This records the pre-execution task contract only. The independent
+        postcondition observer must still observe the same marker before the
+        verifier can attribute the effect.
+        """
+        playbook = session.playbook
+        if playbook is None:
+            return None
+        execute_step = next((step for step in playbook.steps if step.phase_key == 'execute'), None)
+        expectation = execute_step.postcondition if execute_step is not None else None
+        if expectation is None:
+            return None
+        correlation_id = str(expectation.correlation_id or '').strip()
+        correlation_field = str(expectation.correlation_field or '').strip()
+        if not correlation_id or not correlation_field:
+            return None
+        action_ids = [
+            str(action.action_id)
+            for action in task.actions
+            if str(action.correlation_id or '').strip() == correlation_id
+        ]
+        if not action_ids:
+            return None
+        return {
+            'task_id': str(task.task_id),
+            'action_ids': action_ids,
+            'correlation_id': correlation_id,
+            'correlation_field': correlation_field,
+        }
 
