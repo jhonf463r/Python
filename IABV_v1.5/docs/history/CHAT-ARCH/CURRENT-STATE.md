@@ -2300,3 +2300,45 @@ La tesis de biosofía sigue siendo un programa científico. La jerarquía de des
 `plasticity → learning → knowledge revision → contextualization → relation reorganization → causal learning → metacontrol → self-modeling → self-directed experimentation → higher-order organization → recursive development → possible open-ended evolutionary processes`.
 
 No se debe crear todavía un nuevo brain, plasticity engine o superconsciousness engine.
+
+
+
+## 2026-10-01 ACTIVE OVERLAY — META-RUNTIME-07Z TEMPORAL CONTINUITY / CAUSAL VERIFICATION
+
+Canonical absorption record:
+`CHAT-ARCH-2026-10-01-001-meta-runtime-continuity-and-causal-verification.md`
+
+The latest transcript adds a runtime-control boundary without replacing the 2026-09-29 developmental/plasticity overlays.
+
+### Verified routing and forensic rules
+- Never inherit the prior actor as the next actor. Recompute from current frontier and capability-fit.
+- A source-text match must locate the real invocation/call-site when the claim concerns ordering or execution.
+- A suspected production defect must be reconciled against the exact production SHA before patching.
+- Prompt dispatch is not execution; execution is not observation; observation is not causal proof; report is not independent evidence.
+
+### META-RUNTIME-07Z lineage
+Production behavior is anchored to `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+Verification-only test correction is `4fda92ab0a96d38e637b6581d9fc5f35e53d49f2`, changing only `tests/test_ui_resource_preflight.py`.
+The suspected production ordering bug was disproved; no production patch was made.
+
+### UI temporal continuity frontier
+07ZA boundedly established one-shot `DEFER → UI not launched`.
+07ZB found no connected automatic UI retry.
+07ZC refined the continuity problem: generic persistence exists, but no semantically defined, consumable deferred `StartUI` intent with connected wake/recheck/relaunch has been demonstrated.
+
+Preserve:
+`telemetry ≠ intent ≠ consumable intent ≠ trigger ≠ reobservation ≠ reauthorization ≠ launch`.
+
+Generic substrates:
+`PlatformPendingQueue / PlatformPendingTask / PlatformResumeHint / AutonomyCycleService / TaskOutcomeRecorder / startup_summary()` are reusable persistence/context mechanisms, not automatically a UI resume executor.
+
+The existing launch authority remains `start_iabv.ps1`.
+No new scheduler, watcher, daemon, retry loop, UI resume service or second launch authority is authorized by this record.
+
+### META-RUNTIME-07ZD — DISPATCHED / PENDING
+The current task is static composition forensics only. It must decide whether existing persistence + consumer + trigger + reobservation + launch authority already compose into temporal continuity, or identify the first missing causal edge.
+
+The supplied transcript contains the 07ZD prompt but no 07ZD result. Do not infer or close it.
+
+### Science/runtime separation
+The science Deep Research track remains independent from the real IABV→Devin self-development runtime track. Both are evidence-producing tracks and converge only through reconciliation.

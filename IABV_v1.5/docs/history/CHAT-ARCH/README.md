@@ -466,3 +466,13 @@ La auditoría es inicialmente read-only y debe localizar la primera arista causa
 Después de la auditoría: Devin para el parche/runtime mínimo si la arista es concreta; Sonnet/Claude para verificación independiente; Codex solo de nuevo si surge una ambigüedad de fuente/contrato/provenance; Opus 5 solo ante contradicción arquitectónica genuina.
 
 No existe una secuencia histórica fija de actores.
+
+
+
+## 2026-10-01 LATEST ABSORBED RUNTIME-CONTINUITY RECORD
+
+`CHAT-ARCH-2026-10-01-001-meta-runtime-continuity-and-causal-verification.md`
+
+This record should be activated for objectives concerning META-RUNTIME-07Z, UI resource-gate DEFER, deferred UI intent continuity, persistence/consumer/trigger composition, or call-site causal verification.
+
+Current pending frontier: `META-RUNTIME-07ZD` was dispatched as read-only forensic reconciliation; its actual Codex result is not present in the absorbed source yet.

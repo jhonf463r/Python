@@ -1653,3 +1653,27 @@ ChatGPT = synthesis/reconciliation/writeback.
 Opus 5 = genuine architecture contradiction only.
 
 Esto es capability routing, no secuencia fija.
+
+
+
+## 2026-10-01 TEMPORAL CONTINUITY MAP — UI DEFER
+
+The existing composition should be reasoned about as two separate graphs:
+
+`ONE-SHOT LAUNCH GRAPH:
+StartUI → resource observation/policy → DEFER → no new UI → continue launcher/bridge boundary`
+
+and the still-open graph:
+
+`DEFER → durable semantic intent → future trigger → fresh resource observation → policy recomputation → existing launch authority → instance protection → UI resume`.
+
+Known generic substrates:
+`PlatformPendingQueue → persistence`
+`PlatformResumeHint → persisted checkpoint`
+`AutonomyCycleService/startup_summary → context exposure`
+
+None of these edges alone constitutes a UI resume path.
+
+The minimal owner already present is `start_iabv.ps1` for launch authority. The missing question is whether an existing owner/consumer/trigger can safely re-enter that authority after a future resource observation.
+
+No duplicate orchestration organ should be created before the composition audit closes.

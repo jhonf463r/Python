@@ -1855,3 +1855,20 @@ Más órganos no significan organismo. Autonomía local no significa self-develo
 
 ### DEV-U5 — Next action
 Ejecutar el contrato Codex de super-auditoría. No repetir diagnósticos antiguos salvo que aparezca una incertidumbre nueva y distinta.
+
+
+
+## 2026-10-01 OPEN KNOWLEDGE — META-RUNTIME-07ZD
+
+1. Does existing `PlatformPendingQueue/PlatformResumeHint` have a semantically defined `StartUI` pending-action representation?
+2. Is there any existing consumer that turns such state into an action rather than summary/context?
+3. Is there an existing wake/trigger that survives the launcher lifecycle and rechecks RAM for the deferred UI request?
+4. Can any existing consumer safely re-enter `start_iabv.ps1` without duplicating launch authority?
+5. What is the exact first missing causal edge if no full composition exists?
+6. What evidence class should be assigned to each edge: persisted, consumable, triggered, reobserved, reauthorized, launched?
+
+### Pending evidence
+`META-RUNTIME-07ZD` is dispatched but its Codex result is absent from the current transcript source. Treat the frontier as OPEN.
+
+### Build restraint
+No scheduler, watcher, daemon, retry mechanism or UI-resume subsystem should be implemented until the 07ZD composition audit is reconciled.

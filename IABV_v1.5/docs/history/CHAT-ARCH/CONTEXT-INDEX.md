@@ -1496,3 +1496,15 @@ Contrato canónico:
 Commit: `13843a7c2bac252c7c183741f4222659f2bbc605`.
 
 El track científico Deep Research y el track técnico IABV→Devin pueden avanzar de forma independiente.
+
+
+
+## 2026-10-01 — CURRENT CONTEXT INDEX ADDENDUM
+
+| Frontier | Canonical record | Current state / activation rule |
+|---|---|---|
+| META-RUNTIME-07Z causal verification | `CHAT-ARCH-2026-10-01-001-meta-runtime-continuity-and-causal-verification.md` | Use when investigating UI resource-gate ordering, one-shot DEFER semantics, test false-positives or temporal continuity. |
+| UI temporal continuity after DEFER | same record + META-RUNTIME-07ZD dispatch | Generic persistence exists; semantically consumable StartUI intent, wake, post-DEFER recheck and automatic resume remain unproven. |
+| META-RUNTIME-07ZD | same record | DISPATCHED / PENDING; do not infer result until actual Codex response is received and read back. |
+
+Operational rule: activate this overlay only when the objective touches resource-gated UI startup, deferred intent continuity, wake/recheck, or source/runtime causal verification.

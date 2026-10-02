@@ -610,3 +610,14 @@ Status:
 
 Important:
 this track is independent of the still-open Deep Research scientific literature track. The two may proceed in parallel and neither is evidence of closure of the other.
+
+
+
+## 2026-10-01 — ABSORBED CHAT RECORD
+
+- **Source record:** `CHAT-ARCH-2026-10-01-001-meta-runtime-continuity-and-causal-verification.md`
+- **Origin:** user-provided `Se ha pegado el markdown(20261002-030058).md` (4939 lines)
+- **Canonical base at absorption:** `main@8425f03eb45abd11951938f6e3234459c1585b55`
+- **Material themes:** 07Z false-positive correction; call-site verification; one-shot UI DEFER; process lifetime; telemetry vs semantic intent; generic PlatformPendingQueue persistence; missing trigger/recheck/resume composition; 07ZD static composition audit; science/runtime track separation.
+- **Status:** absorbed into canonical memory; unresolved 07ZD remains pending.
+- **Preservation rule:** no technical closure or implementation authority is derived from the transcript alone.

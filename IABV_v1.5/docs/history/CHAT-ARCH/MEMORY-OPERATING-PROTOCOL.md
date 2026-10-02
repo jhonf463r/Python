@@ -1124,3 +1124,23 @@ A participant may disagree with IABV's current interpretation. Such disagreement
 
 This rule is the cross-AI operational form of the earlier cognitive-control-plane finding that the central problem is not merely whether context exists, but whether an external agent actually enters the IABV frame before reasoning.
 
+
+
+
+## 2026-10-01 METHODOLOGY ADDENDUM — CALL-SITE / CAUSAL-EDGE VERIFICATION
+
+For runtime or source-order claims, verification must target the actual producer, invocation or consumer call-site rather than merely the existence of a named function/class/symbol.
+
+Required hierarchy:
+`declared → reachable → invoked → observed → caused → independently verified`.
+
+A test that finds a symbol definition does not prove that the production path calls that symbol at the claimed point.
+
+A prompt being dispatched does not establish that the requested action executed. A report from an actor does not substitute for repository/runtime read-back.
+
+For temporal continuity, distinguish:
+`persisted → consumable → triggered → reobserved → reauthorized → launched`.
+
+Generic persistence must not be promoted to semantic executable intent. Generic background monitoring must not be promoted to an active wake path without an owner, lifetime, trigger, consumer and observed effect.
+
+The previous actor is historical evidence only. Current routing must recompute from the present causal frontier and required capability.
