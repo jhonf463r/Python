@@ -5,6 +5,30 @@
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
 
 #
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZG RECONCILIATION
+
+07ZG is completed as a read-only runtime/source reconciliation against `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+
+Verified:
+- startup bootstrap exercised `AutonomyCycleService.startup_summary()`;
+- `PlatformPendingQueue.list_actionable() → list_all() → Path.read_text(task_*.json)` read persisted pending-task records;
+- the experimental `startui_defer` record remained `PENDING`;
+- the observed path was generic queue/context summarization, not semantic dispatch;
+- the UI launch was caused by explicit `-StartUI` + resource gate `CONTINUE`, not by the pending task.
+
+Evidence boundary:
+- reader attribution to UI `python.exe` PID 22380 is source/chronology correlated, not kernel-level PID+path+stack proof;
+- no per-task runtime receipt was emitted;
+- no IABV decision, reauthorization, automatic wake, retry or learning was caused by the task.
+
+Primary frontier remains:
+`StartUI DEFER → durable semantically defined UI launch intent`.
+
+The secondary diagnostic branch is now narrower:
+`persisted startui_defer → generic startup reader → no semantic handler observed`.
+
+Do not repeat the same underpowered FileIO experiment merely to refine the secondary branch. Independently verify the captured evidence first, then route from the reconciled boundary.
+
 ## 2026-09-29 ACTIVE OVERLAY — SYMBIOSIS / PLASTICITY / SCIENTIFIC LEARNING
 
 **READ THIS OVERLAY BEFORE OLDER DATED SECTIONS WHEN THE OBJECTIVE TOUCHES SYMBIOSIS, ACTOR SELECTION, TOOL/RESOURCE DISCOVERY, KNOWLEDGE PLASTICITY, SCIENTIFIC SELF-STUDY OR AUTONOMOUS DEVELOPMENT.**
