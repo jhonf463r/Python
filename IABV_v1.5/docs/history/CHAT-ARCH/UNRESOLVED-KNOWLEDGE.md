@@ -1875,6 +1875,27 @@ No scheduler, watcher, daemon, retry mechanism or UI-resume subsystem should be 
 
 
 
+## 2026-10-02 — META-RUNTIME-07ZG UNRESOLVED/RECONCILED
+
+07ZG closes the uncertainty "does the startup path read the pending queue at all?" at the source/runtime-correlation level: **YES**.
+
+It does not close:
+1. semantic consumption of `category=startui_defer`;
+2. any state transition or disposition of that task;
+3. resource-recovery wake/recheck;
+4. policy recomputation and reauthorization;
+5. return to the existing `start_iabv.ps1` launch authority;
+6. external-AI observation being consumed by IABV runtime and changing a later decision.
+
+Evidence refinement still open:
+- kernel-level PID/path/stack receipt for the generic reader.
+
+Primary causal frontier remains:
+`StartUI DEFER → durable semantic StartUI intent`.
+
+Method rule:
+`persisted → readable → semantically consumed → state transition → causal effect → independently verified`.
+
 ## 2026-10-02 OPEN KNOWLEDGE UPDATE — 07ZD RESULT
 
 Closed:
