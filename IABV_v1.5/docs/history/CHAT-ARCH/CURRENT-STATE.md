@@ -2517,3 +2517,16 @@ Current frontier:
 `real launcher preflight → natural DEFER → actual persist-startui-defer invocation → persisted singleton → read-back`.
 
 No artificial resource pressure or threshold modification is authorized. Next actor remains **Codex** for one bounded launcher observation using external debugging control to stop before UI/bridge if the gate reaches CONTINUE. After natural DEFER proof, route to Sonnet for independent verification.
+
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZN
+
+07ZN confirms the published producer seam remains source-attributable at `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2`.
+
+The real launcher received `-StartUI` but its own preflight returned `CONTINUE / sufficient_resources` (about 5,115 MB free, 68.2% used), so the natural DEFER branch was not executed.
+
+The external breakpoint control used to prevent later UI/bridge effects did not terminate the script on this host. This control is therefore retired as an experimental barrier.
+
+Current immediate runtime frontier:
+`real launcher preflight → natural DEFER → actual persistence CLI → singleton task → read-back`.
+
+Next attempt, if needed: Codex with an external supervisor/watchdog, only after confirming the host is already naturally below the production DEFER threshold. No artificial pressure, threshold changes or synthetic DEFER.
