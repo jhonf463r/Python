@@ -2010,3 +2010,12 @@ Still unresolved:
 A prior preflight DEFER observed outside the launcher cannot substitute for the launcher's own decision because resource state is time-varying.
 
 No artificial memory pressure or threshold modification is to be used merely to manufacture DEFER.
+
+## 2026-10-02 — META-RUNTIME-07ZN
+
+The natural launcher still did not reach DEFER in the tested execution; the launcher itself observed CONTINUE.
+
+The external breakpoint did not stop execution on the host, so breakpoint-based barriers are not valid evidence/control for this frontier.
+
+Remaining runtime gap:
+`launcher preflight → natural DEFER → launcher persistence invocation → persisted singleton → read-back`.
