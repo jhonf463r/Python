@@ -488,3 +488,15 @@ Latest META-RUNTIME continuity record:
 `StartUI DEFER → durable semantic StartUI intent`.
 
 Do not repeat 07ZD. Do not infer a scheduler requirement yet.
+
+
+## 2026-10-02 LATEST ABSORBED RECORD — META-RUNTIME-07ZF
+
+Latest runtime continuity record:
+CHAT-ARCH-2026-10-01-003-meta-runtime-07zf-observability-and-frame-reconciliation.md
+
+07ZF proved isolated manual persistence/read-back of startui_defer but left consumer observation INCONCLUSIVE. It did not test the natural StartUI DEFER producer. The observed UI launch was caused by explicit -StartUI + CONTINUE.
+
+Current routing remains CODEX by capability-fit. The next experiment must first inspect existing IABV self-observation/frame machinery and only add minimal Windows tracing if necessary. Do not infer absence from an empty capture.
+
+The cross-AI frame protocol is GitHub-backed continuity, not yet proven live runtime communication.
