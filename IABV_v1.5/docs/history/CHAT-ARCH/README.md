@@ -554,3 +554,12 @@ Latest producer publication/runtime record:
 Implementation is remotely attributable at `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2`. Isolated CLI persistence is proven. Natural launcher DEFER remains the only immediate runtime gap.
 
 Next handoff: Codex for one bounded debugger-controlled natural-DEFER observation; then independent Sonnet verification.
+
+## 2026-10-02 LATEST ABSORBED RECORD — META-RUNTIME-07ZN
+
+Latest runtime-control record:
+`CHAT-ARCH-2026-10-02-011-meta-runtime-07zn-runtime-control-result.md`
+
+The published producer seam remains remote-attributable. Natural launcher DEFER remains unproven because the launcher's own preflight returned CONTINUE. The prior breakpoint control method is retired.
+
+Next action, if a new runtime window is available: Codex with a different external supervisor method, only under naturally qualifying resource state.
