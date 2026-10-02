@@ -575,3 +575,9 @@ META-RUNTIME-07ZO is `ENVIRONMENT-BLOCKED`: the immediate real `resource-preflig
 BIO-04 is a parallel scientific track. The transcript contains the targeted Deep Research specification and claims about PDF outputs, but the actual `Resumen Ejecutivo (1).pdf` / second research PDF bytes are not currently available in the Library surface for independent inspection. Therefore the research artifact itself is NOT canonicalized as verified scientific evidence. The next scientific action is artifact recovery or rerun of the targeted Deep Research, followed by independent claim/source verification before any engineering implementation.
 
 Routing rule reinforced: parallel frontiers may progress independently; a blocked runtime seam does not force actor rotation in another track. Actor selection remains `current frontier → required capability → capability-fit → minimum information-gain action`; message budget is an intervention/resource cost, not a routing authority.
+
+## 2026-10-02 LATEST BIO-04 RESULT — PRELIMINARY RECONCILIATION
+
+The executed Deep Research result is now inspectable in the current chat and is treated as a research result, not yet as independently verified scientific knowledge. Several overclaims must be corrected before canonicalization, especially: learning does not require ΔW; knowledge revision does not require ΔR; metacognition is broader than mandatory pre-action ΔD; biological plasticity analogies are usually partial; and the ADD/UPDATE/etc. ontology is an IABV engineering vocabulary, not a direct AGM taxonomy.
+
+Next scientific actor: **Sonnet/Claude-class independent source/claim verifier**. Runtime 07Z remains separate and blocked by current natural resource state.

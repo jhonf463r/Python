@@ -2542,3 +2542,7 @@ Next attempt, if needed: Codex with an external supervisor/watchdog, only after 
 **Active routing split:**
 - Runtime 07Z: wait for a naturally qualifying DEFER window; then Codex remains the fit for the bounded Windows causal observation.
 - BIO-04: recover/obtain the actual research artifact, then independent scientific verification; only after that derive the next engineering frontier.
+
+## 2026-10-02 BIO-04 SCIENTIFIC OVERLAY
+
+The Deep Research result advances BIO-04 to `RESULT AVAILABLE / VERIFICATION OPEN`. It must not yet modify high-confidence scientific knowledge. The next discriminating action is independent source and claim verification, followed by a compact evidence matrix and Knowledge Delta.

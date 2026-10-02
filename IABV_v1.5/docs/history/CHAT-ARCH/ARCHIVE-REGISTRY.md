@@ -721,3 +721,10 @@ this track is independent of the still-open Deep Research scientific literature 
 - **07ZO:** environment-blocked; natural StartUI DEFER remains open; no new runtime evidence.
 - **BIO-04:** targeted research request is archived, but the actual research PDF is not currently retrievable for independent audit; scientific conclusions remain non-canonical until artifact/source verification.
 - **Method:** parallel frontiers are permitted; actor routing remains capability-fit rather than rotation or message depletion.
+
+## 2026-10-02 — BIO-04 PRELIMINARY RESULT
+
+- Record: `CHAT-ARCH-2026-10-02-013-bio04-deep-research-preliminary-reconciliation.md`
+- Research result: available in chat; independent scientific verification remains open.
+- Main methodological corrections: do not equate learning with ΔW; do not define revision by ΔR; do not reduce metacognition to pre-action ΔD; treat biological analogies as partial unless justified.
+- Next actor: Sonnet/Claude-class for adversarial scientific claim/source verification.

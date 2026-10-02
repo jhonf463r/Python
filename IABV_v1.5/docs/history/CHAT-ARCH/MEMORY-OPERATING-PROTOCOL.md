@@ -1217,3 +1217,12 @@ For routing, treat external-agent message budget as a resource/intervention-cost
 `first open evidential/causal edge → required capability → capability-fit actor → minimum discriminating action`.
 
 Cross-AI symbiosis remains bounded by evidence: shared GitHub state enables reconstructable continuity, but `shared repository ≠ live runtime bus`, `frame entry ≠ automatic ingestion`, and `writeback ≠ next-decision change` until runtime causality is demonstrated.
+
+## 2026-10-02 METHODOLOGY ADDENDUM — SCIENTIFIC CLAIM AUDIT
+
+Scientific architecture decisions require a claim ladder: `research result → exact source → source-level verification → corrected claim → operational definition → falsifier → IABV mapping`.
+
+Do not promote a research response's engineering operationalization into a literature-backed definition unless the cited literature actually supports it.
+
+For BIO-04, keep separate:
+`learning`, `knowledge revision`, `reorganization`, `metacognitive monitoring/control`, and `consciousness-relevant indicators`.

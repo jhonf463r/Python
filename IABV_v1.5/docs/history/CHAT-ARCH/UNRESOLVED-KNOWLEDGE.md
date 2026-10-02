@@ -2028,3 +2028,7 @@ BIO-04 scientific verification is also unresolved at artifact level. The targete
 
 Next unresolved scientific edge:
 `actual research artifact → claims/evidence extraction → independent source verification → scientific Knowledge Delta`.
+
+## 2026-10-02 — BIO-04 PRELIMINARY KNOWLEDGE BOUNDARY
+
+Research result is available but verification is open. In particular, the following are not yet canonical: mandatory ΔW for learning, mandatory ΔR for knowledge revision, mandatory pre-action decision change for metacognition, categorical equivalence between digital and biological plasticity, or any claim that a component combination constitutes consciousness.

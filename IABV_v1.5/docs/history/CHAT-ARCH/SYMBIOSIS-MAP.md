@@ -1811,3 +1811,10 @@ This reinforces a stronger symbiosis rule:
 The field is still not a live runtime bus, and repeated text handoff is not itself learning.
 
 Message availability should be treated as intervention cost/availability, never as the primary routing rule. Preserve stronger actors for high-cost tasks when a lower-cost actor can safely close the current edge, but only after capability-fit and independence requirements are satisfied.
+
+## 2026-10-02 SYMBIOSIS UPDATE — BIO-04 RESULT TO VERIFICATION
+
+The cross-AI cycle now has a clear scientific evidence handoff:
+`Deep Research result → independent source audit → corrected scientific claims → Knowledge Delta → engineering frontier`.
+
+Sonnet/Claude-class is selected for the next BIO-04 step because the missing capability is independence and adversarial claim verification, not implementation or Windows runtime. Codex remains reserved for the separate 07Z runtime frontier.
