@@ -88,7 +88,7 @@ def test_start_ui_uses_start_process_with_iabv_module(start_iabv_src: str) -> No
         pos = start_iabv_src.find("if ($StartUI)", idx)
         assert pos != -1, "No se encontro el bloque principal if ($StartUI)"
         # El bloque principal tiene un '{' seguido de contenido con Write-Info.
-        candidate = start_iabv_src[pos : pos + 4500]
+        candidate = start_iabv_src[pos : pos + 9000]
         if "Write-Info" in candidate and "-m iabv_v15 app" in candidate:
             block = candidate
             break

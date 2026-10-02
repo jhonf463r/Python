@@ -3637,8 +3637,6 @@ class AppBootstrap:
     _STARTUP_EVOLUTION_INITIAL_DELAY_MS: int = 120_000
     _STARTUP_EVOLUTION_RETRY_BASE_MS: int = 60_000
     _STARTUP_EVOLUTION_MAX_DEFERRALS: int = 6
-    _STARTUP_EVOLUTION_MIN_FREE_MB: float = 4096.0
-    _STARTUP_EVOLUTION_MAX_RAM_USED_PCT: float = 75.0
 
     # Extended startup: True until *all* background startup phases finish.
     # This is what the watchdog reads (startup_followup_active) to avoid
@@ -4807,18 +4805,17 @@ class AppBootstrap:
         if cpu_pressure in {'high', 'critical'}:
             return f'cpu_pressure:{cpu_pressure}'
 
-        try:
-            available_mb = float(getattr(snap, 'ram_available_mb', 0.0) or 0.0)
-            if available_mb < self._STARTUP_EVOLUTION_MIN_FREE_MB:
-                return f'low_free_ram:{available_mb:.0f}mb'
-        except Exception:
-            pass
-        try:
-            used_pct = float(getattr(snap, 'ram_used_pct', 0.0) or 0.0)
-            if used_pct >= self._STARTUP_EVOLUTION_MAX_RAM_USED_PCT:
-                return f'high_ram_used:{used_pct:.1f}%'
-        except Exception:
-            pass
+        from iabv_v15.services.intelligent_resource_manager import (
+            evaluate_ui_ram_policy,
+        )
+        ram_decision = evaluate_ui_ram_policy(snap)
+        if ram_decision['decision'] == 'DEFER':
+            reason = str(ram_decision['reason'])
+            if reason == 'low_free_ram':
+                return f"low_free_ram:{ram_decision['ram_available_mb']:.0f}mb"
+            if reason == 'high_ram_used':
+                return f"high_ram_used:{ram_decision['ram_used_pct']:.1f}%"
+            return reason
 
         return None
 

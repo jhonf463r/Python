@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import subprocess
 import time
@@ -26,6 +27,9 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+RESOURCE_GATE_MIN_FREE_RAM_MB = 4096.0
+RESOURCE_GATE_MAX_RAM_USED_PCT = 75.0
 
 # ---------------------------------------------------------------------------
 # RESOURCE SNAPSHOT
@@ -64,8 +68,8 @@ class ResourceSnapshot:
         return 'low'
 
 
-def take_resource_snapshot() -> ResourceSnapshot:
-    """Capture current system resource state (cross-platform)."""
+def take_ram_snapshot() -> ResourceSnapshot:
+    """Capture only RAM state for lightweight pre-bootstrap decisions."""
     snap = ResourceSnapshot()
     snap.cpu_count = os.cpu_count() or 1
 
@@ -126,6 +130,65 @@ def take_resource_snapshot() -> ResourceSnapshot:
                             break
     except Exception as exc:
         logger.debug('RAM snapshot failed: %s', exc)
+
+    return snap
+
+
+def evaluate_ui_ram_policy(snapshot: ResourceSnapshot | None) -> dict[str, Any]:
+    """Return the shared, pure RAM decision used for starting a new UI."""
+    unavailable = {
+        'decision': 'DEFER',
+        'reason': 'resource_observation_unavailable',
+        'ram_total_mb': None,
+        'ram_available_mb': None,
+        'ram_used_pct': None,
+        'threshold_free_mb': RESOURCE_GATE_MIN_FREE_RAM_MB,
+        'threshold_used_pct': RESOURCE_GATE_MAX_RAM_USED_PCT,
+    }
+    if snapshot is None:
+        return unavailable
+
+    try:
+        total = snapshot.ram_total_mb
+        available = snapshot.ram_available_mb
+        used_pct = snapshot.ram_used_pct
+        values = (total, available, used_pct)
+        if any(isinstance(value, bool) for value in values):
+            return unavailable
+        total = float(total)
+        available = float(available)
+        used_pct = float(used_pct)
+        if (
+            not all(math.isfinite(value) for value in (total, available, used_pct))
+            or total <= 0
+            or available < 0
+            or available > total
+            or used_pct < 0
+            or used_pct > 100
+        ):
+            return unavailable
+    except (AttributeError, TypeError, ValueError, OverflowError):
+        return unavailable
+
+    result = {
+        'decision': 'CONTINUE',
+        'reason': 'sufficient_resources',
+        'ram_total_mb': total,
+        'ram_available_mb': available,
+        'ram_used_pct': used_pct,
+        'threshold_free_mb': RESOURCE_GATE_MIN_FREE_RAM_MB,
+        'threshold_used_pct': RESOURCE_GATE_MAX_RAM_USED_PCT,
+    }
+    if available < RESOURCE_GATE_MIN_FREE_RAM_MB:
+        result.update(decision='DEFER', reason='low_free_ram')
+    elif used_pct >= RESOURCE_GATE_MAX_RAM_USED_PCT:
+        result.update(decision='DEFER', reason='high_ram_used')
+    return result
+
+
+def take_resource_snapshot() -> ResourceSnapshot:
+    """Capture current system resource state (cross-platform)."""
+    snap = take_ram_snapshot()
 
     # CPU load
     try:

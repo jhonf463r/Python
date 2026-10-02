@@ -265,8 +265,96 @@ if ($issues.Count -gt 0) {
     Write-Warn "Podes arrancar igual (los adapters reportaran 'missing' en run_self_audit)."
 }
 
-# Health checks opcionales (HTTP rapido).
-if (-not $SkipHealthChecks) {
+# --- Lightweight preflight used only when a new UI process is needed. ---
+function Write-StartupTrace($kind, $data) {
+    $ts = (Get-Date -Format 'o')
+    $entry = @{ kind = $kind; ts = $ts; data = $data } | ConvertTo-Json -Compress
+    $traceFile = Join-Path $logsDir 'startup_ui_presence.jsonl'
+    try { Add-Content -Path $traceFile -Value $entry -Encoding utf8 } catch {}
+}
+
+function Find-ExistingUIProcess {
+    # Returns the first matching python iabv_v15 app process (not this PID).
+    try {
+        $procs = Get-CimInstance Win32_Process -Filter "Name = 'python.exe' OR Name = 'python3.exe'" -ErrorAction SilentlyContinue
+        foreach ($p in $procs) {
+            if ($p.ProcessId -eq $PID) { continue }
+            $cmdLine = $p.CommandLine
+            if ($cmdLine -and $cmdLine -match 'iabv_v15.*app') {
+                return [PSCustomObject]@{ Pid = $p.ProcessId; CmdLine = $cmdLine }
+            }
+        }
+    } catch {}
+    return $null
+}
+
+function Invoke-UIResourcePreflight {
+    $previousPythonPath = $env:PYTHONPATH
+    $uiSrcPath = Join-Path $iabvRoot 'src'
+    if ($previousPythonPath -and $previousPythonPath -notlike "*$uiSrcPath*") {
+        $env:PYTHONPATH = "$uiSrcPath;$previousPythonPath"
+    } else {
+        $env:PYTHONPATH = $uiSrcPath
+    }
+    $pythonExe = 'python'
+    if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
+    try {
+        $raw = (& $pythonExe -m iabv_v15 resource-preflight 2>$null | Out-String).Trim()
+        $exitCode = $LASTEXITCODE
+        if (-not $raw) { throw 'resource preflight returned no output' }
+        $result = $raw | ConvertFrom-Json -ErrorAction Stop
+        if ($result.decision -notin @('CONTINUE', 'DEFER')) {
+            throw 'resource preflight returned an unknown decision'
+        }
+        if ($exitCode -ne 0 -and $result.reason -ne 'resource_observation_unavailable') {
+            throw "resource preflight exited with code $exitCode"
+        }
+        return $result
+    } catch {
+        return [PSCustomObject]@{
+            decision = 'DEFER'
+            reason = 'resource_observation_unavailable'
+            ram_total_mb = $null
+            ram_available_mb = $null
+            ram_used_pct = $null
+            threshold_free_mb = $null
+            threshold_used_pct = $null
+        }
+    } finally {
+        $env:PYTHONPATH = $previousPythonPath
+    }
+}
+
+$uiResourceGateEvaluated = $false
+$uiResourceGateDefers = $false
+$uiResourceGateResult = $null
+$uiExistingAtGate = $false
+if ($StartUI) {
+    $uiExistingAtGate = [bool](Find-ExistingUIProcess)
+    if (-not $uiExistingAtGate) {
+        $uiResourceGateResult = Invoke-UIResourcePreflight
+        $uiResourceGateEvaluated = $true
+        $uiResourceGateDefers = $uiResourceGateResult.decision -ne 'CONTINUE'
+        Write-StartupTrace 'resource_gate_result' @{
+            decision = if ($uiResourceGateDefers) { 'defer_ui' } else { 'continue' }
+            reason = $uiResourceGateResult.reason
+            ram_total_mb = $uiResourceGateResult.ram_total_mb
+            ram_available_mb = $uiResourceGateResult.ram_available_mb
+            ram_used_pct = $uiResourceGateResult.ram_used_pct
+            threshold_free_mb = $uiResourceGateResult.threshold_free_mb
+            threshold_used_pct = $uiResourceGateResult.threshold_used_pct
+            ui_requested = $true
+            ui_existing = $false
+            action = if ($uiResourceGateDefers) { 'ui_not_started' } else { 'continue_to_health_checks' }
+        }
+    }
+}
+
+# Health checks opcionales (HTTP rapido). Una UI que ya se decidio aplazar
+# no puede beneficiarse de consultas de disponibilidad externas.
+if ($uiResourceGateDefers) {
+    Write-Info "Health checks opcionales omitidos: UI diferida ($($uiResourceGateResult.reason))."
+} elseif (-not $SkipHealthChecks) {
     Write-Info "Health checks (-SkipHealthChecks para omitir)..."
     if ($env:GITHUB_TOKEN_IABV -and $env:GITHUB_TOKEN_IABV -notmatch 'REEMPLAZAR') {
         try {
@@ -312,31 +400,6 @@ if (-not (Test-Path $bridge)) {
 #   ui_launch_started, ui_launch_result, ui_launch_skipped_existing_ui,
 #   ui_launch_failed, ui_duplicate_prevented, ui_bridge_port_conflict,
 #   ui_bridge_owner_verified.
-
-function Write-StartupTrace($kind, $data) {
-    $ts = (Get-Date -Format 'o')
-    $entry = @{ kind = $kind; ts = $ts; data = $data } | ConvertTo-Json -Compress
-    $traceFile = Join-Path $logsDir 'startup_ui_presence.jsonl'
-    try { Add-Content -Path $traceFile -Value $entry -Encoding utf8 } catch {}
-}
-
-function Find-ExistingUIProcess {
-    # Returns the first matching python iabv_v15 app process (not this PID).
-    try {
-        $procs = Get-CimInstance Win32_Process -Filter "Name = 'python.exe' OR Name = 'python3.exe'" -ErrorAction SilentlyContinue
-        foreach ($p in $procs) {
-            if ($p.ProcessId -eq $PID) { continue }
-            $cmdLine = $p.CommandLine
-            if ($cmdLine -and $cmdLine -match 'iabv_v15.*app') {
-                return [PSCustomObject]@{
-                    Pid       = $p.ProcessId
-                    CmdLine   = $cmdLine
-                }
-            }
-        }
-    } catch {}
-    return $null
-}
 
 function Test-BridgePortOwner($port, $expectedPid) {
     # Checks if the given port is owned by the expected PID.
@@ -435,50 +498,84 @@ if ($StartUI) {
         }
         Write-StartupTrace 'ui_duplicate_prevented' @{ existing_pid = $existingUI.Pid }
     } else {
-        # No UI running — launch it.
-        Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
-        Write-StartupTrace 'ui_launch_started' @{ bridge_port = 18921 }
+        # No UI running — gate only the creation of a new UI process.
+        if (-not $uiResourceGateEvaluated) {
+            $uiResourceGateResult = Invoke-UIResourcePreflight
+            $uiResourceGateEvaluated = $true
+            $uiResourceGateDefers = $uiResourceGateResult.decision -ne 'CONTINUE'
+            Write-StartupTrace 'resource_gate_result' @{
+                decision = if ($uiResourceGateDefers) { 'defer_ui' } else { 'continue' }
+                reason = $uiResourceGateResult.reason
+                ram_total_mb = $uiResourceGateResult.ram_total_mb
+                ram_available_mb = $uiResourceGateResult.ram_available_mb
+                ram_used_pct = $uiResourceGateResult.ram_used_pct
+                threshold_free_mb = $uiResourceGateResult.threshold_free_mb
+                threshold_used_pct = $uiResourceGateResult.threshold_used_pct
+                ui_requested = $true
+                ui_existing = $false
+                action = if ($uiResourceGateDefers) { 'ui_not_started' } else { 'continue_to_ui_launch' }
+            }
+        }
 
-        $env:IABV_SKIP_MCP_AUTOSTART = '1'
-        $uiSrcPath = Join-Path $iabvRoot 'src'
-        if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$uiSrcPath*") {
-            if ($env:PYTHONPATH) {
-                $env:PYTHONPATH = "$uiSrcPath;$env:PYTHONPATH"
-            } else {
-                $env:PYTHONPATH = $uiSrcPath
+        if ($uiResourceGateDefers) {
+            Write-Info "UI diferida por el gate de recursos ($($uiResourceGateResult.reason)); el launcher continuara sin UI."
+            Write-StartupTrace 'ui_launch_skipped_resource_gate' @{
+                decision = 'defer_ui'
+                reason = $uiResourceGateResult.reason
+                ui_requested = $true
+                ui_existing = $false
+                action = 'ui_not_started'
             }
-        }
-        $env:IABV_WORKSPACE_ROOT = $iabvRoot
-        try {
-            $pythonExe = 'python'
-            if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
-            # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
-            # CreateNoWindow suppresses the console without touching wShowWindow.
-            $psi = [System.Diagnostics.ProcessStartInfo]::new()
-            $psi.FileName = $pythonExe
-            $psi.Arguments = '-m iabv_v15 app'
-            $psi.WorkingDirectory = $iabvRoot
-            $psi.UseShellExecute = $false
-            $psi.CreateNoWindow = $true
-            # Make the UI import the workspace that launched it, even when
-            # Python has an editable install pointing at an older IABV clone.
-            $psi.EnvironmentVariables['PYTHONPATH'] = $env:PYTHONPATH
-            $psi.EnvironmentVariables['IABV_WORKSPACE_ROOT'] = $iabvRoot
-            $psi.EnvironmentVariables['IABV_SKIP_MCP_AUTOSTART'] = '1'
-            $uiProc = [System.Diagnostics.Process]::Start($psi)
-            Write-Info "  UI PID     : $($uiProc.Id)"
-            Write-Info "  PYTHONPATH : $env:PYTHONPATH"
-            Write-StartupTrace 'ui_launch_result' @{
-                success = $true; pid = $uiProc.Id; bridge_port = 18921
+            Write-StartupTrace 'ui_presence_check_result' @{
+                ui_alive = $false; action = 'deferred_for_resources'
+                reason = $uiResourceGateResult.reason
             }
-        } catch {
-            Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
-            Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
-            Write-Warn "         python -m iabv_v15 app"
-            Write-StartupTrace 'ui_launch_failed' @{ error = "$_" }
-        }
-        Write-StartupTrace 'ui_presence_check_result' @{
-            ui_alive = $false; action = 'launched_new'
+        } else {
+            # Resources permit a new UI process.
+            Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
+            Write-StartupTrace 'ui_launch_started' @{ bridge_port = 18921 }
+
+            $env:IABV_SKIP_MCP_AUTOSTART = '1'
+            $uiSrcPath = Join-Path $iabvRoot 'src'
+            if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$uiSrcPath*") {
+                if ($env:PYTHONPATH) {
+                    $env:PYTHONPATH = "$uiSrcPath;$env:PYTHONPATH"
+                } else {
+                    $env:PYTHONPATH = $uiSrcPath
+                }
+            }
+            $env:IABV_WORKSPACE_ROOT = $iabvRoot
+            try {
+                $pythonExe = 'python'
+                if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
+                # IMPORTANT: DO NOT use Start-Process -WindowStyle Hidden here.
+                # CreateNoWindow suppresses the console without touching wShowWindow.
+                $psi = [System.Diagnostics.ProcessStartInfo]::new()
+                $psi.FileName = $pythonExe
+                $psi.Arguments = '-m iabv_v15 app'
+                $psi.WorkingDirectory = $iabvRoot
+                $psi.UseShellExecute = $false
+                $psi.CreateNoWindow = $true
+                # Make the UI import the workspace that launched it, even when
+                # Python has an editable install pointing at an older IABV clone.
+                $psi.EnvironmentVariables['PYTHONPATH'] = $env:PYTHONPATH
+                $psi.EnvironmentVariables['IABV_WORKSPACE_ROOT'] = $iabvRoot
+                $psi.EnvironmentVariables['IABV_SKIP_MCP_AUTOSTART'] = '1'
+                $uiProc = [System.Diagnostics.Process]::Start($psi)
+                Write-Info "  UI PID     : $($uiProc.Id)"
+                Write-Info "  PYTHONPATH : $env:PYTHONPATH"
+                Write-StartupTrace 'ui_launch_result' @{
+                    success = $true; pid = $uiProc.Id; bridge_port = 18921
+                }
+            } catch {
+                Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
+                Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
+                Write-Warn "         python -m iabv_v15 app"
+                Write-StartupTrace 'ui_launch_failed' @{ error = "$_" }
+            }
+            Write-StartupTrace 'ui_presence_check_result' @{
+                ui_alive = $false; action = 'launched_new'
+            }
         }
     }
 }

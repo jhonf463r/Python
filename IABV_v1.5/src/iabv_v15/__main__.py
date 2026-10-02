@@ -20,6 +20,7 @@ _sqh()
 del _sqh
 
 import argparse
+import json
 import sys
 
 
@@ -46,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         parser.add_argument(
             "subcommand",
-            choices=["app", "cm"],
+            choices=["app", "cm", "resource-preflight"],
             help="Subcommand to dispatch.",
         )
         parser.parse_args(argv)
@@ -57,8 +58,26 @@ def main(argv: list[str] | None = None) -> int:
 
         return cm_main(argv[1:])
 
+    if argv[0] == "resource-preflight":
+        # Keep this path before application imports: the launcher needs only
+        # local RAM observation and the shared resource policy.
+        from iabv_v15.services.intelligent_resource_manager import (
+            evaluate_ui_ram_policy,
+            take_ram_snapshot,
+        )
+
+        try:
+            result = evaluate_ui_ram_policy(take_ram_snapshot())
+        except Exception:
+            result = evaluate_ui_ram_policy(None)
+        print(json.dumps(result, separators=(",", ":"), allow_nan=False))
+        return 0 if result["reason"] != "resource_observation_unavailable" else 2
+
     print(f"error: unknown subcommand '{argv[0]}'", file=sys.stderr)
-    print("usage: python -m iabv_v15 [app | cm ...]", file=sys.stderr)
+    print(
+        "usage: python -m iabv_v15 [app | cm ... | resource-preflight]",
+        file=sys.stderr,
+    )
     return 2
 
 

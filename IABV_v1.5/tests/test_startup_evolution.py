@@ -24,6 +24,7 @@ def _make_bootstrap() -> tuple[AppBootstrap, Path]:
 def _inject_snapshot(bootstrap: AppBootstrap, *, ram_used_pct: float = 40.0, available_mb: float = 8000.0) -> None:
     bootstrap._init_prebuild_snapshot_cache()
     snap = SimpleNamespace(
+        ram_total_mb=16000,
         ram_pressure='normal',
         cpu_pressure='normal',
         ram_available_mb=available_mb,
