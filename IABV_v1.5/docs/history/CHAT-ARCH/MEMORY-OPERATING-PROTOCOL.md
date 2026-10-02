@@ -1164,6 +1164,26 @@ The current routing rule is:
 Historical actor recommendations never override this rule.
 
 
+## 2026-10-02 METHODOLOGY ADDENDUM — 07ZG READ/CONSUMPTION RECONCILIATION
+
+07ZG adds the following evidence ladder for pending-intent continuity:
+
+`persisted → generic read → semantic dispatch → state transition → causal effect → independent verification`.
+
+A startup enumerator reading `task_*.json` is evidence only for the generic-read edge.
+
+Do not promote:
+`generic read`
+to:
+`semantic consumer`,
+and do not promote:
+`startup state/snapshot persistence`
+to:
+`Knowledge Delta` or learning.
+
+For routing, evidence already sufficient to identify the primary producer seam should not be held hostage by a secondary instrumentation refinement. Independently verify the captured secondary conclusion, then return to the first open causal edge:
+`StartUI DEFER → durable semantic StartUI intent`.
+
 ## 2026-10-02 METHODOLOGY ADDENDUM — 07ZF AND LIVE-FRAME BOUNDARY
 
 Separate natural producer from manual test injection. A downstream experiment using injected state cannot close the upstream producer edge.
