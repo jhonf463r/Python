@@ -1890,3 +1890,20 @@ Open:
 8. Which existing trigger/wake capability can invoke the consumer?
 9. How does the resumed path safely re-enter `start_iabv.ps1`?
 10. What minimal runtime experiment proves the full causal chain?
+
+
+## 2026-10-02 OPEN KNOWLEDGE — META-RUNTIME-07ZF
+
+Closed: isolated persistence/read-back of manually injected startui_defer; explicit -StartUI + CONTINUE caused the observed UI launch.
+
+Open:
+1. natural StartUI DEFER → durable semantic intent producer;
+2. runtime reader/consumer of an injected startui_defer task;
+3. semantic state transition;
+4. trigger/wake after resource recovery;
+5. fresh resource observation and policy recomputation;
+6. reauthorization and safe re-entry to existing launch authority;
+7. IABV runtime ingestion of external actor observations;
+8. external observation changing a later IABV decision in the same causal episode.
+
+Negative knowledge: manual injection != natural producer; inconclusive trace != absent consumer; shared GitHub field != live runtime communication.
