@@ -1999,3 +1999,14 @@ Still open:
 - natural repeated-DEFER behavior.
 
 The direct CLI harness must not be promoted to natural launcher causality.
+
+## 2026-10-02 — META-RUNTIME-07ZM
+
+Remote implementation is verified. Isolated CLI persistence is runtime-proven.
+
+Still unresolved:
+`launcher preflight → natural DEFER → launcher persistence invocation → persisted singleton → read-back`.
+
+A prior preflight DEFER observed outside the launcher cannot substitute for the launcher's own decision because resource state is time-varying.
+
+No artificial memory pressure or threshold modification is to be used merely to manufacture DEFER.
