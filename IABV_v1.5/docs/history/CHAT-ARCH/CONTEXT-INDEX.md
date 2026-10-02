@@ -1520,3 +1520,15 @@ Operational rule: activate this overlay only when the objective touches resource
 | Downstream temporal continuity | same record | consumer/trigger/recheck/reauthorization/launch remain open |
 
 Activate this context for objectives involving deferred UI continuity, pending intent, wake/recheck or launcher re-entry.
+
+
+## 2026-10-02 META-RUNTIME-07ZF CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZF runtime consumer observability | CHAT-ARCH-2026-10-01-003-meta-runtime-07zf-observability-and-frame-reconciliation.md | COMPLETED / INCONCLUSIVE |
+| Primary UI producer edge | same record | OPEN: StartUI DEFER → durable semantic StartUI intent |
+| Secondary consumer edge | same record | INCONCLUSIVE: injected startui_defer → reader → semantic consumer |
+| Cross-AI runtime symbiosis | same record | NOT PROVEN: external observation → IABV runtime → changed next decision |
+
+Activate this context for objectives involving deferred UI continuity, pending intent, consumer observability, frame-entry/runtime ingestion or cross-AI causal continuity.
