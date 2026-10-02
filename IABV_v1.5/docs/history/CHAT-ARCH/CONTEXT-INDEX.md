@@ -1605,3 +1605,14 @@ Next implementation actor: Devin.
 | Singleton CLI persistence | same record | **PROVEN in isolated CLI harness** |
 | Semantic consumer | same record | **OPEN** |
 | Wake/recheck/reauthorization | same record | **OPEN** |
+
+## 2026-10-02 META-RUNTIME-07ZM CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZM publication/provenance | `CHAT-ARCH-2026-10-02-010-meta-runtime-07zm-publication-and-natural-runtime-boundary.md` | **CLOSED: remote artifact attributable** |
+| CLI persistence | same record | **RUNTIME-PROVEN isolation** |
+| Natural launcher DEFER causality | same record | **OPEN** |
+| Semantic consumer | same record | **OPEN** |
+| Wake/recheck/reauthorization | same record | **OPEN** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
