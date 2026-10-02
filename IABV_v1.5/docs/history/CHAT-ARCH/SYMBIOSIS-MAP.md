@@ -1763,3 +1763,12 @@ Routing:
 `Codex contract archaeology → Devin bounded implementation/runtime → Sonnet independent verification`, only if each later edge is still open.
 
 This is capability-fit routing, not a fixed sequence.
+
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZK
+
+07ZK closes the contract needed for a bounded implementation:
+`StartUI DEFER → dedicated minimal Python persistence entrypoint → existing PlatformPendingQueue`.
+
+The pending task represents one logical UI-availability intent per queue/workspace; each launcher invocation carries separate provenance.
+
+Routing now moves to **Devin** for bounded Windows implementation and natural-DEFER runtime proof. Sonnet returns after publication for independent coverage verification.
