@@ -2506,3 +2506,14 @@ Current runtime frontier:
 
 No production commit has been remotely published yet.
 Next actor: **Codex**, to finalize/publish and attempt the single legitimate natural-DEFER runtime proof when the resource state can safely produce DEFER without altering thresholds or fabricating the decision.
+
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZM
+
+07ZM publishes the 07ZL producer seam at `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2`, exactly one commit ahead of technical baseline `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+
+The CLI persistence path is runtime-proven in isolation. The actual launcher was invoked with `-StartUI`, but its own preflight returned `CONTINUE / sufficient_resources`; therefore the DEFER branch did not execute.
+
+Current frontier:
+`real launcher preflight → natural DEFER → actual persist-startui-defer invocation → persisted singleton → read-back`.
+
+No artificial resource pressure or threshold modification is authorized. Next actor remains **Codex** for one bounded launcher observation using external debugging control to stop before UI/bridge if the gate reaches CONTINUE. After natural DEFER proof, route to Sonnet for independent verification.
