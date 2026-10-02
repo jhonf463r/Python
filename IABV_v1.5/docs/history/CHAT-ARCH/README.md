@@ -545,3 +545,12 @@ Latest implementation record:
 The persistence seam is implemented in an isolated worktree and proven through direct CLI read-back, but the natural launcher DEFER path has not yet been observed and no remote implementation commit exists.
 
 Next actor: **Codex** for publication plus bounded natural-DEFER runtime verification.
+
+## 2026-10-02 LATEST ABSORBED RECORD — META-RUNTIME-07ZM
+
+Latest producer publication/runtime record:
+`CHAT-ARCH-2026-10-02-010-meta-runtime-07zm-publication-and-natural-runtime-boundary.md`
+
+Implementation is remotely attributable at `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2`. Isolated CLI persistence is proven. Natural launcher DEFER remains the only immediate runtime gap.
+
+Next handoff: Codex for one bounded debugger-controlled natural-DEFER observation; then independent Sonnet verification.
