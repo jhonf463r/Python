@@ -1532,3 +1532,15 @@ Activate this context for objectives involving deferred UI continuity, pending i
 | Cross-AI runtime symbiosis | same record | NOT PROVEN: external observation → IABV runtime → changed next decision |
 
 Activate this context for objectives involving deferred UI continuity, pending intent, consumer observability, frame-entry/runtime ingestion or cross-AI causal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZG CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| META-RUNTIME-07ZG read/consumer reconciliation | `CHAT-ARCH-2026-10-02-004-meta-runtime-07zg-reconciliation-and-routing.md` | **COMPLETED / read-only reconciliation** |
+| Generic queue read | same record | **PROVEN at source/runtime correlation** |
+| Semantic `startui_defer` consumption | same record | **NOT PROVEN / not observed in productive path** |
+| Primary producer | same record | **OPEN: StartUI DEFER → durable semantic StartUI intent** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN: external observation → IABV runtime → changed next decision** |
+
+Activate this context for deferred UI continuity, pending intent, wake/recheck, queue consumer semantics or cross-AI causal continuity.
