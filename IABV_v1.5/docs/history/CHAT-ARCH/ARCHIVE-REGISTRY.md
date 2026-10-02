@@ -632,3 +632,12 @@ this track is independent of the still-open Deep Research scientific literature 
 - **Main finding:** generic persistence exists but is not connected to `StartUI DEFER`.
 - **First open causal edge:** `StartUI DEFER → durable semantic UI launch request`.
 - **Preservation:** no implementation authority is derived from the report; actor must be recalculated from the exact first missing edge.
+
+
+## 2026-10-02 — META-RUNTIME-07ZF
+
+- Record: CHAT-ARCH-2026-10-01-003-meta-runtime-07zf-observability-and-frame-reconciliation.md
+- Source: user-provided Codex runtime report, execution META-RUNTIME-07ZF-20261001-5241b1770f1b4dfd982b665ba8117e0c
+- Status: absorbed; runtime consumer observation inconclusive
+- Primary open edge: StartUI DEFER → durable semantic StartUI intent
+- Critical method delta: manual injection != natural producer; insufficient trace != absence
