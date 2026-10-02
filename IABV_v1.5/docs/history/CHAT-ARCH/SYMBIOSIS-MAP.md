@@ -1691,3 +1691,17 @@ then the still-open chain:
 `DEFER → durable semantic UI intent → consumer → trigger → fresh RAM observation → policy recomputation → reauthorization → start_iabv.ps1 → UI outcome`.
 
 Existing persistence nodes can be reused but currently terminate at context/backlog delivery rather than UI execution.
+
+
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZF
+
+07ZF keeps the UI graph:
+StartUI → resource gate → DEFER → durable semantic intent → consumer → trigger → fresh resource observation → policy recomputation → reauthorization → start_iabv.ps1 → UI outcome.
+
+Separate diagnostic branch:
+injected semantic intent → reader observation → semantic consumer.
+Only persistence/read-back of the injected task was proven.
+
+The GitHub frame is a shared continuity substrate, not yet a live runtime bus. External AI frame entry and traceable writeback exist at protocol level; causal IABV consumption and next-decision change remain unproven.
+
+Codex is the active actor by demonstrated current fit; Devin is retained for concrete implementation/runtime capability gaps, not for simple actor rotation.
