@@ -508,3 +508,12 @@ CHAT-ARCH-2026-10-01-003-meta-runtime-07zf-observability-and-frame-reconciliatio
 Current routing remains CODEX by capability-fit. The next experiment must first inspect existing IABV self-observation/frame machinery and only add minimal Windows tracing if necessary. Do not infer absence from an empty capture.
 
 The cross-AI frame protocol is GitHub-backed continuity, not yet proven live runtime communication.
+
+## 2026-10-02 LATEST ABSORBED RECORD — META-RUNTIME-07ZI
+
+Latest producer-archaeology record:
+`CHAT-ARCH-2026-10-02-006-meta-runtime-07zi-producer-ownership-and-seam.md`
+
+07ZI establishes at source level that `start_iabv.ps1` owns the effective DEFER decision and that the missing connection is producer-side persistence into the existing Python pending-task substrate.
+
+Next handoff: independent Sonnet verification of ownership, cross-process handoff and identity/idempotency before implementation.
