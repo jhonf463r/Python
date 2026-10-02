@@ -661,3 +661,11 @@ this track is independent of the still-open Deep Research scientific literature 
 - **Finding:** generic queue read confirmed; no semantic `startui_defer` consumer discovered in the audited Python tree.
 - **Routing:** Codex for natural producer/ownership archaeology before implementation.
 
+## 2026-10-02 — META-RUNTIME-07ZI
+
+- **Source:** user-provided Codex source archaeology result.
+- **Technical baseline:** `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+- **Canonical record:** `CHAT-ARCH-2026-10-02-006-meta-runtime-07zi-producer-ownership-and-seam.md`.
+- **Result:** **CLOSED at source level** for producer ownership.
+- **Finding:** effective DEFER is owned by `start_iabv.ps1`; no producer connection to `PlatformPendingQueue` exists.
+- **Next routing:** Sonnet independent contract verification before any implementation.
