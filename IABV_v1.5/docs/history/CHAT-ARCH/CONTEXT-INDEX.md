@@ -1568,3 +1568,16 @@ Activate for deferred UI continuity, pending intent semantics, producer ownershi
 | Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
 
 Activate for StartUI DEFER producer wiring, cross-process persistence, pending intent semantics and temporal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZJ CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| Existing PowerShell→Python boundary inventory | `CHAT-ARCH-2026-10-02-007-meta-runtime-07zj-cross-process-contract-and-idempotency.md` | **CLOSED at source level** |
+| Persistence entrypoint | same record | **OPEN: exact minimal contract** |
+| Deferred-request identity/idempotency | same record | **OPEN** |
+| Primary producer seam | same record | **OPEN: DEFER → durable semantic intent** |
+| Semantic consumer | same record | **OPEN / absent at 5238e85** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
+
+Activate for StartUI deferred-intent persistence, cross-process CLI/API, identity/idempotency and temporal continuity.
