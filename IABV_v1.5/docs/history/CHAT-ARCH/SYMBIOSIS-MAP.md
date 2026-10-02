@@ -1780,3 +1780,12 @@ Codex has implemented the contracted producer seam in an isolated worktree and d
 This does not yet constitute canonical implementation or natural launcher causality.
 
 Because Codex currently has the exact Windows workspace, source context and runtime capability already exercised in this seam, Codex remains the capability-fit actor for the next bounded step: publish the implementation and attempt natural DEFER runtime proof. Sonnet remains the independent verifier after publication.
+
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZM
+
+The producer seam is now remotely attributable. The implementation actor's runtime result correctly distinguishes:
+`CLI persistence proof`
+from
+`natural launcher causal proof`.
+
+Codex remains capability-fit for one final bounded Windows observation because it owns the exact implementation branch/workspace. Use external debugger control rather than repeating an unrestricted full launcher/bridge run. Sonnet follows after the causal evidence exists.
