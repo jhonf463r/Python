@@ -1789,3 +1789,11 @@ from
 `natural launcher causal proof`.
 
 Codex remains capability-fit for one final bounded Windows observation because it owns the exact implementation branch/workspace. Use external debugger control rather than repeating an unrestricted full launcher/bridge run. Sonnet follows after the causal evidence exists.
+
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZN
+
+07ZN reinforces capability-fit routing without forcing actor rotation.
+
+Codex retains fit because the exact implementation branch and Windows runtime are already available. The next experiment must change the control method, not repeat the failed breakpoint strategy.
+
+Preferred next control: external supervisor/watchdog with no production-source modification and no synthetic DEFER. Sonnet remains the independent verifier after natural causal evidence exists.
