@@ -1581,3 +1581,16 @@ Activate for StartUI DEFER producer wiring, cross-process persistence, pending i
 | Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
 
 Activate for StartUI deferred-intent persistence, cross-process CLI/API, identity/idempotency and temporal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZK CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| Identity/persistence contract | `CHAT-ARCH-2026-10-02-008-meta-runtime-07zk-identity-contract-and-implementation-handoff.md` | **CLOSED at contract level** |
+| Natural DEFER persistence | same record | **OPEN: implementation + runtime proof** |
+| Singleton task identity/idempotency | same record | **CONTRACT SELECTED** |
+| Semantic consumer | same record | **OPEN** |
+| Wake/recheck/reauthorization | same record | **OPEN** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
+
+Next implementation actor: Devin.
