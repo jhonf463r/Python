@@ -1928,3 +1928,16 @@ Open:
 8. external observation changing a later IABV decision in the same causal episode.
 
 Negative knowledge: manual injection != natural producer; inconclusive trace != absent consumer; shared GitHub field != live runtime communication.
+
+## 2026-10-02 — META-RUNTIME-07ZH
+
+07ZH closes the uncertainty about an overlooked Python consumer at `5238e85`: no productive call-site was found that semantically dispatches `category=startui_defer`, `next_action`, or task metadata.
+
+Remaining primary uncertainty:
+`natural StartUI DEFER → durable semantic StartUI intent`.
+
+Do not assume previously proposed fields `requested_action`, `requested_time`, `source_context`, `expires_at`, or `cancelled`; exact identifiers were not found in the audited tree.
+
+Next required evidence:
+exact natural DEFER call-site, owner, reusable representation, and smallest existing-organ producer seam.
+
