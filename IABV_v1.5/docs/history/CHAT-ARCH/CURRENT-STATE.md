@@ -2530,3 +2530,15 @@ Current immediate runtime frontier:
 `real launcher preflight → natural DEFER → actual persistence CLI → singleton task → read-back`.
 
 Next attempt, if needed: Codex with an external supervisor/watchdog, only after confirming the host is already naturally below the production DEFER threshold. No artificial pressure, threshold changes or synthetic DEFER.
+
+## 2026-10-02 CROSS-TRACK OVERLAY — 07ZO + BIO-04
+
+**META-RUNTIME-07ZO:** environment-blocked. Immediate real pre-admission on the published implementation returned `CONTINUE / sufficient_resources`; no launcher run was authorized; natural StartUI DEFER → persistence remains unobserved.
+
+**Technical publication state:** `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2` remains the implementation commit on top of `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
+
+**Scientific BIO-04:** the targeted Deep Research specification is present in the cross-chat record, but the actual PDF artifact is not currently retrievable from Library for independent content verification. Do not promote the transcript's description of the PDF to canonical scientific knowledge. The scientific track remains at artifact/source verification, not implementation.
+
+**Active routing split:**
+- Runtime 07Z: wait for a naturally qualifying DEFER window; then Codex remains the fit for the bounded Windows causal observation.
+- BIO-04: recover/obtain the actual research artifact, then independent scientific verification; only after that derive the next engineering frontier.

@@ -563,3 +563,15 @@ Latest runtime-control record:
 The published producer seam remains remote-attributable. Natural launcher DEFER remains unproven because the launcher's own preflight returned CONTINUE. The prior breakpoint control method is retired.
 
 Next action, if a new runtime window is available: Codex with a different external supervisor method, only under naturally qualifying resource state.
+
+## 2026-10-02 LATEST CROSS-TRACK RECONCILIATION — META-RUNTIME-07ZO + BIO-04 SCIENTIFIC TRACK
+
+Canonical record: `CHAT-ARCH-2026-10-02-012-cross-track-reconciliation-07zo-bio04.md`
+
+Remote truth was rechecked before this writeback: `main` = `fe37ecac1493ba479560cd7255509ff02d0842ac`. The published technical producer implementation remains `d01b71f9a7f806bf4d2fa031109cdb1b12c733b2`, exactly one commit ahead of technical baseline `5238e85c014ea6bdda2ffd1a14064883bde559f5`, with the four-file diff previously established.
+
+META-RUNTIME-07ZO is `ENVIRONMENT-BLOCKED`: the immediate real `resource-preflight` returned `CONTINUE / sufficient_resources`, so the launcher was not invoked and the natural `DEFER → persist-startui-defer` edge remains OPEN. Do not manufacture DEFER, alter thresholds, apply artificial pressure, or spend another runtime attempt while the admission state remains CONTINUE. The previous external PowerShell breakpoint method is retired.
+
+BIO-04 is a parallel scientific track. The transcript contains the targeted Deep Research specification and claims about PDF outputs, but the actual `Resumen Ejecutivo (1).pdf` / second research PDF bytes are not currently available in the Library surface for independent inspection. Therefore the research artifact itself is NOT canonicalized as verified scientific evidence. The next scientific action is artifact recovery or rerun of the targeted Deep Research, followed by independent claim/source verification before any engineering implementation.
+
+Routing rule reinforced: parallel frontiers may progress independently; a blocked runtime seam does not force actor rotation in another track. Actor selection remains `current frontier → required capability → capability-fit → minimum information-gain action`; message budget is an intervention/resource cost, not a routing authority.

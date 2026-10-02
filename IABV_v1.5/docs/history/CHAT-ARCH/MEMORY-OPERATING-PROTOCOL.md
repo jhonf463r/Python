@@ -1204,3 +1204,16 @@ Live symbiosis requires evidence that an external observation is consumed by an 
 
 Routing remains:
 first open causal/evidential edge → required capability → capability-fit actor → minimum discriminating action.
+
+## 2026-10-02 METHODOLOGY ADDENDUM — PARALLEL FRONTIERS + RESEARCH ARTIFACT PROVENANCE
+
+IABV may maintain multiple independent frontiers when their required capabilities differ. A blocked runtime experiment does not authorize repeating it and does not block an unrelated scientific frontier.
+
+For scientific work, distinguish:
+`research prompt → research execution → research artifact → source verification → claim reconciliation → Knowledge Delta`.
+A transcript describing a research artifact, a plan for research, or a detailed agent report is not itself equivalent to independently verified scientific evidence.
+
+For routing, treat external-agent message budget as a resource/intervention-cost variable only. It must never override the primary rule:
+`first open evidential/causal edge → required capability → capability-fit actor → minimum discriminating action`.
+
+Cross-AI symbiosis remains bounded by evidence: shared GitHub state enables reconstructable continuity, but `shared repository ≠ live runtime bus`, `frame entry ≠ automatic ingestion`, and `writeback ≠ next-decision change` until runtime causality is demonstrated.

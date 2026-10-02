@@ -1626,3 +1626,15 @@ Next implementation actor: Devin.
 | Natural launcher DEFER → persistence | same record | **OPEN** |
 | Breakpoint control method | same record | **RETIRED / ineffective on host** |
 | Semantic consumer | same record | **OPEN** |
+
+## 2026-10-02 META-RUNTIME-07ZO + BIO-04 CROSS-TRACK INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZO natural DEFER runtime | `CHAT-ARCH-2026-10-02-011-meta-runtime-07zn-runtime-control-result.md` + 07ZO reconciliation | **ENVIRONMENT-BLOCKED / OPEN** |
+| Natural StartUI DEFER → persistence | same runtime track | **OPEN: requires naturally qualifying DEFER** |
+| BIO-04 targeted Deep Research artifact | `CHAT-ARCH-2026-10-02-012-cross-track-reconciliation-07zo-bio04.md` | **ARTIFACT NOT VERIFIED / OPEN** |
+| BIO-04 scientific claims → canonical knowledge | same record | **NOT YET PROMOTABLE** |
+| Cross-AI runtime symbiosis | existing symbiosis map | **NOT PROVEN: external observation → IABV runtime → changed next decision** |
+
+Activate both tracks independently; do not let actor recommendations from one frontier overwrite routing for the other.

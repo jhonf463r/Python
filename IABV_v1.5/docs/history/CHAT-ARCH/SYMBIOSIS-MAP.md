@@ -1797,3 +1797,17 @@ Codex remains capability-fit for one final bounded Windows observation because i
 Codex retains fit because the exact implementation branch and Windows runtime are already available. The next experiment must change the control method, not repeat the failed breakpoint strategy.
 
 Preferred next control: external supervisor/watchdog with no production-source modification and no synthetic DEFER. Sonnet remains the independent verifier after natural causal evidence exists.
+
+## 2026-10-02 SYMBIOSIS UPDATE — CROSS-TRACK RECONCILIATION
+
+The collaboration is now explicitly treated as two potentially concurrent but causally independent tracks:
+
+**Runtime track:** `07ZO = environment-blocked` at `real resource-preflight → natural DEFER`. Codex remains the fit when a naturally qualifying DEFER window exists; no synthetic pressure or repeated CONTINUE run.
+
+**Scientific track:** BIO-04 requires verification of the actual Deep Research artifact before its claims can change canonical knowledge. ChatGPT/Deep Research is the capability for scientific synthesis; Sonnet/Claude-class is the independent verification capability. Codex/Devin are not automatically selected by the existence of a scientific question.
+
+This reinforces a stronger symbiosis rule:
+`shared field → reconstructable context → capability-specific action → independent verification → writeback → reactivation`.
+The field is still not a live runtime bus, and repeated text handoff is not itself learning.
+
+Message availability should be treated as intervention cost/availability, never as the primary routing rule. Preserve stronger actors for high-cost tasks when a lower-cost actor can safely close the current edge, but only after capability-fit and independence requirements are satisfied.

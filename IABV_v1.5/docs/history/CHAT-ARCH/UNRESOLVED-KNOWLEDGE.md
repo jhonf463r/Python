@@ -2019,3 +2019,12 @@ The external breakpoint did not stop execution on the host, so breakpoint-based 
 
 Remaining runtime gap:
 `launcher preflight → natural DEFER → launcher persistence invocation → persisted singleton → read-back`.
+
+## 2026-10-02 — META-RUNTIME-07ZO / BIO-04 CROSS-TRACK
+
+07ZO remains blocked by the current resource admission state: real pre-admission = `CONTINUE / sufficient_resources`. Natural `DEFER → persistence` is still unresolved. No further runtime execution is authorized under the same state.
+
+BIO-04 scientific verification is also unresolved at artifact level. The targeted Deep Research specification is available in the archived chat record, but the cited PDF artifact itself is not currently retrievable from Library for independent inspection. Therefore no scientific conclusion from that PDF is to be promoted to canonical IABV knowledge without source/artifact verification.
+
+Next unresolved scientific edge:
+`actual research artifact → claims/evidence extraction → independent source verification → scientific Knowledge Delta`.

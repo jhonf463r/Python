@@ -714,3 +714,10 @@ this track is independent of the still-open Deep Research scientific literature 
 - **Result:** **ENVIRONMENT-BLOCKED / natural DEFER OPEN**.
 - **Method delta:** external breakpoint did not stop the script and is retired.
 - **Next:** bounded supervisor-controlled attempt only if natural DEFER is currently present without artificial pressure.
+
+## 2026-10-02 — META-RUNTIME-07ZO + BIO-04 CROSS-TRACK
+
+- **Record:** `CHAT-ARCH-2026-10-02-012-cross-track-reconciliation-07zo-bio04.md`
+- **07ZO:** environment-blocked; natural StartUI DEFER remains open; no new runtime evidence.
+- **BIO-04:** targeted research request is archived, but the actual research PDF is not currently retrievable for independent audit; scientific conclusions remain non-canonical until artifact/source verification.
+- **Method:** parallel frontiers are permitted; actor routing remains capability-fit rather than rotation or message depletion.
