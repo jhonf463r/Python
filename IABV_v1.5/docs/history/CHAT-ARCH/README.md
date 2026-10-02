@@ -517,3 +517,12 @@ Latest producer-archaeology record:
 07ZI establishes at source level that `start_iabv.ps1` owns the effective DEFER decision and that the missing connection is producer-side persistence into the existing Python pending-task substrate.
 
 Next handoff: independent Sonnet verification of ownership, cross-process handoff and identity/idempotency before implementation.
+
+## 2026-10-02 LATEST ABSORBED RECORD — META-RUNTIME-07ZJ
+
+Latest contract-verification record:
+`CHAT-ARCH-2026-10-02-007-meta-runtime-07zj-cross-process-contract-and-idempotency.md`
+
+The existing boundary inventory is reconciled: `resource-preflight` remains pure, no generic pending CLI exists, and the candidate seam is a small Python persistence entrypoint called by the PowerShell DEFER owner.
+
+The next unresolved issue is identity/idempotency. Do not send an implementation actor until that contract is independently closed.
