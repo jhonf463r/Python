@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         parser.add_argument(
             "subcommand",
-            choices=["app", "cm", "resource-preflight"],
+            choices=["app", "cm", "resource-preflight", "persist-startui-defer"],
             help="Subcommand to dispatch.",
         )
         parser.parse_args(argv)
@@ -73,9 +73,15 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, separators=(",", ":"), allow_nan=False))
         return 0 if result["reason"] != "resource_observation_unavailable" else 2
 
+    if argv[0] == "persist-startui-defer":
+        # Separate persistence command: resource-preflight remains stateless.
+        from iabv_v15.cli.pending_intent_commands import persist_startui_defer_main
+
+        return persist_startui_defer_main()
+
     print(f"error: unknown subcommand '{argv[0]}'", file=sys.stderr)
     print(
-        "usage: python -m iabv_v15 [app | cm ... | resource-preflight]",
+        "usage: python -m iabv_v15 [app | cm ... | resource-preflight | persist-startui-defer]",
         file=sys.stderr,
     )
     return 2

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import io
 import socket
 import subprocess
 import sys
@@ -117,6 +118,8 @@ def test_resource_preflight_cli_is_local_and_returns_structured_result(
             name == forbidden or name.startswith(forbidden + ".")
             for name in newly_imported
         )
+    assert "iabv_v15.cli.pending_intent_commands" not in newly_imported
+    assert "iabv_v15.services.evolution.platform_pending_queue" not in newly_imported
 
 
 @pytest.mark.parametrize(
@@ -178,3 +181,130 @@ def test_launcher_runs_preflight_with_project_source_and_never_duplicates_thresh
     assert "4096.0" not in launcher and "75.0" not in launcher
     assert "evaluate_ui_ram_policy" in bootstrap
     assert "evaluate_ui_ram_policy" in entrypoint
+
+
+def test_natural_defer_branch_invokes_dedicated_persistence_command() -> None:
+    root = Path(__file__).resolve().parents[1]
+    launcher = (root / "scripts" / "start_iabv.ps1").read_text(encoding="utf-8")
+    defer_branch = launcher.index("if ($uiResourceGateDefers) {", launcher.index("$existingUI = Find-ExistingUIProcess"))
+    persistence = launcher.index("persist-startui-defer", defer_branch)
+    no_ui = launcher.index("ui_launch_skipped_resource_gate", persistence)
+    spawn = launcher.index("[System.Diagnostics.Process]::Start($psi)", no_ui)
+    assert defer_branch < persistence < no_ui < spawn
+    assert "launcher_invocation_id = $launcherInvocationId" in launcher
+    assert "UTF8Encoding]::new($false).GetBytes($deferPayloadJson)" in launcher
+    assert "startui_defer_persistence_failed" in launcher
+
+
+def test_startui_defer_task_contract_and_singleton_persistence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from iabv_v15.cli import pending_intent_commands as command
+    from iabv_v15.domain.models import PendingTaskStatus
+    from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+
+    payload = {
+        "evolution_dir": str(tmp_path / "evolution"),
+        "launcher_invocation_id": "invocation-1",
+        "ui_requested": True,
+        "decision": "DEFER",
+        "timestamp_utc": "2026-10-02T12:00:00Z",
+        "reason": "low_free_ram",
+        "resource_observation": {"ram_available_mb": 1200, "threshold_free_mb": 4096},
+        "source": "start_iabv.ps1",
+    }
+    task = command.build_startui_defer_task(command._validated_payload(json.dumps(payload)))
+    assert task.id == "startui_defer_ui"
+    assert task.category == "startui_defer"
+    assert task.status == PendingTaskStatus.PENDING
+    assert "StartUI" in task.description and "resource gate" in task.description
+    assert task.reason == "low_free_ram"
+    assert task.next_action == ""
+    assert task.metadata["launcher_invocation_id"] == "invocation-1"
+    assert task.metadata["resource_observation"]["ram_available_mb"] == 1200
+
+    def invoke(invocation_id: str) -> int:
+        repeated = dict(payload, launcher_invocation_id=invocation_id)
+        monkeypatch.setattr(command.sys, "stdin", io.StringIO(json.dumps(repeated)))
+        return command.persist_startui_defer_main()
+
+    assert invoke("invocation-1") == 0
+    first_updated_at = PlatformPendingQueue(payload["evolution_dir"]).get(task.id).updated_at
+    assert invoke("invocation-2") == 0
+    output = capsys.readouterr().out
+    assert output.count('"ok": true') == 2
+    queue_dir = Path(payload["evolution_dir"]) / "platform_pending"
+    files = list(queue_dir.glob("task_*.json"))
+    assert [path.name for path in files] == ["task_startui_defer_ui.json"]
+    persisted = PlatformPendingQueue(payload["evolution_dir"]).get(task.id)
+    assert persisted is not None
+    assert persisted.metadata["launcher_invocation_id"] == "invocation-2"
+    assert persisted.updated_at >= first_updated_at
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("decision", "CONTINUE"), ("ui_requested", False)],
+)
+def test_startui_defer_cli_rejects_non_defer_payload(
+    field: str,
+    value,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from iabv_v15.cli import pending_intent_commands as command
+
+    payload = {
+        "evolution_dir": ".",
+        "launcher_invocation_id": "invocation-1",
+        "ui_requested": True,
+        "decision": "DEFER",
+        field: value,
+    }
+    monkeypatch.setattr(command.sys, "stdin", io.StringIO(json.dumps(payload)))
+    assert command.persist_startui_defer_main() != 0
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "failed" in captured.err
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        {"ui_requested": True, "decision": "DEFER", "launcher_invocation_id": "id"},
+        {"ui_requested": True, "decision": "DEFER", "evolution_dir": "."},
+    ],
+)
+def test_startui_defer_cli_rejects_invalid_shape_or_missing_identity(
+    payload,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from iabv_v15.cli import pending_intent_commands as command
+
+    monkeypatch.setattr(command.sys, "stdin", io.StringIO(json.dumps(payload)))
+    assert command.persist_startui_defer_main() != 0
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "failed" in captured.err
+
+
+def test_startui_defer_cli_storage_failure_returns_nonzero_without_ack(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from iabv_v15.cli import pending_intent_commands as command
+    from iabv_v15.services.evolution import platform_pending_queue
+
+    payload = {
+        "evolution_dir": str(tmp_path / "evolution"),
+        "launcher_invocation_id": "invocation-1",
+        "ui_requested": True,
+        "decision": "DEFER",
+    }
+    monkeypatch.setattr(command.sys, "stdin", io.StringIO(json.dumps(payload)))
+    monkeypatch.setattr(platform_pending_queue.PlatformPendingQueue, "upsert", lambda *_args: (_ for _ in ()).throw(OSError("disk full")))
+    assert command.persist_startui_defer_main() != 0
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "disk full" in captured.err

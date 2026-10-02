@@ -62,6 +62,7 @@ if ($NoAutoPull) {
 }
 
 $ErrorActionPreference = 'Stop'
+$launcherInvocationId = if ($StartUI) { [guid]::NewGuid().ToString() } else { $null }
 
 # --- Paths used throughout ---
 $iabvRoot   = Split-Path -Parent $PSScriptRoot
@@ -519,6 +520,74 @@ if ($StartUI) {
 
         if ($uiResourceGateDefers) {
             Write-Info "UI diferida por el gate de recursos ($($uiResourceGateResult.reason)); el launcher continuara sin UI."
+            $deferPayload = [ordered]@{
+                evolution_dir = (Join-Path $iabvRoot 'data\evolution')
+                launcher_invocation_id = $launcherInvocationId
+                ui_requested = $true
+                decision = 'DEFER'
+                timestamp_utc = [DateTime]::UtcNow.ToString('o')
+                reason = [string]$uiResourceGateResult.reason
+                resource_observation = @{
+                    ram_total_mb = $uiResourceGateResult.ram_total_mb
+                    ram_available_mb = $uiResourceGateResult.ram_available_mb
+                    ram_used_pct = $uiResourceGateResult.ram_used_pct
+                    threshold_free_mb = $uiResourceGateResult.threshold_free_mb
+                    threshold_used_pct = $uiResourceGateResult.threshold_used_pct
+                }
+                source = 'start_iabv.ps1'
+            }
+            $deferPayloadJson = ConvertTo-Json -InputObject $deferPayload -Depth 8 -Compress
+            $persistExitCode = 1
+            $persistError = ''
+            try {
+                $pythonExe = 'python'
+                if ($env:IABV_PYTHON) { $pythonExe = $env:IABV_PYTHON }
+                $persistInfo = [System.Diagnostics.ProcessStartInfo]::new()
+                $persistInfo.FileName = $pythonExe
+                $persistInfo.Arguments = '-m iabv_v15 persist-startui-defer'
+                $persistInfo.WorkingDirectory = $iabvRoot
+                $persistInfo.UseShellExecute = $false
+                $persistInfo.RedirectStandardInput = $true
+                $persistInfo.RedirectStandardOutput = $true
+                $persistInfo.RedirectStandardError = $true
+                $persistInfo.EnvironmentVariables['PYTHONPATH'] = (Join-Path $iabvRoot 'src')
+                $persistProcess = [System.Diagnostics.Process]::new()
+                $persistProcess.StartInfo = $persistInfo
+                if (-not $persistProcess.Start()) { throw 'persistence process did not start' }
+                $stdoutTask = $persistProcess.StandardOutput.ReadToEndAsync()
+                $stderrTask = $persistProcess.StandardError.ReadToEndAsync()
+                $payloadBytes = [System.Text.UTF8Encoding]::new($false).GetBytes($deferPayloadJson)
+                $persistProcess.StandardInput.BaseStream.Write($payloadBytes, 0, $payloadBytes.Length)
+                $persistProcess.StandardInput.Close()
+                $persistProcess.WaitForExit()
+                $persistExitCode = $persistProcess.ExitCode
+                $persistStdout = $stdoutTask.GetAwaiter().GetResult().Trim()
+                $persistStderr = $stderrTask.GetAwaiter().GetResult().Trim()
+                if ($persistExitCode -ne 0) {
+                    $persistError = $persistStderr
+                    Write-Warn "[warn] No se pudo persistir la intención StartUI DEFER (exit $persistExitCode): $persistStderr"
+                    Write-StartupTrace 'startui_defer_persistence_failed' @{
+                        launcher_invocation_id = $launcherInvocationId
+                        exit_code = $persistExitCode
+                        diagnostic = $persistStderr
+                    }
+                } else {
+                    Write-StartupTrace 'startui_defer_persistence_succeeded' @{
+                        launcher_invocation_id = $launcherInvocationId
+                        task_id = 'startui_defer_ui'
+                        ack = $persistStdout
+                    }
+                }
+                $persistProcess.Dispose()
+            } catch {
+                $persistError = [string]$_
+                Write-Warn "[warn] Falló la persistencia de la intención StartUI DEFER: $persistError"
+                Write-StartupTrace 'startui_defer_persistence_failed' @{
+                    launcher_invocation_id = $launcherInvocationId
+                    exit_code = $persistExitCode
+                    diagnostic = $persistError
+                }
+            }
             Write-StartupTrace 'ui_launch_skipped_resource_gate' @{
                 decision = 'defer_ui'
                 reason = $uiResourceGateResult.reason
