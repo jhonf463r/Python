@@ -1693,6 +1693,25 @@ then the still-open chain:
 Existing persistence nodes can be reused but currently terminate at context/backlog delivery rather than UI execution.
 
 
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZG
+
+07ZG refines the UI continuity and symbiosis graph.
+
+The downstream branch is now:
+`injected pending task → startup_summary → list_actionable/list_all → persisted task read → generic summary`.
+
+The observed branch does **not** include:
+`startui_defer → semantic dispatch → resource wake → policy → reauthorization → launch`.
+
+Therefore:
+- generic read is not semantic consumption;
+- IABV startup self-observation is not evidence that the task became a decision input;
+- GitHub handoff is not a live runtime bus;
+- external AI writeback is not runtime learning.
+
+Current actor routing is capability-fit:
+**Sonnet** for independent forensic verification of the already captured evidence. No new symbiosis organ and no implementation seam should be introduced before that independent challenge.
+
 ## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZF
 
 07ZF keeps the UI graph:
