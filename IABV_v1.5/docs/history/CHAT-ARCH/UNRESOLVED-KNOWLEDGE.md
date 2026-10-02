@@ -1941,3 +1941,19 @@ Do not assume previously proposed fields `requested_action`, `requested_time`, `
 Next required evidence:
 exact natural DEFER call-site, owner, reusable representation, and smallest existing-organ producer seam.
 
+## 2026-10-02 — META-RUNTIME-07ZI
+
+Producer ownership is now source-reconciled:
+
+`StartUI + preflight result + effective DEFER` belongs to `start_iabv.ps1`.
+
+The missing producer connection is:
+
+`PowerShell DEFER → durable PlatformPendingTask`.
+
+Still unresolved:
+- exact reusable PowerShell→Python persistence entrypoint;
+- stable identity/idempotency contract;
+- whether any existing facade can accept the fact without becoming decision owner.
+
+Do not assume previously proposed fields that are absent from the target contracts.
