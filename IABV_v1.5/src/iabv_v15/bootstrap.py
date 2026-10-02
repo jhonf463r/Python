@@ -267,6 +267,7 @@ from iabv_v15.services.adaptive.autonomy_governance_policy import AutonomyGovern
 from iabv_v15.services.adaptive.approval_gate_service import ApprovalGateService
 from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
 from iabv_v15.services.adaptive.execution_playbook_service import ExecutionPlaybookService, NullOperationalExecutor
+from iabv_v15.services.adaptive.postcondition_verification import PostconditionVerificationService, WorldModelWindowObserver
 from iabv_v15.services.adaptive.goal_engine import GoalEngine
 from iabv_v15.services.adaptive.intent_understanding_service import IntentUnderstandingService
 from iabv_v15.services.adaptive.strategy_pack_registry import StrategyPackRegistry
@@ -1396,7 +1397,12 @@ class AppBootstrap:
         self.adaptive_planner_service = AdaptivePlannerService()
         self.approval_gate_service = ApprovalGateService()
         self.operational_executor = ToolOperationalExecutor(self.tool_teach_service)
-        self.execution_playbook_service = ExecutionPlaybookService(executor=self.operational_executor)
+        self.execution_playbook_service = ExecutionPlaybookService(
+            executor=self.operational_executor,
+            postcondition_verifier=PostconditionVerificationService(
+                observer=WorldModelWindowObserver(self.world_model_service)
+            ),
+        )
         self.task_outcome_recorder = TaskOutcomeRecorder(
             adaptive_session_repository=self.adaptive_session_repository,
             capability_repository=self.capability_repository,

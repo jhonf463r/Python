@@ -57,6 +57,10 @@ class TaskOutcomeRecorder:
         if run_record is not None and self.experiment_lab is not None:
             session = self._record_learning(session=session, run_record=run_record)
             self._check_intent_correction(session=session, run_record=run_record)
+        elif self.experiment_lab is not None and session.outcome is not None:
+            verification = session.outcome.postcondition_verification
+            if verification is not None:
+                self._record_operational_learning(session=session, verification=verification)
         if session.capability_readiness:
             self.capability_repository.save_many(session.capability_readiness)
         if session.approval_checkpoints:
@@ -74,6 +78,42 @@ class TaskOutcomeRecorder:
         else:
             self._save_resume_hint_if_interrupted(saved, run_record=run_record)
         return saved
+
+    def _record_operational_learning(self, *, session: AdaptiveSession, verification: Any) -> None:
+        """Forward only independently verified, directly attributable operations."""
+        if verification.verdict != 'verified' or verification.attribution != 'directly_attributable':
+            return
+        repository = self.experiment_lab.repository
+        find_existing = getattr(repository, 'find_operational_run', None)
+        if callable(find_existing) and find_existing(execution_id=verification.execution_id) is not None:
+            session.metadata['operational_learning_deduplicated'] = verification.execution_id
+            return
+        observed = verification.observation
+        expected = verification.expectation
+        self.experiment_lab.record_outcome(
+            domain=ExperimentDomain.CODE,
+            objective=session.playbook.goal if session.playbook is not None else session.user_goal,
+            subject_key='operational_execution',
+            route=EvaluationRoute.LOCAL,
+            candidate_label='verified_operational_action',
+            candidate_id=verification.execution_id,
+            success=True,
+            observed_summary=f'{expected.kind}:{expected.title} observed={observed.satisfied}',
+            expected_summary=f'{expected.kind}:{expected.title}',
+            precision=1.0,
+            robustness=1.0,
+            execution_ms=max(0, int((verification.verified_at_utc - verification.baseline.observed_at_utc).total_seconds() * 1000)),
+            evidence_refs=list(verification.evidence_refs),
+            metadata={
+                'operational_execution_id': verification.execution_id,
+                'operational_outcome': True,
+                'verification_verdict': verification.verdict,
+                'attribution': verification.attribution,
+                'session_id': session.session_id,
+                'verification': verification.model_dump(mode='json'),
+            },
+            suite_name='verified_operational_outcome',
+        )
 
     def _propagate_to_control_master(self, session: AdaptiveSession) -> None:
         """Close the learning loop: if the session opted in by tagging its

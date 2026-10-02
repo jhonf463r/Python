@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -2049,6 +2049,39 @@ class ExperimentRun(BaseModel):
     created_at_utc: datetime = Field(default_factory=utc_now)
 
 
+class PostconditionExpectation(BaseModel):
+    """Explicit, pre-execution expectation for a visible local window."""
+
+    kind: Literal["window_present"] = "window_present"
+    title: str
+
+
+class PostconditionObservation(BaseModel):
+    source: str
+    observed_at_utc: datetime = Field(default_factory=utc_now)
+    satisfied: bool = False
+    matches: list[dict[str, Any]] = Field(default_factory=list)
+    evidence_ref: str = ""
+    caused_by_execution_id: str | None = None
+
+
+class PostconditionVerification(BaseModel):
+    execution_id: str
+    expectation: PostconditionExpectation
+    baseline: PostconditionObservation
+    observation: PostconditionObservation
+    verdict: Literal["verified", "not_verified", "observation_only", "ambiguous"]
+    attribution: Literal[
+        "directly_attributable",
+        "temporally_associated",
+        "ambiguous_due_to_competing_causes",
+        "not_attributable",
+    ]
+    reason: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    verified_at_utc: datetime = Field(default_factory=utc_now)
+
+
 class ExperimentRecommendation(BaseModel):
     recommendation_id: str = Field(default_factory=lambda: str(uuid4()))
     domain: ExperimentDomain
@@ -2361,6 +2394,7 @@ class PlaybookStep(BaseModel):
     simulation_only: bool = False
     detail: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
+    postcondition: PostconditionExpectation | None = None
 
 
 class ExecutionPlaybook(BaseModel):
@@ -2398,6 +2432,7 @@ class TaskOutcome(BaseModel):
     next_actions: list[str] = Field(default_factory=list)
     evidence_refs: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    postcondition_verification: PostconditionVerification | None = None
 
 
 class AdaptiveSession(BaseModel):

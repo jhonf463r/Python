@@ -3,8 +3,10 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Protocol
+from uuid import uuid4
 
-from iabv_v15.domain.models import AdaptiveSession, AdaptiveSessionStatus, ApprovalDecision, RunStatus, TaskOutcome
+from iabv_v15.domain.models import AdaptiveSession, AdaptiveSessionStatus, ApprovalDecision, PostconditionObservation, PostconditionVerification, RunStatus, TaskOutcome
+from iabv_v15.services.adaptive.postcondition_verification import PostconditionVerificationService
 
 
 @dataclass(slots=True)
@@ -53,8 +55,13 @@ class NullOperationalExecutor:
 
 
 class ExecutionPlaybookService:
-    def __init__(self, executor: OperationalExecutor | None = None) -> None:
+    def __init__(
+        self,
+        executor: OperationalExecutor | None = None,
+        postcondition_verifier: PostconditionVerificationService | None = None,
+    ) -> None:
         self.executor = executor or NullOperationalExecutor()
+        self.postcondition_verifier = postcondition_verifier
 
     def annotate_execution_capability(self, session: AdaptiveSession) -> AdaptiveSession:
         execute_step = self._execute_step(session)
@@ -192,6 +199,24 @@ class ExecutionPlaybookService:
                 metadata={'mode': 'execute_waiting_adapter', **result.metadata},
             )
         else:
+            verification = None
+            execution_id = ""
+            baseline = None
+            if execute_step.postcondition is not None:
+                execution_id = str(uuid4())
+                session.metadata['operational_execution_id'] = execution_id
+                if self.postcondition_verifier is not None:
+                    try:
+                        baseline = self.postcondition_verifier.capture_baseline(
+                            execute_step.postcondition,
+                            execution_id=execution_id,
+                        )
+                    except Exception as exc:  # observation failure must not be misreported as verification
+                        baseline = PostconditionObservation(
+                            source='observer_error',
+                            evidence_ref=f'observer-error:{execution_id}:baseline',
+                        )
+                        baseline.matches = [{'error': type(exc).__name__}]
             self._update_execution_state(
                 session,
                 state='executing',
@@ -199,24 +224,113 @@ class ExecutionPlaybookService:
                 last_action='execute',
             )
             result = self.executor.execute(session)
+            if execute_step.postcondition is not None:
+                if self.postcondition_verifier is not None and baseline is not None:
+                    try:
+                        verification = self.postcondition_verifier.verify(
+                            execution_id=execution_id,
+                            expectation=execute_step.postcondition,
+                            baseline=baseline,
+                            evidence_prefix=f'adaptive-session:{session.session_id}:postcondition:{execution_id}',
+                        )
+                    except Exception as exc:  # noqa: BLE001 - preserve execution while recording unknown verification
+                        verification_error = type(exc).__name__
+                        failed_observation = PostconditionObservation(
+                            source='observer_error',
+                            evidence_ref=f'observer-error:{execution_id}:post',
+                            matches=[{'error': verification_error}],
+                        )
+                        verification = PostconditionVerification(
+                            execution_id=execution_id,
+                            expectation=execute_step.postcondition,
+                            baseline=baseline,
+                            observation=failed_observation,
+                            verdict='not_verified',
+                            attribution='not_attributable',
+                            reason='La fuente independiente falló al observar la postcondición.',
+                            evidence_refs=[
+                                f'adaptive-session:{session.session_id}:postcondition:{execution_id}:baseline',
+                                f'adaptive-session:{session.session_id}:postcondition:{execution_id}:observation',
+                            ],
+                        )
+                    else:
+                        verification_error = ''
+                else:
+                    verification_error = 'postcondition_observer_unavailable'
+                    failed_baseline = baseline or PostconditionObservation(
+                        source='observer_unavailable',
+                        evidence_ref=f'observer-unavailable:{execution_id}:baseline',
+                    )
+                    verification = PostconditionVerification(
+                        execution_id=execution_id,
+                        expectation=execute_step.postcondition,
+                        baseline=failed_baseline,
+                        observation=PostconditionObservation(
+                            source='observer_unavailable',
+                            evidence_ref=f'observer-unavailable:{execution_id}:post',
+                        ),
+                        verdict='not_verified',
+                        attribution='not_attributable',
+                        reason='No hay una fuente independiente disponible para observar la postcondición.',
+                        evidence_refs=[
+                            f'adaptive-session:{session.session_id}:postcondition:{execution_id}:baseline',
+                            f'adaptive-session:{session.session_id}:postcondition:{execution_id}:observation',
+                        ],
+                    )
+                operational_success = bool(
+                    verification is not None
+                    and verification.verdict == 'verified'
+                    and verification.attribution == 'directly_attributable'
+                )
+                outcome_status = RunStatus.SUCCESS if operational_success else RunStatus.PARTIAL
+                execution_state_label = (
+                    'executed'
+                    if operational_success
+                    else 'verification_unconfirmed'
+                    if verification is not None
+                    else 'failed'
+                    if result.status != RunStatus.SUCCESS
+                    else 'executed'
+                )
+                outcome_metadata = {
+                    'mode': 'execute_executed',
+                    **result.metadata,
+                    'operational_execution_id': execution_id,
+                    'executor_status': result.status.value,
+                }
+                if verification_error:
+                    outcome_metadata['postcondition_verification_error'] = verification_error
+                next_actions = result.next_actions
+                outcome_summary = result.summary if operational_success else (
+                    f'{result.summary} Verificación de postcondición: '
+                    f'{verification.verdict}.'
+                )
+            else:
+                outcome_status = result.status
+                execution_state_label = 'executed' if result.status == RunStatus.SUCCESS else 'failed'
+                outcome_metadata = {'mode': 'execute_executed', **result.metadata}
+                next_actions = result.next_actions
+                outcome_summary = result.summary
             self._update_execution_state(
                 session,
-                state='executed' if result.status == RunStatus.SUCCESS else 'failed',
+                state=execution_state_label,
                 detail=result.summary,
                 last_action='execute',
             )
             session.status = (
                 AdaptiveSessionStatus.COMPLETED
-                if result.status == RunStatus.SUCCESS
+                if outcome_status == RunStatus.SUCCESS
                 else AdaptiveSessionStatus.FAILED
-                if result.status == RunStatus.FAILED
+                if outcome_status == RunStatus.FAILED
                 else AdaptiveSessionStatus.READY_TO_EXECUTE
             )
             session.outcome = TaskOutcome(
-                status=result.status,
-                summary=result.summary,
-                next_actions=result.next_actions,
-                metadata={'mode': 'execute_executed', **result.metadata},
+                status=outcome_status,
+                summary=outcome_summary,
+                next_actions=next_actions,
+                evidence_refs=verification.evidence_refs if verification is not None else [],
+                metadata=outcome_metadata,
+                postcondition_verification=verification,
             )
         if session.playbook is not None:
             session.playbook.status = session.status

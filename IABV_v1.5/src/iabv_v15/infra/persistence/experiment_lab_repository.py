@@ -86,6 +86,20 @@ class ExperimentLabRepository:
                 items.append(loaded)
         return items
 
+    def find_operational_run(self, *, execution_id: str) -> ExperimentRun | None:
+        """Find a previously recorded operational outcome by its stable execution identity."""
+        rows = self.db.fetchall(
+            """
+            SELECT run_id, path FROM experiment_runs
+            WHERE json_extract(metadata_json, '$.operational_execution_id') = ?
+            LIMIT 1
+            """,
+            (execution_id,),
+        )
+        if not rows:
+            return None
+        return self._load_run_optional(rows[0]['run_id'], rows[0]['path'])
+
     def list_candidate_traces_for_scope(self, scope_key: str, *, limit: int = 20) -> list[IATraceEntry]:
         traces: list[IATraceEntry] = []
         for run in self.list_runs_by_scope_key(scope_key, limit=limit):
