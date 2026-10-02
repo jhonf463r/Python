@@ -2491,3 +2491,18 @@ UTF-8 JSON over stdin. The persistence command must remain small and must not co
 
 The contract is sufficiently closed for bounded implementation/runtime work.
 Next actor: **Devin**.
+
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZL
+
+07ZL implementation report is absorbed as **IMPLEMENTED / REPORT-BACKED**, not yet canonical or naturally runtime-proven.
+
+Implemented in isolated worktree at technical SHA `5238e85c014ea6bdda2ffd1a14064883bde559f5`:
+`start_iabv.ps1 DEFER → persist-startui-defer → PlatformPendingTask(startui_defer_ui) → PlatformPendingQueue.upsert()`.
+
+Direct Windows CLI harness proved persistence/read-back and singleton behavior. The real `resource-preflight` returned `CONTINUE`, so the launcher was not naturally driven through DEFER.
+
+Current runtime frontier:
+`natural StartUI DEFER → actual launcher invocation of persistence CLI → persisted task → read-back`.
+
+No production commit has been remotely published yet.
+Next actor: **Codex**, to finalize/publish and attempt the single legitimate natural-DEFER runtime proof when the resource state can safely produce DEFER without altering thresholds or fabricating the decision.
