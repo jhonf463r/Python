@@ -1985,3 +1985,17 @@ Selected:
 
 Still unresolved at runtime:
 natural persistence, retry/idempotency behavior, failure semantics, semantic consumer, wake/recheck, reauthorization, UI outcome.
+
+## 2026-10-02 — META-RUNTIME-07ZL
+
+Implemented/report-backed:
+`persist-startui-defer` + singleton `PlatformPendingTask` + existing queue persistence.
+
+Still open:
+- remote publication;
+- natural launcher DEFER runtime path;
+- actual launcher→CLI invocation;
+- natural read-back;
+- natural repeated-DEFER behavior.
+
+The direct CLI harness must not be promoted to natural launcher causality.
