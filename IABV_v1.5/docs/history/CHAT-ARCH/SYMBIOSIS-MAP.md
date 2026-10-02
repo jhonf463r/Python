@@ -1752,3 +1752,14 @@ The candidate minimal composition is:
 Independent verification is still required before implementation. Stable identity/idempotency and the exact cross-process handoff remain unresolved.
 
 Routing: **Sonnet now; Devin only after the seam is independently reconciled.**
+
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZJ
+
+07ZJ resolves boundary choice by elimination: keep `resource-preflight` pure, keep the launcher as DEFER owner, keep `PlatformPendingQueue` as schema/persistence owner.
+
+The remaining contract question is identity/idempotency plus the exact minimal Python persistence entrypoint.
+
+Routing:
+`Codex contract archaeology → Devin bounded implementation/runtime → Sonnet independent verification`, only if each later edge is still open.
+
+This is capability-fit routing, not a fixed sequence.
