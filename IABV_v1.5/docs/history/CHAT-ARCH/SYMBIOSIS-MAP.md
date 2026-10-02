@@ -1724,3 +1724,16 @@ Only persistence/read-back of the injected task was proven.
 The GitHub frame is a shared continuity substrate, not yet a live runtime bus. External AI frame entry and traceable writeback exist at protocol level; causal IABV consumption and next-decision change remain unproven.
 
 Codex is the active actor by demonstrated current fit; Devin is retained for concrete implementation/runtime capability gaps, not for simple actor rotation.
+
+## 2026-10-02 SYMBIOSIS UPDATE — META-RUNTIME-07ZH
+
+Independent verification now supports the downstream boundary:
+`PlatformPendingTask` is generic backlog/context, not an executable UI command.
+
+The correct symbiosis routing is now:
+`closed consumer audit → return to primary producer frontier → source/provenance archaeology → bounded implementation only after contract closure`.
+
+Next actor: **Codex**, selected for the exact natural DEFER call-site and ownership/provenance seam.
+
+Do not promote external design fields whose identifiers are absent from the target SHA. Cross-AI handoff remains a continuity substrate; it is not runtime ingestion or learning.
+
