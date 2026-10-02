@@ -146,7 +146,8 @@ def test_launcher_gates_only_new_ui_and_skips_health_checks_on_defer() -> None:
     root = Path(__file__).resolve().parents[1]
     source = (root / "scripts" / "start_iabv.ps1").read_text(encoding="utf-8")
 
-    preflight = source.index("Invoke-UIResourcePreflight")
+    existing_at_gate = source.index("$uiExistingAtGate = [bool](Find-ExistingUIProcess)")
+    preflight = source.index("$uiResourceGateResult = Invoke-UIResourcePreflight")
     health = source.index("# Health checks opcionales")
     health_requests = source.index("https://api.github.com/repos/jhonf463r/Python")
     ui_presence = source.index("if ($StartUI) {", health_requests)
@@ -155,8 +156,9 @@ def test_launcher_gates_only_new_ui_and_skips_health_checks_on_defer() -> None:
     spawn = source.index("[System.Diagnostics.Process]::Start($psi)", defer_branch)
     bridge = source.rindex("& powershell -ExecutionPolicy Bypass -File $bridge")
 
-    assert preflight < health < health_requests < ui_presence
+    assert existing_at_gate < preflight < health < health_requests < ui_presence
     assert existing_check < defer_branch < spawn < bridge
+    assert "$uiResourceGateDefers = $uiResourceGateResult.decision -ne 'CONTINUE'" in source
     assert "elseif (-not $SkipHealthChecks)" in source
     assert "Health checks opcionales omitidos: UI diferida" in source
     assert "ui_launch_skipped_resource_gate" in source
