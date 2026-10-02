@@ -1144,3 +1144,21 @@ For temporal continuity, distinguish:
 Generic persistence must not be promoted to semantic executable intent. Generic background monitoring must not be promoted to an active wake path without an owner, lifetime, trigger, consumer and observed effect.
 
 The previous actor is historical evidence only. Current routing must recompute from the present causal frontier and required capability.
+
+
+
+## 2026-10-02 METHODOLOGY ADDENDUM — 07ZD PERSISTENCE/CONSUMER/ACTOR RECONCILIATION
+
+When a capability appears to exist, verify the complete semantic chain:
+
+`write → durable state → read → consumer → trigger → action → observed effect`.
+
+Classify persistent artifacts separately from executable continuation.
+
+A reusable substrate should be reused only after its semantic contract and consumer path are established.
+
+The current routing rule is:
+
+`first open causal edge → required capability → capability-fit actor → minimum discriminating action`.
+
+Historical actor recommendations never override this rule.

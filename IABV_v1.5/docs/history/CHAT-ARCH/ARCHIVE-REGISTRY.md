@@ -621,3 +621,14 @@ this track is independent of the still-open Deep Research scientific literature 
 - **Material themes:** 07Z false-positive correction; call-site verification; one-shot UI DEFER; process lifetime; telemetry vs semantic intent; generic PlatformPendingQueue persistence; missing trigger/recheck/resume composition; 07ZD static composition audit; science/runtime track separation.
 - **Status:** absorbed into canonical memory; unresolved 07ZD remains pending.
 - **Preservation rule:** no technical closure or implementation authority is derived from the transcript alone.
+
+
+
+## 2026-10-02 — ABSORBED CHAT RESULT
+
+- **Source:** user-uploaded Codex report `Se ha pegado el markdown(20261002-030235).md`.
+- **Canonical predecessor:** `CHAT-ARCH-2026-10-01-001-meta-runtime-continuity-and-causal-verification.md`.
+- **Result:** `META-RUNTIME-07ZD = CLOSED / static forensic reconciliation`.
+- **Main finding:** generic persistence exists but is not connected to `StartUI DEFER`.
+- **First open causal edge:** `StartUI DEFER → durable semantic UI launch request`.
+- **Preservation:** no implementation authority is derived from the report; actor must be recalculated from the exact first missing edge.

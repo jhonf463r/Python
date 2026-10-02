@@ -2342,3 +2342,37 @@ The supplied transcript contains the 07ZD prompt but no 07ZD result. Do not infe
 
 ### Science/runtime separation
 The science Deep Research track remains independent from the real IABV→Devin self-development runtime track. Both are evidence-producing tracks and converge only through reconciliation.
+
+
+
+## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZD RESULT
+
+Canonical record:
+`CHAT-ARCH-2026-10-01-002-meta-runtime-07zd-result-and-first-open-edge.md`
+
+### 07ZD status
+**CLOSED as static forensic reconciliation.**
+
+Codex confirms generic persistent substrates exist:
+`PlatformPendingQueue / PlatformPendingTask / PlatformResumeHint / AutonomyCycleService / TaskOutcomeRecorder / startup_summary()`.
+
+It also confirms the launcher does **not** enqueue a semantic pending `StartUI` request when `DEFER` occurs.
+
+### Exact first open causal edge
+`StartUI DEFER → durable, semantically defined UI launch request`.
+
+After that, the following remain open: consumer → trigger/wake → fresh resource observation → policy recomputation → reauthorization → existing launch authority.
+
+Do not replace this with the broader claim “IABV lacks persistence.”
+
+### Permanent distinctions
+`telemetry ≠ pending command`
+`persistence ≠ executor`
+`resume context ≠ UI resume`
+`temporary process survival ≠ wake`
+`monitor definition ≠ active monitor`
+`new invocation ≠ automatic retry`.
+
+The existing launch authority remains `start_iabv.ps1`; do not create a second authority.
+
+No scheduler/watcher/daemon/UIResumeService is authorized solely by 07ZD.

@@ -1508,3 +1508,15 @@ El track científico Deep Research y el track técnico IABV→Devin pueden avanz
 | META-RUNTIME-07ZD | same record | DISPATCHED / PENDING; do not infer result until actual Codex response is received and read back. |
 
 Operational rule: activate this overlay only when the objective touches resource-gated UI startup, deferred intent continuity, wake/recheck, or source/runtime causal verification.
+
+
+
+## 2026-10-02 — META-RUNTIME-07ZD CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| META-RUNTIME-07ZD persistence/consumer reconciliation | `CHAT-ARCH-2026-10-01-002-meta-runtime-07zd-result-and-first-open-edge.md` | **CLOSED / static** |
+| First open causal edge | same record | `StartUI DEFER → semantic durable UI intent` |
+| Downstream temporal continuity | same record | consumer/trigger/recheck/reauthorization/launch remain open |
+
+Activate this context for objectives involving deferred UI continuity, pending intent, wake/recheck or launcher re-entry.

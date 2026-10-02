@@ -1677,3 +1677,17 @@ None of these edges alone constitutes a UI resume path.
 The minimal owner already present is `start_iabv.ps1` for launch authority. The missing question is whether an existing owner/consumer/trigger can safely re-enter that authority after a future resource observation.
 
 No duplicate orchestration organ should be created before the composition audit closes.
+
+
+
+## 2026-10-02 TEMPORAL CONTINUITY MAP UPDATE
+
+The reconciled UI continuity graph is:
+
+`StartUI → resource gate → DEFER`
+
+then the still-open chain:
+
+`DEFER → durable semantic UI intent → consumer → trigger → fresh RAM observation → policy recomputation → reauthorization → start_iabv.ps1 → UI outcome`.
+
+Existing persistence nodes can be reused but currently terminate at context/backlog delivery rather than UI execution.

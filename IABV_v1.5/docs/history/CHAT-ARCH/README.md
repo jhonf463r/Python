@@ -476,3 +476,15 @@ No existe una secuencia histórica fija de actores.
 This record should be activated for objectives concerning META-RUNTIME-07Z, UI resource-gate DEFER, deferred UI intent continuity, persistence/consumer/trigger composition, or call-site causal verification.
 
 Current pending frontier: `META-RUNTIME-07ZD` was dispatched as read-only forensic reconciliation; its actual Codex result is not present in the absorbed source yet.
+
+
+
+## 2026-10-02 LATEST ABSORBED RECORD
+
+Latest META-RUNTIME continuity record:
+`CHAT-ARCH-2026-10-01-002-meta-runtime-07zd-result-and-first-open-edge.md`
+
+07ZD is now closed as a static forensic audit. The active frontier is the first missing producer edge:
+`StartUI DEFER → durable semantic StartUI intent`.
+
+Do not repeat 07ZD. Do not infer a scheduler requirement yet.

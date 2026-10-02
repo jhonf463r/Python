@@ -1872,3 +1872,21 @@ Ejecutar el contrato Codex de super-auditoría. No repetir diagnósticos antiguo
 
 ### Build restraint
 No scheduler, watcher, daemon, retry mechanism or UI-resume subsystem should be implemented until the 07ZD composition audit is reconciled.
+
+
+
+## 2026-10-02 OPEN KNOWLEDGE UPDATE — 07ZD RESULT
+
+Closed:
+1. Does generic pending persistence exist? **YES**.
+2. Does it currently represent a deferred StartUI request? **NO**.
+3. Does startup_summary() execute a pending UI launch? **NO**.
+4. Is BackgroundResourceMonitor proven as active UI wake? **NO**.
+5. Is there an automatic post-DEFER UI resume path? **NO**.
+
+Open:
+6. What is the smallest valid semantic payload for a pending StartUI request?
+7. Which existing consumer can own it without creating a duplicate orchestration organ?
+8. Which existing trigger/wake capability can invoke the consumer?
+9. How does the resumed path safely re-enter `start_iabv.ps1`?
+10. What minimal runtime experiment proves the full causal chain?
