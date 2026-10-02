@@ -1162,3 +1162,25 @@ The current routing rule is:
 `first open causal edge → required capability → capability-fit actor → minimum discriminating action`.
 
 Historical actor recommendations never override this rule.
+
+
+## 2026-10-02 METHODOLOGY ADDENDUM — 07ZF AND LIVE-FRAME BOUNDARY
+
+Separate natural producer from manual test injection. A downstream experiment using injected state cannot close the upstream producer edge.
+
+For runtime negatives use the ladder:
+persisted → readable → consumed → semantic effect → causal effect → independently verified.
+
+07ZF adds two permanent rules:
+manual queue injection != natural producer;
+failed/insufficient observability != observed absence.
+
+For cross-AI continuity:
+GitHub shared field != live IABV runtime bus;
+AI frame entry != automatic IABV ingestion;
+AI writeback != changed next IABV decision.
+
+Live symbiosis requires evidence that an external observation is consumed by an IABV runtime organ and changes a subsequent IABV decision within a traceable causal episode.
+
+Routing remains:
+first open causal/evidential edge → required capability → capability-fit actor → minimum discriminating action.
