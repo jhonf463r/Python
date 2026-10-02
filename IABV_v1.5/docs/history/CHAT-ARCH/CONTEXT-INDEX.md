@@ -1557,3 +1557,14 @@ Activate this context for deferred UI continuity, pending intent, wake/recheck, 
 
 Activate for deferred UI continuity, pending intent semantics, producer ownership, wake/recheck or cross-AI causal continuity.
 
+## 2026-10-02 META-RUNTIME-07ZI CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZI producer ownership | `CHAT-ARCH-2026-10-02-006-meta-runtime-07zi-producer-ownership-and-seam.md` | **CLOSED at source level** |
+| Primary producer seam | same record | **OPEN: PowerShell DEFER → existing Python persistence** |
+| Semantic consumer | same record | **OPEN / no consumer present at 5238e85** |
+| Identity/idempotency contract | same record | **OPEN** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
+
+Activate for StartUI DEFER producer wiring, cross-process persistence, pending intent semantics and temporal continuity.
