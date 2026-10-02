@@ -482,6 +482,14 @@ Current pending frontier: `META-RUNTIME-07ZD` was dispatched as read-only forens
 ## 2026-10-02 LATEST ABSORBED RECORD
 
 Latest META-RUNTIME continuity record:
+`CHAT-ARCH-2026-10-02-004-meta-runtime-07zg-reconciliation-and-routing.md`
+
+07ZG is completed as a read-only source/runtime reconciliation. The startup path demonstrably reads persisted pending-task JSON, but `startui_defer` is not semantically dispatched and does not cause the observed UI launch.
+
+Current primary frontier:
+`StartUI DEFER → durable semantic StartUI intent`.
+
+The required next handoff is independent forensic verification of the already captured evidence before any implementation step.
 `CHAT-ARCH-2026-10-01-002-meta-runtime-07zd-result-and-first-open-edge.md`
 
 07ZD is now closed as a static forensic audit. The active frontier is the first missing producer edge:
