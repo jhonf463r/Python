@@ -60,7 +60,7 @@ Current status: shared field and human-visible trace are established as methodol
 **IA DESTINO:** **Sonnet**  
 **CAPABILITY:** independent blind reconstruction and verification  
 **FIRST OPEN EDGE:** `current objective → complete relevant candidate retrieval`  
-**ACTION:** execute RSK-01B on `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` using five fresh objective-only sessions.
+**ACTION:** execute RSK-01B on `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` using five fresh objective-only sessions. Case 5 must score the routing authority encoded in that frozen corpus (Codex at that point), not the post-writeback Sonnet route.
 
 Historical `NEXT ACTOR` text remains non-routable. Do not treat the Codex recommendation as a permanent sequence; after RSK-01B, recompute the actor from the observed result.
 ## DOMAIN ROUTING
