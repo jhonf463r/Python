@@ -1999,3 +1999,13 @@ Before treating repeated external-AI output as a new experiment, reconcile the e
 Method correction also reinforced: polished examples and conceptual claims must remain separated from empirical findings; encryption must remain a transport/security property rather than being silently promoted to contextual authorization; Nissenbaum/Barth attribution must remain source-precise.
 
 This is a method/provenance delta, not proof of causal learning from persistent GitHub state.
+
+## 2026-10-03 TRANSFER — BIO-04 STAGE-A M2 SCIENTIFIC FRONTIER
+
+The corrected M1 science is now the boundary condition for the next external-science module. The next BIO-04 research frontier is `agentic AI / runtime disclosure`: runtime context propagation, tool/function/MCP disclosure, memory/session exposure, inter-agent transfer, logging/telemetry disclosure, provider/cloud transmission, metadata linkage and inference/composition.
+
+Routing is capability-fit: Deep Research for external primary-source synthesis, followed by independent source/evidence verification. No implementation actor is authorized by this research frontier alone.
+
+The contract is `BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-10-03.md`, status `PLANNED / NOT YET EXECUTED`.
+
+Developmental lesson preserved: the existence of a research contract or planned execution identifier is not evidence that execution occurred; actual execution identity and returned artifact must be reconciled before absorption.
