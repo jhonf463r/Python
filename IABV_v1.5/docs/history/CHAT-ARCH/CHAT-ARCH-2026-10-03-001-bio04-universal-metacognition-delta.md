@@ -7,9 +7,9 @@ Absorb the material Knowledge Delta from the 2026-10-03 BIO-04 runtime diagnosis
 ## CURRENT CODE / RUNTIME BASELINE
 
 - Experimental code target: `d1a55897bf7f758914b8237d48ae43f245f06592`.
-- Canonical `main) remains `009d614ca385d7cd18c39aff27f86f6524766348`.
+- Canonical `main` code baseline remains `009d614ca385d7cd18c39aff27f86f6524766348`; the `main` ref itself is now advanced by this documentation-only absorption commit.
 - The runtime checkout used for BIO-04 remains pinned to the target SHA above.
-- A local, uncommitted diagnostic fix corrected tool-ID extraction in `OperationalSelfExaminationService); it is not yet canonical code.
+- A local, uncommitted diagnostic fix corrected tool-ID extraction in `OperationalSelfExaminationService`; it is not yet canonical code.
 - Runtime selector PRE is proven, but real PRE→LEARN→POST causal learning remains open.
 
 ## VERIFIED / RECONCILED TECHNICAL DELTAS
@@ -19,7 +19,7 @@ Absorb the material Knowledge Delta from the 2026-10-03 BIO-04 runtime diagnosis
 3. Real OSES requests are materially different from the minimal probe:
    - deduction request approximately 2897 input tokens;
    - tool-verification request approximately 554 input tokens;
-   - neither specifies `max_tokens);
+   - neither specifies `max_tokens`.
    - both previously hit approximately 30-second request timeouts;
    - adding `max_tokens=16) made both respond in roughly 2.4–3.0 s, but responses were incomplete/truncated and therefore not functionally valid.
 4. OSES performs two sequential reasoning calls in the pre-session path. The second is not dependent on the first response.
