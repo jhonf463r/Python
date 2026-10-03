@@ -55,7 +55,7 @@ Five fresh independent sessions against `3de2bb4eddf4e43d9664e17b935d7a55b6ea944
 2. recent methodological correction;
 3. BIO-04 M1/M2;
 4. human-aware plasticity;
-5. current actor routing.
+5. routing-authority reconstruction at the frozen test SHA (the snapshot in `3de2bb4…` routed to Codex; this avoids exposing the post-writeback Sonnet route).
 
 For each, record:
 
@@ -85,7 +85,7 @@ Interpretation:
 
 `RSK-01A narrows the open boundary from general continuity fragmentation to objective-conditioned complete candidate retrieval as the first empirically discriminating edge; existing organs appear composable in principle, but the causal composition is not demonstrated.`
 
-This is an architectural hypothesis/diagnostic result, not proof of autonomous continuity.
+This is an architectural hypothesis/diagnostic result, not proof of autonomous continuity. The frozen SHA is a contamination control: the current post-writeback routing state is intentionally not part of the blind corpus.
 
 ## METHOD DELTA
 
