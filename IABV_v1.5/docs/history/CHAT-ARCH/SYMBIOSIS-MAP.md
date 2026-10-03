@@ -1987,3 +1987,15 @@ Stronger developmental claim requires:
 `verified prior experience → later contextual retrieval → changed decision/action → causal attribution → reuse`
 
 External AIs and the human remain capability realizations under current prerequisites, not permanent pipeline stages.
+
+## 2026-10-03 TRANSFER — BIO-04 RESEARCH RECEIPT / PROVENANCE-ID DISCIPLINE
+
+A re-pasted M1 research result was substantively congruent with the already audited M1 module but carried a different reported execution/object identity. This reinforces a reusable cross-IA trace rule:
+
+`result similarity ≠ execution identity ≠ independent evidence`.
+
+Before treating repeated external-AI output as a new experiment, reconcile the execution receipt, object identity, source artifact and canonical remote provenance. If they cannot be linked, preserve the output as report/re-receipt rather than promoting it to a distinct evidence instance.
+
+Method correction also reinforced: polished examples and conceptual claims must remain separated from empirical findings; encryption must remain a transport/security property rather than being silently promoted to contextual authorization; Nissenbaum/Barth attribution must remain source-precise.
+
+This is a method/provenance delta, not proof of causal learning from persistent GitHub state.
