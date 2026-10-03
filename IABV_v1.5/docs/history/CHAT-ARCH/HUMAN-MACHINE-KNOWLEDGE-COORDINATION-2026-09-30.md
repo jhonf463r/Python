@@ -214,3 +214,19 @@ Method lesson:
 existing parameter ≠ existing semantic ownership.
 
 The collaboration should not move from a report directly to implementation when the report exposes an unresolved policy boundary.
+
+## 2026-10-03 — HUMAN-AWARE PLASTICITY / CONTEXTUAL DEVIATION
+
+Treat human deviation as a contextual event rather than automatic error. Preserve `deviation != error`.
+
+For a material divergence, preserve:
+`active expectation → observed human change → surrounding context → explicit reason if supplied → candidate interpretations → uncertainty → action → verification → resulting delta`
+
+Do not infer hidden motives. When no explanation is supplied, preserve the reason as unresolved.
+
+## 2026-10-03 — LOW-FRICTION COLLABORATION TARGET
+
+Future direction:
+`human input/result → contextual re-anchoring → relevant knowledge activation → current frontier → capability/realization fit → trace-depth selection → next action/prompt`
+
+Routine context transport should become easier without weakening provenance, verification or governance. This is a developmental trajectory, not a claim of current autonomous runtime behavior.
