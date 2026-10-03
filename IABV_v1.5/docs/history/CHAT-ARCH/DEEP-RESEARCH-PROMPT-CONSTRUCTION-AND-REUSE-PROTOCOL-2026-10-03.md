@@ -667,3 +667,33 @@ The enduring negative knowledge is:
 `methodological recommendation ≠ human policy decision`
 
 END OF PROTOCOL
+
+## 30. CONCRETE RESEARCHER / IA DESTINATION
+
+Deep Research is a capability, not a sufficient handoff identity.
+
+Every research routing decision must explicitly materialize:
+
+`RESEARCH CAPABILITY → CONCRETE IA / EXECUTION SURFACE → COMPLETE PROMPT`.
+
+The prompt header must therefore contain:
+
+- `IA DESTINO / EXECUTION SURFACE`;
+- `ACTOR / CAPABILITY FIT`;
+- `TASK TYPE`;
+- `EXECUTION_ID`;
+- `OBJECT_ID`.
+
+Examples:
+- `IA DESTINO: ChatGPT Deep Research`
+- `IA DESTINO: Claude Sonnet`
+- `IA DESTINO: Devin Windows runtime`
+- `IA DESTINO: Codex repository/provenance`
+
+Do not end with `Deep Research capability` or `independent verifier` alone when a concrete destination is known.
+
+The distinction is preserved:
+`capability != concrete IA`
+`concrete IA != fixed pipeline position`.
+
+The destination must be recomputed after each material reconciliation.
