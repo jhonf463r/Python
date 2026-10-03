@@ -1858,3 +1858,15 @@ New invariant:
 
 The audit also preserved a crucial ownership boundary: OSES owns the semantic output contract; adapters own provider-specific translation; common routing must not silently become semantic validation authority.
 
+
+
+## Transfer 15 — Universal gap confirmed, ownership still unresolved
+
+BIO-04 demonstrates a reusable symbiosis lesson: finding a cross-organ gap does not identify the correct owner automatically. The safe progression is:
+
+`gap → production composition archaeology → ownership decision → minimum seam → implementation → independent runtime verification`.
+
+New invariant:
+`universal gap confirmed ≠ ownership proven`.
+
+Micro-harness/provider-level results must remain scoped and cannot be promoted to end-to-end production evidence.
