@@ -102,3 +102,16 @@ Do not expand into IABV code, implementation design or human policy choice.
 Independent forensic source/claim verification is the unresolved capability. This actor follows the primary-source research pass and is not an implementation actor.
 
 END OF CONTRACT
+## CONCRETE IA DESTINATION
+
+IA DESTINO:
+**Claude Sonnet**
+
+CAPABILITY:
+independent source/evidence verification.
+
+FIRST OPEN EDGE:
+M2 source provenance, exact claim support, metric/experiment integrity, control-efficacy scope, and residual-frontier validation.
+
+This concrete destination is selected from capability-fit for the current state; it is not a fixed pipeline position.
+
