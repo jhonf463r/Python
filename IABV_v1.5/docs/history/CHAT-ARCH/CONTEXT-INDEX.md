@@ -1751,3 +1751,27 @@ Construction rule:
 The existence of a canonical prompt must never be treated as proof of execution. New chats must still verify actual result alignment and source evidence.
 
 Latest BIO-04 Module 1 result provides the current test case for this protocol; its source claims remain subject to adjudication before promotion.
+
+
+## 2026-10-03 BIO-04 STAGE-A M1 — RESULT ADJUDICATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-03-010-bio04-stageA-M1-adjudication.md`
+
+Execution:
+`BROWSE_2026-10-03_BIO-04-A-M1_001`
+
+Status:
+**OBJECT-ALIGNED / PROVISIONALLY SOURCE-SUPPORTED / NOT YET CANONICAL SCIENTIFIC KNOWLEDGE**
+
+M1 covered Contextual Integrity, privacy engineering/NIST, purpose, minimization, sender/recipient/transmission and information-flow models.
+
+Material correction:
+the Barth et al. formalization does not use purpose as a primitive parameter of the basic communication tuple, but it does incorporate purpose into policy consistency and shows purpose-specific simulation. Do not state that CI simply "cannot represent purpose."
+
+Remaining BIO-04 external-science frontiers are separate: agentic-AI/runtime disclosure, metadata/inference/composition risk, transformation, authorization/consent, unknown/failure behavior, locality/trust boundaries, and lifecycle/retention/secondary use.
+
+Prompt-construction method was observed as useful and is now canonically preserved in:
+`DEEP-RESEARCH-PROMPT-CONSTRUCTION-AND-REUSE-PROTOCOL-2026-10-03.md`.
+
+Next actor for this result: **SONNET/CLAUDE-CLASS independent source/claim verifier**.
