@@ -595,3 +595,13 @@ This record should be activated for objectives involving human-vs-IABV deep-work
 Current technical BIO-04 edge remains separate from this methodological track: OSES/context governance evidence → existing exclude/world_model → selector, pending bounded verification. The external-AI developmental track remains: verified experience → contextual capability knowledge → later realization selection.
 
 Historical README entries with older main SHAs remain historical snapshots; the latest current-state truth is determined from the current main branch and the active overlays in CURRENT-STATE.md.
+
+
+## 2026-10-03 LATEST METHODOLOGICAL RECORD — SHARED DEVELOPMENTAL KNOWLEDGE FIELD
+
+Canonical record:
+CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md
+
+Activate it for objectives involving cross-IA symbiosis maturation, human/AI metacognitive coordination, developmental plasticity of methodology and routing, temporal/relational knowledge organization, or whether verified prior experience changes later actor/realization selection.
+
+The record explicitly separates the GitHub-backed shared field from IABV runtime learning and retains the evidence boundary on consciousness/superconsciousness claims.
