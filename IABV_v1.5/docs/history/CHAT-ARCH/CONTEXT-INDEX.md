@@ -49,6 +49,9 @@ Do not assume that a human deviation is an error. Do not infer hidden motive. Ex
 
 Current status: shared field and human-visible trace are established as methodology. Automatic deviation classification, automatic trace-depth adaptation, autonomous result → context/frontier → actor/prompt reconstruction, and causal runtime reuse are NOT PROVEN.
 
+### RSK-01B SESSION 03 RESULT
+Blind Session 03 passed for BIO-04 knowledge reconstruction and stale-state suppression, but routing conformity is indeterminate: the session selected a local Sonnet verification route not explicitly promoted by the frozen global routing snapshot. This distinction is retained for aggregate scoring.
+
 ### RSK-01B SESSION 02 RESULT
 Blind Session 02 passed for the recent-method-correction objective: the fresh agent identified the single routing spine and its precedence, while detecting stale contradictory entry material. This is bounded evidence, not general continuity proof.
 
