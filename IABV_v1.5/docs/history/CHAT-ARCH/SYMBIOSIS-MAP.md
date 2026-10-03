@@ -2055,3 +2055,28 @@ method-use is observed; causal learning from persistent GitHub state remains NOT
 
 Routing consequence:
 the next actor is selected for independent evidence verification, not implementation. After that audit, recompute the first scientific edge rather than inheriting the current candidate mechanically.
+
+## 2026-10-03 TRANSFER — CONTINUITY ROUTING FRAGMENTATION
+
+Human correction exposed a higher-order distinction:
+`memory persistence != reliable relevant activation`.
+
+The archive contains many useful protocols and historical handoffs. Their existence is not the problem by itself. The risk is that each new chat can enter through a locally relevant protocol and inherit its local route before reconstructing the complete current frame.
+
+New reusable method delta:
+`current-state reconstruction must precede protocol-specific routing`.
+
+Current division of authority:
+`CURRENT-STATE top routing snapshot = current routing`
+`CONTEXT-INDEX = navigation`
+`MEMORY-OPERATING-PROTOCOL = method`
+`SYMBIOSIS-MAP = capability/transfer evidence`
+`UNRESOLVED-KNOWLEDGE = open knowledge`
+`historical records = evidence/history`.
+
+Historical next-actor statements remain valuable but are non-routable unless re-promoted by current state.
+
+R34 remains bounded evidence: blind reconstruction succeeded in a tested case, but general reliable relevant-delta recall across arbitrary chats is not proven.
+
+Developmental interpretation:
+`protocol correction → later consumption → changed retrieval/routing` must be tested before claiming causal developmental learning.
