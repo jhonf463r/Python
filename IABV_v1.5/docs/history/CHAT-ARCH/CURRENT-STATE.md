@@ -2884,3 +2884,26 @@ Current methodological negative knowledge:
 `generic "advanced research" report` is not a substitute for a domain-specific research result.
 
 This is a method/knowledge artifact, not proof of future causal learning by IABV. A later episode must actually consume it and change prompt construction or routing for the intended reason before claiming causal developmental learning.
+
+
+## 2026-10-03 BIO-04 STAGE-A M1 — ADJUDICATED
+
+Canonical record:
+`CHAT-ARCH-2026-10-03-010-bio04-stageA-M1-adjudication.md`
+
+Execution:
+`BROWSE_2026-10-03_BIO-04-A-M1_001`
+
+M1 result is **OBJECT-ALIGNED / PROVISIONALLY SOURCE-SUPPORTED / NOT YET CANONICAL SCIENTIFIC KNOWLEDGE**.
+
+The substantive object was correctly preserved: Contextual Integrity, privacy engineering/NIST, purpose, minimization, sender/recipient/transmission, and information-flow models.
+
+Independent source checks support the central Nissenbaum/Barth/NIST backbone. One material wording correction is required: the Barth et al. formalization does not make purpose a primitive field of the basic communication tuple, but it does explicitly use purpose in policy consistency and shows how purpose-specific policies can be represented. Therefore do not claim that Contextual Integrity simply cannot represent purpose.
+
+NIST PF 1.1 remains an Initial Public Draft in the current NIST material; it explicitly addresses purposes, data elements, processing environments, contextual factors, limiting inference, and transmission of processing permissions.
+
+Prompt-construction learning has been canonically persisted separately. M1 demonstrates that bounded object + thread decomposition + source contract + acceptance gates can materially reduce semantic drift, but it does not by itself prove causal learning by IABV.
+
+Current BIO-04 scientific frontier remains open. Candidate remaining external-science modules: agentic-AI/runtime disclosure; metadata/inference/composition risk; transformations; authorization/consent and processing-vs-transmission; unknown/failure behavior; locality/trust boundaries; lifecycle/retention/secondary use.
+
+Next actor for M1 adjudication: **SONNET/CLAUDE-CLASS independent source/claim verifier**. No implementation actor is authorized by this result.
