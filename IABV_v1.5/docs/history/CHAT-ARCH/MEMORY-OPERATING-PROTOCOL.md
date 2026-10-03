@@ -1392,3 +1392,23 @@ Operationalize the "flow like water" target as `minimum routine coordination fri
 Future adaptive trace policy: `routine/low ambiguity → concise`; `complex/deep reconstruction → expanded`; `ambiguous → preserve uncertainty / clarify only if material`.
 
 A stored record or repeated conversational pattern is not learning closure. Strong developmental learning requires `verified prior episode → later contextual retrieval → changed method/routing/decision → causal attribution → reusable consequence`.
+
+## REQUIRED ROUTING OUTPUT — CONCRETE IA DESTINATION
+
+The routing protocol must not end at an abstract capability.
+
+Every material open edge must produce:
+
+`REQUIRED CAPABILITY → CAPABILITY-FIT → CONCRETE IA DESTINATION → NEXT ACTION/PROMPT`
+
+The response to the human must always state the concrete IA destination, even when the capability is described first.
+
+Example:
+`Independent source/evidence verification → Sonnet / Claude-class → IA DESTINO: Claude Sonnet → audit prompt`.
+
+Do not use only:
+`Next actor: independent verifier`
+
+because this leaves the handoff operationally incomplete.
+
+The concrete IA is selected dynamically from evidence and availability. This rule does not reintroduce a fixed ChatGPT→Sonnet→Devin pipeline.
