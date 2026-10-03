@@ -2101,3 +2101,22 @@ At code SHA `d1a55897bf7f758914b8237d48ae43f245f06592`, OSES has semantic output
 ### Next implementation question
 
 What is the smallest contract extension/wiring that allows OSES to express its requirements to the existing provider path, select a fitting realization, configure it through its adapter, and receive a result whose validity is checked before fallback/reuse?
+
+
+## 2026-10-03 — BIO-04 PROVIDER-SEAM OWNERSHIP AMBIGUOUS
+
+Status: OPEN.
+
+Production composition archaeology confirms the universal inference gap, but not a single existing owner for the complete OSES inference continuity.
+
+Verified:
+- local providers are production-wired through `LocalRoleRouter`;
+- `AdaptiveModelSelector` is production-wired but serves cloud planning/degradation roles, not OSES inference selection;
+- `ProviderRouter` is present but not demonstrated as production-constructed;
+- OSES own inference still uses module-level cloud/local functions;
+- OSES semantic response contracts remain informal and are not carried through a common selection/validation/fallback seam.
+
+Open edge:
+`OSES requirements/output contract → single existing production ownership boundary for realization selection/configuration + validation/fallback state`.
+
+Do not activate ProviderRouter, promote AdaptiveModelSelector, or create a new orchestrator without evidence that one of these ownership choices is correct.
