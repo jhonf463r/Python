@@ -1950,3 +1950,17 @@ New routing rule:
 when an upstream policy semantic boundary is unresolved, do not let an implementation actor convert an existing parameter into policy by assumption.
 
 The next audit must independently test whether the Method Delta "existing parameter != existing semantic ownership" changes the investigation.
+
+
+## 2026-10-03 TRANSFER — INDEPENDENT CORRECTION OF POLICY ROUTING
+
+Sonnet independently confirmed Codex's main OSES governance classification while narrowing context-data claims and retracting its own earlier premature suggestion to wire ProviderRouter/exclude before policy semantics were defined.
+
+New reusable invariant:
+existing policy precedent in another domain ≠ policy coverage in the target causal path.
+
+New developmental observation:
+method-use was observed because ownership tracing changed the interpretation of a seemingly reusable filter. Causal learning from persistent GitHub state remains NOT PROVEN because the prompt itself supplied the method and no counterfactual was run.
+
+Routing consequence:
+human policy definition precedes implementation. Once policy is specified, recompute actor/capability from the resulting technical contract.
