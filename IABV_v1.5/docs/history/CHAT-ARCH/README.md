@@ -648,3 +648,11 @@ For complex research, prefer modular research threads over one undifferentiated 
 Do not automatically copy an old research prompt. Recompute the current research object and first open research edge, then construct the prompt from the reusable protocol.
 
 This record is a methodological memory for future chats. It does not itself prove that a later Deep Research run will comply; every execution still requires object/provenance/result adjudication.
+
+## 2026-10-03 ACTIVE TRACEABILITY UPDATE — BIO-04 M1 RE-RECEIPT
+
+Canonical trace record: `CHAT-ARCH-2026-10-03-012-bio04-stageA-M1-receipt-provenance-reconciliation.md`.
+
+A re-pasted M1 result is substantively aligned with the already adjudicated M1 knowledge, but its reported execution/object identifiers do not match the canonical M1 execution identifiers. Treat the discrepancy as a provenance reconciliation boundary, not as a second execution.
+
+The accepted M1 unit remains the corrected claim set. The next BIO-04 science frontier remains agentic-AI/runtime disclosure; the proposed M2 execution is not considered proven merely because the prompt exists.
