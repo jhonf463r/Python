@@ -1669,3 +1669,18 @@ Primary record:
 `CHAT-ARCH-2026-10-03-002-bio04-universal-inference-contract.md`.
 
 Next architecture step must be independently reconciled before implementation.
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE GAP / SONNET CONFIRMATION
+
+Activate:
+`CHAT-ARCH-2026-10-03-002-bio04-universal-inference-contract.md`
+plus the independent contract result absorbed in:
+`CHAT-ARCH-2026-10-03-003-bio04-universal-inference-gap-confirmed.md`.
+
+Use this route for:
+- provider/model selection;
+- reasoning depth;
+- response-schema contracts;
+- fallback semantics;
+- resource/latency-aware inference;
+- OSES metacognition;
+- any proposal to solve a provider symptom with a provider-specific knob.

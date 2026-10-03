@@ -754,3 +754,14 @@ Material delta:
 - A provider/model symptom should be treated as evidence for a universal adaptation question before a local parameter patch.
 
 Status: source archaeology reconciled; implementation and runtime closure remain open.
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE GAP CONFIRMED
+
+Independent Sonnet audit confirmed the source-level universal gap identified by Codex. The result is now canonically absorbed.
+
+Maximum justified claim:
+`UNIVERSAL GAP CONFIRMED`.
+
+First open edge:
+`OSES task/output contract → common selection/configuration seam`.
+
+No implementation has been canonicalized from this finding.

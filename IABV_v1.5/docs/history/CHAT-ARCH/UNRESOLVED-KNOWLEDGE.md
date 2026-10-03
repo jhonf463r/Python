@@ -2075,3 +2075,29 @@ Open questions:
 - Where should response-schema validation live?
 - How should fallback remain contract-preserving and budget-aware?
 - How should deep metacognition adapt to resource/latency rather than become a universal hard prerequisite?
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE GAP INDEPENDENTLY CONFIRMED
+
+### Status
+
+`UNIVERSAL GAP CONFIRMED` by independent source/contract audit.
+
+### Evidence boundary
+
+At code SHA `d1a55897bf7f758914b8237d48ae43f245f06592`, OSES has semantic output contracts in prompts/consumers, while the common provider path lacks a shared structured response contract, reasoning/latency/resource constraints, and contract-preserving fallback continuity.
+
+### First open causal edge
+
+`OSES task/output contract → common selection/configuration seam`.
+
+### Ownership constraints
+
+- Do not automatically extend `InferenceRequest` with every possible budget or resource field.
+- Do not automatically make `AdaptiveModelSelector` the universal selector.
+- Do not create a new inference orchestrator.
+- Preserve adapter ownership of provider-specific parameters.
+- Preserve OSES ownership of the meaning/validity of its own output.
+- Any common validation mechanism must be justified by an existing ownership boundary.
+
+### Next implementation question
+
+What is the smallest contract extension/wiring that allows OSES to express its requirements to the existing provider path, select a fitting realization, configure it through its adapter, and receive a result whose validity is checked before fallback/reuse?

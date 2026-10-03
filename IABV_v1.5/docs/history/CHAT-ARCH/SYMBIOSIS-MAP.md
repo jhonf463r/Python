@@ -1846,3 +1846,15 @@ New invariant:
 `distributed capability signals + adapters ≠ universal adaptation until contract-to-selection-to-validation continuity is proven`.
 
 The reusable pattern should work across LLMs, browser, desktop/UI, shell, local services and external tools. Realization-specific parameters stay inside adapters; the reasoning algorithm remains capability/contract driven.
+## Transfer 13 — Independent confirmation of the universal inference gap
+
+Sonnet independently reconstructed the OSES/provider contracts and confirmed that the gap is cross-organ, not merely an Ollama-local defect. The same evidence also showed that no single existing component currently owns the full sequence:
+
+`requirements → realization selection → configuration → validation → contract-preserving fallback`.
+
+New invariant:
+
+`existing routing + existing capability metadata + provider adapters ≠ universal inference adaptation until their contract continuity is proven`.
+
+The audit also preserved a crucial ownership boundary: OSES owns the semantic output contract; adapters own provider-specific translation; common routing must not silently become semantic validation authority.
+

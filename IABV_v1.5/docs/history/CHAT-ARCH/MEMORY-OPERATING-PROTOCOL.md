@@ -1266,3 +1266,14 @@ First reconcile:
 A provider-specific adapter may translate the universal requirement into local parameters. Those parameters are not the universal algorithm.
 
 Distributed metadata becomes adaptive behavior only when it is causally consumed by selection and followed by result validation.
+## 2026-10-03 ACTIVE RULE — UNIVERSAL CONTRACT BEFORE LOCAL IMPLEMENTATION
+
+When an existing subsystem has several partial mechanisms for capability, routing, resource state, latency or provider configuration, do not assume their existence means the universal algorithm is present.
+
+Require a demonstrated continuity:
+
+`requirement → decision → realization → configuration → validated result`.
+
+When the consumer has a domain-specific semantic contract, preserve that ownership and connect it to common infrastructure without transferring semantic authority to a generic router.
+
+Negative evidence is reusable: an Ollama-specific parameter may improve one realization while leaving the universal mechanism gap untouched.

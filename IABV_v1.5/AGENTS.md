@@ -446,3 +446,17 @@ Required sequence:
 `required capability → response contract → current constraints → candidate realizations → selection/configuration → validated result → fallback/degradation → future evidence`.
 
 Provider-specific knobs are realization details. Before implementation, prove which existing organ owns each edge and whether the change closes a real cross-organ gap without duplicating decision authority.
+## 2026-10-03 ACTIVE EVOLUTION RULE — INDEPENDENT CONTRACT CONFIRMATION BEFORE IMPLEMENTATION
+
+After source archaeology identifies a cross-organ gap, obtain independent contract verification before implementation when the proposed change could affect shared routing/decision ownership.
+
+For BIO-04, treat the independent confirmation as closure of the architectural-question stage, not closure of runtime behavior.
+
+Implementation must:
+- reuse existing owners;
+- keep OSES semantic contract ownership explicit;
+- keep provider-specific translation in adapters;
+- avoid promoting a narrower selector to universal authority without evidence;
+- add only the smallest contract/wiring necessary;
+- verify structured response validity and fallback behavior;
+- remain universal across local and cloud realizations.

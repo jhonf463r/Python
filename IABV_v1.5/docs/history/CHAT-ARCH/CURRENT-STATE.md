@@ -2634,3 +2634,33 @@ Current diagnosis also reinforces:
 
 BIO-04 first open architectural edge:
 `OSES task/output contract → common provider selection/configuration seam`.
+## 2026-10-03 ACTIVE OVERLAY — BIO-04 UNIVERSAL INFERENCE CONTRACT CONFIRMED
+
+Independent Sonnet audit confirmed the source-level classification `UNIVERSAL GAP CONFIRMED` at code SHA `d1a55897bf7f758914b8237d48ae43f245f06592`.
+
+### Reconciled boundary
+
+The missing continuity is:
+
+`OSES requirements/output contract → common inference selection/configuration → realization-specific adapter → response validation → contract-preserving fallback`.
+
+Existing owners remain complementary:
+- OSES owns task semantics and consumer-required output meaning.
+- `InferenceRequest` carries partial common requirements.
+- `ProviderRouter` owns common provider routing/execution.
+- `AdaptiveModelSelector` owns a narrower cloud/model selection capability and must not be promoted automatically to universal authority.
+- adapters translate universal requirements to realization-specific parameters.
+- response validation belongs at the consumer contract boundary or a proven common validator.
+
+### Important negative knowledge
+
+A provider-specific `max_tokens`, `think`, timeout, model, or endpoint change is NOT yet justified as the universal solution.
+
+Do not turn `Ollama) behavior into a special-case algorithm.
+
+### Current first open edge
+
+`OSES task/output requirements → common selection/configuration seam`
+
+Implementation must follow a reconciled ownership specification and remain minimal. Runtime learning closure remains blocked behind this edge and subsequent real execution.
+
