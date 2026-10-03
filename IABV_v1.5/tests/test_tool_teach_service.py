@@ -111,6 +111,300 @@ def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: 
     return service, repository
 
 
+def _record_verified_tool_experience(
+    service: ToolTeachService,
+    *,
+    scope: str,
+    candidate_id: str = 'shell_command',
+    capability_id: str = 'source.inspect',
+    success: bool = True,
+    verdict: str = 'verified',
+    attribution: str = 'directly_attributable',
+    evidence_refs: list[str] | None = None,
+) -> str:
+    execution_id = str(uuid4())
+    evidence = ['evidence://verified-run'] if evidence_refs is None else evidence_refs
+    verification = {
+        'execution_id': execution_id,
+        'expectation': {'kind': 'window_present', 'title': 'test effect', 'correlation_id': 'test-marker', 'correlation_field': 'marker'},
+        'baseline': {'source': 'independent-test-observer', 'satisfied': False},
+        'observation': {
+            'source': 'independent-test-observer',
+            'satisfied': True,
+            'matches': [{'marker': 'test-marker'}],
+            'evidence_ref': evidence[0] if evidence else '',
+            'caused_by_execution_id': None,
+        },
+        'verdict': verdict,
+        'attribution': attribution,
+        'evidence_refs': evidence,
+    }
+    run, _ = service.experiment_lab.record_outcome(
+        domain=ExperimentDomain.CODE,
+        objective='Inspect source for a requested capability',
+        subject_key=scope,
+        route=EvaluationRoute.CODE_AGENT,
+        candidate_label=candidate_id,
+        candidate_id=candidate_id,
+        success=success,
+        observed_summary='Independent operational verification passed',
+        expected_summary='Expected source inspection completed',
+        evidence_refs=evidence,
+        suite_name='verified_operational_outcome',
+        metadata={
+            'comparison_scope_key': scope,
+            'capability_id': capability_id,
+            'tool_capabilities': [capability_id],
+            'tool_id': candidate_id,
+            'operational_outcome': True,
+            'operational_execution_id': execution_id,
+            'verification_verdict': verdict,
+            'attribution': attribution,
+            'verification': verification,
+        },
+    )
+    return run.run_id
+
+
+def _generic_capability_request(scope: str, capability_id: str = 'source.inspect') -> InferenceRequest:
+    return InferenceRequest(
+        user_goal='Inspect the source repository',
+        task_role=TaskRole.TOOL_USE,
+        goal_parameters={
+            'task_id': scope,
+            'required_capability_id': capability_id,
+            'allowed_tool_ids': ['shell_command', 'playwright_browser'],
+            'execution_scope': 'read_only',
+        },
+    )
+
+
+def _create_equivalent_test_candidates(service: ToolTeachService, repository: ToolRecordRepository) -> None:
+    shell = repository.get_card('shell_command')
+    assert shell is not None
+    for tool_id in ('tool_a', 'tool_b'):
+        repository.save_card(shell.model_copy(update={
+            'tool_id': tool_id,
+            'title': tool_id,
+            'capabilities': ['source.inspect'],
+            'success_count': 0,
+            'failure_count': 0,
+        }))
+        service.registry.invalidate_availability_cache(tool_id)
+
+
+def _equivalent_candidates_request(*, scope: str, preferred: str = '') -> InferenceRequest:
+    parameters = {
+        'task_id': scope,
+        'required_capability_id': 'source.inspect',
+        'allowed_tool_ids': ['tool_a', 'tool_b'],
+        'execution_scope': 'read_only',
+    }
+    if preferred:
+        parameters['tool_id'] = preferred
+    return InferenceRequest(user_goal='Inspect workspace state', task_role=TaskRole.TOOL_USE, goal_parameters=parameters)
+
+
+def _give_two_tools_same_capability(service: ToolTeachService, repository: ToolRecordRepository) -> None:
+    for tool_id in ('shell_command', 'playwright_browser'):
+        card = repository.get_card(tool_id)
+        assert card is not None
+        repository.save_card(card.model_copy(update={'capabilities': ['source.inspect']}))
+        service.registry.invalidate_availability_cache(tool_id)
+
+
+def test_generic_selector_receives_scoped_verified_operational_experience_by_tool_identity() -> None:
+    root = _workspace('generic_selector_operational_experience')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+        run_id = _record_verified_tool_experience(service, scope='generic_scope')
+
+        task = service.build_task_from_request(_generic_capability_request('generic_scope'))
+        ranking = task.metadata['mode_selection']['metadata']['candidate_ranking']
+        experience_by_candidate = {item['tool_id']: item['verified_operational_experience_ids'] for item in ranking}
+
+        assert task.metadata['comparison_scope_key'] == 'generic_scope'
+        assert experience_by_candidate['shell_command'] == [run_id]
+        assert experience_by_candidate['playwright_browser'] == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_generic_selector_does_not_consume_verified_experience_from_another_scope() -> None:
+    root = _workspace('generic_selector_experience_scope_mismatch')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+        _record_verified_tool_experience(service, scope='prior_scope')
+
+        task = service.build_task_from_request(_generic_capability_request('future_scope'))
+        ranking = task.metadata['mode_selection']['metadata']['candidate_ranking']
+
+        assert task.metadata['comparison_scope_key'] == 'future_scope'
+        assert all(not item['verified_operational_experience_ids'] for item in ranking)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_generic_selector_does_not_consume_experience_for_another_capability() -> None:
+    root = _workspace('generic_selector_experience_capability_mismatch')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+        _record_verified_tool_experience(service, scope='generic_scope', capability_id='source.write')
+
+        task = service.build_task_from_request(_generic_capability_request('generic_scope', capability_id='source.inspect'))
+        ranking = task.metadata['mode_selection']['metadata']['candidate_ranking']
+
+        assert task.metadata['comparison_scope_key'] == 'generic_scope'
+        assert all(not item['verified_operational_experience_ids'] for item in ranking)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_generic_selector_uses_existing_capability_readiness_context() -> None:
+    root = _workspace('generic_selector_capability_readiness')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+        run_id = _record_verified_tool_experience(service, scope='generic_scope')
+        request = _generic_capability_request('generic_scope')
+        request = request.model_copy(
+            update={
+                'goal_parameters': {
+                    key: value for key, value in request.goal_parameters.items()
+                    if key not in {'required_capability_id', 'capability_id'}
+                },
+                'metadata': {'capability_readiness': [{'capability_id': 'source.inspect'}]},
+            }
+        )
+
+        task = service.build_task_from_request(request)
+        ranking = task.metadata['mode_selection']['metadata']['candidate_ranking']
+        experience_by_candidate = {item['tool_id']: item['verified_operational_experience_ids'] for item in ranking}
+
+        assert experience_by_candidate['shell_command'] == [run_id]
+        assert experience_by_candidate['playwright_browser'] == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_verified_experience_is_a_bounded_candidate_specific_score_component() -> None:
+    root = _workspace('generic_selector_experience_score_components')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+        _record_verified_tool_experience(service, scope='generic_scope')
+
+        task = service.build_task_from_request(_generic_capability_request('generic_scope'))
+        components = {
+            item['tool_id']: item['score_components']
+            for item in task.metadata['mode_selection']['metadata']['candidate_ranking']
+        }
+
+        assert components['shell_command']['verified_experience_signal'] == 0.5
+        assert components['shell_command']['verified_experience_score'] == 0.4
+        assert components['playwright_browser']['verified_experience_signal'] == 0.0
+        assert components['playwright_browser']['verified_experience_score'] == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_unverified_or_unsuccessful_runs_do_not_increase_candidate_score() -> None:
+    root = _workspace('generic_selector_unverified_experience')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+        _record_verified_tool_experience(service, scope='generic_scope', verdict='observation_only')
+        _record_verified_tool_experience(service, scope='generic_scope', attribution='temporally_associated')
+        _record_verified_tool_experience(service, scope='generic_scope', success=False)
+        _record_verified_tool_experience(service, scope='generic_scope', evidence_refs=[])
+
+        task = service.build_task_from_request(_generic_capability_request('generic_scope'))
+        components = [item['score_components'] for item in task.metadata['mode_selection']['metadata']['candidate_ranking']]
+
+        assert all(item['verified_experience_signal'] == 0.0 for item in components)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_unavailable_candidate_cannot_receive_verified_experience_signal() -> None:
+    root = _workspace('generic_selector_unavailable_experience')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+        _record_verified_tool_experience(service, scope='generic_scope')
+        service.registry.adapters['shell'] = FakeToolAdapter(ToolType.SHELL, available=False)
+        service.registry.invalidate_availability_cache('shell_command')
+
+        task = service.build_task_from_request(_generic_capability_request('generic_scope'))
+        ranking = {item['tool_id']: item for item in task.metadata['mode_selection']['metadata']['candidate_ranking']}
+
+        assert ranking['shell_command']['score_components']['availability'] == 0.0
+        assert ranking['shell_command']['score_components']['verified_experience_signal'] == 0.0
+        assert ranking['shell_command']['score_components']['verified_experience_score'] == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_no_experience_keeps_the_existing_candidate_score_unchanged() -> None:
+    root = _workspace('generic_selector_no_experience_regression')
+    try:
+        service, repository = _service(root)
+        _give_two_tools_same_capability(service, repository)
+
+        task = service.build_task_from_request(_generic_capability_request('empty_scope'))
+        ranking = task.metadata['mode_selection']['metadata']['candidate_ranking']
+
+        assert all(item['score_components']['verified_experience_signal'] == 0.0 for item in ranking)
+        assert all(item['score_components']['verified_experience_score'] == 0.0 for item in ranking)
+        for item in ranking:
+            components = item['score_components']
+            expected = (
+                components['availability'] * 2.2
+                + components['adapter_exists'] * 0.8
+                + components['stability'] * 1.5
+                + components['cost'] * 0.8
+                + components['risk'] * 1.2
+                + components['latency'] * 0.8
+                + components['frequency'] * 0.6
+                + components['learned_pattern'] * 1.8
+                + components['desired_match'] * 1.4
+                + components['suggested_match'] * 0.5
+                + components['resolved_bonus'] * 0.8
+                + components['affinity'] * 1.6
+                + components['quota'] * 1.4
+            )
+            assert item['score'] == round(expected, 4)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_generic_selection_order_can_change_from_verified_candidate_experience() -> None:
+    root = _workspace('generic_selector_verified_experience_ranking_effect')
+    try:
+        service, repository = _service(root)
+        _create_equivalent_test_candidates(service, repository)
+        request = _equivalent_candidates_request(scope='ranking_scope', preferred='tool_b')
+        pre = service.build_task_from_request(request)
+        pre_ranking = pre.metadata['mode_selection']['metadata']['candidate_ranking']
+
+        _record_verified_tool_experience(service, scope='ranking_scope', candidate_id='tool_a')
+        _record_verified_tool_experience(service, scope='ranking_scope', candidate_id='tool_a')
+        post = service.build_task_from_request(request)
+        post_ranking = post.metadata['mode_selection']['metadata']['candidate_ranking']
+
+        assert pre.tool_id == 'tool_b'
+        assert post.tool_id == 'tool_a'
+        assert pre_ranking[0]['score'] >= pre_ranking[1]['score']
+        assert post_ranking[0]['tool_id'] == 'tool_a'
+        assert post_ranking[0]['score_components']['verified_experience_signal'] > 0.0
+        assert post_ranking[0]['verified_operational_experience_ids']
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_tool_teach_service_preserves_tool_sandbox_route_and_executes_read_only() -> None:
     root = _workspace('tool_teach_service_read_only')
     shutil.rmtree(root, ignore_errors=True)

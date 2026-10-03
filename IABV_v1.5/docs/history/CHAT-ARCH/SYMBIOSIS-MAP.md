@@ -1836,3 +1836,16 @@ The focused integrated test confirms the producer-to-ExperimentLab persistence s
 
 Next frontier:
 `semantic persisted experience → real future lookup/consumption`.
+
+## 2026-10-02 SYMBIOSIS UPDATE — BIO-04 GENERIC SELECTOR CONTEXT
+
+Generic selection now reads exact-scope verified operational runs from ExperimentLab and passes them into `InteractionModeSelector` as candidate-specific context. Candidate identity remains the concrete ToolCard `tool_id`; required capability remains a separate semantic filter. Tests establish separation for two tools sharing one capability and prevent cross-scope reuse. This bridge does not yet change the ranking or selected tool.
+
+Next frontier:
+`generic selector receives semantic experience → actual selection outcome changes because of that evidence`.
+
+## 2026-10-02 SYMBIOSIS UPDATE — BIO-04 CANDIDATE SCORE SIGNAL
+
+The generic selector now adds a bounded score component from matching, verified operational run support. Identity is the current ToolCard `tool_id`; scope and capability are checked before scoring. The term is zero for unavailable/no-adapter candidates and leaves all preexisting score factors intact. Unit tests show the signal can alter ordering under a controlled fixture. No runtime learning claim follows from those fixtures.
+
+The requested PRE/LEARN/POST runtime did not start: Windows preflight was below the allowed resource threshold. The next frontier is a real persisted verified outcome changing a later generic candidate ranking under matched task semantics, followed by independent verification.

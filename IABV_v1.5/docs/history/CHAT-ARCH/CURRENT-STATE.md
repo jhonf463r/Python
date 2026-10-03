@@ -2574,3 +2574,21 @@ Focused source/test proof: `test_verified_operational_outcome_seams.py` and `tes
 Closed for this bounded slice: `verified operational outcome → semantically comparable persisted experience`.
 
 First remaining causal edge: `semantic persisted experience → real future lookup/consumption`. Changed selection and future-decision influence remain open.
+
+## 2026-10-02 ACTIVE OVERLAY — BIO-04 GENERIC SELECTOR EXPERIENCE TRANSPORT
+
+On canonical remote base `27c5f19ce25bfced5a0e1acfa3261643e4171691`, generic `ToolTeachService.build_task_from_request() → _select_mode() → InteractionModeSelector.select()` now looks up verified operational ExperimentRuns by the request's existing `comparison_scope_key` when a required capability is present in goal parameters or existing capability-readiness context. `build_task_for_session()` carries its existing `CapabilityReadiness` values into that request context. The bridge accepts only successful `verified_operational_outcome` runs with evidence, direct attribution, matching capability semantics, and stable candidate identity. `InteractionModeSelector` associates the run ID only with the matching current ToolCard `tool_id` that still declares a stored tool capability, exposing that context in its per-candidate ranking metadata. Existing external-assistant recommendation behavior and candidate restrictions are unchanged.
+
+Focused tests prove exact-scope lookup/transport, Tool A versus Tool B identity isolation when both implement the same capability, and rejection of a different scope. Selector tests pass. This is source/test evidence only: no production runtime or PRE/LEARN/POST experiment was run, and no selection-score or winning-candidate change is claimed.
+
+Closed for this slice: `verified semantic persisted experience → generic future selector receives candidate-specific context`.
+
+Next frontier: `generic selector receives semantic experience → actual selection outcome changes because of that evidence`, followed by independent verification. No future-decision influence is yet established.
+
+## 2026-10-02 ACTIVE OVERLAY — BIO-04 VERIFIED EXPERIENCE SCORE SIGNAL
+
+Local changes on branch `codex/bio04-verified-outcome-seams-20261002` add a candidate-specific `verified_experience_signal = n/(n+1)` over distinct retrieved verified operational run IDs, with zero for ineligible candidates and a maximum score contribution of 0.8. The run-count signal consumes only successful, evidence-bearing `verified_operational_outcome` runs whose verdict is `verified`, attribution is `directly_attributable`, scope and capability match, and `candidate_id` matches the current ToolCard `tool_id`. The experience term is added to, not substituted for, the existing selector factors. Current availability and adapter gates suppress the term; allowed candidate filtering remains upstream.
+
+Focused unit tests pass (9 generic path cases and 6 InteractionModeSelector cases), including an ordering change with isolated test-persisted runs. This establishes code-path score/ranking influence under controlled fixtures only; those fixtures are not operational learning evidence. No PRE/LEARN/POST runtime was performed. Runtime preflight on Windows 11 (`MSI`, 10.0.26300) measured 3,339.4 MB free and 79.24% used, below the clean-room execution requirement; the runtime experiment is blocked and no action was started.
+
+Code/test frontier: `verified experience → bounded candidate score signal → generic ranking` is closed for the tested conditions. Runtime frontier remains: `real verified LEARN outcome → PRE/POST ranking difference → independent causal verification`.

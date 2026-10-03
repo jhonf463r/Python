@@ -2057,3 +2057,21 @@ Still unresolved:
 - whether a future consumer compares different `tool_id` realizations within a capability rather than grouping only by route/assistant/configuration;
 - subsequent selector/decision change caused by retrieved experience;
 - broad capability/observer coverage and the separate scientific BIO-04 claim/artifact track.
+
+## 2026-10-02 — BIO-04 GENERIC SELECTOR TRANSPORT UPDATE
+
+The first two bullets above are closed for the tested source/test path: generic `ToolTeachService._select_mode()` performs exact `comparison_scope_key` retrieval and `InteractionModeSelector` receives verified run IDs keyed to the matching ToolCard `tool_id`, with capability matching preserved separately. Focused tests verify same-capability candidate isolation and scope mismatch rejection. This is not production runtime evidence.
+
+Still open:
+- whether this received evidence changes the generic selector's actual ranking or selected realization;
+- independent verification of such a changed decision;
+- broad capability/observer coverage and the separate scientific BIO-04 claim/artifact track.
+
+## 2026-10-02 — BIO-04 CANDIDATE SCORE SIGNAL UPDATE
+
+Source and focused tests now establish a bounded candidate-specific score term, and a controlled unit fixture changes candidate ordering. This does not establish real operational influence because the positive run in that ranking test is test-persisted. The requested PRE/LEARN/POST run is blocked before execution by host preflight (3,339.4 MB free; 79.24% memory used). No runtime action occurred.
+
+Still unresolved:
+- real verified operational experience causing a later generic ranking difference;
+- independent verification of the real PRE/POST causal attribution;
+- broad capability/observer coverage and the separate scientific BIO-04 claim/artifact track.

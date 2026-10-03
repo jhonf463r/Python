@@ -31,9 +31,14 @@ class _CandidateAssessment:
     already_resolved: bool = False
     improvement_already_implemented: bool = False
     quota_status: str = 'unknown'
+    operational_experience_ids: list[str] = field(default_factory=list)
 
 
 class InteractionModeSelector:
+    # The total experience term is capped at the existing adapter factor and
+    # remains below the availability factor; individual runs have diminishing returns.
+    _VERIFIED_EXPERIENCE_MAX_SCORE = 0.8
+
     def __init__(self, registry: ToolRegistry, repository: ToolRecordRepository):
         self.registry = registry
         self.repository = repository
@@ -46,6 +51,7 @@ class InteractionModeSelector:
         suggested_tool_id: str | None = None,
         allowed_tool_ids: list[str] | None = None,
         worker_pool: dict[str, Any] | None = None,
+        operational_experiences: list[Any] | None = None,
     ) -> ModeSelectionDecision:
         desired_modes = self._desired_modes(request)
         cards = [self.registry.refresh_card(item) for item in self.registry.list_cards()]
@@ -64,7 +70,7 @@ class InteractionModeSelector:
             return preferred_external
         task_kind = self._detect_task_kind(request)
         assessments = [
-            self._assess_candidate(card=item, request=request, draft_task=draft_task, suggested_tool_id=suggested_tool_id, desired_modes=desired_modes, task_kind=task_kind, worker_pool=worker_pool)
+            self._assess_candidate(card=item, request=request, draft_task=draft_task, suggested_tool_id=suggested_tool_id, desired_modes=desired_modes, task_kind=task_kind, worker_pool=worker_pool, operational_experiences=operational_experiences)
             for item in cards
         ]
         assessments.sort(key=lambda item: item.total_score, reverse=True)
@@ -87,6 +93,8 @@ class InteractionModeSelector:
                     'tool_id': item.card.tool_id,
                     'mode': item.mode.value,
                     'score': round(item.total_score, 4),
+                    'verified_operational_experience_ids': list(item.operational_experience_ids),
+                    'score_components': dict(item.scores),
                 }
                 for item in assessments[:5]
             ],
@@ -206,6 +214,7 @@ class InteractionModeSelector:
         desired_modes: list[InteractionMode],
         task_kind: str = '',
         worker_pool: dict[str, Any] | None = None,
+        operational_experiences: list[Any] | None = None,
     ) -> _CandidateAssessment:
         mode = self._mode_for_tool(card.tool_type)
         goal = request.user_goal.lower()
@@ -233,6 +242,29 @@ class InteractionModeSelector:
         resolution_bonus = 1.0 if already_resolved else 0.0
         affinity = self._affinity_score(card, task_kind)
         quota = self._quota_score(card, worker_pool)
+        experience_ids = [
+            str(run.run_id)
+            for run in (operational_experiences or [])
+            if (
+                str(run.candidate_id or dict(run.metadata or {}).get('tool_id') or '').strip() == card.tool_id
+                and bool(
+                    {
+                        str(dict(run.metadata or {}).get('capability_id') or '').strip(),
+                        *(str(item).strip() for item in (dict(run.metadata or {}).get('required_action_types') or [])),
+                        *(str(item).strip() for item in (dict(run.metadata or {}).get('tool_capabilities') or [])),
+                    }
+                    & {str(item).strip() for item in card.capabilities}
+                )
+            )
+        ]
+        unique_experience_count = len(set(experience_ids))
+        eligible_for_experience = bool(availability and adapter_exists)
+        verified_experience_signal = (
+            unique_experience_count / (unique_experience_count + 1.0)
+            if eligible_for_experience and unique_experience_count
+            else 0.0
+        )
+        verified_experience_score = self._VERIFIED_EXPERIENCE_MAX_SCORE * verified_experience_signal
         total_score = (
             availability * 2.2
             + adapter_exists * 0.8
@@ -247,6 +279,7 @@ class InteractionModeSelector:
             + resolution_bonus * 0.8
             + affinity * 1.6
             + quota * 1.4
+            + verified_experience_score
         )
         quota_status = self._quota_status_label(card, worker_pool)
         reason_bits = [
@@ -260,6 +293,7 @@ class InteractionModeSelector:
             f'patron={learned_pattern:.2f}',
             f'afinidad={affinity:.2f}',
             f'cuota={quota:.2f}',
+            f'experiencia_verificada={verified_experience_signal:.2f}',
         ]
         if task_kind:
             reason_bits.append(f'task_kind={task_kind}')
@@ -288,6 +322,8 @@ class InteractionModeSelector:
                 'resolved_bonus': resolution_bonus,
                 'affinity': affinity,
                 'quota': quota,
+                'verified_experience_signal': verified_experience_signal,
+                'verified_experience_score': verified_experience_score,
             },
             total_score=total_score,
             reason=' | '.join(reason_bits),
@@ -297,6 +333,7 @@ class InteractionModeSelector:
             equivalent_pattern_exists=equivalent_pattern_exists,
             already_resolved=already_resolved,
             improvement_already_implemented=improvement_already_implemented,
+            operational_experience_ids=experience_ids,
         )
 
     def _desired_modes(self, request: InferenceRequest) -> list[InteractionMode]:

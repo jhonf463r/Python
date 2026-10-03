@@ -20,6 +20,7 @@ from iabv_v15.domain.models import (
     InteractionMode,
     InteractionPattern,
     ModeSelectionDecision,
+    PostconditionVerification,
     ReasoningMode,
     ReportKind,
     RoleRoute,
@@ -674,7 +675,13 @@ class ToolTeachService:
             task_role=session.intent.detected_role,
             goal_parameters=goal_parameters,
             site_hint=session.intent.site_hint,
-            metadata={'adaptive_session_id': session.session_id},
+            metadata={
+                'adaptive_session_id': session.session_id,
+                'capability_readiness': [
+                    item.model_dump(mode='json') if hasattr(item, 'model_dump') else dict(item)
+                    for item in (session.capability_readiness or [])
+                ],
+            },
         )
         task = self.build_task_from_request(request)
         return task.model_copy(
@@ -1223,12 +1230,82 @@ class ToolTeachService:
         allowed_tool_ids = [str(item) for item in (request.goal_parameters.get('allowed_tool_ids') or []) if str(item)]
         if not allowed_tool_ids and request.task_role == TaskRole.TOOL_SANDBOX and suggested_tool_id:
             allowed_tool_ids = [suggested_tool_id]
-        return self.mode_selector.select(
+        operational_experiences = self._generic_operational_experiences(
+            request=request,
+            scope_key=self._comparison_scope_key(
+                user_goal=request.user_goal,
+                site_id=site_id,
+                goal_parameters=dict(request.goal_parameters or {}),
+                metadata=dict(request.metadata or {}),
+            ),
+        )
+        selector_kwargs = dict(
             request=request,
             draft_task=draft_task,
             suggested_tool_id=suggested_tool_id,
             allowed_tool_ids=allowed_tool_ids or None,
         )
+        if operational_experiences:
+            selector_kwargs['operational_experiences'] = operational_experiences
+        return self.mode_selector.select(**selector_kwargs)
+
+    def _generic_operational_experiences(self, *, request: InferenceRequest, scope_key: str) -> list[Any]:
+        """Load verified, capability-matched tool outcomes for generic selection context."""
+        if self.experiment_lab is None or not scope_key:
+            return []
+        goal_parameters = dict(request.goal_parameters or {})
+        capability_ids = {
+            str(value).strip()
+            for value in (
+                goal_parameters.get('required_capability_id'),
+                goal_parameters.get('capability_id'),
+                *(goal_parameters.get('required_capabilities') or []),
+                *(item.get('capability_id') for item in (request.metadata or {}).get('capability_readiness', []) if isinstance(item, dict)),
+            )
+            if str(value or '').strip()
+        }
+        if not capability_ids:
+            return []
+        repository = self.experiment_lab.repository
+        list_by_scope = getattr(repository, 'list_runs_by_scope_key', None)
+        if not callable(list_by_scope):
+            return []
+        try:
+            runs = list_by_scope(scope_key, limit=20)
+        except Exception:
+            return []
+        experiences = []
+        for run in runs:
+            metadata = dict(run.metadata or {})
+            try:
+                verification = PostconditionVerification.model_validate(metadata.get('verification') or {})
+            except Exception:
+                continue
+            run_capabilities = {
+                str(metadata.get('capability_id') or '').strip(),
+                *(str(item).strip() for item in (metadata.get('required_action_types') or [])),
+                *(str(item).strip() for item in (metadata.get('tool_capabilities') or [])),
+            }
+            candidate_id = str(run.candidate_id or metadata.get('tool_id') or '').strip()
+            if (
+                not candidate_id
+                or not (capability_ids & run_capabilities)
+                or not run.success
+                or str(run.suite_name or '') != 'verified_operational_outcome'
+                or not run.evidence_refs
+                or not metadata.get('operational_outcome')
+                or str(metadata.get('verification_verdict') or '').strip().lower() != 'verified'
+                or str(metadata.get('attribution') or '').strip().lower() != 'directly_attributable'
+                or verification.execution_id != str(metadata.get('operational_execution_id') or '').strip()
+                or verification.verdict != 'verified'
+                or verification.attribution != 'directly_attributable'
+                or verification.baseline.satisfied
+                or not verification.observation.satisfied
+                or not verification.evidence_refs
+            ):
+                continue
+            experiences.append(run)
+        return experiences
 
     def _synaptic_decision_for_request(self, request: InferenceRequest) -> dict[str, Any]:
         if self.synaptic_router is None:
