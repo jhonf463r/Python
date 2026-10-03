@@ -3183,3 +3183,27 @@ Audit input:
 The verifier must challenge exact source support, publication status, quantitative metrics, experimental conditions, control efficacy, competing explanations and the residual frontier.
 
 No implementation or IABV policy selection in this audit.
+
+## 2026-10-03 METHOD CORRECTION — CONCRETE IA DESTINATION IS MANDATORY
+
+The collaboration protocol is refined:
+
+`next capability` is not enough.
+
+For every open edge that is actionable now, the human-facing routing output must explicitly state:
+
+**IA DESTINO:** concrete AI/actor or execution surface.
+
+Then state:
+**CAPABILITY**
+**FIRST OPEN EDGE**
+**WHY THIS IA NOW**
+**COMPLETE PROMPT / ACTION**
+
+This preserves dynamic capability-fit routing while preventing an unusable abstract handoff.
+
+Current application:
+**IA DESTINO: Claude Sonnet**
+**CAPABILITY: independent source/evidence verification**
+**FIRST OPEN EDGE: M2 source/claim integrity**
+**WHY NOW: material M2 evidence exists, but has not yet passed independent audit**
