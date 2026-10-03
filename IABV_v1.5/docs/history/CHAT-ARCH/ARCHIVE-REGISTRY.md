@@ -822,3 +822,13 @@ Canonical M1 remains `BROWSE_2026-10-03_BIO-04-A-M1_001` and status remains `CAN
 Knowledge/provenance lesson: `reported execution identity != verified canonical execution identity` until direct evidence reconciles the two.
 
 Next BIO-04 frontier remains `agentic AI / runtime disclosure`; no M2 execution is canonically established by this receipt.
+
+## 2026-10-03 — BIO-04 STAGE-A M2 RESEARCH CONTRACT
+
+Source contract: `BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-10-03.md`.
+Purpose: external scientific/technical research of runtime disclosure and information propagation mechanisms in contemporary LLM/agentic systems, following corrected M1 knowledge.
+
+Status: `PLANNED / NOT YET EXECUTED`.
+Planned execution ID: `BROWSE_2026-10-03_BIO-04-A-M2_001`.
+
+Do not treat the contract as execution evidence. Preserve actual execution receipt separately and require independent source/evidence adjudication before canonical absorption.
