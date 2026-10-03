@@ -2886,24 +2886,55 @@ Current methodological negative knowledge:
 This is a method/knowledge artifact, not proof of future causal learning by IABV. A later episode must actually consume it and change prompt construction or routing for the intended reason before claiming causal developmental learning.
 
 
-## 2026-10-03 BIO-04 STAGE-A M1 — ADJUDICATED
+## 2026-10-03 BIO-04 STAGE-A M1 — SOURCE-AUDIT RECONCILIATION
 
-Canonical record:
+Canonical records:
 `CHAT-ARCH-2026-10-03-010-bio04-stageA-M1-adjudication.md`
+`CHAT-ARCH-2026-10-03-011-bio04-stageA-M1-source-audit-reconciliation.md`
 
 Execution:
 `BROWSE_2026-10-03_BIO-04-A-M1_001`
 
-M1 result is **OBJECT-ALIGNED / PROVISIONALLY SOURCE-SUPPORTED / NOT YET CANONICAL SCIENTIFIC KNOWLEDGE**.
+Independent source audit:
+`AUDIT_2026-10-03_BIO-04-A-M1_001`
 
-The substantive object was correctly preserved: Contextual Integrity, privacy engineering/NIST, purpose, minimization, sender/recipient/transmission, and information-flow models.
+Status:
+**CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE**
 
-Independent source checks support the central Nissenbaum/Barth/NIST backbone. One material wording correction is required: the Barth et al. formalization does not make purpose a primitive field of the basic communication tuple, but it does explicitly use purpose in policy consistency and shows how purpose-specific policies can be represented. Therefore do not claim that Contextual Integrity simply cannot represent purpose.
+The independent audit classified the returned M1 as PARTIALLY-VERIFIED. OBJECT ALIGNMENT and REQUIRED COVERAGE passed. The remaining issue was source granularity and over-broad wording, not a failure of the research object.
 
-NIST PF 1.1 remains an Initial Public Draft in the current NIST material; it explicitly addresses purposes, data elements, processing environments, contextual factors, limiting inference, and transmission of processing permissions.
+Primary-source closure performed after the audit:
+- Nissenbaum 2004 primary text confirms contextual integrity as a privacy benchmark tied to context-specific informational norms of appropriateness and flow/distribution.
+- NIST PF 1.0 official material confirms it is voluntary; the current NIST framework page states its contents do not have the force and effect of law.
+- NIST PF 1.0 Core confirms data minimization as a privacy principle and includes CT.DM-P7 on transmitting processing permissions with data elements.
+- Current official NIST material still presents PF 1.1 as an Initial Public Draft / coming-soon version; do not label it final without newer official evidence.
 
-Prompt-construction learning has been canonically persisted separately. M1 demonstrates that bounded object + thread decomposition + source contract + acceptance gates can materially reduce semantic drift, but it does not by itself prove causal learning by IABV.
+Required claim corrections:
+- purpose is not a primitive parameter of the Barth basic communication tuple, but purpose appears in the broader contextual/policy treatment and purpose-specific simulation;
+- do not attribute an unverified five-parameter list to Nissenbaum 2004;
+- do not equate NIST's ID.RA-P1 use of "contextual" with Contextual Integrity;
+- do not equate NIST CT.DM-P7/P8 transmission mechanisms with CI normative transmission principles;
+- restrict the RBAC insufficiency claim to the basic RBAC comparison in Barth;
+- do not call minimization a CI principle or claim that contextual minimization was established by Barth;
+- illustrative privacy examples are not empirical findings.
 
-Current BIO-04 scientific frontier remains open. Candidate remaining external-science modules: agentic-AI/runtime disclosure; metadata/inference/composition risk; transformations; authorization/consent and processing-vs-transmission; unknown/failure behavior; locality/trust boundaries; lifecycle/retention/secondary use.
+Accepted scientific Knowledge Delta:
+- privacy analysis of information transfer cannot be reduced to binary public/private classification;
+- Contextual Integrity evaluates information flows against norms of the relevant context, including appropriateness and flow/distribution;
+- sender, recipient, subject/role and transmission conditions are important dimensions of contextualized flow analysis;
+- purpose requires a qualified treatment rather than an absolute absence claim;
+- NIST PF 1.0 provides voluntary privacy-risk guidance and explicitly contains data minimization, processing-permission transmission, local-device processing and inference-limitation mechanisms;
+- PF 1.1 must currently be labeled IPD / coming-soon from official NIST evidence;
+- external frameworks do not automatically define an IABV/OSES machine-enforceable transmission policy.
 
-Next actor for M1 adjudication: **SONNET/CLAUDE-CLASS independent source/claim verifier**. No implementation actor is authorized by this result.
+Still open:
+agentic-AI/runtime disclosure; metadata and inference/composition risk; transformations; authorization/consent; unknown/failure behavior; locality/trust boundaries; lifecycle/retention/secondary use; and current IABV compliance with any external framework.
+
+The canonical unit is the corrected claim set, not the unmodified report.
+
+Next BIO-04 frontier must be recomputed from current uncertainty. Current candidate with direct relevance to OSES is:
+**agentic AI / runtime disclosure** — privacy leakage, over-disclosure, context propagation, tool-call disclosure, memory exposure and inter-agent data transfer in contemporary LLM/agent systems.
+
+Next research actor: **Deep Research capability** for bounded external scientific research. After execution, route to an independent source/evidence verifier.
+
+No implementation actor is authorized by this result.
