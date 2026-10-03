@@ -1,5 +1,64 @@
 # IABV v1.5 — CHAT-ARCH Current State Reconciliation
 
+## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
+
+**Last reconciled:** 2026-10-03
+**Reason:** human-observed cross-chat routing fragmentation.
+
+### CURRENT OBJECTIVE
+Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
+
+### CURRENT TRUTH
+The repository already contains substantial continuity machinery: README, MEMORY-OPERATING-PROTOCOL, CONTEXT-INDEX, CURRENT-STATE, SYMBIOSIS-MAP, UNRESOLVED-KNOWLEDGE, AI frame-entry and Deep Research protocols, plus many objective-specific source records.
+
+However, reliable retrieval across the whole field is **NOT PROVEN**. R34 proved bounded blind reconstruction in one tested case, not general reliable relevant-delta recall across arbitrary new chats.
+
+### MATERIAL NEW FINDING
+The archive contains many historical routing statements and overlapping protocol/addendum layers. The search surface currently exposes dozens of files containing historical `Next actor` / `Current next actor` language and multiple active-overlay / entry instructions.
+
+The risk is:
+`relevant document found != complete current frame reconstructed`.
+
+### SINGLE ROUTING SPINE
+Only this top-level snapshot is allowed to determine the **current** routing decision.
+
+Canonical layer roles:
+- README = entry contract and precedence.
+- CURRENT-STATE top snapshot = current truth + current routing.
+- CONTEXT-INDEX = memory navigation.
+- MEMORY-OPERATING-PROTOCOL = routing/epistemic method.
+- SYMBIOSIS-MAP = capability/method/routing transfer evidence.
+- UNRESOLVED-KNOWLEDGE = open knowledge/pending ideas.
+- historical records = evidence/history, not current routing commands.
+
+Historical `NEXT ACTOR` text remains preserved but is **NON-ROUTABLE HISTORY** unless explicitly promoted through this snapshot.
+
+### CURRENT DOMAIN FRONTIER
+`objective → unified existing-organ self-knowledge retrieval → complete relevant activation → correct current routing`
+
+This is the existing RSK-01 family. No new retrieval brain/service is authorized.
+
+### CURRENT REQUIRED CAPABILITY
+Repository/code architecture archaeology + systemic integration analysis.
+
+### IA DESTINO
+**CODEX**
+
+### WHY THIS IA NOW
+The open uncertainty is source/integration composition: determine how existing memory/index/registry/currentness/provenance organs can produce a complete relevant activation packet and where the first irreducible contract gap is.
+
+### NEXT ACTION
+Read-only RSK-01-A audit of existing-organ composition and coverage.
+
+### HUMAN-AWARE DEVELOPMENTAL FRONTIER
+`protocol-change observation → later contextual consumption → changed future retrieval/routing`
+
+### M2 SCIENTIFIC STATUS
+BIO-04 M2 is **CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE** based on the independent audit, with corrected metrics/provenance and bounded evidence. It does not authorize implementation.
+
+### HARD ROUTING RULE
+A new chat must not select an actor from a historical document before reading this snapshot and reconciling it with the current objective. If this snapshot conflicts with historical `NEXT ACTOR` text, this snapshot wins.
+
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
