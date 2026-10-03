@@ -2120,3 +2120,29 @@ Open edge:
 `OSES requirements/output contract → single existing production ownership boundary for realization selection/configuration + validation/fallback state`.
 
 Do not activate ProviderRouter, promote AdaptiveModelSelector, or create a new orchestrator without evidence that one of these ownership choices is correct.
+
+
+## 2026-10-03 — HUMAN DEEP-WORK / META-CONTROL FRONTIER
+
+A new unresolved methodological frontier is explicit: a collaboration can look intelligent while mechanically inheriting prompts and actor choices from previous reports.
+
+Open questions:
+- Can the protocol expose to the human exactly why the next edge was selected?
+- Can IABV reproduce the same deep-work checks without simply echoing the human's method?
+- Which routine coordination functions can safely migrate from human to IABV?
+- Can a later actor selection be shown to change because of a verified experience rather than because the prompt explicitly named the actor?
+- How should discrepancies between human interpretation, AI interpretation and verified IABV state be represented over one episode?
+
+## 2026-10-03 — BIO-04 GOVERNANCE / SEMANTIC SELECTION FRONTIER
+
+TASK_TYPE_INERT is closed as a selector finding. Semantic suitability remains a missing-data/contract problem. Governance/resource signals provide a smaller existing seam: exclude and world_model can affect candidate eligibility but are not yet passed by current production callers.
+
+Immediate unresolved technical edge: OSES/context governance evidence → upstream gate check → existing selector filter inputs.
+
+Capability-to-realization mapping remains intentionally unresolved and must not be invented before the existing data/owners are reconciled.
+
+## 2026-10-03 — EXTERNAL-AI LEARNING FRONTIER
+
+Future developmental experiment: Codex/Devin episode → verified capability evidence → persistent contextual state → later selection → changed decision.
+
+Still unproven: account/session administration as a reusable capability; authenticated/authorized external-agent management by IABV; later actor selection changed because of learned experience; causal runtime ingestion of the external result into IABV state.
