@@ -460,3 +460,21 @@ Implementation must:
 - add only the smallest contract/wiring necessary;
 - verify structured response validity and fallback behavior;
 - remain universal across local and cloud realizations.
+
+## REGLA OPERATIVA — IA DESTINO OBLIGATORIA
+
+Toda salida de planificación, reconciliación o routing que deje trabajo abierto debe terminar explicitando:
+
+- **IA DESTINO:** nombre/actor concreto al que se debe enviar el siguiente paso;
+- **CAPACIDAD:** por qué esa IA es adecuada;
+- **OBJETIVO DEL RELEVO:** primera arista que debe cerrar;
+- **PROMPT / ACCIÓN:** instrucción completa y copiable;
+- **VERIFICADOR POSTERIOR:** IA siguiente sólo si ya puede determinarse por la frontera actual.
+
+No es suficiente escribir únicamente `capability-fit`, `next actor` o `independent verifier`.
+
+La selección sigue siendo dinámica y nunca una secuencia fija, pero el resultado operativo debe materializarse en una IA concreta:
+
+`objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
+
+Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
