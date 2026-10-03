@@ -3168,3 +3168,18 @@ Immediate next actor:
 **Sonnet / Claude-class independent source-evidence verifier**.
 
 No IABV implementation or policy selection is authorized from M2.
+
+### M2 INDEPENDENT AUDIT GATE
+
+Canonical audit contract:
+`CHAT-ARCH-2026-10-03-015-bio04-stageA-M2-independent-source-audit-contract.md`
+
+Immediate next actor:
+**Sonnet / Claude-class independent source-evidence verifier**.
+
+Audit input:
+`CHAT-ARCH-2026-10-03-014-bio04-stageA-M2-primary-source-research-pass.md`.
+
+The verifier must challenge exact source support, publication status, quantitative metrics, experimental conditions, control efficacy, competing explanations and the residual frontier.
+
+No implementation or IABV policy selection in this audit.
