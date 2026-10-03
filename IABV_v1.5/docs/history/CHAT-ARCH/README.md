@@ -605,3 +605,31 @@ CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md
 Activate it for objectives involving cross-IA symbiosis maturation, human/AI metacognitive coordination, developmental plasticity of methodology and routing, temporal/relational knowledge organization, or whether verified prior experience changes later actor/realization selection.
 
 The record explicitly separates the GitHub-backed shared field from IABV runtime learning and retains the evidence boundary on consciousness/superconsciousness claims.
+
+
+## 2026-10-03 DEEP-RESEARCH PROMPT CONSTRUCTION METHOD — LATEST METHOD DELTA
+
+Canonical reusable protocol:
+`DEEP-RESEARCH-PROMPT-CONSTRUCTION-AND-REUSE-PROTOCOL-2026-10-03.md`
+
+Use this before constructing any future Deep Research request.
+
+The protocol was derived from repeated 2026-09-30–2026-10-03 research failures and the first correctly aligned BIO-04 module result. It establishes that robust research prompting is not primarily a matter of prompt length.
+
+Required construction:
+`objective → exact research object → central discriminating question → scope lock → research-thread decomposition → source strategy → claim/evidence contract → false-positive controls → execution provenance → result signature → acceptance gates → stop conditions`.
+
+Critical durable distinctions:
+- task specification != research object;
+- research methodology != research object;
+- diagnostic != scientific research;
+- research contract != evidence of execution;
+- citation != source verification;
+- report != verified knowledge;
+- IABV context != external scientific evidence.
+
+For complex research, prefer modular research threads over one undifferentiated giant query when modularization increases object preservation and coverage auditability.
+
+Do not automatically copy an old research prompt. Recompute the current research object and first open research edge, then construct the prompt from the reusable protocol.
+
+This record is a methodological memory for future chats. It does not itself prove that a later Deep Research run will comply; every execution still requires object/provenance/result adjudication.
