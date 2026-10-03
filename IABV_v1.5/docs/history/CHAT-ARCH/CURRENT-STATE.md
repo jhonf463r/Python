@@ -2860,3 +2860,27 @@ Research scope includes privacy theory, contextual integrity, privacy engineerin
 Human decision remains downstream of the research. No policy value is selected by the research actor.
 
 Current domain frontier remains request-level OSES policy semantics. Developmental frontier remains whether this scientifically grounded policy decision and later use change the method/routing of a subsequent IABV cycle.
+
+
+## 2026-10-03 ACTIVE OVERLAY — DEEP-RESEARCH PROMPT CONSTRUCTION LEARNING
+
+Canonical reusable record:
+`CHAT-ARCH/DEEP-RESEARCH-PROMPT-CONSTRUCTION-AND-REUSE-PROTOCOL-2026-10-03.md`
+
+The project now treats robust Deep Research prompting as an explicit methodological capability to be preserved for future chats.
+
+Current rule:
+`prompt length` is not the control variable. The research contract must preserve object identity, bounded scope, source/evidence requirements, false-positive controls, execution provenance and acceptance criteria.
+
+For future Deep Research:
+`objective → current uncertainty → exact research object → central discriminating question → in/out scope → bounded search threads → source hierarchy → claim-level evidence contract → false-positive controls → execution identity/provenance → result signature → acceptance gates → stop conditions`.
+
+Use modular research when it materially reduces semantic drift.
+
+Hard acceptance order remains:
+`OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+Current methodological negative knowledge:
+`generic "advanced research" report` is not a substitute for a domain-specific research result.
+
+This is a method/knowledge artifact, not proof of future causal learning by IABV. A later episode must actually consume it and change prompt construction or routing for the intended reason before claiming causal developmental learning.
