@@ -1804,3 +1804,26 @@ Routing rule reinforced: a research receipt must reconcile object identity, exec
 | After execution | independent source/claim audit | **required before absorption** |
 
 Activate this context for model-context disclosure, tool/function/MCP propagation, inter-agent transfer, memory leakage, logging/telemetry exposure, provider/cloud transmission, metadata/inference composition or runtime disclosure controls.
+
+
+## 2026-10-03 BIO-04 M1 — KNOWLEDGE CONSOLIDATION / PENDING EDGES
+
+Activate:
+`CHAT-ARCH-2026-10-03-013-bio04-m1-knowledge-consolidation-pending-edges.md`
+
+Use when the objective concerns BIO-04 privacy-flow semantics, request-level policy dimensions, M2 preparation, or the distinction between research evidence and implementation authorization.
+
+| New reusable point | State |
+|---|---|
+| request-level flow decision needs semantic dimensions, not one sensitivity bit | **DERIVED / NOT IMPLEMENTATION-AUTHORIZED** |
+| purpose compatibility and data necessity are separate tests | **DERIVED / STRONG** |
+| local/remote, encryption, consent and authorization are distinct properties | **DERIVED / REUSABLE** |
+| unknown policy state needs explicit handling | **OPEN** |
+| framework evidence != runtime policy/enforcement | **METHODOLOGICAL INVARIANT** |
+| M2 must trace host availability → model context → tool/MCP → provider/log/retention/inference | **NEXT RESEARCH EDGE** |
+
+Pending gates:
+- execute and reconcile M2 actual receipt/result;
+- independent M2 source audit;
+- human OSES normative policy decision before implementation;
+- recompute residual science modules after M2.
