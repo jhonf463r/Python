@@ -2726,3 +2726,26 @@ The long-term experiment is to treat Codex, Devin and other external systems as 
 ### Account-state direction
 
 Account management is a capability/state domain separate from tool identity: exists ≠ authenticated ≠ authorized ≠ available ≠ usable ≠ suitable. Do not infer durable account capability from one successful session.
+
+
+## 2026-10-03 ACTIVE OVERLAY — SHARED DEVELOPMENTAL KNOWLEDGE FIELD
+
+Canonical record:
+CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md
+
+The project now treats the GitHub-backed IABV frame as a potential temporary developmental field: verified experience should progressively change method, routing and later decision-making across episodes, rather than merely accumulate history.
+
+Temporal state is represented by episode order, freshness, before/after state, provenance, supersession and later reuse. Relational state is represented by links among objective, capability, actor, realization, resource, account/authentication/authorization, environment, evidence, claims, decisions and outcomes.
+
+This creates two frontiers for material cycles:
+1. DOMAIN FRONTIER — the first open causal/evidential edge of the objective.
+2. DEVELOPMENTAL FRONTIER — whether prior verified knowledge actually changes the method, routing or decision of the current cycle.
+
+The developmental frontier must not override the domain frontier without evidence.
+
+New critical edge:
+verified delta → later contextual consumption → changed decision.
+
+A written protocol or Knowledge Delta is not considered causally learned until a later episode demonstrably consumes it and changes behavior for the intended reason.
+
+Space-time remains an operational framing of temporal lineage/freshness plus relational context, not a scientific claim about physical consciousness.
