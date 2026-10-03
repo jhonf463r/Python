@@ -85,6 +85,9 @@ Session 03/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`
 ### RSK-01B PROGRESS UPDATE — SESSION 04
 Session 04/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for human-aware plasticity: it recovered the method and negative knowledge, suppressed stale routing and reconstructed Codex from the frozen snapshot. Runtime plasticity remains unproven. No A/B/C/D classification yet.
 
+### RSK-01B FINAL AGGREGATE
+Five blind Sonnet sessions completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. All five recovered substantial relevant material; four reconstructed Codex as the frozen current route. Session 03 selected a domain-local Sonnet verification route after finding a BIO-04 provenance gap; this is not classified as routing failure because global-vs-domain scope was not experimentally fixed. The experiment did not freeze independent expected material sets, so completeness remains NOT PROVEN. RSK-01A static B remains the leading architectural hypothesis; RSK-01B does not confirm runtime B. Next action is RSK-01C fixture/contract audit by Codex.
+
 ### HUMAN-AWARE DEVELOPMENTAL FRONTIER
 `protocol-change observation → later contextual consumption → changed future retrieval/routing`
 
