@@ -2,22 +2,35 @@
 
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
-**Last reconciled:** 2026-10-03
-**Reason:** human-observed cross-chat routing fragmentation.
+**Last reconciled:** 2026-10-03  
+**Reason:** RSK-01A static audit reconciled; blind continuity test is now the minimum discriminating action.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-The repository already contains substantial continuity machinery: README, MEMORY-OPERATING-PROTOCOL, CONTEXT-INDEX, CURRENT-STATE, SYMBIOSIS-MAP, UNRESOLVED-KNOWLEDGE, AI frame-entry and Deep Research protocols, plus many objective-specific source records.
+The repository contains substantial continuity machinery and a deliberate single routing spine, but reliable objective-conditioned retrieval of the **complete relevant candidate set** is still **NOT PROVEN**.
 
-However, reliable retrieval across the whole field is **NOT PROVEN**. R34 proved bounded blind reconstruction in one tested case, not general reliable relevant-delta recall across arbitrary new chats.
+RSK-01A (Codex) audited the existing composition at main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` and found coverage split across CHAT-ARCH, local knowledge/index services, context assemblers, capability registries, world/self models, OSES/self-audit and provenance/evidence surfaces. The report's principal classification is **B — missing causal integration**, with **A (session/procedure)** and **C (corpus/index/currentness)** as contributing possibilities. **D is not established.**
+
+This is an external forensic report now reconciled into state; the underlying code findings are not being represented as independently repeated by ChatGPT.
 
 ### MATERIAL NEW FINDING
-The archive contains many historical routing statements and overlapping protocol/addendum layers. The search surface currently exposes dozens of files containing historical `Next actor` / `Current next actor` language and multiple active-overlay / entry instructions.
+The first open edge is narrower than the full routing problem:
 
-The risk is:
-`relevant document found != complete current frame reconstructed`.
+`current objective → complete relevant candidate retrieval`
+
+The current document route is procedural:
+`README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific evidence`
+
+The runtime route searches local repositories/context assemblers, but RSK-01A did not find a demonstrated causal path that makes the canonical CHAT-ARCH field — current truth, recent material deltas, negative knowledge, historical evidence, currentness/provenance and actor evidence — arrive as one objective-conditioned activation set before actor selection.
+
+Therefore:
+
+`relevant hit != complete relevant state`  
+`stored Knowledge Delta != consumed Knowledge Delta`  
+`R34 bounded success != general continuity reliability`  
+`historical NEXT ACTOR != current routing authority`
 
 ### SINGLE ROUTING SPINE
 Only this top-level snapshot is allowed to determine the **current** routing decision.
@@ -34,21 +47,31 @@ Canonical layer roles:
 Historical `NEXT ACTOR` text remains preserved but is **NON-ROUTABLE HISTORY** unless explicitly promoted through this snapshot.
 
 ### CURRENT DOMAIN FRONTIER
-`objective → unified existing-organ self-knowledge retrieval → complete relevant activation → correct current routing`
+`objective → complete relevant candidate retrieval`
 
-This is the existing RSK-01 family. No new retrieval brain/service is authorized.
+This remains within the existing RSK-01 retrieval-fabric family. No new retrieval brain/service is authorized.
 
 ### CURRENT REQUIRED CAPABILITY
-Repository/code architecture archaeology + systemic integration analysis.
+Independent cross-chat reconstruction + adversarial verification of retrieval completeness, currentness, historical-routing suppression and objective-conditioned routing.
 
 ### IA DESTINO
-**CODEX**
+**SONNET**
 
 ### WHY THIS IA NOW
-The open uncertainty is source/integration composition: determine how existing memory/index/registry/currentness/provenance organs can produce a complete relevant activation packet and where the first irreducible contract gap is.
+Codex has narrowed the architectural uncertainty to a testable question, but static inspection cannot establish whether a fresh AI actually activates the complete relevant field. A genuinely fresh Sonnet session is the lowest-cost independent verifier for that operational boundary.
 
 ### NEXT ACTION
-Read-only RSK-01-A audit of existing-organ composition and coverage.
+Execute **RSK-01B — blind continuity test** against main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, five fresh sessions, objective-only entry, no preselected file list or historical handoff.
+
+### REQUIRED TEST / ACCEPTANCE
+For each of five fixed objectives record:
+`EXPECTED MATERIAL STATE → RETRIEVED → OMITTED → STALE ITEMS → HISTORICAL NEXT ACTORS SURFACED → FIRST OPEN EDGE → IA DESTINO → NEXT ACTION`
+
+Then classify the observed failure pattern as A/B/C/D:
+- A = the canonical field is sufficient but the session failed to follow/activate the entry procedure.
+- B = existing organs contain the material but no causal composition activates it as one objective-conditioned set.
+- C = necessary corpus/index/currentness/canonicalization data is absent, ambiguous or not reliably addressable.
+- D = existing owners cannot express the responsibility without an irreducible new semantic owner; this requires proof.
 
 ### HUMAN-AWARE DEVELOPMENTAL FRONTIER
 `protocol-change observation → later contextual consumption → changed future retrieval/routing`
@@ -58,6 +81,10 @@ BIO-04 M2 is **CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE** based on 
 
 ### HARD ROUTING RULE
 A new chat must not select an actor from a historical document before reading this snapshot and reconciling it with the current objective. If this snapshot conflicts with historical `NEXT ACTOR` text, this snapshot wins.
+
+### LAST VERIFIED REPOSITORY ANCHOR
+Code/repository state audited by RSK-01A: `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`.  
+The subsequent memory writeback is a provenance-bearing state update and does not change the code truth used for the blind test.
 
 ## PURPOSE
 
