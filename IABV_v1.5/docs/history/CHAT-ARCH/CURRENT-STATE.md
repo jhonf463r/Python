@@ -73,6 +73,9 @@ For case 5, `routing authority` means the authority encoded in the frozen test c
 - C = necessary corpus/index/currentness/canonicalization data is absent, ambiguous or not reliably addressable.
 - D = existing owners cannot express the responsibility without an irreducible new semantic owner; this requires proof.
 
+### RSK-01B PROGRESS
+Session 01/05 completed on frozen corpus `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for the technical-continuity objective: current routing was reconstructed as Codex, historical routing was suppressed, and the next action matched RSK-01A. This is bounded evidence only; no A/B/C/D classification yet.
+
 ### HUMAN-AWARE DEVELOPMENTAL FRONTIER
 `protocol-change observation → later contextual consumption → changed future retrieval/routing`
 
