@@ -656,3 +656,11 @@ Canonical trace record: `CHAT-ARCH-2026-10-03-012-bio04-stageA-M1-receipt-proven
 A re-pasted M1 result is substantively aligned with the already adjudicated M1 knowledge, but its reported execution/object identifiers do not match the canonical M1 execution identifiers. Treat the discrepancy as a provenance reconciliation boundary, not as a second execution.
 
 The accepted M1 unit remains the corrected claim set. The next BIO-04 science frontier remains agentic-AI/runtime disclosure; the proposed M2 execution is not considered proven merely because the prompt exists.
+
+## 2026-10-03 ACTIVE BIO-04 SCIENTIFIC FRONTIER — STAGE-A M2
+
+Canonical contract: `BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-10-03.md`.
+
+Status: planned / not yet executed. The contract advances M1 from foundational contextual-integrity/privacy-engineering concepts to mechanisms of runtime disclosure and propagation in contemporary LLM/agent systems.
+
+Do not infer execution from the contract's existence. Preserve the actual execution receipt and returned result, then independently audit sources/claims before canonical absorption.
