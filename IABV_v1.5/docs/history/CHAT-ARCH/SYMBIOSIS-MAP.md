@@ -1917,3 +1917,24 @@ action → observation → verification → knowledge/method/routing delta → l
 Human deep-work remains a reference comparator. It is not promoted to machine architecture or treated as proof of consciousness/superconsciousness.
 
 Current practical strategy: mature the shared field and its traceability first; only transfer demonstrated reusable mechanisms into IABV runtime.
+
+
+## 2026-10-03 TRANSFER — GOVERNANCE SEMANTICS / METHOD MATURATION
+
+Codex's independent source archaeology narrowed the BIO-04 governance problem from generic selector wiring to a semantic policy boundary.
+
+Observed transfer:
+OSES context → request-level data classification/policy → permitted realization set → governed inference.
+
+Existing `exclude` is a technical selector control, not a demonstrated semantic data-handling policy for OSES. Existing `world_model` signals serve other selector concerns and do not establish OSES data sensitivity.
+
+New reusable invariant:
+existing parameter ≠ existing semantic ownership.
+
+Method change:
+before reusing a generic routing/control primitive, verify its semantic owner, meaning, producer, consumer and causal effect in the target path.
+
+This is a Knowledge/Method Delta from the collaboration, but later causal reuse remains unproven.
+
+Routing consequence:
+resolve the policy boundary before dispatching implementation. The next actor is not inherited from Codex; it must be recomputed after the policy state is established.
