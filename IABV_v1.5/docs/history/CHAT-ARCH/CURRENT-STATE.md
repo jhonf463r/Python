@@ -3114,3 +3114,57 @@ Closed against unnecessary repetition: the re-pasted M1 result does not justify 
 
 Developmental status remains:
 `method-use observed; causal learning from persisted GitHub state NOT PROVEN`.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — PRIMARY-SOURCE PASS RECONCILIATION
+
+Canonical research-pass record:
+`CHAT-ARCH-2026-10-03-014-bio04-stageA-M2-primary-source-research-pass.md`
+
+Planned Deep Research execution:
+`BROWSE_2026-10-03_BIO-04-A-M2_001` = **NOT EXECUTED**.
+
+Equivalent bounded primary-source pass:
+`BROWSE_EQUIV_2026-10-03_BIO-04-A-M2_001` = **EXECUTED / MATERIAL EVIDENCE ACQUIRED**.
+
+M2 now establishes a stronger external-science boundary:
+`final output safety != system privacy safety`.
+
+Required causal distinction:
+`host availability != model-context inclusion != tool exposure != external transmission != retention/logging != downstream inference`.
+
+Strong empirical mechanisms now evidenced in named studies:
+- task-time unnecessary sensitive-data use;
+- tool-output prompt injection and exfiltration;
+- memory extraction;
+- reasoning-trace leakage;
+- inter-agent/shared-memory leakage;
+- metadata/traffic inference.
+
+Current analytical taxonomy:
+`B0 host availability`
+→ `B1 model context`
+→ `B2 tool/function`
+→ `B3 inter-agent`
+→ `B4 external provider`
+→ `B5 observability`
+→ `B6 retention/persistence`
+→ `B7 transformed`
+→ `B8 inferred/composed`.
+
+This taxonomy is analytical, not a claim that every architecture implements every boundary.
+
+Control evidence is bounded, not universal:
+privacy-aware prompting, tool filtering/detection and internal-channel redaction have positive results in named evaluations, with security/utility tradeoffs.
+
+Provider evidence confirms endpoint/product-specific retention/state behavior. Locality is not itself a privacy guarantee.
+
+New unresolved scientific edge, pending independent audit:
+`request-level necessity + authorization + UNKNOWN-state semantics + enforceable selective disclosure across heterogeneous agent channels`.
+
+Residual research candidates:
+transformation/de-identification; locality/trust boundary; lifecycle/retention/secondary use; compositional privacy across repeated tool/memory/agent interactions.
+
+Immediate next actor:
+**Sonnet / Claude-class independent source-evidence verifier**.
+
+No IABV implementation or policy selection is authorized from M2.
