@@ -37,6 +37,18 @@ IDENTIFY CURRENT GATE + LAST VERIFIED STATE
 SELECT MINIMAL DISCRIMINATING NEXT ACTION
 ```
 
+## 2026-10-03 LIVE ROUTING OVERRIDE — HUMAN-AWARE PLASTICITY
+
+Activate `CHAT-ARCH-2026-10-03-009-human-aware-plasticity-zero-friction-biosophia.md` together with the existing human deep-work and shared-field records when the objective touches:
+`human deviation/correction | observable circumstance reconstruction | adaptive trace depth | copy/paste continuity | collaboration plasticity | developmental routing`
+
+Routing remains:
+`current objective → current verified truth → classify current uncertainty/deviation → first open edge → required capability → capability-fit realization → minimum action → verification → Knowledge/Method/Relation/Routing Delta`
+
+Do not assume that a human deviation is an error. Do not infer hidden motive. Explicit explanation and observable evidence are preferred; otherwise preserve uncertainty.
+
+Current status: shared field and human-visible trace are established as methodology. Automatic deviation classification, automatic trace-depth adaptation, autonomous result → context/frontier → actor/prompt reconstruction, and causal runtime reuse are NOT PROVEN.
+
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
