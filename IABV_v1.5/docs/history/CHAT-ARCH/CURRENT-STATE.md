@@ -82,6 +82,9 @@ Session 02/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`
 ### RSK-01B PROGRESS UPDATE — SESSION 03
 Session 03/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction showed strong BIO-04 M1/M2 retrieval: accepted claims, corrections, provenance limits, negative knowledge and stale-state suppression were recovered. The session then chose a local BIO-04 provenance-verification route (Sonnet), but the frozen global routing snapshot was RSK-01A → Codex, so routing conformity remains indeterminate. This is not a new canonical route and no A/B/C/D classification has been made.
 
+### RSK-01B PROGRESS UPDATE — SESSION 04
+Session 04/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for human-aware plasticity: it recovered the method and negative knowledge, suppressed stale routing and reconstructed Codex from the frozen snapshot. Runtime plasticity remains unproven. No A/B/C/D classification yet.
+
 ### HUMAN-AWARE DEVELOPMENTAL FRONTIER
 `protocol-change observation → later contextual consumption → changed future retrieval/routing`
 
