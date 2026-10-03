@@ -2701,3 +2701,28 @@ The next edge is not "activate ProviderRouter". It is to identify the smallest e
 without duplicating routing authority or creating a new inference orchestrator.
 
 Micro-harness inference evidence must remain scoped: provider-level success/retry is not end-to-end OSES production evidence.
+
+
+## 2026-10-03 ACTIVE OVERLAY — HUMAN DEEP-WORK / META-CONTROL / ACTION-LEARNING TRACE
+
+Canonical record: CHAT-ARCH-2026-10-03-006-human-deep-work-meta-control-and-action-learning-trace.md
+
+The human explicitly identified a methodological risk: recent prompt generation can behave as if the previous program/agent state automatically determines the next action. This is now treated as an automation-bias false positive, not as evidence of symbiosis.
+
+The protocol must expose, for each material action: objective → current truth → uncertainty → hypotheses → alternatives → required capability → actor fit → action → expected observation → observation → verification → lesson → Knowledge Delta → routing delta → unresolved → next edge.
+
+Human-visible reasoning must explain why the current edge is being pursued and what changed. A provenance-grade machine trace should retain action/episode identity, actor, capability, realization, resource/environment, authorization, evidence, verification, before/after state, lesson and deltas. The existence of a trace is not evidence that IABV runtime consumes it causally.
+
+### Current BIO-04 technical frontier
+
+TASK_TYPE_INERT is independently verified for provider selection. The selector consumes general health/availability/history signals but not task semantics. A governance/resource sub-gap remains: exclude and world_model are supported selector inputs but are not passed by current production callers. The next technical edge is bounded verification of whether OSES has an upstream governance gate and, if not, whether existing governance evidence can reach the existing selector without duplication.
+
+Do not jump directly from this to task-type scoring or a capability registry.
+
+### Developmental direction
+
+The long-term experiment is to treat Codex, Devin and other external systems as contextual realizations of capabilities. A successful episode should eventually become verified capability evidence plus persistent contextual knowledge that demonstrably affects later actor/realization selection. This remains unproven.
+
+### Account-state direction
+
+Account management is a capability/state domain separate from tool identity: exists ≠ authenticated ≠ authorized ≠ available ≠ usable ≠ suitable. Do not infer durable account capability from one successful session.
