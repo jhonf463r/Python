@@ -88,9 +88,9 @@ REQUIRED EVIDENCE: `python314._pth`, user-site isolation, package/site-packages 
 
 QUESTION: Can a new chat discover the right historical knowledge from GitHub based on its objective without loading the complete archive?
 
-CURRENT STATUS: Navigation layer now exists; operational proof should come from use and subsequent reconciliation.
+CURRENT STATUS: **OPEN — RSK-01A STATIC AUDIT COMPLETED; OPERATIONAL RELIABILITY NOT PROVEN.** Codex's audit of main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` classified the likely architectural gap primarily as B (missing integration), while A/C remain testable contributors. The next discriminating action is RSK-01B blind continuity testing.
 
-SUCCESS CONDITION: Objective → domain routing → relevant source archives → current reconciliation → activated context → work without unnecessary historical flooding.
+SUCCESS CONDITION: Objective → complete relevant candidate retrieval → current reconciliation → activated context → correct routing without unnecessary historical flooding or stale actor capture.
 
 ### UK-09 — Archive completeness beyond commits/tasks
 
