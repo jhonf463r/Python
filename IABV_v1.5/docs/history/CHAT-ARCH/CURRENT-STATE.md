@@ -61,7 +61,7 @@ Independent cross-chat reconstruction + adversarial verification of retrieval co
 Codex has narrowed the architectural uncertainty to a testable question, but static inspection cannot establish whether a fresh AI actually activates the complete relevant field. A genuinely fresh Sonnet session is the lowest-cost independent verifier for that operational boundary.
 
 ### NEXT ACTION
-Execute **RSK-01B — blind continuity test** against main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, five fresh sessions, objective-only entry, no preselected file list or historical handoff.
+Execute **RSK-01B — blind continuity test** against frozen corpus `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, five fresh sessions, each with one **fully instantiated concrete objective**. A prior attempt was correctly stopped because a template placeholder remained unresolved; that attempt is not test evidence.
 
 ### REQUIRED TEST / ACCEPTANCE
 For each of five fixed objectives record:
@@ -81,6 +81,9 @@ BIO-04 M2 is **CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE** based on 
 
 ### HARD ROUTING RULE
 A new chat must not select an actor from a historical document before reading this snapshot and reconciling it with the current objective. If this snapshot conflicts with historical `NEXT ACTOR` text, this snapshot wins.
+
+### RSK-01B PREPARATION CONTROL
+Every external session prompt must be fully instantiated before handoff. No literal template placeholder may reach the evaluated AI. An unresolved placeholder is a preparation error and must not be counted as a continuity result.
 
 ### TEST CONTAMINATION CONTROL
 The RSK-01B corpus is frozen at `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, the code/memory state audited before this reconciliation. The blind test must not use a later main commit because the later writeback explicitly names RSK-01B and Sonnet and would leak the test route.
