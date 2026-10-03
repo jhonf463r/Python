@@ -3266,3 +3266,16 @@ Current application:
 **CAPABILITY: independent source/evidence verification**
 **FIRST OPEN EDGE: M2 source/claim integrity**
 **WHY NOW: material M2 evidence exists, but has not yet passed independent audit**
+## 2026-10-03 RSK-01A — CONCRETE CURRENT HANDOFF
+
+**IA DESTINO:** Codex
+
+**CAPABILITY:** repository/code architecture archaeology + systemic integration analysis.
+
+**FIRST OPEN EDGE:** `current objective → complete relevant knowledge activation → correct current routing`.
+
+**HANDOFF RECORD:** `CHAT-ARCH-2026-10-03-017-RSK-01A-CODEX-HANDOFF.md`.
+
+**ACTION:** read-only audit of existing memory/index/relation/currentness/provenance organs. Determine why a new chat can retrieve one locally coherent protocol while omitting material cross-cutting deltas, and whether existing composition can close the gap without a new service.
+
+**NO IMPLEMENTATION.**
