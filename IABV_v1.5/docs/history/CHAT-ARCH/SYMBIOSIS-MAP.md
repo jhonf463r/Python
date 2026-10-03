@@ -1827,3 +1827,12 @@ The tested correlation rule stays capability-neutral at the verifier boundary: a
 
 Next frontier:
 `verified persisted outcome → measurable influence on a subsequent selector/decision`, requiring separate evidence and independent verification. Keep scientific BIO-04 claim verification separate from this engineering/runtime track.
+
+## 2026-10-02 SYMBIOSIS UPDATE — BIO-04 SEMANTIC EXPERIENCE TRANSPORT
+
+The bounded source/test change transports the real executed realization (`tool_id`, adapter and assistant/tool family) separately from its capability signals (`PlaybookStep.capability_id`, action types and ToolCard capabilities), with configuration and verification provenance, into `ExperimentRun`. `candidate_id` now identifies the tool realization; `execution_id` remains provenance. Scope keys reuse the existing TaskOutcomeRecorder hierarchy.
+
+The focused integrated test confirms the producer-to-ExperimentLab persistence seam, not operational execution, later retrieval or selector influence. No selector/weighting semantics changed.
+
+Next frontier:
+`semantic persisted experience → real future lookup/consumption`.

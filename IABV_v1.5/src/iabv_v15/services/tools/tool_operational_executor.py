@@ -41,11 +41,29 @@ class ToolOperationalExecutor:
         causal_correlation = self._causal_correlation_manifest(task=task, session=session)
         approved = not any(item.decision == ApprovalDecision.PENDING for item in session.approval_checkpoints)
         result = self.tool_teach_service.execute_task(task, approved=approved)
+        trace = dict(result.metadata.get('ia_trace_entry') or {})
+        card = self.tool_teach_service.registry.get_card(result.tool_id)
+        execute_step = next(
+            (step for step in (session.playbook.steps if session.playbook is not None else []) if step.phase_key == 'execute'),
+            None,
+        )
         metadata = {
             'mode': result.execution_state.state,
             'tool_id': result.tool_id,
-            'validation_status': result.validation_status.value,
+            'tool_label': card.title if card is not None else result.tool_id,
+            'tool_type': result.tool_type.value,
+            'adapter_key': result.execution_state.executor_name,
+            'tool_task_id': result.task_id,
             'tool_result_id': result.result_id,
+            'required_capability_id': str(execute_step.capability_id or '') if execute_step is not None else '',
+            'required_action_types': [action.action_type.value for action in task.actions],
+            'tool_capabilities': list(card.capabilities) if card is not None else [],
+            'assistant_kind': str(trace.get('actual_assistant_kind') or result.metadata.get('assistant_kind') or ''),
+            'assistant_configuration': dict(trace.get('assistant_configuration') or result.metadata.get('assistant_configuration') or {}),
+            'config_signature': str(trace.get('config_signature') or result.metadata.get('config_signature') or ''),
+            'route': str(trace.get('route') or ''),
+            'comparison_scope_key': str(trace.get('comparison_scope_key') or task.metadata.get('comparison_scope_key') or ''),
+            'validation_status': result.validation_status.value,
             'rollback_state': result.rollback_state.state if result.rollback_state is not None else '',
             'rollback_detail': result.rollback_state.detail if result.rollback_state is not None else '',
         }

@@ -2562,3 +2562,15 @@ Implementation changes are local and uncommitted; no implementation SHA or remot
 
 First remaining learning frontier:
 `persisted directly attributable operational outcome → independently verified influence on a later selector/decision`.
+
+## 2026-10-02 ACTIVE OVERLAY — BIO-04 SEMANTIC EXPERIENCE TRANSPORT
+
+On BIO branch base `55bcc4fce17fe3e3dcc396e8d4c106ffc7dfc9af`, the operational outcome producer now carries selected ToolCard/ToolResult identity through `ToolOperationalExecutor → TaskOutcome → TaskOutcomeRecorder → ExperimentLab`.
+
+The semantic `ExperimentRun` uses the executed `tool_id` as `candidate_id`; the concrete `execution_id` stays provenance. Metadata preserves the `PlaybookStep.capability_id` where present, actual action types, declared ToolCard capabilities, adapter key, tool type, assistant family, configuration/signature, ToolTask/ToolResult IDs, verification and evidence. `TaskOutcomeRecorder` reuses its existing comparison-scope and subject-key helpers to write the experience under comparable task/objective/general scopes. Outcomes without sufficient tool, adapter, assistant-family and capability identity are not recorded as selectable candidate experience. Existing ToolTeach trace semantics report `FALLBACK` for `iabv_runtime`; this is preserved rather than mislabelled `LOCAL`.
+
+Focused source/test proof: `test_verified_operational_outcome_seams.py` and `test_task_outcome_recorder.py` pass (29 tests combined), including a ToolTask → executor → independently verified TaskOutcome → real ExperimentLab persistence/read-back fixture. This is controlled test evidence, not a new operational runtime action. No PRE/LEARN/POST experiment or selector change was performed.
+
+Closed for this bounded slice: `verified operational outcome → semantically comparable persisted experience`.
+
+First remaining causal edge: `semantic persisted experience → real future lookup/consumption`. Changed selection and future-decision influence remain open.

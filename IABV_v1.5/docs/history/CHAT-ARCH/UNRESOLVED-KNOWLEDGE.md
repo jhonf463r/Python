@@ -2045,3 +2045,15 @@ This does not close learning in the stronger sense of later decision influence. 
 
 Next causal edge:
 `persisted verified outcome → a subsequent selector/decision changes because of that evidence`.
+
+## 2026-10-02 — BIO-04 SEMANTIC OPERATIONAL EXPERIENCE TRANSPORT
+
+The producer-side transport gap is closed at source/test level: directly verified operational outcomes now require a real tool/adapter/assistant identity and capability signal before they become selectable experience. `ExperimentRun.candidate_id` is the executed `tool_id`; `operational_execution_id` remains provenance. The run also contains the existing comparable subject scopes, capability/action semantics, adapter/tool family/configuration and verification/evidence.
+
+Evidence is focused source tests with a controlled ToolTask/ToolResult fixture and real ExperimentLab persistence/read-back. No fresh external or production operation was run. The current selector consumer was not changed or exercised against this experience.
+
+Still unresolved:
+- `semantic persisted experience → real future lookup/consumption` by the intended consumer;
+- whether a future consumer compares different `tool_id` realizations within a capability rather than grouping only by route/assistant/configuration;
+- subsequent selector/decision change caused by retrieved experience;
+- broad capability/observer coverage and the separate scientific BIO-04 claim/artifact track.

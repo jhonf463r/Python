@@ -83,6 +83,27 @@ class TaskOutcomeRecorder:
         """Forward only independently verified, directly attributable operations."""
         if verification.verdict != 'verified' or verification.attribution != 'directly_attributable':
             return
+        outcome_metadata = dict(session.outcome.metadata or {}) if session.outcome is not None else {}
+        tool_id = str(outcome_metadata.get('tool_id') or '').strip()
+        adapter_key = str(outcome_metadata.get('adapter_key') or '').strip()
+        assistant_kind = str(outcome_metadata.get('assistant_kind') or '').strip().lower()
+        required_capability_id = str(outcome_metadata.get('required_capability_id') or '').strip()
+        required_action_types = [
+            str(item).strip()
+            for item in outcome_metadata.get('required_action_types', [])
+            if str(item).strip()
+        ]
+        tool_capabilities = [
+            str(item).strip()
+            for item in outcome_metadata.get('tool_capabilities', [])
+            if str(item).strip()
+        ]
+        # A verified effect without its executed realization and capability
+        # semantics is provenance, but not a comparable candidate experience.
+        if not tool_id or not adapter_key or not assistant_kind or not (
+            required_capability_id or required_action_types or tool_capabilities
+        ):
+            return
         repository = self.experiment_lab.repository
         find_existing = getattr(repository, 'find_operational_run', None)
         if callable(find_existing) and find_existing(execution_id=verification.execution_id) is not None:
@@ -90,30 +111,55 @@ class TaskOutcomeRecorder:
             return
         observed = verification.observation
         expected = verification.expectation
-        self.experiment_lab.record_outcome(
-            domain=ExperimentDomain.CODE,
-            objective=session.playbook.goal if session.playbook is not None else session.user_goal,
-            subject_key='operational_execution',
-            route=EvaluationRoute.LOCAL,
-            candidate_label='verified_operational_action',
-            candidate_id=verification.execution_id,
-            success=True,
-            observed_summary=f'{expected.kind}:{expected.title} observed={observed.satisfied}',
-            expected_summary=f'{expected.kind}:{expected.title}',
-            precision=1.0,
-            robustness=1.0,
-            execution_ms=max(0, int((verification.verified_at_utc - verification.baseline.observed_at_utc).total_seconds() * 1000)),
-            evidence_refs=list(verification.evidence_refs),
-            metadata={
-                'operational_execution_id': verification.execution_id,
-                'operational_outcome': True,
-                'verification_verdict': verification.verdict,
-                'attribution': verification.attribution,
-                'session_id': session.session_id,
-                'verification': verification.model_dump(mode='json'),
-            },
-            suite_name='verified_operational_outcome',
-        )
+        route_value = str(outcome_metadata.get('route') or '').strip().lower()
+        try:
+            route = EvaluationRoute(route_value)
+        except ValueError:
+            route = EvaluationRoute.FALLBACK
+        comparison_scope_key = str(outcome_metadata.get('comparison_scope_key') or '').strip()
+        if not comparison_scope_key:
+            comparison_scope_key = self._comparison_scope_key(session=session, run_record=None)
+        subject_keys = self._subject_keys(session=session, comparison_scope_key=comparison_scope_key)
+        assistant_configuration = dict(outcome_metadata.get('assistant_configuration') or {})
+        config_signature = str(outcome_metadata.get('config_signature') or '')
+        task_id = str(outcome_metadata.get('tool_task_id') or '').strip()
+        result_id = str(outcome_metadata.get('tool_result_id') or '').strip()
+        for subject_key in subject_keys:
+            self.experiment_lab.record_outcome(
+                domain=ExperimentDomain.CODE,
+                objective=session.playbook.goal if session.playbook is not None else session.user_goal,
+                subject_key=subject_key,
+                route=route,
+                candidate_label=str(outcome_metadata.get('tool_label') or tool_id),
+                candidate_id=tool_id,
+                success=True,
+                observed_summary=f'{expected.kind}:{expected.title} observed={observed.satisfied}',
+                expected_summary=f'{expected.kind}:{expected.title}',
+                execution_ms=max(0, int((verification.verified_at_utc - verification.baseline.observed_at_utc).total_seconds() * 1000)),
+                evidence_refs=list(verification.evidence_refs),
+                metadata={
+                    'assistant_kind': assistant_kind,
+                    'assistant_configuration': assistant_configuration,
+                    'config_signature': config_signature,
+                    'comparison_scope_key': comparison_scope_key,
+                    'subject_key': subject_key,
+                    'capability_id': required_capability_id,
+                    'required_action_types': required_action_types,
+                    'tool_capabilities': tool_capabilities,
+                    'tool_id': tool_id,
+                    'adapter_key': adapter_key,
+                    'tool_type': str(outcome_metadata.get('tool_type') or ''),
+                    'tool_task_id': task_id,
+                    'tool_result_id': result_id,
+                    'operational_execution_id': verification.execution_id,
+                    'operational_outcome': True,
+                    'verification_verdict': verification.verdict,
+                    'attribution': verification.attribution,
+                    'session_id': session.session_id,
+                    'verification': verification.model_dump(mode='json'),
+                },
+                suite_name='verified_operational_outcome',
+            )
 
     def _propagate_to_control_master(self, session: AdaptiveSession) -> None:
         """Close the learning loop: if the session opted in by tagging its
@@ -518,7 +564,7 @@ class TaskOutcomeRecorder:
             ]
         )
 
-    def _comparison_scope_key(self, *, session: AdaptiveSession, run_record: RunRecord) -> str:
+    def _comparison_scope_key(self, *, session: AdaptiveSession, run_record: RunRecord | None) -> str:
         decision_metadata = dict((dict(session.metadata.get('decision_context') or {}).get('metadata') or {}))
         perception_metadata = dict((dict(session.metadata.get('perception_snapshot') or {}).get('metadata') or {}))
         for candidate in (
@@ -528,7 +574,8 @@ class TaskOutcomeRecorder:
             probe = str(candidate or '').strip()
             if probe:
                 return probe
-        site_prefix = session.context.site_id or session.intent.site_hint or run_record.request.site_hint or 'general'
+        run_site_hint = run_record.request.site_hint if run_record is not None else ''
+        site_prefix = session.context.site_id or session.intent.site_hint or run_site_hint or 'general'
         compact = '-'.join(
             token
             for token in (

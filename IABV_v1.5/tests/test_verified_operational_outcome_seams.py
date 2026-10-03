@@ -6,19 +6,27 @@ from types import SimpleNamespace
 from iabv_v15.domain.models import (
     AdaptiveSession,
     AdaptiveSessionStatus,
+    ExecutionState,
     ExecutionPlaybook,
     EvaluationRoute,
     ExperimentDomain,
+    GoalContext,
     PlaybookStep,
     PostconditionExpectation,
     PostconditionObservation,
     RunRecord,
     RunStatus,
+    TaskRole,
+    TaskContext,
     TaskIntent,
     TaskOutcome,
     ToolAction,
     ToolActionType,
+    ToolCard,
+    ToolResult,
     ToolTask,
+    ToolType,
+    ToolValidationStatus,
 )
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
@@ -87,9 +95,15 @@ def operational_session() -> AdaptiveSession:
                 title="Open target",
                 description="Execute the operation",
                 executable=True,
+                capability_id="visible_desktop_execution",
                 postcondition=PostconditionExpectation(kind="window_present", title="Target"),
             )],
         ),
+        context=TaskContext(goal_context=GoalContext(
+            task={"objective_id": "task-objective-1"},
+            project={"objective_id": "project-objective-1"},
+            active_node_id="active-node-1",
+        )),
     )
 
 
@@ -291,6 +305,9 @@ def test_a9_tool_executor_manifest_uses_the_task_action_identity() -> None:
     )
 
     class FakeRegistry:
+        def get_card(self, tool_id):
+            return SimpleNamespace(tool_id=tool_id, title="Fake tool", capabilities=[])
+
         def pick_card_for_task(self, task):
             return SimpleNamespace(adapter_key="adapter")
 
@@ -307,14 +324,17 @@ def test_a9_tool_executor_manifest_uses_the_task_action_identity() -> None:
 
         def execute_task(self, task, *, approved):
             return SimpleNamespace(
-                execution_state=SimpleNamespace(state="executed", detail=""),
+                execution_state=SimpleNamespace(state="executed", detail="", executor_name="adapter"),
                 tool_id=task.tool_id,
+                task_id=task.task_id,
+                tool_type=SimpleNamespace(value="custom"),
                 validation_status=SimpleNamespace(value="approved"),
                 result_id="result-9",
                 rollback_state=None,
                 success=True,
                 output_text="",
                 error_message="",
+                metadata={},
             )
 
     result = ToolOperationalExecutor(FakeToolTeachService()).execute(session)
@@ -386,7 +406,7 @@ class FakeExperimentLab:
 
     def record_outcome(self, **kwargs):
         self.calls.append(kwargs)
-        self.repository.runs[kwargs["candidate_id"]] = SimpleNamespace(run_id=kwargs["candidate_id"])
+        self.repository.runs[kwargs["metadata"]["operational_execution_id"]] = SimpleNamespace(run_id=kwargs["metadata"]["operational_execution_id"])
         return SimpleNamespace(run_id=kwargs["candidate_id"]), SimpleNamespace()
 
 
@@ -412,7 +432,34 @@ def real_lab(root) -> ExperimentLab:
     )
 
 
-def directly_verified_outcome(execution_id: str = "exec-1") -> TaskOutcome:
+def operational_tool_metadata() -> dict:
+    return {
+        "tool_id": "desktop_human_runner",
+        "tool_label": "Desktop human runner",
+        "tool_type": "custom",
+        "adapter_key": "desktop_human",
+        "tool_task_id": "tool-task-1",
+        "tool_result_id": "tool-result-1",
+        "required_capability_id": "visible_desktop_execution",
+        "required_action_types": ["launch_app"],
+        "tool_capabilities": ["launch_app", "focus_window", "screenshot"],
+        "assistant_kind": "iabv_runtime",
+        "assistant_configuration": {
+            "planning_mode": "with_plan",
+            "tools_mode": "with_tools",
+            "assistant_mode": "general",
+            "origin_mode": "external",
+            "metadata": {"tool_id": "desktop_human_runner", "assistant_kind": "iabv_runtime"},
+        },
+        "config_signature": "with_plan|without_files|normal|short|with_tools|without_browser|general|external",
+        # ToolTeachService's trace classifier reports FALLBACK for this family,
+        # rather than incorrectly labelling the desktop realization LOCAL.
+        "route": "fallback",
+        "comparison_scope_key": "site:open-target-window",
+    }
+
+
+def directly_verified_outcome(execution_id: str = "exec-1", *, metadata: dict | None = None) -> TaskOutcome:
     verifier = PostconditionVerificationService(
         SequenceObserver([
             observation(False),
@@ -425,27 +472,166 @@ def directly_verified_outcome(execution_id: str = "exec-1") -> TaskOutcome:
         expectation=PostconditionExpectation(kind="window_present", title="Target"),
         baseline=baseline,
     )
-    return TaskOutcome(status=RunStatus.SUCCESS, postcondition_verification=verification)
+    return TaskOutcome(status=RunStatus.SUCCESS, postcondition_verification=verification, metadata=dict(metadata or {}))
 
 
 def test_b1_verified_operational_outcome_reaches_experiment_lab_with_provenance(tmp_path) -> None:
     lab = real_lab(tmp_path)
     session = operational_session()
-    session.outcome = directly_verified_outcome()
+    session.outcome = directly_verified_outcome(metadata=operational_tool_metadata())
     make_recorder(lab).record(session)
     runs = lab.repository.list_runs(
         domain=ExperimentDomain.CODE.value,
-        subject_key="operational_execution",
+        subject_key="site:open-target-window",
         limit=5,
     )
     assert len(runs) == 1
     run = runs[0]
     assert run.success is True
-    assert run.candidate_id == "exec-1"
+    assert run.candidate_id == "desktop_human_runner"
+    assert run.candidate_label == "Desktop human runner"
+    assert run.assistant_kind == "iabv_runtime"
+    assert run.route == EvaluationRoute.FALLBACK
     assert run.expected_summary == "window_present:Target"
     assert run.observed_summary == "window_present:Target observed=True"
     assert run.evidence_refs == session.outcome.postcondition_verification.evidence_refs
     assert run.metadata["operational_execution_id"] == "exec-1"
+    assert run.metadata["tool_id"] == run.candidate_id
+    assert run.metadata["adapter_key"] == "desktop_human"
+    assert run.metadata["capability_id"] == "visible_desktop_execution"
+    assert run.metadata["required_action_types"] == ["launch_app"]
+    assert run.metadata["tool_capabilities"] == ["launch_app", "focus_window", "screenshot"]
+    assert run.metadata["tool_task_id"] == "tool-task-1"
+    assert run.metadata["tool_result_id"] == "tool-result-1"
+    assert run.assistant_configuration.metadata["tool_id"] == "desktop_human_runner"
+    assert run.config_signature == operational_tool_metadata()["config_signature"]
+    assert run.comparison_scope_key == "site:open-target-window"
+    assert run.subject_key == "site:open-target-window"
+
+
+def test_b1b_semantic_operational_experience_uses_existing_reusable_subject_hierarchy(tmp_path) -> None:
+    lab = real_lab(tmp_path)
+    session = operational_session()
+    session.outcome = directly_verified_outcome(metadata=operational_tool_metadata())
+    make_recorder(lab).record(session)
+    for subject_key in ("site:open-target-window", "task-objective-1", "general"):
+        runs = lab.repository.list_runs(domain=ExperimentDomain.CODE.value, subject_key=subject_key, limit=5)
+        assert len(runs) == 1
+        assert runs[0].candidate_id == "desktop_human_runner"
+        assert runs[0].metadata["operational_execution_id"] == "exec-1"
+
+
+def test_b1c_real_tool_task_semantics_survive_executor_outcome_and_lab_persistence(tmp_path) -> None:
+    marker = "nonce-tool-task-1"
+    card = ToolCard(
+        tool_id="desktop_human_runner",
+        title="Desktop human runner",
+        tool_type=ToolType.CUSTOM,
+        adapter_key="desktop_human",
+        capabilities=["launch_app", "focus_window", "screenshot"],
+        metadata={"assistant_kind": "iabv_runtime"},
+    )
+    task = ToolTask(
+        task_id="tool-task-1",
+        tool_id=card.tool_id,
+        title="Open target",
+        objective="Open target window",
+        actions=[ToolAction(
+            action_id="tool-action-1",
+            action_type=ToolActionType.LAUNCH_APP,
+            label="Open target",
+            correlation_id=marker,
+        )],
+        metadata={
+            "actual_assistant_kind": "iabv_runtime",
+            "assistant_configuration": operational_tool_metadata()["assistant_configuration"],
+            "config_signature": operational_tool_metadata()["config_signature"],
+            "comparison_scope_key": "site:open-target-window",
+        },
+    )
+
+    class FakeAdapter:
+        def is_available(self, _card):
+            return True
+
+    class FakeRegistry:
+        def get_card(self, tool_id):
+            return card if tool_id == card.tool_id else None
+
+        def pick_card_for_task(self, _task, **_kwargs):
+            return card
+
+    class FakeToolTeachService:
+        registry = FakeRegistry()
+        adapters = {"desktop_human": FakeAdapter()}
+
+        def build_task_for_session(self, _session):
+            return task
+
+        def execute_task(self, actual_task, *, approved=False):
+            trace = {
+                "route": "fallback",
+                "actual_assistant_kind": "iabv_runtime",
+                "assistant_configuration": task.metadata["assistant_configuration"],
+                "config_signature": task.metadata["config_signature"],
+                "comparison_scope_key": task.metadata["comparison_scope_key"],
+            }
+            return ToolResult(
+                task_id=actual_task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=True,
+                validation_status=ToolValidationStatus.APPROVED,
+                execution_state=ExecutionState(state="executed", executor_name=card.adapter_key),
+                metadata={
+                    "assistant_kind": "iabv_runtime",
+                    "assistant_configuration": task.metadata["assistant_configuration"],
+                    "config_signature": task.metadata["config_signature"],
+                    "ia_trace_entry": trace,
+                },
+            )
+
+    session = operational_session()
+    session.intent.detected_role = TaskRole.TOOL_USE
+    session.playbook.steps[0].postcondition = PostconditionExpectation(
+        kind="window_present",
+        title="Target",
+        correlation_id=marker,
+        correlation_field="title",
+    )
+    session.playbook.steps[0].capability_id = "visible_desktop_execution"
+    session.outcome = None
+    observer = SequenceObserver([
+        PostconditionObservation(source="independent_test_source", satisfied=False),
+        PostconditionObservation(
+            source="independent_test_source",
+            satisfied=True,
+            matches=[{"title": marker, "pid": 7}],
+            evidence_ref="independent-post-observation",
+        ),
+    ])
+    executed = ExecutionPlaybookService(
+        executor=ToolOperationalExecutor(FakeToolTeachService()),
+        postcondition_verifier=PostconditionVerificationService(observer),
+    ).execute(session)
+    assert executed.outcome is not None
+    assert executed.outcome.postcondition_verification.verdict == "verified"
+    assert executed.outcome.postcondition_verification.attribution == "directly_attributable"
+    assert executed.outcome.metadata["tool_id"] == "desktop_human_runner"
+    assert executed.outcome.metadata["adapter_key"] == "desktop_human"
+    assert executed.outcome.metadata["tool_task_id"] == "tool-task-1"
+    assert executed.outcome.metadata["tool_result_id"]
+
+    lab = real_lab(tmp_path)
+    make_recorder(lab).record(executed)
+    runs = lab.repository.list_runs(domain=ExperimentDomain.CODE.value, subject_key="site:open-target-window", limit=5)
+    assert len(runs) == 1
+    run = runs[0]
+    assert run.candidate_id == "desktop_human_runner"
+    assert run.metadata["capability_id"] == "visible_desktop_execution"
+    assert run.metadata["adapter_key"] == "desktop_human"
+    assert run.metadata["operational_execution_id"] == executed.outcome.postcondition_verification.execution_id
+    assert "independent-post-observation" in run.evidence_refs
 
 
 def test_b5_correlation_verified_outcome_reaches_experiment_lab_without_observer_claim(tmp_path) -> None:
@@ -471,6 +657,7 @@ def test_b5_correlation_verified_outcome_reaches_experiment_lab_without_observer
     baseline = verifier.capture_baseline(expectation, execution_id="exec-5")
     session.outcome = TaskOutcome(
         status=RunStatus.SUCCESS,
+        metadata=operational_tool_metadata(),
         postcondition_verification=verifier.verify(
             execution_id="exec-5",
             expectation=expectation,
@@ -485,15 +672,12 @@ def test_b5_correlation_verified_outcome_reaches_experiment_lab_without_observer
     )
     assert session.outcome.postcondition_verification.observation.caused_by_execution_id is None
     make_recorder(lab).record(session)
-    runs = lab.repository.list_runs(
-        domain=ExperimentDomain.CODE.value,
-        subject_key="operational_execution",
-        limit=5,
-    )
+    runs = lab.repository.list_runs(domain=ExperimentDomain.CODE.value, subject_key="site:open-target-window", limit=5)
     assert len(runs) == 1
-    assert runs[0].candidate_id == "exec-5"
+    assert runs[0].candidate_id == "desktop_human_runner"
     assert runs[0].success is True
     assert "independent-post-observation" in runs[0].evidence_refs
+    assert runs[0].metadata["operational_execution_id"] == "exec-5"
 
 
 def test_b2_unverified_outcome_does_not_train_success() -> None:
@@ -513,19 +697,23 @@ def test_b2_unverified_outcome_does_not_train_success() -> None:
     assert lab.calls == []
 
 
+def test_b2b_verified_outcome_without_tool_identity_is_not_selectable() -> None:
+    lab = FakeExperimentLab()
+    session = operational_session()
+    session.outcome = directly_verified_outcome()
+    make_recorder(lab).record(session)
+    assert lab.calls == []
+
+
 def test_b3_repeated_record_of_same_execution_is_deduplicated(tmp_path) -> None:
     lab = real_lab(tmp_path)
     session = operational_session()
-    session.outcome = directly_verified_outcome("exec-3")
+    session.outcome = directly_verified_outcome("exec-3", metadata=operational_tool_metadata())
     recorder = make_recorder(lab)
     recorder.record(session)
     recorder.record(session)
-    runs = lab.repository.list_runs(
-        domain=ExperimentDomain.CODE.value,
-        subject_key="operational_execution",
-        limit=10,
-    )
-    assert len(runs) == 1
+    assert len(lab.repository.list_runs(domain=ExperimentDomain.CODE.value, subject_key="site:open-target-window", limit=10)) == 1
+    assert len(lab.repository.list_runs(domain=ExperimentDomain.CODE.value, subject_key="task-objective-1", limit=10)) == 1
     assert session.metadata["operational_learning_deduplicated"] == "exec-3"
 
 
