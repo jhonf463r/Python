@@ -2204,3 +2204,18 @@ Required output:
 independent challenge to Codex, context-category map, existing policy semantics, producer→contract→consumer trace, neutral human policy decision sheet, and the smallest local synthetic post-policy experiment.
 
 Human policy authority remains explicit. The auditor must not choose the policy.
+
+
+## 2026-10-03 RECONCILED OPEN EDGE — BIO-04 POLICY
+
+Sonnet independently confirms the Codex classification: GOVERNANCE SEMANTIC GAP.
+
+The first open edge remains:
+OSES context construction → request-level data classification/policy.
+
+Policy precedents exist in other domains but are partial and disconnected from OSES. The selector's exclude input is filtering/availability control, not semantic privacy policy; world_model is not a demonstrated data-sensitivity policy.
+
+Human policy remains unresolved and implementation remains unauthorized.
+
+Developmental frontier:
+method-use was observed during independent audit, including correction of a prior premature routing recommendation. Persistent causal learning of this method is not proven because the audit prompt itself supplied the method context and no counterfactual exists.
