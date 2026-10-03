@@ -1779,3 +1779,16 @@ Latest BIO-04 Module 1 result provides the current test case for this protocol; 
 Activate this context for BIO-04 privacy/data handling, contextual integrity, information-flow semantics, NIST Privacy Framework, or preparation of the next external-science module.
 
 The canonical unit is the corrected claim set, not the unmodified research report.
+
+## 2026-10-03 BIO-04 M1 RE-RECEIPT / PROVENANCE RECONCILIATION
+
+Activate `CHAT-ARCH-2026-10-03-012-bio04-stageA-M1-receipt-provenance-reconciliation.md` when a Deep Research result claims an execution/object identity that differs from the canonical M1 execution record.
+
+Current status:
+- substantive M1 result = congruent with canonical corrected M1 knowledge;
+- reported execution ID `BIO-04-SA-M1-0001` = not remotely reconciled to canonical M1 execution `BROWSE_2026-10-03_BIO-04-A-M1_001`;
+- no evidence found here that M2 execution `BROWSE_2026-10-03_BIO-04-A-M2_001` has executed;
+- next BIO-04 science frontier = `agentic AI / runtime disclosure`;
+- actor fit = Deep Research → independent source/evidence verifier.
+
+Routing rule reinforced: a research receipt must reconcile object identity, execution identity, source artifact and evidence provenance before it can become a distinct canonical evidence instance.
