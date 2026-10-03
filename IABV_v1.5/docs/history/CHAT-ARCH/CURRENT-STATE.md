@@ -91,6 +91,35 @@ Not established: automatic human-deviation classification, automatic motive reco
 
 Secondary edge:
 `verified collaboration experience → persistent capability/method knowledge → changed future actor/realization selection`
+## 2026-10-03 ACTIVE OVERLAY — HUMAN-AWARE PLASTICITY / ZERO-FRICTION BIOSOPHIA
+
+Canonical record: `CHAT-ARCH-2026-10-03-009-human-aware-plasticity-zero-friction-biosophia.md`
+
+Human interaction is part of the developmental field. A deviation from the active route is not automatically an error:
+`deviation != error`
+
+Classify from observable evidence before interpretation. Candidate meanings include execution error, misunderstanding, correction of an AI interpretation, new evidence, objective/priority change, environmental change, interruption/context loss, or deliberate route rejection.
+
+Explicit human explanation is evidence; unobserved motive remains uncertain. Do not infer hidden psychology from conversational behavior.
+
+Target loop:
+`interaction → divergence → contextual reconstruction → uncertainty → minimum clarification when material → action → observation → verification → reconciliation → Knowledge/Method/Relation/Routing Delta → later reuse`
+
+Plasticity must include both domain knowledge and collaboration knowledge: context transport, trace depth, actor/realization fit, recurring correction patterns and verification burden.
+
+Operational biosophy target:
+`minimum routine coordination friction + maximum necessary traceability`
+
+Reducing friction must not remove provenance, verification, governance, authorization or uncertainty. Routine context carriage should become implicit; high-consequence boundaries remain explicit.
+
+Target mature path:
+`external result → context reconstruction → memory activation → current truth → first open edge → capability-fit realization → trace-depth choice → next prompt/action → result ingestion → reconciliation → writeback`
+
+Automatic deviation classification, automatic trace-depth adaptation, autonomous copy/paste re-anchoring, runtime causal consumption of GitHub memory and coordination reduction caused by persistent learned state remain **NOT PROVEN**.
+
+Maintain two frontiers: DOMAIN FRONTIER (first open causal/evidential edge) and DEVELOPMENTAL FRONTIER (whether verified experience changes method/routing/trace depth/decision). Developmental state cannot override domain truth without evidence.
+
+Do not create a HumanModel, DeepWorkDetector, SpaceTimeEngine, PlasticityEngine or BiosophyBrain by reflex. First compose existing memory, frame, self-model, OSES, capability/selection, provenance/evidence and experiment organs.
 ## 2026-10-03 ACTIVE OVERLAY — UNIVERSAL EVOLUTION / METACOGNITION OPERABILITY
 
 **READ THIS BEFORE OLDER SYMBIOSIS/BIO-04 SECTIONS.**
