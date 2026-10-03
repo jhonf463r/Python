@@ -1964,3 +1964,26 @@ method-use was observed because ownership tracing changed the interpretation of 
 
 Routing consequence:
 human policy definition precedes implementation. Once policy is specified, recompute actor/capability from the resulting technical contract.
+
+## 2026-10-03 — HUMAN FALLIBILITY AS CONTEXT, NOT NOISE
+
+Invariant:
+`deviation != error`
+
+A human route change can be an execution error, misunderstanding, correction, new evidence, objective change, environmental change, interruption/context loss or deliberate rejection. First reconstruct observable context and preserve uncertainty.
+
+## 2026-10-03 — ZERO-FRICTION DOES NOT MEAN ZERO-CONTROL
+
+Operational biosophy target:
+`minimum routine coordination friction + maximum necessary traceability`
+
+Move routine context carriage, evidence organization, actor fit, prompt construction and lesson extraction toward machine support without removing human governance, authorization, provenance or independent verification.
+
+## 2026-10-03 — COLLABORATION PLASTICITY
+
+Collaboration experience should eventually update both domain knowledge and collaboration knowledge, including context transport, trace depth, actor/realization fit, recurring correction patterns and verification burden.
+
+Stronger developmental claim requires:
+`verified prior experience → later contextual retrieval → changed decision/action → causal attribution → reuse`
+
+External AIs and the human remain capability realizations under current prerequisites, not permanent pipeline stages.
