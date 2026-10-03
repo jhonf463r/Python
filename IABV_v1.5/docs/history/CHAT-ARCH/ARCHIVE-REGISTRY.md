@@ -778,3 +778,9 @@ State: DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=PENDING
 Purpose: preserve the human intervention that detected automatic prompt-chain inheritance as a methodological false-positive and formalized the action → observation → verification → lesson → knowledge/routing delta chain.
 
 Key routing consequence: the immediate BIO-04 technical frontier remains governance/resource wiring; the longer developmental frontier is verified external-agent experience changing later realization selection.
+
+
+## 2026-10-03 — BIO-04 OSES GOVERNANCE BOUNDARY
+
+Source record: CHAT-ARCH-2026-10-03-008-bio04-oses-governance-boundary.md
+Purpose: preserve Codex's read-only source reconciliation and the narrowed first open edge for OSES request-level policy semantics.
