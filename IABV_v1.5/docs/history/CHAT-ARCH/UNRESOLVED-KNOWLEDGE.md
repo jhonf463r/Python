@@ -2284,3 +2284,34 @@ Post-audit candidate frontier:
 `request-level necessity + authorization + UNKNOWN-state semantics + enforceable selective disclosure across heterogeneous agent channels`.
 
 No IABV policy or implementation is implied by this research.
+
+## 2026-10-03 OPEN KNOWLEDGE — CROSS-CHAT RELEVANT-DELTAS RECALL
+
+QUESTION:
+Can a new chat reliably reconstruct the complete material current frame before actor selection, rather than activating one locally relevant protocol and omitting other material deltas?
+
+CURRENT STATUS:
+`NOT PROVEN`.
+
+Known evidence:
+- extensive canonical memory exists;
+- current-state / context-index / memory protocol provide objective-conditioned entry rules;
+- R34 demonstrated bounded blind reconstruction in one tested case;
+- human observation shows practical risk of incomplete cross-chat activation;
+- repository search exposes many historical routing statements and overlapping protocol layers.
+
+Open edge:
+`objective → complete relevant activation → correct current routing`.
+
+Required discriminating audit:
+RSK-01A — existing-organ composition and coverage.
+
+Do not solve by deleting historical knowledge or creating a new retrieval brain before auditing existing composition.
+
+Acceptance must distinguish:
+A. procedure/usage failure;
+B. missing integration;
+C. corpus/index/currentness/canonicalization gap;
+D. irreducible semantic ownership gap.
+
+Historical routing text must remain non-routable unless promoted through the current routing snapshot.
