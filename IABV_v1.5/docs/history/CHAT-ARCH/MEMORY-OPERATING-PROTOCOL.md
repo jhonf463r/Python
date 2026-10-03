@@ -1377,3 +1377,18 @@ A stored protocol change, memory record or repeated conversational pattern is no
 `verified prior episode → later contextual retrieval → changed method/routing/decision → attribution to the prior state → reusable consequence`
 
 This rule applies equally to human corrections, AI lessons and cross-IA collaboration.
+## 2026-10-03 — HUMAN-AWARE PLASTICITY / LOW-FRICTION COORDINATION
+
+Treat the human as a contextual participant, not an infallible deterministic source. Preserve `deviation != error`.
+
+When a material deviation appears, first reconstruct observable context and classify possibilities: execution error, misunderstanding, correction, new evidence, objective/priority change, environmental change, interruption/context loss, or deliberate route rejection.
+
+Use explicit human explanation when supplied. Do not infer hidden motives; preserve uncertainty otherwise.
+
+Collaboration plasticity must learn both domain knowledge and collaboration knowledge: context transport, trace depth, actor/realization fit, recurring correction patterns, verification burden and effective coordination method.
+
+Operationalize the "flow like water" target as `minimum routine coordination friction + maximum necessary traceability`. Reducing friction must not remove provenance, verification, governance, authorization or uncertainty.
+
+Future adaptive trace policy: `routine/low ambiguity → concise`; `complex/deep reconstruction → expanded`; `ambiguous → preserve uncertainty / clarify only if material`.
+
+A stored record or repeated conversational pattern is not learning closure. Strong developmental learning requires `verified prior episode → later contextual retrieval → changed method/routing/decision → causal attribution → reusable consequence`.
