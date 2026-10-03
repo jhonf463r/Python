@@ -1792,3 +1792,15 @@ Current status:
 - actor fit = Deep Research → independent source/evidence verifier.
 
 Routing rule reinforced: a research receipt must reconcile object identity, execution identity, source artifact and evidence provenance before it can become a distinct canonical evidence instance.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — ACTIVE SCIENTIFIC FRONTIER
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| BIO-04 Stage-A M2 | `BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-10-03.md` | **PLANNED / NOT YET EXECUTED** |
+| Research object | agentic AI / runtime information disclosure | **OPEN** |
+| Planned execution | `BROWSE_2026-10-03_BIO-04-A-M2_001` | **planned identifier only; not execution proof** |
+| Next actor | Deep Research | **capability-fit** |
+| After execution | independent source/claim audit | **required before absorption** |
+
+Activate this context for model-context disclosure, tool/function/MCP propagation, inter-agent transfer, memory leakage, logging/telemetry exposure, provider/cloud transmission, metadata/inference composition or runtime disclosure controls.
