@@ -1938,3 +1938,15 @@ This is a Knowledge/Method Delta from the collaboration, but later causal reuse 
 
 Routing consequence:
 resolve the policy boundary before dispatching implementation. The next actor is not inherited from Codex; it must be recomputed after the policy state is established.
+
+
+## 2026-10-03 TRANSFER — POLICY-BOUNDARY AUDIT ROUTING
+
+Codex narrowed the OSES domain frontier to request-level data classification/policy. The capability-fit next actor is now Sonnet/Claude-class independent security/contract/source audit.
+
+The actor is selected because the unresolved capability is independent challenge and policy/contract archaeology, not implementation.
+
+New routing rule:
+when an upstream policy semantic boundary is unresolved, do not let an implementation actor convert an existing parameter into policy by assumption.
+
+The next audit must independently test whether the Method Delta "existing parameter != existing semantic ownership" changes the investigation.
