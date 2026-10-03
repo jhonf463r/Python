@@ -871,3 +871,19 @@ Next actor:
 **Sonnet / Claude-class independent source-evidence verifier**.
 
 No implementation or policy selection.
+
+## 2026-10-03 — RSK-01A CONTINUITY / RETRIEVAL HANDOFF
+
+Source record:
+`CHAT-ARCH-2026-10-03-017-RSK-01A-CODEX-HANDOFF.md`
+
+Purpose:
+read-only audit of whether existing IABV memory, indexing, relation, provenance and currentness organs can produce complete relevant activation for a new objective.
+
+IA DESTINO:
+**Codex**
+
+State:
+**READY / NOT EXECUTED**
+
+No implementation authorized.
