@@ -2664,3 +2664,21 @@ Do not turn `Ollama) behavior into a special-case algorithm.
 
 Implementation must follow a reconciled ownership specification and remain minimal. Runtime learning closure remains blocked behind this edge and subsequent real execution.
 
+
+
+## 2026-10-03 ACTIVE OVERLAY — BIO-04 PROVIDER-SEAM OWNERSHIP STILL OPEN
+
+Codex implementation stopped with `ARCHITECTURAL COMPLEXITY WARNING` after the universal inference gap was independently confirmed by Sonnet. This does **not** justify a new component. It means the exact production ownership/wiring of the missing seam is not yet uniquely demonstrated.
+
+Current open edge:
+`OSES requirements + response contract → production-wired provider selection/configuration → contract validation result available to fallback`.
+
+Reconciled ownership boundary:
+- OSES owns semantic task/output meaning.
+- `InferenceRequest` carries partial common requirements.
+- `ProviderRouter` is the closest existing routing owner, but its production composition into OSES is not yet demonstrated.
+- `AdaptiveModelSelector` must not be silently promoted to universal semantic authority.
+- adapters own provider-specific parameter translation.
+- no new inference orchestrator/manager is justified by current evidence.
+
+Next action: read-only production composition archaeology of provider construction, router wiring, OSES construction, dependency injection/late binding and the real runtime call path. Only after that should implementation resume.
