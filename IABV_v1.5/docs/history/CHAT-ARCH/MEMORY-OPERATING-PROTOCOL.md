@@ -1277,3 +1277,26 @@ Require a demonstrated continuity:
 When the consumer has a domain-specific semantic contract, preserve that ownership and connect it to common infrastructure without transferring semantic authority to a generic router.
 
 Negative evidence is reusable: an Ollama-specific parameter may improve one realization while leaving the universal mechanism gap untouched.
+
+
+## 2026-10-03 METHODOLOGY ADDENDUM — HUMAN DEEP-WORK / META-CONTROL TRACE
+
+A material human intervention has added an explicit test of the collaboration protocol itself. When the workflow appears to inherit the next actor or prompt mechanically from the previous result, treat that as an automation-bias risk.
+
+For material human decisions, expose: OBJECTIVE → CURRENT_TRUTH → KNOWNS → UNKNOWNS → HYPOTHESES → ALTERNATIVES → FIRST_OPEN_EDGE → REQUIRED_CAPABILITY → ACTOR_FIT → ACTION → EXPECTED_OBSERVATION → OBSERVATION → VERIFICATION → LESSON → KNOWLEDGE_DELTA → ROUTING_DELTA → NEGATIVE_KNOWLEDGE → UNRESOLVED → NEXT_EDGE → STOP_CONDITION.
+
+Maintain two views: a human-visible decision trace and a provenance-grade machine trace. They refer to the same episode/action where possible, but they are not conflated.
+
+### Action-to-learning promotion ladder
+
+Use: L0 action recorded → L1 observation recorded → L2 observation verified → L3 reusable fact → L4 method lesson → L5 persistent knowledge/capability change → L6 future routing/decision change caused by that state → L7 behavioral consequence → L8 independently verified outcome improvement.
+
+Do not promote an action to learning solely because a record, score or explanation was persisted.
+
+### Human-vs-IABV metacognitive comparator
+
+The user's deep-work process is an experimental reference episode for future protocol design. A stronger operational comparator should test whether IABV independently checks objective, uncertainty, alternatives, evidence, capability-fit, expected observation, verification, consequence and future reuse. This is not a scientific claim of superintelligence or consciousness.
+
+### External-AI capability learning
+
+When Codex, Devin or another external system is used, record the experience contextually as actor × capability × realization × resource × environment × account/authentication × authorization × context × outcome × time. Only future decision consumption can move the evidence beyond contextual experience.
