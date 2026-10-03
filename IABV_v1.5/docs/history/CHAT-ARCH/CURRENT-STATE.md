@@ -2788,3 +2788,11 @@ Method Delta:
 Before reusing a routing primitive, verify its semantic owner, policy meaning, producer, consumer and causal effect.
 
 This methodological delta must be considered in later routing decisions, but its causal reuse is not yet proven.
+
+
+## 2026-10-03 SOURCE RECORD POINTER — BIO-04 OSES GOVERNANCE
+
+Canonical source record:
+CHAT-ARCH-2026-10-03-008-bio04-oses-governance-boundary.md
+
+This record is the evidence-bearing source for the Codex reconciliation that narrowed the first open OSES edge to request-level policy semantics.
