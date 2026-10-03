@@ -2009,3 +2009,26 @@ Routing is capability-fit: Deep Research for external primary-source synthesis, 
 The contract is `BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-10-03.md`, status `PLANNED / NOT YET EXECUTED`.
 
 Developmental lesson preserved: the existence of a research contract or planned execution identifier is not evidence that execution occurred; actual execution identity and returned artifact must be reconciled before absorption.
+
+
+## 2026-10-03 TRANSFER — BIO-04 M1 KNOWLEDGE EXTRACTION AS COLLABORATION METHOD
+
+A re-pasted M1 result was mined into separate layers instead of being treated as a single report artifact:
+`verified claim / correction / derived deduction / open question / task or decision gate`.
+
+Reusable method delta:
+
+`deep external result → claim reconciliation → safe deduction extraction → explicit pending gate → future routing`
+
+Important deductions preserved as derived rather than scientific facts:
+- privacy-flow decisions require multiple semantic dimensions;
+- purpose compatibility and necessity/minimization are separate checks;
+- transmission/security properties do not automatically establish authorization or contextual appropriateness;
+- unknown policy state needs an explicit downstream decision;
+- framework guidance is not runtime enforcement evidence.
+
+Developmental status:
+method-use is observed; causal learning from persistent GitHub state is still NOT PROVEN because later counterfactual use has not yet demonstrated that the persisted method changed routing or decision.
+
+Routing consequence:
+M2 remains the domain frontier; human normative policy definition remains a downstream governance gate; implementation stays blocked until that boundary is resolved.
