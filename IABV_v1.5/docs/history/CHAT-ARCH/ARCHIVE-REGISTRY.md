@@ -832,3 +832,26 @@ Status: `PLANNED / NOT YET EXECUTED`.
 Planned execution ID: `BROWSE_2026-10-03_BIO-04-A-M2_001`.
 
 Do not treat the contract as execution evidence. Preserve actual execution receipt separately and require independent source/evidence adjudication before canonical absorption.
+
+
+## 2026-10-03 — BIO-04 M1 KNOWLEDGE CONSOLIDATION / PENDING EDGES
+
+Source record:
+`CHAT-ARCH-2026-10-03-013-bio04-m1-knowledge-consolidation-pending-edges.md`
+
+Purpose: preserve the reusable knowledge, derived design principles and explicit pending decision/research gates extracted from a re-pasted M1 result.
+
+State:
+`CANONICAL METHOD/KNOWLEDGE CONSOLIDATION`
+
+Important preserved deductions:
+- request-level privacy flow requires multiple semantic dimensions rather than one sensitivity flag;
+- purpose compatibility and data necessity are distinct;
+- locality, encryption, consent, authorization and provider identity must not be conflated;
+- unknown state needs explicit policy semantics;
+- external framework evidence does not itself prove IABV policy enforcement.
+
+Pending:
+M2 actual execution + evidence reconciliation; independent M2 audit; human normative OSES policy boundary; post-M2 residual research frontier recomputation.
+
+No implementation is authorized by M1 alone.
