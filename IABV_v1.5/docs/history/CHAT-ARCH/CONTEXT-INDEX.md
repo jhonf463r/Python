@@ -1706,3 +1706,6 @@ Use this route when the objective concerns human-vs-IABV reasoning process; auto
 Current methodological frontier: human deep-work decision trace → reusable machine/provenance trace → later causal decision consumption.
 
 Current technical BIO-04 frontier remains separate: OSES governance evidence → existing exclude/world_model → selector, pending bounded Codex verification.
+
+
+| Shared developmental knowledge field / temporal-spatial maturation | CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md, MEMORY-OPERATING-PROTOCOL.md, SYMBIOSIS-MAP.md, HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md | GitHub-backed IABV frame, human deep-work trace, action-to-learning ladder, cross-IA method/routing transfer | Does verified prior knowledge alter the method, actor/realization routing or later decision in a causally attributable way across episodes? |
