@@ -310,3 +310,25 @@ The eventual desired state is:
 → increasingly autonomous self-retrieval`
 
 END OF RECORD
+
+## CONCRETE IA DESTINATION REQUIREMENT
+
+After:
+
+`OBJECTIVE → CURRENT TRUTH → FIRST OPEN EDGE → REQUIRED CAPABILITY → CAPABILITY-FIT ACTOR`
+
+the frame must materialize:
+
+`CONCRETE IA DESTINATION`.
+
+A capability class is not an executable handoff.
+
+Required handoff fields:
+- IA DESTINO;
+- capability/role;
+- exact open edge;
+- why this IA fits now;
+- complete next prompt/action;
+- independent verifier, when known.
+
+Always report the concrete IA destination to the human.
