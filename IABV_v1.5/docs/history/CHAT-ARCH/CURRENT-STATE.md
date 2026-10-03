@@ -5,6 +5,78 @@
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
 
 #
+
+## 2026-10-03 ACTIVE OVERLAY — UNIVERSAL EVOLUTION / METACOGNITION OPERABILITY
+
+**READ THIS BEFORE OLDER SYMBIOSIS/BIO-04 SECTIONS.**
+
+This overlay absorbs the 2026-10-03 BIO-04 diagnostic result and the user's explicit long-horizon design intent.
+
+### Universal evolution rule
+
+The project must prefer:
+
+`local symptom → causal boundary → reusable algorithmic principle → existing-organ ownership → device/tool/provider realization → verified effect → Knowledge Delta → future reuse`
+
+over:
+
+`local symptom → ad-hoc patch → new special case → repeat`.
+
+A tool, provider, device, browser or desktop realization should normally be represented as a candidate realization/configuration of a capability, not as a special algorithmic branch. Preserve:
+
+`capability ≠ realization`
+`tool/device identity ≠ algorithm`
+`local fix ≠ algorithmic evolution`
+`environment state ≠ universal rule`
+
+### Universal adaptation target
+
+Working universal path:
+
+`objective → required capability → candidate realizations → current prerequisites/state → justified selection → governed execution → independent observation → verification → experience → future comparison/decision`.
+
+Adaptation should account for device/runtime, resource pressure, provider/tool availability, authentication/authorization, UI/environment, temporal freshness and verified performance while keeping the underlying decision mechanism reusable.
+
+### Laptop-assistant target
+
+For the laptop objective, IABV should progressively be able to determine from fresh evidence:
+- what is happening in the environment;
+- what it knows and how fresh/proven the observation is;
+- what it does not know;
+- which capability/realization is currently viable;
+- whether the next step is wait, repair, restart, change realization, request permission or continue;
+- what happened after the action;
+- what should persist for future decisions.
+
+This is a desired capability trajectory, not a claim of present completion.
+
+### Metacognition operability
+
+Current evidence shows that OSES can place substantial LLM reasoning and sequential resource inspection before session creation. Therefore preserve the candidate design constraint:
+
+`deep/optional metacognition should be resource-aware, freshness-aware and failure-bounded before becoming a hard prerequisite for basic execution`.
+
+Do not bypass governance or verification to satisfy this constraint.
+
+### Current BIO-04 edge
+
+The selector implementation is published at `d1a55897bf7f758914b8237d48ae43f245f06592`. Runtime learning remains unproven. The immediate blocker is functional, bounded OSES reasoning and correct tool identity in the metacognitive path. A local tool-ID parser fix is tested but not yet published.
+
+### Space-time working hypothesis
+
+Treat the user's "intelligent universal biosophy / space-time" language as an operational research framing: adaptation should reason over temporal freshness/sequence/latency/change together with environmental context/device/resources/tools. It is not an established scientific claim.
+
+### Anti-brute-force rule
+
+When a local bug appears during evolution, pause before adding a patch and ask:
+1. what universal mechanism explains this failure;
+2. which existing organ owns that mechanism;
+3. what is device-specific data versus universal logic;
+4. what minimum experiment distinguishes competing explanations;
+5. what Knowledge Delta should become reusable memory.
+
+Repeated local patches without a reusable principle are evidence to re-open the model at the architectural/algorithmic boundary, not permission to add another subsystem.
+
 ## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZG RECONCILIATION
 
 07ZG is completed as a read-only runtime/source reconciliation against `5238e85c014ea6bdda2ffd1a14064883bde559f5`.

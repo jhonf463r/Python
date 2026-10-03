@@ -411,3 +411,29 @@ Al empezar una sesion nueva:
 - que resultado dieron
 - que quedo `UNRESOLVED`
 - cual es el siguiente paso recomendado
+
+## 2026-10-03 ACTIVE EVOLUTION RULE — UNIVERSAL ADAPTATION / NO BRUTE-FORCE PATCHING
+
+When handling a material runtime problem, treat it as a possible observation about the general algorithm, not merely as a local defect.
+
+Before implementation, agents must ask:
+1. What universal mechanism could explain the symptom?
+2. Which existing organ/contract already owns that mechanism?
+3. What belongs to the invariant algorithm and what belongs to the device/tool/provider realization?
+4. What is the smallest experiment that separates these explanations?
+5. What verified Knowledge Delta should be persisted for future routing?
+
+The project preference is:
+
+`objective → state → causal frontier → capability → actor-fit → discriminating experiment → observation → verification → reconciliation → Knowledge Delta → reusable adaptation`.
+
+Do not interpret repeated local patches as progress if they increase special-case logic without a demonstrated reusable principle. Adapters are allowed when they implement a shared capability contract; they must not become separate reasoning algorithms for each tool/device.
+
+For laptop assistance, preserve the distinction:
+
+`current live observation ≠ stale snapshot`
+`metacognition exists ≠ metacognition is operationally useful`
+`diagnosis ≠ action`
+`action ≠ verification`
+
+The user's long-horizon goal is an adaptive laptop assistant that can reason over environmental and temporal context, select viable realizations, diagnose routine problems from evidence, and retain verified knowledge so the user is interrupted mainly for genuine decisions. This is a design objective, not a claim of completed capability.

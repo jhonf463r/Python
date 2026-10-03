@@ -728,3 +728,17 @@ this track is independent of the still-open Deep Research scientific literature 
 - Research result: available in chat; independent scientific verification remains open.
 - Main methodological corrections: do not equate learning with ΔW; do not define revision by ΔR; do not reduce metacognition to pre-action ΔD; treat biological analogies as partial unless justified.
 - Next actor: Sonnet/Claude-class for adversarial scientific claim/source verification.
+
+
+## 2026-10-03 — BIO-04 UNIVERSAL METACOGNITION / EVOLUTION DELTA
+
+Canonical absorption record: `CHAT-ARCH-2026-10-03-001-bio04-universal-metacognition-delta.md`.
+
+Material Knowledge Delta:
+- Ollama itself is responsive for minimal direct inference, but real OSES payloads can exceed the 30-second HTTP timeout because output/reasoning is unbounded in the current call shape; exact functional control remains open.
+- OSES can perform two sequential reasoning calls before session creation.
+- Tool-ID parsing in one diagnostic path was demonstrated wrong locally; correction is tested but not yet canonical.
+- IABV self/environment data can be stale or internally inconsistent relative to fresh Windows observation.
+- Project-wide design intent is to evolve reusable universal adaptation mechanisms rather than accumulate device/provider-specific patches.
+
+Status: diagnostic knowledge absorbed; production causal closure not claimed.

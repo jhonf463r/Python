@@ -1818,3 +1818,22 @@ The cross-AI cycle now has a clear scientific evidence handoff:
 `Deep Research result → independent source audit → corrected scientific claims → Knowledge Delta → engineering frontier`.
 
 Sonnet/Claude-class is selected for the next BIO-04 step because the missing capability is independence and adversarial claim verification, not implementation or Windows runtime. Codex remains reserved for the separate 07Z runtime frontier.
+
+
+## Transfer 11 — Universal adaptation is the intended synthesis
+
+The 2026-10-03 BIO-04 diagnosis made explicit a project-wide evolution rule: recurring local failures should be mined for a reusable algorithmic mechanism before implementation is changed. Tool/provider/device differences should normally be treated as realization/context variables of a general capability process, not as special-case logic.
+
+New working invariants:
+
+`local patch ≠ evolution of the algorithm`
+`capability ≠ realization`
+`environment observation ≠ current truth unless freshness/provenance are known`
+`metacognition present ≠ metacognition operationally useful`
+`deep self-examination ≠ mandatory prerequisite for every ordinary action`
+
+The desired symbiosis pattern is:
+
+`human objective → IABV current-state perception → uncertainty/frontier → capability-fit realization → governed action → observation/verification → Knowledge Delta → future adaptation`.
+
+The user's "biosofía inteligente universal espacio-tiempo" is retained as a research/design hypothesis: temporal context and environmental context should jointly condition adaptation while the underlying algorithms remain reusable.

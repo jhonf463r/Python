@@ -1226,3 +1226,32 @@ Do not promote a research response's engineering operationalization into a liter
 
 For BIO-04, keep separate:
 `learning`, `knowledge revision`, `reorganization`, `metacognitive monitoring/control`, and `consciousness-relevant indicators`.
+
+
+## 2026-10-03 ACTIVE RULE — UNIVERSAL ALGORITHM EVOLUTION
+
+When a runtime failure appears, the first question is not "what patch makes this pass?" but:
+
+`what reusable mechanism does this failure reveal?`
+
+The preferred reasoning sequence is:
+
+`symptom → current evidence → causal boundary → generalizable principle → existing-organ owner → smallest discriminating experiment → minimal implementation only if justified → runtime verification → Knowledge Delta → reuse`.
+
+For heterogeneous tools/devices, keep the algorithm invariant where possible and adapt the candidate realization through observed context, prerequisites, resources, identity, permissions, performance and temporal freshness.
+
+Explicit anti-pattern:
+
+`device/provider/tool-specific branch → patch → new special case → repeated divergence`.
+
+This does not prohibit necessary adapters. It requires that adapters implement a shared capability contract rather than redefining the reasoning algorithm for each realization.
+
+### Metacognition as an operational resource
+
+For laptop assistance, self-examination must eventually be evaluated as an operational control capability, not merely a collection of introspection routines. Relevant properties include freshness, provenance, uncertainty, latency, failure boundaries, actionability and verification.
+
+A deep metacognitive path should not become a hard prerequisite for every ordinary operation merely because the component exists. Any separation/deferment must preserve governance, provenance and verification.
+
+### Space-time working hypothesis
+
+Use temporal/environmental context as first-class conditioning variables for future adaptation: what changed, when, in which device/runtime context, under which resource/tool state, with what verified consequence, and what persisted for future reuse. This is a project hypothesis, not a scientific conclusion.

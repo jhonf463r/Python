@@ -1648,3 +1648,15 @@ Activate both tracks independently; do not let actor recommendations from one fr
 | Canonical scientific Knowledge Delta | **BLOCKED until independent verification** |
 | First scientific engineering frontier | **OPEN; derive after claim audit** |
 | Runtime META-RUNTIME-07Z | **INDEPENDENT / environment-blocked** |
+
+
+## 2026-10-03 — BIO-04 UNIVERSAL METACOGNITION / EVOLUTION DELTA
+
+Route this objective through:
+- `CURRENT-STATE.md) active universal-evolution overlay;
+- `CHAT-ARCH-2026-10-03-001-bio04-universal-metacognition-delta.md`;
+- `SYMBIOSIS-MAP.md` Transfer 11;
+- `UNRESOLVED-KNOWLEDGE.md` BIO-04 universal-metacognition section;
+- `MEMORY-OPERATING-PROTOCOL.md` universal algorithm-evolution rule.
+
+Activation triggers include: laptop assistant behavior, universal tool adaptation, device/provider adaptation, metacognition on the critical path, fresh-vs-stale environment state, diagnostic capability gaps, and any proposal that looks like a local patch but may reveal a reusable algorithmic principle.

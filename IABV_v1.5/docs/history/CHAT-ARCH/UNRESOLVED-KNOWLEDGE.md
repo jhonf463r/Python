@@ -2032,3 +2032,29 @@ Next unresolved scientific edge:
 ## 2026-10-02 — BIO-04 PRELIMINARY KNOWLEDGE BOUNDARY
 
 Research result is available but verification is open. In particular, the following are not yet canonical: mandatory ΔW for learning, mandatory ΔR for knowledge revision, mandatory pre-action decision change for metacognition, categorical equivalence between digital and biological plasticity, or any claim that a component combination constitutes consciousness.
+
+
+## 2026-10-03 — BIO-04 / UNIVERSAL METACOGNITION OPERABILITY
+
+### User-design intent
+The project should evolve toward an intelligent universal assistant for the laptop and heterogeneous environments: it should understand current reality, adapt tools/realizations to the device, learn from verified experience, and minimize the user's burden of low-level diagnosis. This is a design objective, not evidence that the current system already satisfies it.
+
+### Knowledge Delta
+Current runtime diagnosis establishes a concrete gap between having self/environment-model organs and having a fresh, coherent, actionable live diagnosis. IABV snapshots can be stale or internally inconsistent; Ollama can be reachable while real inference is slow; and OSES can spend substantial time reasoning before session creation. A local parser defect also showed that metacognitive reasoning can be aimed at the wrong tool identity.
+
+### Universal algorithm hypothesis
+A general mechanism should be reused across tools/devices:
+
+`objective → capability → candidate realization → prerequisites/state → selection → governed action → observation → verification → experience → future reuse`.
+
+The device/provider/tool should modify candidate state and parameters, not fork the algorithm.
+
+### Open research questions
+- How much metacognitive reasoning is functionally necessary for a given decision?
+- Which parts of OSES are required for session creation versus optional deep diagnosis/correction?
+- How should freshness, provenance and uncertainty be represented so IABV can reconcile live host truth against stale snapshots?
+- How can IABV choose among heterogeneous realizations without tool-specific logic?
+- How can verified operational experience alter that choice in a later real decision?
+
+### Space-time framing
+Retain as a working hypothesis the idea that universal adaptation should combine temporal state (freshness, episodes, change, latency) with environmental state (device, resources, tools, accounts, UI, network). Do not promote this framing to scientific fact without evidence.
