@@ -790,3 +790,9 @@ Purpose: preserve Codex's read-only source reconciliation and the narrowed first
 
 Source record: CHAT-ARCH-2026-10-03-009-bio04-independent-policy-audit-reconciliation.md
 Purpose: preserve Sonnet's independent confirmation/narrowing of Codex's OSES governance analysis, the corrected method lesson and the human-owned policy frontier.
+
+
+## 2026-10-03 — BIO-04 DATA-HANDLING SCIENCE DEEP RESEARCH
+
+Source contract: BIO-04-DATA-HANDLING-SCIENCE-DEEP-RESEARCH-2026-10-03.md
+Purpose: scientific and privacy-engineering foundation for the human-owned OSES request-level data-handling policy decision.
