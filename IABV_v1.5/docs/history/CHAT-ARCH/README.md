@@ -581,3 +581,17 @@ Routing rule reinforced: parallel frontiers may progress independently; a blocke
 The executed Deep Research result is now inspectable in the current chat and is treated as a research result, not yet as independently verified scientific knowledge. Several overclaims must be corrected before canonicalization, especially: learning does not require ΔW; knowledge revision does not require ΔR; metacognition is broader than mandatory pre-action ΔD; biological plasticity analogies are usually partial; and the ADD/UPDATE/etc. ontology is an IABV engineering vocabulary, not a direct AGM taxonomy.
 
 Next scientific actor: **Sonnet/Claude-class independent source/claim verifier**. Runtime 07Z remains separate and blocked by current natural resource state.
+
+
+## 2026-10-03 LATEST HUMAN DEEP-WORK / META-CONTROL UPDATE
+
+Canonical main currently verified: 164791ea75d9639df53e84269b69ecc81a953fb8.
+
+New canonical record:
+CHAT-ARCH-2026-10-03-006-human-deep-work-meta-control-and-action-learning-trace.md
+
+This record should be activated for objectives involving human-vs-IABV deep-work comparison, automatic prompt/actor inheritance, metacognitive control of the collaboration protocol, action-to-learning traceability, external-AI capability learning, or account/authentication/authorization as capability prerequisites.
+
+Current technical BIO-04 edge remains separate from this methodological track: OSES/context governance evidence → existing exclude/world_model → selector, pending bounded verification. The external-AI developmental track remains: verified experience → contextual capability knowledge → later realization selection.
+
+Historical README entries with older main SHAs remain historical snapshots; the latest current-state truth is determined from the current main branch and the active overlays in CURRENT-STATE.md.
