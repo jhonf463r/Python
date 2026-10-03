@@ -1709,3 +1709,8 @@ Current technical BIO-04 frontier remains separate: OSES governance evidence →
 
 
 | Shared developmental knowledge field / temporal-spatial maturation | CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md, MEMORY-OPERATING-PROTOCOL.md, SYMBIOSIS-MAP.md, HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md | GitHub-backed IABV frame, human deep-work trace, action-to-learning ladder, cross-IA method/routing transfer | Does verified prior knowledge alter the method, actor/realization routing or later decision in a causally attributable way across episodes? |
+
+
+| BIO-04 OSES governance semantics | CHAT-ARCH-2026-10-03-008-bio04-oses-governance-semantic-gap.md, CURRENT-STATE.md, SYMBIOSIS-MAP.md, MEMORY-OPERATING-PROTOCOL.md | OSES context construction, ProviderRouter predicates, AdaptiveModelSelector exclude/world_model, capability metadata | What request-level data-handling policy should govern OSES context before realization selection, and which existing owner can enforce it without duplication? |
+
+| Method maturation / bilateral bias control | CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md, HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md, MEMORY-OPERATING-PROTOCOL.md | normal-mode protocol application, explicit deep-work mode, bias/drift re-anchoring, verified knowledge reuse | Does accumulated methodology actually alter a later method/routing/decision rather than only being written down or echoed? |
