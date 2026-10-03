@@ -2219,3 +2219,41 @@ Human policy remains unresolved and implementation remains unauthorized.
 
 Developmental frontier:
 method-use was observed during independent audit, including correction of a prior premature routing recommendation. Persistent causal learning of this method is not proven because the audit prompt itself supplied the method context and no counterfactual exists.
+
+## 2026-10-03 — UK-HUMAN-01 — Human deviation classification and circumstance reconstruction
+
+QUESTION: Can existing IABV/context machinery distinguish execution error, misunderstanding, correction, new evidence, objective change, environment/context change and deliberate route rejection without over-inference?
+
+CURRENT STATUS: NOT PROVEN.
+
+Required chain:
+`interaction → divergence signal → contextual state → candidate explanation(s) → uncertainty → minimal clarification/support → reconciled classification → reusable lesson`
+
+Restriction: explicit human explanation may update the classification; hidden motives must remain uncertain.
+
+## 2026-10-03 — UK-HUMAN-02 — Automatic adaptive trace depth
+
+QUESTION: Can observable interaction patterns reliably distinguish routine from complex/deep-reconstruction context and change trace depth without weakening correctness or verification?
+
+CURRENT STATUS: NOT PROVEN.
+
+Candidate signals: objective continuity, correction density, scope changes, evidence revisitation, context complexity and explicit reconstruction requests.
+
+## 2026-10-03 — UK-HUMAN-03 — Copy/paste result to autonomous re-anchoring
+
+QUESTION: Can an external result cause correct memory activation, current-truth reconciliation, frontier detection and capability-fit next-action/prompt selection without manual replay of the prior context?
+
+CURRENT STATUS: NOT PROVEN.
+
+Required chain:
+`result ingestion → relevant memory activation → current truth → first open edge → capability/realization selection → next action`
+
+Textual continuity is insufficient; causal contextual consumption must be demonstrated.
+
+## 2026-10-03 — UK-HUMAN-04 — Coordination reduction caused by developmental knowledge
+
+QUESTION: Does persistent human/AI collaboration knowledge measurably reduce routine human coordination while preserving verification and governance?
+
+CURRENT STATUS: NOT PROVEN.
+
+Controlled comparison: materially equivalent episodes with and without the relevant verified lesson, measuring coordination steps, trace depth, actor selection, verification burden and resulting decision.
