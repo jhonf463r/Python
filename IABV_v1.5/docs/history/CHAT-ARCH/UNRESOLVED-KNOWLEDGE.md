@@ -2163,3 +2163,27 @@ Minimum discriminating design:
 control episode without the relevant prior lesson activated versus treatment episode with the verified lesson activated, while holding objective/resource conditions as constant as practical. Measure activation, routing, action, verification and reuse.
 
 Do not infer causal learning from textual similarity, repeated prompts, repeated actor sequences or the presence of a durable record.
+
+
+## 2026-10-03 OPEN KNOWLEDGE — BIO-04 OSES GOVERNANCE POLICY
+
+Codex source archaeology classifies the OSES governance seam as GOVERNANCE SEMANTIC GAP.
+
+First open edge:
+OSES context construction → request-level data classification/policy.
+
+Questions that must be resolved before implementation:
+1. Which context categories are permitted for local inference only?
+2. Which categories may be used with remote inference?
+3. Which categories require redaction or transformation first?
+4. When must explicit authorization be present?
+5. What is the required behavior when policy cannot be established?
+
+Existing mechanisms remain available but unproven for this route: ProviderRouter data-handling predicates, AdaptiveModelSelector exclude, world_model permissions/availability and existing capability metadata.
+
+Do not assume any of them is the semantic owner until producer/consumer and causal wiring are demonstrated.
+
+Follow-up experiment after policy definition:
+local synthetic context → policy classification → permitted/excluded realizations → selector behavior.
+
+No external provider execution, no selector scoring changes, no task-type scoring, no new governance manager and no learning claim.
