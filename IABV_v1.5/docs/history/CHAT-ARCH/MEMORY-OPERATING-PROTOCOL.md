@@ -1340,3 +1340,40 @@ Therefore:
 written method ≠ operative method ≠ causally learned method.
 
 END AMENDMENT
+
+## 2026-10-03 — HUMAN-AWARE PLASTICITY / LOW-FRICTION COORDINATION
+
+For objectives involving collaboration continuity, user correction, human deviation, deep-work adaptation, prompt inheritance or developmental learning, activate the human-aware developmental field in addition to ordinary objective-conditioned memory.
+
+Treat the human as a contextual participant, not an infallible deterministic source.
+
+Preserve the distinction:
+`deviation != error`
+
+Classify deviations from observable evidence before interpreting them. Candidate categories include execution error, misunderstanding, correction, new evidence, objective/priority change, environmental change, context loss/interruption and deliberate route rejection. Explicit human reasons outrank inference; unobserved motives remain uncertain.
+
+The material interaction loop becomes:
+`interaction → divergence signal → contextual reconstruction → explanation hypotheses → uncertainty → minimum clarification when necessary → action → observation → verification → reconciliation → Knowledge/Method/Relation/Routing Delta → later reuse`
+
+For collaboration-level plasticity, preserve not only domain facts but also reusable knowledge about how human + AI work on particular objectives under particular conditions, including actor/realization fit, context transport, trace depth and recurring failure patterns.
+
+Operationalize the user's "flow like water" target as:
+`minimum routine coordination friction + maximum necessary traceability`
+
+Never reduce friction by removing verification, provenance, governance, authorization or uncertainty. The intended automation is implicit routine context carriage and reconstruction, not hidden decision authority.
+
+### Adaptive trace-depth rule
+
+A future runtime may estimate work-context state only from observable interaction evidence and explicit human declarations. It may adapt trace depth:
+`routine/low ambiguity → concise`
+`complex/deep reconstruction → expanded`
+`ambiguous → preserve uncertainty / clarify only if material`
+
+This is a developmental target until runtime causal evidence exists.
+
+### Developmental learning gate
+
+A stored protocol change, memory record or repeated conversational pattern is not learning closure. To claim developmental learning, demonstrate:
+`verified prior episode → later contextual retrieval → changed method/routing/decision → attribution to the prior state → reusable consequence`
+
+This rule applies equally to human corrections, AI lessons and cross-IA collaboration.
