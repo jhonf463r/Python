@@ -1723,3 +1723,31 @@ Current technical BIO-04 frontier remains separate: OSES governance evidence →
 
 
 | BIO-04 privacy/data-handling science foundation | BIO-04-DATA-HANDLING-SCIENCE-DEEP-RESEARCH-2026-10-03.md, CURRENT-STATE.md, CHAT-ARCH-2026-10-03-009-bio04-independent-policy-audit-reconciliation.md | Privacy theory, contextual integrity, privacy engineering, information flow, agentic-AI privacy, authorization and locality | What scientific/technical distinctions must be fixed before the human defines OSES request-level data-handling policy? |
+
+
+## 2026-10-03 DEEP-RESEARCH PROMPT CONSTRUCTION / REUSE
+
+Activate:
+`DEEP-RESEARCH-PROMPT-CONSTRUCTION-AND-REUSE-PROTOCOL-2026-10-03.md`
+and
+`DEEP-RESEARCH-OPERATING-PROTOCOL-2026-09-30.md`
+
+Use this route whenever a new chat must formulate, revise or evaluate a Deep Research request.
+
+Primary retrieval questions:
+- What is the current objective?
+- What is the exact research object?
+- Is this a diagnostic or actual research?
+- What is the first open uncertainty?
+- What source families are required?
+- Can the research be decomposed into bounded threads?
+- What false-positive controls are needed?
+- What result signature is required?
+- What evidence would cause rejection?
+
+Construction rule:
+`objective → research object → central question → scope → decomposition → sources → evidence contract → controls → provenance → result signature → acceptance → stop`.
+
+The existence of a canonical prompt must never be treated as proof of execution. New chats must still verify actual result alignment and source evidence.
+
+Latest BIO-04 Module 1 result provides the current test case for this protocol; its source claims remain subject to adjudication before promotion.
