@@ -1695,3 +1695,14 @@ Current classification:
 
 First open edge:
 `OSES contract → existing production ownership boundary`.
+
+
+## 2026-10-03 — HUMAN DEEP-WORK / META-CONTROL / ACTION-LEARNING
+
+Activate: CHAT-ARCH-2026-10-03-006-human-deep-work-meta-control-and-action-learning-trace.md, CURRENT-STATE.md, MEMORY-OPERATING-PROTOCOL.md, SYMBIOSIS-MAP.md and UNRESOLVED-KNOWLEDGE.md.
+
+Use this route when the objective concerns human-vs-IABV reasoning process; automatic prompt or actor inheritance; metacognitive control of the collaboration protocol; human-visible versus machine/provenance traceability; action → observation → lesson → learning promotion; learning from Codex/Devin/external-agent experiences; or account/authentication/authorization state as a capability prerequisite.
+
+Current methodological frontier: human deep-work decision trace → reusable machine/provenance trace → later causal decision consumption.
+
+Current technical BIO-04 frontier remains separate: OSES governance evidence → existing exclude/world_model → selector, pending bounded Codex verification.
