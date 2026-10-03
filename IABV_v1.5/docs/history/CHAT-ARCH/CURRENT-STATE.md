@@ -76,6 +76,9 @@ For case 5, `routing authority` means the authority encoded in the frozen test c
 ### RSK-01B PROGRESS
 Session 01/05 completed on frozen corpus `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for the technical-continuity objective: current routing was reconstructed as Codex, historical routing was suppressed, and the next action matched RSK-01A. This is bounded evidence only; no A/B/C/D classification yet.
 
+### RSK-01B PROGRESS UPDATE
+Session 02/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for the recent-method-correction objective. It identified the single routing spine and correctly suppressed historical routing, while also detecting residual duplicated/contradictory entry material inside the corpus. No A/B/C/D classification yet.
+
 ### HUMAN-AWARE DEVELOPMENTAL FRONTIER
 `protocol-change observation → later contextual consumption → changed future retrieval/routing`
 
