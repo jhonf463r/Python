@@ -23,7 +23,7 @@ The first open edge is narrower than the full routing problem:
 The current document route is procedural:
 `README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific evidence`
 
-The runtime route searches local repositories/context assemblers, but RSK-01A did not find a demonstrated causal path that makes the canonical CHAT-ARCH field — current truth, recent material deltas, negative knowledge, historical evidence, currentness/provenance and actor evidence — arrive as one objective-conditioned activation set before actor selection.
+The runtime route searches local repositories/context assemblers, but RSK-01A did not find a demonstrated causal path that makes the canonical CHAT-ARCH field — current truth, recent material deltas, negative knowledge, historical evidence, currentness/provenance and actor evidence — arrive as one objective-conditioned activation set before actor selection. RSK-01B therefore fixes the pre-writeback corpus at the audited SHA rather than testing against the newly written routing state.
 
 Therefore:
 
@@ -67,7 +67,7 @@ Execute **RSK-01B — blind continuity test** against main `3de2bb4eddf4e43d9664
 For each of five fixed objectives record:
 `EXPECTED MATERIAL STATE → RETRIEVED → OMITTED → STALE ITEMS → HISTORICAL NEXT ACTORS SURFACED → FIRST OPEN EDGE → IA DESTINO → NEXT ACTION`
 
-Then classify the observed failure pattern as A/B/C/D:
+For case 5, `routing authority` means the authority encoded in the frozen test corpus at `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`; at that corpus state the current snapshot routed to Codex. This is deliberately separate from the post-writeback main route, now routed to Sonnet.
 - A = the canonical field is sufficient but the session failed to follow/activate the entry procedure.
 - B = existing organs contain the material but no causal composition activates it as one objective-conditioned set.
 - C = necessary corpus/index/currentness/canonicalization data is absent, ambiguous or not reliably addressable.
@@ -81,6 +81,9 @@ BIO-04 M2 is **CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE** based on 
 
 ### HARD ROUTING RULE
 A new chat must not select an actor from a historical document before reading this snapshot and reconciling it with the current objective. If this snapshot conflicts with historical `NEXT ACTOR` text, this snapshot wins.
+
+### TEST CONTAMINATION CONTROL
+The RSK-01B corpus is frozen at `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, the code/memory state audited before this reconciliation. The blind test must not use a later main commit because the later writeback explicitly names RSK-01B and Sonnet and would leak the test route.
 
 ### LAST VERIFIED REPOSITORY ANCHOR
 Code/repository state audited by RSK-01A: `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`.  
