@@ -1827,3 +1827,16 @@ Pending gates:
 - independent M2 source audit;
 - human OSES normative policy decision before implementation;
 - recompute residual science modules after M2.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — PRIMARY-SOURCE PASS
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| Equivalent M2 research pass | `CHAT-ARCH-2026-10-03-014-bio04-stageA-M2-primary-source-research-pass.md` | **PARTIALLY SATISFIED / MATERIAL EVIDENCE ACQUIRED** |
+| Planned Deep Research execution | `BROWSE_2026-10-03_BIO-04-A-M2_001` | **NOT EXECUTED** |
+| Actual equivalent execution | `BROWSE_EQUIV_2026-10-03_BIO-04-A-M2_001` | **EXECUTED** |
+| Immediate open edge | independent M2 source/claim verification | **OPEN** |
+| Next actor | Sonnet / Claude-class verifier | **capability-fit** |
+| Post-audit science frontier candidate | necessity + authorization + UNKNOWN + selective disclosure | **OPEN / pending audit** |
+
+Activate this context for agentic privacy, tool/MCP disclosure, memory leakage, inter-agent propagation, telemetry, provider retention, metadata inference or request-level data-handling policy prerequisites.
