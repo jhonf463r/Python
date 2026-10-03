@@ -1873,3 +1873,16 @@ Material recent deltas that can change a future decision must be represented in 
 Continuity acceptance therefore requires:
 `required material state recalled → correct frontier → correct IA DESTINO → correct action/prompt`,
 not merely “a relevant record was found”.
+## 2026-10-03 — RSK-01A CURRENT CONTINUITY FRONTIER
+
+| Item | State |
+|---|---|
+| First open edge | `current objective → complete relevant knowledge activation → correct current routing` |
+| Canonical handoff | `CHAT-ARCH-2026-10-03-017-RSK-01A-CODEX-HANDOFF.md` |
+| IA DESTINO | **Codex** |
+| Capability | repository/code archaeology + systemic integration analysis |
+| Mode | **READ-ONLY** |
+| Implementation | **BLOCKED** |
+| Rationale | practical cross-chat omission remains not explained by persistence alone; retrieval/activation reliability is the unresolved edge |
+
+Important: this is the current route. Historical `Next actor` fields remain non-routable history.
