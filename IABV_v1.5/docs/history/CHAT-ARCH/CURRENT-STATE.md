@@ -3083,3 +3083,34 @@ Acceptance remains:`OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT �
 After execution: independent source/evidence audit before canonical absorption. No implementation actor is authorized by M2 research alone.
 
 Important provenance rule: existence of this contract or planned execution ID is not evidence that M2 has executed. Actual execution ID and returned result must be preserved and reconciled.
+
+
+## 2026-10-03 BIO-04 M1 — KNOWLEDGE CONSOLIDATION / PENDING EDGES
+
+Canonical consolidation record:
+`CHAT-ARCH-2026-10-03-013-bio04-m1-knowledge-consolidation-pending-edges.md`
+
+This record explicitly preserves useful deductions from the re-pasted M1 result instead of allowing them to disappear into chat.
+
+### Reusable derived principles
+
+- A request-level privacy/flow decision should not collapse to a single sensitivity bit. Candidate semantic dimensions are information/type, subject, sender/actor role, recipient/role, contextual domain, purpose and transmission conditions. This is a derived design direction, not an implementation specification.
+- Separate purpose compatibility from data necessity:
+  `purpose_allowed != data_minimal`.
+- Locality, encryption, consent, authorization, provider identity and transmission mechanism are distinct properties; none should silently substitute for another.
+- Unknown policy state requires explicit semantics. Whether unknown means deny, ask, defer, local-only fallback or another action remains open.
+- External frameworks provide scientific/technical evidence and guidance; they do not automatically become IABV/OSES policy semantics or prove runtime enforcement.
+- M2 must distinguish data merely available to the host from data actually entering model context, tool/MCP payloads, external-provider transmission, logging/retention or downstream inference.
+
+### Pending work now registered
+
+1. Execute `BROWSE_2026-10-03_BIO-04-A-M2_001` for the agentic-AI/runtime-disclosure object and preserve the actual execution receipt/result.
+2. Independently audit the M2 source/claim evidence before absorption.
+3. Human normative gate: define OSES request-level data-handling semantics for local-only, remote-allowed, redaction/transformation, authorization, prohibited, necessity and unknown cases before implementation.
+4. After M2, recompute whether authorization/consent, transformation/de-identification, unknown/failure behavior, locality/trust and lifecycle/retention remain open scientific modules.
+5. Do not implement a policy merely because a research framework or report names a control.
+
+Closed against unnecessary repetition: the re-pasted M1 result does not justify reopening the full M1 research module or treating its alternate receipt as a second independent execution.
+
+Developmental status remains:
+`method-use observed; causal learning from persisted GitHub state NOT PROVEN`.
