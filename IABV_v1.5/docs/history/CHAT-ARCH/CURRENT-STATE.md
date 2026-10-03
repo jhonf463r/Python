@@ -2682,3 +2682,22 @@ Reconciled ownership boundary:
 - no new inference orchestrator/manager is justified by current evidence.
 
 Next action: read-only production composition archaeology of provider construction, router wiring, OSES construction, dependency injection/late binding and the real runtime call path. Only after that should implementation resume.
+
+
+## 2026-10-03 ACTIVE OVERLAY — BIO-04 PROVIDER-SEAM OWNERSHIP STILL AMBIGUOUS
+
+Latest production-composition archaeology confirms:
+- AppBootstrap wires local providers into `LocalRoleRouter` and wires `AdaptiveModelSelector` into `CloudReasoningPlannerService` and OSES.
+- `ProviderRouter` was not found constructed in production source; observed constructions are test-only.
+- OSES still calls module-level cloud/local reasoning functions for its own metacognitive inference.
+- `AdaptiveModelSelector` is consulted by OSES for degradation analysis, not as the selector for OSES's own inference realization.
+- `LocalRoleRouter` is a real production routing owner, but its ownership does not cover the complete OSES contract/validation/fallback problem.
+
+Therefore the current status is:
+`UNIVERSAL GAP CONFIRMED / OWNERSHIP SEAM OPEN`.
+
+The next edge is not "activate ProviderRouter". It is to identify the smallest existing production ownership boundary that can carry:
+`OSES requirements/output contract → realization selection/configuration → contract validation → fallback signal`
+without duplicating routing authority or creating a new inference orchestrator.
+
+Micro-harness inference evidence must remain scoped: provider-level success/retry is not end-to-end OSES production evidence.
