@@ -6,6 +6,91 @@ This document is the compact current-state bridge between historical knowledge a
 
 #
 
+## 2026-10-03 ACTIVE OVERLAY — HUMAN-AWARE PLASTICITY / ZERO-FRICTION BIOSOPHIA
+
+**READ THIS BEFORE OLDER SYMBIOSIS / METACOGNITION SECTIONS WHEN THE OBJECTIVE INVOLVES HUMAN DEVIATION, COLLABORATION PLASTICITY, TRACE-DEPTH ADAPTATION, CONTEXT CONTINUITY OR REDUCING ROUTINE HUMAN COORDINATION.**
+
+Canonical record:
+`CHAT-ARCH-2026-10-03-009-human-aware-plasticity-zero-friction-biosophia.md`
+
+The current developmental vision is that every material interaction can become reusable collaboration knowledge, including corrections, changes of direction and ordinary human errors. The human is not a deterministic or infallible component.
+
+Preserve:
+`deviation != error`
+
+A deviation may indicate error, misunderstanding, correction, new evidence, objective change, environmental change, interruption or deliberate rejection of the current route. Classify from observable evidence before assigning interpretation.
+
+Never infer hidden human motives from conversational behavior. Preserve explicit reasons when supplied, and preserve uncertainty otherwise.
+
+### Human-aware developmental loop
+
+`interaction → observed divergence → contextual reconstruction → candidate explanation(s) → uncertainty classification → minimum clarification/support when necessary → action → observation → verification → reconciliation → Knowledge / Method / Relation / Routing Delta → later reuse`
+
+Relevant context includes objective/phase, activated knowledge, previous action and expected result, observed result, temporal order/freshness, runtime/resource/environment state, constraints, prior corrections, actor/capability/realization state and explicit objective changes.
+
+### Plasticity target
+
+Plasticity is not merely storage:
+`experience → verified evidence → contextualized change → reusable representation → later contextual retrieval → changed method/routing/decision → observed consequence → independent verification → reuse`
+
+It must include both domain knowledge and collaboration knowledge: how human + AI should work on a class of objective under particular conditions.
+
+### Zero-friction operational meaning
+
+The desired biosophical direction is:
+`minimum routine coordination friction + maximum necessary traceability`
+
+Reducing friction must never mean bypassing provenance, verification, governance, authorization or uncertainty. Routine transport and reconstruction should become increasingly implicit; high-consequence boundaries should remain explicit and auditable.
+
+Target path:
+`user interaction → context reconstruction → relevant knowledge activation → frontier detection → capability/realization fit → next action/prompt → execution → result ingestion → reconciliation → developmental writeback`
+
+### Human deep-work / adaptive trace target
+
+Long-horizon target:
+`observable interaction pattern → probable context-state estimate → trace-depth adaptation → action → feedback → calibration`
+
+Use observable continuity, correction density, scope changes, evidence revisitation and task complexity as signals. These are operational signals, not proof of hidden mental states.
+
+Target policy:
+`routine/low ambiguity → concise trace`
+`complex/deep reconstruction → expanded decision trace`
+`ambiguous context → preserve uncertainty and ask only when necessary`
+
+Automatic detection remains **NOT PROVEN**.
+
+### Developmental and domain frontiers
+
+DOMAIN FRONTIER = first open causal/evidential edge of the current technical/scientific objective.
+
+DEVELOPMENTAL FRONTIER = whether verified prior experience changes the method, routing, trace depth or decision.
+
+The developmental frontier cannot override the domain frontier without evidence.
+
+### Mature interaction target
+
+`external result arrives → current context is reconstructed → relevant memory is activated → current state is reconciled → first open edge is identified → capability-fit realization is selected → appropriate trace depth is chosen → next prompt/action is generated → result is ingested → learning/routing delta is assessed`
+
+This is a target capability, not current autonomous closure.
+
+### Build restraint
+
+Do not create a HumanModel, DeepWorkDetector, SpaceTimeEngine, PlasticityEngine, BiosophyBrain or generic coordination brain by reflex.
+
+First compose existing CHAT-ARCH, frame entry, human-machine coordination, WorldModel/EnvironmentSelfModel, OSES/self-audit, capability/selection organs, provenance/evidence and ExperimentLab. Create new architecture only after an explicit responsibility is shown not to be expressible or causally closable by existing organs.
+
+### Current evidence boundary
+
+Established: the methodology contains a shared developmental field, human-visible deep-work trace, dynamic actor selection and explicit action/observation/verification/learning distinctions.
+
+Not established: automatic human-deviation classification, automatic motive reconstruction, automatic trace-depth control, autonomous external-result ingestion into current-state/frontier/action selection, runtime causal consumption of GitHub memory, or reduced human coordination causally attributable to persistent learned state.
+
+### Immediate developmental edge
+
+`human interaction → contextual event representation → deviation classification with uncertainty → adaptive trace depth → later verified contextual consumption`
+
+Secondary edge:
+`verified collaboration experience → persistent capability/method knowledge → changed future actor/realization selection`
 ## 2026-10-03 ACTIVE OVERLAY — UNIVERSAL EVOLUTION / METACOGNITION OPERABILITY
 
 **READ THIS BEFORE OLDER SYMBIOSIS/BIO-04 SECTIONS.**
