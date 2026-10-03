@@ -167,3 +167,30 @@ RSK-01 is the future automated retrieval/activation mechanism.
 This record establishes the information that the future activation field should be able to organize and retrieve.
 
 END OF RECORD
+
+
+## 2026-10-03 — HUMAN DEEP-WORK / META-CONTROL EPISODE
+
+A material human intervention has now been absorbed into the shared field.
+
+The human identified that repeated AI handoffs can drift into a mechanically inherited prompt chain. The correct response is to treat the collaboration protocol itself as an object of observation and experimentation.
+
+The human-visible developmental trace should expose:
+OBJECTIVE → CURRENT TRUTH → KNOWNS/UNKNOWNS → HYPOTHESES → ALTERNATIVES → FIRST OPEN EDGE → REQUIRED CAPABILITY → ACTOR FIT → ACTION → OBSERVATION → VERIFICATION → LESSON → KNOWLEDGE DELTA → ROUTING DELTA → NEXT EDGE.
+
+This human reasoning episode is a reference case for future IABV metacognitive comparison. It does not prove superior intelligence, consciousness or autonomous metacognition in any machine.
+
+### Action-to-learning distinction
+
+The field now distinguishes:
+ACTION → OBSERVATION → VERIFICATION → FACT → INFERENCE → LESSON → KNOWLEDGE DELTA → CAPABILITY DELTA → ROUTING DELTA → FUTURE DECISION.
+
+The existence of a durable record is insufficient to claim that learning occurred. A later decision must demonstrably consume the changed state for the stronger learning claim.
+
+### External AI realization model
+
+Codex, Devin and other external systems are future realizations of capabilities rather than fixed roles. Their contextual evidence should include capability, realization, environment, resources, account/authentication, authorization, task context and verified outcome.
+
+### Current technical handoff
+
+The active BIO-04 technical frontier remains the bounded verification of the governance path into the existing selector. The human-methodology frontier is the later causal demonstration that the trace itself can become reusable machine state and change a future decision.
