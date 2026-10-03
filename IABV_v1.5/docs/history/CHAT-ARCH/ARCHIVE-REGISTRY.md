@@ -855,3 +855,19 @@ Pending:
 M2 actual execution + evidence reconciliation; independent M2 audit; human normative OSES policy boundary; post-M2 residual research frontier recomputation.
 
 No implementation is authorized by M1 alone.
+
+## 2026-10-03 — BIO-04 STAGE-A M2 INDEPENDENT AUDIT CONTRACT
+
+Source contract:
+`CHAT-ARCH-2026-10-03-015-bio04-stageA-M2-independent-source-audit-contract.md`
+
+Purpose:
+independent challenge of the M2 primary-source research pass before canonical scientific absorption.
+
+State:
+**READY / NOT YET EXECUTED**
+
+Next actor:
+**Sonnet / Claude-class independent source-evidence verifier**.
+
+No implementation or policy selection.
