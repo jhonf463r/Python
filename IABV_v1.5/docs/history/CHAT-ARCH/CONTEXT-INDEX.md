@@ -1853,3 +1853,23 @@ Activate:
 | Required capability | independent forensic source/evidence verification |
 | Actor | Sonnet / Claude-class verifier |
 | Implementation | **BLOCKED** |
+
+## 2026-10-03 CONTINUITY ROUTING RULE — INDEX IS NOT ACTOR AUTHORITY
+
+CONTEXT-INDEX is a **memory navigation map**, not an alternate current routing authority.
+
+Its job:
+`objective → relevant knowledge neighborhood → source records`.
+
+It must not cause a new chat to select an actor directly from an historical `Next actor` field.
+
+Current routing must come from:
+`CURRENT-STATE top routing snapshot`.
+
+Historical actor fields retrieved through the index are evidence about prior states only.
+
+Material recent deltas that can change a future decision must be represented in CURRENT-STATE; otherwise selective objective-conditioned retrieval can produce locally coherent but globally incomplete continuity.
+
+Continuity acceptance therefore requires:
+`required material state recalled → correct frontier → correct IA DESTINO → correct action/prompt`,
+not merely “a relevant record was found”.
