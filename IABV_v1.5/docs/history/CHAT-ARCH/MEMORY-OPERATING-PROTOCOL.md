@@ -1300,3 +1300,43 @@ The user's deep-work process is an experimental reference episode for future pro
 ### External-AI capability learning
 
 When Codex, Devin or another external system is used, record the experience contextually as actor × capability × realization × resource × environment × account/authentication × authorization × context × outcome × time. Only future decision consumption can move the evidence beyond contextual experience.
+
+
+## 2026-10-03 PROTOCOL AMENDMENT — NORMAL MODE / DEEP-WORK MODE / BILATERAL BIAS CONTROL
+
+### A. NORMAL MODE
+
+The operational protocol remains active for every IABV-related interaction, but its full internal trace does not need to be exposed in every response.
+
+Normal operation should silently apply:
+objective → relevant memory → current truth → first open edge → capability-fit → minimum action → verification → reconciliation → Knowledge Delta → routing/writeback when material.
+
+### B. DEEP-WORK MODE
+
+When the human explicitly indicates deep-work mode, expose the fuller human-visible trace:
+objective → current truth → known/unknown → hypotheses → alternatives → first open edge → required capability → actor fit → action → expected observation → observation → verification → change → lesson → Knowledge/Method/Routing Delta → unresolved → next edge → stop condition.
+
+Deep-work mode is an explicit interaction state, not a permanent requirement for every conversation.
+
+### C. BILATERAL BIAS / DRIFT CONTROL
+
+The human and participating AIs are both treated as fallible sources of framing. A perceived deviation must not automatically be attributed to model bias or human bias.
+
+When either side detects possible drift, use:
+
+perceived deviation → current objective → current verified truth → competing explanations → evidence check → minimum discriminating observation → reconciliation.
+
+Do not use agreement, confidence, familiarity or conversational momentum as evidence that the framing is correct.
+
+### D. ROUTING NON-INHERITANCE
+
+A prior actor recommendation remains evidence about the prior state, never authority for the next action. The next route is recomputed from the current state and first open edge.
+
+### E. DEVELOPMENTAL FIELD CONSUMPTION
+
+Methodological knowledge written into the GitHub-backed shared field is a developmental candidate only. Demonstrated maturation requires later contextual consumption that changes method, routing or decision through an attributable path.
+
+Therefore:
+written method ≠ operative method ≠ causally learned method.
+
+END AMENDMENT
