@@ -332,3 +332,18 @@ Required handoff fields:
 - independent verifier, when known.
 
 Always report the concrete IA destination to the human.
+
+## 2026-10-03 CONTINUITY ENTRY HARDENING
+
+Before activating any objective-specific protocol, historical handoff, or domain record, the participant must read the **CURRENT-STATE top routing snapshot**.
+
+Required order:
+`README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific records`.
+
+Reason:
+a new chat may otherwise enter through a locally relevant protocol and omit a material recent delta stored elsewhere.
+
+Historical routing fields remain evidence only:
+`historical NEXT ACTOR = non-routable`.
+
+The current snapshot must be treated as the sole current actor-routing authority for the active objective.
