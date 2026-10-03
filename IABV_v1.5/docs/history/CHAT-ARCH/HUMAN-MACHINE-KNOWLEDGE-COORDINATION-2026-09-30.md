@@ -194,3 +194,23 @@ Codex, Devin and other external systems are future realizations of capabilities 
 ### Current technical handoff
 
 The active BIO-04 technical frontier remains the bounded verification of the governance path into the existing selector. The human-methodology frontier is the later causal demonstration that the trace itself can become reusable machine state and change a future decision.
+
+
+## 2026-10-03 INTERACTION MODES / BILATERAL DRIFT CONTROL
+
+The human specifies that the full deep-work comparison should be activated explicitly. Normal operation still applies the established IABV method, but the complete decision trace remains implicit unless deep-work mode is declared or a material methodological drift/control issue makes it necessary.
+
+When deep-work mode is declared, expose the human-visible trace and compare the current process against the operational metacognitive comparator.
+
+A perceived deviation may come from either side of the collaboration. Neither human framing nor AI framing is presumed correct. Re-anchor through current objective, verified state, competing explanations, evidence and the minimum discriminating observation.
+
+This rule is intended to reduce confirmation drift without transferring decision authority from the human.
+
+## 2026-10-03 CODEX RECONCILIATION
+
+Codex narrowed BIO-04 OSES governance from a generic selector-wiring question to a request-level policy question. This is recorded canonically in CHAT-ARCH-2026-10-03-008-bio04-oses-governance-boundary.md.
+
+Method lesson:
+existing parameter ≠ existing semantic ownership.
+
+The collaboration should not move from a report directly to implementation when the report exposes an unresolved policy boundary.
