@@ -1291,3 +1291,15 @@ The object-preservation diagnostic has already yielded the relevant information.
 
 Do not route to an implementation actor until the scientific result is accepted and the IABV-specific frontier is recomputed.
 
+
+## REQUIRED HANDOFF FIELD — CONCRETE IA DESTINATION
+
+At the end of every adjudication, include:
+
+`FIRST OPEN EDGE`
+`REQUIRED CAPABILITY`
+`IA DESTINO`
+`WHY THIS IA`
+`COMPLETE NEXT PROMPT / ACTION`
+
+A generic role such as `independent verifier` is not an adequate operational handoff when the actual IA is known.
