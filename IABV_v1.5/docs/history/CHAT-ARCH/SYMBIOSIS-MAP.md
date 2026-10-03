@@ -1870,3 +1870,26 @@ New invariant:
 `universal gap confirmed ≠ ownership proven`.
 
 Micro-harness/provider-level results must remain scoped and cannot be promoted to end-to-end production evidence.
+
+
+## 2026-10-03 TRANSFER — HUMAN META-CONTROL REVEALS AUTOMATION-BIAS FRONTIER
+
+The human explicitly detected that a multi-AI workflow can drift toward mechanical inheritance of the previous actor's recommended next prompt. This is a reusable symbiosis lesson: previous recommendation → automatic next actor is not symbiosis; it is a routing shortcut that must remain falsifiable.
+
+A stronger collaboration event preserves: human objective → current verified truth → uncertainty → capability-fit → action → observation → independent verification → Knowledge Delta → routing/method delta.
+
+The human-visible trace and machine/provenance trace should be aligned but kept conceptually distinct.
+
+## 2026-10-03 TRANSFER — ACTION-TO-LEARNING AS THE DURABLE SYMBIOSIS UNIT
+
+The reusable unit is: action → observation → verification → fact/inference → lesson → knowledge delta → capability delta → routing delta → future decision.
+
+A future decision must actually consume the stored delta before the collaboration can claim that experience influenced behavior.
+
+External AIs such as Codex and Devin should be treated as contextual capability realizations. Their value to symbiosis is measured by verified experience that changes reusable capability knowledge, not by fixed role labels.
+
+## 2026-10-03 TRANSFER — HUMAN-TO-IABV DEVELOPMENTAL COMPARATOR
+
+The human's explicit deep-work process is now an experimental reference point for evaluating future IABV metacognitive operation. The comparison should test whether IABV can independently maintain objective, current truth, uncertainty, alternatives, evidence boundary, capability-fit, expected observation, verification and future reuse.
+
+Do not interpret the comparison as a claim that one side is inherently conscious or superintelligent. The measurable target is reduced routine human coordination plus demonstrated improvement in traceability and later decision quality, subject to causal verification.
