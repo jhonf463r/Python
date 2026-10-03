@@ -2749,3 +2749,42 @@ verified delta → later contextual consumption → changed decision.
 A written protocol or Knowledge Delta is not considered causally learned until a later episode demonstrably consumes it and changes behavior for the intended reason.
 
 Space-time remains an operational framing of temporal lineage/freshness plus relational context, not a scientific claim about physical consciousness.
+
+
+## 2026-10-03 BIO-04 GOVERNANCE RECONCILIATION — CODEX
+
+Codex completed the requested read-only source archaeology at technical SHA d1a55897bf7f758914b8237d48ae43f245f06592.
+
+Reconciled facts:
+- Two OSES context-building paths can place detailed tool/account/browser/session/environment/resource metadata into reasoning context.
+- OSES reasoning is cloud-first on the audited helper path and does not invoke ProviderRouter or AdaptiveModelSelector for that inference.
+- ProviderRouter contains data-handling predicates, but those predicates are not demonstrated as effective for the OSES path.
+- AdaptiveModelSelector accepts exclude, but OSES does not route its inference through that selector; therefore exclude does not presently govern OSES provider attempts.
+- world_model affects selector concerns such as web permission gates, quotas and availability, but is not a demonstrated OSES data-sensitivity policy signal.
+- Existing capability metadata is partial and does not provide a demonstrated selector-consumed mapping from OSES context sensitivity to permitted realizations.
+
+Classification:
+GOVERNANCE SEMANTIC GAP.
+
+The first open edge is narrowed to:
+OSES context construction → request-level data classification/policy.
+
+Only after that policy boundary is specified should implementation be selected. The next experiment should be local/synthetic and must verify policy decision → permitted/excluded realization set without invoking external providers.
+
+Evidence boundary:
+static request construction and potential data flow are source-proven; real transmission and runtime payload observation were not performed.
+
+Negative knowledge added:
+existing routing parameter ≠ existing semantic ownership; availability/credentials ≠ semantic authorization; static cloud-call construction ≠ observed transmission.
+
+Current implementation status:
+NOT AUTHORIZED.
+
+## 2026-10-03 DEVELOPMENTAL METHOD RECONCILIATION
+
+This result provides a concrete example of the shared-developmental-field rule. A generic mechanism such as exclude cannot be promoted to a semantic policy owner simply because the parameter exists.
+
+Method Delta:
+Before reusing a routing primitive, verify its semantic owner, policy meaning, producer, consumer and causal effect.
+
+This methodological delta must be considered in later routing decisions, but its causal reuse is not yet proven.
