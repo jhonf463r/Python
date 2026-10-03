@@ -2187,3 +2187,20 @@ Follow-up experiment after policy definition:
 local synthetic context → policy classification → permitted/excluded realizations → selector behavior.
 
 No external provider execution, no selector scoring changes, no task-type scoring, no new governance manager and no learning claim.
+
+
+## 2026-10-03 ROUTED OPEN EDGE — BIO-04 POLICY BOUNDARY
+
+First open edge:
+OSES context construction → request-level data classification/policy.
+
+Next actor:
+SONNET/CLAUDE-CLASS independent security/contract/source auditor.
+
+Reason:
+the current uncertainty is semantic ownership and policy contract, not implementation.
+
+Required output:
+independent challenge to Codex, context-category map, existing policy semantics, producer→contract→consumer trace, neutral human policy decision sheet, and the smallest local synthetic post-policy experiment.
+
+Human policy authority remains explicit. The auditor must not choose the policy.
