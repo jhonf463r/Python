@@ -2846,3 +2846,17 @@ Developmental-field observation:
 method-use = OBSERVED because the audit required producer/consumer ownership before reuse of an existing filter and corrected the prior routing proposal. Causal learning from persistent GitHub state remains NOT PROVEN because the prompt itself supplied the method context and a counterfactual is absent.
 
 The immediate next frontier is human policy definition, after which actor/capability routing must be recomputed from the resulting contract.
+
+
+## 2026-10-03 BIO-04 SCIENTIFIC POLICY FOUNDATION — DEEP RESEARCH CONTRACT
+
+Canonical research contract:
+BIO-04-DATA-HANDLING-SCIENCE-DEEP-RESEARCH-2026-10-03.md
+
+Before the human fixes request-level OSES data-handling policy, a science/privacy-engineering research pass is required. The research is deliberately separate from source implementation and must distinguish scientific/technical findings from normative policy choices.
+
+Research scope includes privacy theory, contextual integrity, privacy engineering, data minimization, purpose limitation, authorization/authentication, information-flow control, metadata sensitivity, transformation methods, local-versus-remote inference, fail-open/fail-closed behavior and current agentic-AI privacy evidence through 2026-10-03.
+
+Human decision remains downstream of the research. No policy value is selected by the research actor.
+
+Current domain frontier remains request-level OSES policy semantics. Developmental frontier remains whether this scientifically grounded policy decision and later use change the method/routing of a subsequent IABV cycle.
