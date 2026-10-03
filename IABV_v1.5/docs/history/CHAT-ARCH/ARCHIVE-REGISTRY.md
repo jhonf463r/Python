@@ -887,3 +887,16 @@ State:
 **READY / NOT EXECUTED**
 
 No implementation authorized.
+
+## 2026-10-03 — CONTINUITY ROUTING FRAGMENTATION RECONCILIATION
+
+Source record:
+`CHAT-ARCH-2026-10-03-016-continuity-routing-fragmentation-and-M2-audit-reconciliation.md`.
+
+Purpose: preserve the human-observed cross-chat omission problem, the protocol-authority consolidation and the reconciled M2 audit.
+
+State:
+**CANONICAL METHOD / ROUTING RECONCILIATION**.
+
+Concrete current handoff:
+`CHAT-ARCH-2026-10-03-017-RSK-01A-CODEX-HANDOFF.md` → **Codex**, read-only.
