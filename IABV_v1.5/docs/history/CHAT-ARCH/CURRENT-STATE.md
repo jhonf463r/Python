@@ -3065,3 +3065,21 @@ The M1 scientific verdict does not change: `CANONICALLY ABSORBABLE AS SCOPED, CO
 No evidence found in this reconciliation proves the proposed `BROWSE_2026-10-03_BIO-04-A-M2_001` execution or a canonical M2 result. The next BIO-04 domain frontier therefore remains `agentic AI / runtime disclosure`; actor fit remains Deep Research followed by independent source/evidence verification.
 
 Traceability delta: `reported execution identity → canonical execution identity` must be reconciled before a repeated result is treated as an independent execution.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — AGENTIC AI RUNTIME DATA DISCLOSURE CONTRACT
+
+Canonical research contract:
+`BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-10-03.md`
+
+Status: `PLANNED / NOT YET EXECUTED`.
+Planned execution identifier: `BROWSE_2026-10-03_BIO-04-A-M2_001`.
+
+The M2 object is external scientific/technical research into runtime disclosure and propagation mechanisms in contemporary LLM/agentic systems. It covers model-context assembly, tool/function/MCP boundaries, inter-agent exchange, memory/session state, logging/telemetry, external providers/cloud, storage/retention, transformations and inference/composition.
+
+M1 corrections remain active: purpose must be source-precise; conceptual examples are not empirical findings; encryption/authentication/locality/provider availability are not automatic privacy authorization; external frameworks do not automatically become IABV policy semantics.
+
+Acceptance remains:`OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+After execution: independent source/evidence audit before canonical absorption. No implementation actor is authorized by M2 research alone.
+
+Important provenance rule: existence of this contract or planned execution ID is not evidence that M2 has executed. Actual execution ID and returned result must be preserved and reconciled.
