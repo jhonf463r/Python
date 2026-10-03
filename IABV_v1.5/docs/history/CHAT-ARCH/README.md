@@ -664,3 +664,25 @@ Canonical contract: `BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-1
 Status: planned / not yet executed. The contract advances M1 from foundational contextual-integrity/privacy-engineering concepts to mechanisms of runtime disclosure and propagation in contemporary LLM/agent systems.
 
 Do not infer execution from the contract's existence. Preserve the actual execution receipt and returned result, then independently audit sources/claims before canonical absorption.
+
+## 2026-10-03 CONTINUITY CONSOLIDATION — SINGLE ROUTING SPINE
+
+The archive has accumulated many historical handoffs, protocols and dated routing statements. This creates a retrieval hazard: a new chat can find a locally relevant protocol and follow it before reconstructing the complete current state.
+
+Therefore the canonical entry contract is now:
+
+`README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX relevant records → MEMORY-OPERATING-PROTOCOL method → objective-specific evidence`.
+
+**Only the top routing snapshot in CURRENT-STATE is a current actor-routing authority.**
+
+All historical `NEXT ACTOR`, `CURRENT NEXT ACTOR`, `ROUTING` and handoff statements remain valuable evidence but are **NON-ROUTABLE HISTORY** unless explicitly re-promoted by the current snapshot.
+
+A new chat must first determine:
+`current objective → current truth → material recent deltas → closed/open edges → IA DESTINO`.
+
+Do not mistake:
+`relevant protocol found ≠ complete current frame reconstructed`.
+
+Material cross-chat deltas must be summarized into CURRENT-STATE so selective retrieval does not silently discard recent learning.
+
+R34 remains a bounded blind-reconstruction result, not proof of general retrieval reliability.
