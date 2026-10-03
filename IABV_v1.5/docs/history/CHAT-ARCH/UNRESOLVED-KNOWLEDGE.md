@@ -2146,3 +2146,20 @@ Capability-to-realization mapping remains intentionally unresolved and must not 
 Future developmental experiment: Codex/Devin episode → verified capability evidence → persistent contextual state → later selection → changed decision.
 
 Still unproven: account/session administration as a reusable capability; authenticated/authorized external-agent management by IABV; later actor selection changed because of learned experience; causal runtime ingestion of the external result into IABV state.
+
+
+## 2026-10-03 OPEN KNOWLEDGE — SHARED DEVELOPMENTAL FIELD
+
+New working hypothesis: the GitHub-backed IABV frame can function as a temporary developmental knowledge substrate while IABV runtime is not yet continuously consuming it.
+
+Open causal edges:
+1. written Knowledge/Method/Routing Delta → later activated context;
+2. later activated context → changed action/selection;
+3. changed action/selection → attributable downstream consequence;
+4. verified reuse → reduced routine human coordination or increased experimental efficiency;
+5. reusable experience → capability development across a distinct objective.
+
+Minimum discriminating design:
+control episode without the relevant prior lesson activated versus treatment episode with the verified lesson activated, while holding objective/resource conditions as constant as practical. Measure activation, routing, action, verification and reuse.
+
+Do not infer causal learning from textual similarity, repeated prompts, repeated actor sequences or the presence of a durable record.
