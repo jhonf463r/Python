@@ -2815,3 +2815,34 @@ DOMAIN FRONTIER = policy boundary.
 DEVELOPMENTAL FRONTIER = whether the prior method lesson "existing parameter != existing semantic ownership" actually changes the audit method and later routing.
 
 The human does not need to enter deep-work mode for routine execution. Full human-visible trace is activated only when the human explicitly declares deep-work mode or a material drift/control issue warrants it.
+
+
+## 2026-10-03 BIO-04 INDEPENDENT POLICY AUDIT RECONCILIATION
+
+Canonical source record:
+CHAT-ARCH-2026-10-03-009-bio04-independent-policy-audit-reconciliation.md
+
+Sonnet/Claude-class independently audited Codex's OSES governance interpretation at technical SHA d1a55897bf7f758914b8237d48ae43f245f06592.
+
+Result: Codex's main classification is CONFIRMED and several claims are narrowed. The first open edge remains:
+OSES context construction → request-level data classification/policy.
+
+The key refinement is that the gap is a genuine semantic ownership gap in this route, not merely selector wiring. ProviderRouter privacy predicates, redaction mechanisms, ObservationPermissionGate and selector exclude/world_model are partial precedents in other domains and are not demonstrated as an effective OSES transmission policy.
+
+Important independent correction: Sonnet explicitly retracts its earlier premature recommendation to wire ProviderRouter/exclude before policy semantics exist.
+
+Current human-owned policy questions:
+- which OSES context categories are local-only;
+- which may be cloud-permitted;
+- which require redaction/transformation;
+- which require explicit authorization;
+- what happens when classification is unknown;
+- what happens when no permitted realization remains;
+- whether the local endpoint itself requires an integrity/locality contract.
+
+Implementation remains NOT AUTHORIZED until the policy boundary is specified.
+
+Developmental-field observation:
+method-use = OBSERVED because the audit required producer/consumer ownership before reuse of an existing filter and corrected the prior routing proposal. Causal learning from persistent GitHub state remains NOT PROVEN because the prompt itself supplied the method context and a counterfactual is absent.
+
+The immediate next frontier is human policy definition, after which actor/capability routing must be recomputed from the resulting contract.
