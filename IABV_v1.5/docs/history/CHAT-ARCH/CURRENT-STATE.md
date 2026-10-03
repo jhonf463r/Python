@@ -2796,3 +2796,22 @@ Canonical source record:
 CHAT-ARCH-2026-10-03-008-bio04-oses-governance-boundary.md
 
 This record is the evidence-bearing source for the Codex reconciliation that narrowed the first open OSES edge to request-level policy semantics.
+
+
+## 2026-10-03 BIO-04 NEXT ACTOR — INDEPENDENT POLICY-BOUNDARY AUDIT
+
+Canonical prompt:
+BIO-04-OSES-DATA-HANDLING-POLICY-INDEPENDENT-AUDIT-2026-10-03.md
+
+After Codex source reconciliation, the first open edge is:
+OSES context construction → request-level data classification/policy.
+
+The next capability-fit actor is SONNET/CLAUDE-CLASS independent security/contract/source auditor. It must independently challenge Codex, map existing policy semantics and prepare a neutral human policy decision sheet without choosing the policy or implementing code.
+
+Current implementation status remains NOT AUTHORIZED.
+
+The developmental-field method requires two parallel checks:
+DOMAIN FRONTIER = policy boundary.
+DEVELOPMENTAL FRONTIER = whether the prior method lesson "existing parameter != existing semantic ownership" actually changes the audit method and later routing.
+
+The human does not need to enter deep-work mode for routine execution. Full human-visible trace is activated only when the human explicitly declares deep-work mode or a material drift/control issue warrants it.
