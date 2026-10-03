@@ -49,6 +49,9 @@ Do not assume that a human deviation is an error. Do not infer hidden motive. Ex
 
 Current status: shared field and human-visible trace are established as methodology. Automatic deviation classification, automatic trace-depth adaptation, autonomous result → context/frontier → actor/prompt reconstruction, and causal runtime reuse are NOT PROVEN.
 
+### RSK-01B SESSION 02 RESULT
+Blind Session 02 passed for the recent-method-correction objective: the fresh agent identified the single routing spine and its precedence, while detecting stale contradictory entry material. This is bounded evidence, not general continuity proof.
+
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
