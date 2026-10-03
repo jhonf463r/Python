@@ -1753,25 +1753,17 @@ The existence of a canonical prompt must never be treated as proof of execution.
 Latest BIO-04 Module 1 result provides the current test case for this protocol; its source claims remain subject to adjudication before promotion.
 
 
-## 2026-10-03 BIO-04 STAGE-A M1 — RESULT ADJUDICATION
+## 2026-10-03 BIO-04 STAGE-A M1 — SOURCE-AUDIT RECONCILIATION
 
-Canonical record:
-`CHAT-ARCH-2026-10-03-010-bio04-stageA-M1-adjudication.md`
+| Frontier | Canonical record | State |
+|---|---|---|
+| BIO-04 Stage-A M1 | `CHAT-ARCH-2026-10-03-011-bio04-stageA-M1-source-audit-reconciliation.md` | **CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE** |
+| Independent source audit | `AUDIT_2026-10-03_BIO-04-A-M1_001` | **PARTIALLY-VERIFIED; resolved by scoped claim correction + targeted primary-source closure** |
+| Accepted M1 object | Contextual Integrity + privacy engineering + information flow | **CLOSED FOR THIS MODULE** |
+| PF 1.1 status | Official current NIST material | **Initial Public Draft / coming soon; not final** |
+| Next BIO-04 science frontier | agentic AI / runtime disclosure | **OPEN; bounded threads required before execution** |
+| Next actor | Deep Research capability | **Capability-fit for external literature synthesis; independent verifier follows** |
 
-Execution:
-`BROWSE_2026-10-03_BIO-04-A-M1_001`
+Activate this context for BIO-04 privacy/data handling, contextual integrity, information-flow semantics, NIST Privacy Framework, or preparation of the next external-science module.
 
-Status:
-**OBJECT-ALIGNED / PROVISIONALLY SOURCE-SUPPORTED / NOT YET CANONICAL SCIENTIFIC KNOWLEDGE**
-
-M1 covered Contextual Integrity, privacy engineering/NIST, purpose, minimization, sender/recipient/transmission and information-flow models.
-
-Material correction:
-the Barth et al. formalization does not use purpose as a primitive parameter of the basic communication tuple, but it does incorporate purpose into policy consistency and shows purpose-specific simulation. Do not state that CI simply "cannot represent purpose."
-
-Remaining BIO-04 external-science frontiers are separate: agentic-AI/runtime disclosure, metadata/inference/composition risk, transformation, authorization/consent, unknown/failure behavior, locality/trust boundaries, and lifecycle/retention/secondary use.
-
-Prompt-construction method was observed as useful and is now canonically preserved in:
-`DEEP-RESEARCH-PROMPT-CONSTRUCTION-AND-REUSE-PROTOCOL-2026-10-03.md`.
-
-Next actor for this result: **SONNET/CLAUDE-CLASS independent source/claim verifier**.
+The canonical unit is the corrected claim set, not the unmodified research report.
