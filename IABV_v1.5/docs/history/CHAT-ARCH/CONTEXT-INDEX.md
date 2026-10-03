@@ -72,6 +72,9 @@ Blind Session 01 passed for the technical-continuity objective at frozen SHA `3d
 **ACTION:** execute RSK-01B on `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` using five fresh objective-only sessions, each with a fully instantiated concrete objective. A template-placeholder refusal is a setup failure and is not scored. Case 5 must score the routing authority encoded in that frozen corpus (Codex at that point), not the post-writeback Sonnet route.
 
 Historical `NEXT ACTOR` text remains non-routable. Do not treat the Codex recommendation as a permanent sequence; after RSK-01B, recompute the actor from the observed result.
+### RSK-01B FINAL AGGREGATE
+RSK-01B completed 5/5: bounded documentary continuity demonstrated, complete relevant-field recall not proven. Next actor is **Codex** for a read-only RSK-01C fixture/contract audit that freezes independent expected material and clarifies global-vs-domain routing semantics. Sonnet remains the prospective independent verifier.
+
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
