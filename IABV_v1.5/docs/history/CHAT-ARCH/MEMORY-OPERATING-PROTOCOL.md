@@ -1412,3 +1412,23 @@ Do not use only:
 because this leaves the handoff operationally incomplete.
 
 The concrete IA is selected dynamically from evidence and availability. This rule does not reintroduce a fixed ChatGPT→Sonnet→Devin pipeline.
+
+## 2026-10-03 CONTINUITY CONSOLIDATION — PROTOCOL HIERARCHY
+
+The protocol layer is intentionally distributed by responsibility, but the current decision state is singular.
+
+Use:
+- README for entry and precedence;
+- CURRENT-STATE top routing snapshot for current truth and current IA destination;
+- CONTEXT-INDEX for memory navigation;
+- this document for retrieval/evidence/routing methodology;
+- SYMBIOSIS-MAP for capability-transfer evidence;
+- UNRESOLVED-KNOWLEDGE for open knowledge;
+- historical records for source evidence.
+
+A methodology document must never become a second current-state router.
+
+The authoritative operational chain is:
+`CURRENT OBJECTIVE → CURRENT TRUTH → MATERIAL DELTAS → CLOSED/OPEN EDGES → REQUIRED CAPABILITY → CAPABILITY FIT → IA DESTINO → ACTION/PROMPT`.
+
+If any historical addendum contains a different `Next actor`, do not follow it directly. Recompute from CURRENT-STATE.
