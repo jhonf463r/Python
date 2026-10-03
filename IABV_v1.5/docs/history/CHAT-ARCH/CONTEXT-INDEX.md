@@ -1720,3 +1720,6 @@ Current technical BIO-04 frontier remains separate: OSES governance evidence →
 
 
 | BIO-04 independent policy audit reconciliation | CHAT-ARCH-2026-10-03-009-bio04-independent-policy-audit-reconciliation.md, CURRENT-STATE.md, SYMBIOSIS-MAP.md | Independent challenge of OSES privacy ownership, partial policy precedents, human policy boundary, method correction | Does the human-defined request-level policy map cleanly to an existing producer/consumer/decision path without duplicating semantic authority? |
+
+
+| BIO-04 privacy/data-handling science foundation | BIO-04-DATA-HANDLING-SCIENCE-DEEP-RESEARCH-2026-10-03.md, CURRENT-STATE.md, CHAT-ARCH-2026-10-03-009-bio04-independent-policy-audit-reconciliation.md | Privacy theory, contextual integrity, privacy engineering, information flow, agentic-AI privacy, authorization and locality | What scientific/technical distinctions must be fixed before the human defines OSES request-level data-handling policy? |
