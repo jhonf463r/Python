@@ -2032,3 +2032,26 @@ method-use is observed; causal learning from persistent GitHub state is still NO
 
 Routing consequence:
 M2 remains the domain frontier; human normative policy definition remains a downstream governance gate; implementation stays blocked until that boundary is resolved.
+
+## 2026-10-03 TRANSFER — BIO-04 M2 MULTI-CHANNEL PRIVACY MODEL
+
+M2 produced a reusable external-science method delta:
+
+`privacy analysis → causal disclosure path, not output-only observation`.
+
+Preserve the boundary chain:
+`host availability → model context → tool/function → inter-agent → provider → observability → persistence → transformation → inference/composition`.
+
+New reusable invariant:
+`final output safety != system privacy safety`.
+
+New collaboration/method delta:
+a polished agent result should be decomposed into:
+`observed mechanism / evidence class / control effect / limitation / unresolved edge`,
+not absorbed as one undifferentiated privacy conclusion.
+
+Developmental status remains:
+method-use is observed; causal learning from persistent GitHub state remains NOT PROVEN.
+
+Routing consequence:
+the next actor is selected for independent evidence verification, not implementation. After that audit, recompute the first scientific edge rather than inheriting the current candidate mechanically.
