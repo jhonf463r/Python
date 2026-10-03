@@ -2058,3 +2058,20 @@ The device/provider/tool should modify candidate state and parameters, not fork 
 
 ### Space-time framing
 Retain as a working hypothesis the idea that universal adaptation should combine temporal state (freshness, episodes, change, latency) with environmental state (device, resources, tools, accounts, UI, network). Do not promote this framing to scientific fact without evidence.
+
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE / REALIZATION CONTRACT GAP
+
+Classification: `UNIVERSAL MECHANISM GAP`.
+
+Existing components separately represent parts of the required policy, but the OSES inference path bypasses the common provider-selection/configuration seam.
+
+Open edge:
+`OSES task/output contract → common selection/configuration seam`.
+
+Open questions:
+- What existing contract owner should carry OSES response requirements and constraints?
+- Can InferenceRequest express the contract without becoming overloaded?
+- Can ProviderRouter / AdaptiveModelSelector consume the requirements without duplicating decision authority?
+- Where should response-schema validation live?
+- How should fallback remain contract-preserving and budget-aware?
+- How should deep metacognition adapt to resource/latency rather than become a universal hard prerequisite?

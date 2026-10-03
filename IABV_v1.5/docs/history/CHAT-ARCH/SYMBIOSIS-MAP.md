@@ -1837,3 +1837,12 @@ The desired symbiosis pattern is:
 `human objective → IABV current-state perception → uncertainty/frontier → capability-fit realization → governed action → observation/verification → Knowledge Delta → future adaptation`.
 
 The user's "biosofía inteligente universal espacio-tiempo" is retained as a research/design hypothesis: temporal context and environmental context should jointly condition adaptation while the underlying algorithms remain reusable.
+
+## Transfer 12 — Universal inference requires a shared contract
+
+BIO-04 converted the Ollama incident into a cross-organ architecture finding. Complexity, deep-reasoning, latency, resource, capability and provider signals exist separately, but OSES does not currently compose them through a common contract-driven selection/configuration path.
+
+New invariant:
+`distributed capability signals + adapters ≠ universal adaptation until contract-to-selection-to-validation continuity is proven`.
+
+The reusable pattern should work across LLMs, browser, desktop/UI, shell, local services and external tools. Realization-specific parameters stay inside adapters; the reasoning algorithm remains capability/contract driven.

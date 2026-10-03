@@ -437,3 +437,12 @@ For laptop assistance, preserve the distinction:
 `action ≠ verification`
 
 The user's long-horizon goal is an adaptive laptop assistant that can reason over environmental and temporal context, select viable realizations, diagnose routine problems from evidence, and retain verified knowledge so the user is interrupted mainly for genuine decisions. This is a design objective, not a claim of completed capability.
+
+## 2026-10-03 ACTIVE EVOLUTION RULE — INFERENCE CONTRACT BEFORE PROVIDER PATCH
+
+When an LLM/provider is slow, unavailable or semantically inadequate, first reconcile the universal inference contract before changing provider-specific parameters.
+
+Required sequence:
+`required capability → response contract → current constraints → candidate realizations → selection/configuration → validated result → fallback/degradation → future evidence`.
+
+Provider-specific knobs are realization details. Before implementation, prove which existing organ owns each edge and whether the change closes a real cross-organ gap without duplicating decision authority.

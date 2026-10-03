@@ -742,3 +742,15 @@ Material Knowledge Delta:
 - Project-wide design intent is to evolve reusable universal adaptation mechanisms rather than accumulate device/provider-specific patches.
 
 Status: diagnostic knowledge absorbed; production causal closure not claimed.
+
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE CONTRACT DELTA
+
+Absorption record:
+`CHAT-ARCH-2026-10-03-002-bio04-universal-inference-contract.md`.
+
+Material delta:
+- OSES does not currently participate in a common contract-driven provider selection/configuration path.
+- Complexity, deep-reasoning, latency, resource and provider signals exist in separate organs but are not causally composed for OSES inference.
+- A provider/model symptom should be treated as evidence for a universal adaptation question before a local parameter patch.
+
+Status: source archaeology reconciled; implementation and runtime closure remain open.

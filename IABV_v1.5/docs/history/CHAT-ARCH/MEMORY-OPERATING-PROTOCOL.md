@@ -1255,3 +1255,14 @@ A deep metacognitive path should not become a hard prerequisite for every ordina
 ### Space-time working hypothesis
 
 Use temporal/environmental context as first-class conditioning variables for future adaptation: what changed, when, in which device/runtime context, under which resource/tool state, with what verified consequence, and what persisted for future reuse. This is a project hypothesis, not a scientific conclusion.
+
+## 2026-10-03 ACTIVE RULE — UNIVERSAL INFERENCE ADAPTATION
+
+When an AI/provider is slow, unavailable or semantically inadequate, do not immediately add a provider-specific parameter.
+
+First reconcile:
+`required capability → response contract → current constraints → candidate realizations → selection/configuration → validated result → fallback/degradation → evidence for future selection`.
+
+A provider-specific adapter may translate the universal requirement into local parameters. Those parameters are not the universal algorithm.
+
+Distributed metadata becomes adaptive behavior only when it is causally consumed by selection and followed by result validation.

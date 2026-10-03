@@ -2618,3 +2618,19 @@ Next attempt, if needed: Codex with an external supervisor/watchdog, only after 
 ## 2026-10-02 BIO-04 SCIENTIFIC OVERLAY
 
 The Deep Research result advances BIO-04 to `RESULT AVAILABLE / VERIFICATION OPEN`. It must not yet modify high-confidence scientific knowledge. The next discriminating action is independent source and claim verification, followed by a compact evidence matrix and Knowledge Delta.
+
+## 2026-10-03 ACTIVE OVERLAY — UNIVERSAL INFERENCE / REALIZATION CONTRACT
+
+This overlay records a material BIO-04 deduction: separate signals for complexity, provider routing, latency, resource pressure, capability and provider adaptation do not constitute universal adaptation until they are connected by a shared inference contract.
+
+Preferred causal seam:
+`task/capability + response contract + current constraints → candidate realization → configuration → validated result → contract-preserving fallback/degradation`.
+
+Provider/model parameters remain realization details. Do not treat an Ollama-specific setting as the universal algorithm before this seam is reconciled.
+
+Current diagnosis also reinforces:
+`installed ≠ loaded ≠ responsive ≠ contract-valid result`.
+`metacognition exists ≠ metacognition is operationally useful`.
+
+BIO-04 first open architectural edge:
+`OSES task/output contract → common provider selection/configuration seam`.

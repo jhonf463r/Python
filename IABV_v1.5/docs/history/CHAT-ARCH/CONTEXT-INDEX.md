@@ -1660,3 +1660,12 @@ Route this objective through:
 - `MEMORY-OPERATING-PROTOCOL.md` universal algorithm-evolution rule.
 
 Activation triggers include: laptop assistant behavior, universal tool adaptation, device/provider adaptation, metacognition on the critical path, fresh-vs-stale environment state, diagnostic capability gaps, and any proposal that looks like a local patch but may reveal a reusable algorithmic principle.
+
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE / REALIZATION CONTRACT
+
+Activate this record for objectives involving LLM/provider selection, reasoning depth, response schemas, inference latency, resource-aware adaptation, fallback, OSES metacognition, and universal tool/device realization.
+
+Primary record:
+`CHAT-ARCH-2026-10-03-002-bio04-universal-inference-contract.md`.
+
+Next architecture step must be independently reconciled before implementation.
