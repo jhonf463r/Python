@@ -1840,3 +1840,16 @@ Pending gates:
 | Post-audit science frontier candidate | necessity + authorization + UNKNOWN + selective disclosure | **OPEN / pending audit** |
 
 Activate this context for agentic privacy, tool/MCP disclosure, memory leakage, inter-agent propagation, telemetry, provider retention, metadata inference or request-level data-handling policy prerequisites.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — INDEPENDENT AUDIT GATE
+
+Activate:
+`CHAT-ARCH-2026-10-03-015-bio04-stageA-M2-independent-source-audit-contract.md`
+
+| Input | State |
+|---|---|
+| M2 primary-source pass | **MATERIAL EVIDENCE ACQUIRED / NOT YET CANONICALLY ABSORBED** |
+| Immediate uncertainty | source/claim integrity + exact quantitative support | 
+| Required capability | independent forensic source/evidence verification |
+| Actor | Sonnet / Claude-class verifier |
+| Implementation | **BLOCKED** |
