@@ -2257,3 +2257,30 @@ QUESTION: Does persistent human/AI collaboration knowledge measurably reduce rou
 CURRENT STATUS: NOT PROVEN.
 
 Controlled comparison: materially equivalent episodes with and without the relevant verified lesson, measuring coordination steps, trace depth, actor selection, verification burden and resulting decision.
+
+## 2026-10-03 OPEN KNOWLEDGE — BIO-04 M2 MULTI-CHANNEL DISCLOSURE
+
+M2 external research establishes multiple privacy-relevant agent boundaries in named evaluations, but does not close a universal request-level enforcement model.
+
+Open causal/scientific edges:
+
+1. `task necessity → minimum required context`: no universal architecture-independent method is established.
+2. `authorization/purpose → field-level transmission decision`: technical mechanisms exist, but semantic privacy policy remains unresolved.
+3. `UNKNOWN provider/recipient/necessity → runtime action`: deny/ask/defer/local fallback semantics remain open.
+4. `transformation → privacy + utility guarantee`: generalized redaction/pseudonymization safety is not established.
+5. `local realization → complete local trust boundary`: locality alone is insufficient; downstream processing/telemetry/retention must be observable.
+6. `multi-channel propagation → compositional privacy guarantee`: repeated tool/memory/inter-agent flows lack a universally validated composition rule.
+7. `internal-channel audit → production assurance`: benchmarks establish the need for visibility, but production-wide prevalence and monitoring semantics remain open.
+
+Important evidence rule:
+`benchmark evidence != production prevalence`
+`provider documentation != independent runtime observation`
+`control efficacy in one configuration != universal guarantee`.
+
+Immediate verification gate:
+independent M2 source/claim audit.
+
+Post-audit candidate frontier:
+`request-level necessity + authorization + UNKNOWN-state semantics + enforceable selective disclosure across heterogeneous agent channels`.
+
+No IABV policy or implementation is implied by this research.
