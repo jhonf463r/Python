@@ -1684,3 +1684,14 @@ Use this route for:
 - resource/latency-aware inference;
 - OSES metacognition;
 - any proposal to solve a provider symptom with a provider-specific knob.
+
+
+## 2026-10-03 — BIO-04 PROVIDER SEAM OWNERSHIP AMBIGUOUS
+
+Activate `CHAT-ARCH-2026-10-03-005-bio04-provider-seam-ownership-ambiguous.md` for objectives involving OSES provider composition, ProviderRouter production wiring, LocalRoleRouter ownership, AdaptiveModelSelector scope, response-contract validation and fallback ownership.
+
+Current classification:
+`UNIVERSAL GAP CONFIRMED / OWNERSHIP SEAM OPEN`.
+
+First open edge:
+`OSES contract → existing production ownership boundary`.
