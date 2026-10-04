@@ -3311,7 +3311,7 @@ The long-horizon question is where increasingly integrated environmental underst
 
 ### CODEX IABV-LAPTOP-MIND-01 RECONCILIATION
 
-Codex audited source at `cd10c25f002d5ab34ef488e7a81f3ba35453f16e`. A remote comparison to current main `000443279501996af7d0331698548a050a605c63f` shows the intervening changes were documentation/data only; no source-code file changed. The finding is therefore still applicable to current source, while its audit provenance remains the older SHA.
+Codex audited source at `cd10c25f002d5ab34ef488e7a81f3ba35453f16e`. A remote comparison to the main lineage that now continues through `99af306bfa38a0766f35751b47158e2232ea562e` shows the intervening changes were documentation/data only; no source-code file changed. The finding is therefore still applicable to current source, while its audit provenance remains the older SHA.
 
 The first open universal composition seam is:
 
