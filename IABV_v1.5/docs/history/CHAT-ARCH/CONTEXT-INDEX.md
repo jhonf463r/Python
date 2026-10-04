@@ -1935,3 +1935,13 @@ Required genealogy for new material ideas:
 
 Anti-drift:
 `Codex/ChatGPT/Claude/Devin/Ollama`, browser, desktop app, API, CLI and MCP are realizations/resources/channels; none is the parent concept.
+
+## 2026-10-03 — UNIFIED LONGITUDINAL MEMORY ROUTING
+
+Canonical source: `CHAT-ARCH-2026-10-03-042-unified-interaction-memory-space-time-continuity.md`.
+
+Current continuity rule: `CURRENT-STATE → MEMORY-OPERATING-PROTOCOL → material recent deltas → closed/negative knowledge → objective-specific history → current source/runtime reconciliation → first open edge → exact prompt`.
+
+Specific 2026-10-03 delta: `CHAT-ARCH-2026-10-03-043-laptop-mind-capability-seam-probe.md` is a material source record whose specific result must remain retrievable as a first-class recent delta. Its key qualification is that the probe was fixture-backed and did not prove live laptop observation.
+
+Do not treat this index entry as proof of causal memory reuse; continuity activation and later causal influence remain separate experiments.
