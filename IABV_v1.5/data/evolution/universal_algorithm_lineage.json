@@ -175,6 +175,20 @@
       "source_records": [
         "CHAT-ARCH-2026-10-04-040-universal-algorithm-convergence-control.md"
       ]
+    },
+    {
+      "id": "UAAL-D013",
+      "parent": "UAAL-D008",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CLARIFICATION_AND_PROJECT_SYNTHESIS",
+      "status": "DESIGN_NOT_RUNTIME_CAUSALLY_PROVEN",
+      "title": "Experiential Teaching and Universal Capability Acquisition",
+      "source_records": [
+        "CHAT-ARCH-2026-10-03-041-experiential-teaching-universal-capability-acquisition.md",
+        "UNIVERSAL-ENVIRONMENTAL-SEMANTICS-2026-09-26.md",
+        "UNIVERSAL-EXPERIMENTAL-REALITY-LOOP-2026-09-26.md"
+      ],
+      "next_open_edge": "observation → normalized capability/affordance representation → safe reusable capability"
     }
   ],
   "protocol_version": "UAAL-TRACE-1",
