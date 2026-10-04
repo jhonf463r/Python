@@ -3293,3 +3293,76 @@ The durable derivation chain is:
 `human/AI idea → concept → hypothesis/design → implementation → experiment → observation → verification → Knowledge/Method/Routing Delta → reuse`.
 
 A child concept must preserve its parent, derivation reason, evidence boundary and next open edge. Unverified ideas remain ideas/hypotheses/unresolved knowledge; they do not become current truth by repetition.
+
+## 2026-10-03 LATEST RECONCILIATION — EXPERIENTIAL TEACHING / FIRST UNIVERSAL CAPABILITY SEAM
+
+### HUMAN DEVELOPMENT INTENT
+
+The intended path is to begin using IABV in the real laptop environment and teach through governed interaction rather than pre-programming every application, language, concept or workflow. Material human demonstrations, corrections, explanations and objective changes are experience-bearing events.
+
+Target:
+`use → observe → teach/correct → verify → represent → reuse → adapt`
+
+Preserve:
+`deviation != error`
+`explicit human explanation > inferred motive`
+
+The long-horizon question is where increasingly integrated environmental understanding, self-modeling, metacognition, adaptive control and verified learning may produce higher-order intelligence. "Super-consciousness" remains a research hypothesis, not a present-system claim.
+
+### CODEX IABV-LAPTOP-MIND-01 RECONCILIATION
+
+Codex audited source at `cd10c25f002d5ab34ef488e7a81f3ba35453f16e`. A remote comparison to current main `000443279501996af7d0331698548a050a605c63f` shows the intervening changes were documentation/data only; no source-code file changed. The finding is therefore still applicable to current source, while its audit provenance remains the older SHA.
+
+The first open universal composition seam is:
+
+`PerceptionSnapshot(environment/world evidence) → CapabilityReadinessService(normalized required capability/affordance)`
+
+Codex established that:
+- `TaskContextAssembler` builds `PerceptionSnapshot` with `EnvironmentSelfModel` and `WorldModelSnapshot`;
+- `AdaptiveTaskOrchestrator` later calls `CapabilityReadinessService.evaluate(intent, context)`;
+- `CapabilityReadinessService._required_capabilities()` maps known intents to a finite capability vocabulary;
+- the audited source does not demonstrate a universal normalization from fresh environmental evidence to the capability representation used by realization selection.
+
+Classification:
+`composition + semantic integration`.
+
+This is not evidence that a new organ is required.
+
+### TEACHING / CAPABILITY-ACQUISITION IMPLICATION
+
+This seam is more fundamental than any single MCP/Codex connection. A genuinely teachable laptop mind needs to move from observed reality to a capability representation that can be reused across different realizations.
+
+Target progression:
+`observe unfamiliar reality → identify concepts/affordances → capability hypothesis → safe realization → action → observe effect → verify → reusable capability → later reuse`.
+
+Natural-language ability, machine/UI language, application affordances, OS semantics, domain concepts, tools/interfaces and temporal/resource constraints are capability domains that can be acquired through this common mechanism. They are not justification for separate specialized brains.
+
+### FIRST DISCRIMINATING EXPERIMENT
+
+Run the bounded offline contrafactual probe proposed by Codex:
+same app-agnostic task and request, two candidate realizations, vary only `EnvironmentSelfModel`/`WorldModelSnapshot` viability, do not supply `tool_id` or manual preference, and stop at preview/ranking before execution.
+
+Discriminate:
+- environmental evidence does not reach capability/elegibility → wiring/contract gap;
+- environmental evidence reaches the path but does not affect ranking → semantic/selection ineffectiveness;
+- selection changes coherently → this seam is supported for the controlled task, not yet universal.
+
+### ACTIVE DEVELOPMENTAL EDGE
+
+`observation → normalized capability/affordance representation → safe reusable capability`
+
+### SEPARATE RSK-01A.5 STATUS
+
+Codex's separate MCP configuration attempt remains:
+`configuration recognized → IABV tools discovery in Codex session` = OPEN/BLOCKED.
+
+Do not let that realization-specific MCP boundary redefine the universal algorithmic frontier.
+
+### STATUS BOUNDARY
+
+- Universal Adaptive Algorithm: canonical design intent.
+- Experiential teaching / universal capability acquisition: design target, runtime causal proof open.
+- Laptop cognitive-operational layer: design target, broad end-to-end runtime proof open.
+- Human-aware plasticity: design target, automatic causal reuse open.
+- Super-consciousness emergence: research hypothesis, not proven.
+- Current first technical edge: observation/environment state → normalized capability representation.
