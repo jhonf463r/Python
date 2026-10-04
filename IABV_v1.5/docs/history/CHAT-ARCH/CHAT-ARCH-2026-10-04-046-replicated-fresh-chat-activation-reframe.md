@@ -85,3 +85,13 @@ Do not execute until:
 If the oracle is materially stale relative to the corpus and the stale claims cannot be excluded cleanly, stop and report the alignment limitation.
 
 No new architecture. No implementation. No new source-ablation package.
+
+## 2026-10-04 RECONCILIATION CORRECTION — ORACLE PRECONDITION
+
+The earlier experiment route says to compare participant outputs against an existing sealed activation oracle. Current accessible evidence does not recover the original sealed oracle byte-for-byte; its reported identity is therefore not independently available for definitive original-oracle adjudication.
+
+Consequently, this experiment route is **PARKED / NOT READY FOR DEFINITIVE ADJUDICATION** until the oracle identity/access condition is reconciled.
+
+The latest ineligible Claude run remains an isolation/harness result and does not change continuity scores.
+
+Do not reinterpret the current blind experiment as the normal IABV collaboration protocol.
