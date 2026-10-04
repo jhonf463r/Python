@@ -1481,3 +1481,180 @@ The long-horizon target is:
 `understand environment → infer capability → select realization → act → observe → verify → learn → reuse → improve future decision`.
 
 The eventual higher-order intelligence hypothesis must be evaluated through this observable chain, not assumed from code size, model size, or tool count.
+
+---
+
+## 2026-10-03 — ONE LOGICAL MEMORY / INTERACTION SPACE-TIME COMPACTION
+
+The repository must be treated as **one logical longitudinal memory field**, not as a collection of independent memories created by each chat.
+
+The physical projections have different responsibilities and must not compete:
+
+| Projection | Responsibility | Authority |
+|---|---|---|
+| `CURRENT-STATE.md` | active current truth + active routing snapshot | **only current routing authority** |
+| `CONTEXT-INDEX.md` | objective-conditioned navigation to relevant memory | retrieval/navigation only |
+| `MEMORY-OPERATING-PROTOCOL.md` | epistemic/memory method and constraints | method only |
+| `SYMBIOSIS-MAP.md` | capability/transfer evidence | evidence/synthesis only |
+| `UNRESOLVED-KNOWLEDGE.md` | unresolved hypotheses, negative knowledge, open questions | unresolved register only |
+| `ARCHIVE-REGISTRY.md` | source identity/provenance/absorption index | provenance only |
+| registered `CHAT-ARCH` records | immutable episode/source evidence | historical evidence |
+
+A new record must not become a second current-state document or another routing authority.
+
+### Interaction-space-time episode model
+
+For every material human/AI interaction, preserve the smallest sufficient episode representation:
+
+```text
+EPISODE {
+  episode_id
+  timestamp / temporal order
+  objective / phase
+  circumstances / environment state
+  activated knowledge
+  human input / correction / explicit explanation
+  hypotheses / alternatives
+  action or reasoning step
+  expected observation
+  observed result
+  verification / verifier
+  reconciliation
+  Knowledge Delta
+  Method Delta
+  Relation Delta
+  Routing Delta
+  open edge / next frontier
+  provenance / source anchor
+  supersedes / superseded_by
+}
+```
+
+This is an operational representation of temporal lineage and relational context. It is **not** a claim about physical spacetime or consciousness.
+
+### Memory transition algorithm
+
+Treat durable memory as a state transition:
+
+```text
+M_t + Episode_t
+  → candidate delta
+  → evidence gate
+  → contradiction/supersession reconciliation
+  → M_(t+1)
+  → objective-conditioned activation later
+```
+
+A new file, record, score, preference or timestamp is not by itself learning.
+Learning requires evidence that verified experience changed a reusable representation, method, relation, routing decision or later behavior.
+
+### Anti-repetition / anti-duplication rule
+
+For a material chat result:
+
+```text
+source episode → compact semantic delta → canonical projection update
+```
+
+Do **not** copy the full historical explanation into `CURRENT-STATE`, `CONTEXT-INDEX`, `SYMBIOSIS-MAP`, `UNRESOLVED-KNOWLEDGE` and a new archive record at the same time.
+
+Each canonical projection should contain only the fields it owns and a reference to the source episode when needed.
+
+A historical record should describe what happened in that episode; it should not restate the whole accumulated project history.
+
+### Fresh-chat continuity algorithm
+
+Every new chat or participating AI must reconstruct the active frame in this exact order:
+
+```text
+1. CURRENT OBJECTIVE
+2. CURRENT VERIFIED TRUTH
+3. MATERIAL RECENT DELTAS since the last relevant state anchor
+4. CLOSED EDGES / NEGATIVE KNOWLEDGE
+5. RELEVANT HISTORICAL EPISODES
+6. FIRST OPEN CAUSAL / EVIDENTIAL EDGE
+7. REQUIRED CAPABILITY
+8. CAPABILITY-FIT ACTOR / REALIZATION
+9. MINIMUM DISCRIMINATING ACTION
+10. EXACT NEXT PROMPT
+11. EXPECTED OBSERVATION
+12. INDEPENDENT VERIFIER
+13. STOP CONDITION
+```
+
+The participant must never inherit a historical `next actor` merely because it appears in a retrieved document.
+
+### Prompt generation contract
+
+When the user asks "what follows?" or requests the next prompt, the response must derive it from the active frame rather than from the last agent's recommendation.
+
+The generated prompt must explicitly contain:
+
+```text
+OBJECTIVE
+CURRENT VERIFIED STATE
+PROVENANCE / TARGET SHA
+CLOSED EDGES — DO NOT REOPEN
+FIRST OPEN EDGE
+QUESTION TO DISCRIMINATE
+CAPABILITY REQUIRED
+WHY THIS ACTOR NOW
+CONTROL / NEGATIVE CONTROL
+NO-SCOPE-CREEP CONSTRAINT
+EXACT PROCEDURE
+EVIDENCE TO CAPTURE AT EACH EDGE
+STOP CONDITION
+REQUIRED REPORT FORMAT
+WRITEBACK EXPECTATION (if applicable)
+```
+
+The prompt should be executable by copy/paste without the receiving AI needing the human to reconstruct prior chat context.
+
+### Continuity acceptance algorithm
+
+A fresh-chat continuity test is successful only when all of the following are correct for the tested objective:
+
+```text
+current objective
++ current truth
++ material recent delta recall
++ stale/obsolete suppression
++ negative knowledge recall
++ first-open-edge identification
++ capability-fit actor
++ concrete prompt correctness
++ provenance correctness
+```
+
+Stronger evidence requires a controlled treatment/control pair showing that activated prior knowledge changes the later decision or action for the intended reason. A textual echo is insufficient.
+
+### Human interaction is first-class longitudinal evidence
+
+Human corrections, deviations, explanations, changes of objective and rejections of an AI route are episode data. Preserve:
+
+`deviation != error`
+
+and:
+
+`explicit human explanation > inferred motive`
+
+Do not infer hidden motive from behavior. When the reason is unknown, retain the uncertainty and use the minimum clarification needed for a material decision.
+
+### Methodological target
+
+```text
+user interaction/result
+→ episode reconstruction
+→ relevant memory activation
+→ current-state reconciliation
+→ frontier detection
+→ capability-fit selection
+→ exact next prompt/action
+→ result ingestion
+→ verification
+→ delta computation
+→ canonical writeback
+→ later contextual reuse
+```
+
+Current status remains **NOT PROVEN** for autonomous cross-chat activation, autonomous external-result ingestion, causal GitHub-memory consumption by runtime, or coordination reduction caused by persistent learned state.
