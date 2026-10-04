@@ -686,3 +686,27 @@ Do not mistake:
 Material cross-chat deltas must be summarized into CURRENT-STATE so selective retrieval does not silently discard recent learning.
 
 R34 remains a bounded blind-reconstruction result, not proof of general retrieval reliability.
+
+## 2026-10-04 CONCEPTUAL ROOT — UNIVERSAL ADAPTIVE ALGORITHM
+
+Canonical conceptual parent:
+`UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`
+
+Concept root:
+`UAAL-ROOT-001`
+
+This is the durable parent concept for the IABV development program. It records the idea genealogy so provider-, application-, browser-, MCP- or AI-specific work cannot silently become the definition of IABV.
+
+Machine-readable lineage:
+`IABV_v1.5/data/evolution/universal_algorithm_lineage.json`
+
+Authority separation:
+`CURRENT-STATE` = current routing authority;
+`UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION` = conceptual parent authority;
+`CONTEXT-INDEX` = navigation;
+`MEMORY-OPERATING-PROTOCOL` = operating method;
+`SYMBIOSIS-MAP` = cross-IA capability/transfer evidence;
+`UNRESOLVED-KNOWLEDGE` = open ideas/questions;
+historical records = evidence/history.
+
+Every material human/AI idea should be preserved as a concept or explicit revision/competing interpretation with parent, origin, derivation reason, epistemic status, evidence and next open edge.
