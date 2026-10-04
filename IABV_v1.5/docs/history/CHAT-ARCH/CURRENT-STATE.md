@@ -31,7 +31,7 @@ Evidence-oriented fresh-chat continuity evaluation: determine whether relevant i
 The repository-level indexing gap identified in 043 is now closed. The remaining uncertainty is operational continuity: whether a genuinely fresh AI can activate the consolidated longitudinal memory and reconstruct the current decision frame without human history transport. Sonnet/Claude is used as the fresh participant; an independent verifier should score its reconstruction.
 
 ### NEXT ACTION
-Run the minimum blind continuity experiment against the now-indexed longitudinal memory. Fresh participant: Sonnet/Claude. Independent verifier: Codex or equivalent, with access to the sealed scoring rubric. Measure relevant recent-delta recall, stale-route suppression, first-open-edge correctness, actor-fit correctness, prompt completeness and provenance. Do not implement.
+Regenerate and freeze a blinded FULL-vs-ABLATION source-artifact experiment against the reconciled canonical state, then run two independent fresh Sonnet/Claude sessions under opaque conditions. Compare claim-level reconstruction deltas against the existing sealed oracle. Do not treat source perturbation as proof of internal activation or causal reuse.
 
 ### CROSS-AI ROLE
 ChatGPT = reconciliation/adjudication/synthesis/writeback; Codex = repository and composition archaeology / difficult technical seam; Sonnet = independent forensic challenge; Devin = Windows/runtime fallback when a concrete environment capability requires it; external AIs and local models are resources selected by capability-fit.
