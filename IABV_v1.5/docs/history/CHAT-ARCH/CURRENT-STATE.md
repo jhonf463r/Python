@@ -1,7 +1,17 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
-**Last reconciled:** 2026-10-03  
-**Reason:** RSK-01A.5 was blocked before execution because the Codex session had no active IABV MCP client connection. Historical source evidence shows IABV MCP capability and prior live stdio use, so the new frontier is restoring/verifying the existing live connection, not implementing a new MCP layer.
+**Last reconciled:** 2026-10-03
+**Reason:** The broader laptop-native/free-first objective is now explicitly canonical. RSK-01A.5 is blocked at the live MCP connection boundary, but that boundary is only one step toward the larger goal: IABV coordinating the laptop's installed apps, browser/session, desktop/UI, local providers and external AIs as one capability/realization environment.
+
+### OVERARCHING PRODUCT OBJECTIVE
+IABV should become a laptop-native operational assistant/coordinator: the laptop, its installed applications, human-used browsers/sessions, desktop/UI, local runtime, accounts/resources and external AI tools are treated as one operational environment coordinated by existing IABV capabilities.
+
+### ECONOMIC / RESOURCE CONSTRAINT
+**FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless the user explicitly changes this constraint. Prefer existing local capabilities, existing free-tier access, existing browser/web sessions, and local providers such as Ollama. Do not use paid infrastructure as a default unblocker.
+
+### CROSS-AI TARGET
+`IABV state/memory → capability/realization selection → appropriate tool/AI → execution → observation → verification → result ingestion → reusable delta → changed future decision`
+Codex and ChatGPT are realizations inside this larger objective, not the objective itself.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
@@ -13,37 +23,34 @@ RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recover
 `existing IABV MCP server capability + client configuration → live connected MCP session available to Codex`
 
 ### CURRENT REQUIRED CAPABILITY
-Repository-aware inspection of the existing IABV MCP server/runbook plus Windows/Codex MCP configuration to establish the minimum non-architectural live connection.
+Inspect the existing IABV MCP server/runbook and Windows/Codex configuration, find the minimum free/local route to a live connection, and verify it without adding architecture.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-The blocking edge is now the external-agent connection boundary, not code archaeology or runtime routing itself. Codex is the best-fit primary actor to inspect both the repository contract and its own current MCP configuration. Devin is fallback only if a concrete Windows/environment limitation blocks Codex.
+The immediate blocker is the connection boundary. Codex is the capability-fit primary actor for repository + Windows + MCP inspection. The broader laptop-native objective must remain visible so this does not become a narrow product-integration exercise.
 
 ### NEXT ACTION
-Audit the existing IABV MCP connection mechanism (runbook, server transport, scripts and Codex-side MCP configuration), determine the smallest safe way to connect Codex to the existing IABV MCP server, and establish or precisely document the connection without changing IABV application architecture. Once the connection is live, rerun RSK-01A.5.
+Inspect the existing IABV MCP connection path and Codex-side MCP configuration. Prefer local stdio or existing local/web-session mechanisms that require no new paid API key. Establish or precisely document the minimum live connection. Do not implement a new MCP layer. After live connection, rerun RSK-01A.5.
 
-### RSK-01A.5-PREP
-**PREPARED — SHA VERIFIED LOCALLY** at `C:\Python\IABV_v1.5_rsk-01a5`.
+### SPACE-TIME / CONTINUITY CONTROL
+Record decision-relevant state with timestamp, objective/phase, circumstance, evidence provenance, status and supersession where relevant. Preserve the distinction between historical evidence and current routing authority.
 
 ### RSK-01A.5
-**BLOCKED BEFORE EXECUTION** — no active MCP client/server connection in the Codex execution session. This is not evidence against the runtime path.
+**BLOCKED BEFORE EXECUTION** — fixed-SHA worktree prepared, but no active IABV MCP connection in the Codex session.
+
+### DEVELOPMENTAL INFLECTION
+Not reached yet. The target is not faster coding; it is a causal cumulative loop where IABV state improves external AI/tool selection, execution, verification, reusable learning and later decisions across laptop realizations.
 
 ### HYPOTHESIS STATUS
 A — STILL OPEN; B — SUPPORTED, bounded static composition; C — STILL OPEN; D — NOT SUPPORTED.
 
-### DEVELOPMENTAL INFLECTION
-Do not claim the IABV→AI collaboration loop yet. The immediate measurable milestone is:
-`IABV MCP live state → Codex consumes it in a real session`.
-The stronger inflection remains:
-`IABV state/memory → correct actor/capability selection → external AI execution → result ingestion → verified reusable delta → changed future decision`.
-
 ### ROUTING CONTROL
-Historical NEXT ACTOR fields remain non-routable. Codex is primary for the current connection-boundary edge; Devin is fallback for a concrete blocker.
+Historical NEXT ACTOR fields remain non-routable. Codex is primary for the current connection-boundary edge. Devin is fallback only for a concrete capability/environment blocker. Free-first is an active routing constraint.
 
 ### STOP CONDITION
-Stop after the existing MCP connection is either established and observed by Codex, or proven unavailable for a concrete environmental reason. Do not implement a new MCP architecture.
+Stop after the existing MCP connection is established and observed, or a concrete environmental blocker is documented. Do not create a paid dependency or new MCP architecture.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
