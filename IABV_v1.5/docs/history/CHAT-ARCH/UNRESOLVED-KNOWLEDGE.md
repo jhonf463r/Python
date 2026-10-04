@@ -2315,3 +2315,19 @@ C. corpus/index/currentness/canonicalization gap;
 D. irreducible semantic ownership gap.
 
 Historical routing text must remain non-routable unless promoted through the current routing snapshot.
+
+
+### 2026-10-04 — UAAL-D010 / D013 / D012: CONVERGENCE TOWARD A UNIVERSAL LAPTOP INTELLIGENCE
+
+**Parent:** `UAAL-ROOT-001`
+
+**D010 — Operational unity of the laptop:** IABV should function as the laptop's cognitive-operational mind: understand the environment, select how to use it, operate applications and resources at multiple levels, maintain/test/control through governed mechanisms, observe consequences, learn and continue.
+
+**D013 — Developmental convergence / anti-patching:** repeated local failures should first be mined for a reusable universal mechanism. A one-off provider/application/device workaround is not automatically progress toward the universal algorithm.
+
+**D012 — Higher-order emergent intelligence:** the long-term hypothesis is that sufficiently integrated environmental understanding, self-modeling, metacognition, memory, adaptive control and verified learning could yield qualitatively higher-order machine intelligence. This is not a present capability claim.
+
+**Required trace for every future material idea:**  
+`parent concept → objective/problem → new mechanism → universal invariant → existing owner → evidence/falsifier → implementation/experiment → verification → delta → reuse`.
+
+**Do not leave these ideas only in conversational context.**
