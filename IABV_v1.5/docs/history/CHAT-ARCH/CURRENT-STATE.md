@@ -251,6 +251,22 @@ When a local bug appears during evolution, pause before adding a patch and ask:
 Repeated local patches without a reusable principle are evidence to re-open the model at the architectural/algorithmic boundary, not permission to add another subsystem.
 
 
+
+## 2026-10-04 — RSK-01 LATEST BLIND RUN: INELIGIBLE
+
+The latest Sonnet/Claude blind-participant attempt stopped at the eligibility gate with:
+
+`INELIGIBLE — PRIOR CONTEXT PRESENT`
+
+Classification: `INELIGIBLE / HARNESS-ISOLATION RESULT`.
+
+No continuity reconstruction was produced and the run is excluded from primary continuity scoring. This does not show that Claude lacks continuity or memory activation capability.
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-RSK01-BLIND-RUN-INELIGIBLE.md`
+
+Important operational correction: the blind condition belongs only to RSK-01. It is not the normal collaboration rule. In ordinary IABV development, participating AIs enter the GitHub-backed IABV canonical frame and follow capability-fit routing.
+
 ## 2026-10-04 ACTIVE OVERLAY — IABV GITHUB-BACKED OPERATIONAL COORDINATION
 
 The normal development mode is now explicitly distinguished from the RSK-01 blind-continuity experiment.
