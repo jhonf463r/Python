@@ -58,38 +58,31 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A.6 MCP CONNECTION BOUNDARY
+## 2026-10-03 LIVE ROUTING — RSK-01A.6 MCP CONNECTION / LAPTOP-NATIVE FREE-FIRST
 
+**Overarching objective:** `IABV coordinates the laptop, installed apps, human-used browser/session, desktop/UI, local providers and external AIs as one capability/realization environment.`  
+**Operating constraint:** **FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless explicitly changed by the user.  
 **Current frontier:** `existing IABV MCP server capability + client configuration → live connected MCP session available to Codex`  
 **IA DESTINO:** **Codex**  
-**CAPABILITY:** inspect existing IABV MCP server/runbook plus Windows/Codex MCP configuration and establish the minimum non-architectural live connection.  
-**ACTION:** determine how Codex can connect to the already-existing IABV MCP server; verify transport, launch command, workspace, gates and client configuration; establish or precisely document the connection. Then rerun RSK-01A.5.
+**CAPABILITY:** inspect the existing MCP server/runbook and Windows/Codex configuration, using the minimum local/free connection path.  
+**ACTION:** establish or precisely document a live IABV MCP connection using existing mechanisms; do not add a new MCP architecture. Then rerun RSK-01A.5.
+
+### CONTINUITY CONTROL
+Decision-relevant user constraints and circumstances are canonicalized with time/phase/evidence. Historical records remain evidence, not routing commands. CURRENT-STATE top snapshot remains sole active global routing authority.
 
 ### RSK-01A.5 RESULT
-**BLOCKED BEFORE EXECUTION.** The prepared fixed-SHA worktree was valid, but the Codex session had no active IABV MCP connection, so neither control nor treatment executed.
-
-### RECONCILIATION
-Do not relabel original hypothesis C. Original A/B/C/D remain:
-A — STILL OPEN; B — SUPPORTED, bounded; C — STILL OPEN; D — NOT SUPPORTED.
-
-The runtime result is an experiment-status result: **no runtime path observed because the MCP connection precondition was unavailable**.
-
-### EXISTING CAPABILITY EVIDENCE
-Repository runbook documents an IABV MCP server with stdio transport and historical CHAT-ARCH evidence records a prior live MCP gateway connection. Therefore this frontier is connection availability/configuration, not proof of missing MCP architecture.
+Blocked before execution: the fixed-SHA worktree was valid, but the Codex session had no active IABV MCP connection.
 
 ### DEVELOPMENTAL TARGET
-First measurable collaboration milestone:
-`IABV live MCP state → Codex real-session consumption`.
-
-Later stronger loop:
-`IABV state/memory → actor selection → Codex/ChatGPT work → result ingestion → verified reusable delta → changed future decision`.
+First collaboration bridge: `IABV live state → Codex real-session consumption`.
+Stronger loop: `IABV state/memory → capability/realization selection → external AI/tool execution → verification → reusable delta → changed future decision`.
+This is the actual candidate inflection; faster coding alone is not sufficient.
 
 ### ROUTING POLICY
-Codex is primary. Devin is fallback only for a concrete environment blocker. Human approval may be required for local credential/network configuration, but the next analysis actor remains Codex.
+Codex primary for current edge. Devin fallback only for a concrete blocker. Prefer local/free realizations before paid APIs or subscriptions.
 
 ### STOP
-Stop when the existing connection is established and observed, or a concrete environmental blocker is documented. No new MCP layer.
-## DOMAIN ROUTING
+Stop after live connection is observed or a concrete environmental blocker is documented. No implementation.## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
 |---|---|---|---|
