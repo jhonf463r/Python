@@ -1457,3 +1457,27 @@ Promotion ladder:
 `IDEA → HYPOTHESIS → DESIGN → IMPLEMENTATION → WIRED → INVOKED → OBSERVED → VERIFIED → EFFECTIVE → CAUSAL → REUSABLE → DEVELOPMENTAL`.
 
 Persistence alone never promotes an idea to learning. The strongest learning/development claims require later contextual reuse that changes a future method, routing decision or behavior.
+
+## 2026-10-04 ACTIVE RULE — DEVELOPMENTAL CONVERGENCE
+
+IABV development must optimize for convergence toward the universal adaptive algorithm, not indefinite accumulation of local patches.
+
+Before implementing a fix:
+
+`symptom → evidence → causal boundary → reusable mechanism → existing-organ owner → universal invariant → minimum experiment`.
+
+Classify the proposed change as:
+
+`UNIVERSAL MECHANISM | REALIZATION ADAPTER | DIAGNOSTIC | LOCAL WORKAROUND`.
+
+A local workaround can be valid operationally but must not be promoted as universal progress without transfer/generalization evidence.
+
+For the laptop-mind target, foreground/background, desktop/browser, API/CLI/MCP/local, application/provider and account/session differences are realization/context variables. The high-level adaptive reasoning loop remains the invariant under test.
+
+Every material human or AI idea must preserve concept lineage. If it is not ready for implementation, record it as a concept/hypothesis/unresolved item rather than letting it disappear from chat.
+
+The long-horizon target is:
+
+`understand environment → infer capability → select realization → act → observe → verify → learn → reuse → improve future decision`.
+
+The eventual higher-order intelligence hypothesis must be evaluated through this observable chain, not assumed from code size, model size, or tool count.
