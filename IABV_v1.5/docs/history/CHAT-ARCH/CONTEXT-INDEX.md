@@ -58,24 +58,27 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A.2 ROUTING-CLAIM TRACE ACTIVE
+## 2026-10-03 LIVE ROUTING — RSK-01A.3 ADVERSARIAL VERIFICATION ACTIVE
 
-**Current frontier:** `canonical routing-authoritative claim → runtime candidate/activation path → actor-selection consumer`  
-**IA DESTINO:** **Codex**  
-**CAPABILITY:** read-only end-to-end trace of canonical current-routing state through ingestion/index/context into `AdaptiveTaskOrchestrator` / `LocalRoleRouter`.  
-**ACTION:** trace claim R01 from `CURRENT-STATE.md` in fixed SHA `3de2bb4…`; no implementation, no runtime.
+**Current frontier:** `canonical CURRENT-STATE routing authority → runtime routing representation/consumer`  
+**IA DESTINO:** **Sonnet**  
+**CAPABILITY:** independent adversarial code archaeology to falsify the bounded B conclusion across readers/loaders/context bridges/routing adapters.  
+**ACTION:** attempt to find any missed operational path from canonical `CURRENT-STATE.md` to actor selection on fixed SHA `3de2bb4…`; read-only, no runtime.
+
+### RSK-01A.2 RESULT
+R01: no operational ingestion/runtime representation was found from canonical `CURRENT-STATE.md` into the inspected actor-selection path. B supported only for audited surfaces; A/C remain open; D not supported.
 
 ### RSK-01A.1 RESULT
-N03 trace: canonical `UNRESOLVED-KNOWLEDGE.md` claim → no demonstrated ingestion path → `KnowledgeRepository` candidate boundary. B supported only for N03/audited composition; A and C remain open; D not supported.
+N03: canonical `UNRESOLVED-KNOWLEDGE.md` → no demonstrated ingestion → `KnowledgeRepository`. B supported only for N03/audited surfaces.
 
-### RSK-01D
+### RSK-01D RESULT
 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL.
 
 ### NEXT DISCRIMINATING STEP
-Trace routing-authoritative claim R01 to the actual actor-selection consumer. Determine whether canonical current routing is operationally consumable or remains documentary-only.
+Independent Sonnet verification must try to refute the negative-path conclusion. A new operational reader/loader/bridge would materially change B; failure to find one within the defined scope strengthens the bounded result.
 
 ### STOP
-Stop when the R01 source → actor-selection path is demonstrated with consuming field/condition, or no such path can be demonstrated in the searched surfaces.
+Stop after either a missed operational path is proven, or the negative result survives the adversarial search scope. No implementation.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
