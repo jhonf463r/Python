@@ -15,6 +15,9 @@ Operational loop:
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI reconstructs the same material longitudinal context — including debate, deductions, corrections, circumstances, negative knowledge and recent routing changes — without the human repeating the history.
 
+### DEFAULT COLLABORATION MODE
+For ordinary IABV work, participating AIs enter the IABV canonical frame and use GitHub-backed current state for routing, evidence discipline, prompt construction and writeback. Blindness is reserved for explicit continuity experiments.
+
 ### CURRENT VERIFIED TRUTH
 RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A.1/A.2/A.3/A.4 established a bounded static negative for canonical R01→internal routing, while an external MCP read path exists. RSK-01A.5 never executed because the Codex session lacked a live MCP connection. RSK-01A.6 confirmed the existing MCP server and local `stdio` capability but no live Codex connection. The broader repository already contains multiple external-AI, browser, desktop, local-provider and MCP realizations; therefore MCP↔Codex is only one realization test, not the global product objective. The 2026-10-03 laptop-mind probe 043 is now canonically indexed and registered; its fixture-backed limitation remains part of the current evidence boundary. The first attempted fresh-blind run was invalid for primary scoring: the participant could infer the condition from unequal corpus structure and disclosed prior project/task exposure. Record 045 preserves this as harness failure, not continuity evidence.
 
@@ -24,13 +27,13 @@ RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recover
 ### CURRENT REQUIRED CAPABILITY
 Evidence-oriented fresh-chat continuity evaluation: determine whether relevant indexed interaction history is activated into a complete current decision frame, while distinguishing source availability, observable reconstruction, provenance and causal reuse without creating a new memory subsystem.
 
-### IA DESTINO
+### IA DESTINO — RSK-01 EXPERIMENT ONLY
 **SONNET / CLAUDE — FRESH BLIND PARTICIPANT**
 
-### WHY THIS IA NOW
-The repository-level indexing gap identified in 043 is now closed. The remaining uncertainty is operational continuity: whether a genuinely fresh AI can activate the consolidated longitudinal memory and reconstruct the current decision frame without human history transport. Sonnet/Claude is used as the fresh participant; an independent verifier should score its reconstruction.
+### WHY THIS IA NOW — RSK-01 ONLY
+The repository-level indexing gap identified in 043 is now closed. The remaining uncertainty is operational continuity: whether a genuinely fresh AI can activate the consolidated longitudinal memory and reconstruct the current decision frame without human history transport. Sonnet/Claude is used as the blind experimental participant; this restriction does not apply to ordinary IABV collaboration.
 
-### NEXT ACTION
+### NEXT ACTION — RSK-01
 Freeze one canonical participant corpus against the current target and identical TASK.txt. Before each participant run, disable Claude's documented past-chat search/reference feature where available and ensure the conversation is outside any project workspace carrying IABV project knowledge/instructions. Then run two independent genuinely new Sonnet/Claude conversations with the same corpus and task. Compare claim-level reconstructions against the existing sealed activation oracle, first excluding any stale/ineligible oracle claims. Do not interpret reproducibility as proof of internal activation, source-specific dependence or causal reuse.
 
 ### CROSS-AI ROLE
@@ -247,6 +250,55 @@ When a local bug appears during evolution, pause before adding a patch and ask:
 
 Repeated local patches without a reusable principle are evidence to re-open the model at the architectural/algorithmic boundary, not permission to add another subsystem.
 
+
+## 2026-10-04 ACTIVE OVERLAY — IABV GITHUB-BACKED OPERATIONAL COORDINATION
+
+The normal development mode is now explicitly distinguished from the RSK-01 blind-continuity experiment.
+
+### NORMAL IABV COLLABORATION
+
+During ordinary IABV work, ChatGPT, Codex, Sonnet/Claude, Devin and other participating AIs should enter the IABV canonical frame, retrieve relevant current state, recompute the first open edge and work under capability-fit routing.
+
+The intended coordination loop is:
+
+`human objective → IABV current frame → relevant knowledge → verified truth → closed edges → first open edge → required capability → capability-fit actor → exact prompt/task → action → observation → verification → reconciliation → writeback → next frontier`
+
+The purpose is to reduce routine human context transport while preserving provenance, evidence and governance.
+
+This is GitHub-backed operational coordination, not a new software coordinator/brain.
+
+### IABV → CODEX WORKFLOW
+
+When the first open edge requires Codex capability, the exact task should be generated from the current IABV frame and handed to Codex with:
+
+`objective → current truth → relevant memory → closed edges → first open edge → why Codex fits → exact bounded action → stop condition → evidence required → verifier → writeback target`
+
+Codex then returns observation/artifact/provenance/evidence boundary. IABV/ChatGPT reconciles the result and recomputes the next frontier.
+
+The goal is to make IABV progressively useful as the control surface for using Codex, without assuming that the runtime has already automated this loop.
+
+### RSK-01 EXCEPTION — BLIND PARTICIPANT
+
+The instruction that a Claude/Sonnet participant must be genuinely fresh, outside IABV Project context and without prior-chat retrieval is specific to the RSK-01 continuity experiment.
+
+It is not the default collaboration rule.
+
+Therefore:
+
+`INELIGIBLE — PRIOR CONTEXT PRESENT`
+
+means only that the particular blind-test run is contaminated/ineligible for continuity scoring.
+
+It does not mean Claude/Sonnet is normally supposed to ignore the IABV frame.
+
+### CURRENT EXPERIMENT ROUTING
+
+The `SONNET / CLAUDE — FRESH BLIND PARTICIPANT` destination in this file applies to RSK-01 only.
+
+Normal actor selection remains capability-fit and must be recomputed from the current objective and evidence.
+
+Canonical coordination protocol:
+`IABV_v1.5/docs/history/CHAT-ARCH/IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md`
 ## 2026-10-02 ACTIVE OVERLAY — META-RUNTIME-07ZG RECONCILIATION
 
 07ZG is completed as a read-only runtime/source reconciliation against `5238e85c014ea6bdda2ffd1a14064883bde559f5`.
