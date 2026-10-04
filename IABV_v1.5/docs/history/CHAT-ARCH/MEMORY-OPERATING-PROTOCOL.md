@@ -1432,3 +1432,28 @@ The authoritative operational chain is:
 `CURRENT OBJECTIVE → CURRENT TRUTH → MATERIAL DELTAS → CLOSED/OPEN EDGES → REQUIRED CAPABILITY → CAPABILITY FIT → IA DESTINO → ACTION/PROMPT`.
 
 If any historical addendum contains a different `Next actor`, do not follow it directly. Recompute from CURRENT-STATE.
+
+## 2026-10-04 ACTIVE RULE — IDEA GENEALOGY / UNIVERSAL ALGORITHM
+
+The universal adaptive algorithm is the conceptual parent of the development program. Its canonical source is `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`, concept root `UAAL-ROOT-001`.
+
+When a human, IABV component or external AI contributes a material idea, do not leave it only in chat. Classify it as:
+`new child | parent revision | competing interpretation | independent concept`.
+
+Preserve the derivation:
+`parent concept → problem/objective → new distinction/mechanism → evidence boundary → falsifier → affected existing organs → next discriminating action`.
+
+Minimum durable fields:
+`CONCEPT_ID + PARENT_CONCEPT_ID + SOURCE + ORIGIN + DERIVATION_REASON + EPISTEMIC_STATUS + EVIDENCE + FALSIFIER + IMPLEMENTATION/VERIFICATION REFERENCES + NEXT_OPEN_EDGE + TIMESTAMP + PROVENANCE`.
+
+Machine-readable lineage:
+`data/evolution/universal_algorithm_lineage.json`.
+
+A material idea that is not implementation-ready belongs in `UNRESOLVED-KNOWLEDGE.md` with its concept ID and parent. It remains retrievable without becoming current truth.
+
+Keep universal algorithmic invariants separate from realization-specific details. Provider/app/browser/API/CLI/MCP parameters may adapt at the edge; they must not silently redefine the parent algorithm.
+
+Promotion ladder:
+`IDEA → HYPOTHESIS → DESIGN → IMPLEMENTATION → WIRED → INVOKED → OBSERVED → VERIFIED → EFFECTIVE → CAUSAL → REUSABLE → DEVELOPMENTAL`.
+
+Persistence alone never promotes an idea to learning. The strongest learning/development claims require later contextual reuse that changes a future method, routing decision or behavior.
