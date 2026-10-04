@@ -37,6 +37,21 @@ IDENTIFY CURRENT GATE + LAST VERIFIED STATE
 SELECT MINIMAL DISCRIMINATING NEXT ACTION
 ```
 
+## 2026-10-04 REPLICATED FRESH-CHAT ACTIVATION — METHOD REFRAME
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-046-replicated-fresh-chat-activation-reframe.md`
+
+The source-content perturbation route is superseded as an experimental method because CURRENT-STATE and CONTEXT-INDEX now contain experiment metadata and prior harness-failure information. Rewriting canonical memory to conceal that information would contaminate the continuity field.
+
+Current minimum experiment:
+`one frozen canonical participant corpus + identical TASK → two independent fresh Sonnet/Claude reconstructions → claim-level adjudication`.
+
+Primary question:
+`consolidated canonical memory availability → reproducible fresh-chat activation into the current decision frame`.
+
+This tests bounded reproducibility of activation/reconstruction, not internal activation, source-specific dependence, causal decision impact or causal reuse.
+
 ## 2026-10-04 FRESH-BLIND HARNESS FAILURE — CONDITION LEAKAGE / CONTAMINATION
 
 Canonical record:
