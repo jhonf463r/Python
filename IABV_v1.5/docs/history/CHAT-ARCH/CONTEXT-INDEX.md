@@ -37,6 +37,24 @@ IDENTIFY CURRENT GATE + LAST VERIFIED STATE
 SELECT MINIMAL DISCRIMINATING NEXT ACTION
 ```
 
+## 2026-10-04 CONTINUITY DIFFERENTIAL — SOURCE-ARTIFACT ABLATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-044-continuity-differential-source-ablation-reconciliation.md`
+
+Current method delta:
+`independent source-read audit` is **NOT PROVEN** under the present trust boundary.
+The active experimental method is now:
+`controlled source-artifact availability perturbation → differential fresh-chat reconstruction`.
+
+Interpretation constraints:
+- source-artifact dependence is not proof of internal activation;
+- gateway delivery is not proof of model processing;
+- behavioral reconstruction change is not causal reuse;
+- the prior differential package created before the CURRENT-STATE reconciliation is superseded.
+
+For continuity work, retrieve 044 together with CURRENT-STATE, 042, 043, 025 and 029. The current routing authority remains CURRENT-STATE.
+
 ## 2026-10-03 LIVE ROUTING OVERRIDE — HUMAN-AWARE PLASTICITY
 
 Activate `CHAT-ARCH-2026-10-03-009-human-aware-plasticity-zero-friction-biosophia.md` together with the existing human deep-work and shared-field records when the objective touches:
