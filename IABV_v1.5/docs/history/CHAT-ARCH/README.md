@@ -31,8 +31,9 @@ Core retrieval:
 ## ENTRY ORDER FOR A NEW CHAT
 
 1. `README.md` — continuity contract and evidence rules.
-2. `CONTEXT-INDEX.md` — objective-driven routing.
-3. `CURRENT-STATE.md` — current project state and active gates.
+2. `CURRENT-STATE.md` — current project state and active routing.
+3. `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md` — conceptual parent and derivation rules.
+4. `CONTEXT-INDEX.md` — objective-driven routing.
 4. `CURRENT-STATE-OVERRIDE-2026-09-17.md` — latest append-only operational corrections for the 2026-09-17 causal-learning frontier.
 5. `SYMBIOSIS-MAP.md` — cross-IA capability and knowledge transfer.
 6. `UNRESOLVED-KNOWLEDGE.md` — ideas, deductions and unresolved boundaries.
