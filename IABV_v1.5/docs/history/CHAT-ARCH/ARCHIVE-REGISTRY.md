@@ -932,3 +932,11 @@ Any provider-, app-, browser-, MCP- or AI-specific work must identify its parent
 - **Material insight:** IABV should be taught through real governed interaction and verified experience rather than individually preprogramming every application, language, concept or workflow.
 - **Current technical frontier:** `PerceptionSnapshot(environment/world evidence) → normalized capability/affordance representation`.
 - **Consciousness boundary:** super-consciousness remains a research hypothesis; no runtime or architectural claim is implied.
+
+
+## 2026-10-03 — LAPTOP-MIND CAPABILITY SEAM PROBE
+
+- `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-03-043-laptop-mind-capability-seam-probe.md` — DIRECT_CANONICAL_SOURCE=YES / source-level offline probe.
+- Finding: environmental viability evidence in the fixture-backed PerceptionSnapshot did not reach CapabilityReadinessService; the selector changed only when the candidate inventory changed.
+- Evidence limit: the probe did not start IABV or observe the live laptop environment.
+- This record is a domain frontier, not a current routing authority. Current routing remains solely in CURRENT-STATE.md.
