@@ -3276,3 +3276,20 @@ Current application:
 **ACTION:** read-only audit of existing memory/index/relation/currentness/provenance organs. Determine why a new chat can retrieve one locally coherent protocol while omitting material cross-cutting deltas, and whether existing composition can close the gap without a new service.
 
 **NO IMPLEMENTATION.**
+
+### 2026-10-04 CONCEPTUAL PARENT / IDEA TRACEABILITY
+
+`UAAL-ROOT-001` is now the canonical conceptual parent for the IABV development program.
+
+Source:
+`UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`
+
+Machine-readable lineage:
+`data/evolution/universal_algorithm_lineage.json`
+
+This layer does not override routing. `CURRENT-STATE` remains the current routing authority. Its role is to prevent conceptual drift: every major development, experiment or tool-specific change must identify which part of the universal algorithm it realizes, tests, constrains or revises.
+
+The durable derivation chain is:
+`human/AI idea → concept → hypothesis/design → implementation → experiment → observation → verification → Knowledge/Method/Routing Delta → reuse`.
+
+A child concept must preserve its parent, derivation reason, evidence boundary and next open edge. Unverified ideas remain ideas/hypotheses/unresolved knowledge; they do not become current truth by repetition.
