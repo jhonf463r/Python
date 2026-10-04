@@ -253,6 +253,22 @@ Repeated local patches without a reusable principle are evidence to re-open the 
 
 
 
+
+## 2026-10-04 — IABV → CODEX REAL DISPATCH FRONTIER
+
+The source composition already contains the principal Codex route: technical diagnosis can resolve to `consult_codex`, `AutonomousEvolutionService` invokes `ToolTeachService.execute_external_consultation()`, `codex_installed` is registered through `external_assistant`, and Codex has a dedicated rollout/session capture path.
+
+Therefore the immediate open edge is no longer “does a Codex route exist?” It is:
+`IABV production decision → Codex selection → real launch → verified response capture`.
+
+Current governance boundary: `codex_installed` requires human approval. The first real experiment must preserve that gate.
+
+Minimum experiment: one harmless read-only production Windows consultation, stopping at the first causal break. Do not add a new coordinator or weaken approval solely to make the experiment pass.
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-048-IABV-CODEX-REAL-DISPATCH-FRONTIER.md`
+
+After real dispatch/capture is proven, the next edge is response ingestion followed by a verified change in a subsequent IABV decision.
 ## 2026-10-04 — CODEX NORMAL FRAME-ENTRY RESULT
 
 Codex successfully followed the GitHub-backed IABV frame-entry protocol in ordinary collaboration: it reconciled remote `main`, distinguished a detached local checkout from canonical state, reconstructed the continuity frontier and stopped at the declared evidence boundary.
