@@ -3,37 +3,43 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03
-**Reason:** RSK-01D completed as a blind documentary retrieval test and was independently scored against the sealed expected-state manifest.
+**Reason:** RSK-01A completed a read-only static composition audit and located a bounded gap between canonical CHAT-ARCH documents and the productive retrieval candidate set.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01D produced partial documentary recovery against the independent expected state: 6/18 claims fully correct, 11/18 partial, 1/18 omitted. Global routing recovery was correct; no demonstrated routing/currentness/provenance/contradiction error occurred. Completeness remains unproven. The scoring report's attribution of A to session procedure was too strong; A, B and C remain open, while D is not supported.
+RSK-01D showed partial documentary recovery: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery was correct. RSK-01A then showed objective-conditioned retrieval exists for operational `KnowledgeItem` data, but the audited path does not demonstrate canonical `CHAT-ARCH/*.md` entering that candidate set, and the inspected routing consumer does not consume `knowledge_hits`/memory snapshot as actor-selection inputs. B is supported only for that audited composition path; A and C remain open; D is not supported.
 
 ### CURRENT DOMAIN FRONTIER
-`unified existing-organ self-knowledge retrieval → complete relevant activation`
+`canonical CHAT-ARCH claim → productive runtime retrieval candidate set`
 
 ### CURRENT REQUIRED CAPABILITY
-Read-only repository archaeology and static producer → transformation → consumer composition tracing across existing continuity/memory/index/currentness organs.
+Single-claim end-to-end repository archaeology across source authority, ingestion/indexing, candidate formation, reconciliation/filtering and the `TaskContextAssembler` consumer.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-RSK-01D has already shown that a fresh agent can recover substantial documentary state but not complete relevant activation. The remaining discriminating uncertainty is whether the open edge is caused by session/procedure, corpus/currentness/canonicalization, or missing productive composition among existing organs.
+RSK-01A narrowed the architectural uncertainty to one falsifiable composition edge. The highest-information action is no longer a broad organ survey; it is tracing one concrete canonical claim through all relevant ingestion/index paths to determine whether the gap is absence of ingestion (B) or representation/currentness/canonicalization (C).
 
 ### NEXT ACTION
-Execute RSK-01-A as a read-only audit of the existing continuity/memory/index/currentness composition, using its already defined scope and questions. Do not implement or create a new retrieval service.
+Trace one canonical CHAT-ARCH claim marked `OMITTED` or `RECOVERED_PARTIAL` by RSK-01D from source and authority metadata through every relevant ingestion/index path to the candidate set consumed by `TaskContextAssembler`.
 
 ### RSK-01D ADJUDICATION
-6/18 RECOVERED_CORRECT; 11/18 RECOVERED_PARTIAL; 1/18 OMITTED. Material coverage 3/5 complete + 2/5 partial = 60%. Routing recovery CORRECT. Documentary recovery PARTIAL. Completeness PARTIAL.
+6/18 RECOVERED_CORRECT; 11/18 RECOVERED_PARTIAL; 1/18 OMITTED. Material coverage: 3/5 complete + 2/5 partial = 60%. Routing recovery CORRECT. Documentary recovery PARTIAL.
+
+### RSK-01A RESULT
+Objective-conditioned retrieval over operational `KnowledgeItem` is statically wired. Canonical CHAT-ARCH Markdown → productive retrieval candidate set is NOT PROVEN in the audited path. Routing consumer exists, but inspected governance/route inputs do not include `knowledge_hits` / memory snapshot. Runtime and causal influence remain untested.
+
+### HYPOTHESIS STATUS
+A — STILL OPEN. B — SUPPORTED, bounded to the audited CHAT-ARCH → productive retrieval composition path. C — STILL OPEN. D — NOT SUPPORTED.
 
 ### ROUTING CONTROL
 Domain-local BIO-04 routing does not replace the global RSK route without explicit promotion in the current snapshot. Historical NEXT ACTOR text remains non-routable.
 
 ### STOP CONDITION
-Stop after RSK-01-A identifies the existing producer → transformation → consumer composition path, locates the first open activation edge, distinguishes documentary/static evidence from runtime evidence, and provides enough evidence to adjudicate A/B/C without implementation.
+Stop after the single-claim trace proves either that the claim reaches the `TaskContextAssembler` candidate set and identifies the selection/reconciliation step, or that the claim has no source → candidate path in the searched surfaces. No implementation or new retrieval service.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
