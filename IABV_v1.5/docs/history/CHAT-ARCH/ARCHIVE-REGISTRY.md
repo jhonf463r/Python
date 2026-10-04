@@ -922,3 +922,13 @@ Authority separation:
 `CURRENT-STATE` = current routing; `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION` = conceptual parent; `CONTEXT-INDEX` = navigation; `MEMORY-OPERATING-PROTOCOL` = method; `SYMBIOSIS-MAP` = cross-IA transfer evidence; `UNRESOLVED-KNOWLEDGE` = open ideas; historical records = evidence/history.
 
 Any provider-, app-, browser-, MCP- or AI-specific work must identify its parent concept and state whether it realizes, tests, constrains or revises the universal algorithm.
+
+## 2026-10-04 — EXPERIENTIAL TEACHING / UNIVERSAL CAPABILITY ACQUISITION
+
+- **Source record:** `CHAT-ARCH-2026-10-03-041-experiential-teaching-universal-capability-acquisition.md`
+- **Parent concept:** `UAAL-D008` (Knowledge Plasticity), grounded in `UAAL-D001` and `UAAL-D002`.
+- **Type:** DEVELOPMENTAL DESIGN / HUMAN-MACHINE COLLABORATION / CAPABILITY ACQUISITION
+- **State:** CANONICAL DESIGN CONTEXT / RUNTIME CAUSAL PROOF OPEN
+- **Material insight:** IABV should be taught through real governed interaction and verified experience rather than individually preprogramming every application, language, concept or workflow.
+- **Current technical frontier:** `PerceptionSnapshot(environment/world evidence) → normalized capability/affordance representation`.
+- **Consciousness boundary:** super-consciousness remains a research hypothesis; no runtime or architectural claim is implied.
