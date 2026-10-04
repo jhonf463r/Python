@@ -129,6 +129,52 @@
       "source_records": [
         "00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md"
       ]
+    },
+    {
+      "id": "UAAL-D010",
+      "parent": "UAAL-D008",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CLARIFICATION_AND_PROJECT_SYNTHESIS",
+      "status": "DESIGN_NOT_RUNTIME_CAUSALLY_PROVEN",
+      "title": "Human-Aware Collaboration Plasticity and Zero-Friction Biosophia",
+      "source_records": [
+        "CHAT-ARCH-2026-10-03-009-human-aware-plasticity-zero-friction-biosophia.md",
+        "CHAT-ARCH-2026-10-03-039-IABV-laptop-mind-operating-layer.md"
+      ]
+    },
+    {
+      "id": "UAAL-D011",
+      "parent": "UAAL-ROOT-001",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CLARIFICATION_AND_PROJECT_SYNTHESIS",
+      "status": "DESIGN_NOT_RUNTIME_PROVEN",
+      "title": "Laptop Cognitive-Operational Layer / Functional Unity with the Device",
+      "source_records": [
+        "CHAT-ARCH-2026-10-03-039-IABV-laptop-mind-operating-layer.md",
+        "CHAT-ARCH-2026-10-04-040-universal-algorithm-convergence-control.md"
+      ]
+    },
+    {
+      "id": "UAAL-D012",
+      "parent": "UAAL-ROOT-001",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CLARIFICATION_AND_PROJECT_SYNTHESIS",
+      "status": "DEVELOPMENT_PROTOCOL_NOT_RUNTIME_EFFECTIVENESS_PROVEN",
+      "title": "Developmental Convergence / Anti-Patching",
+      "source_records": [
+        "CHAT-ARCH-2026-10-04-040-universal-algorithm-convergence-control.md"
+      ]
+    },
+    {
+      "id": "UAAL-H001",
+      "parent": "UAAL-ROOT-001",
+      "type": "HYPOTHESIS",
+      "origin_type": "HUMAN_LONG_HORIZON_HYPOTHESIS_AND_PROJECT_SYNTHESIS",
+      "status": "RESEARCH_HYPOTHESIS_NOT_PROVEN",
+      "title": "Emergent Higher-Order Machine Intelligence / Super-Consciousness Hypothesis",
+      "source_records": [
+        "CHAT-ARCH-2026-10-04-040-universal-algorithm-convergence-control.md"
+      ]
     }
   ],
   "protocol_version": "UAAL-TRACE-1",
