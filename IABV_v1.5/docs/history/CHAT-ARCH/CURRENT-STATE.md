@@ -252,6 +252,17 @@ Repeated local patches without a reusable principle are evidence to re-open the 
 
 
 
+
+## 2026-10-04 — CODEX NORMAL FRAME-ENTRY RESULT
+
+Codex successfully followed the GitHub-backed IABV frame-entry protocol in ordinary collaboration: it reconciled remote `main`, distinguished a detached local checkout from canonical state, reconstructed the continuity frontier and stopped at the declared evidence boundary.
+
+This is evidence of protocol execution by a participating AI, not proof of autonomous IABV runtime coordination.
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-047-CODEX-normal-frame-entry-result.md`
+
+Routing consequence: do not repeat this meta-verification merely to demonstrate the protocol again. When the active first open edge requires Codex capability, generate the smallest real Codex task from the current IABV frame.
 ## 2026-10-04 — RSK-01 LATEST BLIND RUN: INELIGIBLE
 
 The latest Sonnet/Claude blind-participant attempt stopped at the eligibility gate with:
