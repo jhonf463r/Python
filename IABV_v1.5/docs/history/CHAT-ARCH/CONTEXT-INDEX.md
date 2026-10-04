@@ -58,20 +58,24 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A ACTIVE
+## 2026-10-03 LIVE ROUTING — RSK-01A CLAIM TRACE ACTIVE
 
-**Current frontier:** `unified existing-organ self-knowledge retrieval → complete relevant activation`  
+**Current frontier:** `canonical CHAT-ARCH claim → productive runtime retrieval candidate set`  
 **IA DESTINO:** **Codex**  
-**CAPABILITY:** read-only repository archaeology + static producer → transformation → consumer composition tracing across existing continuity/memory/index/currentness organs.  
-**ACTION:** execute RSK-01-A using its existing scope/questions; no implementation and no new retrieval service.
+**CAPABILITY:** single-claim end-to-end repository archaeology across canonical source/authority → ingestion/indexing → candidate formation → reconciliation/filtering → `TaskContextAssembler`.  
+**ACTION:** trace one RSK-01D `OMITTED` or `RECOVERED_PARTIAL` claim end-to-end; no implementation.
 
-### RSK-01D ADJUDICATION
-Blind Sonnet retrieval against the sealed expected state was **PARTIAL**: 6/18 claims fully correct, 11/18 partial, 1/18 omitted. Routing recovery was **CORRECT**; no demonstrated currentness/provenance/contradiction/routing error occurred. Completeness remains **PARTIAL**.
+### RSK-01A RESULT
+Static audit established objective-conditioned retrieval for operational `KnowledgeItem` data, but did not demonstrate canonical `CHAT-ARCH/*.md` entering the productive candidate set. The inspected routing consumer also does not receive `knowledge_hits` / memory snapshot as actor-selection inputs. B is supported only for this audited composition path; A and C remain open; D not supported.
 
-### A/B/C/D STATUS
-A — STILL OPEN; B — STILL OPEN; C — STILL OPEN; D — NOT SUPPORTED. The earlier scoring statement that A was SUPPORTED was too strong: partial retrieval does not by itself establish that session procedure caused the omissions.
+### RSK-01D RESULT
+6/18 complete, 11/18 partial, 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL; completeness PARTIAL.
 
-RSK-01D is now historical evidence. Do not rerun it. The next discriminating action is RSK-01-A.
+### NEXT DISCRIMINATING STEP
+Trace one concrete canonical claim from source and authority metadata through all relevant ingestion/index paths to the candidate set used by `TaskContextAssembler`. Prefer an RSK-01D omitted/partial claim.
+
+### STOP
+Stop when the claim either reaches the candidate set and its selection/reconciliation step is identified, or no source → candidate path can be demonstrated in the searched surfaces.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
