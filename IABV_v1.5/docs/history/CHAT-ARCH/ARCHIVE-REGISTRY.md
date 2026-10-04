@@ -900,3 +900,25 @@ State:
 
 Concrete current handoff:
 `CHAT-ARCH-2026-10-03-017-RSK-01A-CODEX-HANDOFF.md` → **Codex**, read-only.
+
+## 2026-10-04 REGISTRATION — UNIVERSAL ADAPTIVE ALGORITHM CONCEPT ROOT
+
+Canonical conceptual source:
+`IABV_v1.5/docs/history/CHAT-ARCH/UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`
+
+Type:
+`CONCEPTUAL_ROOT / DEVELOPMENT_PROTOCOL`
+
+Concept root:
+`UAAL-ROOT-001`
+
+Purpose:
+Preserve the central universal algorithm as the parent from which environmental semantics, capability inference, realization/channel selection, modality adaptation, governed action/observation, learning, metacognition, plasticity and developmental/evolutionary hypotheses derive.
+
+Machine-readable lineage:
+`IABV_v1.5/data/evolution/universal_algorithm_lineage.json`
+
+Authority separation:
+`CURRENT-STATE` = current routing; `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION` = conceptual parent; `CONTEXT-INDEX` = navigation; `MEMORY-OPERATING-PROTOCOL` = method; `SYMBIOSIS-MAP` = cross-IA transfer evidence; `UNRESOLVED-KNOWLEDGE` = open ideas; historical records = evidence/history.
+
+Any provider-, app-, browser-, MCP- or AI-specific work must identify its parent concept and state whether it realizes, tests, constrains or revises the universal algorithm.
