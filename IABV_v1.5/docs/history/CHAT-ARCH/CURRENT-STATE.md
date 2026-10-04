@@ -3,28 +3,28 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03
-**Reason:** RSK-01A.2 traced routing-authoritative claim R01 and found no operational ingestion path into the inspected actor-selection path; independent adversarial falsification is now the minimum discriminating action.
+**Reason:** RSK-01A.3 adversarial static verification did not falsify the bounded B conclusion for canonical R01.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1 established objective-conditioned operational retrieval over `KnowledgeItem`, with no demonstrated canonical CHAT-ARCH ingestion for N03. RSK-01A.2 likewise found no `CURRENT-STATE` ingestion/runtime representation reaching the inspected actor-selection consumer. B is supported only for the audited canonical-document → operational-routing composition; A and C remain open; D is not supported.
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned operational retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 independently failed to falsify that bounded negative. `read_repo_file()` can expose CHAT-ARCH to an external audit agent, but no bridge from its result to IABV actor selection was demonstrated.
 
 ### CURRENT DOMAIN FRONTIER
 `canonical CURRENT-STATE routing authority → runtime routing representation/consumer`
 
 ### CURRENT REQUIRED CAPABILITY
-Independent adversarial code archaeology capable of falsifying a bounded negative-path conclusion across readers, loaders, context bridges and routing adapters.
+Targeted static falsification of dynamically constructed readers/imports/reflection that could connect canonical routing state to governance/actor selection.
 
 ### IA DESTINO
-**SONNET**
+**CODEX**
 
 ### WHY THIS IA NOW
-Two independent Codex traces now report the same bounded absence: canonical CHAT-ARCH content is not demonstrated in the operational candidate/routing path. The remaining uncertainty is whether that negative result is complete or a search-surface blind spot. Sonnet is used as the adversarial verifier.
+Independent adversarial search did not find a missed direct operational path. One residual uncertainty remains: dynamically constructed file paths/imports/reflection could evade literal/static searches. A final targeted falsification pass has higher information gain than implementation or runtime at this stage.
 
 ### NEXT ACTION
-Perform a read-only adversarial verification of the R01 bounded B conclusion on the fixed SHA, attempting specifically to find any missed reader/loader/bridge that could make canonical `CURRENT-STATE.md` operationally consumable by actor selection.
+Run one targeted read-only static search on the fixed SHA for `getattr`, `setattr`, `importlib`, `__import__`, `joinpath`, `with_name`, dynamically built `.md` paths and equivalent mechanisms, but only where resulting data could reach routing/governance.
 
 ### RSK-01D
 6/18 complete; 11/18 partial; 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL.
@@ -32,17 +32,14 @@ Perform a read-only adversarial verification of the R01 bounded B conclusion on 
 ### RSK-01A.1
 N03: canonical `UNRESOLVED-KNOWLEDGE.md` → no demonstrated ingestion → `KnowledgeRepository`; B supported only for N03/audited surfaces.
 
-### RSK-01A.2
-R01: canonical `CURRENT-STATE.md` → no demonstrated runtime representation/ingestion → inspected actor-selection path; B supported only for this composition.
-
-### HYPOTHESIS STATUS
-A — STILL OPEN. B — SUPPORTED, bounded. C — STILL OPEN. D — NOT SUPPORTED.
+### RSK-01A.2 / A.3
+R01: no demonstrated runtime representation/ingestion to actor selection in audited surfaces; A.3 adversarial search returned NOT FALSIFIED. B remains supported only at the bounded static composition level; A/C remain open; D not supported.
 
 ### ROUTING CONTROL
 BIO-04 domain-local routes and historical NEXT ACTOR text remain non-routable globally without explicit promotion in the current snapshot.
 
 ### STOP CONDITION
-Stop after adversarial verification either finds a missed operational path from R01 to actor selection, or establishes that the bounded negative conclusion survives the defined search scope. No implementation and no runtime execution.
+Stop after the targeted dynamic-path search either demonstrates an R01 → routing path or leaves the bounded negative intact. Then decide whether runtime verification is justified. No implementation.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
