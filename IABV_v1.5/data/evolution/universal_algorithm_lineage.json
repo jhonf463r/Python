@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "concept_root_id": "UAAL-ROOT-001",
+  "updated_at": "2026-10-04",
+  "authority": {
+    "conceptual": "docs/history/CHAT-ARCH/UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md",
+    "routing": "docs/history/CHAT-ARCH/CURRENT-STATE.md",
+    "navigation": "docs/history/CHAT-ARCH/CONTEXT-INDEX.md",
+    "method": "docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md",
+    "cross_ai": "docs/history/CHAT-ARCH/SYMBIOSIS-MAP.md",
+    "unresolved": "docs/history/CHAT-ARCH/UNRESOLVED-KNOWLEDGE.md"
+  },
+  "concepts": [
+    {
+      "id": "UAAL-ROOT-001",
+      "parent": null,
+      "type": "IDEA",
+      "origin_type": "HUMAN_DERIVED_AND_PROJECT_SYNTHESIS",
+      "status": "CANONICAL_DESIGN_INTENT",
+      "title": "Universal Adaptive Algorithm",
+      "source_records": [
+        "00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md",
+        "UNIVERSAL-ENVIRONMENTAL-SEMANTICS-2026-09-26.md",
+        "UNIVERSAL-EXPERIMENTAL-REALITY-LOOP-2026-09-26.md",
+        "BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md"
+      ]
+    },
+    {
+      "id": "UAAL-D001",
+      "parent": "UAAL-ROOT-001",
+      "type": "DESIGN",
+      "origin_type": "PROJECT_SYNTHESIS",
+      "status": "DESIGN_NOT_RUNTIME_PROVEN",
+      "title": "Universal Environmental Semantics",
+      "source_records": [
+        "UNIVERSAL-ENVIRONMENTAL-SEMANTICS-2026-09-26.md"
+      ]
+    },
+    {
+      "id": "UAAL-D002",
+      "parent": "UAAL-ROOT-001",
+      "type": "DESIGN",
+      "origin_type": "PROJECT_SYNTHESIS",
+      "status": "DESIGN_NOT_RUNTIME_PROVEN",
+      "title": "Universal Experimental Reality Loop",
+      "source_records": [
+        "UNIVERSAL-EXPERIMENTAL-REALITY-LOOP-2026-09-26.md"
+      ]
+    },
+    {
+      "id": "UAAL-D003",
+      "parent": "UAAL-ROOT-001",
+      "type": "DESIGN",
+      "origin_type": "PROJECT_SYNTHESIS",
+      "status": "PARTIAL_NOT_END_TO_END_PROVEN",
+      "title": "Capability and Resource Fabric",
+      "source_records": [
+        "SYMBIOSIS-MAP.md",
+        "BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md"
+      ]
+    },
+    {
+      "id": "UAAL-D004",
+      "parent": "UAAL-D003",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CORRECTION_AND_PROJECT_SYNTHESIS",
+      "status": "PARTIAL_NOT_END_TO_END_PROVEN",
+      "title": "Adaptive Realization and Modality Selection",
+      "source_records": [
+        "UNIVERSAL-ENVIRONMENTAL-SEMANTICS-2026-09-26.md",
+        "CHAT-ARCH-2026-10-03-039-IABV-laptop-mind-operating-layer.md"
+      ]
+    },
+    {
+      "id": "UAAL-D005",
+      "parent": "UAAL-D004",
+      "type": "DESIGN",
+      "origin_type": "ARCHITECTURAL_EVIDENCE",
+      "status": "PARTIAL",
+      "title": "Human Browser and Session as Environmental Resource",
+      "source_records": [
+        "CHAT-ARCH-2026-10-03-039-IABV-laptop-mind-operating-layer.md",
+        "R6/R7 historical records"
+      ]
+    },
+    {
+      "id": "UAAL-D006",
+      "parent": "UAAL-D003",
+      "type": "DESIGN",
+      "origin_type": "PROJECT_SYNTHESIS",
+      "status": "PARTIAL_DYNAMIC_SELECTION_NOT_PROVEN",
+      "title": "External AI as Capability Realization",
+      "source_records": [
+        "SYMBIOSIS-MAP.md",
+        "CHAT-ARCH-2026-09-03_CHAT-ARCH-2026-006_adaptive-meta-orchestrator-forensic.md"
+      ]
+    },
+    {
+      "id": "UAAL-D007",
+      "parent": "UAAL-ROOT-001",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CORRECTION_AND_PROJECT_SYNTHESIS",
+      "status": "PARTIAL_RUNTIME_CAUSAL_CLOSURE_OPEN",
+      "title": "Metacognitive Self-Use",
+      "source_records": [
+        "BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md",
+        "CHAT-ARCH-2026-09-21-008-metacognitive-self-use-provenance-gate.md"
+      ]
+    },
+    {
+      "id": "UAAL-D008",
+      "parent": "UAAL-ROOT-001",
+      "type": "HYPOTHESIS",
+      "origin_type": "EVIDENCE_DERIVED",
+      "status": "SELECTOR_LEVEL_EVIDENCE_STRONGER_CLAIM_OPEN",
+      "title": "Knowledge Plasticity",
+      "source_records": [
+        "CHAT-ARCH-2026-09-17-004-cross-chat-symbiosis-reconciliation.md",
+        "SYMBIOSIS-MAP.md"
+      ]
+    },
+    {
+      "id": "UAAL-D009",
+      "parent": "UAAL-D008",
+      "type": "HYPOTHESIS",
+      "origin_type": "PROJECT_SYNTHESIS",
+      "status": "MEASUREMENT_PROGRAM",
+      "title": "Developmental Acceleration",
+      "source_records": [
+        "00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md"
+      ]
+    }
+  ],
+  "protocol_version": "UAAL-TRACE-1",
+  "minimum_trace": [
+    "concept_id",
+    "parent_concept_id",
+    "source_record",
+    "origin_type",
+    "objective_or_problem",
+    "derivation_reason",
+    "epistemic_status",
+    "evidence",
+    "falsifier",
+    "implementation_refs",
+    "verification_refs",
+    "knowledge_delta",
+    "method_delta",
+    "routing_delta",
+    "next_open_edge",
+    "timestamp",
+    "branch_or_sha"
+  ]
+}
