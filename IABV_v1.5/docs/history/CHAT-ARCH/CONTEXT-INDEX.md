@@ -58,23 +58,15 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A RECONCILIATION / RSK-01B ACTIVE
+## 2026-10-03 LIVE ROUTING — RSK-01C ACTIVE
 
-**Current frontier:** `objective → complete relevant candidate retrieval`
+**Current frontier:** `objective → independent expected material state`
 
-**RSK-01A finding:** Codex's read-only audit of main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` classified the practical architectural gap primarily as **B — missing integration**, with A/C as competing contributors and D not established. The report found existing partial owners but no demonstrated composition that activates current truth, recent material deltas, negative knowledge, relevant history, provenance/currentness and actor evidence as one objective-conditioned set before routing.
+**IA DESTINO:** **Codex**
+**CAPABILITY:** reproducible evaluation-fixture construction + repository archaeology
+**ACTION:** prepare and seal the atomic expected-state manifest from frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`.
 
-**Active experiment:** `CHAT-ARCH-2026-10-03-018-RSK-01A-reconciliation-and-RSK-01B-blind-continuity-test.md`
-
-**IA DESTINO:** **Sonnet**  
-**CAPABILITY:** independent blind reconstruction and verification  
-**FIRST OPEN EDGE:** `current objective → complete relevant candidate retrieval`  
-**ACTION:** execute RSK-01B on `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` using five fresh objective-only sessions, each with a fully instantiated concrete objective. A template-placeholder refusal is a setup failure and is not scored. Case 5 must score the routing authority encoded in that frozen corpus (Codex at that point), not the post-writeback Sonnet route.
-
-Historical `NEXT ACTOR` text remains non-routable. Do not treat the Codex recommendation as a permanent sequence; after RSK-01B, recompute the actor from the observed result.
-### RSK-01B FINAL AGGREGATE
-RSK-01B completed 5/5: bounded documentary continuity demonstrated, complete relevant-field recall not proven. Next actor is **Codex** for a read-only RSK-01C fixture/contract audit that freezes independent expected material and clarifies global-vs-domain routing semantics. Sonnet remains the prospective independent verifier.
-
+RSK-01B is complete and historical. Do not rerun it yet. Historical `NEXT ACTOR` remains non-routable.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
