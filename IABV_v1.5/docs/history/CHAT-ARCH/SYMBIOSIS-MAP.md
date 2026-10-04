@@ -2080,3 +2080,21 @@ R34 remains bounded evidence: blind reconstruction succeeded in a tested case, b
 
 Developmental interpretation:
 `protocol correction → later consumption → changed retrieval/routing` must be tested before claiming causal developmental learning.
+
+## 2026-10-04 — CROSS-IA LEARNING MUST MAP TO THE UNIVERSAL PARENT
+
+All cross-IA capability observations are evidence about a realization of `UAAL-ROOT-001`, not evidence that an external AI is the algorithm itself.
+
+For every material transfer preserve:
+`parent concept → capability needed → realization/actor → environment/resource state → action → observation → verification → delta → later reuse`.
+
+Codex, Devin, ChatGPT, Claude, Ollama and future participants are nodes/resources in the same developmental field. Their relative usefulness is objective- and evidence-dependent.
+
+Every collaboration lesson should distinguish:
+- universal mechanism learned;
+- realization-specific detail;
+- effect on capability selection/method/environmental understanding;
+- evidence/provenance;
+- remaining uncertainty.
+
+An actor-specific success cannot become a universal rule without transfer evidence.
