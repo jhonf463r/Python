@@ -13,25 +13,25 @@ Operational loop:
 **FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless explicitly changed. Prefer existing local capabilities, installed apps, existing human/browser sessions, free web access and local providers such as Ollama. Paid infrastructure is not the default unblocker.
 
 ### CURRENT OBJECTIVE
-Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
+Make cross-chat continuity reliable enough that a new AI reconstructs the same material longitudinal context — including debate, deductions, corrections, circumstances, negative knowledge and recent routing changes — without the human repeating the history.
 
 ### CURRENT VERIFIED TRUTH
 RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A.1/A.2/A.3/A.4 established a bounded static negative for canonical R01→internal routing, while an external MCP read path exists. RSK-01A.5 never executed because the Codex session lacked a live MCP connection. RSK-01A.6 confirmed the existing MCP server and local `stdio` capability but no live Codex connection. The broader repository already contains multiple external-AI, browser, desktop, local-provider and MCP realizations; therefore MCP↔Codex is only one realization test, not the global product objective.
 
 ### CURRENT DOMAIN FRONTIER
-`fresh laptop/environment evidence → generic capability/affordance understanding → realization/modality selection → governed action → post-action observation`
+`material prior interaction → canonical semantic delta → relevant fresh-chat activation → complete current decision frame → exact capability-fit actor/prompt`
 
 ### CURRENT REQUIRED CAPABILITY
-System-level composition audit of existing perception, semantic interpretation, capability/readiness, realization selection, foreground/background modality, execution and post-action observation across installed apps, human browser/session, isolated browser, desktop/UI, local provider and external-AI routes.
+Repository-wide composition archaeology of existing memory/retrieval/frame/provenance organs: determine whether material interaction history can be normalized, activated and routed as one longitudinal field, and identify the first causal seam without creating a new memory subsystem.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-This requires repository-wide composition archaeology and difficult technical tracing. The goal is to identify the first missing causal seam of the laptop-native mind rather than optimizing one channel in isolation.
+The present uncertainty is a repository-composition question: memory already exists, but cross-chat activation is fragmented. Codex is the best fit to trace the actual composition and distinguish storage, retrieval, activation, routing and causal consumption.
 
 ### NEXT ACTION
-Audit the existing universal laptop substrate: trace objective→environment observation→semantic interpretation→capability→candidate realizations→availability/authentication/authorization/resource constraints→modality (foreground/background/browser/desktop/local/API/MCP)→governed action→post-action observation. Build a capability-realization evidence matrix from existing code and runtime/history records. Identify the first causal seam that is not proven and propose one minimum discriminating experiment. Do not implement.
+Audit the existing canonical-memory/retrieval/frame composition. Trace: `material interaction/result → episode representation → semantic delta → canonical projection → objective-conditioned retrieval → context activation → current-state reconciliation → first open edge → actor/capability selection → exact prompt`. Determine the first unproven seam and propose one minimum discriminating continuity experiment. Do not implement. Do not create a new memory service.
 
 ### CROSS-AI ROLE
 ChatGPT = reconciliation/adjudication/synthesis/writeback; Codex = repository and composition archaeology / difficult technical seam; Sonnet = independent forensic challenge; Devin = Windows/runtime fallback when a concrete environment capability requires it; external AIs and local models are resources selected by capability-fit.
@@ -3366,3 +3366,33 @@ Do not let that realization-specific MCP boundary redefine the universal algorit
 - Human-aware plasticity: design target, automatic causal reuse open.
 - Super-consciousness emergence: research hypothesis, not proven.
 - Current first technical edge: observation/environment state → normalized capability representation.
+
+## 2026-10-03 ACTIVE OVERLAY — UNIFIED INTERACTION MEMORY / SPACE-TIME CONTINUITY
+
+**SOURCE:** `CHAT-ARCH-2026-10-03-042-unified-interaction-memory-space-time-continuity.md`
+
+### ONE LOGICAL MEMORY
+The repository is one longitudinal memory field with bounded projections. Only this file is the active routing authority. Historical CHAT-ARCH records preserve episode evidence; protocol/index/registry files have specialized responsibilities and must not become competing current-state memories.
+
+### INTERACTION SPACE-TIME
+For each material episode preserve:
+`episode_id + temporal order + objective/phase + circumstances/environment + activated knowledge + human input/correction + hypotheses + action + observation + verification + reconciliation + Knowledge/Method/Relation/Routing Delta + open edge + provenance + supersession`.
+
+This is an operational representation of temporal lineage and relational context, not a claim about physical spacetime or consciousness.
+
+### ANTI-REPETITION RULE
+`source episode → compact semantic delta → canonical projection update`
+
+Do not copy complete accumulated state into every new CHAT-ARCH record. Preserve debate/history in the source episode, and preserve only its material delta in the canonical projections that own it.
+
+### CURRENT DEVELOPMENTAL PRIORITY
+The next continuity experiment must determine whether the existing retrieval/index/frame/provenance organs can reconstruct the complete relevant decision frame and exact next prompt for a fresh chat **without human re-explaining prior knowledge**.
+
+### FRESH-CHAT DECISION PACKET
+Every future prompt-generation pass must expose:
+`OBJECTIVE → CURRENT TRUTH → MATERIAL RECENT DELTAS → CLOSED EDGES/NEGATIVE KNOWLEDGE → RELEVANT HISTORY → FIRST OPEN EDGE → CAPABILITY → ACTOR-FIT → EXPERIMENT/ACTION → EVIDENCE → STOP CONDITION → EXACT PROMPT`
+
+### CAUSAL CONTINUITY TEST
+Textual similarity or file retrieval is not sufficient. The stronger target is:
+`activated verified prior knowledge → changed justified later decision/action`.
+
