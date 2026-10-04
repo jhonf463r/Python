@@ -1,6 +1,6 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
-**Last reconciled:** 2026-10-03
+**Last reconciled:** 2026-10-04
 **Reason:** The global objective was clarified: IABV is intended as the cognitive/operational mind of the laptop, not merely an IABV↔Codex coordinator. MCP, browsers, desktop apps, APIs, CLI, local models and external AIs are channels/resources/realizations inside one environmental model.
 
 ### OVERARCHING PRODUCT OBJECTIVE
