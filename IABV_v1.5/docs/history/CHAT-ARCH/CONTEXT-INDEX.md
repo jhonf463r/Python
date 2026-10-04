@@ -37,6 +37,19 @@ IDENTIFY CURRENT GATE + LAST VERIFIED STATE
 SELECT MINIMAL DISCRIMINATING NEXT ACTION
 ```
 
+## 2026-10-04 FRESH-BLIND HARNESS FAILURE — CONDITION LEAKAGE / CONTAMINATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-045-fresh-blind-run-blocked-condition-leakage.md`
+
+Primary scoring status: **INVALID / BLOCKED**.
+The first participant execution is not eligible for the FULL-vs-ABLATION pair because the participant could distinguish the condition from unequal corpus structure (8 vs 7 corpus files), and it disclosed prior project/task exposure. Preserve the response as harness/debug evidence only.
+
+Method delta:
+`same path + same file count + same package structure + identical task + controlled source-content perturbation`
+
+Do not execute another participant until condition leakage is removed and a genuinely new conversation is used.
+
 ## 2026-10-04 CONTINUITY DIFFERENTIAL — SOURCE-ARTIFACT ABLATION
 
 Canonical record:
