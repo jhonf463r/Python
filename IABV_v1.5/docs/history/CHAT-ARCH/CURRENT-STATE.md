@@ -3,40 +3,46 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03
-**Reason:** RSK-01A.1 traced canonical negative claim N03 and bounded the productive-retrieval gap to a Case B result for that claim.
+**Reason:** RSK-01A.2 traced routing-authoritative claim R01 and found no operational ingestion path into the inspected actor-selection path; independent adversarial falsification is now the minimum discriminating action.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A found objective-conditioned operational retrieval over `KnowledgeItem`, but not demonstrated ingestion of canonical CHAT-ARCH. RSK-01A.1 traced N03 from canonical Markdown to the retrieval candidate boundary and found no source → `KnowledgeRepository` path in audited surfaces, supporting B only for N03. A and C remain open; D is not supported.
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1 established objective-conditioned operational retrieval over `KnowledgeItem`, with no demonstrated canonical CHAT-ARCH ingestion for N03. RSK-01A.2 likewise found no `CURRENT-STATE` ingestion/runtime representation reaching the inspected actor-selection consumer. B is supported only for the audited canonical-document → operational-routing composition; A and C remain open; D is not supported.
 
 ### CURRENT DOMAIN FRONTIER
-`canonical routing-authoritative claim → runtime candidate/activation path → actor-selection consumer`
+`canonical CURRENT-STATE routing authority → runtime routing representation/consumer`
 
 ### CURRENT REQUIRED CAPABILITY
-Read-only end-to-end tracing of a canonical current-routing claim through ingestion/index/context into the actual actor-selection decision path.
+Independent adversarial code archaeology capable of falsifying a bounded negative-path conclusion across readers, loaders, context bridges and routing adapters.
 
 ### IA DESTINO
-**CODEX**
+**SONNET**
 
 ### WHY THIS IA NOW
-N03 establishes that one negative knowledge claim is not entering the operational candidate universe, but that claim does not itself test whether the canonical routing authority can affect actor selection. The highest-information next step is a routing-authoritative claim trace.
+Two independent Codex traces now report the same bounded absence: canonical CHAT-ARCH content is not demonstrated in the operational candidate/routing path. The remaining uncertainty is whether that negative result is complete or a search-surface blind spot. Sonnet is used as the adversarial verifier.
 
 ### NEXT ACTION
-Trace claim R01 from `CURRENT-STATE.md` through any ingestion/index/context path to the actual routing consumer (`AdaptiveTaskOrchestrator` / `LocalRoleRouter`) in the fixed SHA.
+Perform a read-only adversarial verification of the R01 bounded B conclusion on the fixed SHA, attempting specifically to find any missed reader/loader/bridge that could make canonical `CURRENT-STATE.md` operationally consumable by actor selection.
 
-### RSK-01A.1 RESULT
-N03: canonical Markdown → no demonstrated ingestion path → `KnowledgeRepository` candidate set. Case B supported only for this claim/path. Runtime and external DB insertion remain unknown.
+### RSK-01D
+6/18 complete; 11/18 partial; 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL.
+
+### RSK-01A.1
+N03: canonical `UNRESOLVED-KNOWLEDGE.md` → no demonstrated ingestion → `KnowledgeRepository`; B supported only for N03/audited surfaces.
+
+### RSK-01A.2
+R01: canonical `CURRENT-STATE.md` → no demonstrated runtime representation/ingestion → inspected actor-selection path; B supported only for this composition.
 
 ### HYPOTHESIS STATUS
-A — STILL OPEN. B — SUPPORTED, bounded to audited canonical CHAT-ARCH → productive retrieval composition. C — STILL OPEN. D — NOT SUPPORTED.
+A — STILL OPEN. B — SUPPORTED, bounded. C — STILL OPEN. D — NOT SUPPORTED.
 
 ### ROUTING CONTROL
 BIO-04 domain-local routes and historical NEXT ACTOR text remain non-routable globally without explicit promotion in the current snapshot.
 
 ### STOP CONDITION
-Stop after the R01 trace proves either that the canonical routing claim reaches the actor-selection path with a demonstrated consuming field/condition, or that no source → actor-selection path can be demonstrated in the searched surfaces. No implementation or runtime execution.
+Stop after adversarial verification either finds a missed operational path from R01 to actor selection, or establishes that the bounded negative conclusion survives the defined search scope. No implementation and no runtime execution.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
