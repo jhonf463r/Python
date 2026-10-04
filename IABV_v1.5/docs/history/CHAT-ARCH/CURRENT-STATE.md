@@ -3,43 +3,40 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03
-**Reason:** RSK-01A completed a read-only static composition audit and located a bounded gap between canonical CHAT-ARCH documents and the productive retrieval candidate set.
+**Reason:** RSK-01A.1 traced canonical negative claim N03 and bounded the productive-retrieval gap to a Case B result for that claim.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01D showed partial documentary recovery: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery was correct. RSK-01A then showed objective-conditioned retrieval exists for operational `KnowledgeItem` data, but the audited path does not demonstrate canonical `CHAT-ARCH/*.md` entering that candidate set, and the inspected routing consumer does not consume `knowledge_hits`/memory snapshot as actor-selection inputs. B is supported only for that audited composition path; A and C remain open; D is not supported.
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A found objective-conditioned operational retrieval over `KnowledgeItem`, but not demonstrated ingestion of canonical CHAT-ARCH. RSK-01A.1 traced N03 from canonical Markdown to the retrieval candidate boundary and found no source → `KnowledgeRepository` path in audited surfaces, supporting B only for N03. A and C remain open; D is not supported.
 
 ### CURRENT DOMAIN FRONTIER
-`canonical CHAT-ARCH claim → productive runtime retrieval candidate set`
+`canonical routing-authoritative claim → runtime candidate/activation path → actor-selection consumer`
 
 ### CURRENT REQUIRED CAPABILITY
-Single-claim end-to-end repository archaeology across source authority, ingestion/indexing, candidate formation, reconciliation/filtering and the `TaskContextAssembler` consumer.
+Read-only end-to-end tracing of a canonical current-routing claim through ingestion/index/context into the actual actor-selection decision path.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-RSK-01A narrowed the architectural uncertainty to one falsifiable composition edge. The highest-information action is no longer a broad organ survey; it is tracing one concrete canonical claim through all relevant ingestion/index paths to determine whether the gap is absence of ingestion (B) or representation/currentness/canonicalization (C).
+N03 establishes that one negative knowledge claim is not entering the operational candidate universe, but that claim does not itself test whether the canonical routing authority can affect actor selection. The highest-information next step is a routing-authoritative claim trace.
 
 ### NEXT ACTION
-Trace one canonical CHAT-ARCH claim marked `OMITTED` or `RECOVERED_PARTIAL` by RSK-01D from source and authority metadata through every relevant ingestion/index path to the candidate set consumed by `TaskContextAssembler`.
+Trace claim R01 from `CURRENT-STATE.md` through any ingestion/index/context path to the actual routing consumer (`AdaptiveTaskOrchestrator` / `LocalRoleRouter`) in the fixed SHA.
 
-### RSK-01D ADJUDICATION
-6/18 RECOVERED_CORRECT; 11/18 RECOVERED_PARTIAL; 1/18 OMITTED. Material coverage: 3/5 complete + 2/5 partial = 60%. Routing recovery CORRECT. Documentary recovery PARTIAL.
-
-### RSK-01A RESULT
-Objective-conditioned retrieval over operational `KnowledgeItem` is statically wired. Canonical CHAT-ARCH Markdown → productive retrieval candidate set is NOT PROVEN in the audited path. Routing consumer exists, but inspected governance/route inputs do not include `knowledge_hits` / memory snapshot. Runtime and causal influence remain untested.
+### RSK-01A.1 RESULT
+N03: canonical Markdown → no demonstrated ingestion path → `KnowledgeRepository` candidate set. Case B supported only for this claim/path. Runtime and external DB insertion remain unknown.
 
 ### HYPOTHESIS STATUS
-A — STILL OPEN. B — SUPPORTED, bounded to the audited CHAT-ARCH → productive retrieval composition path. C — STILL OPEN. D — NOT SUPPORTED.
+A — STILL OPEN. B — SUPPORTED, bounded to audited canonical CHAT-ARCH → productive retrieval composition. C — STILL OPEN. D — NOT SUPPORTED.
 
 ### ROUTING CONTROL
-Domain-local BIO-04 routing does not replace the global RSK route without explicit promotion in the current snapshot. Historical NEXT ACTOR text remains non-routable.
+BIO-04 domain-local routes and historical NEXT ACTOR text remain non-routable globally without explicit promotion in the current snapshot.
 
 ### STOP CONDITION
-Stop after the single-claim trace proves either that the claim reaches the `TaskContextAssembler` candidate set and identifies the selection/reconciliation step, or that the claim has no source → candidate path in the searched surfaces. No implementation or new retrieval service.
+Stop after the R01 trace proves either that the canonical routing claim reaches the actor-selection path with a demonstrated consuming field/condition, or that no source → actor-selection path can be demonstrated in the searched surfaces. No implementation or runtime execution.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
