@@ -42,6 +42,44 @@ The IABV frame supplies the **reference state and epistemic/control constraints*
 - provenance collapse;
 - prompt-to-prompt discontinuity.
 
+
+## NORMAL COLLABORATION VS BLIND EXPERIMENT
+
+There are two explicit modes.
+
+### NORMAL COLLABORATION MODE
+
+For ordinary IABV work, the participating AI should use the IABV canonical frame.
+
+This applies to ChatGPT, Codex, Sonnet/Claude, Devin and other participating AIs when their objective concerns IABV.
+
+The purpose is productive continuity, capability-fit routing, evidence discipline and traceable writeback.
+
+### BLIND EXPERIMENT MODE
+
+A blind participant is used only when an experiment explicitly measures fresh reconstruction/activation.
+
+In blind mode, the experiment contract overrides normal frame entry so that prior IABV context is intentionally excluded.
+
+The current RSK-01 experiment is one such case.
+
+Thus:
+
+`normal Claude/Sonnet → ENTER IABV FRAME`
+
+while:
+
+`RSK-01 blind Claude/Sonnet → DO NOT ENTER PRIOR IABV FRAME; USE FROZEN TEST CORPUS ONLY`
+
+An ineligible result in blind mode is a harness/isolation result, not a judgment that the AI should normally operate without IABV context.
+
+## IABV-BACKED COORDINATION
+
+When IABV work requires another AI, frame entry should precede prompt generation:
+
+`IABV CURRENT STATE → FIRST OPEN EDGE → REQUIRED CAPABILITY → ACTOR FIT → EXACT TASK → EXECUTION → OBSERVATION / PROVENANCE → VERIFICATION → WRITEBACK`
+
+For a Codex task, the generated prompt should explain why Codex is capability-fit and provide the smallest bounded action rather than transferring the entire archive.
 ## WHEN TO ENTER THE IABV FRAME
 
 Enter this frame whenever the objective materially concerns:
