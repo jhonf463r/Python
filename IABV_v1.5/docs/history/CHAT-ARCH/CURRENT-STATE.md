@@ -2,63 +2,38 @@
 
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
-**Last reconciled:** 2026-10-03  
-**Reason:** RSK-01B completed; RSK-01C established the missing independent expected-state measurement contract.
+**Last reconciled:** 2026-10-03
+**Reason:** RSK-01C expected-state fixture completed; blind independent evaluation is now the minimum discriminating action.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01B demonstrated bounded blind documentary discoverability across five objectives, but not complete relevant-field recall. RSK-01A remains the leading static architectural hypothesis (B — missing causal integration), not a runtime conclusion.
-
-RSK-01C now established the next measurable boundary: the evaluated agent's retrieval must be compared with an **independently sealed expected material state** rather than trusting the agent's own `OMITTED` report.
-
-### MATERIAL NEW FINDING
-First open edge:
-`objective → independent expected material state`
-
-After that fixture is independently derived and sealed, the next edge will be:
-`expected material state → blind evaluated retrieval → measured omissions/currentness/routing`
-
-### SINGLE ROUTING SPINE
-Only this top-level snapshot is allowed to determine the **current** routing decision.
-
-Canonical layer roles:
-- README = entry contract and precedence.
-- CURRENT-STATE top snapshot = current truth + current routing.
-- CONTEXT-INDEX = memory navigation.
-- MEMORY-OPERATING-PROTOCOL = routing/epistemic method.
-- SYMBIOSIS-MAP = capability/method/routing transfer evidence.
-- UNRESOLVED-KNOWLEDGE = open knowledge/pending ideas.
-- historical records = evidence/history, not current routing commands.
-
-Historical `NEXT ACTOR` text remains preserved but is **NON-ROUTABLE HISTORY** unless explicitly promoted through this snapshot.
+RSK-01A remains the leading static architectural hypothesis (B — missing causal integration), but RSK-01B established only bounded documentary discoverability. RSK-01C has now supplied an independently reviewed atomic expected-state contract so that the next evaluation can measure omissions rather than trust the evaluated agent's own report.
 
 ### CURRENT DOMAIN FRONTIER
-`objective → independent expected material state`
-
-This remains within the RSK-01 family. No new retrieval brain/service is authorized.
+`sealed expected material state → blind evaluated retrieval → independent omission/currentness/routing scoring`
 
 ### CURRENT REQUIRED CAPABILITY
-Repository archaeology + reproducible evaluation-fixture construction / evidence manifest generation.
+Independent repository reconstruction against a hidden expected-state benchmark.
 
 ### IA DESTINO
-**CODEX**
+**SONNET**
 
 ### WHY THIS IA NOW
-RSK-01C narrowed the remaining uncertainty to independent ground-truth construction. The next highest-information step is not another blind generation pass; it is producing a sealed atomic expected-state manifest from the fixed corpus before exposing it to an evaluated agent.
+The remaining uncertainty is now empirical document-level continuity under a hidden independent ground truth, not architecture discovery.
 
 ### NEXT ACTION
-Prepare and seal the independent `EXPECTED MATERIAL STATE` manifest for the fixed objective against `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`.
+Run RSK-01D as one fresh Sonnet session against frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, with only the fixed objective and read-only repository access. Do not expose the manifest, hash or prior session results.
 
-### REQUIRED ACCEPTANCE
-The manifest must contain atomic claims with provenance, materiality classification, supersession/contradiction relation, negative/routing authority status, and enough scope information to score retrieval independently.
+### EXPECTED-STATE PROVENANCE
+Manifest: 18 atomic claims / 19 NDJSON lines / reported SHA-256 `cf298c42d86a1f3c3778fbfec4f81cbdd25355697263293c175683be0921a1b6`. Content was independently reviewed; checksum was not independently recomputed.
+
+### ROUTING CONTROL
+Domain-local routing is not automatically global routing. The fixed objective defines BIO-04 as context only. Score the final route against the sealed expected state and the global snapshot.
 
 ### STOP CONDITION
-Stop after the manifest exists, is independently reviewed/sealed, and the next evaluated session can be run without exposing it. No implementation.
-
-### ROUTING PRECEDENCE
-RSK-01C supersedes the previous RSK-01B top route for the next action. The RSK-01B records remain historical evidence.
+Stop after the blind Sonnet response is captured. Independent scoring occurs afterward. No implementation.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
