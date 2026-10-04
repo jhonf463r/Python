@@ -25,13 +25,13 @@ RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recover
 Repository-wide composition archaeology of existing memory/retrieval/frame/provenance organs: determine whether material interaction history can be normalized, activated and routed as one longitudinal field, and identify the first causal seam without creating a new memory subsystem.
 
 ### IA DESTINO
-**CODEX**
+**SONNET / CLAUDE — FRESH BLIND PARTICIPANT**
 
 ### WHY THIS IA NOW
-The present uncertainty is a repository-composition question: memory already exists, but cross-chat activation is fragmented. Codex is the best fit to trace the actual composition and distinguish storage, retrieval, activation, routing and causal consumption.
+The repository-level indexing gap identified in 043 is now closed. The remaining uncertainty is operational continuity: whether a genuinely fresh AI can activate the consolidated longitudinal memory and reconstruct the current decision frame without human history transport. Sonnet/Claude is used as the fresh participant; an independent verifier should score its reconstruction.
 
 ### NEXT ACTION
-Run the minimum blind continuity experiment against the now-indexed longitudinal memory. Use a fresh AI/session with no manually reconstructed history. Measure whether the canonical entry surfaces recover the relevant recent deltas, suppress stale routing, identify the same first open edge, choose the capability-fit actor and generate the correct complete next prompt. Require an independent blind score. Do not implement.
+Run the minimum blind continuity experiment against the now-indexed longitudinal memory. Fresh participant: Sonnet/Claude. Independent verifier: Codex or equivalent, with access to the sealed scoring rubric. Measure relevant recent-delta recall, stale-route suppression, first-open-edge correctness, actor-fit correctness, prompt completeness and provenance. Do not implement.
 
 ### CROSS-AI ROLE
 ChatGPT = reconciliation/adjudication/synthesis/writeback; Codex = repository and composition archaeology / difficult technical seam; Sonnet = independent forensic challenge; Devin = Windows/runtime fallback when a concrete environment capability requires it; external AIs and local models are resources selected by capability-fit.
