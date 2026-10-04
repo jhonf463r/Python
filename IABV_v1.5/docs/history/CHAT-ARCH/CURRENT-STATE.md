@@ -22,7 +22,7 @@ RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recover
 `indexed material interaction delta → relevant fresh-chat activation → complete current decision frame → exact capability-fit actor/prompt → controlled causal reuse`
 
 ### CURRENT REQUIRED CAPABILITY
-Repository-wide composition archaeology of existing memory/retrieval/frame/provenance organs: determine whether material interaction history can be normalized, activated and routed as one longitudinal field, and identify the first causal seam without creating a new memory subsystem.
+Evidence-oriented fresh-chat continuity evaluation: determine whether relevant indexed interaction history is activated into a complete current decision frame, while distinguishing source availability, observable reconstruction, provenance and causal reuse without creating a new memory subsystem.
 
 ### IA DESTINO
 **SONNET / CLAUDE — FRESH BLIND PARTICIPANT**
@@ -55,7 +55,7 @@ A — STILL OPEN; B — SUPPORTED, bounded static composition; C — STILL OPEN;
 Every material routing/context change should preserve objective, phase, timestamp, circumstance, provenance, status, supersession and resulting frontier so future chats do not regress to a narrower interpretation.
 
 ### STOP CONDITION
-Stop after the composition audit identifies the first unproven causal seam and one minimum discriminating experiment. No new universal brain, no paid dependency, no provider-specific architecture.
+Stop after the controlled fresh-chat continuity experiment discriminates the current activation edge or reaches an explicit evidence limit. Treat source-read auditability as not proven in the current trust boundary; distinguish behavioral source dependence from internal activation and from causal reuse. No implementation, no new memory subsystem, no paid dependency, no provider-specific architecture.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
