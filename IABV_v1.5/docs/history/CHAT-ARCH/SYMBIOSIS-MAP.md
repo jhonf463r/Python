@@ -2098,3 +2098,35 @@ Every collaboration lesson should distinguish:
 - remaining uncertainty.
 
 An actor-specific success cannot become a universal rule without transfer evidence.
+## 2026-10-04 — IABV AS GITHUB-BACKED COORDINATION FRAME
+
+Normal symbiosis is not a blind relay between AIs. Participating AIs should enter the IABV canonical frame before ordinary IABV work and use the current state to recompute the first open edge and capability-fit actor.
+
+The coordination pattern is:
+
+`human objective → IABV current frame → relevant knowledge → evidence boundary → first open edge → capability-fit actor → exact task → action → observation → verification → reconciliation → writeback`
+
+This reduces routine context transport without making any actor a permanent role.
+
+### Blind continuity is an experiment-specific exception
+
+RSK-01 intentionally changes the normal frame-entry rule for its participant so that fresh reconstruction can be tested without prior project context.
+
+Therefore:
+
+`blind participant → experimental condition`
+
+not:
+
+`blind participant → normal symbiosis policy`
+
+A Claude/Sonnet `INELIGIBLE — PRIOR CONTEXT PRESENT` result is consequently an isolation/harness finding, not a reason to prevent Claude from using IABV during normal work.
+
+### IABV → Codex
+
+When the current frontier requires repository/implementation capability, IABV should generate the Codex task from current verified state rather than from a historical next-actor instruction.
+
+Codex returns action, observation, artifact/provenance, evidence boundary and unresolved edge. The collaboration then reconciles and writes back.
+
+This is the intended low-friction route toward using IABV to help operate Codex while preserving the distinction between externalized coordination today and autonomous runtime coordination not yet proven.
+
