@@ -58,27 +58,24 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A.3 ADVERSARIAL VERIFICATION ACTIVE
+## 2026-10-03 LIVE ROUTING — RSK-01A.4 DYNAMIC-PATH FALSIFICATION ACTIVE
 
 **Current frontier:** `canonical CURRENT-STATE routing authority → runtime routing representation/consumer`  
-**IA DESTINO:** **Sonnet**  
-**CAPABILITY:** independent adversarial code archaeology to falsify the bounded B conclusion across readers/loaders/context bridges/routing adapters.  
-**ACTION:** attempt to find any missed operational path from canonical `CURRENT-STATE.md` to actor selection on fixed SHA `3de2bb4…`; read-only, no runtime.
+**IA DESTINO:** **Codex**  
+**CAPABILITY:** targeted static falsification of dynamically constructed readers/imports/reflection that could connect canonical routing state to governance/actor selection.  
+**ACTION:** search fixed SHA `3de2bb4…` for `getattr`, `setattr`, `importlib`, `__import__`, `joinpath`, `with_name`, dynamic `.md` paths and equivalent mechanisms only where outputs could reach routing/governance.
 
-### RSK-01A.2 RESULT
-R01: no operational ingestion/runtime representation was found from canonical `CURRENT-STATE.md` into the inspected actor-selection path. B supported only for audited surfaces; A/C remain open; D not supported.
+### RSK-01A.3 RESULT
+Adversarial static search: **NOT FALSIFIED**. No missed direct operational reader/parser/loader/indexer from canonical `CURRENT-STATE.md` to inspected actor selection was found. `read_repo_file()` is an external-agent pull bridge, not a demonstrated internal routing path.
 
-### RSK-01A.1 RESULT
-N03: canonical `UNRESOLVED-KNOWLEDGE.md` → no demonstrated ingestion → `KnowledgeRepository`. B supported only for N03/audited surfaces.
-
-### RSK-01D RESULT
-6/18 complete, 11/18 partial, 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL.
+### HYPOTHESIS STATUS
+A — STILL OPEN; B — SUPPORTED, bounded; C — STILL OPEN; D — NOT SUPPORTED.
 
 ### NEXT DISCRIMINATING STEP
-Independent Sonnet verification must try to refute the negative-path conclusion. A new operational reader/loader/bridge would materially change B; failure to find one within the defined scope strengthens the bounded result.
+Close the residual static blind spot for dynamic path/import/reflection. If no path is found, B can be treated as a bounded static conclusion and the decision moves to whether runtime verification is justified.
 
 ### STOP
-Stop after either a missed operational path is proven, or the negative result survives the adversarial search scope. No implementation.
+Stop after dynamic-path search finds an R01 → routing bridge or leaves the bounded negative intact. No implementation.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
