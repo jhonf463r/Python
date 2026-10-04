@@ -1,45 +1,47 @@
-# IABV v1.5 — CHAT-ARCH Current State Reconciliation
-
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
-**Last reconciled:** 2026-10-03
-**Reason:** RSK-01A.3 adversarial static verification did not falsify the bounded B conclusion for canonical R01.
+**Last reconciled:** 2026-10-03  
+**Reason:** RSK-01A.4 closed the targeted static dynamic-path blind spot; the remaining edge is runtime causal verification. Codex is now the primary actor because the current Windows-capable Codex workflow matches the required repository + runtime capability. Devin is fallback only for a concrete capability/environment blocker.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned operational retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 independently failed to falsify that bounded negative. `read_repo_file()` can expose CHAT-ARCH to an external audit agent, but no bridge from its result to IABV actor selection was demonstrated.
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned operational retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 did not falsify that bounded negative. RSK-01A.4 found the dynamic MCP `read_repo_file()` path to an external client but no demonstrated propagation into internal routing. The SHA `3de2bb4...` is now locally prepared in a clean detached worktree for runtime verification.
 
 ### CURRENT DOMAIN FRONTIER
-`canonical CURRENT-STATE routing authority → runtime routing representation/consumer`
+`actual MCP read_repo_file result → possible internal IABV context/governance/routing consumption`
 
 ### CURRENT REQUIRED CAPABILITY
-Targeted static falsification of dynamically constructed readers/imports/reflection that could connect canonical routing state to governance/actor selection.
+Runtime causal observation across the MCP boundary, with repository provenance and actor-selection traceability.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-Independent adversarial search did not find a missed direct operational path. One residual uncertainty remains: dynamically constructed file paths/imports/reflection could evade literal/static searches. A final targeted falsification pass has higher information gain than implementation or runtime at this stage.
+The remaining question is not another static code-search question. It requires executing the already-prepared fixed-SHA environment and observing whether the returned R01 artifact enters internal routing. Current Codex supports Windows execution/worktrees and is the higher-fit primary coding/runtime agent for this experiment. Devin remains a fallback only if Codex encounters a concrete environment/capability blocker.
 
 ### NEXT ACTION
-Run one targeted read-only static search on the fixed SHA for `getattr`, `setattr`, `importlib`, `__import__`, `joinpath`, `with_name`, dynamically built `.md` paths and equivalent mechanisms, but only where resulting data could reach routing/governance.
+Execute RSK-01A.5 on the prepared worktree `C:\Python\IABV_v1.5_rsk-01a5` at exactly `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Run the control/treatment experiment, capture the MCP artifact and provenance, trace any retransmission into IABV context/governance/routing, and adjudicate the causal boundary.
 
-### RSK-01D
-6/18 complete; 11/18 partial; 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL.
+### RSK-01A.5-PREP
+**PREPARED — SHA VERIFIED LOCALLY.** Target SHA and R01 were verified in the prepared detached worktree.
 
-### RSK-01A.1
-N03: canonical `UNRESOLVED-KNOWLEDGE.md` → no demonstrated ingestion → `KnowledgeRepository`; B supported only for N03/audited surfaces.
+### RSK-01A.4
+**CASE B — RUTA DINÁMICA PARCIAL.** Dynamic MCP reading of R01 reaches the external MCP client; no internal routing propagation was demonstrated statically.
 
-### RSK-01A.2 / A.3
-R01: no demonstrated runtime representation/ingestion to actor selection in audited surfaces; A.3 adversarial search returned NOT FALSIFIED. B remains supported only at the bounded static composition level; A/C remain open; D not supported.
+### HYPOTHESIS STATUS
+A — STILL OPEN; B — SUPPORTED, bounded static composition; C — STILL OPEN; D — NOT SUPPORTED.
+
+### DEVELOPMENTAL INFLECTION
+Do not equate faster coding with the intended inflection. The meaningful target is a verified closed loop:
+`IABV state/memory → capability/actor selection → external AI work → result ingestion → verified reusable delta → changed future decision`.
 
 ### ROUTING CONTROL
-BIO-04 domain-local routes and historical NEXT ACTOR text remain non-routable globally without explicit promotion in the current snapshot.
+Historical NEXT ACTOR fields remain non-routable. Codex is primary for this current edge; Devin is not primary unless a concrete capability blocker is observed.
 
 ### STOP CONDITION
-Stop after the targeted dynamic-path search either demonstrates an R01 → routing path or leaves the bounded negative intact. Then decide whether runtime verification is justified. No implementation.
+Stop when RSK-01A.5 produces a clean causal adjudication or a concrete capability/environment blocker. Then recompute the next actor from the resulting frontier. No implementation.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
