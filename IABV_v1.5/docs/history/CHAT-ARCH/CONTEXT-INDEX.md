@@ -58,24 +58,24 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A CLAIM TRACE ACTIVE
+## 2026-10-03 LIVE ROUTING — RSK-01A.2 ROUTING-CLAIM TRACE ACTIVE
 
-**Current frontier:** `canonical CHAT-ARCH claim → productive runtime retrieval candidate set`  
+**Current frontier:** `canonical routing-authoritative claim → runtime candidate/activation path → actor-selection consumer`  
 **IA DESTINO:** **Codex**  
-**CAPABILITY:** single-claim end-to-end repository archaeology across canonical source/authority → ingestion/indexing → candidate formation → reconciliation/filtering → `TaskContextAssembler`.  
-**ACTION:** trace one RSK-01D `OMITTED` or `RECOVERED_PARTIAL` claim end-to-end; no implementation.
+**CAPABILITY:** read-only end-to-end trace of canonical current-routing state through ingestion/index/context into `AdaptiveTaskOrchestrator` / `LocalRoleRouter`.  
+**ACTION:** trace claim R01 from `CURRENT-STATE.md` in fixed SHA `3de2bb4…`; no implementation, no runtime.
 
-### RSK-01A RESULT
-Static audit established objective-conditioned retrieval for operational `KnowledgeItem` data, but did not demonstrate canonical `CHAT-ARCH/*.md` entering the productive candidate set. The inspected routing consumer also does not receive `knowledge_hits` / memory snapshot as actor-selection inputs. B is supported only for this audited composition path; A and C remain open; D not supported.
+### RSK-01A.1 RESULT
+N03 trace: canonical `UNRESOLVED-KNOWLEDGE.md` claim → no demonstrated ingestion path → `KnowledgeRepository` candidate boundary. B supported only for N03/audited composition; A and C remain open; D not supported.
 
-### RSK-01D RESULT
-6/18 complete, 11/18 partial, 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL; completeness PARTIAL.
+### RSK-01D
+6/18 complete, 11/18 partial, 1/18 omitted; routing recovery CORRECT; documentary recovery PARTIAL.
 
 ### NEXT DISCRIMINATING STEP
-Trace one concrete canonical claim from source and authority metadata through all relevant ingestion/index paths to the candidate set used by `TaskContextAssembler`. Prefer an RSK-01D omitted/partial claim.
+Trace routing-authoritative claim R01 to the actual actor-selection consumer. Determine whether canonical current routing is operationally consumable or remains documentary-only.
 
 ### STOP
-Stop when the claim either reaches the candidate set and its selection/reconciliation step is identified, or no source → candidate path can be demonstrated in the searched surfaces.
+Stop when the R01 source → actor-selection path is demonstrated with consuming field/condition, or no such path can be demonstrated in the searched surfaces.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
