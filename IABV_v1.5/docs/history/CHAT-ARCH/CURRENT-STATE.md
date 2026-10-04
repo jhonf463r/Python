@@ -1,55 +1,61 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03
-**Reason:** RSK-01A.6 confirmed that IABV MCP capability exists but the Codex session had no active connection. The minimum free/local path is now narrowed to the existing IABV `stdio` server plus a Codex local MCP configuration, with read-only tool allowlisting for the first proof.
+**Reason:** The global objective was clarified: IABV is intended as the cognitive/operational mind of the laptop, not merely an IABV↔Codex coordinator. MCP, browsers, desktop apps, APIs, CLI, local models and external AIs are channels/resources/realizations inside one environmental model.
 
 ### OVERARCHING PRODUCT OBJECTIVE
-IABV should become a laptop-native operational assistant/coordinator: the laptop, installed applications, human-used browsers/sessions, desktop/UI, local runtime, accounts/resources, local providers and external AI tools are coordinated as one capability/realization environment.
+IABV should progressively perceive, understand, reason about and act through the laptop as one heterogeneous operational environment: OS/processes/resources, desktop/UI, installed applications, human browser sessions, isolated browser sessions, filesystem/runtime, local models, external AIs, APIs/CLI/MCP, identities/accounts/sessions/permissions and time/freshness.
+
+Operational loop:
+`objective → environment perception → semantic interpretation → uncertainty → required capability → candidate realizations/channels → prerequisites/constraints → governed selection → action → observation → verification → updated environmental state → next decision`.
 
 ### ECONOMIC / RESOURCE CONSTRAINT
-**FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless explicitly changed. Prefer local capabilities, existing free access, existing browser/web sessions and local providers. Do not introduce a paid API, proxy or tunnel as the default unblocker.
-
-### CROSS-AI TARGET
-`IABV state/memory → capability/realization selection → appropriate tool/AI → execution → observation → verification → reusable delta → changed future decision`
+**FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless explicitly changed. Prefer existing local capabilities, installed apps, existing human/browser sessions, free web access and local providers such as Ollama. Paid infrastructure is not the default unblocker.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
-### CURRENT TRUTH
-RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 did not falsify that bounded negative. RSK-01A.4 found a dynamic MCP `read_repo_file()` path to an external client but no demonstrated internal routing propagation. RSK-01A.5 was prepared on the frozen SHA but did not execute because the Codex session had no active IABV MCP connection. RSK-01A.6 then confirmed the existing IABV MCP server supports local `stdio`, while the Codex session currently has no IABV server configured or connected.
+### CURRENT VERIFIED TRUTH
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A.1/A.2/A.3/A.4 established a bounded static negative for canonical R01→internal routing, while an external MCP read path exists. RSK-01A.5 never executed because the Codex session lacked a live MCP connection. RSK-01A.6 confirmed the existing MCP server and local `stdio` capability but no live Codex connection. The broader repository already contains multiple external-AI, browser, desktop, local-provider and MCP realizations; therefore MCP↔Codex is only one realization test, not the global product objective.
 
 ### CURRENT DOMAIN FRONTIER
-`existing IABV MCP stdio server → Codex local MCP client configured safely → live tool discovery`
+`fresh laptop/environment evidence → generic capability/affordance understanding → realization/modality selection → governed action → post-action observation`
 
 ### CURRENT REQUIRED CAPABILITY
-Configure and verify the existing local stdio MCP path from the fixed IABV worktree to Codex without paid dependencies and without exposing write/self-update tools during the initial proof.
+System-level composition audit of existing perception, semantic interpretation, capability/readiness, realization selection, foreground/background modality, execution and post-action observation across installed apps, human browser/session, isolated browser, desktop/UI, local provider and external-AI routes.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-This is now the smallest open edge. Another static search would repeat already-closed work; a full runtime causal experiment is premature without a live MCP session. Codex can configure its MCP client and run the local stdio server directly on the laptop.
+This requires repository-wide composition archaeology and difficult technical tracing. The goal is to identify the first missing causal seam of the laptop-native mind rather than optimizing one channel in isolation.
 
 ### NEXT ACTION
-Use the existing module `python -m iabv_v15.infra.mcp.server` with `IABV_WORKSPACE_ROOT` pointing to `C:\Python\IABV_v1.5_rsk-01a5`, local stdio transport, and a read-only tool allowlist. Verify live discovery and one harmless read-only call. Then rerun RSK-01A.5.
+Audit the existing universal laptop substrate: trace objective→environment observation→semantic interpretation→capability→candidate realizations→availability/authentication/authorization/resource constraints→modality (foreground/background/browser/desktop/local/API/MCP)→governed action→post-action observation. Build a capability-realization evidence matrix from existing code and runtime/history records. Identify the first causal seam that is not proven and propose one minimum discriminating experiment. Do not implement.
 
-### TOOL-SAFETY BOUNDARY
-For the initial connection proof, expose only read-only audit/observation tools. Do not expose MCP self-update/write tools. Do not use the Cloudflare/HTTP bridge unless local stdio is proven unusable.
+### CROSS-AI ROLE
+ChatGPT = reconciliation/adjudication/synthesis/writeback; Codex = repository and composition archaeology / difficult technical seam; Sonnet = independent forensic challenge; Devin = Windows/runtime fallback when a concrete environment capability requires it; external AIs and local models are resources selected by capability-fit.
 
-### SPACE-TIME / CONTINUITY DELTA
-`A.5-PREP → A.5 blocked: no MCP session → A.6 identified local stdio as the minimal free/local path → next is live discovery → then causal runtime test.` This state transition is part of the canonical continuity record.
+### LAPTOP / HUMAN BROWSER PRINCIPLE
+Human-used browser sessions and installed applications are first-class environmental resources when governed access exists. Web ChatGPT/Claude is a legitimate realization when API access is unavailable or unnecessary. Isolated browser, shared CDP and desktop UI are alternative realization modalities; selection should depend on objective and current constraints.
+
+### FOREGROUND / BACKGROUND PRINCIPLE
+Foreground/background is a realization constraint, not the universal algorithm. If background execution is unavailable, IABV should reason over alternative modalities rather than declaring the capability impossible.
+
+### CARTESIAN ENVIRONMENT MODEL
+Interpret the user's 'Matrix' idea as a multi-dimensional operational state space: entity/object, location/scope, time/freshness, state, relation, capability, channel, visibility, foreground/background feasibility, authentication, authorization, resource/quota, provenance and task relevance.
 
 ### DEVELOPMENTAL INFLECTION
-Not reached yet. Candidate first bridge is `IABV live state → Codex real-session consumption`. Stronger inflection remains the cumulative loop across laptop realizations: `IABV state → selection → AI/tool execution → verified result → reusable delta → changed future decision`.
+Not yet reached. The candidate inflection is not 'IABV can call Codex'; it is the repeated causal loop `IABV perceives → understands → selects realization → acts → verifies → learns → later acts better with less routine human coordination` across heterogeneous laptop realizations.
 
 ### HYPOTHESIS STATUS
-A — STILL OPEN; B — SUPPORTED, bounded; C — STILL OPEN; D — NOT SUPPORTED.
+A — STILL OPEN; B — SUPPORTED, bounded static composition; C — STILL OPEN; D — NOT SUPPORTED.
 
-### ROUTING CONTROL
-Codex primary. Devin fallback only for a concrete OS/environment blocker. Human involvement only where an actual permission/authorization boundary exists. Free-first is an active constraint.
+### SPACE-TIME / CONTINUITY CONTROL
+Every material routing/context change should preserve objective, phase, timestamp, circumstance, provenance, status, supersession and resulting frontier so future chats do not regress to a narrower interpretation.
 
 ### STOP CONDITION
-Stop after live MCP discovery + one read-only tool call, or a concrete blocker. Do not create new MCP architecture, paid dependencies or a public tunnel.
+Stop after the composition audit identifies the first unproven causal seam and one minimum discriminating experiment. No new universal brain, no paid dependency, no provider-specific architecture.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
