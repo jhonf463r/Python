@@ -1918,3 +1918,20 @@ not merely “a relevant record was found”.
 | Rationale | practical cross-chat omission remains not explained by persistence alone; retrieval/activation reliability is the unresolved edge |
 
 Important: this is the current route. Historical `Next actor` fields remain non-routable history.
+
+## 2026-10-04 — UNIVERSAL ADAPTIVE ALGORITHM CONCEPT ROOT
+
+**Concept root:** `UAAL-ROOT-001`
+**Canonical conceptual source:** `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`
+**Machine-readable lineage:** `data/evolution/universal_algorithm_lineage.json`
+
+Activate this root for objectives involving universal cognition, laptop/environment understanding, adaptive tool/resource use, cross-AI collaboration, metacognition, plasticity, self-development or evolution.
+
+Parent derivation:
+`universal adaptive algorithm → environmental semantics → capability/affordance inference → realization/channel selection → modality adaptation → governed action/observation → learning/reuse → self-development/evolution`.
+
+Required genealogy for new material ideas:
+`CONCEPT_ID → PARENT_CONCEPT_ID → SOURCE → ORIGIN → DERIVATION_REASON → EPISTEMIC_STATUS → EVIDENCE → FALSIFIER → NEXT_OPEN_EDGE`.
+
+Anti-drift:
+`Codex/ChatGPT/Claude/Devin/Ollama`, browser, desktop app, API, CLI and MCP are realizations/resources/channels; none is the parent concept.
