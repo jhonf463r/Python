@@ -3,37 +3,37 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03
-**Reason:** RSK-01C expected-state fixture completed; blind independent evaluation is now the minimum discriminating action.
+**Reason:** RSK-01D completed as a blind documentary retrieval test and was independently scored against the sealed expected-state manifest.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01A remains the leading static architectural hypothesis (B — missing causal integration), but RSK-01B established only bounded documentary discoverability. RSK-01C has now supplied an independently reviewed atomic expected-state contract so that the next evaluation can measure omissions rather than trust the evaluated agent's own report.
+RSK-01D produced partial documentary recovery against the independent expected state: 6/18 claims fully correct, 11/18 partial, 1/18 omitted. Global routing recovery was correct; no demonstrated routing/currentness/provenance/contradiction error occurred. Completeness remains unproven. The scoring report's attribution of A to session procedure was too strong; A, B and C remain open, while D is not supported.
 
 ### CURRENT DOMAIN FRONTIER
-`sealed expected material state → blind evaluated retrieval → independent omission/currentness/routing scoring`
+`unified existing-organ self-knowledge retrieval → complete relevant activation`
 
 ### CURRENT REQUIRED CAPABILITY
-Independent repository reconstruction against a hidden expected-state benchmark.
+Read-only repository archaeology and static producer → transformation → consumer composition tracing across existing continuity/memory/index/currentness organs.
 
 ### IA DESTINO
-**SONNET**
+**CODEX**
 
 ### WHY THIS IA NOW
-The remaining uncertainty is now empirical document-level continuity under a hidden independent ground truth, not architecture discovery.
+RSK-01D has already shown that a fresh agent can recover substantial documentary state but not complete relevant activation. The remaining discriminating uncertainty is whether the open edge is caused by session/procedure, corpus/currentness/canonicalization, or missing productive composition among existing organs.
 
 ### NEXT ACTION
-Run RSK-01D as one fresh Sonnet session against frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, with only the fixed objective and read-only repository access. Do not expose the manifest, hash or prior session results.
+Execute RSK-01-A as a read-only audit of the existing continuity/memory/index/currentness composition, using its already defined scope and questions. Do not implement or create a new retrieval service.
 
-### EXPECTED-STATE PROVENANCE
-Manifest: 18 atomic claims / 19 NDJSON lines / reported SHA-256 `cf298c42d86a1f3c3778fbfec4f81cbdd25355697263293c175683be0921a1b6`. Content was independently reviewed; checksum was not independently recomputed.
+### RSK-01D ADJUDICATION
+6/18 RECOVERED_CORRECT; 11/18 RECOVERED_PARTIAL; 1/18 OMITTED. Material coverage 3/5 complete + 2/5 partial = 60%. Routing recovery CORRECT. Documentary recovery PARTIAL. Completeness PARTIAL.
 
 ### ROUTING CONTROL
-Domain-local routing is not automatically global routing. The fixed objective defines BIO-04 as context only. Score the final route against the sealed expected state and the global snapshot.
+Domain-local BIO-04 routing does not replace the global RSK route without explicit promotion in the current snapshot. Historical NEXT ACTOR text remains non-routable.
 
 ### STOP CONDITION
-Stop after the blind Sonnet response is captured. Independent scoring occurs afterward. No implementation.
+Stop after RSK-01-A identifies the existing producer → transformation → consumer composition path, locates the first open activation edge, distinguishes documentary/static evidence from runtime evidence, and provides enough evidence to adjudicate A/B/C without implementation.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
