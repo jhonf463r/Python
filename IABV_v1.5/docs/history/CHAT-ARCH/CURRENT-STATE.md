@@ -1,47 +1,49 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03  
-**Reason:** RSK-01A.4 closed the targeted static dynamic-path blind spot; the remaining edge is runtime causal verification. Codex is now the primary actor because the current Windows-capable Codex workflow matches the required repository + runtime capability. Devin is fallback only for a concrete capability/environment blocker.
+**Reason:** RSK-01A.5 was blocked before execution because the Codex session had no active IABV MCP client connection. Historical source evidence shows IABV MCP capability and prior live stdio use, so the new frontier is restoring/verifying the existing live connection, not implementing a new MCP layer.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned operational retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 did not falsify that bounded negative. RSK-01A.4 found the dynamic MCP `read_repo_file()` path to an external client but no demonstrated propagation into internal routing. The SHA `3de2bb4...` is now locally prepared in a clean detached worktree for runtime verification.
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned operational retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 did not falsify that bounded negative. RSK-01A.4 found the dynamic MCP `read_repo_file()` path to an external client but no demonstrated internal routing propagation. RSK-01A.5 was prepared on the exact frozen SHA but did not execute because the Codex session lacked an active connected IABV MCP path. Historical records/runbook show that IABV MCP has existed and has previously been connected via stdio.
 
 ### CURRENT DOMAIN FRONTIER
-`actual MCP read_repo_file result → possible internal IABV context/governance/routing consumption`
+`existing IABV MCP server capability + client configuration → live connected MCP session available to Codex`
 
 ### CURRENT REQUIRED CAPABILITY
-Runtime causal observation across the MCP boundary, with repository provenance and actor-selection traceability.
+Repository-aware inspection of the existing IABV MCP server/runbook plus Windows/Codex MCP configuration to establish the minimum non-architectural live connection.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-The remaining question is not another static code-search question. It requires executing the already-prepared fixed-SHA environment and observing whether the returned R01 artifact enters internal routing. Current Codex supports Windows execution/worktrees and is the higher-fit primary coding/runtime agent for this experiment. Devin remains a fallback only if Codex encounters a concrete environment/capability blocker.
+The blocking edge is now the external-agent connection boundary, not code archaeology or runtime routing itself. Codex is the best-fit primary actor to inspect both the repository contract and its own current MCP configuration. Devin is fallback only if a concrete Windows/environment limitation blocks Codex.
 
 ### NEXT ACTION
-Execute RSK-01A.5 on the prepared worktree `C:\Python\IABV_v1.5_rsk-01a5` at exactly `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Run the control/treatment experiment, capture the MCP artifact and provenance, trace any retransmission into IABV context/governance/routing, and adjudicate the causal boundary.
+Audit the existing IABV MCP connection mechanism (runbook, server transport, scripts and Codex-side MCP configuration), determine the smallest safe way to connect Codex to the existing IABV MCP server, and establish or precisely document the connection without changing IABV application architecture. Once the connection is live, rerun RSK-01A.5.
 
 ### RSK-01A.5-PREP
-**PREPARED — SHA VERIFIED LOCALLY.** Target SHA and R01 were verified in the prepared detached worktree.
+**PREPARED — SHA VERIFIED LOCALLY** at `C:\Python\IABV_v1.5_rsk-01a5`.
 
-### RSK-01A.4
-**CASE B — RUTA DINÁMICA PARCIAL.** Dynamic MCP reading of R01 reaches the external MCP client; no internal routing propagation was demonstrated statically.
+### RSK-01A.5
+**BLOCKED BEFORE EXECUTION** — no active MCP client/server connection in the Codex execution session. This is not evidence against the runtime path.
 
 ### HYPOTHESIS STATUS
 A — STILL OPEN; B — SUPPORTED, bounded static composition; C — STILL OPEN; D — NOT SUPPORTED.
 
 ### DEVELOPMENTAL INFLECTION
-Do not equate faster coding with the intended inflection. The meaningful target is a verified closed loop:
-`IABV state/memory → capability/actor selection → external AI work → result ingestion → verified reusable delta → changed future decision`.
+Do not claim the IABV→AI collaboration loop yet. The immediate measurable milestone is:
+`IABV MCP live state → Codex consumes it in a real session`.
+The stronger inflection remains:
+`IABV state/memory → correct actor/capability selection → external AI execution → result ingestion → verified reusable delta → changed future decision`.
 
 ### ROUTING CONTROL
-Historical NEXT ACTOR fields remain non-routable. Codex is primary for this current edge; Devin is not primary unless a concrete capability blocker is observed.
+Historical NEXT ACTOR fields remain non-routable. Codex is primary for the current connection-boundary edge; Devin is fallback for a concrete blocker.
 
 ### STOP CONDITION
-Stop when RSK-01A.5 produces a clean causal adjudication or a concrete capability/environment blocker. Then recompute the next actor from the resulting frontier. No implementation.
+Stop after the existing MCP connection is either established and observed by Codex, or proven unavailable for a concrete environmental reason. Do not implement a new MCP architecture.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
