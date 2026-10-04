@@ -2331,3 +2331,26 @@ Historical routing text must remain non-routable unless promoted through the cur
 `parent concept → objective/problem → new mechanism → universal invariant → existing owner → evidence/falsifier → implementation/experiment → verification → delta → reuse`.
 
 **Do not leave these ideas only in conversational context.**
+
+
+### 2026-10-04 — UAAL-D013: EXPERIENTIAL TEACHING / UNIVERSAL CAPABILITY ACQUISITION
+
+**Parent:** `UAAL-D008` Knowledge Plasticity, grounded also in `UAAL-D001` Environmental Semantics and `UAAL-D002` Experimental Reality Loop.
+
+**Human intent:** stop treating every new application, language, concept or operational situation as a preprogrammed integration problem. Use IABV in the real environment and teach it through governed interaction so verified experience progressively becomes reusable capability.
+
+Target:
+`real interaction → observation → human teaching/correction → capability hypothesis → safe experiment → verification → reusable representation → later contextual reuse → changed decision`.
+
+Capability scope is broad and may include natural language, machine/UI language, entities/relations/states, OS semantics, files/processes/windows, browser/session semantics, application affordances, domain concepts, tools/interfaces and temporal/resource/identity/authorization constraints. These are knowledge/capability domains, not separate brains.
+
+**Central open question:** can the existing organs turn fresh environmental observation into a normalized capability/affordance representation that can be selected and taught across different realizations?
+
+**Current technical candidate:** `PerceptionSnapshot(environment/world evidence) → CapabilityReadinessService(normalized capability/affordance)`.
+
+**Status:** DESIGN / NOT RUNTIME CAUSALLY PROVEN.
+
+**Consciousness boundary:** finding or closing this seam does not demonstrate consciousness. The user's super-consciousness idea remains a long-horizon research hypothesis. A future emergence study should use observable, falsifiable criteria such as novel-task transfer, self-correction, persistent representation change, causal future-decision influence, cross-realization generalization and independently verified improvement.
+
+**Anti-patch rule:** a new application or tool should first test whether the common capability mechanism can learn it; provider-specific code is justified only when the realization-specific boundary genuinely requires it.
+
