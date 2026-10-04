@@ -1,56 +1,55 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03
-**Reason:** The broader laptop-native/free-first objective is now explicitly canonical. RSK-01A.5 is blocked at the live MCP connection boundary, but that boundary is only one step toward the larger goal: IABV coordinating the laptop's installed apps, browser/session, desktop/UI, local providers and external AIs as one capability/realization environment.
+**Reason:** RSK-01A.6 confirmed that IABV MCP capability exists but the Codex session had no active connection. The minimum free/local path is now narrowed to the existing IABV `stdio` server plus a Codex local MCP configuration, with read-only tool allowlisting for the first proof.
 
 ### OVERARCHING PRODUCT OBJECTIVE
-IABV should become a laptop-native operational assistant/coordinator: the laptop, its installed applications, human-used browsers/sessions, desktop/UI, local runtime, accounts/resources and external AI tools are treated as one operational environment coordinated by existing IABV capabilities.
+IABV should become a laptop-native operational assistant/coordinator: the laptop, installed applications, human-used browsers/sessions, desktop/UI, local runtime, accounts/resources, local providers and external AI tools are coordinated as one capability/realization environment.
 
 ### ECONOMIC / RESOURCE CONSTRAINT
-**FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless the user explicitly changes this constraint. Prefer existing local capabilities, existing free-tier access, existing browser/web sessions, and local providers such as Ollama. Do not use paid infrastructure as a default unblocker.
+**FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless explicitly changed. Prefer local capabilities, existing free access, existing browser/web sessions and local providers. Do not introduce a paid API, proxy or tunnel as the default unblocker.
 
 ### CROSS-AI TARGET
-`IABV state/memory → capability/realization selection → appropriate tool/AI → execution → observation → verification → result ingestion → reusable delta → changed future decision`
-Codex and ChatGPT are realizations inside this larger objective, not the objective itself.
+`IABV state/memory → capability/realization selection → appropriate tool/AI → execution → observation → verification → reusable delta → changed future decision`
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned operational retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 did not falsify that bounded negative. RSK-01A.4 found the dynamic MCP `read_repo_file()` path to an external client but no demonstrated internal routing propagation. RSK-01A.5 was prepared on the exact frozen SHA but did not execute because the Codex session lacked an active connected IABV MCP path. Historical records/runbook show that IABV MCP has existed and has previously been connected via stdio.
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A/01A.1/01A.2 found objective-conditioned retrieval over `KnowledgeItem` but no demonstrated canonical CHAT-ARCH ingestion into the audited candidate/routing path. RSK-01A.3 did not falsify that bounded negative. RSK-01A.4 found a dynamic MCP `read_repo_file()` path to an external client but no demonstrated internal routing propagation. RSK-01A.5 was prepared on the frozen SHA but did not execute because the Codex session had no active IABV MCP connection. RSK-01A.6 then confirmed the existing IABV MCP server supports local `stdio`, while the Codex session currently has no IABV server configured or connected.
 
 ### CURRENT DOMAIN FRONTIER
-`existing IABV MCP server capability + client configuration → live connected MCP session available to Codex`
+`existing IABV MCP stdio server → Codex local MCP client configured safely → live tool discovery`
 
 ### CURRENT REQUIRED CAPABILITY
-Inspect the existing IABV MCP server/runbook and Windows/Codex configuration, find the minimum free/local route to a live connection, and verify it without adding architecture.
+Configure and verify the existing local stdio MCP path from the fixed IABV worktree to Codex without paid dependencies and without exposing write/self-update tools during the initial proof.
 
 ### IA DESTINO
 **CODEX**
 
 ### WHY THIS IA NOW
-The immediate blocker is the connection boundary. Codex is the capability-fit primary actor for repository + Windows + MCP inspection. The broader laptop-native objective must remain visible so this does not become a narrow product-integration exercise.
+This is now the smallest open edge. Another static search would repeat already-closed work; a full runtime causal experiment is premature without a live MCP session. Codex can configure its MCP client and run the local stdio server directly on the laptop.
 
 ### NEXT ACTION
-Inspect the existing IABV MCP connection path and Codex-side MCP configuration. Prefer local stdio or existing local/web-session mechanisms that require no new paid API key. Establish or precisely document the minimum live connection. Do not implement a new MCP layer. After live connection, rerun RSK-01A.5.
+Use the existing module `python -m iabv_v15.infra.mcp.server` with `IABV_WORKSPACE_ROOT` pointing to `C:\Python\IABV_v1.5_rsk-01a5`, local stdio transport, and a read-only tool allowlist. Verify live discovery and one harmless read-only call. Then rerun RSK-01A.5.
 
-### SPACE-TIME / CONTINUITY CONTROL
-Record decision-relevant state with timestamp, objective/phase, circumstance, evidence provenance, status and supersession where relevant. Preserve the distinction between historical evidence and current routing authority.
+### TOOL-SAFETY BOUNDARY
+For the initial connection proof, expose only read-only audit/observation tools. Do not expose MCP self-update/write tools. Do not use the Cloudflare/HTTP bridge unless local stdio is proven unusable.
 
-### RSK-01A.5
-**BLOCKED BEFORE EXECUTION** — fixed-SHA worktree prepared, but no active IABV MCP connection in the Codex session.
+### SPACE-TIME / CONTINUITY DELTA
+`A.5-PREP → A.5 blocked: no MCP session → A.6 identified local stdio as the minimal free/local path → next is live discovery → then causal runtime test.` This state transition is part of the canonical continuity record.
 
 ### DEVELOPMENTAL INFLECTION
-Not reached yet. The target is not faster coding; it is a causal cumulative loop where IABV state improves external AI/tool selection, execution, verification, reusable learning and later decisions across laptop realizations.
+Not reached yet. Candidate first bridge is `IABV live state → Codex real-session consumption`. Stronger inflection remains the cumulative loop across laptop realizations: `IABV state → selection → AI/tool execution → verified result → reusable delta → changed future decision`.
 
 ### HYPOTHESIS STATUS
-A — STILL OPEN; B — SUPPORTED, bounded static composition; C — STILL OPEN; D — NOT SUPPORTED.
+A — STILL OPEN; B — SUPPORTED, bounded; C — STILL OPEN; D — NOT SUPPORTED.
 
 ### ROUTING CONTROL
-Historical NEXT ACTOR fields remain non-routable. Codex is primary for the current connection-boundary edge. Devin is fallback only for a concrete capability/environment blocker. Free-first is an active routing constraint.
+Codex primary. Devin fallback only for a concrete OS/environment blocker. Human involvement only where an actual permission/authorization boundary exists. Free-first is an active constraint.
 
 ### STOP CONDITION
-Stop after the existing MCP connection is established and observed, or a concrete environmental blocker is documented. Do not create a paid dependency or new MCP architecture.
+Stop after live MCP discovery + one read-only tool call, or a concrete blocker. Do not create new MCP architecture, paid dependencies or a public tunnel.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
