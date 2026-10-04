@@ -58,14 +58,20 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01D ACTIVE
+## 2026-10-03 LIVE ROUTING — RSK-01A ACTIVE
 
-**Current frontier:** `sealed expected material state → blind evaluated retrieval → independent omission/currentness/routing scoring`
-**IA DESTINO:** **Sonnet**
-**CAPABILITY:** independent reconstruction against hidden expected-state benchmark
-**ACTION:** execute RSK-01D on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` with only the fixed objective.
-**No manifest/hash/prior transcript may be provided to the evaluated agent.**
+**Current frontier:** `unified existing-organ self-knowledge retrieval → complete relevant activation`  
+**IA DESTINO:** **Codex**  
+**CAPABILITY:** read-only repository archaeology + static producer → transformation → consumer composition tracing across existing continuity/memory/index/currentness organs.  
+**ACTION:** execute RSK-01-A using its existing scope/questions; no implementation and no new retrieval service.
 
+### RSK-01D ADJUDICATION
+Blind Sonnet retrieval against the sealed expected state was **PARTIAL**: 6/18 claims fully correct, 11/18 partial, 1/18 omitted. Routing recovery was **CORRECT**; no demonstrated currentness/provenance/contradiction/routing error occurred. Completeness remains **PARTIAL**.
+
+### A/B/C/D STATUS
+A — STILL OPEN; B — STILL OPEN; C — STILL OPEN; D — NOT SUPPORTED. The earlier scoring statement that A was SUPPORTED was too strong: partial retrieval does not by itself establish that session procedure caused the omissions.
+
+RSK-01D is now historical evidence. Do not rerun it. The next discriminating action is RSK-01-A.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
