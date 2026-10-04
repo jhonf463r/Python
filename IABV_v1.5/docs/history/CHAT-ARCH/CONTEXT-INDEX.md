@@ -58,29 +58,29 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A.7 LOCAL STDIO MCP / CODEX
+## 2026-10-03 LIVE ROUTING — LAPTOP-MIND / UNIVERSAL-REALIZATION COMPOSITION
 
-**Overarching objective:** `IABV coordinates the laptop's installed apps, human-used browser/session, desktop/UI, local runtime/providers and external AIs as one capability/realization environment.`  
+**Overarching objective:** `IABV is the cognitive/operational mind of the laptop: it should perceive, understand, reason and act through heterogeneous laptop resources as one environment.`  
 **Operating constraint:** **FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS.**  
-**Current frontier:** `existing IABV MCP stdio server → Codex local MCP client configured safely → live tool discovery`  
+**Current frontier:** `fresh laptop/environment evidence → generic capability/affordance understanding → realization/modality selection → governed action → post-action observation`  
 **IA DESTINO:** **Codex**  
-**CAPABILITY:** local Windows process + Codex MCP configuration + MCP discovery/verification.  
-**ACTION:** configure the existing IABV `stdio` server against `C:\Python\IABV_v1.5_rsk-01a5`, restrict first proof to read-only tools, verify discovery + one read-only tool call, then rerun RSK-01A.5.
+**CAPABILITY:** repository-wide composition archaeology across perception, world-state, capability/readiness, external AI, browser/CDP, desktop UI, local providers, foreground/background modality, governance and post-action observation.  
+**ACTION:** produce an evidence matrix of existing capability→realization→modality paths; trace objective→perception→interpretation→capability→selection→action→observation; identify the first unproven causal seam; propose one minimum discriminating experiment. No implementation.
 
-### RSK-01A.6 RESULT
-**BLOCKED — ENVIRONMENT.** No active IABV MCP process was connected to the Codex session. The repository/runbook confirm the server exists and supports stdio.
+### IMPORTANT REFRAME
+`IABV ↔ Codex` is one realization/test case, not the product objective.
+`MCP` is one channel, not the product objective.
+`ChatGPT/Claude/Codex/Ollama` are resources selected by capability-fit, not fixed stages.
+`browser/desktop/API/CLI/MCP` are access channels/realizations.
 
-### IMPORTANT
-Do not reinterpret this as missing MCP architecture. Do not use Cloudflare/HTTP or purchase an API as the default solution. Local stdio is the preferred free/local path.
+### CURRENT SUBSTRATE EVIDENCE
+Existing ToolCards include installed/web/desktop/local/MCP realizations; UniversalPerceptionService and UIExecutionRunner cover browser/desktop observation/action; shared CDP can reuse a human browser session; account/resource scanning includes free-tier state; external assistant paths model launch/capture/background modes. Existence is not proof of universal causal composition.
 
-### SAFETY
-IABV MCP dynamically registers self-update/write tools. Initial Codex connection must therefore use an allowlist containing only read-only audit/observation tools.
-
-### SPACE-TIME DELTA
-`A.5-PREP → A.5 blocked → A.6 connection audit → local stdio identified → A.7 live discovery.`
+### DEVELOPMENTAL TARGET
+Candidate inflection: `IABV perceives → understands → selects realization → acts → verifies → learns → later acts better with less routine human coordination`.
 
 ### STOP
-Stop after live discovery + one read-only tool call or concrete blocker. No architecture change.
+Stop after the first missing causal seam and one minimum discriminating experiment. No new universal architecture and no paid dependency.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
