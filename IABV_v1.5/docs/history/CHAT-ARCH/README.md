@@ -28,22 +28,41 @@ Core retrieval:
 
 `new objective → discover relevant memory → reconcile current reality → activate context → select capabilities/roles → act → verify → learn → write back`
 
+
+## 2026-10-03 — ONE LOGICAL MEMORY / NO CHAT-BY-CHAT MEMORY PROLIFERATION
+
+Treat the repository as **one logical longitudinal memory field**. The physical files below are projections with different responsibilities; they are not separate memories:
+
+`CURRENT-STATE.md` = active state/routing authority
+`CONTEXT-INDEX.md` = objective-conditioned navigation
+`MEMORY-OPERATING-PROTOCOL.md` = memory/epistemic method
+`SYMBIOSIS-MAP.md` = capability/transfer evidence
+`UNRESOLVED-KNOWLEDGE.md` = unresolved/negative knowledge
+`ARCHIVE-REGISTRY.md` = provenance index
+`CHAT-ARCH` records = historical episode evidence
+
+A new chat result should normally produce **one source episode + compact semantic delta**, then update only the canonical projection(s) that own that delta. Do not restate the entire project history in every new record.
+
+The longitudinal interaction field must preserve what materially evolved: human intent/correction, debate and competing hypotheses, circumstances, evidence boundaries, decisions and rejected alternatives, method changes, routing changes, temporal order, supersession and the next frontier.
+
+The continuity target is not merely "the next AI sees the same files". It is:
+
+`material prior episode → relevant activation → correct current decision/prompt → later observable reuse`.
+
+The first condition is retrieval/activation; the second is causal reuse. Both must be tested separately.
+
 ## ENTRY ORDER FOR A NEW CHAT
 
-1. `README.md` — continuity contract and evidence rules.
-2. `CURRENT-STATE.md` — current project state and active routing.
-3. `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md` — conceptual parent and derivation rules.
-4. `CONTEXT-INDEX.md` — objective-driven routing.
-4. `CURRENT-STATE-OVERRIDE-2026-09-17.md` — latest append-only operational corrections for the 2026-09-17 causal-learning frontier.
-5. `SYMBIOSIS-MAP.md` — cross-IA capability and knowledge transfer.
-6. `UNRESOLVED-KNOWLEDGE.md` — ideas, deductions and unresolved boundaries.
-7. `CANONICAL-ABSORPTION-2026-09-11.md` — source reachability, absorption and deletion-readiness audit.
-8. `ARCHIVE-REGISTRY.md` — source-history locations and identities.
-9. `CHAT-ARCH-2026-09-29-002-symbiosis-capability-plasticity-scientific-learning.md` — latest absorbed method delta for frontier-driven actor routing, capability discovery, knowledge plasticity and scientific self-study.
-10. `CHAT-ARCH-2026-10-03-009-human-aware-plasticity-zero-friction-biosophia.md` — latest human-aware plasticity / zero-friction collaboration-development record.
-11. Relevant historical source records selected by the objective.
+Use only four mandatory orientation surfaces:
 
-Do **not** read every historical record by default.
+1. `CURRENT-STATE.md` — current truth + current routing snapshot.
+2. `MEMORY-OPERATING-PROTOCOL.md` — method, evidence and anti-repetition rules.
+3. `CONTEXT-INDEX.md` — objective-conditioned navigation.
+4. `README.md` — continuity/evidence contract (already being read here).
+
+Then activate only the source records and specialized projections required by the current objective.
+
+Do **not** automatically read dated overrides, every handoff, every protocol, or every historical record. Historical `NEXT ACTOR` statements are never current authority unless explicitly re-promoted through `CURRENT-STATE.md`.
 
 ## OBJECTIVE-CONDITIONED ACTIVATION
 
