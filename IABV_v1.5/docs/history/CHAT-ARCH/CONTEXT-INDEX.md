@@ -58,31 +58,30 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A.6 MCP CONNECTION / LAPTOP-NATIVE FREE-FIRST
+## 2026-10-03 LIVE ROUTING — RSK-01A.7 LOCAL STDIO MCP / CODEX
 
-**Overarching objective:** `IABV coordinates the laptop, installed apps, human-used browser/session, desktop/UI, local providers and external AIs as one capability/realization environment.`  
-**Operating constraint:** **FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS** unless explicitly changed by the user.  
-**Current frontier:** `existing IABV MCP server capability + client configuration → live connected MCP session available to Codex`  
+**Overarching objective:** `IABV coordinates the laptop's installed apps, human-used browser/session, desktop/UI, local runtime/providers and external AIs as one capability/realization environment.`  
+**Operating constraint:** **FREE-FIRST / NO NEW PAID API KEYS OR SUBSCRIPTIONS.**  
+**Current frontier:** `existing IABV MCP stdio server → Codex local MCP client configured safely → live tool discovery`  
 **IA DESTINO:** **Codex**  
-**CAPABILITY:** inspect the existing MCP server/runbook and Windows/Codex configuration, using the minimum local/free connection path.  
-**ACTION:** establish or precisely document a live IABV MCP connection using existing mechanisms; do not add a new MCP architecture. Then rerun RSK-01A.5.
+**CAPABILITY:** local Windows process + Codex MCP configuration + MCP discovery/verification.  
+**ACTION:** configure the existing IABV `stdio` server against `C:\Python\IABV_v1.5_rsk-01a5`, restrict first proof to read-only tools, verify discovery + one read-only tool call, then rerun RSK-01A.5.
 
-### CONTINUITY CONTROL
-Decision-relevant user constraints and circumstances are canonicalized with time/phase/evidence. Historical records remain evidence, not routing commands. CURRENT-STATE top snapshot remains sole active global routing authority.
+### RSK-01A.6 RESULT
+**BLOCKED — ENVIRONMENT.** No active IABV MCP process was connected to the Codex session. The repository/runbook confirm the server exists and supports stdio.
 
-### RSK-01A.5 RESULT
-Blocked before execution: the fixed-SHA worktree was valid, but the Codex session had no active IABV MCP connection.
+### IMPORTANT
+Do not reinterpret this as missing MCP architecture. Do not use Cloudflare/HTTP or purchase an API as the default solution. Local stdio is the preferred free/local path.
 
-### DEVELOPMENTAL TARGET
-First collaboration bridge: `IABV live state → Codex real-session consumption`.
-Stronger loop: `IABV state/memory → capability/realization selection → external AI/tool execution → verification → reusable delta → changed future decision`.
-This is the actual candidate inflection; faster coding alone is not sufficient.
+### SAFETY
+IABV MCP dynamically registers self-update/write tools. Initial Codex connection must therefore use an allowlist containing only read-only audit/observation tools.
 
-### ROUTING POLICY
-Codex primary for current edge. Devin fallback only for a concrete blocker. Prefer local/free realizations before paid APIs or subscriptions.
+### SPACE-TIME DELTA
+`A.5-PREP → A.5 blocked → A.6 connection audit → local stdio identified → A.7 live discovery.`
 
 ### STOP
-Stop after live connection is observed or a concrete environmental blocker is documented. No implementation.## DOMAIN ROUTING
+Stop after live discovery + one read-only tool call or concrete blocker. No architecture change.
+## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
 |---|---|---|---|
