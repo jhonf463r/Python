@@ -58,15 +58,14 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01C ACTIVE
+## 2026-10-03 LIVE ROUTING — RSK-01D ACTIVE
 
-**Current frontier:** `objective → independent expected material state`
+**Current frontier:** `sealed expected material state → blind evaluated retrieval → independent omission/currentness/routing scoring`
+**IA DESTINO:** **Sonnet**
+**CAPABILITY:** independent reconstruction against hidden expected-state benchmark
+**ACTION:** execute RSK-01D on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` with only the fixed objective.
+**No manifest/hash/prior transcript may be provided to the evaluated agent.**
 
-**IA DESTINO:** **Codex**
-**CAPABILITY:** reproducible evaluation-fixture construction + repository archaeology
-**ACTION:** prepare and seal the atomic expected-state manifest from frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`.
-
-RSK-01B is complete and historical. Do not rerun it yet. Historical `NEXT ACTOR` remains non-routable.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
