@@ -16,10 +16,10 @@ Operational loop:
 Make cross-chat continuity reliable enough that a new AI reconstructs the same material longitudinal context — including debate, deductions, corrections, circumstances, negative knowledge and recent routing changes — without the human repeating the history.
 
 ### CURRENT VERIFIED TRUTH
-RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A.1/A.2/A.3/A.4 established a bounded static negative for canonical R01→internal routing, while an external MCP read path exists. RSK-01A.5 never executed because the Codex session lacked a live MCP connection. RSK-01A.6 confirmed the existing MCP server and local `stdio` capability but no live Codex connection. The broader repository already contains multiple external-AI, browser, desktop, local-provider and MCP realizations; therefore MCP↔Codex is only one realization test, not the global product objective.
+RSK-01D was partial: 6/18 complete, 11/18 partial, 1/18 omitted; routing recovery correct. RSK-01A.1/A.2/A.3/A.4 established a bounded static negative for canonical R01→internal routing, while an external MCP read path exists. RSK-01A.5 never executed because the Codex session lacked a live MCP connection. RSK-01A.6 confirmed the existing MCP server and local `stdio` capability but no live Codex connection. The broader repository already contains multiple external-AI, browser, desktop, local-provider and MCP realizations; therefore MCP↔Codex is only one realization test, not the global product objective. The 2026-10-03 laptop-mind probe 043 is now canonically indexed and registered; its fixture-backed limitation remains part of the current evidence boundary.
 
 ### CURRENT DOMAIN FRONTIER
-`material prior interaction → canonical semantic delta → relevant fresh-chat activation → complete current decision frame → exact capability-fit actor/prompt`
+`indexed material interaction delta → relevant fresh-chat activation → complete current decision frame → exact capability-fit actor/prompt → controlled causal reuse`
 
 ### CURRENT REQUIRED CAPABILITY
 Repository-wide composition archaeology of existing memory/retrieval/frame/provenance organs: determine whether material interaction history can be normalized, activated and routed as one longitudinal field, and identify the first causal seam without creating a new memory subsystem.
@@ -31,7 +31,7 @@ Repository-wide composition archaeology of existing memory/retrieval/frame/prove
 The present uncertainty is a repository-composition question: memory already exists, but cross-chat activation is fragmented. Codex is the best fit to trace the actual composition and distinguish storage, retrieval, activation, routing and causal consumption.
 
 ### NEXT ACTION
-Audit the existing canonical-memory/retrieval/frame composition. Trace: `material interaction/result → episode representation → semantic delta → canonical projection → objective-conditioned retrieval → context activation → current-state reconciliation → first open edge → actor/capability selection → exact prompt`. Determine the first unproven seam and propose one minimum discriminating continuity experiment. Do not implement. Do not create a new memory service.
+Run the minimum blind continuity experiment against the now-indexed longitudinal memory. Use a fresh AI/session with no manually reconstructed history. Measure whether the canonical entry surfaces recover the relevant recent deltas, suppress stale routing, identify the same first open edge, choose the capability-fit actor and generate the correct complete next prompt. Require an independent blind score. Do not implement.
 
 ### CROSS-AI ROLE
 ChatGPT = reconciliation/adjudication/synthesis/writeback; Codex = repository and composition archaeology / difficult technical seam; Sonnet = independent forensic challenge; Devin = Windows/runtime fallback when a concrete environment capability requires it; external AIs and local models are resources selected by capability-fit.
