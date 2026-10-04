@@ -3,34 +3,22 @@
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-03  
-**Reason:** RSK-01A static audit reconciled; blind continuity test is now the minimum discriminating action.
+**Reason:** RSK-01B completed; RSK-01C established the missing independent expected-state measurement contract.
 
 ### CURRENT OBJECTIVE
 Make cross-chat continuity reliable enough that a new AI does not select one protocol/history neighborhood and silently omit material knowledge, deductions, negative knowledge or recent routing changes already persisted in GitHub.
 
 ### CURRENT TRUTH
-The repository contains substantial continuity machinery and a deliberate single routing spine, but reliable objective-conditioned retrieval of the **complete relevant candidate set** is still **NOT PROVEN**.
+RSK-01B demonstrated bounded blind documentary discoverability across five objectives, but not complete relevant-field recall. RSK-01A remains the leading static architectural hypothesis (B — missing causal integration), not a runtime conclusion.
 
-RSK-01A (Codex) audited the existing composition at main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` and found coverage split across CHAT-ARCH, local knowledge/index services, context assemblers, capability registries, world/self models, OSES/self-audit and provenance/evidence surfaces. The report's principal classification is **B — missing causal integration**, with **A (session/procedure)** and **C (corpus/index/currentness)** as contributing possibilities. **D is not established.**
-
-This is an external forensic report now reconciled into state; the underlying code findings are not being represented as independently repeated by ChatGPT.
+RSK-01C now established the next measurable boundary: the evaluated agent's retrieval must be compared with an **independently sealed expected material state** rather than trusting the agent's own `OMITTED` report.
 
 ### MATERIAL NEW FINDING
-The first open edge is narrower than the full routing problem:
+First open edge:
+`objective → independent expected material state`
 
-`current objective → complete relevant candidate retrieval`
-
-The current document route is procedural:
-`README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific evidence`
-
-The runtime route searches local repositories/context assemblers, but RSK-01A did not find a demonstrated causal path that makes the canonical CHAT-ARCH field — current truth, recent material deltas, negative knowledge, historical evidence, currentness/provenance and actor evidence — arrive as one objective-conditioned activation set before actor selection. RSK-01B therefore fixes the pre-writeback corpus at the audited SHA rather than testing against the newly written routing state.
-
-Therefore:
-
-`relevant hit != complete relevant state`  
-`stored Knowledge Delta != consumed Knowledge Delta`  
-`R34 bounded success != general continuity reliability`  
-`historical NEXT ACTOR != current routing authority`
+After that fixture is independently derived and sealed, the next edge will be:
+`expected material state → blind evaluated retrieval → measured omissions/currentness/routing`
 
 ### SINGLE ROUTING SPINE
 Only this top-level snapshot is allowed to determine the **current** routing decision.
@@ -47,66 +35,30 @@ Canonical layer roles:
 Historical `NEXT ACTOR` text remains preserved but is **NON-ROUTABLE HISTORY** unless explicitly promoted through this snapshot.
 
 ### CURRENT DOMAIN FRONTIER
-`objective → complete relevant candidate retrieval`
+`objective → independent expected material state`
 
-This remains within the existing RSK-01 retrieval-fabric family. No new retrieval brain/service is authorized.
+This remains within the RSK-01 family. No new retrieval brain/service is authorized.
 
 ### CURRENT REQUIRED CAPABILITY
-Independent cross-chat reconstruction + adversarial verification of retrieval completeness, currentness, historical-routing suppression and objective-conditioned routing.
+Repository archaeology + reproducible evaluation-fixture construction / evidence manifest generation.
 
 ### IA DESTINO
-**SONNET**
+**CODEX**
 
 ### WHY THIS IA NOW
-Codex has narrowed the architectural uncertainty to a testable question, but static inspection cannot establish whether a fresh AI actually activates the complete relevant field. A genuinely fresh Sonnet session is the lowest-cost independent verifier for that operational boundary.
+RSK-01C narrowed the remaining uncertainty to independent ground-truth construction. The next highest-information step is not another blind generation pass; it is producing a sealed atomic expected-state manifest from the fixed corpus before exposing it to an evaluated agent.
 
 ### NEXT ACTION
-Execute **RSK-01B — blind continuity test** against frozen corpus `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, five fresh sessions, each with one **fully instantiated concrete objective**. A prior attempt was correctly stopped because a template placeholder remained unresolved; that attempt is not test evidence.
+Prepare and seal the independent `EXPECTED MATERIAL STATE` manifest for the fixed objective against `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`.
 
-### REQUIRED TEST / ACCEPTANCE
-For each of five fixed objectives record:
-`EXPECTED MATERIAL STATE → RETRIEVED → OMITTED → STALE ITEMS → HISTORICAL NEXT ACTORS SURFACED → FIRST OPEN EDGE → IA DESTINO → NEXT ACTION`
+### REQUIRED ACCEPTANCE
+The manifest must contain atomic claims with provenance, materiality classification, supersession/contradiction relation, negative/routing authority status, and enough scope information to score retrieval independently.
 
-For case 5, `routing authority` means the authority encoded in the frozen test corpus at `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`; at that corpus state the current snapshot routed to Codex. This is deliberately separate from the post-writeback main route, now routed to Sonnet.
-- A = the canonical field is sufficient but the session failed to follow/activate the entry procedure.
-- B = existing organs contain the material but no causal composition activates it as one objective-conditioned set.
-- C = necessary corpus/index/currentness/canonicalization data is absent, ambiguous or not reliably addressable.
-- D = existing owners cannot express the responsibility without an irreducible new semantic owner; this requires proof.
+### STOP CONDITION
+Stop after the manifest exists, is independently reviewed/sealed, and the next evaluated session can be run without exposing it. No implementation.
 
-### RSK-01B PROGRESS
-Session 01/05 completed on frozen corpus `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for the technical-continuity objective: current routing was reconstructed as Codex, historical routing was suppressed, and the next action matched RSK-01A. This is bounded evidence only; no A/B/C/D classification yet.
-
-### RSK-01B PROGRESS UPDATE
-Session 02/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for the recent-method-correction objective. It identified the single routing spine and correctly suppressed historical routing, while also detecting residual duplicated/contradictory entry material inside the corpus. No A/B/C/D classification yet.
-
-### RSK-01B PROGRESS UPDATE — SESSION 03
-Session 03/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction showed strong BIO-04 M1/M2 retrieval: accepted claims, corrections, provenance limits, negative knowledge and stale-state suppression were recovered. The session then chose a local BIO-04 provenance-verification route (Sonnet), but the frozen global routing snapshot was RSK-01A → Codex, so routing conformity remains indeterminate. This is not a new canonical route and no A/B/C/D classification has been made.
-
-### RSK-01B PROGRESS UPDATE — SESSION 04
-Session 04/05 completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. Blind Sonnet reconstruction passed for human-aware plasticity: it recovered the method and negative knowledge, suppressed stale routing and reconstructed Codex from the frozen snapshot. Runtime plasticity remains unproven. No A/B/C/D classification yet.
-
-### RSK-01B FINAL AGGREGATE
-Five blind Sonnet sessions completed on frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`. All five recovered substantial relevant material; four reconstructed Codex as the frozen current route. Session 03 selected a domain-local Sonnet verification route after finding a BIO-04 provenance gap; this is not classified as routing failure because global-vs-domain scope was not experimentally fixed. The experiment did not freeze independent expected material sets, so completeness remains NOT PROVEN. RSK-01A static B remains the leading architectural hypothesis; RSK-01B does not confirm runtime B. Next action is RSK-01C fixture/contract audit by Codex.
-
-### HUMAN-AWARE DEVELOPMENTAL FRONTIER
-`protocol-change observation → later contextual consumption → changed future retrieval/routing`
-
-### M2 SCIENTIFIC STATUS
-BIO-04 M2 is **CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE** based on the independent audit, with corrected metrics/provenance and bounded evidence. It does not authorize implementation.
-
-### HARD ROUTING RULE
-A new chat must not select an actor from a historical document before reading this snapshot and reconciling it with the current objective. If this snapshot conflicts with historical `NEXT ACTOR` text, this snapshot wins.
-
-### RSK-01B PREPARATION CONTROL
-Every external session prompt must be fully instantiated before handoff. No literal template placeholder may reach the evaluated AI. An unresolved placeholder is a preparation error and must not be counted as a continuity result.
-
-### TEST CONTAMINATION CONTROL
-The RSK-01B corpus is frozen at `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`, the code/memory state audited before this reconciliation. The blind test must not use a later main commit because the later writeback explicitly names RSK-01B and Sonnet and would leak the test route.
-
-### LAST VERIFIED REPOSITORY ANCHOR
-Code/repository state audited by RSK-01A: `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`.  
-The subsequent memory writeback is a provenance-bearing state update and does not change the code truth used for the blind test.
-
+### ROUTING PRECEDENCE
+RSK-01C supersedes the previous RSK-01B top route for the next action. The RSK-01B records remain historical evidence.
 ## PURPOSE
 
 This document is the compact current-state bridge between historical knowledge and future objective-driven chats. It is intentionally smaller than the complete archive.
