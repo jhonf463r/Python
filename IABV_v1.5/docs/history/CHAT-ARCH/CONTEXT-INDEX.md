@@ -58,31 +58,37 @@ Blind Session 02 passed for the recent-method-correction objective: the fresh ag
 ### RSK-01B SESSION 01 RESULT
 Blind Session 01 passed for the technical-continuity objective at frozen SHA `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442`: Codex routing reconstructed correctly; historical actors suppressed. This is bounded evidence, not general continuity proof.
 
-## 2026-10-03 LIVE ROUTING — RSK-01A.5 RUNTIME CAUSALITY / CODEX PRIMARY
+## 2026-10-03 LIVE ROUTING — RSK-01A.6 MCP CONNECTION BOUNDARY
 
-**Current frontier:** `actual MCP read_repo_file result → possible internal IABV context/governance/routing consumption`  
+**Current frontier:** `existing IABV MCP server capability + client configuration → live connected MCP session available to Codex`  
 **IA DESTINO:** **Codex**  
-**CAPABILITY:** repository-aware Windows runtime execution plus causal trace across MCP → external client → IABV routing.  
-**ACTION:** execute RSK-01A.5 on prepared worktree `C:\Python\IABV_v1.5_rsk-01a5`, detached at `3de2bb4…`; run control/treatment, trace artifact transfer and routing inputs, adjudicate the causal boundary.
+**CAPABILITY:** inspect existing IABV MCP server/runbook plus Windows/Codex MCP configuration and establish the minimum non-architectural live connection.  
+**ACTION:** determine how Codex can connect to the already-existing IABV MCP server; verify transport, launch command, workspace, gates and client configuration; establish or precisely document the connection. Then rerun RSK-01A.5.
 
-### RSK-01A.5-PREP RESULT
-**PREPARED — SHA VERIFIED LOCALLY.** The target SHA and R01 were verified in a clean detached worktree.
+### RSK-01A.5 RESULT
+**BLOCKED BEFORE EXECUTION.** The prepared fixed-SHA worktree was valid, but the Codex session had no active IABV MCP connection, so neither control nor treatment executed.
 
-### RSK-01A.4 RESULT
-**CASE B — RUTA DINÁMICA PARCIAL.** Dynamic MCP file read can expose R01 to an external client; no internal routing propagation was demonstrated statically.
+### RECONCILIATION
+Do not relabel original hypothesis C. Original A/B/C/D remain:
+A — STILL OPEN; B — SUPPORTED, bounded; C — STILL OPEN; D — NOT SUPPORTED.
 
-### ROUTING POLICY
-Codex is primary for this edge. Devin is fallback only if Codex reports a concrete environment/capability blocker. Do not inherit Devin from the previous preparation handoff merely because it was named historically.
+The runtime result is an experiment-status result: **no runtime path observed because the MCP connection precondition was unavailable**.
+
+### EXISTING CAPABILITY EVIDENCE
+Repository runbook documents an IABV MCP server with stdio transport and historical CHAT-ARCH evidence records a prior live MCP gateway connection. Therefore this frontier is connection availability/configuration, not proof of missing MCP architecture.
 
 ### DEVELOPMENTAL TARGET
-The intended IABV→AI collaboration inflection is not "faster coding" alone. It requires verified closure:
-`IABV state/memory → actor/capability selection → external AI execution → result ingestion → reusable verified delta → changed future decision`.
+First measurable collaboration milestone:
+`IABV live MCP state → Codex real-session consumption`.
 
-### HYPOTHESIS STATUS
-A — STILL OPEN; B — SUPPORTED, bounded static composition; C — STILL OPEN; D — NOT SUPPORTED.
+Later stronger loop:
+`IABV state/memory → actor selection → Codex/ChatGPT work → result ingestion → verified reusable delta → changed future decision`.
+
+### ROUTING POLICY
+Codex is primary. Devin is fallback only for a concrete environment blocker. Human approval may be required for local credential/network configuration, but the next analysis actor remains Codex.
 
 ### STOP
-Stop after RSK-01A.5 yields a causal adjudication or a concrete blocker. No implementation.
+Stop when the existing connection is established and observed, or a concrete environmental blocker is documented. No new MCP layer.
 ## DOMAIN ROUTING
 
 | Domain / objective | Activate first | Also inspect | Key questions |
