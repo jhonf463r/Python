@@ -3924,3 +3924,25 @@ A capability may be dormant, unavailable, unauthorized or resource-blocked witho
 **DO NOT SHRINK CAPABILITY TO FIT THE CURRENT TASK; SHRINK THE ACTIVE SEARCH/EXECUTION SET TO FIT THE CURRENT TASK.**
 
 This is a design principle; runtime proof of universal capability preservation and context-optimal activation remains open.
+
+
+## 2026-10-05 ACTIVE OVERLAY — PRODUCT NORTH STAR: IABV AS THE USER'S LAPTOP ASSISTANT
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md`
+
+The primary product vision is **HUMAN ↔ IABV**. IABV is intended to become the user's artificial assistant and cognitive/operational layer of the laptop. ChatGPT, Codex, Claude, Devin, Ollama and other tools are resources/channels that IABV should progressively select and consult when the objective requires them.
+
+The desired mature loop is:
+`human objective → IABV perceives laptop/environment → understands context → identifies uncertainty/capability → discovers candidate resources → checks access/authentication/authorization/quota → selects governed realization → delegates/acts → observes → verifies → updates state/knowledge → continues or asks human when necessary`.
+
+**Maturity boundary:**
+- S0 human-mediated coordination = current practical mode for many experiments.
+- S1 IABV-frame-assisted coordination = operationally available through GitHub-backed canonical frame and explicit prompt generation.
+- S2 IABV-mediated delegation = NOT PROVEN.
+- S3 dynamic multi-AI collaboration = NOT PROVEN.
+- S4 delegated experience changing later routing/strategy = NOT PROVEN.
+
+The correct developmental question is not “teach Codex first” as a permanent priority. First close the universal capability seams that make IABV capable of observing its environment, selecting a resource and carrying one governed round trip. Then prove dynamic multi-resource choice. Account/session/login handling is a separate governed resource capability; credentials must not be casually exposed to external AIs.
+
+Current technical frontier remains:
+`LIVE WorldModel → LIVE PerceptionSnapshot`.
