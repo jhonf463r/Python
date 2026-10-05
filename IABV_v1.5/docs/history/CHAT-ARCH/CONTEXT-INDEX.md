@@ -1991,3 +1991,18 @@ Current continuity rule: `CURRENT-STATE → MEMORY-OPERATING-PROTOCOL → materi
 Specific 2026-10-03 delta: `CHAT-ARCH-2026-10-03-043-laptop-mind-capability-seam-probe.md` is a material source record whose specific result must remain retrievable as a first-class recent delta. Its key qualification is that the probe was fixture-backed and did not prove live laptop observation.
 
 Do not treat this index entry as proof of causal memory reuse; continuity activation and later causal influence remain separate experiments.
+
+## 2026-10-05 ACTIVE DEVELOPMENT ROUTING — FIRST SELF-CODE INFLECTION
+
+Canonical record: `CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md`
+
+For the product-development objective, prioritize the first open edge:
+`verified improvement proposal → isolated executable code variant → baseline/candidate comparison → independent verification → governed production-code promotion`.
+
+Required capability:
+`capability-oriented code evolution + existing-organ archaeology + controlled verification`.
+
+Do not route automatically to RSK-01. RSK-01 remains a secondary continuity experiment unless it directly changes the self-development contract.
+
+Intended developmental sequence:
+`assist development → close isolated self-code loop → causal developmental plasticity → capability compounding/consolidation → progressively self-directed development`.
