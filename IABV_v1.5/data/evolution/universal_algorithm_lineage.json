@@ -205,6 +205,21 @@
       "derivation_reason": "Verified collaboration failures should improve the method used to investigate, verify, route and experiment, not merely produce local patches.",
       "universal_invariant": "failure → classification → causal boundary → competing explanations → reusable method candidate → counterexample → verification → promotion/rejection → later reuse",
       "next_open_edge": "later contextual consumption of a verified method delta → changed future investigation/routing behavior"
+    },
+    {
+      "id": "UAAL-D015",
+      "parent": "UAAL-D003",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CLARIFICATION_AND_PROJECT_SYNTHESIS",
+      "status": "DESIGN_NOT_RUNTIME_PROVEN",
+      "title": "Capability Preservation and Context-Gated Sparse Activation",
+      "source_records": [
+        "CHAT-ARCH-2026-10-05-053-meta-method-plasticity-rsk01-readiness-reconciliation.md",
+        "UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md"
+      ],
+      "derivation_reason": "A universal adaptive system should preserve a broad capability repertoire while activating only the subset justified by the current objective and constraints.",
+      "universal_invariant": "broad capability preservation + context-conditioned activation + governed realization selection",
+      "next_open_edge": "verified runtime reuse of dormant capability knowledge when a later objective makes the capability relevant"
     }
   ],
   "protocol_version": "UAAL-TRACE-1",
