@@ -3675,3 +3675,21 @@ Every future prompt-generation pass must expose:
 Textual similarity or file retrieval is not sufficient. The stronger target is:
 `activated verified prior knowledge → changed justified later decision/action`.
 
+## 2026-10-05 ACTIVE METHOD CLARIFICATION — CAPABILITY PRESERVATION / SPARSE ACTIVATION
+
+Universal adaptation must not reduce the system's capability repertoire merely because a capability is not useful in the current context.
+
+Preserve:
+`capability inventory != active capability set`
+`selection != deletion`
+`unavailable now != useless generally`
+`not selected now != not needed later`
+
+The intended optimization is:
+`broad capability preservation + context-conditioned activation + governed realization selection`
+
+A capability may be dormant, unavailable, unauthorized or resource-blocked without being discarded from the developmental repertoire.
+
+**DO NOT SHRINK CAPABILITY TO FIT THE CURRENT TASK; SHRINK THE ACTIVE SEARCH/EXECUTION SET TO FIT THE CURRENT TASK.**
+
+This is a design principle; runtime proof of universal capability preservation and context-optimal activation remains open.
