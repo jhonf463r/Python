@@ -1,3 +1,18 @@
+## 2026-10-05 ACTIVE OVERLAY — CURRENT SELF-CODE BASELINE
+
+**Canonical correction:** `CHAT-ARCH-2026-10-05-057-current-main-baseline-reconciliation.md`
+
+The remote `refs/heads/main` advanced through subsequent canonical documentation writebacks. Therefore, for the next self-code implementation, the operative baseline is the latest remote main:
+
+`824ebf6db61035784a4cddbd5f667dc849d77738`
+
+The previously referenced `1053cc...` remains the correct authority for the earlier Codex report, but is no longer the branch head. `9139...` is an older predecessor.
+
+The local `C:\Python` checkout remains non-authoritative and dirty.
+
+The developmental frontier is unchanged:
+`verified improvement proposal → isolated executable candidate diff`.
+
 ## 2026-10-05 ACTIVE OVERLAY — BASELINE AUTHORITY CORRECTED
 
 **Canonical correction:** `CHAT-ARCH-2026-10-05-056-self-code-baseline-authority-reconciliation.md`
