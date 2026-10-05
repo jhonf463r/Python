@@ -2402,3 +2402,19 @@ Capability scope is broad and may include natural language, machine/UI language,
 **DO NOT EQUATE:** login capability with intelligence, provider connectivity with symbiosis, or automation volume with developmental inflection.
 
 **RELATED RECORD:** `CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md`.
+
+## 2026-10-05 ACTIVE ITEM — UK-UAAL-RQ05 CANDIDATE RUNTIME LOAD
+
+**QUESTION:** Does the RQ05 no-refresh candidate actually load in a fresh attributed MCP runtime and expose a live PerceptionSnapshot?
+
+**STATUS:** OPEN / CANDIDATE TESTED / RUNTIME UNVERIFIED.
+
+Candidate source behavior:
+`build_perception_snapshot(refresh=False)` avoids request_refresh for World Model/Environment Self Model and the safe translation path excludes portable-context reconstruction.
+
+The candidate passed focused/related tests, but the active MCP session did not reload it and the tool was not invoked live.
+
+Required next evidence:
+`fresh candidate process → tool invocation → no tool-induced refresh → live fields in PerceptionSnapshot → provenance`.
+
+Do not treat the candidate as production capability until that runtime chain is demonstrated.
