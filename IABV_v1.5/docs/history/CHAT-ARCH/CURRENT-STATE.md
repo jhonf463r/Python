@@ -1,3 +1,31 @@
+## 2026-10-05 ACTIVE OVERLAY — FINAL MAIN TIP AFTER RQ01–RQ04 WRITEBACK
+
+The UAAL RQ01–RQ04 reconciliation generated documentation-only commits after the code-bearing baseline.
+
+**CURRENT REMOTE `refs/heads/main`:**
+`4901d964d3913b18f91299fd1137fe42bbf56f68`
+
+**CODE-BEARING EXPERIMENT BASELINE:**
+`e46d8304167708bed0764d3bf2be8fd6643e8944`
+
+The six commits between these SHAs are documentation-only changes:
+- RQ01–RQ04 reconciliation record;
+- CURRENT-STATE overlay;
+- CONTEXT-INDEX routing;
+- SYMBIOSIS-MAP transfer;
+- UNRESOLVED-KNOWLEDGE frontier;
+- ARCHIVE-REGISTRY registration.
+
+Therefore future technical experiments must not accidentally use the latest documentation tip as evidence that executable code changed. Reconcile the exact code SHA independently.
+
+**Canonical RQ01–RQ04 record:**
+`CHAT-ARCH-2026-10-05-058-uaal-rq01-rq04-symbiosis-reconciliation.md`
+
+**Current technical frontier:**
+`LIVE WorldModel → LIVE PerceptionSnapshot`
+
+**Current technical actor: CODEX.**
+
 ## 2026-10-05 ACTIVE OVERLAY — UAAL-RQ01–RQ04 / SYMBIOSIS + LIVE-PERCEPTION FRONTIER
 
 **Canonical record:** `CHAT-ARCH-2026-10-05-058-uaal-rq01-rq04-symbiosis-reconciliation.md`
