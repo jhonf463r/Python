@@ -1,3 +1,56 @@
+## 2026-10-05 ACTIVE OVERLAY — RSK-01 ARTIFACT / ORACLE READINESS RECONCILIATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-053-meta-method-plasticity-rsk01-readiness-reconciliation.md`
+
+Codex completed a read-only readiness audit. No participant was executed and no production code was modified.
+
+Remote canonical `main` is `bb1af0a68eb1b154cc68ff422895626d03ae7dd8`. The previously recovered RSK-01 participant package is a complete historical snapshot for `bc2a75721eede0b11feb3aa950d236b6d8776b68`, but that target is 21 commits behind current `main`.
+
+The package/task artifacts are therefore not the current canonical participant snapshot.
+
+An accessible `ACTIVATION_ORACLE_FROZEN.txt` has a verified hash, but the originally declared oracle bytes remain unrecovered. The accessible file is a reconstruction associated with another target. Therefore the oracle is not currently adjudicable as the original experiment reference.
+
+The latest participant response `INELIGIBLE — PRIOR CONTEXT PRESENT` remains a harness/isolation result only.
+
+### CURRENT RSK-01 OPEN EDGE
+
+`current main → canonical corpus + exact TASK → original oracle identity/access → corpus/oracle alignment → eligible isolated participant`
+
+### CURRENT REQUIRED CAPABILITY
+
+`artifact/provenance archaeology + experimental contract reconciliation`
+
+### IA DESTINATION — RSK-01
+
+**CODEX**
+
+No Sonnet/Claude participant execution is authorized until the readiness preconditions are closed.
+
+### NEW UNIVERSAL METHOD RULE — META-METHOD PLASTICITY
+
+For material experiments:
+
+`experiment contract → artifact/input readiness → isolation/blinding → oracle/verification readiness → actor execution`
+
+A participant or implementation actor must not be the first component to discover that required inputs, provenance, isolation or verification conditions are absent.
+
+More generally:
+
+`failure → classification → causal boundary → competing explanations → reusable method candidate → counterexample → verification → promotion/rejection`
+
+This is a methodology rule, not proof that IABV runtime has autonomously learned it.
+
+### DEVELOPMENTAL STATUS
+
+The project now distinguishes:
+
+**DOMAIN FRONTIER:** the technical/scientific edge being tested.
+
+**META-METHOD FRONTIER:** whether prior verified failures can later cause a better method, routing decision or experiment design.
+
+The second frontier must not override the first.
+
 ## CANONICAL ROUTING SNAPSHOT — ONLY ACTIVE ROUTING AUTHORITY
 
 **Last reconciled:** 2026-10-04
