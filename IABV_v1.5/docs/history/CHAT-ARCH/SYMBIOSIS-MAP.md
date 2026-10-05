@@ -2130,3 +2130,21 @@ Codex returns action, observation, artifact/provenance, evidence boundary and un
 
 This is the intended low-friction route toward using IABV to help operate Codex while preserving the distinction between externalized coordination today and autonomous runtime coordination not yet proven.
 
+## 2026-10-05 TRANSFER — META-METHOD PLASTICITY / EXPERIMENT READINESS
+
+The RSK-01 readiness audit produced a reusable methodological distinction:
+
+`required capability is present ≠ experiment is ready to execute`.
+
+A future actor can be capability-fit yet operationally wrong to invoke when material inputs, target provenance, isolation, oracle identity/alignment or verification conditions are unresolved.
+
+New reusable invariant:
+
+`actor capability-fit + execution preconditions + evidence contract = valid intervention`
+
+The failure pattern is generalized as:
+
+`failure/irregularity → classify → causal boundary → competing explanations → reusable method → counterexample → independent verification → promotion/rejection`.
+
+This is a developmental method candidate derived from the collaboration episode. Causal runtime consumption by IABV remains NOT PROVEN.
+
