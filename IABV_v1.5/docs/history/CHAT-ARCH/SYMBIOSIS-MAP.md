@@ -2225,3 +2225,17 @@ Credentials are governed resources, not conversational knowledge to be freely co
 
 Preserve:
 `email != identity != account != session != credential != authorization`.
+
+## 2026-10-05 TRANSFER — RQ05 / OBSERVABILITY AS A DEVELOPMENTAL CAPABILITY
+
+RQ05 reinforces an important symbiosis method rule:
+
+When an existing organ cannot be safely observed through the available tool surface, first identify the smallest observational seam that composes the existing organ rather than building a parallel organ.
+
+Observed candidate pattern:
+`current WorldModel → existing TaskContextAssembler → existing PerceptionSnapshot → read-only projection`.
+
+The candidate is not yet canonical or runtime-proven. The reusable lesson is the method:
+`missing evidence surface → minimum observability seam → controlled runtime attribution → independent verification → promotion/rejection`.
+
+This is relevant to the larger product vision because IABV cannot autonomously select useful resources until its own environmental state and capability state are themselves sufficiently observable.
