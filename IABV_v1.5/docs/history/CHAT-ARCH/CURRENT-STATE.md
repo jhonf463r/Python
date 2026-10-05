@@ -1,3 +1,40 @@
+## 2026-10-05 ACTIVE OVERLAY — SELF-CODE INFLECTION: CANDIDATE DIFF SEAM CLOSED NEXT
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-055-self-code-candidate-diff-reconciliation.md`
+
+### RECONCILED STATE
+
+Codex read-only archaeology against canonical `main` = `91c4d9caab9d885a947c1b4c8d9637b498c11ac8` confirms the upstream self-development substrate already exists:
+
+`self-observation → findings → improvement proposal → structured recommendation → validation/decision → CodexTaskSpec`.
+
+The first still-open self-code edge is:
+
+`verified improvement proposal → isolated executable candidate diff`.
+
+The existing `SandboxExperimentService` validates route/configuration alternatives; it is not yet proven as a Git code sandbox. `PromotionPrPublisher` is documentary/evidence publication, not production-code promotion.
+
+### NEXT ACTION
+
+**CODEX — IMPLEMENTATION**, tightly scoped.
+
+Close only:
+`baseline SHA → isolated candidate checkout/worktree → bounded patch → candidate diff + provenance`.
+
+Do not implement candidate-vs-baseline behavioral validation, independent verification, promotion or rollback in the same step unless a pre-existing contract is already required to make candidate materialization safe.
+
+### SUCCESS CONDITION
+
+A real bounded test can produce:
+`known baseline → isolated candidate → concrete diff → provenance`
+without mutating the baseline or `main`.
+
+This does **not** prove that the candidate is better.
+
+### ROUTING RESTRAINT
+
+No new evolution brain/engine/orchestrator. Reuse existing evolution, self-teach, sandbox, Git and governance organs. Do not route to Sonnet/Claude yet. Devin only if a concrete Windows/runtime blocker appears.
+
 ## 2026-10-05 ACTIVE OVERLAY — FIRST DEVELOPMENTAL INFLECTION: IABV HELPING EVOLVE ITS OWN CODE
 
 **Canonical record:** `CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md`
