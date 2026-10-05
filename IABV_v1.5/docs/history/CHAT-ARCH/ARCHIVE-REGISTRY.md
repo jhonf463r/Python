@@ -962,3 +962,29 @@ Routing: **Codex** is the current fit for repository artifact/provenance reconci
 - `CHAT-ARCH-2026-10-05-055-self-code-candidate-diff-reconciliation.md` — canonical reconciliation of the first open self-code evolution edge: proposal → isolated candidate diff, with Codex implementation routing.
 
 - `CHAT-ARCH-2026-10-05-056-self-code-baseline-authority-reconciliation.md` — correction establishing current remote `main` as the self-code candidate baseline; `9139...` is historical predecessor.
+
+## 2026-10-05 REGISTRATION — UAAL-RQ01–RQ04 / SYMBIOSIS RECONCILIATION
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-05-058-uaal-rq01-rq04-symbiosis-reconciliation.md`
+
+Type:
+`RECONCILIATION / SYMBIOSIS / METHODOLOGY / ROUTING`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Purpose:
+Preserve the RQ01–RQ04 evidence chain, the universal-program developmental vision, the distinction between GitHub-frame coordination symbiosis and unproven runtime causal symbiosis, and the current routing requirement that every material technical prompt explicitly name its capability-fit AI destination.
+
+Current technical frontier:
+`LIVE WorldModel → LIVE PerceptionSnapshot`
+
+Current actor:
+**CODEX**
+
+Related future independent verification:
+**SONNET / CLAUDE**, only after an attributable artifact/claim exists.
+
+This record supersedes no historical evidence; it reconciles it into the current routing frame.
+
