@@ -940,3 +940,19 @@ Any provider-, app-, browser-, MCP- or AI-specific work must identify its parent
 - Finding: environmental viability evidence in the fixture-backed PerceptionSnapshot did not reach CapabilityReadinessService; the selector changed only when the candidate inventory changed.
 - Evidence limit: the probe did not start IABV or observe the live laptop environment.
 - This record is a domain frontier, not a current routing authority. Current routing remains solely in CURRENT-STATE.md.
+
+## 2026-10-05 REGISTRATION — META-METHOD PLASTICITY / RSK-01 READINESS
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-053-meta-method-plasticity-rsk01-readiness-reconciliation.md`
+
+Type: `RECONCILIATION / METHOD DELTA / SYMBIOSIS / EXPERIMENT READINESS`
+
+State: `CANONICAL SOURCE / RSK-01 STILL BLOCKED BEFORE PARTICIPANT EXECUTION`
+
+Material delta: the recovered RSK-01 package is verified only for historical target `bc2a757...`; the original activation oracle bytes remain unrecovered and the accessible reconstruction is not aligned for definitive adjudication against current `main`.
+
+Method delta: material experiments must pass artifact/input, provenance, isolation and oracle/verification readiness before participant execution.
+
+Routing: **Codex** is the current fit for repository artifact/provenance reconciliation; **Sonnet/Claude** remains the participant only after readiness closes.
+
