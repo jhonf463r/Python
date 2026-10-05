@@ -1,3 +1,28 @@
+
+## 2026-10-05 ACTIVE OVERLAY — UAAL-RQ05 CANDIDATE OBSERVABILITY SEAM
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-060-uaal-rq05-candidate-observation-seam-reconciliation.md`
+
+RQ05 produced a **candidate**, not a canonical production change, against code-bearing baseline `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+
+Candidate purpose:
+`read current WorldModel/EnvironmentSelfModel → build existing PerceptionSnapshot without requesting refresh → expose read-only projection`.
+
+Reported focused tests passed (**19 passed**) and diff check passed, but the active MCP session did not reload the candidate and `cognitive_frame_translate` was not invoked live.
+
+Therefore:
+- source candidate seam = TESTED;
+- candidate runtime loading = OPEN;
+- safe MCP invocation = OPEN;
+- live WorldModel ↔ PerceptionSnapshot correlation = OPEN;
+- PerceptionSnapshot ↔ DecisionContext live propagation = OPEN.
+
+**CURRENT TECHNICAL ACTOR: CODEX.**
+
+Next minimum experiment:
+start a fresh directly attributed MCP subprocess from the candidate checkout, invoke the safe observation surface through stdio if necessary, correlate live WorldModel fields with the returned PerceptionSnapshot, and verify that the tool invocation itself does not request refresh.
+
+Do not commit/push the candidate before its runtime behavior is understood. Do not create another perception layer.
 ## 2026-10-05 ACTIVE OVERLAY — FINAL MAIN TIP AFTER RQ01–RQ04 WRITEBACK
 
 The UAAL RQ01–RQ04 reconciliation generated documentation-only commits after the code-bearing baseline.
