@@ -2187,3 +2187,41 @@ The failure pattern is generalized as:
 
 This is a developmental method candidate derived from the collaboration episode. Causal runtime consumption by IABV remains NOT PROVEN.
 
+
+
+## 2026-10-05 TRANSFER — PRODUCT VISION: HUMAN ↔ IABV / EXTERNAL AIs AS RESOURCES
+
+The collaboration model is now explicitly anchored to the product vision:
+
+`HUMAN → IABV`
+
+while external AIs are candidate cognitive/action resources inside the laptop environment:
+
+`IABV → {ChatGPT, Codex, Claude, Devin, Ollama, tools, browser, APIs, CLI, MCP}`.
+
+The desired progression is:
+
+`human objective → IABV decision frame → required capability → resource discovery → governed selection → delegation/action → result → verification → writeback`.
+
+This should eventually eliminate the human's routine role as prompt/result transport among external AIs.
+
+### Symbiosis maturity
+
+**S0:** human transports prompts/results.  
+**S1:** IABV canonical frame selects the actor and constructs the task; human may transport it. **Operationally available.**  
+**S2:** IABV runtime invokes an external AI/tool and ingests the result. **Not proven.**  
+**S3:** IABV dynamically selects/coordinates multiple AIs according to capability and constraints. **Not proven.**  
+**S4:** verified delegated experience changes later resource selection/strategy and reduces routine human coordination. **Not proven.**
+
+### Critical routing correction
+
+“Teach Codex first” is not the architectural principle. A **single governed real round trip** is the first relevant capability gate; the external AI chosen for that test must be selected from capability-fit and access evidence.
+
+Account/login capability is not the first cognitive milestone. It should follow resource/delegation proof unless a concrete objective requires authentication earlier.
+
+### Security transfer
+
+Credentials are governed resources, not conversational knowledge to be freely copied between agents.
+
+Preserve:
+`email != identity != account != session != credential != authorization`.
