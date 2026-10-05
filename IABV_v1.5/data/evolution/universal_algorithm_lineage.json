@@ -220,6 +220,31 @@
       "derivation_reason": "A universal adaptive system should preserve a broad capability repertoire while activating only the subset justified by the current objective and constraints.",
       "universal_invariant": "broad capability preservation + context-conditioned activation + governed realization selection",
       "next_open_edge": "verified runtime reuse of dormant capability knowledge when a later objective makes the capability relevant"
+    },
+    {
+      "id": "UAAL-D016",
+      "parent": "UAAL-D008",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CLARIFICATION_AND_PROJECT_SYNTHESIS",
+      "status": "DESIGN_NOT_RUNTIME_PROVEN",
+      "title": "Governed Self-Code Evolution / Capability-Oriented Code Plasticity",
+      "source_records": [
+        "CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md",
+        "UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md"
+      ],
+      "derivation_reason": "The near-term developmental inflection is reached when verified experience can drive bounded, reversible evolution of IABV's own code while preserving the broader capability repertoire.",
+      "universal_invariant": "verified deficit → required capability → existing-organ archaeology → isolated code evolution → baseline/candidate verification → governed promotion/rejection/rollback → capability/method/relation/routing delta → later contextual reuse",
+      "evolution_operations": [
+        "ACQUIRE",
+        "REFINE",
+        "COMPOSE",
+        "CONSOLIDATE",
+        "SPECIALIZE",
+        "GENERALIZE",
+        "SUPERSEDE",
+        "ROLLBACK"
+      ],
+      "next_open_edge": "verified improvement proposal → isolated executable code variant → baseline/candidate comparison → independent verification → governed production-code promotion"
     }
   ],
   "protocol_version": "UAAL-TRACE-1",
