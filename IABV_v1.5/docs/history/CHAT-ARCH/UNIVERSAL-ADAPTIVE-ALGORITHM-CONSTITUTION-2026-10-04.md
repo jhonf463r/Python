@@ -327,3 +327,19 @@ This constitution is the **conceptual parent authority**, not a routing command.
 Historical records remain evidence/history.
 
 END OF CONSTITUTION
+
+## 20A. CAPABILITY PRESERVATION / SPARSE ACTIVATION
+
+Universal adaptation must preserve:
+`capability repertoire != active working set`.
+
+The algorithm should not remove capabilities merely because they are not currently selected. Instead:
+`broad capability inventory → context-conditioned activation → governed candidate selection → action`.
+
+Selection is a current-use decision, not a permanent statement about value or future necessity.
+
+Capabilities may be `AVAILABLE | DORMANT | UNAVAILABLE | UNAUTHORIZED | RESOURCE_BLOCKED | UNSUITABLE_NOW | SELECTED` without collapsing these states into one boolean capability/not-capability classification.
+
+Universal objective: **preserve optionality, minimize active complexity, maximize justified capability fit.**
+
+This is conceptual; universal runtime effectiveness is not yet proven.
