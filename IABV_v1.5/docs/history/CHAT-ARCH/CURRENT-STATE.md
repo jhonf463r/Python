@@ -3989,3 +3989,26 @@ Current first open edge:
 `fresh candidate process → bootstrap boundary → candidate tool invocation → no tool-induced refresh → live PerceptionSnapshot correlation`
 
 **NEXT ACTOR: CODEX.**
+
+
+## 2026-10-05 ACTIVE OVERLAY — UAAL-RQ07 WORLD MODEL PRODUCER/FRESHNESS SEAM
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-062-uaal-rq07-world-model-producer-reconciliation.md`
+
+RQ07 established fresh candidate runtime provenance and safe `cognitive_frame_translate` invocation, but the World Model consumed by that process was not current Windows state.
+
+Observed World Model:
+- snapshot last updated `2026-04-20`;
+- scan counters `0/0`;
+- active/focused windows empty;
+- World Model metadata pointed to `/home/ubuntu/repos/Python/IABV_v1.5`;
+- Environment Self Model identified the Windows candidate workspace.
+
+Source verification explains this: when `IABV_MCP_SUBPROCESS=1`, the MCP bootstrap constructs `WorldModelService` with `bootstrap_scan=False`, and `WorldModelService` initializes from persisted `data/evolution/world_model/latest.json`.
+
+Therefore the current open edge is **not** “WorldModel capability missing”. It is:
+`CURRENT WINDOWS ENVIRONMENT → main/live WorldModel producer → fresh persisted/current snapshot → MCP/PerceptionSnapshot`.
+
+**NEXT ACTOR: CODEX.**
+
+The next minimum experiment must verify the producer/handoff. If no current Windows snapshot exists, obtain explicit human authorization for one read-only WorldModel scan before executing it.
