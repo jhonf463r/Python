@@ -956,3 +956,5 @@ Method delta: material experiments must pass artifact/input, provenance, isolati
 
 Routing: **Codex** is the current fit for repository artifact/provenance reconciliation; **Sonnet/Claude** remains the participant only after readiness closes.
 
+
+- `CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md` — canonical routing/development record defining the first practical IABV self-code evolution inflection and capability-oriented code plasticity.
