@@ -2378,3 +2378,27 @@ Capability scope is broad and may include natural language, machine/UI language,
 
 **Anti-patch rule:** a new application or tool should first test whether the common capability mechanism can learn it; provider-specific code is justified only when the realization-specific boundary genuinely requires it.
 
+
+
+## 2026-10-05 ACTIVE PRODUCT FRONTIER — UK-IABV-AS-ASSISTANT
+
+**QUESTION:** How close is IABV to becoming the sole conversational interface through which the human requests laptop work, while IABV itself selects/consults external AIs, tools, browser sessions and applications as resources?
+
+**STATUS:** DESIGN CONFIRMED / RUNTIME S2+ NOT PROVEN.
+
+**CURRENTLY AVAILABLE:** GitHub-backed IABV coordination frame can already select a capability-fit actor and construct an evidence-bounded prompt for human transport. This is operational S1 coordination.
+
+**MISSING FOR S2:** IABV runtime must itself discover/select a governed external resource, invoke it, capture its result, reconcile that result and continue the objective loop without routine human prompt transport.
+
+**PRIORITY ORDER:**
+1. Safe live environmental observation and PerceptionSnapshot observability.
+2. Objective-conditioned capability/resource selection.
+3. One governed external-AI round trip.
+4. Dynamic multi-AI selection.
+5. Account/session/authentication capability expansion as governed resource handling.
+6. Repeated heterogeneous laptop objectives.
+7. Verified learning that changes later routing/strategy.
+
+**DO NOT EQUATE:** login capability with intelligence, provider connectivity with symbiosis, or automation volume with developmental inflection.
+
+**RELATED RECORD:** `CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md`.
