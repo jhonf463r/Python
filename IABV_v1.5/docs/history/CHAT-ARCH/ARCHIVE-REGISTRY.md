@@ -1017,3 +1017,25 @@ Account principle:
 `email != identity != account != session != credential != authorization`
 
 Do not treat login handling or any single external AI as the first architectural objective. First establish one governed real round trip, then broaden dynamic resource selection and account/session capabilities.
+
+
+## 2026-10-05 REGISTRATION — UAAL-RQ06 BOOTSTRAP / OBSERVATION BOUNDARY
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-05-061-uaal-rq06-bootstrap-observation-boundary.md`
+
+Type:
+`RECONCILIATION / METHODOLOGY / RUNTIME-EVIDENCE`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+RQ06 stopped before runtime. The canonical MCP startup path normally performs World Model / Environment Self Awareness refresh during AppBootstrap service wiring.
+
+This does not invalidate the RQ05 candidate. The next experiment must establish a post-bootstrap measurement boundary and distinguish bootstrap refreshes from tool-induced refresh.
+
+Current edge:
+`fresh candidate process → bootstrap boundary → safe observation invocation → live PerceptionSnapshot correlation`
+
+Current actor:
+**CODEX**
