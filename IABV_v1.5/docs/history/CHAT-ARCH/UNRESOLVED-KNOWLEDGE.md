@@ -2438,3 +2438,24 @@ Do not require:
 `fresh process startup → zero refreshes`.
 
 That stronger condition contradicts the existing startup contract and is not necessary for RQ05.
+
+## 2026-10-05 ACTIVE ITEM — UK-UAAL-RQ07 CURRENT WINDOWS WORLD MODEL HANDOFF
+
+**QUESTION:** Does the Windows IABV producer generate a current World Model snapshot that the MCP/PerceptionSnapshot path actually consumes?
+
+**STATUS:** OPEN.
+
+RQ07 showed:
+- candidate runtime loaded and invoked;
+- PerceptionSnapshot created;
+- same WorldModelService instance used;
+- no tool-phase refresh;
+- but World Model data was approximately 168.9 days old and identified a Linux workspace, while Environment Self Model identified Windows.
+
+Source-level cause:
+MCP subprocess deliberately starts WorldModelService with `bootstrap_scan=False` and loads persisted `latest.json`.
+
+Required next evidence:
+`Windows producer observation → fresh WorldModel → expected persistence path → MCP consumer → PerceptionSnapshot`.
+
+If no current Windows producer state is available, perform one explicitly authorized read-only scan only; do not use a synthetic fixture to close the live edge.
