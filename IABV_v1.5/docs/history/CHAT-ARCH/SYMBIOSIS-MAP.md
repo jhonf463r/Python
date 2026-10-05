@@ -1,3 +1,42 @@
+## 2026-10-05 TRANSFER — UAAL-RQ01–RQ04 / IABV CANONICAL FRAME AS INTERMEDIARY
+
+The latest collaboration sequence establishes a useful distinction between **coordination symbiosis** and **runtime causal symbiosis**.
+
+### Coordination symbiosis — operationally available
+
+For ordinary IABV development, the GitHub-backed canonical frame can already mediate between the human objective and whichever AI is capability-fit:
+
+`human objective → IABV frame → relevant knowledge/negative knowledge → verified current state → first open edge → capability-fit actor → exact task/prompt → actor result → verification → reconciliation → writeback`
+
+This reduces prompt-to-prompt historical transport and prevents each AI from independently reconstructing the project from scratch.
+
+### Runtime causal symbiosis — NOT YET PROVEN
+
+The stronger claim remains:
+
+`external AI observation → IABV runtime state change → later changed decision/action → independent verification → reusable knowledge`
+
+Nothing in RQ01–RQ04 proves that full loop.
+
+### RQ01–RQ04 technical lesson
+
+RQ02 proved, inside a controlled harness, that a change represented in `PerceptionSnapshot.world_model` can propagate to governance. RQ03/RQ04 showed that the canonical code wires WorldModel and PerceptionSnapshot structurally, but current MCP exposure cannot safely show the live-produced snapshot without risking refresh.
+
+Therefore the next collaborator must solve **observability of the existing organ**, not create another cognitive subsystem.
+
+### Prompt-generation learning
+
+The coordinator/ChatGPT must name the destination IA explicitly on every material technical prompt and derive it from:
+`capability → access → intervention cost → independence → information gain`.
+
+A prior actor's recommendation is evidence from a previous state, not authority for the next actor.
+
+### Preserve the user vision
+
+The target is not “IABV learns every application through adapters”. The target is a generic multi-channel environmental learning loop in which a new program is a new environment instance and reusable structural/causal knowledge transfers across instances.
+
+This remains a hypothesis/engineering target, not a current runtime proof.
+
 # IABV v1.5 — Cross-IA Symbiosis / Knowledge-Transfer Map
 
 ## PURPOSE
