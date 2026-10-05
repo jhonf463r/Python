@@ -2239,3 +2239,18 @@ The candidate is not yet canonical or runtime-proven. The reusable lesson is the
 `missing evidence surface → minimum observability seam → controlled runtime attribution → independent verification → promotion/rejection`.
 
 This is relevant to the larger product vision because IABV cannot autonomously select useful resources until its own environmental state and capability state are themselves sufficiently observable.
+
+## 2026-10-05 TRANSFER — RQ06 / PHASE-SEPARATED OBSERVATION
+
+Reusable methodological lesson:
+
+A runtime contains legitimate initialization behavior. An observational experiment must not erase that behavior merely to obtain a “clean” test. Instead it must establish a causal measurement boundary.
+
+Preserve:
+`startup refresh ≠ tool refresh`
+`fresh process ≠ clean observation`
+
+The correct symbiosis/evidence pattern is:
+`existing runtime behavior → phase boundary → minimum instrumentation → actor observation → reconciliation`.
+
+This prevents an experiment harness from changing the very runtime contract it is supposed to measure.
