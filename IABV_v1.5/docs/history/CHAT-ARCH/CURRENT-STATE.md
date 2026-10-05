@@ -255,6 +255,63 @@ Repeated local patches without a reusable principle are evidence to re-open the 
 
 
 
+## 2026-10-04 — IABV → CODEX APPROVAL → SAME-TASK CONTINUATION
+
+The approval-continuation audit is now reconciled.
+
+For the existing episode:
+
+`task=f7689caf-00ef-4a49-a7d4-c38e27fd6ec8`
+`result=15c940dc-65f6-4285-bf6f-1b8f02a4d5b1`
+
+Codex performed a read-only source/wiring/persistence audit. The task remains `pending`; the result remains `waiting_approval`; no human approval, launch or response is evidenced.
+
+Source reconciliation confirms that the existing approval path is session/playbook-oriented:
+
+`AdaptiveTaskOrchestrator.approve_next_phase(session_id)`
+→ `ExecutionPlaybookService.approve_next_phase(session)`
+→ approval checkpoint update
+→ session execution.
+
+The adaptive executor then builds a `ToolTask` from that session and calls `ToolTeachService.execute_task(task, approved=approved)`.
+
+The direct autonomous Codex episode instead originates at:
+
+`AutonomousEvolutionService.plan_or_execute()`
+→ `ToolTeachService.execute_external_consultation()`
+→ direct `ToolTask`
+→ `ToolApprovalPolicy`
+→ sandbox
+→ `waiting_approval`.
+
+No production consumer was found that demonstrably maps a human approval artifact to the exact direct task ID and resumes that same task.
+
+Therefore:
+
+**SAME-TASK CONTINUATION = NOT PROVEN**
+
+Classification:
+`APPROVAL MECHANISM EXISTS — TASK CONTINUATION NOT PROVEN`
+
+Do not substitute `execute_task(..., approved=True)` for human approval. That parameter changes the task's approval state inside execution and is not itself an approval artifact.
+
+### CURRENT OPEN EDGE — APPROVAL CONTINUATION
+
+`intended ownership of direct ToolTask approval continuation → existing supported consumer or confirmed missing causal seam`
+
+This is now the first open edge for the Codex-dispatch branch.
+
+Required capability:
+**repository architecture / existing-organ ownership / approval-wiring archaeology**
+
+Immediate actor:
+**Codex**
+
+No implementation is authorized yet. First determine whether the missing bridge is intentionally owned by an existing UI/session/governance organ or whether a concrete integration seam is genuinely absent.
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-051-CODEX-APPROVAL-TASK-CONTINUATION-NOT-PROVEN.md`
+
 ## 2026-10-04 — IABV → CODEX APPROVAL GATE RESULT
 
 The clean-target runtime gate is now closed.
