@@ -1679,3 +1679,18 @@ The general meta-method loop is:
 
 This amendment governs collaboration methodology. It does not claim that IABV runtime autonomously performs the loop.
 
+## 2026-10-05 ACTIVE METHOD AMENDMENT — CAPABILITY PRESERVATION / CONTEXT-GATED ACTIVATION
+
+Adaptive behavior must distinguish the capability repertoire from the currently activated set.
+
+Preserve:
+`capability inventory != active capability set`
+`selection != deletion`
+`unavailable != useless`
+`not selected != not needed`
+
+Preserve broad capability knowledge and use context, prerequisites, governance, resources, evidence and expected information gain to activate a sparse working set.
+
+The objective is not capability minimization. It is **activation minimization under capability preservation**.
+
+A realization may be dormant, unavailable, unauthorized or temporarily blocked while remaining a valid future candidate.
