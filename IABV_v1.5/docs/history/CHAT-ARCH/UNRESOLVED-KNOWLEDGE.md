@@ -2418,3 +2418,23 @@ Required next evidence:
 `fresh candidate process → tool invocation → no tool-induced refresh → live fields in PerceptionSnapshot → provenance`.
 
 Do not treat the candidate as production capability until that runtime chain is demonstrated.
+
+## 2026-10-05 ACTIVE ITEM — UK-UAAL-RQ06 BOOTSTRAP / TOOL-REFRESH ATTRIBUTION
+
+**QUESTION:** Can the RQ05 candidate be invoked in a fresh attributable MCP process while distinguishing legitimate bootstrap refreshes from refresh calls caused by the observation tool?
+
+**STATUS:** OPEN.
+
+Known:
+`AppBootstrap()` normally wires services and requests World Model / Environment Self Awareness refresh during startup.
+
+Therefore the next test must establish:
+`bootstrap complete → measurement boundary → cognitive_frame_translate → post-tool refresh accounting`.
+
+The target claim is only:
+`cognitive_frame_translate invocation → no additional request_refresh calls`.
+
+Do not require:
+`fresh process startup → zero refreshes`.
+
+That stronger condition contradicts the existing startup contract and is not necessary for RQ05.
