@@ -1039,3 +1039,29 @@ Current edge:
 
 Current actor:
 **CODEX**
+
+
+## 2026-10-05 REGISTRATION — UAAL-RQ07 WORLD MODEL PRODUCER / FRESHNESS RECONCILIATION
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-05-062-uaal-rq07-world-model-producer-reconciliation.md`
+
+Type:
+`RECONCILIATION / RUNTIME-EVIDENCE / SYMBIOSIS / METHODOLOGY`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+RQ07 established fresh candidate runtime provenance and a real handler invocation, but not current Windows environmental truth. The consumed World Model was a stale persisted snapshot with a Linux workspace path.
+
+Source-level explanation: MCP subprocess mode disables WorldModel bootstrap scanning and reuses persisted `latest.json`.
+
+Current frontier:
+`CURRENT WINDOWS ENVIRONMENT → live WorldModel producer → fresh snapshot/persistence → MCP WorldModel → PerceptionSnapshot`
+
+Current actor:
+**CODEX**
+
+This record reinforces the invariant:
+`new representation != new observation`
+and requires temporal/provenance validation before closing live environmental perception.
