@@ -255,6 +255,35 @@ Repeated local patches without a reusable principle are evidence to re-open the 
 
 
 
+## 2026-10-04 — IABV → CODEX APPROVAL BRIDGE: CASE B CONFIRMED
+
+Independent reconciliation of Codex's approval-continuation audit confirms **CASE B — EXISTING ORGAN CAN EXPRESS IT, WIRING MISSING**.
+
+A real existing `HumanApprovalBroker` supports task-descriptive `scope`, stable `request_id`, human `approve()/reject()` and post-resolution handling. It even defines `external_call_authorization` as a supported approval kind. However, no source/wiring path was found that creates a broker approval request for the direct Codex `ToolTask`, correlates its result to that task's `task_id`, and resumes that same task through `ToolTeachService.execute_task()`.
+
+Therefore the repository already contains the relevant building blocks:
+
+`HumanApprovalBroker` + `ToolRecordRepository` + `ToolTeachService`
+
+but their direct-task approval lifecycle is not composed.
+
+The closest execution owner is **ToolTeachService**, while `HumanApprovalBroker` should remain the human approval transport rather than become a new coordinator. Whether the lifecycle should be synchronous or asynchronous must be decided before implementation.
+
+### CURRENT OPEN EDGE
+
+`task-scoped human approval lifecycle contract → minimal existing-organ integration`
+
+Required capability:
+**safe approval-lifecycle design using existing organs**
+
+Immediate actor:
+**ChatGPT / synthesis-adjudication**
+
+Implementation is still **NOT AUTHORIZED**.
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-052-APPROVAL-BRIDGE-CASE-B-CONFIRMED.md`
+
 ## 2026-10-04 — IABV → CODEX APPROVAL → SAME-TASK CONTINUATION
 
 The approval-continuation audit is now reconciled.
