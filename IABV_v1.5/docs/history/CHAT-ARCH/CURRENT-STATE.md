@@ -254,6 +254,18 @@ Repeated local patches without a reusable principle are evidence to re-open the 
 
 
 
+
+## 2026-10-04 — RSK-01/CODEX DISPATCH ENVIRONMENT GATE
+
+The first IABV→Codex real-dispatch attempt stopped correctly because the available `C:/Python` checkout was at `8425f03eb45abd11951938f6e3234459c1585b55` with local modifications, while the authorized experiment target was `be97b989559cc04cebc9eb62890d6bc73e03dd7a`.
+
+Classification: `ENVIRONMENT / PROVENANCE BLOCK — TEST NOT EXECUTED`.
+
+Next edge:
+`clean isolated workspace at exact target SHA → production runtime preflight`.
+
+Canonical record:
+`CHAT-ARCH-2026-10-04-049-CODEX-WORKSPACE-GATE.md`.
 ## 2026-10-04 — IABV → CODEX REAL DISPATCH FRONTIER
 
 The source composition already contains the principal Codex route: technical diagnosis can resolve to `consult_codex`, `AutonomousEvolutionService` invokes `ToolTeachService.execute_external_consultation()`, `codex_installed` is registered through `external_assistant`, and Codex has a dedicated rollout/session capture path.
