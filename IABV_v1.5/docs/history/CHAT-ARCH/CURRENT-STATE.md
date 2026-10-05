@@ -1,3 +1,64 @@
+## 2026-10-05 ACTIVE OVERLAY — UAAL-RQ01–RQ04 / SYMBIOSIS + LIVE-PERCEPTION FRONTIER
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-058-uaal-rq01-rq04-symbiosis-reconciliation.md`
+
+**CURRENT REMOTE MAIN TIP:** `fe25f0b6169137b41bce4f5dd1f66e171e7c66b3` after this documentation writeback.  
+**CODE-BEARING EXPERIMENT BASELINE:** `e46d8304167708bed0764d3bf2be8fd6643e8944`.  
+The writeback commit adds documentation only; future technical experiments must record the exact executable/source SHA separately from the current main tip.
+
+### CURRENT UNIVERSAL OBJECTIVE
+
+IABV is intended to become the cognitive/operational layer of the laptop as one heterogeneous environment, not a collection of application-specific adapters and not merely an IABV↔Codex bridge.
+
+Target loop:
+`objective → space/time/constraints → perceive → represent → interpret → uncertainty → required capability → discover realization/channel → check access/resources/provenance → select → govern → act → observe transition → verify → update world/self model → store reusable knowledge → reuse → adapt → next decision`.
+
+A new application is an **environment instance**. Universal behavior should learn the instance from observation and experience rather than require a new semantic patch for each program.
+
+### RQ01–RQ04 RECONCILED EVIDENCE
+
+- **RQ01:** component-level sensitivity was observed in resource pressure, capability readiness, adaptive selection and fixed-rule premise sensitivity; full integrated adaptive reasoning was not proven.
+- **RQ02:** controlled method-level harness proved `permission_gate → PerceptionSnapshot → DecisionContext → governance`; route stayed `knowledge`, while governance changed from `consult_chatgpt` to `request_observation_permission`; irrelevant control did not change governance.
+- **RQ03/RQ04:** canonical code demonstrates `WorldModelService → TaskContextAssembler → PerceptionSnapshot → DecisionContext` at **LEVEL 2 structural integration**, while current MCP visibility cannot expose the runtime-produced PerceptionSnapshot without the refresh/observability problem.
+- **Current first open technical edge:** `LIVE WorldModel → LIVE PerceptionSnapshot`.
+
+### IABV AS COLLABORATIVE INTERMEDIARY — BOUNDARY
+
+For ordinary development, the **IABV canonical GitHub frame is already usable as the intermediary coordination plane**:
+
+`human objective → canonical IABV frame → relevant memory → verified state → open edge → capability-fit actor → exact prompt → result → verification → reconciliation → writeback`.
+
+This is operational/documentary intermediary behavior, not yet proof that the IABV runtime autonomously consumes an external AI observation and changes a later decision. That stronger runtime symbiosis remains open.
+
+### ACTIVE ACTOR ROUTING
+
+**Current technical actor: CODEX.**  
+Reason: the open edge is a repository/MCP/read-only runtime observability seam requiring source archaeology and minimal technical intervention.
+
+Every future technical prompt must state the destination IA explicitly, plus:
+`actor-fit reason + exact baseline + first open edge + minimum experiment + evidence contract + stop condition + returned deltas`.
+
+Do not rotate actors by message count or historical turn order.
+
+**Later independent verifier:** Sonnet/Claude, only after an attributable artifact/claim exists.  
+**Devin:** only for a concrete Windows/runtime environment blocker.  
+**ChatGPT:** synthesis, reconciliation, routing, prompt construction and writeback.  
+**Deep Research:** external scientific research, kept separate from runtime proof.
+
+### NEGATIVE KNOWLEDGE / DO NOT REPEAT
+
+Do not rerun RQ01 or RQ02 as though their method-level findings were absent. Do not treat `world_model_snapshot` as a PerceptionSnapshot. Do not pursue exact MCP PID attribution as the sole goal. Do not call CommonSense for this frontier. Do not trigger refresh merely to manufacture a cleaner observation. Do not create a new perception organ when the missing capability is safe observation of an existing one.
+
+### NEXT FRONTIER
+
+RQ05 is the safe-observation seam:
+`existing runtime WorldModel → observable existing PerceptionSnapshot`.
+
+The desired minimum change is configuration-only if possible; otherwise a reversible read-only source seam that separates:
+`read current state` from `request new observation/refresh`.
+
+Do not advance to universal-program understanding until this frontier is recomputed from fresh evidence.
+
 ## 2026-10-05 ACTIVE OVERLAY — CURRENT SELF-CODE BASELINE
 
 **Canonical correction:** `CHAT-ARCH-2026-10-05-057-current-main-baseline-reconciliation.md`
