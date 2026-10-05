@@ -1,3 +1,23 @@
+## 2026-10-05 ACTIVE OVERLAY — BASELINE AUTHORITY CORRECTED
+
+**Canonical correction:** `CHAT-ARCH-2026-10-05-056-self-code-baseline-authority-reconciliation.md`
+
+The current canonical baseline for the UAAL-D016 candidate-diff implementation is:
+
+`refs/heads/main = 1053cc446ce1514d78ae1380875270a9d6d37e17`
+
+The previously cited `9139f15cf626d5652ff497475d619143160b593c` is its direct predecessor, not the current `main` and not a separately frozen baseline.
+
+The local `C:\Python` checkout at `8425f03...` with a dirty working tree is non-authoritative.
+
+### NEXT ACTION
+
+Proceed with Codex implementation only from exact baseline `1053cc...` in an isolated worktree/copy. Preserve the current `main` untouched.
+
+The developmental frontier remains:
+
+`verified improvement proposal → isolated executable candidate diff`.
+
 ## 2026-10-05 ACTIVE OVERLAY — SELF-CODE INFLECTION: CANDIDATE DIFF SEAM CLOSED NEXT
 
 **Canonical record:** `CHAT-ARCH-2026-10-05-055-self-code-candidate-diff-reconciliation.md`
