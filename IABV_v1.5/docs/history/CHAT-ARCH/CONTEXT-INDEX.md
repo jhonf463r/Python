@@ -2130,3 +2130,20 @@ Current technical actor:
 
 Minimum next experiment:
 fresh candidate MCP process, record bootstrap separately, then measure `request_refresh` calls attributable only to the subsequent `cognitive_frame_translate` invocation and correlate its PerceptionSnapshot with the live World Model.
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ07 WORLD MODEL PRODUCER / FRESHNESS
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-062-uaal-rq07-world-model-producer-reconciliation.md`
+
+RQ07 proved candidate runtime loading and no tool-phase refresh, but the consumed World Model was a stale persisted snapshot from a Linux path.
+
+Current frontier:
+`CURRENT WINDOWS ENVIRONMENT → WorldModel producer → fresh snapshot/persistence → MCP WorldModel → PerceptionSnapshot`
+
+Required capability:
+`Windows runtime producer/freshness provenance + WorldModel persistence/handoff verification`
+
+Do not treat this as a missing perception architecture. Do not create another WorldModel.
+
+The next actor is **CODEX**. Prefer first a read-only inspection of the current producer/persistence state. If no fresh Windows snapshot exists, the minimum discriminating runtime test requires one explicitly authorized read-only scan.
