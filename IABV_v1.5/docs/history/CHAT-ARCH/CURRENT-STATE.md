@@ -3971,3 +3971,21 @@ The correct developmental question is not “teach Codex first” as a permanent
 
 Current technical frontier remains:
 `LIVE WorldModel → LIVE PerceptionSnapshot`.
+
+## 2026-10-05 ACTIVE OVERLAY — UAAL-RQ06 BOOTSTRAP / OBSERVATION BOUNDARY
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-061-uaal-rq06-bootstrap-observation-boundary.md`
+
+RQ06 stopped before runtime because normal MCP startup constructs `AppBootstrap` with service wiring enabled, and that existing startup contract requests World Model / Environment Self Awareness refresh during `role_router_ready`.
+
+This does **not** invalidate the RQ05 candidate. It changes the experiment boundary.
+
+The required distinction is:
+`bootstrap refresh phase` ≠ `safe observation tool phase`.
+
+The next experiment must permit normal bootstrap behavior, mark a post-bootstrap measurement boundary, then invoke the candidate `cognitive_frame_translate` and determine whether the tool invocation itself adds refresh requests.
+
+Current first open edge:
+`fresh candidate process → bootstrap boundary → candidate tool invocation → no tool-induced refresh → live PerceptionSnapshot correlation`
+
+**NEXT ACTOR: CODEX.**
