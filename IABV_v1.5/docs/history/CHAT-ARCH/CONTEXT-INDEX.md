@@ -2108,3 +2108,25 @@ Current actor:
 **CODEX**
 
 After runtime candidate verification, recompute whether an independent Sonnet audit is required before any production incorporation.
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ06 PHASE-SEPARATED RUNTIME ATTRIBUTION
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-061-uaal-rq06-bootstrap-observation-boundary.md`
+
+RQ06 identified that normal MCP bootstrap itself requests World Model / Environment Self Awareness refresh. The correct experiment therefore does not attempt to make startup globally side-effect-free.
+
+Required phase separation:
+`startup/bootstrap evidence`
+→
+`post-bootstrap baseline`
+→
+`safe observation invocation`
+→
+`post-tool evidence`.
+
+Current technical actor:
+**CODEX**
+
+Minimum next experiment:
+fresh candidate MCP process, record bootstrap separately, then measure `request_refresh` calls attributable only to the subsequent `cognitive_frame_translate` invocation and correlate its PerceptionSnapshot with the live World Model.
