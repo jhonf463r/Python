@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "concept_root_id": "UAAL-ROOT-001",
-  "updated_at": "2026-10-04",
+  "updated_at": "2026-10-05",
   "authority": {
     "conceptual": "docs/history/CHAT-ARCH/UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md",
     "routing": "docs/history/CHAT-ARCH/CURRENT-STATE.md",
@@ -189,6 +189,22 @@
         "UNIVERSAL-EXPERIMENTAL-REALITY-LOOP-2026-09-26.md"
       ],
       "next_open_edge": "observation → normalized capability/affordance representation → safe reusable capability"
+    },
+    {
+      "id": "UAAL-D014",
+      "parent": "UAAL-D008",
+      "type": "DESIGN",
+      "origin_type": "HUMAN_CLARIFICATION_AND_PROJECT_SYNTHESIS",
+      "status": "DESIGN_METHOD_EFFECTIVENESS_NOT_RUNTIME_PROVEN",
+      "title": "Meta-Method Plasticity / Failure-to-Evolution Loop",
+      "source_records": [
+        "CHAT-ARCH-2026-10-05-053-meta-method-plasticity-rsk01-readiness-reconciliation.md",
+        "MEMORY-OPERATING-PROTOCOL.md",
+        "SYMBIOSIS-MAP.md"
+      ],
+      "derivation_reason": "Verified collaboration failures should improve the method used to investigate, verify, route and experiment, not merely produce local patches.",
+      "universal_invariant": "failure → classification → causal boundary → competing explanations → reusable method candidate → counterexample → verification → promotion/rejection → later reuse",
+      "next_open_edge": "later contextual consumption of a verified method delta → changed future investigation/routing behavior"
     }
   ],
   "protocol_version": "UAAL-TRACE-1",
