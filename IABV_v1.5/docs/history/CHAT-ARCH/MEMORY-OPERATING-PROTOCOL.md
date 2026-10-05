@@ -1,3 +1,22 @@
+
+## 2026-10-05 METHOD AMENDMENT — SELF-CODE EVOLUTION / CAPABILITY-ORIENTED PLASTICITY
+
+When the developmental objective is IABV evolution of its own code, route through the smallest existing composition that can close:
+
+`verified deficit → required capability → existing-organ archaeology → minimal code-evolution hypothesis → isolated variant → baseline/candidate validation → independent verification → governed promotion/rejection/rollback → capability/method/relation/routing delta → later reuse`.
+
+Do not treat a proposal, sandbox result or PR description as proof of code evolution.
+
+Prefer capability-oriented evolution over file-oriented growth. A successful change may:
+`ACQUIRE | REFINE | COMPOSE | CONSOLIDATE | SPECIALIZE | GENERALIZE | SUPERSEDE | ROLLBACK`.
+
+Preserve the broad capability repertoire while minimizing the active working set. Never delete capability knowledge merely because the current objective does not need it.
+
+For every self-code evolution candidate, preserve at minimum:
+`objective + deficit + required capability + existing owner(s) + baseline SHA + candidate diff + tests + runtime evidence + independent verification + promotion decision + rollback path`.
+
+The first developmental inflection is achieved by a bounded closed loop from observed deficit to auditable incorporated code change; stronger developmental plasticity requires later non-identical reuse that changes a future development decision.
+
 # IABV v1.5 — Operational Memory Protocol
 
 ## PURPOSE
