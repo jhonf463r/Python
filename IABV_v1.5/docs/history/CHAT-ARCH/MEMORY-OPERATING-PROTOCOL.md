@@ -1658,3 +1658,24 @@ user interaction/result
 ```
 
 Current status remains **NOT PROVEN** for autonomous cross-chat activation, autonomous external-result ingestion, causal GitHub-memory consumption by runtime, or coordination reduction caused by persistent learned state.
+
+## 2026-10-05 ACTIVE METHOD AMENDMENT — META-METHOD PLASTICITY
+
+A material experiment must pass an explicit readiness gate before actor execution:
+
+`experiment contract → artifact/input readiness → target/provenance → isolation/blinding → oracle/verification readiness → actor execution`.
+
+Do not use the participant or implementation actor as a substitute for experiment-contract validation.
+
+When a failure or irregularity occurs, distinguish:
+
+`observed failure → interpretation → causal explanation → reusable method`.
+
+Only the observed failure is immediate evidence. A new methodological rule requires a causal/generalization argument and should be challenged with counterexamples before promotion.
+
+The general meta-method loop is:
+
+`failure → classification → causal boundary → competing explanations → minimum discriminating action → method candidate → counterexample/regression → independent verification → promote/reject → later reuse`.
+
+This amendment governs collaboration methodology. It does not claim that IABV runtime autonomously performs the loop.
+
