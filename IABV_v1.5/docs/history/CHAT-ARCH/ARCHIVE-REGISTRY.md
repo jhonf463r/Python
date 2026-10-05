@@ -988,3 +988,32 @@ Related future independent verification:
 
 This record supersedes no historical evidence; it reconciles it into the current routing frame.
 
+
+
+## 2026-10-05 REGISTRATION — IABV AS LAPTOP MIND / SINGLE USER INTERFACE / AGENT INTERMEDIARY
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md`
+
+Type:
+`STRATEGIC_SYNTHESIS / PRODUCT_VISION / SYMBIOSIS / ROUTING`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+Purpose:
+Preserve the primary product vision that the human should interact primarily with IABV, while ChatGPT, Codex, Claude, Devin, Ollama and other tools are resources/channels selected by IABV from objective, uncertainty, capability, access, authorization and resource constraints.
+
+Maturity:
+`S1 IABV-frame-assisted coordination = operational`
+`S2 IABV-mediated runtime delegation = NOT PROVEN`
+`S3 dynamic multi-AI collaboration = NOT PROVEN`
+`S4 verified delegated learning/reduced coordination = NOT PROVEN`
+
+Current technical frontier:
+`LIVE WorldModel → LIVE PerceptionSnapshot`
+
+Account principle:
+`email != identity != account != session != credential != authorization`
+
+Do not treat login handling or any single external AI as the first architectural objective. First establish one governed real round trip, then broaden dynamic resource selection and account/session capabilities.
