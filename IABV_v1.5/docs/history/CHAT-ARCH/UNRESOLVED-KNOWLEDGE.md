@@ -1,3 +1,27 @@
+## 2026-10-05 ACTIVE FRONTIER — UK-UAAL-RQ04 — LIVE PERCEPTION OBSERVABILITY
+
+**QUESTION:** Can IABV expose the `PerceptionSnapshot` actually produced from the live World Model, read-only, without triggering a new environment observation?
+
+**CURRENT STATUS:** OPEN / PARTIALLY_CLOSED.
+
+**WHY IMPORTANT:** RQ02 has already proven that a controlled PerceptionSnapshot difference can alter governance. The remaining uncertainty is whether the same perceptual representation is populated from the live World Model in runtime.
+
+**KNOWN STATE:**
+- canonical code structurally connects WorldModelService → TaskContextAssembler → PerceptionSnapshot → DecisionContext;
+- `world_model_snapshot(refresh=False)` exposes current stored World Model state but not the PerceptionSnapshot;
+- `cognitive_frame_translate` and `orchestrator_preview` exist in canonical source but are not currently exposed in the observed MCP surface;
+- the perceptual assembler may request refresh, so blindly invoking it is not an acceptable read-only experiment.
+
+**REQUIRED CAPABILITY:**
+`safe runtime observation of existing PerceptionSnapshot without refresh`.
+
+**MINIMUM DISCRIMINATING ACTION:**
+First determine whether configuration-only exposure is sufficient. Otherwise introduce only the minimum reversible read-only seam that separates `read current state` from `request new observation`.
+
+**STOP CONDITION:** If observation requires a refresh/scan, stop rather than converting the continuity experiment into a desktop-perception experiment.
+
+**RELATED RECORD:** `CHAT-ARCH-2026-10-05-058-uaal-rq01-rq04-symbiosis-reconciliation.md`.
+
 # IABV v1.5 — Unresolved / Latent Knowledge Register
 
 ## PURPOSE
