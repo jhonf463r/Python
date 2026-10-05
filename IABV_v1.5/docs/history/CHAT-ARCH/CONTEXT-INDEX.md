@@ -2090,3 +2090,21 @@ For account/login objectives preserve:
 `email != identity != account != session != credential != authorization`.
 
 Prefer governed reuse of already-authenticated sessions where appropriate rather than passing secrets through external-AI prompts.
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ05 SAFE PERCEPTION OBSERVATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-060-uaal-rq05-candidate-observation-seam-reconciliation.md`
+
+RQ05 converted the missing runtime observability capability into a tested candidate source seam:
+`build_perception_snapshot(refresh=False) → existing PerceptionSnapshot without requesting refresh`.
+
+This is **candidate implementation evidence**, not canonical production evidence.
+
+Current technical frontier:
+`candidate checkout → fresh attributed MCP process → safe invocation → live WorldModel/PerceptionSnapshot correlation`
+
+Current actor:
+**CODEX**
+
+After runtime candidate verification, recompute whether an independent Sonnet audit is required before any production incorporation.
