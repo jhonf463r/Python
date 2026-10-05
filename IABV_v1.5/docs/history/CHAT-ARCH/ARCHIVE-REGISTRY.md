@@ -960,3 +960,5 @@ Routing: **Codex** is the current fit for repository artifact/provenance reconci
 - `CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md` — canonical routing/development record defining the first practical IABV self-code evolution inflection and capability-oriented code plasticity.
 
 - `CHAT-ARCH-2026-10-05-055-self-code-candidate-diff-reconciliation.md` — canonical reconciliation of the first open self-code evolution edge: proposal → isolated candidate diff, with Codex implementation routing.
+
+- `CHAT-ARCH-2026-10-05-056-self-code-baseline-authority-reconciliation.md` — correction establishing current remote `main` as the self-code candidate baseline; `9139...` is historical predecessor.
