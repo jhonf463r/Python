@@ -2254,3 +2254,22 @@ The correct symbiosis/evidence pattern is:
 `existing runtime behavior → phase boundary → minimum instrumentation → actor observation → reconciliation`.
 
 This prevents an experiment harness from changing the very runtime contract it is supposed to measure.
+
+## 2026-10-05 TRANSFER — RQ07 / PRODUCER-FRESHNESS AS A FIRST-CLASS EVIDENCE EDGE
+
+RQ07 adds a reusable invariant for the IABV intermediary model:
+
+`consumer receives a current-looking object` does not prove `producer observed current reality`.
+
+The correct chain is:
+`producer provenance → observation freshness → persistence/handoff → consumer identity → representation`.
+
+Also preserve:
+`same service instance != current environmental truth`
+`new snapshot object != new environmental observation`
+`persisted snapshot != current snapshot`.
+
+For IABV as the laptop mind, environmental memory must carry enough temporal/provenance semantics to distinguish:
+`current observation`, `recent observation`, `stale observation`, and `foreign/inconsistent observation`.
+
+This is now part of the reusable symbiosis method.
