@@ -1,3 +1,54 @@
+## 2026-10-05 ACTIVE ROUTING — UAAL-RQ01–RQ04 + IABV INTERMEDIARY FRAME
+
+Canonical reconciliation:
+`CHAT-ARCH-2026-10-05-058-uaal-rq01-rq04-symbiosis-reconciliation.md`
+
+Activate this record whenever the objective involves:
+- universal adaptive algorithm / laptop-as-one-environment;
+- PerceptionSnapshot / WorldModel integration;
+- environmental understanding of unfamiliar programs;
+- cross-IA symbiosis;
+- prompt/actor routing from the IABV coordinator frame;
+- current RQ01–RQ05 frontier.
+
+### Current domain frontier
+
+`LIVE WorldModel → LIVE PerceptionSnapshot`
+
+RQ01 established only component-level sensitivity.  
+RQ02 established method-level causal propagation from controlled perception input to governance.  
+RQ03/RQ04 established Level 2 structural wiring but not runtime attribution of the produced PerceptionSnapshot.
+
+### Retrieval rule for future chats
+
+Before generating a technical prompt for this frontier, activate:
+1. `CURRENT-STATE.md`
+2. `MEMORY-OPERATING-PROTOCOL.md`
+3. `SYMBIOSIS-MAP.md`
+4. this RQ01–RQ04 reconciliation
+5. the latest exact GitHub baseline and runtime provenance.
+
+Then compute:
+`objective → exact state/provenance → relevant history → closed edges → first open edge → required capability → actor-fit → minimum experiment → expected evidence → prompt → observation → verification → writeback`.
+
+### Explicit AI destination rule
+
+Every generated technical prompt must name its destination actor in the first section:
+`TARGET ACTOR / IA`.
+
+It must also state why that actor is capability-fit. Actor selection is not a rotation mechanism and must not be inherited from a previous prompt.
+
+### Universal-program interpretation track
+
+For unfamiliar software, retrieve the universal-instance model:
+`new program → raw observation → normalized structure → semantic hypotheses → affordances → uncertainty → information-gain exploration → action → state transition → verification → instance/pattern/causal/capability/meta memory → future reuse`.
+
+This is a developmental target, not an end-to-end verified capability.
+
+### Symbiosis boundary
+
+The GitHub-backed IABV frame is already a practical collaboration intermediary for ordinary work. Runtime evidence that an external AI observation is ingested by IABV and changes a later decision remains unproven and must not be implied by documentation continuity alone.
+
 # IABV v1.5 — CHAT-ARCH Context Index
 
 ## FUNCTION
