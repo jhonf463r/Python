@@ -2057,3 +2057,36 @@ Do not route automatically to RSK-01. RSK-01 remains a secondary continuity expe
 
 Intended developmental sequence:
 `assist development → close isolated self-code loop → causal developmental plasticity → capability compounding/consolidation → progressively self-directed development`.
+
+
+## 2026-10-05 ACTIVE PRODUCT ROUTING — HUMAN ↔ IABV AS PRIMARY INTERFACE
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md`
+
+Activate this record whenever the objective concerns:
+- IABV as the user's primary laptop assistant;
+- using desktop applications/programs through IABV;
+- IABV choosing or consulting ChatGPT/Codex/Claude/Devin/Ollama;
+- automatic delegation or round trip;
+- browser/application account/session use;
+- authentication/authorization/resource selection;
+- universal laptop environmental agency.
+
+Core product relation:
+`HUMAN ↔ IABV`
+
+External AIs are resources, not fixed pipeline stages.
+
+Before selecting a specific AI, compute:
+`objective → uncertainty → required capability → candidate resources/channels → access/authorization/constraints → actor/resource fit → minimum intervention`.
+
+Current maturity:
+`S1 frame-assisted coordination available; S2 autonomous/runtime-mediated delegation not proven; S3 dynamic multi-AI selection not proven; S4 causal learned collaboration not proven`.
+
+Do not route to a specific provider merely because it was used in the previous turn.
+
+For account/login objectives preserve:
+`email != identity != account != session != credential != authorization`.
+
+Prefer governed reuse of already-authenticated sessions where appropriate rather than passing secrets through external-AI prompts.
