@@ -343,3 +343,30 @@ Capabilities may be `AVAILABLE | DORMANT | UNAVAILABLE | UNAUTHORIZED | RESOURCE
 Universal objective: **preserve optionality, minimize active complexity, maximize justified capability fit.**
 
 This is conceptual; universal runtime effectiveness is not yet proven.
+
+
+## 20C. DEVELOPMENTAL INFLECTION — GOVERNED SELF-CODE EVOLUTION / CAPABILITY-ORIENTED CODE PLASTICITY
+
+### UAAL-D016
+
+The first practical developmental inflection is reached when IABV can participate directly in the evolution of its own code through a bounded, reversible, evidence-driven loop:
+
+`verified deficit → required capability → existing-organ archaeology → minimal code-evolution hypothesis → isolated variant → baseline/candidate test → runtime observation → independent verification → governed promotion/rejection/rollback → capability/method/relation/routing delta → later contextual reuse`.
+
+The object of evolution is the **capability system**, not raw code volume.
+
+Therefore preserve:
+
+`capability repertoire != active working set`
+
+and allow:
+
+`ACQUIRE → REFINE → COMPOSE → CONSOLIDATE → SPECIALIZE → GENERALIZE → SUPERSEDE → ROLLBACK`.
+
+A new capability does not necessarily require a new service. An evolution may instead improve an existing organ, compose existing organs, consolidate equivalent realizations, specialize a realization by context, or generalize a verified local lesson into a reusable contract.
+
+The first inflection does **not** require unrestricted autonomous mutation of production code. It requires a closed enough bridge that an IABV-observed problem can become a tested, auditable, reversible code candidate and that successful candidates can be incorporated under governance.
+
+The strongest developmental evidence begins only when a later non-identical objective measurably changes because a prior verified development state was reused.
+
+Nonclaims remain unchanged: this does not establish consciousness, sentience, open-ended evolution or human-equivalent general intelligence.
