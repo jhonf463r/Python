@@ -1,3 +1,73 @@
+## 2026-10-05 ACTIVE OVERLAY — FIRST DEVELOPMENTAL INFLECTION: IABV HELPING EVOLVE ITS OWN CODE
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md`
+
+### PRODUCT PRIORITY
+
+The near-term goal is to reach the first practical inflection where IABV can materially help evolve its own code, rather than merely report problems or generate improvement proposals.
+
+Target:
+`observed deficit → required capability → existing-organ archaeology → minimal code evolution → isolated variant → test/baseline comparison → independent verification → governed incorporation → reusable capability/method delta → later reuse`
+
+This is **IABV-assisted self-development first**. Unrestricted autonomous self-modification is not the target.
+
+### CURRENT SUBSTRATE — ALREADY PRESENT
+
+Source archaeology confirms relevant existing organs for:
+- self-examination / OSES;
+- evolution review and improvement backlog;
+- adaptive feedback;
+- ExperimentLab;
+- ExperimentRecommendation / ToolEvolutionProposal;
+- AutonomousValidationCycle;
+- SandboxExperimentService;
+- Codex task/context/test-spec generation;
+- governed proposal execution;
+- Git synchronization;
+- portable developmental context;
+- evidence/provenance and regression tracking.
+
+Do not create a generic new evolution brain unless an explicit contract cannot be expressed or closed by these existing organs.
+
+### FIRST OPEN CAUSAL EDGE
+
+`verified improvement proposal → isolated executable code variant → baseline/candidate comparison → independent verification → governed production-code promotion`
+
+The repository already contains proposal/validation infrastructure and a promotion-PR mechanism, but the promotion mechanism currently represents evidence/documentation publication rather than proof of autonomous production-code modification.
+
+Therefore:
+`proposal ≠ code evolution`
+`sandbox validation ≠ production incorporation`
+`promotion artifact ≠ self-development`
+
+### CODE PLASTICITY PRINCIPLE
+
+IABV should evolve **capabilities**, not simply accumulate code.
+
+`capability repertoire != active working set`
+
+Candidate transformations:
+`ACQUIRE → REFINE → COMPOSE → CONSOLIDATE → SPECIALIZE → GENERALIZE → SUPERSEDE → ROLLBACK`
+
+A dormant, blocked or currently unnecessary capability remains preserved for future activation.
+
+### DEVELOPMENTAL GATES
+
+1. **Assisted self-development:** IABV diagnoses and packages a bounded code change for implementation and verification.
+2. **Closed isolated evolution:** IABV can create a reversible candidate, test it against baseline and choose keep/reject under governance.
+3. **Causal developmental plasticity:** later code-development decisions measurably change because of verified prior experience.
+4. **Capability compounding:** related capabilities can be composed/consolidated/generalized without capability loss.
+5. **Progressively self-directed development:** new objectives can trigger capability discovery and governed creation with less routine human coordination.
+
+### ROUTING AUTHORITY FOR THIS DEVELOPMENTAL OBJECTIVE
+
+Use capability-fit routing for the **self-code evolution seam**, not the historical RSK-01 participant route. RSK-01 remains a secondary continuity experiment unless it directly changes this contract.
+
+### STOP / NONCLAIM
+
+Do not claim consciousness, open-ended evolution or autonomous self-development until the corresponding causal evidence exists.
+
+
 ## 2026-10-05 ACTIVE OVERLAY — RSK-01 ARTIFACT / ORACLE READINESS RECONCILIATION
 
 Canonical record:
