@@ -1,3 +1,22 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 IMPORT READINESS FAILURE
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-104-rq13-import-readiness-failure.md`
+
+Type:
+`RECONCILIATION / EXECUTION-READINESS / RUNTIME-NOT-OBSERVED / SYMBIOSIS`
+
+State:
+`HARNESS IMPORT READINESS FAILURE / TARGET NOT ENTERED`
+
+Finding:
+Harness `60EC734D...` passed provenance but `C:\\Users\\faber\\miniconda3\\python.exe` could not resolve `iabv_v15.bootstrap` from the execution environment.
+
+Current routing:
+`correct import-path construction → self-test → new SHA → fresh authorization → bounded RQ13 runtime`.
+
+No target evidence or learning evidence was produced.
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 SOURCE WORKTREE TARGET-PATH ATTRIBUTABLE
 
 Canonical record:
