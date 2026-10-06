@@ -1,3 +1,18 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-075-uaal-rq13-portable-context-preconditioning-reconciliation.md`
+
+Sonnet/Claude independently confirmed the stale portable-context blocker and identified an existing preconditioning mechanism: MCP `portable_context_get(refresh=True)`.
+
+The next minimum edge is now runtime, not another general static audit:
+
+`portable_context_get(refresh=True) → capture package identity/site/objective/fingerprint → construct matching conversational request → verify no rebuild during P0 construction`.
+
+The preconditioning is an explicit experimental precondition, not normal untouched headless lifecycle state. A fresh authorization must explicitly cover that preconditioning and the subsequent single `handle_request`.
+
+**NEXT ACTOR: CODEX.**
+
+Do not claim P0 is natural from untouched state. The eventual experiment must disclose the preconditioning and verify whether the request reuses the package rather than rebuilding because of `_goal_shifted`.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-074-uaal-rq13-portable-context-precondition-reconciliation.md`
