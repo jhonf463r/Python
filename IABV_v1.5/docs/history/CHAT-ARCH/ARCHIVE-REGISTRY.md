@@ -1,4 +1,16 @@
-## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-108
+## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-109
+
+Registered:
+`CHAT-ARCH-2026-10-06-109-rq13-no-safe-boundary-authorization-decision.md`
+
+Material delta:
+- no supported safe boundary was found on exact baseline `e46d830...`;
+- current authorization correctly blocks runtime because bootstrap may transitively execute provider health checks;
+- technical boundary search is closed;
+- no production bypass is justified;
+- current routing is human authorization adjudication followed by CODEX runtime only if the transitive effect set is explicitly accepted.
+
+`CURRENT-STATE.md` remains the routing authority.## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-108
 
 Registered canonical episode:
 `CHAT-ARCH-2026-10-06-108-rq13-provider-health-authorization-boundary.md`
