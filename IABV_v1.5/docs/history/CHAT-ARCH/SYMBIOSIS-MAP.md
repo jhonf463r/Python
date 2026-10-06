@@ -1,3 +1,19 @@
+## 2026-10-06 TRANSFER — UAAL-RQ13 INDEPENDENT AUDIT → BOUNDED RUNTIME EXPERIMENT
+
+Sonnet/Claude added independent challenge and narrowed the Codex block.
+
+The collaboration chain now demonstrates:
+`Codex primary archaeology → Sonnet/Claude adversarial audit → ChatGPT reconciliation → Codex bounded runtime intervention`.
+
+New method distinction:
+a conditional external-comparison path can be bypassable by an existing baseline intent condition, while the absence of a production stop hook remains a separate control-boundary problem.
+
+Therefore the next experiment must prove both:
+`comparison avoided`
+and
+`safe stop before record`.
+
+No architecture change or new cognitive organ is justified.
 ## 2026-10-06 TRANSFER — UAAL-RQ13 BLOCK → INDEPENDENT ADVERSARIAL AUDIT
 
 RQ13 adds a collaboration routing lesson:
