@@ -1,3 +1,16 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION → P0 READINESS
+
+**STATUS:** READY FOR BOUNDED RUNTIME / NOT AUTHORIZED.
+
+**QUESTION:** Can the existing `portable_context_get(refresh=True)` precondition a fresh portable package whose `site_id` and `active_objective_id` can be reused in a real conversational request, so that `current_package()` returns the cached package during P0 construction instead of rebuilding?
+
+**MINIMUM ACTION:** one authorized preconditioning call; capture returned package identity and persisted fingerprint; build a matching request using the discovered objective/site state; verify cache hit/no package rebuild; only then proceed to the already-defined P0/DC reconstruction stop.
+
+**IMPORTANT:** preconditioning is an explicit experimental input. It changes persistent runtime state and must be recorded separately.
+
+**NEXT ACTOR:** CODEX.
+
+**DO NOT** treat freshness alone as sufficient; `_goal_shifted` remains a second rebuild trigger.
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 PORTABLE-CONTEXT READINESS
 
 **STATUS:** BLOCKED / RUNTIME-INPUT PRECONDITION GATE.
