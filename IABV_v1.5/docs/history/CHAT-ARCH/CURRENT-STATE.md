@@ -342,8 +342,20 @@ Evidence-oriented fresh-chat continuity evaluation: determine whether relevant i
 ### WHY THIS IA NOW — RSK-01 ONLY
 The repository-level indexing gap identified in 043 is now closed. The remaining uncertainty is operational continuity: whether a genuinely fresh AI can activate the consolidated longitudinal memory and reconstruct the current decision frame without human history transport. Sonnet/Claude is used as the blind experimental participant; this restriction does not apply to ordinary IABV collaboration.
 
-### NEXT ACTION — RSK-01
-Freeze one canonical participant corpus against the current target and identical TASK.txt. Before each participant run, disable Claude's documented past-chat search/reference feature where available and ensure the conversation is outside any project workspace carrying IABV project knowledge/instructions. Then run two independent genuinely new Sonnet/Claude conversations with the same corpus and task. Compare claim-level reconstructions against the existing sealed activation oracle, first excluding any stale/ineligible oracle claims. Do not interpret reproducibility as proof of internal activation, source-specific dependence or causal reuse.
+### NEXT ACTION — RSK-01 — SUPERSEDED / PARKED
+The historical two-participant execution instruction is non-routable until the RSK-01 readiness gate is closed.
+
+Before any Sonnet/Claude participant execution, reconcile:
+current main → canonical participant corpus + exact TASK → original oracle identity/access → corpus/oracle alignment → isolation/blinding readiness → eligible participant.
+
+Current evidence does not authorize participant execution merely because a historical transcript proposes a second eligible participant.
+Historical participant labels and historical NEXT ACTOR fields are evidence/history, not current routing authority.
+
+The specific S1/S2 interpretation reported in transcript reconciliation record
+`CHAT-ARCH-2026-10-05-064-rsk01-chat-reconciliation-eligibility-oracle.md`
+is not independently promoted here as current participant evidence.
+
+The current technical route remains governed by the newer active overlays and must be recalculated from the top of CURRENT-STATE.md.
 
 ### CROSS-AI ROLE
 ChatGPT = reconciliation/adjudication/synthesis/writeback; Codex = repository and composition archaeology / difficult technical seam; Sonnet = independent forensic challenge; Devin = Windows/runtime fallback when a concrete environment capability requires it; external AIs and local models are resources selected by capability-fit.
