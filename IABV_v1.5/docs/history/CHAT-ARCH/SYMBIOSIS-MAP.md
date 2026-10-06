@@ -2290,6 +2290,24 @@ For IABV as the laptop mind, environmental memory must carry enough temporal/pro
 This is now part of the reusable symbiosis method.
 
 
+## 2026-10-06 TRANSFER — RQ09 / PRODUCER-PERSISTENCE CLOSURE + MCP IDENTITY BOUNDARY
+
+RQ09 verified a fresh authorized Windows observation and exact producer-to-persistence correlation.
+
+Reusable invariant:
+`current observation → attributable producer → persisted snapshot` can be closed without proving downstream consumption.
+
+New negative:
+`fresh persisted snapshot != guaranteed MCP-consumed snapshot`.
+`fresh MCP process != preserved producer snapshot`.
+
+Future handoff measurement must preserve identity across every boundary:
+`producer snapshot ID → persisted snapshot ID → MCP in-memory WorldModel ID → PerceptionSnapshot identity/provenance`.
+
+Bootstrap is part of the causal measurement boundary; startup refresh must be separated from tool-induced refresh rather than suppressed.
+
+Current frontier remains the MCP handoff. Codex remains actor-fit because the open uncertainty is exact repository/runtime attribution. No independent verifier is warranted yet.
+
 ## 2026-10-05 TRANSFER — RQ08 / PRODUCER AUTHORIZATION AS A GOVERNED OBSERVATION
 
 RQ08 reinforces that observation itself is a governed operation when it mutates IABV-owned persisted state.
