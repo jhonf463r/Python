@@ -1,3 +1,13 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP STALL UNLOCALIZED
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-090-uaal-rq13-bootstrap-stall-unlocalized.md`.
+- Baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- Latest executed harness SHA: `CDDEA79069BB4D90F84BD01AE3269AC1500E6E4471FABEC29AEA4B8F585588A8`.
+- Runtime entered AppBootstrap and reached `phase_tools_adapters_done`, but bootstrap completion was not observed.
+- Ollama timeout is classified as bootstrap-induced provider-health observation, **not** proven main-thread stall cause.
+- **First open edge:** `phase_tools_adapters_done → exact main-thread bootstrap stall location → AppBootstrap completion`.
+- **Next actor:** CODEX.
+- Next intervention: external-harness stack/progress watchdog only; new SHA and fresh authorization required.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PROVIDER HEALTH BOOTSTRAP AUTHORIZATION BOUNDARY
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-089-uaal-rq13-provider-health-bootstrap-boundary.md`.
