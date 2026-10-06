@@ -1,3 +1,18 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 AUTHORIZED STABILIZATION HARNESS GAP
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-087-uaal-rq13-authorized-stabilization-harness-gap.md`
+
+Human authorization was explicit for baseline bootstrap observation effects plus post-bootstrap stabilization using existing `EnvironmentSelfAwarenessService.stop()` and `WorldModelService.stop()`, followed by one `current_package(refresh=True)`.
+
+CODEX correctly did not execute because the authorized harness SHA `C8DACA7DC0E9E21C63455FA29BA6DB75D579730D101ADDE55340A4933912D14C` does not implement that newly authorized stabilization sequence.
+
+**CLASSIFICATION:** `BLOCKED / AUTHORIZED-CONTRACT-NOT-IMPLEMENTED`.
+
+**CURRENT FIRST OPEN EDGE:** `authorized experiment contract → corrected/self-tested harness artifact → fresh authorization naming new harness SHA`.
+
+**NEXT ACTOR: CODEX.**
+
+No runtime evidence was produced. The old SHA must not be reused after harness modification.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP OBSERVATION AUTHORIZATION BOUNDARY
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-086-uaal-rq13-bootstrap-observation-authorization-boundary.md`
