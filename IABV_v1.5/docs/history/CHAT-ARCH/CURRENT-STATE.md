@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 STATIC BLOCK / INDEPENDENT AUDIT
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-072-uaal-rq13-static-block-reconciliation.md`
+
+RQ13 Phase 1 is **BLOCKED** for runtime.
+
+Codex established that `orchestrator_preview` stops at the pre-governance DecisionContext and does not exercise the normal post-governance reconstruction. The normal `handle_request` path reaches reconstruction but may cross `_parallel_ia_comparison` and later `TaskOutcomeRecorder.record`/persistence boundaries.
+
+**CURRENT FIRST OPEN ACTIONABLE EDGE:**
+`existing baseline configuration/state → prove _parallel_ia_comparison can be disabled → prove a stop boundary immediately after post-governance reconstruction and before out-of-scope execution/persistence`.
+
+**NEXT ACTOR: SONNET/CLAUDE**, independent adversarial source audit.
+
+This is a capability-fit reroute: Codex supplied primary archaeology; the remaining uncertainty is whether the reported block is genuinely unavoidable or can be narrowed using existing baseline conditions.
+
+No RQ13 runtime authorization exists.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ12 RUNTIME RECONCILIATION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-071-uaal-rq12-runtime-reconciliation.md`
