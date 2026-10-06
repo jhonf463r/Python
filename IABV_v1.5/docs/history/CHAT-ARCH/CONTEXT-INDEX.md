@@ -1,3 +1,12 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-074-uaal-rq13-portable-context-precondition-reconciliation.md`
+- RQ12: baseline MCP → PerceptionSnapshot closed/attributable.
+- RQ13 DecisionContext reconstruction remains open.
+- Immediate blocker: stale portable-context runtime input can cause synchronous persistence before P0.
+- First actionable edge: safe existing preconditioning/lifecycle path for portable context.
+- Next actor: SONNET/CLAUDE for independent source audit.
+- No runtime preconditioning or `handle_request` execution authorized by this routing.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOUNDED RUNTIME EXPERIMENT
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-073-uaal-rq13-sonnet-static-adversarial-reconciliation.md`
