@@ -1,3 +1,25 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ10 POST-TRANSLATION DECISION-CONTEXT HANDOFF
+
+**QUESTION:** After a live MCP invocation constructs a `PerceptionSnapshot` containing a `DecisionContext`, can the existing downstream orchestrator consumer receive and expose that DecisionContext with attributable live WorldModel evidence?
+
+**CURRENT STATUS:** OPEN.
+
+RQ10 closes the previous immediate frontier of live MCP → PerceptionSnapshot observation, but not the downstream consumer edge.
+
+**KNOWN:** At `e46d830...`, `TaskContextAssembler.build_perception_snapshot` constructs `DecisionContext` inside the PerceptionSnapshot; `AdaptiveTaskOrchestrator.build_decision_context_preview` returns that embedded DecisionContext; MCP `orchestrator_preview` exposes this preview path without executing the selected route.
+
+**LIMIT:** RQ10 observed a monitor-generated replacement snapshot `fa38...`; it does not prove that the original RQ09 producer snapshot `4917...` was preserved unchanged.
+
+**REQUIRED CAPABILITY:** runtime correlation of the existing PerceptionSnapshot/DecisionContext path with the existing downstream preview consumer.
+
+**MINIMUM DISCRIMINATING ACTION:** one fresh candidate MCP `orchestrator_preview` invocation, capturing pre/post snapshot identity, refresh events, returned DecisionContext, correlated WorldModel evidence and proof that no external route executes.
+
+**AUTHORIZATION:** fresh runtime authorization is required because the underlying assembler may request a WorldModel refresh/write.
+
+**STOP:** first identity discontinuity or any indication that the preview path performs external execution or an unexpected mutation.
+
+**RELATED:** `CHAT-ARCH-2026-10-06-066-uaal-rq10-mcp-perception-reconciliation.md`.
+
 ## 2026-10-05 ACTIVE FRONTIER — UK-UAAL-RQ04 — LIVE PERCEPTION OBSERVABILITY
 
 **QUESTION:** Can IABV expose the `PerceptionSnapshot` actually produced from the live World Model, read-only, without triggering a new environment observation?
