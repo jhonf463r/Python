@@ -1,3 +1,14 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 POST-TARGET REPORTING FAILURE
+
+- Canonical record: `CHAT-ARCH-2026-10-06-100-rq13-post-target-reporting-failure.md`.
+- One authorized run of harness `50779B1D...` entered runtime and reached `bootstrap_init_done`.
+- PCS/AppBootstrap ObjectiveRepository identity equivalence was observed: same repository object; same storage object.
+- The run failed after the target boundary while emitting `LATEST_ACTIVE_TRACE` because of an `event` keyword collision.
+- **First open edge:** read-only recovery of artifacts produced by that exact run; no target rerun.
+- **Next actor:** CODEX, forensic artifact inspection only.
+- `current_package(refresh=True)` is strongly indicated as invoked once; exact package evidence remains uncaptured.
+- No new learning evidence.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 HARNESS PATH CORRECTION READY
 
 - Canonical record: `CHAT-ARCH-2026-10-06-099-rq13-harness-path-correction-ready.md`.
