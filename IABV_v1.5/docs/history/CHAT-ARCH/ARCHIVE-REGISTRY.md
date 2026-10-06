@@ -1,3 +1,22 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 PERSISTED PACKAGE SOURCE CORRELATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-101-rq13-persisted-package-source-correlation.md`
+
+Type:
+`RECONCILIATION / PERSISTED-ARTIFACT-RECOVERY / SOURCE-CORRELATION / SYMBIOSIS`
+
+State:
+`PERSISTED PACKAGE RECOVERED / RETURNED PACKAGE NOT DIRECTLY CAPTURED`
+
+Finding:
+Package `d3efa58a-7dd1-44e4-9302-055e3be8e510` was recovered from the PID `26220` run with active objective `f8b087e1-c1fe-477a-80e9-faaaedb61740`. Source inspection establishes package persistence followed by return of the same in-memory package object, but the runtime return was not serialized.
+
+Current routing:
+`external harness reporting correction → self-test → new SHA → fresh authorization → bounded new RQ13 runtime`.
+
+No learning evidence was produced.
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 TARGET REACHED ONCE / POST-TARGET REPORTING FAILURE
 
 Canonical record:
