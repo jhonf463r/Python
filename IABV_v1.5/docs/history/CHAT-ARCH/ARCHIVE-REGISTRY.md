@@ -1089,3 +1089,14 @@ Next actor:
 Next experiment:
 one explicitly authorized read-only light World Model scan, then producer→persistence→fresh MCP→PerceptionSnapshot correlation.
 
+
+## 2026-10-05 REGISTRATION — RSK-01 CHAT RECONCILIATION / ELIGIBILITY + ORACLE
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-064-rsk01-chat-reconciliation-eligibility-oracle.md`
+
+Type: `RECONCILIATION / EVIDENCE DISCIPLINE / META-METHOD / RSK-01`
+
+State: `CANONICAL SOURCE / HISTORICAL TRANSCRIPT RECONCILED AGAINST CURRENT MAIN`
+
+Material delta: participant status is gated by eligibility/artifact evidence; oracle validity requires original identity/access, integrity and corpus alignment; historical NEXT ACTION is not routable without promotion in CURRENT-STATE.
