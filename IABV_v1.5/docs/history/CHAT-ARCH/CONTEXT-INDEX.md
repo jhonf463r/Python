@@ -1,3 +1,24 @@
+## 2026-10-06 ACTIVE ROUTING — UAAL-RQ10 PROVENANCE CORRECTION
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-067-uaal-rq10-provenance-correction.md`
+
+Activate for objectives involving:
+- attribution of runtime evidence to an exact Git SHA;
+- dirty/clean worktree provenance;
+- candidate overlays;
+- RQ05/RQ10 runtime evidence reconciliation;
+- deciding whether reported MCP observations can be promoted to baseline truth.
+
+### Current domain frontier
+
+`RQ10 runtime process → exact executable artifact / exact worktree diff → attribution`
+
+### Current actor
+
+**CODEX** — capability-fit for direct worktree diff/session-artifact provenance archaeology.
+
+Do not route to Sonnet yet; independent forensic adjudication is premature while the primary executable artifact itself is unresolved.
 ## 2026-10-06 ROUTING REFINEMENT — RQ10 DECISION-CONTEXT LINEAGE
 
 The current frontier is now narrower than the generic `PerceptionSnapshot → DecisionContext` relation. The DecisionContext is constructed inside the PerceptionSnapshot, while the normal AdaptiveTaskOrchestrator later reconstructs a DecisionContext during `_refresh_session_metadata()` and replaces the snapshot's DecisionContext before persisting session metadata.
