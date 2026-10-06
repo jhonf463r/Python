@@ -1,3 +1,12 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT ATTRIBUTION UNRESOLVED
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-085-uaal-rq13-portable-context-alignment-not-adjudicable.md`.
+- Controlled TASK: `f8b087e1-c1fe-477a-80e9-faaaedb61740`; persistence already verified.
+- `current_package(refresh=True)` returned/persisted package `29268456-8e69-4ec0-b9ae-40ee2ea0ff07` with empty `active_objective_id`.
+- Baseline `ObjectiveRepository` uses fresh AppDatabase connections; `PortableContextService._latest_objective()` swallows exceptions as `None`.
+- **First actionable edge:** transparently observe ObjectiveRepository.latest_active success/failure inside current_package, then attribute `active_objective_id`.
+- No downstream P0/DecisionContext execution follows yet.
+- Next actor: CODEX.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 CONTROLLED TASK ESTABLISHED
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-084-uaal-rq13-controlled-task-precondition-closed.md`.
