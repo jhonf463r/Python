@@ -1,3 +1,29 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 NO EXISTING SAFE BOUNDARY / AUTHORIZATION DECISION OPEN
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-109-rq13-no-safe-boundary-authorization-decision.md`
+
+CODEX completed the requested read-only source/control-flow audit against exact baseline tree `e46d8304167708bed0764d3bf2be8fd6643e8944` and reports **NO EXISTING SAFE BOUNDARY** that both preserves ordinary AppBootstrap/service construction and guarantees exclusion of provider health checks while keeping the RQ13 target reachable.
+
+Baseline causal path:
+`AppBootstrap._wire_services() → EnvironmentSelfAwarenessService.request_refresh(role_router_ready, full=False) → provider-health path when no usable cached payload exists → LocalRoleRouter.health_snapshot() → _parallel_health_checks() → provider/embedding health_check()`.
+
+`_defer_services`, `IABV_MCP_SUBPROCESS`, `IABV_DEFER_TOOL_PROBE`, `PYTEST_CURRENT_TEST` and the existing health cache do not provide a supported production boundary satisfying the required constraints. The later full deferred refresh can also reach provider health.
+
+**CLASSIFICATION:** `NO EXISTING SAFE BOUNDARY / RQ13 RUNTIME BLOCKED BY AUTHORIZATION SCOPE`.
+
+No runtime was executed, no IABV import occurred, no provider health request occurred, and no files were modified in the audit.
+
+This closes the technical search for a safe bypass. It does **not** authorize altering production semantics to manufacture one.
+
+**CURRENT FIRST OPEN EDGE:** `human decision on narrowly expanded bootstrap authorization → fresh authorization naming exact harness SHA plus allowed transitive effects → one bounded RQ13 runtime`.
+
+The coherent authorization scope should cover only unavoidable baseline bootstrap/environment observation effects required to reach RQ13, including provider health checks induced by those scans and their local observational/persistence effects, while continuing to prohibit provider inference/generation, user-task execution, MCP provider execution, external-assistant/Devin tasks, TASK/objective mutation, P0/DecisionContext downstream execution, unrelated work, and any additional target calls beyond the explicit single `current_package(refresh=True)` / `latest_active()` measurements.
+
+**IA DESTINO:** HUMAN AUTHORIZATION → CODEX  
+**CAPABILITY:** authorization adjudication first; then Windows/runtime execution under the exact contract.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PROVIDER HEALTH AUTHORIZATION BOUNDARY / RUNTIME NOT ENTERED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-108-rq13-provider-health-authorization-boundary.md`
