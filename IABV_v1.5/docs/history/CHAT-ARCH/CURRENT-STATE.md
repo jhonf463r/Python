@@ -4012,3 +4012,23 @@ Therefore the current open edge is **not** “WorldModel capability missing”. 
 **NEXT ACTOR: CODEX.**
 
 The next minimum experiment must verify the producer/handoff. If no current Windows snapshot exists, obtain explicit human authorization for one read-only WorldModel scan before executing it.
+
+
+## 2026-10-05 ACTIVE OVERLAY — UAAL-RQ08 PRODUCER AUTHORIZATION BOUNDARY
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-063-uaal-rq08-producer-authorization-reconciliation.md`
+
+RQ08 correctly stopped before scanning: no fresh Windows producer was attributable to the candidate workspace and the required explicit authorization was not granted.
+
+New verified state:
+- candidate persisted World Model is foreign/staged (Linux metadata, `2026-04-20` timestamp);
+- the older `rsk-01a5` MCP snapshot is Windows-rooted but stale and its writer is unattributed;
+- canonical `C:\Python\IABV_v1.5` snapshot is also stale relative to the default light interval;
+- no current attributable Windows producer was established.
+
+Therefore the current first open edge is narrowed to:
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer`.
+
+The next experiment remains **CODEX**, but only after explicit human authorization for one read-only light World Model scan. No scan should be executed without that authorization.
+
+Do not move to MCP handoff, PerceptionSnapshot closure, Sonnet audit or external-AI delegation until this producer edge is closed or precisely failed.

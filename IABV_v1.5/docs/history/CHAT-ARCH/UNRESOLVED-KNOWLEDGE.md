@@ -2459,3 +2459,17 @@ Required next evidence:
 `Windows producer observation → fresh WorldModel → expected persistence path → MCP consumer → PerceptionSnapshot`.
 
 If no current Windows producer state is available, perform one explicitly authorized read-only scan only; do not use a synthetic fixture to close the live edge.
+
+
+## 2026-10-05 ACTIVE ITEM — UK-UAAL-RQ08 CURRENT WINDOWS PRODUCER ATTRIBUTION
+
+**QUESTION:** Can a current Windows World Model snapshot be produced, persisted and attributed to the candidate workspace so that the MCP/PerceptionSnapshot path can consume the exact observation?
+
+**STATUS:** OPEN / AUTHORIZATION-GATED.
+
+RQ08 found no fresh candidate Windows producer snapshot. The candidate persisted artifact is foreign/staged; other Windows-rooted snapshots are stale or writer-unattributed.
+
+Required next evidence:
+`authorized read-only producer scan → fresh snapshot → persistence attribution → fresh MCP consumer → PerceptionSnapshot correlation`.
+
+No scan without explicit authorization. No architectural bypass.

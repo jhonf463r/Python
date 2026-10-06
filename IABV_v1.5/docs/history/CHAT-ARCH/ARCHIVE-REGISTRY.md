@@ -1065,3 +1065,27 @@ Current actor:
 This record reinforces the invariant:
 `new representation != new observation`
 and requires temporal/provenance validation before closing live environmental perception.
+
+
+## 2026-10-05 REGISTRATION — UAAL-RQ08 WORLD MODEL PRODUCER / AUTHORIZATION RECONCILIATION
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-05-063-uaal-rq08-producer-authorization-reconciliation.md`
+
+Type:
+`RECONCILIATION / RUNTIME-EVIDENCE / GOVERNANCE / SYMBIOSIS / METHODOLOGY`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES`
+
+RQ08 stopped correctly before scanning because no fresh Windows producer was attributable to the candidate workspace and explicit authorization was absent.
+
+Current frontier:
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer`
+
+Next actor:
+**CODEX**
+
+Next experiment:
+one explicitly authorized read-only light World Model scan, then producer→persistence→fresh MCP→PerceptionSnapshot correlation.
+

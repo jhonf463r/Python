@@ -2273,3 +2273,18 @@ For IABV as the laptop mind, environmental memory must carry enough temporal/pro
 `current observation`, `recent observation`, `stale observation`, and `foreign/inconsistent observation`.
 
 This is now part of the reusable symbiosis method.
+
+
+## 2026-10-05 TRANSFER — RQ08 / PRODUCER AUTHORIZATION AS A GOVERNED OBSERVATION
+
+RQ08 reinforces that observation itself is a governed operation when it mutates IABV-owned persisted state.
+
+Reusable sequence:
+`inspect → classify freshness/provenance → authorization gate → minimum observation → persistence verification → consumer correlation`.
+
+Do not confuse a missing fresh artifact with permission to manufacture one. The human authorization boundary is part of the experiment contract, not an implementation nuisance.
+
+The producer relation remains open:
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → persisted snapshot → MCP → PerceptionSnapshot`.
+
+Runtime symbiosis remains unproven beyond S1 frame-assisted coordination.

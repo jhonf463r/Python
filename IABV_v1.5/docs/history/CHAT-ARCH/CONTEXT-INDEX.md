@@ -2147,3 +2147,23 @@ Required capability:
 Do not treat this as a missing perception architecture. Do not create another WorldModel.
 
 The next actor is **CODEX**. Prefer first a read-only inspection of the current producer/persistence state. If no fresh Windows snapshot exists, the minimum discriminating runtime test requires one explicitly authorized read-only scan.
+
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ08 PRODUCER AUTHORIZATION / CURRENT WINDOWS STATE
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-063-uaal-rq08-producer-authorization-reconciliation.md`
+
+RQ08 did not execute a scan because no fresh candidate Windows producer snapshot existed and authorization was absent.
+
+Current first open edge:
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer`
+
+Current actor:
+**CODEX**
+
+Minimum next experiment:
+one explicitly authorized read-only light World Model scan, followed by producer→persisted snapshot→fresh MCP→PerceptionSnapshot correlation.
+
+Method invariant:
+`producer capability exists != producer currently operating != producer attributable to consumer snapshot`.
