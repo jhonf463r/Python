@@ -1,3 +1,21 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PROVIDER HEALTH BOOTSTRAP BOUNDARY
+
+RQ13 reconciles the aborted runtime correctly:
+
+`Ollama health check timeout != provider task inference`.
+
+The baseline EnvironmentSelfAwareness scan can invoke `LocalRoleRouter.health_snapshot()`, which can invoke `OllamaExpertProvider.health_check()`. Thus provider health observation is part of the bootstrap/environment observation surface.
+
+New distinction:
+`bootstrap-induced provider health probe != provider inference/execution`.
+
+New authorization rule:
+Allow only provider health checks causally induced by baseline bootstrap/environment scans. Do not generalize this permission to `answer_user`, `infer_task`, user-task inference, MCP provider calls, or downstream provider execution.
+
+The previous authorization was therefore conservatively ambiguous; the Codex stop was correct.
+
+No runtime target evidence was produced.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 STABILIZATION HARNESS READY
 
 The RQ13 external harness now realizes the previously authorized stabilization intervention and passes isolated self-tests.
