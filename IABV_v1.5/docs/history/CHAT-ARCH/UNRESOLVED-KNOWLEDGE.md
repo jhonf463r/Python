@@ -1,3 +1,17 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 HARNESS EVIDENCE-CONTRACT READINESS
+
+**STATUS:** BLOCKED / RUNTIME NOT AUTHORIZED.
+
+**QUESTION:** Does the external RQ13 harness implement the complete authorized evidence contract for PCS/ObjectiveRepository/latest_active/package alignment?
+
+**RESULT:** NO. Codex found the current harness lacks the required persisted-package fingerprint and its legacy runtime route includes excluded service-stop/oracle behavior.
+
+**FIRST OPEN EDGE:** `authorized experiment contract → compliant harness artifact → harness self-test`.
+
+**MINIMUM ACTION:** CODEX may modify only the external harness, add the persisted-package fingerprint, remove/isolate excluded legacy paths without weakening the contract, self-test the complete route, and return a new SHA-256. No IABV runtime is authorized until a fresh human authorization names that new SHA.
+
+**UNIVERSAL ALIGNMENT:** this is measurement readiness only; it does not advance claims about learning, reuse or autonomous coordination.
+
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 RETURN TO CONTEXT/DECISION CAUSAL SEAM
 
 **STATUS:** READY FOR FRESH AUTHORIZATION / RUNTIME NOT AUTHORIZED.
