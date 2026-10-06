@@ -1,3 +1,13 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP COMPLETION / FRONTIER RETURN
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-093-uaal-rq13-bootstrap-completion-frontier-return.md`.
+- Baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- Harness: `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C`.
+- AppBootstrap completed in one bounded diagnostic run; `wire_services_done` and `APPBOOTSTRAP_COMPLETED` were observed.
+- Prior `ollama list` non-return was not reproduced and is no longer the first routing edge unless it recurs/blocking.
+- **First open edge:** `completed bootstrap → runtime PCS/ObjectiveRepository identity → transparent latest_active attribution → package alignment`.
+- **Next actor:** HUMAN AUTHORIZATION → CODEX.
+- Preserve the larger causal target: pre-governance perception/context → governed decision → later experience/learning; RQ13 is an enabling seam, not the final objective.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP STALL LOCATION IDENTIFIED
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-092-uaal-rq13-bootstrap-stall-location-identified.md`.
