@@ -1,3 +1,31 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 RETURN TO CONTEXT/DECISION CAUSAL SEAM
+
+**STATUS:** READY FOR FRESH AUTHORIZATION / RUNTIME NOT AUTHORIZED.
+
+**QUESTION:** After canonical AppBootstrap completes, can the existing runtime expose an attributable PortableContextService/ObjectiveRepository identity and a portable package whose objective/site metadata can be correlated into the subsequent decision path?
+
+**WHY THIS EDGE MATTERS:** RQ13 is not the final learning objective. It is an enabling test of the universal chain
+`perception/context → governance/decision`.
+The higher-order target remains
+`verified experience → reusable knowledge → future decision/behavior change`.
+
+**KNOWN:**
+- executable baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`;
+- bounded AppBootstrap completion is now observed;
+- the earlier `ollama list` non-return remains unresolved but was not reproduced in the latest run;
+- previous RQ13 package observation returned a persisted package but left `active_objective_id` unattributed/unresolved;
+- controlled TASK `f8b087e1-c1fe-477a-80e9-faaaedb61740` was explicitly experimental state, not natural lifecycle state.
+
+**FIRST OPEN CAUSAL EDGE:**
+`completed bootstrap → runtime PCS/ObjectiveRepository identity → transparent latest_active success/failure → package objective/site attribution`.
+
+**MINIMUM ACTION:** one fresh bounded CODEX runtime observation using the external harness. Complete AppBootstrap once; capture the runtime identities; perform exactly one `current_package(refresh=True)`; transparently record `latest_active()` success/failure/result; capture package ID/site/objective and persisted fingerprint; stop before P0, MCP provider execution, TASK mutation, `handle_request`, DecisionContext reconstruction.
+
+**DO NOT:** reopen Ollama diagnostics unless that path recurs or blocks this edge.
+
+**DOWNSTREAM:** once attribution/alignment closes, move to the existing live `PerceptionSnapshot/DecisionContext → normal orchestrator reconstruction → governed decision` seam. Do not replace it with a new architecture.
+
+**NEXT ACTOR:** HUMAN AUTHORIZATION → CODEX.
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 SUBPROCESS NON-RETURN AFTER STALL LOCALIZATION
 
 **STATUS:** READY FOR FRESH AUTHORIZATION / RUNTIME NOT AUTHORIZED.
