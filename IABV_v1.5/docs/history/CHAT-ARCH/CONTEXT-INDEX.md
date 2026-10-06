@@ -1,4 +1,17 @@
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PRECONDITION / GOAL ALIGNMENT
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-079-uaal-rq13-precondition-harness-and-goal-alignment.md`.
+- Artifact readiness: closed.
+- Correct execution CWD/source provenance: closed for the latest run.
+- Bootstrap → `POST_BOOTSTRAP_BOUNDARY`: closed.
+- One portable-context refresh occurred, but harness-blocked environmental probes contaminate that precondition.
+- Returned package `97da7e6d-0f13-4478-98a3-5946ca15ccda` had empty `active_objective_id`; request alignment therefore failed.
+- Baseline source shows MCP refresh has no `task_context` parameter and may derive only a tentative session title when no active ObjectiveNode exists.
+- **First actionable edge:** independently determine whether an existing baseline path can yield auditable site/objective alignment without production modification or another blind runtime refresh.
+- **Next actor:** SONNET/CLAUDE.
+- No runtime authorization granted by this routing.
+
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 WRONG-CWD RUNTIME STOP
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-078-uaal-rq13-wrong-cwd-stop.md`.
