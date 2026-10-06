@@ -1,3 +1,19 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PRECONDITION CONTRACT NARROWING
+
+RQ13 adds a useful distinction between **refreshability** and **alignability**:
+
+`precondition can execute != precondition yields an input aligned with the subsequent task context`.
+
+The latest runtime showed a successful call into `current_package(refresh=True)` but no usable `active_objective_id`; meanwhile the harness contaminated environmental probes during package construction.
+
+Reusable collaboration rule:
+
+`runtime result with mixed evidence → separate harness contamination → reconcile baseline contract semantics → route only the remaining uncertainty`.
+
+The current open question is specifically whether existing baseline composition can produce an auditable `site_id` + `active_objective_id` for the target request without inventing new architecture or silently mutating the experiment.
+
+This is a method/contract delta, not proof of causal learning from persistent GitHub state.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 EXECUTION-CONTEXT PROVENANCE
 
 RQ13 produced a further runtime attribution invariant:
