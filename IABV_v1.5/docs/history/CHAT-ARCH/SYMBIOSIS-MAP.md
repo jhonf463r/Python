@@ -2376,3 +2376,42 @@ The producer relation remains open:
 `CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → persisted snapshot → MCP → PerceptionSnapshot`.
 
 Runtime symbiosis remains unproven beyond S1 frame-assisted coordination.
+
+
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ11 READINESS + ARTIFACT PROVENANCE
+
+RQ11 strengthens the collaborative control-plane method without creating a new organ.
+
+### New reusable transfer
+
+A capability-fit actor is not automatically an executable intervention. Material work requires:
+
+`capability-fit + execution preconditions + evidence contract = valid intervention`
+
+For runtime experiments, the readiness chain is now operationally explicit:
+
+`experiment contract → artifact/input readiness → target/provenance → isolation/blinding → oracle/verification readiness → actor execution`.
+
+### Provenance transfer
+
+When a worktree is dirty, the baseline HEAD cannot identify the executed artifact by itself:
+
+`HEAD SHA = baseline ≠ executed artifact = baseline`.
+
+The reusable attribution gate is:
+
+`runtime observation → executable fingerprint → clean/dirty state → exact diff → temporal linkage → attribution`.
+
+### Preview transfer
+
+A route can be non-executing while its preparation path mutates state. Therefore:
+
+`non-executing ≠ side-effect-free`
+
+and any preview/read-only claim must be checked against the complete call chain and persistence/refresh behavior.
+
+### Routing consequence
+
+Current UAAL RQ10/RQ11 routing remains **CODEX** because the open edge is repository/worktree/runtime provenance archaeology. No runtime authorization is implied, and no downstream DecisionContext experiment should begin until the provenance gate is resolved.
+
+Historical next-step recommendations remain evidence from their original state, not authority for the current route.
