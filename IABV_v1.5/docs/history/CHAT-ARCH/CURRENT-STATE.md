@@ -1,3 +1,22 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP COMPLETION / FRONTIER RETURN
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-093-uaal-rq13-bootstrap-completion-frontier-return.md`
+
+The latest bounded diagnostic run completed normal AppBootstrap on executable baseline `e46d830...`, reaching `phase_world_model_done`, `phase_oses_done`, `wire_services_done`, and `APPBOOTSTRAP_COMPLETED` after about 33.2 seconds.
+
+**CLASSIFICATION:** `BOOTSTRAP COMPLETED / PRIOR STALL NOT A CURRENT BLOCKER`.
+
+The previous `ollama list` stack remains a valid historical observation, but this run did not reproduce it: no Ollama process was observed and no Ollama health-timeout log appeared. Its underlying non-return mechanism remains unresolved but is now secondary unless it recurs or blocks the causal RQ13 path.
+
+**CURRENT FIRST OPEN EDGE:** `completed canonical bootstrap → runtime PortableContextService/ObjectiveRepository identity → transparent latest_active attribution → auditable portable-context package alignment`.
+
+**NEXT ACTOR: HUMAN AUTHORIZATION → CODEX.**
+
+RQ13 remains an enabling seam for the universal developmental loop:
+`objective → uncertainty → observation → representation → hypothesis → information-gain test → capability-fit actor/resource → governed action → transition → verification → model update → decision → experience → learning → reuse`.
+
+Do not turn Windows/Ollama/PowerShell/MCP behavior into the project objective. They are replaceable environmental capabilities at the boundary. Do not claim bootstrap completion, package/context existence, decision influence, or selector scoring as learning.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP STALL LOCATION IDENTIFIED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-092-uaal-rq13-bootstrap-stall-location-identified.md`
