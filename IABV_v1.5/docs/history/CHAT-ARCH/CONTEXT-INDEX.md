@@ -1,4 +1,12 @@
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 NO PRE-EXISTING OBJECTIVE
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-081-uaal-rq13-no-preexisting-objective-reconciliation.md`.
+- Artifact readiness, CWD/provenance, and bootstrap boundary are closed.
+- Runtime ObjectiveRepository inspection found zero OBJECTIVE/PROJECT/TASK rows.
+- `portable_context_get(refresh=True)` cannot carry a task/objective context, and GoalEngine creates objectives only after P0 within `handle_request`.
+- **First actionable edge:** explicitly govern whether a controlled precondition may create a real auditable active TASK/goal before P0.
+- No objective creation or runtime execution is currently authorized.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 OBJECTIVE MATERIALIZATION
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-080-uaal-rq13-objective-materialization-reconciliation.md`.
