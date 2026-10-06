@@ -1,3 +1,11 @@
+# 2026-10-06 LATEST MEMORY ABSORPTION POINTER — CHAT-ARCH-2026-10-06-094
+
+- Source: `Se ha pegado el markdown(20261006-002329).md`, read in full (883 lines).
+- Canonical absorption: `CHAT-ARCH-2026-10-06-094-chat-full-absorption-universal-routing-reconciliation.md`.
+- Absorbed material lessons: evidence/artifact separation; eligibility and oracle gates; runtime artifact provenance; capability-fit plus readiness; historical NEXT ACTION non-authority; local anomaly de-prioritization; universal developmental/learning loop.
+- **Routing consequence:** no change to the current technical RQ13 frontier. The source chat's RSK-01 participant proposal remains historical candidate routing only and is not promoted.
+- Current routing authority remains `CURRENT-STATE.md`.
+
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP COMPLETION / FRONTIER RETURN
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-093-uaal-rq13-bootstrap-completion-frontier-return.md`.
