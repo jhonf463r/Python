@@ -1,3 +1,22 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP BOUNDARY CLOSED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-076-uaal-rq13-bootstrap-boundary-closed.md`
+
+RQ13 bootstrap boundary is now **CLOSED / LIVE-OBSERVED / BASELINE-ATTRIBUTABLE** on executable baseline `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+
+Verified: artifact-ready worktree `C:\temp\rq13-e46-artifact-ready\IABV_v1.5`; in-process provenance for all four relevant modules; normal synchronous bootstrap completed and emitted `POST_BOOTSTRAP_BOUNDARY` at `2026-10-06T03:46:15.577222Z`.
+
+Normal availability probes were observed: GitHub HTTP 200, Devin HTTP 200, Ollama HTTP 200, local MCP timeout. Three direct connectivity probes were blocked by the harness; therefore the persisted EnvironmentSelfModel `connected=false` result is harness-contaminated and not host truth.
+
+Bootstrap persistence occurred as authorized setup. `portable_context/latest.json` retained its pre-bootstrap fingerprint.
+
+**CURRENT FIRST OPEN EDGE:**
+`POST_BOOTSTRAP_BOUNDARY → one completed portable-context precondition → package identity/fingerprint → aligned conversational request → zero build_package during P0`.
+
+The bootstrap-only authorization is consumed. A fresh runtime authorization is required for the next experiment.
+
+Do not claim portable-context reuse, P0, DecisionContext reconstruction, governance continuity or learning from this episode.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-075-uaal-rq13-portable-context-preconditioning-reconciliation.md`
