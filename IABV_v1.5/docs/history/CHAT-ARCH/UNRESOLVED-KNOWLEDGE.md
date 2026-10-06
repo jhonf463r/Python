@@ -1,3 +1,24 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ12 CLEAN-BASELINE PROVENANCE OBSERVATION
+
+**QUESTION:** Can the canonical executable baseline `e46d830...` produce an attributable live MCP → PerceptionSnapshot observation under a clean worktree with in-process artifact fingerprints?
+
+**STATUS:** READY FOR AUTHORIZED RUNTIME / NOT YET AUTHORIZED.
+
+RQ10 is formally `MIXED/INDETERMINATE` and remains candidate/variant evidence. RQ11B found no surviving artifact that provides a cryptographic digest of the exact modules loaded by PID `21668`.
+
+**MINIMUM ACTION:** one clean baseline MCP observation with fingerprints captured inside the running process before `cognitive_frame_translate`.
+
+**REQUIRED PRECONDITIONS:** clean worktree; exact baseline SHA; no candidate overlay; explicit fresh runtime authorization; artifact/input readiness; isolation; observation/verification contract.
+
+**STOP:** do not execute until authorization exists; stop after PerceptionSnapshot identity/provenance; do not advance to downstream DecisionContext runtime testing in the same observation.
+
+**NEXT ACTOR:** CODEX.
+
+## 2026-10-06 CLOSED/ABANDONED RETROSPECTIVE EDGE — RQ10 PID 21668 EXACT LOADED-BYTES PROOF
+
+**STATUS:** bounded unresolved / no further retrospective action justified.
+
+The exact in-process module digest for PID `21668` was not captured. Existing timestamps, import paths and bytecode metadata support likely candidate-overlay execution but cannot cryptographically prove loaded bytes. Preserve `MIXED/INDETERMINATE` rather than inventing certainty.
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ11 STATIC READINESS / RQ10 ARTIFACT ATTRIBUTION
 
 **QUESTION:** Can the RQ10 runtime observation be attributed to clean executable baseline `e46d830...`, to the RQ05 candidate overlay, or to a mixed/indeterminate artifact?
