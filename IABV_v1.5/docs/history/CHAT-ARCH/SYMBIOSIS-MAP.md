@@ -1,4 +1,17 @@
-## 2026-10-06 METHOD DELTA — RQ13 TRANSITIVE AUTHORIZATION BOUNDARY
+## 2026-10-06 METHOD DELTA — RQ13 NO SAFE BOUNDARY / TRANSITIVE AUTHORIZATION
+
+RQ13 now closes the technical search for an existing supported bootstrap boundary that excludes provider health checks while preserving the ordinary service path and target reachability.
+
+Reusable method rule:
+`runtime-ready ≠ authorization-safe`;
+the authorization contract must cover transitive reachable effects of the selected lifecycle boundary.
+
+For the baseline RQ13 bootstrap, the transitive path can include environment/world-model observations and provider/embedding health checks. These are distinct from provider inference/generation and must be authorized separately from downstream task execution.
+
+Routing consequence:
+`human authorization decision on accepted bootstrap effect set → exact SHA-scoped authorization → bounded runtime`.
+
+Do not create a new production bypass solely to satisfy a narrow experiment unless architecture archaeology first demonstrates that the requested boundary cannot be achieved otherwise.## 2026-10-06 METHOD DELTA — RQ13 TRANSITIVE AUTHORIZATION BOUNDARY
 
 RQ13 exposed a reusable collaboration invariant: `normal lifecycle path ≠ authorization-safe intervention`.
 
