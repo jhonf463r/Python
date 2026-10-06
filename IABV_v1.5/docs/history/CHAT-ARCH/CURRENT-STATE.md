@@ -1,3 +1,22 @@
+## 2026-10-06 ACTIVE OVERLAY — UNIVERSAL FRONTIER RECONCILIATION / RQ13 DECISION-CONTEXT SECONDARY
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-111-universal-frontier-reconciliation.md`
+
+The latest RQ13 result closed returned-package ↔ persisted-package correspondence. The subsequent static DecisionContext audit is valid, but reconciliation against the universal algorithm shows it is a **secondary integrity frontier**, not the first open universal causal edge.
+
+Reason: `CapabilityReadinessService.evaluate(intent, context)` occurs before `_refresh_session_metadata()` and `_build_decision_context()`, and baseline `CapabilityReadinessService` does not directly consume `PerceptionSnapshot.environment_self_model` or `PerceptionSnapshot.world_model`. Therefore the earlier universal transition `live environmental/world evidence → capability/affordance representation → realization selection` remains unresolved.
+
+**CURRENT FIRST OPEN CAUSAL EDGE:** `live PerceptionSnapshot environment/world evidence → capability/affordance representation that materially affects capability or realization selection`.
+
+Sharper question: can existing capability/selection organs consume fresh environmental evidence without a new organ, and can one minimum experiment discriminate absent wiring from semantic ineffectiveness?
+
+**DecisionContext status:** `VALID SECONDARY INTEGRITY FRONTIER / NOT CURRENT FIRST UNIVERSAL CAUSAL EDGE`. Do not authorize or execute `handle_request()` merely to close this secondary seam.
+
+**IA DESTINO:** CODEX
+**CAPABILITY:** repository-wide composition archaeology focused on environmental evidence → capability/readiness → realization selection.
+**NEXT ACTION:** trace exactly where `PerceptionSnapshot.environment_self_model` / `world_model` is consumed, transformed or lost before capability/selection; no runtime, no production changes, no DecisionContext runtime substitution.
+
+Universal alignment remains: the current task is one realization-specific experiment for the parent algorithm, not a new objective. Learning status unchanged.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 RETURNED/PERSISTED PACKAGE CORRESPONDENCE CLOSED / DECISION-CONTEXT FRONTIER
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-110-rq13-returned-persisted-correspondence-closed.md`
