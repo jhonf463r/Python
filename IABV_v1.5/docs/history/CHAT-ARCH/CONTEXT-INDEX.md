@@ -1,4 +1,16 @@
-## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 AUTHORIZATION DECISION
+## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 DECISION-CONTEXT RECONSTRUCTION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-110-rq13-returned-persisted-correspondence-closed.md`
+
+RQ13 package return/persistence correspondence is now runtime-verified/closed for the authorized baseline execution.
+
+Current first open edge:
+`live PerceptionSnapshot pre-governance DecisionContext → normal adaptive orchestration reconstruction → post-governance DecisionContext / refreshed PerceptionSnapshot`.
+
+Next actor: CODEX, read-only source/control-flow and runtime-boundary audit. Do not assume `orchestrator_preview` is side-effect-free and do not run runtime yet.
+
+Current routing authority remains `CURRENT-STATE.md`.## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 AUTHORIZATION DECISION
 
 Canonical episode:
 `CHAT-ARCH-2026-10-06-109-rq13-no-safe-boundary-authorization-decision.md`
