@@ -1,3 +1,16 @@
+## 2026-10-06 TRANSFER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+
+Sonnet/Claude's independent audit narrowed the portable-context blocker to a concrete existing mechanism: `portable_context_get(refresh=True)`.
+
+New method rule:
+
+`preconditioned runtime state` must be treated as an explicit input to an experiment, not silently mistaken for untouched natural state.
+
+The minimum runtime test is:
+
+`precondition package → fingerprint persisted state → align request goal/site with package metadata → verify no rebuild → continue only if the P0 boundary is clean`.
+
+This returns control to **Codex** because the remaining uncertainty is Windows runtime behavior and exact persistence/cache correlation.
 ## 2026-10-06 TRANSFER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION GATE
 
 RQ13 exposes another reusable continuity rule:
