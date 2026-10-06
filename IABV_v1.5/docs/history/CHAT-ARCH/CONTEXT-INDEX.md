@@ -146,6 +146,12 @@ Do not assume that a human deviation is an error. Do not infer hidden motive. Ex
 
 Current status: shared field and human-visible trace are established as methodology. Automatic deviation classification, automatic trace-depth adaptation, autonomous result → context/frontier → actor/prompt reconstruction, and causal runtime reuse are NOT PROVEN.
 
+### 2026-10-05 RSK-01 CHAT RECONCILIATION / ELIGIBILITY + ORACLE
+Canonical record: `CHAT-ARCH-2026-10-05-064-rsk01-chat-reconciliation-eligibility-oracle.md`
+Status: CANONICAL RECONCILIATION / METHOD DELTA.
+Material learning: participant eligibility must be established from artifacts/provenance and execution preconditions, not labels; oracle availability requires original identity/access plus integrity and corpus alignment; historical NEXT ACTION is not current routing until promoted by CURRENT-STATE.
+Routing consequence: the transcript's proposed second eligible participant remains non-routable until the RSK-01 readiness gate closes. Current technical routing remains governed by the latest CURRENT-STATE overlays.
+
 ### RSK-01B SESSION 03 RESULT
 Blind Session 03 passed for BIO-04 knowledge reconstruction and stale-state suppression, but routing conformity is indeterminate: the session selected a local Sonnet verification route not explicitly promoted by the frozen global routing snapshot. This distinction is retained for aggregate scoring.
 
