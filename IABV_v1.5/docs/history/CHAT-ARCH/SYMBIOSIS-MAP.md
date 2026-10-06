@@ -1,3 +1,19 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 CONTROLLED TASK STATE
+
+RQ13 closes the pre-state prerequisite:
+
+`empty ObjectiveRepository → explicit controlled TASK → independent persistence verification`.
+
+Invariant:
+
+`controlled experimental TASK != natural lifecycle TASK`.
+
+Downstream frontier:
+
+`controlled active TASK → portable_context alignment → package identity/site/objective fingerprint → P0`.
+
+Exact Unicode provenance of the long requested title remains unresolved and must not be silently normalized.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS READY / STATE-BOUNDARY RETURN
 
 The harness defect is closed as an evidence-method boundary.
