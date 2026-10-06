@@ -1,3 +1,12 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 HARNESS READY
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-083-uaal-rq13-harness-readiness-reconciliation.md`.
+- External provenance harness is corrected and self-verified; runtime is still not authorized.
+- Previous separate read-only runtime observation found zero persisted OBJECTIVE/PROJECT/TASK rows at that observation time; current runtime state has not been refreshed by the harness correction.
+- **First actionable edge:** fresh runtime authorization → pre-mutation ObjectiveRepository read/provenance → controlled single TASK precondition → independent read-back.
+- Do not create a second TASK if one is found.
+- Do not execute `current_package(refresh=True)` unless fresh authorization explicitly covers it.
+- Next actor: CODEX.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 HARNESS PROVENANCE BLOCK
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-082-uaal-rq13-harness-provenance-failure-reconciliation.md`.
