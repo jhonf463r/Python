@@ -1,3 +1,16 @@
+## 2026-10-06 ADDENDUM — RQ10 SOURCE-LEVEL DECISION-CONTEXT LINEAGE
+
+Direct source inspection at executable baseline `e46d830...` narrows the open edge further.
+
+In `AdaptiveTaskOrchestrator._refresh_session_metadata()`, the orchestrator rebuilds a DecisionContext using the supplied PerceptionSnapshot, and `_refresh_perception_snapshot()` replaces the snapshot's decision_context with that reconstructed object before session metadata is persisted.
+
+Therefore the next live question is not simply whether DecisionContext exists. It is whether the evidence carried by the live PerceptionSnapshot survives this existing pre-governance → post-governance reconstruction.
+
+**REFINED FIRST OPEN EDGE:**
+`live PerceptionSnapshot pre-governance DecisionContext → existing orchestrator DecisionContext reconstruction → downstream route/governance state`.
+
+Do not use `orchestrator_preview` alone as proof of this edge; it returns the preview DecisionContext but does not exercise the normal post-governance reconstruction.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ10 MCP → PERCEPTION SNAPSHOT RECONCILIATION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-066-uaal-rq10-mcp-perception-reconciliation.md`
