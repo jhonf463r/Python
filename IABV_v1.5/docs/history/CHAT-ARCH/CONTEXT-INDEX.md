@@ -1,3 +1,13 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP STALL LOCATION IDENTIFIED
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-092-uaal-rq13-bootstrap-stall-location-identified.md`.
+- Baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- Harness SHA: `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C`.
+- Runtime directly observed MainThread in the synchronous `ollama list` subprocess path during EnvironmentSelfAwarenessService construction.
+- Progress reached `phase_tool_registry_done`; AppBootstrap completion was not observed.
+- **First open edge:** `_run_command([ollama,'list'], timeout=2s) → why subprocess.run/communicate does not return → bootstrap continuation`.
+- **Next actor:** HUMAN AUTHORIZATION → CODEX.
+- Prior diagnostic authorization is consumed.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP DIAGNOSTIC WATCHDOG READY
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-091-uaal-rq13-bootstrap-diagnostic-watchdog-ready.md`.
@@ -997,8 +1007,7 @@ Then use independent external verification when the result makes a critical clai
 For objectives involving:
 - IABV self-analysis/self-development;
 - biosofía artificial;
-- metacognition or systemic integrity;
-- actor handoff/provenance;
+- metacognition or systemic integrity;- actor handoff/provenance;
 - I0 credential seam;
 
 activate the 2026-09-21 source record:
@@ -1997,8 +2006,1459 @@ Activate for StartUI DEFER producer wiring, cross-process persistence, pending i
 
 ## 2026-10-02 META-RUNTIME-07ZJ CONTEXT INDEX
 
+| Frontier | Canonical record | State |- actor handoff/provenance;
+- I0 credential seam;
+
+activate the 2026-09-21 source record:
+`CHAT-ARCH-2026-09-21-008-metacognitive-self-use-provenance-gate.md`
+
+Then reconcile with:
+`CURRENT-STATE.md`
+`MEMORY-OPERATING-PROTOCOL.md`
+`SYMBIOSIS-MAP.md`
+`UNRESOLVED-KNOWLEDGE.md`
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+and the exact active branch/SHA.
+
+### Deep self-assessment routing
+
+Preferred first action:
+`IABV-native deep self-assessment preflight`.
+
+Required outputs:
+current truth, relevant organ map, evidence states, change surface, uncertainty classes, first open causal edge, adversarial neighboring hypothesis, smallest discriminating experiment, capability-fit routing and Knowledge Delta candidate.
+
+### Modification-handoff routing
+
+Before sending a reported implementation result to an auditor, require:
+`artifact identity → exact SHA → remote read-back → claimed content`.
+
+If the artifact is absent or unresolvable:
+`no implementation claim → no audit claim → preserve discrepancy → reacquire exact artifact`.
+
+### Current I0 M3 route
+
+For `7753ce5632370b2a03726aeff63dbcd1ac7afc42`:
+`SONNET` = next independent M3 audit.
+If M3 survives:
+`DEVIN` = real Windows/runtime phase.
+Then:
+`SONNET` = independent runtime audit.
+
+## 2026-09-21 ROUTING — I0 M3 AFTER INDEPENDENT AUDIT
+
+For the exact M3 artifact:
+`7753ce5632370b2a03726aeff63dbcd1ac7afc42`
+
+Route:
+`SONNET independent audit = completed/reported`
+→ `DEVIN controlled Windows runtime`
+→ `SONNET independent runtime audit`
+→ `ChatGPT reconciliation/writeback`.
+
+When auditing any commit, retrieve both:
+`direct parent → head`
+and
+`historical baseline → head`
+when the narrative claims continuity from an older baseline.
+
+A test-only immediate diff must not be mistaken for ancestry-wide production immutability.
+
+
+
+## 2026-09-21 ROUTING DOMAIN — BIOSOFÍA ARTIFICIAL / DEVELOPMENTAL SELF-CONSTRUCTION
+
+When an objective concerns biosofía artificial, autoconstrucción, autoevolución, digital organisms, generational learning or development acceleration, activate first:
+
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+`BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`
+`BIOSOFIA-ARTIFICIAL-DEVELOPMENTAL-AUTOPOIETIC-THESIS-2026-09-21.md`
+`SYSTEMIC-INTEGRITY-AND-CONNECTIVITY-2026-09-12.md` when cross-organ coherence is implicated.
+
+Questions to route:
+1. What developmental level is actually being tested (acquisition, recombination, development, generational evolution)?
+2. What existing IABV organs already provide the required substrate?
+3. What is the first unproven causal edge?
+4. What must be heredable and what is only runtime state?
+5. What negative controls distinguish development from automation, persistence from heredity, and adaptation from open-ended evolution?
+6. What independent verifier can validate the result?
+
+The research analogy is:
+`seed → unit → cooperation → differentiation → integration → lineage → variation → selection → next generation`
+
+but the evidence model remains:
+`idea → design → code → wired → invoked → observed → independently verified → causally proven → learned → reused`
+
+Do not treat biological analogy as evidence.
+Do not treat the existence of many IABV services as proof of organism-level organization.
+
+## 2026-09-21 GLOBAL DEVELOPMENT NORTH STAR — PRIMARY ROUTING
+
+For objectives involving biosofía artificial, autonomous development, self-analysis, scientific self-development, exponential/developmental acceleration, or reducing routine human coordination, activate first:
+
+- `00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`
+- `BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md`
+- `BIOSOFIA-METACOGNITIVE-EXECUTION-ROADMAP-2026-09-21.md`
+- `BIOSOFIA-ARTIFICIAL-DEVELOPMENTAL-AUTOPOIETIC-THESIS-2026-09-21.md`
+- `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md`
+
+The global objective is compounding verified capability while reducing routine human transport/coordination. Do not equate code volume, memory volume, number of AIs, or number of services with development.
+
+### Strategic separation
+
+- **Scientific circuit:** question → hypothesis → prediction → experiment → analysis → verification → knowledge/model update → next experiment.
+- **Symbiosis:** objective → capability-fit actor/resource → governed execution → observation → verification → learning.
+- **Development:** deficit → variation → experiment → verified new capability → governed incorporation → reuse.
+- **Evolution:** repeated variation + selection + viability + heredity/lineage.
+
+Do not collapse these tracks.
+
+### Current scientific gate
+
+The forensic snapshot `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md` identifies the first open causal edge as:
+
+`ExperimentRun / ExperimentRecommendation → downstream consumer → next hypothesis / next experiment`
+
+Before new architecture, exhaustively trace existing readers/consumers.
+
+### Development-inflection gate
+
+The target is a longitudinal decrease in routine human coordination together with increased verified reusable capability per unit of human coordination. “Exponential” remains a hypothesis until the measured series supports it.
+
+## 2026-09-21 DEVELOPMENT CONTROL TOWER ROUTING
+
+For any broad objective where several IABV tracks interact, activate:
+
+`DEVELOPMENT-CONTROL-TOWER-2026-09-21.md`
+
+It is the consolidated map of:
+- global objective/North Star;
+- proven, partial and open gates;
+- scientific/development/symbiosis tracks;
+- prioritized pending work;
+- stale-status avoidance;
+- current actor routing.
+
+Use it as the first cross-domain reconciliation layer, then drill into the specific source records.
+
+## 2026-09-21 SCIENTIFIC CAUSAL REFINEMENT — ROUTING
+
+For scientific-loop objectives, do not stop at “does Recommendation have a consumer?”.
+
+The current source already shows:
+
+`ExperimentRun → Recommendation → ToolEvolutionMonitor → Proposal → AutonomousValidationCycle → SandboxExperiment`.
+
+Route next work to the first uncertainty that remains: whether outcome differences causally alter the next proposal/experiment. Use BIO-R13 before creating new architecture.
+
+Relevant records:
+- `BIOSOFIA-SCIENTIFIC-ORGAN-FORENSIC-2026-09-21.md`
+- `DEVELOPMENT-CONTROL-TOWER-2026-09-21.md`
+- `UNRESOLVED-KNOWLEDGE.md` UK-BIO-13
+
+For the current scientific/developmental frontier, after the reader/consumer reconciliation, activate `BIO-R13-DEVIN-HANDOFF-2026-09-21.md`. This is a bounded test-only task; use Devin first, then Sonnet for independent verification.
+
+For the blocked BIO-R13 frontier, use `BIO-R14-SONNET-HANDOFF-2026-09-21.md`: identify the smallest deterministic real-code causal seam before any full harness construction. NEXT ACTOR = SONNET.
+
+
+## 2026-09-28 ROUTING OVERRIDE — BIO-UNIVERSAL R32-G AFTER SONNET AUDIT
+
+For the active BIO-UNIVERSAL-09.11 R32-G objective:
+
+Current state:
+- R32-G = **NOT PROVEN**;
+- independent Sonnet audit = completed;
+- source-level route = confirmed at technical SHA;
+- execution artifact/provenance = unresolved;
+- reported branch `bio-universal-09.11-r22b-runtime` = not remotely resolvable;
+- reported `test_r32_g_local_experience.py` = not recovered in repository history.
+
+Therefore next actor:
+**DEVIN**
+
+Required capability:
+exact Windows/runtime artifact recovery/publication or provenance-safe fresh execution.
+
+Do not route to another broad audit before an attributable artifact exists.
+Once a verifiable artifact/runtime chain exists, route to **SONNET** for independent verification.
+
+Required method:
+`objective → uncertainty → capability-fit → smallest discriminating action → execution/observation → independent verification → reconciliation → writeback`.
+
+Do not conflate:
+`source-level wiring`
+with
+`specific runtime proof`.
+
+Do not conflate:
+`metacognitive_evaluation`
+with
+`OSES finding`
+or
+`AdaptiveWeightLayer adjustment`.
+
+
+## 2026-09-28 ROUTING OVERRIDE — R32-G AFTER DEVIN FRESH EXECUTION REPORT
+
+For BIO-UNIVERSAL-09.11 R32-G:
+- Sonnet's prior forensic audit is complete.
+- Devin now reports a fresh provenance-preserved execution.
+- Independent GitHub reconciliation still cannot resolve the reported evidence branch/commit.
+- Therefore the active blocker is **remote publication/read-back**, not implementation and not another forensic interpretation pass.
+
+Next actor:
+**DEVIN**
+
+Required action:
+`publish exact evidence branch + exact commit + artifact/provenance records → remote read-back`.
+
+Only after successful remote read-back:
+**SONNET** → independent verification of the fresh execution.
+
+Do not promote R32-G to PROVEN before Sonnet's independent verification.
+
+
+
+## 2026-09-28 ROUTING OVERRIDE — R32-G REMOTE PUBLICATION CLOSED
+
+R32-G remote publication has been independently reconciled at the Git layer.
+
+Current evidence head:
+`devin/bio-universal-09-11-r32g-evidence-2026-09-28`
+@`4c56d2ca439e277c86de701e7aff9ed93a0bd89c`
+
+Baseline:
+`707388053dcc760dbcec017357f1b6001994bd57`
+
+Closed edge:
+`artifact → commit → branch → remote read-back`
+
+Still open:
+`remote-published artifact → independent runtime/production-path verification`
+
+Important artifact finding:
+the test imports `LocalRoleRouter` but does not use it and manually constructs the objects later consumed by `TaskOutcomeRecorder`. Therefore do not describe this artifact as proof of the complete `InferenceService → AdaptiveTaskOrchestrator → TaskOutcomeRecorder` productive route.
+
+Next actor: **SONNET**.
+
+Sonnet must audit the exact remote artifact without mutation, determine the maximum justified claim, and isolate the first open causal edge. The fresh runtime remains report-backed until independently reproduced/observed. Historical R32-G execution remains REPORTED_ONLY.
+
+Preserve:
+`publication proven ≠ runtime proven ≠ production-path proven`.
+
+
+## 2026-09-28 R32-G — SONNET INDEPENDENT AUDIT RECONCILIATION
+
+Sonnet's read-only audit is independently consistent with the repository evidence.
+
+### Adjudication
+
+**R32-G remains NOT PROVEN as an end-to-end production-path experiment.**
+
+The published artifact proves a narrower proposition:
+
+`real provider call → manually constructed RunRecord → direct TaskOutcomeRecorder.record() → _record_learning() → metacognitive_evaluation → persistence`
+
+It does not prove:
+
+`InferenceService → AdaptiveTaskOrchestrator.handle_request() → production RunRecord/session → finalize_with_run() → TaskOutcomeRecorder`.
+
+### Confirmed source findings
+
+At technical baseline `707388053dcc760dbcec017357f1b6001994bd57`:
+
+- `TaskOutcomeRecorder._extract_prediction()` reads `previous_recommendation.confidence` from the real top-level model field.
+- The published test put `confidence=0.8` only in `metadata` and supplied unsupported extra fields such as `success`, `objective`, `route`, and `candidate_label`; `ExperimentRecommendation` does not define those fields.
+- Consequently the test's effective `confidence` remained `0.0`, yielding predicted failure and `false_negative=true`.
+- The same logic with a real top-level `confidence=0.8` produces success prediction and calibration error `0.2`; therefore the original false negative is a test/schema construction artifact.
+- `AdaptiveWeightLayer` stores its persistence location in the private `_weights_path`; assigning `persistence_path` after construction does not isolate storage. The published test therefore cannot substantiate its claim of isolated adaptive-weight persistence.
+- The test's `duration_ms=0` and `RunStatus.SUCCESS` are manually fixed rather than derived by `InferenceService._execute()`.
+- Production session linkage/finalization and associated metadata are bypassed.
+
+### Runtime epistemic state
+
+Sonnet did not have access to the claimed Windows/Ollama runtime. Its re-execution substituted a synthetic `InferenceResult`, which successfully verifies recorder semantics but not the historical/fresh Ollama execution.
+
+Therefore:
+
+`runtime execution = REPORT-BACKED`
+
+not:
+
+`RUNTIME-PROVEN`.
+
+### Persistence boundary
+
+Persistence/reload was reproduced, but this proves data persistence only. It does not independently prove that the upstream reported runtime event produced that record.
+
+### OSES boundary
+
+The single R32-G evaluation cannot satisfy the OSES metacognitive aggregation thresholds. Do not promote it to an OSES finding or adaptive metacognitive adjustment.
+
+### Negative knowledge added
+
+- A published execution report can remain auto-attested even after artifact publication.
+- A direct lower-level invocation can reproduce a learning subgraph while bypassing the canonical production route.
+- Model/schema defaults can silently convert an intended prediction into another prediction.
+- Post-construction mutation of a similarly named public-looking attribute does not prove actual isolation when the implementation stores state elsewhere.
+- `metacognitive_evaluation` can be reproducible without carrying causal information from the external/model output.
+
+### New first open causal edge
+
+The first discriminating edge is now:
+
+`system-generated prior recommendation → full production execution → production finalization → real RunRecord → TaskOutcomeRecorder._record_learning() → valid prediction extraction → metacognitive_evaluation`
+
+The prior recommendation must be produced by IABV itself, not seeded by the test.
+
+### Routing
+
+**Next actor: DEVIN**, because the unresolved capability is now a real Windows/Ollama execution through the existing production orchestration/bootstrap path.
+
+SONNET is the independent verifier only after that evidence exists.
+
+Do not modify `_extract_prediction()` merely to make R32-G pass. First test the actual contract as implemented. A repair can be considered only if the production-generated recommendation demonstrably violates the intended contract.
+
+Do not reopen R28 or R34.
+
+
+## 2026-09-28 R32-G2 — BLOCKED BEFORE EXECUTION / ROUTING REFINED
+
+Devin did not execute R32-G2. No warm-up, no target execution, no production-path runtime observation, and no experiment artifact were produced.
+
+Important reconciliation:
+- reported `EXACT_EVIDENCE_HEAD=e8e056986` does **not** resolve remotely;
+- reported evidence branch `devin/bio-universal-09-11-r32g2-production-runtime-2026-09-28` is not present remotely;
+- therefore no R32-G2 publication/read-back edge exists to verify.
+
+R32-G2 remains **BLOCKED**, not failed and not disproven.
+
+The claim that the 4000+ line `AppBootstrap` requires whole-file analysis is too broad for the next action. Repository archaeology already shows existing production-bootstrap usage patterns:
+- `scripts/run_self_audit.py` constructs `AppBootstrap(workspace_root=...)`;
+- `tests/test_self_teach_orchestrator.py` constructs `AppBootstrap(str(workspace))` and directly calls `bootstrap.inference_service.infer_task(...)`;
+- multiple existing tests use isolated workspaces with `AppBootstrap(str(workspace))`.
+
+Therefore the first open uncertainty should be narrowed to:
+
+`smallest existing real bootstrap seam → production InferenceService → real provider → learning/finalization`
+
+rather than “understand all of AppBootstrap”.
+
+### Routing
+
+Next actor: **SONNET**.
+
+Capability required:
+- architecture archaeology of the existing bootstrap graph;
+- identify the smallest real-code production seam already exercised by repository tests;
+- determine exact construction prerequisites and isolation mechanism;
+- design the minimum discriminating R32-G2 runtime harness without implementing it.
+
+After Sonnet identifies a viable seam:
+**DEVIN** performs the real Windows/Ollama execution and provenance-preserving publication.
+Then:
+**SONNET** independently verifies the runtime evidence.
+
+No new architecture. No production modifications during the archaeology phase.
+
+
+## 2026-09-28 R32-G2A — SONNET SOURCE ARCHAEOLOGY CLOSED THE BOOTSTRAP UNCERTAINTY
+
+R32-G2A is **PROVEN at source level** as a bootstrap-seam identification, not as runtime proof.
+
+Smallest existing production seam:
+`AppBootstrap(<isolated workspace>) → bootstrap.inference_service.infer_task(request)`
+
+Verified at baseline `707388053dcc760dbcec017357f1b6001994bd57`:
+- `AppBootstrap.__init__` with default `_defer_services=False` calls `_wire_services()`;
+- `_wire_services()` constructs `ExperimentLab`, `AdaptiveWeightLayer`, `LocalRoleRouter`, `TaskOutcomeRecorder`, `AdaptiveTaskOrchestrator`, and `InferenceService`;
+- `InferenceService) receives the adaptive orchestrator;
+- `_build_ui_objects()` is not required for the inference/lifecycle path;
+- existing repository tests already use `AppBootstrap(workspace)` followed by `bootstrap.inference_service.infer_task(...)`.
+
+Important refinement: the adaptive path does not call `OllamaExpertProvider.infer_task()` directly. The local model evidence must come from the production `general_provider.answer_user()` path and the resulting `raw_output['local_chat_llm']` evidence. `RunStatus.SUCCESS` alone is insufficient to prove Ollama execution.
+
+The effective AdaptiveWeightLayer isolation is AppBootstrap's explicit workspace-derived `persistence_path`, not post-construction assignment. A fresh workspace is therefore the correct isolation boundary.
+
+R32-G2 remains **BLOCKED BEFORE EXECUTION**. The architecture blocker is narrowed to a Windows runtime experiment using the identified seam; no full 4000+ line AppBootstrap redesign/archaeology is required.
+
+Next actor by capability-fit: **DEVIN** for the real Windows/Ollama production-path execution and provenance-preserving publication.
+After publication: **SONNET** for independent runtime verification.
+
+Do not reopen R28 or R34. The separate `b3e211fb` audit remains a distinct gate.
+
+
+## 2026-09-28 ROUTING — R32-G2 PRODUCTION TIMEOUT AFTER ATTEMPT
+
+For the active BIO-UNIVERSAL-09.11 R32-G2 gate:
+
+- Current status: **BLOCKED AFTER EXECUTION ATTEMPT**;
+- isolated `AppBootstrap` construction was reported successful;
+- `InferenceService.infer_task()` and `AdaptiveTaskOrchestrator.handle_request()` were entered;
+- real Ollama `phi3:latest` exceeded the configured 30-second timeout (~54s reported);
+- no production `RunRecord`, target execution or `metacognitive_evaluation` was produced;
+- supplied branch/head remain unverified remotely.
+
+### First open causal edge
+
+`real Ollama completion under production timeout → production RunRecord → finalize_with_run() → TaskOutcomeRecorder.record() → _record_learning() → recommendation lookup → prediction → metacognitive_evaluation`
+
+### Next actor
+
+**DEVIN**
+
+Required capability: Windows/Ollama runtime execution with a bounded environment/configuration intervention.
+
+Smallest action: inventory actually installed Ollama models, select a model that completes within the current 30-second timeout, set `IABV_OLLAMA_MODEL` before `AppBootstrap`, correct UTF-8-safe reporting, and repeat the same R32-G2 production harness without manually constructing RunRecord/session/recommendation/recorder objects.
+
+After remote evidence publication and read-back: **SONNET** for independent runtime verification.
+
+Do not reopen R28, R34 or the already reconciled R32-G publication/audit edges.
+
+
+## 2026-09-28 ROUTING — R32-G2 PRODUCTION SUCCESS AWAITING INDEPENDENT VERIFICATION
+
+Current R32-G2 state:
+- remote artifact/branch/head: **VERIFIED**;
+- source call graph: **CONSISTENT**;
+- runtime success: **REPORT-BACKED**;
+- final causal status: **PENDING SONNET**.
+
+Critical verifier targets:
+1. resolve effective Ollama model identity from runtime evidence;
+2. verify exact warm-up recommendation identity and supporting ExperimentRun;
+3. verify target-side `latest_recommendation()` consumes that recommendation before `record_outcome()`;
+4. verify resulting `metacognitive_evaluation` is attached to the target ExperimentRun and reloadable;
+5. verify absence of manual/synthetic shortcuts.
+
+Do not route to implementation yet. Do not jump to OSES/AdaptiveWeightLayer before R32-G2 is independently closed.
+
+**NEXT ACTOR: SONNET.**
+
+
+## 2026-09-28 ROUTING — R32-G2 PARTIALLY PROVEN / RUNTIME ATTRIBUTION OPEN
+
+Current state:
+- Git/artifact/source path: **independently established**;
+- runtime invocation: **REPORT-BACKED**;
+- effective Ollama model: **UNKNOWN**;
+- exact recommendation consumed by target: **NOT ESTABLISHED**;
+- metacognitive evaluation derivation: **source-proven**;
+- final R32-G2 causal status: **PARTIALLY PROVEN / PENDING RUNTIME ATTRIBUTION**.
+
+Next actor: **DEVIN**.
+
+Required evidence:
+`actual Ollama model` + `target-side latest_recommendation() per subject key` + `ExperimentRun subject_key for metacognitive_evaluation` + `fresh repository-instance reload`.
+
+After publication: **SONNET** independent re-verification.
+
+Do not route to OSES/AdaptiveWeightLayer yet.
+
+    
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2
+
+### Current gate
+
+R32-G2 v2 has strong runtime evidence, but its final status is **pending independent verification** because:
+- embedded report provenance contains stale/unresolvable SHA text;
+- exact target-side recommendation consumption is inferred rather than directly recorded;
+- “persistence reload” is same-instance reread.
+
+### Required verifier
+
+**SONNET** — independent forensic verification of the v2 branch/artifact/report and these exact evidence boundaries.
+
+### Next runtime actor after verification
+
+**DEVIN** — bounded Windows runtime experiment for:
+
+`production metacognitive_evaluation`
+→ `OSES finding`
+→ `AdaptiveWeightLayer.apply_metacognitive_adjustment()`
+→ persisted adjustment
+→ controlled future scoring/decision effect.
+
+The next experiment should deliberately cross the OSES metacognitive-miscalibration threshold (>0.4 average calibration error or the false-positive/false-negative thresholds), because the successful R32-G2 v2 case (0.2992, FP=0, FN=0) does not invoke the feedback path.
+
+### Retrieval instruction
+
+When a new chat touches R32-G2, activate:
+`CURRENT-STATE.md` → `SYMBIOSIS-MAP.md` → `UNRESOLVED-KNOWLEDGE.md` → v2 attribution artifact/report → OSES/AWL source seam.
+
+Preserve these distinctions:
+`runtime-loaded model != request-level model proof`
+`pre-target persistence != direct consumption event`
+`same-instance reread != independent reload`
+`metacognitive_evaluation != OSES finding`
+`OSES finding != adaptive adjustment`
+`adaptive adjustment != future decision influence`.
+
+
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — POST-SONNET R32-G2 V2
+
+R32-G2 v2 = **PARTIALLY PROVEN** after independent forensic verification.
+
+First open runtime observation:
+`actual R32-G2 v2 ExperimentRun.metadata.worker_telemetry.worker_kind`
+
+Required actor: **DEVIN** (Windows/runtime workspace access).
+
+Action:
+- inspect the already-produced isolated v2 ExperimentRuns;
+- print only the relevant metadata keys and `worker_telemetry.worker_kind`;
+- do not rerun;
+- do not mutate production;
+- do not invent telemetry.
+
+Routing consequence:
+- telemetry present → next OSES/AWL causal runtime experiment;
+- telemetry absent → stop and escalate gate ownership/contract semantics before any implementation change.
+
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 WORKER TELEMETRY
+
+R32-G2 v2 runtime observation is report-backed:
+- three target ExperimentRuns found;
+- `worker_telemetry` exists;
+- `worker_telemetry.worker_kind` absent/empty in all three;
+- OSES task-packet `wt_total=0 < 3`.
+
+### First open contract boundary
+
+Do not add `worker_kind` to local chat yet.
+
+Activate:
+`ExternalWorkerTelemetry` → tool-adapter producers → `TaskOutcomeRecorder` propagation → OSES `_task_packet_pattern_findings()` → existing generic OSES metacognition consumers/tests.
+
+### Next actor
+
+**SONNET** — independent contract/ownership archaeology.
+
+Decision needed:
+whether local `metacognitive_evaluation` should use an existing generic OSES path, or whether task-packet metacognitive findings are intentionally external-worker-only.
+
+No implementation before this decision.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 CONTRACT CLOSED
+
+Sonnet's independent archaeology closes the contract/ownership question at source level.
+
+Canonical contract:
+- `ExternalWorkerTelemetry` + `worker_kind` = external-worker domain.
+- `metacognitive_evaluation` = generic ExperimentRun evidence.
+- `_task_packet_pattern_findings()` = task-packet/worker analysis; do not relabel local Ollama as a worker.
+- no already-existing generic OSES consumer for raw `metacognitive_evaluation` was found.
+
+Important execution gates to carry forward:
+- OSES task-packet method requires at least 5 eligible `evidence_basis` runs before returning findings.
+- metacognitive calibration needs >=3 observations and its existing error/FP/FN thresholds.
+- multiple subject-key ExperimentRuns from one execution are not automatically independent observations.
+
+### Next actor
+
+**DEVIN** — read-only Windows/runtime inventory.
+
+Required observation:
+- eligible-run total;
+- real non-empty external `worker_kind` count;
+- whether `wt_total >= 3` is reached in persisted operational data;
+- R32-G2 v2 canonical execution/run identity versus subject-key multiplicity;
+- existing OSES read-only output: `total`, `wt_total`, calibration sample size, average calibration error, FP/FN and categories.
+
+Do not rerun, mutate, inject telemetry, patch `worker_kind`, or change OSES thresholds. Publish exact evidence for remote read-back, then route to **SONNET**.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 OPERATIONAL GATE CLOSED
+
+Devin's operational inventory independently read back the persisted workspace evidence:
+- eligible OSES runs = 6, so the initial `total >= 5` gate is satisfied;
+- non-empty external `worker_kind` = 0, so `wt_total >= 3` is not satisfied;
+- the three target ExperimentRuns are multiple lanes of one execution/session.
+
+The prior contract archaeology is now operationally corroborated. Do not return to the question of inventing `worker_kind='ollama'`.
+
+### Current gate
+`generic ExperimentRun.metacognitive_evaluation → OSES generic consumer` remains open.
+
+### Next actor
+**SONNET** for a read-only implementation-contract specification of the smallest OSES change using existing organs only, preserving worker/task-packet semantics and current thresholds. No implementation. After reconciliation, route to **DEVIN** for bounded implementation/runtime proof.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 CONTRACT SPEC CORRECTION
+
+Before implementation, activate this correction:
+- Existing OSES `_metacognitive_calibration_findings(previous_review, experiment_runs)` is a different metacognitive mechanism and must remain intact.
+- New generic run-level consumer should use a distinct name such as `_experiment_run_metacognitive_findings`.
+- Do not silently collapse ExperimentRuns by linked_run_id in the minimal seam; preserve current measurement semantics and reserve independent-execution requirements for the runtime proof.
+- Treat `evidence_basis is not None` as a structural gate, not evidence-quality proof.
+- New tests must isolate AdaptiveWeightLayer persistence.
+
+### Next actor
+
+**SONNET** — delta-only correction of the implementation-contract specification. No implementation.
+
+## 2026-09-28 LIVE ROUTING OVERRIDE — R32-G2 V2 IMPLEMENTATION READY
+
+The reported `total >= 5` discrepancy is resolved as a false audit finding. Baseline source explicitly contains `_TP_MIN_RUNS = 5` and the `if total < self._TP_MIN_RUNS: return []` gate. Do not reopen this threshold question.
+
+Current implementation contract:
+- new consumer must have a distinct name from existing `_metacognitive_calibration_findings`;
+- no linked_run_id collapse in the minimal seam;
+- preserve the structural `evidence_basis is not None` predicate;
+- preserve worker semantics, existing category names and thresholds;
+- isolate AdaptiveWeightLayer persistence in tests.
+
+### Next actor
+
+**DEVIN** — bounded implementation, regression tests, and Windows/runtime proof. After implementation/publication, route to **SONNET** for independent verification.
+
+## 2026-09-28 LIVE ROUTING ADDITION — R32-G2 V2 TEST SEAM
+
+Implementation must include migration of the direct underconfidence test that currently calls `_task_packet_pattern_findings()`. Do not preserve a test expectation that the worker/task-packet method emits generic metacognitive categories after extraction.
+
+
+## 2026-09-28 — R32-G2-V2 POST-IMPLEMENTATION CONTINUITY INDEX
+
+### Canonical evidence
+
+- implementation branch: `devin/r32g2-v2-generic-metacognitive-seam-2026-09-28`
+- implementation commit: `87ae24b73964bf208b82d6b15fa7924c6dd6e7bc`
+- report/publication commit: `79bdd8ab47206e9f5a07fdc2151923f934da474a`
+- post-implementation independent verification report:
+  `IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V2-POST-IMPLEMENTATION-INDEPENDENT-VERIFICATION-RECONCILIATION-2026-09-28.md`
+
+### Retrieval rule
+
+When a new chat touches R32-G2, retrieve:
+`CURRENT-STATE → UNRESOLVED-KNOWLEDGE → SYMBIOSIS-MAP → R32-G2-V2 post-implementation verification report → implementation branch/source`.
+
+Preserve:
+`implementation commit != report commit != branch HEAD`
+`test-proven != runtime-proven`
+`metacognitive_evaluation != OSES finding`
+`OSES finding != adaptive adjustment`
+`adaptive adjustment != future decision influence`.
+
+### Active routing
+
+The implementation/contract seam is closed. **DEVIN** is next for the smallest real Windows/Ollama production-path experiment. **SONNET** follows for independent runtime verification.
+
+Do not reopen the worker-kind contract or threshold dispute. Do not rerun earlier R32-G2 v2 solely to validate this new seam.
+
+
+## 2026-09-28 — R32-G2-V3 ATTRIBUTION HOLD
+
+V3 artifact/report:
+`IABV_v1.5/R32-G2-V3-PRODUCTION-RUNTIME-DISCRIMINATING-EXPERIMENT-RESULT-2026-09-28.md`
+
+V3 branch:
+`devin/r32g2-v3-production-runtime-discriminating-2026-09-28`
+
+V3 HEAD:
+`d611eefb8eb76578a84880ed27184d32ab4248a3`
+
+Pre-Sonnet reconciliation:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V3-CHATGPT-PRE-SONNET-RECONCILIATION-2026-09-28.md`
+
+Retrieval rule for R32-G2 V3:
+activate V3 report + runtime harness + TaskOutcomeRecorder._record_learning/_extract_prediction semantics before accepting the claimed metacognitive_evaluation provenance.
+
+Current status:
+**PENDING SONNET ATTRIBUTION VERIFICATION**.
+
+Do not propagate the report's `FIRST_OPEN_CAUSAL_EDGE = adjustment → future decision influence` until a real OSES finding and AdaptiveWeightLayer adjustment have been observed.
+
+
+## 2026-09-28 — R32-G2-V3 ATTRIBUTION CORRECTION INDEX
+
+V3 source-level attribution correction:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V3-ATTRIBUTION-RECONCILIATION-2026-09-28.md`
+
+Key correction:
+V3's harness queried the nonexistent `AdaptiveSession.subject_keys` field. Actual production learning keys are computed by `TaskOutcomeRecorder._subject_keys()` and stored under `session.metadata['adaptive_learning']['subject_keys']`.
+
+Therefore:
+`reported warm-up subject_keys=[]` ≠ `observed absence of subject keys`.
+
+Current evidence boundary:
+- V3 provenance = confirmed;
+- runtime production path = report-backed/source-consistent;
+- exact recommendation identity = not independently proven;
+- threshold = naturally not crossed;
+- finding/AWL adjustment = not observed.
+
+Next open causal edge:
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+Next actor: **DEVIN** after independent source reconciliation, followed by **SONNET**.
+
+
+## 2026-09-28 — R32-G2-V3 SUBJECT-KEY ATTRIBUTION CORRECTION
+
+The decisive source reconciliation:
+- `AdaptiveSession` has no top-level `subject_keys`;
+- V3 harness therefore incorrectly observed `[]`;
+- `TaskOutcomeRecorder._subject_keys()` computes the real learning keys;
+- those keys are recorded under `session.metadata['adaptive_learning']['subject_keys']`;
+- `general` is always one of the computed keys;
+- warm-up finalization therefore can create the `general` recommendation consumed by target execution;
+- the V3 three metacognitive evaluations are source-consistent.
+
+Strict independent runtime attribution remains limited because raw V3 runtime evidence was not published and Sonnet's pass was incomplete.
+
+Current first open edge:
+`real threshold-crossing metacognitive population → OSES finding → AdaptiveWeightLayer adjustment`.
+
+## 2026-09-28 — R32-G2-V4 SEMANTIC CONTRACT INDEX
+
+Canonical report:
+`IABV_v1.5/docs/history/CHAT-ARCH/BIO-UNIVERSAL-09.11-R32-G2V4-SEMANTIC-CONTRACT-ADJUDICATION-2026-09-28.md`
+
+Retrieve this report whenever a new chat touches R32-G2 V4 or the provider-failure/OSES threshold route.
+
+Key facts:
+- V4 HEAD: `e67a78a9be4b16718caaa5b04c112c5fbfc8c5f2`.
+- V4 is documentation/harness-only relative to implementation ancestor `79bdd8ab47206e9f5a07fdc2151923f934da474a`.
+- Nonexistent-model 404 is a valid negative runtime finding: adaptive recovery converted the event to SUCCESS.
+- `actual_success = RunStatus.SUCCESS` remains canonical.
+- `used_fallback` is degraded recovery semantics.
+- Semantic model selected: `3` (separate task outcome from provider-health/recovery cause while preserving SUCCESS/PARTIAL/FAILED).
+
+Current first open edge:
+`llm_chat[error] → InferenceResult degradation signal in _build_result()`.
+
+Next proof sequence, only after legitimate contract consistency is established:
+`real degraded/failure event → RunStatus != SUCCESS → actual_success=False → finalized ExperimentRun → metacognitive_evaluation → OSES threshold → finding → AWL adjustment`.
+
+Do not jump to future decision influence before finding→adjustment is observed.
+
+Preserve:
+`provider failure != task failure in every context`
+`metacognitive_evaluation != OSES finding`
+`OSES finding != AWL adjustment`
+`AWL adjustment != future decision influence`
+`N subject-key ExperimentRuns != N independent experiences`.
+
+
+
+## 2026-09-28 META-01-E2a CONTINUITY INDEX
+
+Primary reconciliation:
+`META-01-E2a-POST-IMPLEMENTATION-RECONCILIATION-2026-09-28.md`
+
+### Activation order
+
+When a new chat touches META-01 / DiscernmentFrame, activate in this order:
+
+`META-01-E2a post-implementation reconciliation`
+→ `CURRENT-STATE.md`
+→ `UNRESOLVED-KNOWLEDGE.md`
+→ `SYMBIOSIS-MAP.md`
+→ exact implementation commit/artifact once published
+→ Sonnet independent verification.
+
+### Current evidence state
+
+Devin's implementation report is **not yet canonical evidence**. Reported local branch:
+`feature/discernment-frame-seam`
+
+Reported base/HEAD:
+`8fe2b94f66e10d2379945754ea58dd7e92626c60`
+
+GitHub branch read-back at reconciliation: **NOT FOUND**.
+
+Therefore first open edge is:
+
+`local modified worktree → commit → remote read-back → independent verification`.
+
+Do not route directly to semantic:
+
+`grounding/unresolved → epistemic uncertainty → hypothesis → prediction → experiment`
+
+until the implementation provenance gate closes.
+
+Preserve:
+
+`report != artifact != SHA != runtime proof != independent verification`.
+
+
+
+## 2026-09-28 META-01-E2a REMOTE RECONCILIATION INDEX
+
+Primary records:
+- `META-01-E2a-POST-IMPLEMENTATION-RECONCILIATION-2026-09-28.md`
+- `META-01-E2a-REMOTE-RECONCILIATION-PRE-SONNET-2026-09-28.md`
+
+Implementation commit:
+`475c033630bc6285fa39206a0c6294a5ad8fb7b0`
+
+Parent:
+`8fe2b94f66e10d2379945754ea58dd7e92626c60`
+
+Remote branch:
+`feature/discernment-frame-seam`
+
+Current gate:
+**SONNET INDEPENDENT VERIFICATION PENDING**.
+
+Known verification targets include runtime TCA propagation, fresh PCS export, task-context/OSES behavior, runtime frame-ID attribution, actual concurrency behavior, and distinction between source wiring and effective production consumption.
+
+Do not activate E2b from Devin's report alone.
+
+
+
+## 2026-09-29 META-01-E2a POST-SONNET CONTINUITY
+
+Primary record:
+`META-01-E2a-POST-SONNET-RECONCILIATION-2026-09-29.md`
+
+Implementation:
+`feature/discernment-frame-seam @ 475c033630bc6285fa39206a0c6294a5ad8fb7b0`
+
+Status:
+**PARTIALLY PROVEN / WINDOWS PRODUCTION VERIFICATION OPEN**.
+
+Next actor:
+**DEVIN**.
+
+Activation rule:
+verify real Windows AppBootstrap + deferred metacognition + fresh PCS consumption before any E2b semantic investigation.
+
+
+
+## 2026-09-28 META-01-E2a WINDOWS VERIFICATION RETRY INDEX
+
+Primary interruption record:
+`META-01-E2a-DEVIN-WINDOWS-RUNTIME-ATTEMPT-BLOCK-2026-09-28.md`
+
+Current exact target:
+`475c033630bc6285fa39206a0c6294a5ad8fb7b0`
+
+Current action:
+**DEVIN — retry Windows production verification in a new detached worktree.**
+
+Do not clean/delete the existing `feature/discernment-frame-seam` worktree. Do not modify source or tests. Do not advance to E2b until the Windows production edge is independently observed.
+
+
+## 2026-09-29 — DEVELOPMENT IDEAS / RESTRUCTURING BACKLOG
+
+New canonical retrieval resource:
+IABV_v1.5/docs/history/CHAT-ARCH/DEVELOPMENT-IDEAS-AND-RESTRUCTURING-BACKLOG-2026-09-29.md
+
+Purpose:
+Preserve useful hypotheses and future architectural/developmental ideas without prematurely converting them into implementation work.
+
+Use this backlog whenever a new idea concerns reusable semantic/state flow across organs or devices; portable experience/rehydration; lineage-preserving memory transfer; biological analogies such as cell, neuron, homeostasis or evolution as functional audit lenses; IABV using its own self-observation to select future experiments; future learning-to-routing causality; or cross-organ semantic contract/restructuring audits.
+
+Retrieval rule:
+idea → activation condition → relevant existing organs → minimal experiment/audit → evidence → Knowledge Delta → implementation decision.
+
+Do not treat backlog entries as current capabilities, architecture commitments or proof claims.
+
+Current backlog IDs: MB-01, UI-01, UFS-01, UFS-02, UFS-03, BIO-01, BIO-02, BIO-03, INT-01.
+
+For any future restructuring audit, inspect the backlog before proposing a new service or universal entity.
+
+
+## 2026-09-29 RETRIEVAL DOMAIN — GENETIC PLASTICITY / SCIENTIFIC SELF-STUDY
+
+Activate:
+IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-09-29-003-second-order-genetic-plasticity-scientific-observability.md
+
+when the objective touches:
+- learning/plasticity as an intrinsic IABV developmental property;
+- knowledge revision vs accumulation;
+- contextual actor/tool/capability learning;
+- scientific telemetry and before/after state;
+- endogenous hypothesis→experiment→verification loops;
+- functional “superconsciousness” research;
+- autonomous/developmental transition criteria.
+
+Before selecting an actor, reconcile the current frontier. For scientific synthesis use a capability-fit research actor; for source archaeology use a code-archaeology actor; for runtime use a Windows/runtime actor; for adversarial verification use an independent verifier. Historical NEXT ACTOR values are not current authority.
+
+Key retrieval invariants:
+memory update ≠ knowledge revision;
+score adaptation ≠ semantic knowledge revision;
+knowledge revision ≠ topology reorganization;
+persistence ≠ learning;
+actor name ≠ capability-fit;
+source wiring ≠ runtime proof.
+
+
+## 2026-09-30 LIVE ROUTING — PHASE 2A.3 SELF-CONTAINED SCIENCE
+
+### Research routing record
+
+**Objective:** obtain externally validated scientific evidence for the capability progression from adaptation through learning, knowledge revision, contextualization, relation reorganization, causal learning, metacognitive control and self-directed experimentation, with machine-consciousness indicators treated only as a downstream research layer.
+
+**Current boundary:** object identity is sufficiently explicit; the scientific execution itself remains unproven.
+
+**First open edge:** `canonical prompt → actual launched prompt/execution instance`.
+
+**Required capability:** primary-source scientific literature synthesis, source verification, methodological discrimination and falsification.
+
+**Capability-fit actor:** **ChatGPT Deep Research / equivalent deep-research capability**.
+
+**Canonical prompt:** `DEEP-RESEARCH-PHASE-2A3-SELF-CONTAINED-SCIENCE-2026-09-30.md`.
+
+**Execution rule:** `TASK_TYPE=RESEARCH`; no diagnostic replay; no GitHub/attachment dependency; unique execution identity.
+
+**Acceptance:** `OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+**After acceptance only:** `Stage B IABV reconciliation → smallest discriminating experiment → frontier-driven actor selection/writeback`.
+
+### Method delta
+
+The 2026-09-30 failure series establishes that actor selection must not be changed merely because a returned report is wrong. First identify whether the defect is:
+`object failure | input/delivery failure | execution-selection failure | source-access failure | research capability failure | result-quality failure`.
+
+Repeated identical diagnostics after object preservation are evidence of an execution-handoff ambiguity, not repeated independent scientific capability failures.
+## 2026-09-30 LIVE ROUTING — REAL IABV SELF-DEVELOPMENT
+
+Objective: demostrar que IABV puede identificar una necesidad propia de desarrollo, derivar la capability necesaria, seleccionar un recurso compatible y utilizar Devin por la ruta legítima, obteniendo después una observación verificable que cambie la siguiente acción.
+
+First open edge:
+`IABV developmental need → capability/resource discovery → actor selection → legitimate Devin execution → response capture → verification → Knowledge/Decision Delta → changed next action`.
+
+Capability-fit actor actual: Codex para la super-auditoría read-only ya registrada.
+
+Después del audit, recomputar: Devin para implementación/runtime concreto; Sonnet/Claude para verificación independiente; Opus 5 solo si aparece contradicción arquitectónica real.
+
+Contrato canónico:
+`CODEX-SUPER-AUDIT-IABV-SELF-DEVELOPMENT-REAL-LOOP-2026-09-30.md`.
+
+Commit: `13843a7c2bac252c7c183741f4222659f2bbc605`.
+
+El track científico Deep Research y el track técnico IABV→Devin pueden avanzar de forma independiente.
+
+
+
+## 2026-10-01 — CURRENT CONTEXT INDEX ADDENDUM
+
+| Frontier | Canonical record | Current state / activation rule |
+|---|---|---|
+| META-RUNTIME-07Z causal verification | `CHAT-ARCH-2026-10-01-001-meta-runtime-continuity-and-causal-verification.md` | Use when investigating UI resource-gate ordering, one-shot DEFER semantics, test false-positives or temporal continuity. |
+| UI temporal continuity after DEFER | same record + META-RUNTIME-07ZD dispatch | Generic persistence exists; semantically consumable StartUI intent, wake, post-DEFER recheck and automatic resume remain unproven. |
+| META-RUNTIME-07ZD | same record | DISPATCHED / PENDING; do not infer result until actual Codex response is received and read back. |
+
+Operational rule: activate this overlay only when the objective touches resource-gated UI startup, deferred intent continuity, wake/recheck, or source/runtime causal verification.
+
+
+
+## 2026-10-02 — META-RUNTIME-07ZD CONTEXT INDEX
+
 | Frontier | Canonical record | State |
 |---|---|---|
+| META-RUNTIME-07ZD persistence/consumer reconciliation | `CHAT-ARCH-2026-10-01-002-meta-runtime-07zd-result-and-first-open-edge.md` | **CLOSED / static** |
+| First open causal edge | same record | `StartUI DEFER → semantic durable UI intent` |
+| Downstream temporal continuity | same record | consumer/trigger/recheck/reauthorization/launch remain open |
+
+Activate this context for objectives involving deferred UI continuity, pending intent, wake/recheck or launcher re-entry.
+
+
+## 2026-10-02 META-RUNTIME-07ZF CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZF runtime consumer observability | CHAT-ARCH-2026-10-01-003-meta-runtime-07zf-observability-and-frame-reconciliation.md | COMPLETED / INCONCLUSIVE |
+| Primary UI producer edge | same record | OPEN: StartUI DEFER → durable semantic StartUI intent |
+| Secondary consumer edge | same record | INCONCLUSIVE: injected startui_defer → reader → semantic consumer |
+| Cross-AI runtime symbiosis | same record | NOT PROVEN: external observation → IABV runtime → changed next decision |
+
+Activate this context for objectives involving deferred UI continuity, pending intent, consumer observability, frame-entry/runtime ingestion or cross-AI causal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZG CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| META-RUNTIME-07ZG read/consumer reconciliation | `CHAT-ARCH-2026-10-02-004-meta-runtime-07zg-reconciliation-and-routing.md` | **COMPLETED / read-only reconciliation** |
+| Generic queue read | same record | **PROVEN at source/runtime correlation** |
+| Semantic `startui_defer` consumption | same record | **NOT PROVEN / not observed in productive path** |
+| Primary producer | same record | **OPEN: StartUI DEFER → durable semantic StartUI intent** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN: external observation → IABV runtime → changed next decision** |
+
+Activate this context for deferred UI continuity, pending intent, wake/recheck, queue consumer semantics or cross-AI causal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZH CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZH independent consumer audit | `CHAT-ARCH-2026-10-02-005-meta-runtime-07zh-verdict-and-producer-frontier.md` | **COMPLETED** |
+| Generic queue read | same record | **CONFIRMED** |
+| Semantic `startui_defer` consumer in Python tree | same record | **NOT PRESENT / NOT SUPPORTED** |
+| Primary producer seam | same record | **OPEN: natural StartUI DEFER → durable semantic StartUI intent** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN: external observation → IABV runtime → changed next decision** |
+
+Activate for deferred UI continuity, pending intent semantics, producer ownership, wake/recheck or cross-AI causal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZI CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZI producer ownership | `CHAT-ARCH-2026-10-02-006-meta-runtime-07zi-producer-ownership-and-seam.md` | **CLOSED at source level** |
+| Primary producer seam | same record | **OPEN: PowerShell DEFER → existing Python persistence** |
+| Semantic consumer | same record | **OPEN / no consumer present at 5238e85** |
+| Identity/idempotency contract | same record | **OPEN** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
+
+Activate for StartUI DEFER producer wiring, cross-process persistence, pending intent semantics and temporal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZJ CONTEXT INDEX
+
+| Frontier | Canonical record | State ||---|---|---|
+| Existing PowerShell→Python boundary inventory | `CHAT-ARCH-2026-10-02-007-meta-runtime-07zj-cross-process-contract-and-idempotency.md` | **CLOSED at source level** |
+| Persistence entrypoint | same record | **OPEN: exact minimal contract** |
+| Deferred-request identity/idempotency | same record | **OPEN** |
+| Primary producer seam | same record | **OPEN: DEFER → durable semantic intent** |
+| Semantic consumer | same record | **OPEN / absent at 5238e85** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
+
+Activate for StartUI deferred-intent persistence, cross-process CLI/API, identity/idempotency and temporal continuity.
+
+## 2026-10-02 META-RUNTIME-07ZK CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| Identity/persistence contract | `CHAT-ARCH-2026-10-02-008-meta-runtime-07zk-identity-contract-and-implementation-handoff.md` | **CLOSED at contract level** |
+| Natural DEFER persistence | same record | **OPEN: implementation + runtime proof** |
+| Singleton task identity/idempotency | same record | **CONTRACT SELECTED** |
+| Semantic consumer | same record | **OPEN** |
+| Wake/recheck/reauthorization | same record | **OPEN** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
+
+Next implementation actor: Devin.
+
+## 2026-10-02 META-RUNTIME-07ZL CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZL implementation | `CHAT-ARCH-2026-10-02-009-meta-runtime-07zl-implementation-report.md` | **IMPLEMENTED / report-backed** |
+| Remote publication | same record | **OPEN** |
+| Natural DEFER → persistence | same record | **OPEN / runtime proof missing** |
+| Singleton CLI persistence | same record | **PROVEN in isolated CLI harness** |
+| Semantic consumer | same record | **OPEN** |
+| Wake/recheck/reauthorization | same record | **OPEN** |
+
+## 2026-10-02 META-RUNTIME-07ZM CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZM publication/provenance | `CHAT-ARCH-2026-10-02-010-meta-runtime-07zm-publication-and-natural-runtime-boundary.md` | **CLOSED: remote artifact attributable** |
+| CLI persistence | same record | **RUNTIME-PROVEN isolation** |
+| Natural launcher DEFER causality | same record | **OPEN** |
+| Semantic consumer | same record | **OPEN** |
+| Wake/recheck/reauthorization | same record | **OPEN** |
+| Cross-AI runtime symbiosis | same record | **NOT PROVEN** |
+
+## 2026-10-02 META-RUNTIME-07ZN CONTEXT INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZN runtime-control result | `CHAT-ARCH-2026-10-02-011-meta-runtime-07zn-runtime-control-result.md` | **COMPLETED / environment-blocked** |
+| Published producer seam | same record | **REMOTE-PUBLISHED** |
+| Natural launcher DEFER → persistence | same record | **OPEN** |
+| Breakpoint control method | same record | **RETIRED / ineffective on host** |
+| Semantic consumer | same record | **OPEN** |
+
+## 2026-10-02 META-RUNTIME-07ZO + BIO-04 CROSS-TRACK INDEX
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| 07ZO natural DEFER runtime | `CHAT-ARCH-2026-10-02-011-meta-runtime-07zn-runtime-control-result.md` + 07ZO reconciliation | **ENVIRONMENT-BLOCKED / OPEN** |
+| Natural StartUI DEFER → persistence | same runtime track | **OPEN: requires naturally qualifying DEFER** |
+| BIO-04 targeted Deep Research artifact | `CHAT-ARCH-2026-10-02-012-cross-track-reconciliation-07zo-bio04.md` | **ARTIFACT NOT VERIFIED / OPEN** |
+| BIO-04 scientific claims → canonical knowledge | same record | **NOT YET PROMOTABLE** |
+| Cross-AI runtime symbiosis | existing symbiosis map | **NOT PROVEN: external observation → IABV runtime → changed next decision** |
+
+Activate both tracks independently; do not let actor recommendations from one frontier overwrite routing for the other.
+
+## 2026-10-02 BIO-04 INDEX UPDATE
+
+| Frontier | State |
+|---|---|
+| Targeted Deep Research execution | **RESULT AVAILABLE** |
+| Scientific source/claim verification | **OPEN** |
+| Canonical scientific Knowledge Delta | **BLOCKED until independent verification** |
+| First scientific engineering frontier | **OPEN; derive after claim audit** |
+| Runtime META-RUNTIME-07Z | **INDEPENDENT / environment-blocked** |
+
+
+## 2026-10-03 — BIO-04 UNIVERSAL METACOGNITION / EVOLUTION DELTA
+
+Route this objective through:
+- `CURRENT-STATE.md) active universal-evolution overlay;
+- `CHAT-ARCH-2026-10-03-001-bio04-universal-metacognition-delta.md`;
+- `SYMBIOSIS-MAP.md` Transfer 11;
+- `UNRESOLVED-KNOWLEDGE.md` BIO-04 universal-metacognition section;
+- `MEMORY-OPERATING-PROTOCOL.md` universal algorithm-evolution rule.
+
+Activation triggers include: laptop assistant behavior, universal tool adaptation, device/provider adaptation, metacognition on the critical path, fresh-vs-stale environment state, diagnostic capability gaps, and any proposal that looks like a local patch but may reveal a reusable algorithmic principle.
+
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE / REALIZATION CONTRACT
+
+Activate this record for objectives involving LLM/provider selection, reasoning depth, response schemas, inference latency, resource-aware adaptation, fallback, OSES metacognition, and universal tool/device realization.
+
+Primary record:
+`CHAT-ARCH-2026-10-03-002-bio04-universal-inference-contract.md`.
+
+Next architecture step must be independently reconciled before implementation.
+## 2026-10-03 — BIO-04 UNIVERSAL INFERENCE GAP / SONNET CONFIRMATION
+
+Activate:
+`CHAT-ARCH-2026-10-03-002-bio04-universal-inference-contract.md`
+plus the independent contract result absorbed in:
+`CHAT-ARCH-2026-10-03-003-bio04-universal-inference-gap-confirmed.md`.
+
+Use this route for:
+- provider/model selection;
+- reasoning depth;
+- response-schema contracts;
+- fallback semantics;
+- resource/latency-aware inference;
+- OSES metacognition;
+- any proposal to solve a provider symptom with a provider-specific knob.
+
+
+## 2026-10-03 — BIO-04 PROVIDER SEAM OWNERSHIP AMBIGUOUS
+
+Activate `CHAT-ARCH-2026-10-03-005-bio04-provider-seam-ownership-ambiguous.md` for objectives involving OSES provider composition, ProviderRouter production wiring, LocalRoleRouter ownership, AdaptiveModelSelector scope, response-contract validation and fallback ownership.
+
+Current classification:
+`UNIVERSAL GAP CONFIRMED / OWNERSHIP SEAM OPEN`.
+
+First open edge:
+`OSES contract → existing production ownership boundary`.
+
+
+## 2026-10-03 — HUMAN DEEP-WORK / META-CONTROL / ACTION-LEARNING
+
+Activate: CHAT-ARCH-2026-10-03-006-human-deep-work-meta-control-and-action-learning-trace.md, CURRENT-STATE.md, MEMORY-OPERATING-PROTOCOL.md, SYMBIOSIS-MAP.md and UNRESOLVED-KNOWLEDGE.md.
+
+Use this route when the objective concerns human-vs-IABV reasoning process; automatic prompt or actor inheritance; metacognitive control of the collaboration protocol; human-visible versus machine/provenance traceability; action → observation → lesson → learning promotion; learning from Codex/Devin/external-agent experiences; or account/authentication/authorization state as a capability prerequisite.
+
+Current methodological frontier: human deep-work decision trace → reusable machine/provenance trace → later causal decision consumption.
+
+Current technical BIO-04 frontier remains separate: OSES governance evidence → existing exclude/world_model → selector, pending bounded Codex verification.
+
+
+| Shared developmental knowledge field / temporal-spatial maturation | CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md, MEMORY-OPERATING-PROTOCOL.md, SYMBIOSIS-MAP.md, HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md | GitHub-backed IABV frame, human deep-work trace, action-to-learning ladder, cross-IA method/routing transfer | Does verified prior knowledge alter the method, actor/realization routing or later decision in a causally attributable way across episodes? |
+
+
+| BIO-04 OSES governance semantics | CHAT-ARCH-2026-10-03-008-bio04-oses-governance-semantic-gap.md, CURRENT-STATE.md, SYMBIOSIS-MAP.md, MEMORY-OPERATING-PROTOCOL.md | OSES context construction, ProviderRouter predicates, AdaptiveModelSelector exclude/world_model, capability metadata | What request-level data-handling policy should govern OSES context before realization selection, and which existing owner can enforce it without duplication? |
+
+| Method maturation / bilateral bias control | CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md, HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md, MEMORY-OPERATING-PROTOCOL.md | normal-mode protocol application, explicit deep-work mode, bias/drift re-anchoring, verified knowledge reuse | Does accumulated methodology actually alter a later method/routing/decision rather than only being written down or echoed? |
+
+
+| BIO-04 request-level policy boundary audit | BIO-04-OSES-DATA-HANDLING-POLICY-INDEPENDENT-AUDIT-2026-10-03.md, CHAT-ARCH-2026-10-03-008-bio04-oses-governance-boundary.md, CURRENT-STATE.md, MEMORY-OPERATING-PROTOCOL.md | OSES context classification, ProviderRouter predicates, selector controls, governance/authorization contracts, human policy boundary | Which existing semantics can support request-level data handling, what remains a true semantic gap, and what policy decision must remain human-owned? |
+
+
+| BIO-04 independent policy audit reconciliation | CHAT-ARCH-2026-10-03-009-bio04-independent-policy-audit-reconciliation.md, CURRENT-STATE.md, SYMBIOSIS-MAP.md | Independent challenge of OSES privacy ownership, partial policy precedents, human policy boundary, method correction | Does the human-defined request-level policy map cleanly to an existing producer/consumer/decision path without duplicating semantic authority? |
+
+
+| BIO-04 privacy/data-handling science foundation | BIO-04-DATA-HANDLING-SCIENCE-DEEP-RESEARCH-2026-10-03.md, CURRENT-STATE.md, CHAT-ARCH-2026-10-03-009-bio04-independent-policy-audit-reconciliation.md | Privacy theory, contextual integrity, privacy engineering, information flow, agentic-AI privacy, authorization and locality | What scientific/technical distinctions must be fixed before the human defines OSES request-level data-handling policy? |
+
+
+## 2026-10-03 DEEP-RESEARCH PROMPT CONSTRUCTION / REUSE
+
+Activate:
+`DEEP-RESEARCH-PROMPT-CONSTRUCTION-AND-REUSE-PROTOCOL-2026-10-03.md`
+and
+`DEEP-RESEARCH-OPERATING-PROTOCOL-2026-09-30.md`
+
+Use this route whenever a new chat must formulate, revise or evaluate a Deep Research request.
+
+Primary retrieval questions:
+- What is the current objective?
+- What is the exact research object?
+- Is this a diagnostic or actual research?
+- What is the first open uncertainty?
+- What source families are required?
+- Can the research be decomposed into bounded threads?
+- What false-positive controls are needed?
+- What result signature is required?
+- What evidence would cause rejection?
+
+Construction rule:
+`objective → research object → central question → scope → decomposition → sources → evidence contract → controls → provenance → result signature → acceptance → stop`.
+
+The existence of a canonical prompt must never be treated as proof of execution. New chats must still verify actual result alignment and source evidence.
+
+Latest BIO-04 Module 1 result provides the current test case for this protocol; its source claims remain subject to adjudication before promotion.
+
+
+## 2026-10-03 BIO-04 STAGE-A M1 — SOURCE-AUDIT RECONCILIATION
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| BIO-04 Stage-A M1 | `CHAT-ARCH-2026-10-03-011-bio04-stageA-M1-source-audit-reconciliation.md` | **CANONICALLY ABSORBABLE AS SCOPED, CORRECTED KNOWLEDGE** |
+| Independent source audit | `AUDIT_2026-10-03_BIO-04-A-M1_001` | **PARTIALLY-VERIFIED; resolved by scoped claim correction + targeted primary-source closure** |
+| Accepted M1 object | Contextual Integrity + privacy engineering + information flow | **CLOSED FOR THIS MODULE** |
+| PF 1.1 status | Official current NIST material | **Initial Public Draft / coming soon; not final** |
+| Next BIO-04 science frontier | agentic AI / runtime disclosure | **OPEN; bounded threads required before execution** |
+| Next actor | Deep Research capability | **Capability-fit for external literature synthesis; independent verifier follows** |
+
+Activate this context for BIO-04 privacy/data handling, contextual integrity, information-flow semantics, NIST Privacy Framework, or preparation of the next external-science module.
+
+The canonical unit is the corrected claim set, not the unmodified research report.
+
+## 2026-10-03 BIO-04 M1 RE-RECEIPT / PROVENANCE RECONCILIATION
+
+Activate `CHAT-ARCH-2026-10-03-012-bio04-stageA-M1-receipt-provenance-reconciliation.md` when a Deep Research result claims an execution/object identity that differs from the canonical M1 execution record.
+
+Current status:
+- substantive M1 result = congruent with canonical corrected M1 knowledge;
+- reported execution ID `BIO-04-SA-M1-0001` = not remotely reconciled to canonical M1 execution `BROWSE_2026-10-03_BIO-04-A-M1_001`;
+- no evidence found here that M2 execution `BROWSE_2026-10-03_BIO-04-A-M2_001` has executed;
+- next BIO-04 science frontier = `agentic AI / runtime disclosure`;
+- actor fit = Deep Research → independent source/evidence verifier.
+
+Routing rule reinforced: a research receipt must reconcile object identity, execution identity, source artifact and evidence provenance before it can become a distinct canonical evidence instance.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — ACTIVE SCIENTIFIC FRONTIER
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| BIO-04 Stage-A M2 | `BIO-04-STAGE-A-M2-AGENTIC-AI-RUNTIME-DATA-DISCLOSURE-2026-10-03.md` | **PLANNED / NOT YET EXECUTED** |
+| Research object | agentic AI / runtime information disclosure | **OPEN** |
+| Planned execution | `BROWSE_2026-10-03_BIO-04-A-M2_001` | **planned identifier only; not execution proof** |
+| Next actor | Deep Research | **capability-fit** |
+| After execution | independent source/claim audit | **required before absorption** |
+
+Activate this context for model-context disclosure, tool/function/MCP propagation, inter-agent transfer, memory leakage, logging/telemetry exposure, provider/cloud transmission, metadata/inference composition or runtime disclosure controls.
+
+
+## 2026-10-03 BIO-04 M1 — KNOWLEDGE CONSOLIDATION / PENDING EDGES
+
+Activate:
+`CHAT-ARCH-2026-10-03-013-bio04-m1-knowledge-consolidation-pending-edges.md`
+
+Use when the objective concerns BIO-04 privacy-flow semantics, request-level policy dimensions, M2 preparation, or the distinction between research evidence and implementation authorization.
+
+| New reusable point | State |
+|---|---|
+| request-level flow decision needs semantic dimensions, not one sensitivity bit | **DERIVED / NOT IMPLEMENTATION-AUTHORIZED** |
+| purpose compatibility and data necessity are separate tests | **DERIVED / STRONG** |
+| local/remote, encryption, consent and authorization are distinct properties | **DERIVED / REUSABLE** |
+| unknown policy state needs explicit handling | **OPEN** |
+| framework evidence != runtime policy/enforcement | **METHODOLOGICAL INVARIANT** |
+| M2 must trace host availability → model context → tool/MCP → provider/log/retention/inference | **NEXT RESEARCH EDGE** |
+
+Pending gates:
+- execute and reconcile M2 actual receipt/result;
+- independent M2 source audit;
+- human OSES normative policy decision before implementation;
+- recompute residual science modules after M2.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — PRIMARY-SOURCE PASS
+
+| Frontier | Canonical record | State |
+|---|---|---|
+| Equivalent M2 research pass | `CHAT-ARCH-2026-10-03-014-bio04-stageA-M2-primary-source-research-pass.md` | **PARTIALLY SATISFIED / MATERIAL EVIDENCE ACQUIRED** |
+| Planned Deep Research execution | `BROWSE_2026-10-03_BIO-04-A-M2_001` | **NOT EXECUTED** |
+| Actual equivalent execution | `BROWSE_EQUIV_2026-10-03_BIO-04-A-M2_001` | **EXECUTED** |
+| Immediate open edge | independent M2 source/claim verification | **OPEN** |
+| Next actor | Sonnet / Claude-class verifier | **capability-fit** |
+| Post-audit science frontier candidate | necessity + authorization + UNKNOWN + selective disclosure | **OPEN / pending audit** |
+
+Activate this context for agentic privacy, tool/MCP disclosure, memory leakage, inter-agent propagation, telemetry, provider retention, metadata inference or request-level data-handling policy prerequisites.
+
+## 2026-10-03 BIO-04 STAGE-A M2 — INDEPENDENT AUDIT GATE
+
+Activate:
+`CHAT-ARCH-2026-10-03-015-bio04-stageA-M2-independent-source-audit-contract.md`
+
+| Input | State |
+|---|---|
+| M2 primary-source pass | **MATERIAL EVIDENCE ACQUIRED / NOT YET CANONICALLY ABSORBED** |
+| Immediate uncertainty | source/claim integrity + exact quantitative support | 
+| Required capability | independent forensic source/evidence verification |
+| Actor | Sonnet / Claude-class verifier |
+| Implementation | **BLOCKED** |
+
+## 2026-10-03 CONTINUITY ROUTING RULE — INDEX IS NOT ACTOR AUTHORITY
+
+CONTEXT-INDEX is a **memory navigation map**, not an alternate current routing authority.
+
+Its job:
+`objective → relevant knowledge neighborhood → source records`.
+
+It must not cause a new chat to select an actor directly from an historical `Next actor` field.
+
+Current routing must come from:
+`CURRENT-STATE top routing snapshot`.
+
+Historical actor fields retrieved through the index are evidence about prior states only.
+
+Material recent deltas that can change a future decision must be represented in CURRENT-STATE; otherwise selective objective-conditioned retrieval can produce locally coherent but globally incomplete continuity.
+
+Continuity acceptance therefore requires:
+`required material state recalled → correct frontier → correct IA DESTINO → correct action/prompt`,
+not merely “a relevant record was found”.
+## 2026-10-03 — RSK-01A CURRENT CONTINUITY FRONTIER
+
+| Item | State |
+|---|---|
+| First open edge | `current objective → complete relevant knowledge activation → correct current routing` |
+| Canonical handoff | `CHAT-ARCH-2026-10-03-017-RSK-01A-CODEX-HANDOFF.md` |
+| IA DESTINO | **Codex** |
+| Capability | repository/code archaeology + systemic integration analysis |
+| Mode | **READ-ONLY** |
+| Implementation | **BLOCKED** |
+| Rationale | practical cross-chat omission remains not explained by persistence alone; retrieval/activation reliability is the unresolved edge |
+
+Important: this is the current route. Historical `Next actor` fields remain non-routable history.
+
+## 2026-10-04 — UNIVERSAL ADAPTIVE ALGORITHM CONCEPT ROOT
+
+**Concept root:** `UAAL-ROOT-001`
+**Canonical conceptual source:** `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`
+**Machine-readable lineage:** `data/evolution/universal_algorithm_lineage.json`
+
+Activate this root for objectives involving universal cognition, laptop/environment understanding, adaptive tool/resource use, cross-AI collaboration, metacognition, plasticity, self-development or evolution.
+
+Parent derivation:
+`universal adaptive algorithm → environmental semantics → capability/affordance inference → realization/channel selection → modality adaptation → governed action/observation → learning/reuse → self-development/evolution`.
+
+Required genealogy for new material ideas:
+`CONCEPT_ID → PARENT_CONCEPT_ID → SOURCE → ORIGIN → DERIVATION_REASON → EPISTEMIC_STATUS → EVIDENCE → FALSIFIER → NEXT_OPEN_EDGE`.
+
+Anti-drift:
+`Codex/ChatGPT/Claude/Devin/Ollama`, browser, desktop app, API, CLI and MCP are realizations/resources/channels; none is the parent concept.
+
+## 2026-10-03 — UNIFIED LONGITUDINAL MEMORY ROUTING
+
+Canonical source: `CHAT-ARCH-2026-10-03-042-unified-interaction-memory-space-time-continuity.md`.
+
+Current continuity rule: `CURRENT-STATE → MEMORY-OPERATING-PROTOCOL → material recent deltas → closed/negative knowledge → objective-specific history → current source/runtime reconciliation → first open edge → exact prompt`.
+
+Specific 2026-10-03 delta: `CHAT-ARCH-2026-10-03-043-laptop-mind-capability-seam-probe.md` is a material source record whose specific result must remain retrievable as a first-class recent delta. Its key qualification is that the probe was fixture-backed and did not prove live laptop observation.
+
+Do not treat this index entry as proof of causal memory reuse; continuity activation and later causal influence remain separate experiments.
+
+## 2026-10-05 ACTIVE DEVELOPMENT ROUTING — FIRST SELF-CODE INFLECTION
+
+Canonical record: `CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md`
+
+For the product-development objective, prioritize the first open edge:
+`verified improvement proposal → isolated executable code variant → baseline/candidate comparison → independent verification → governed production-code promotion`.
+
+Required capability:
+`capability-oriented code evolution + existing-organ archaeology + controlled verification`.
+
+Do not route automatically to RSK-01. RSK-01 remains a secondary continuity experiment unless it directly changes the self-development contract.
+
+Intended developmental sequence:
+`assist development → close isolated self-code loop → causal developmental plasticity → capability compounding/consolidation → progressively self-directed development`.
+
+
+## 2026-10-05 ACTIVE PRODUCT ROUTING — HUMAN ↔ IABV AS PRIMARY INTERFACE
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md`
+
+Activate this record whenever the objective concerns:
+- IABV as the user's primary laptop assistant;
+- using desktop applications/programs through IABV;
+- IABV choosing or consulting ChatGPT/Codex/Claude/Devin/Ollama;
+- automatic delegation or round trip;
+- browser/application account/session use;
+- authentication/authorization/resource selection;
+- universal laptop environmental agency.
+
+Core product relation:
+`HUMAN ↔ IABV`
+
+External AIs are resources, not fixed pipeline stages.
+
+Before selecting a specific AI, compute:
+`objective → uncertainty → required capability → candidate resources/channels → access/authorization/constraints → actor/resource fit → minimum intervention`.
+
+Current maturity:
+`S1 frame-assisted coordination available; S2 autonomous/runtime-mediated delegation not proven; S3 dynamic multi-AI selection not proven; S4 causal learned collaboration not proven`.
+
+Do not route to a specific provider merely because it was used in the previous turn.
+
+For account/login objectives preserve:
+`email != identity != account != session != credential != authorization`.
+
+Prefer governed reuse of already-authenticated sessions where appropriate rather than passing secrets through external-AI prompts.
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ05 SAFE PERCEPTION OBSERVATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-060-uaal-rq05-candidate-observation-seam-reconciliation.md`
+
+RQ05 converted the missing runtime observability capability into a tested candidate source seam:
+`build_perception_snapshot(refresh=False) → existing PerceptionSnapshot without requesting refresh`.
+
+This is **candidate implementation evidence**, not canonical production evidence.
+
+Current technical frontier:
+`candidate checkout → fresh attributed MCP process → safe invocation → live WorldModel/PerceptionSnapshot correlation`
+
+Current actor:
+**CODEX**
+
+After runtime candidate verification, recompute whether an independent Sonnet audit is required before any production incorporation.
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ06 PHASE-SEPARATED RUNTIME ATTRIBUTION
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-061-uaal-rq06-bootstrap-observation-boundary.md`
+
+RQ06 identified that normal MCP bootstrap itself requests World Model / Environment Self Awareness refresh. The correct experiment therefore does not attempt to make startup globally side-effect-free.
+
+Required phase separation:
+`startup/bootstrap evidence`
+→
+`post-bootstrap baseline`
+→
+`safe observation invocation`
+→
+`post-tool evidence`.
+
+Current technical actor:
+**CODEX**
+
+Minimum next experiment:
+fresh candidate MCP process, record bootstrap separately, then measure `request_refresh` calls attributable only to the subsequent `cognitive_frame_translate` invocation and correlate its PerceptionSnapshot with the live World Model.
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ07 WORLD MODEL PRODUCER / FRESHNESS
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-062-uaal-rq07-world-model-producer-reconciliation.md`
+
+RQ07 proved candidate runtime loading and no tool-phase refresh, but the consumed World Model was a stale persisted snapshot from a Linux path.
+
+Current frontier:
+`CURRENT WINDOWS ENVIRONMENT → WorldModel producer → fresh snapshot/persistence → MCP WorldModel → PerceptionSnapshot`
+
+Required capability:
+`Windows runtime producer/freshness provenance + WorldModel persistence/handoff verification`
+
+Do not treat this as a missing perception architecture. Do not create another WorldModel.
+
+The next actor is **CODEX**. Prefer first a read-only inspection of the current producer/persistence state. If no fresh Windows snapshot exists, the minimum discriminating runtime test requires one explicitly authorized read-only scan.
+
+
+## 2026-10-05 ACTIVE FRONTIER — UAAL-RQ08 PRODUCER AUTHORIZATION / CURRENT WINDOWS STATE
+
+Canonical record:
+`CHAT-ARCH-2026-10-05-063-uaal-rq08-producer-authorization-reconciliation.md`
+
+RQ08 did not execute a scan because no fresh candidate Windows producer snapshot existed and authorization was absent.
+
+Current first open edge:
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer`
+
+Current actor:
+**CODEX**
+
+Minimum next experiment:
+one explicitly authorized read-only light World Model scan, followed by producer→persisted snapshot→fresh MCP→PerceptionSnapshot correlation.
+
+Method invariant:
+`producer capability exists != producer currently operating != producer attributable to consumer snapshot`.|---|---|---|
 | Existing PowerShell→Python boundary inventory | `CHAT-ARCH-2026-10-02-007-meta-runtime-07zj-cross-process-contract-and-idempotency.md` | **CLOSED at source level** |
 | Persistence entrypoint | same record | **OPEN: exact minimal contract** |
 | Deferred-request identity/idempotency | same record | **OPEN** |
