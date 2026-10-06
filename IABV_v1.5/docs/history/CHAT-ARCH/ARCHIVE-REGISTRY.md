@@ -1,3 +1,14 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 STATIC BLOCK RECONCILIATION
+
+`CHAT-ARCH-2026-10-06-072-uaal-rq13-static-block-reconciliation.md`
+
+**Type:** CANONICAL RECONCILIATION / STATIC BLOCK / ACTOR REROUTING
+
+**Preserves:** Codex's finding that preview does not reach post-governance reconstruction, the normal request-path comparison/recording boundaries, and the rerouting to independent Sonnet/Claude source audit.
+
+**Routing:** activate for the static safety-boundary audit of the existing orchestration path.
+
+**Next actor:** SONNET/CLAUDE.
 ## 2026-10-06 REGISTRATION — UAAL-RQ12 RUNTIME RECONCILIATION
 
 `CHAT-ARCH-2026-10-06-071-uaal-rq12-runtime-reconciliation.md`
