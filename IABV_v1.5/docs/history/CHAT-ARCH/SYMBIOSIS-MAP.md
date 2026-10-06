@@ -1,3 +1,22 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 EXECUTION-CONTEXT PROVENANCE
+
+RQ13 produced a further runtime attribution invariant:
+
+`correct imported source != complete authorized runtime attribution`.
+
+For bounded Windows experiments, the execution-context contract must include at least:
+
+`source identity + process executable + CWD + relevant persistence root + authorization scope`.
+
+A process can import the correct baseline source from one worktree while executing with a different CWD. That condition is insufficient when relative paths or runtime state may depend on the working directory.
+
+Reusable routing rule:
+
+`artifact receipt → exact launch context verification before application initialization → in-process provenance → observation`.
+
+The wrong-CWD episode is a harness/execution-scope failure, not evidence of an IABV semantic defect. Its runtime authorization is consumed; corrected execution requires fresh human authorization.
+
+
 ## 2026-10-06 TRANSFER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
 
 Sonnet/Claude's independent audit narrowed the portable-context blocker to a concrete existing mechanism: `portable_context_get(refresh=True)`.
