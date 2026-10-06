@@ -1,3 +1,14 @@
+## 2026-10-06 METHOD AMENDMENT — EVIDENCE-CONTRACT COMPLETENESS GATE
+
+For any material experiment, an evidence contract is incomplete when a required output field cannot be produced by the authorized harness.
+
+Preserve:
+`instrumentation exists ≠ evidence contract implemented`.
+
+A readiness failure in the harness is a precondition failure, not partial runtime evidence. Correct the harness first, generate a new artifact identity/digest, self-test it against the full contract, and only then request fresh runtime authorization.
+
+Never weaken the experiment contract merely to reuse an existing harness.
+
 ## 2026-10-06 METHOD AMENDMENT — RUNTIME ARTIFACT PROVENANCE GATE
 
 A runtime observation may not inherit the evidentiary status of a Git SHA merely because HEAD points to that SHA.
