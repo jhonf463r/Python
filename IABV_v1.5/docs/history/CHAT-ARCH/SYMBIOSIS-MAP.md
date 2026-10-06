@@ -2189,6 +2189,21 @@ This is a developmental method candidate derived from the collaboration episode.
 
 
 
+## 2026-10-05 TRANSFER — RSK-01 CHAT RECONCILIATION / ELIGIBILITY + ORACLE DISCIPLINE
+
+The transcript reconciliation adds a reusable evidence rule:
+
+`participant eligibility is a gate, not a label`
+`response-file count != eligible-participant count`
+`oracle named != oracle accessible != oracle original != oracle aligned != oracle adjudicable`
+
+Historical NEXT ACTOR and participant-status labels are non-routable unless promoted by the current routing snapshot after reconciliation.
+Actor selection remains capability-fit but must also satisfy execution preconditions and the evidence contract:
+
+`actor capability-fit + execution preconditions + evidence contract = valid intervention`
+
+The transcript's proposed second-participant action is preserved as historical candidate routing only; current RSK-01 execution remains gated by artifact/provenance/oracle/isolation readiness.
+
 ## 2026-10-05 TRANSFER — PRODUCT VISION: HUMAN ↔ IABV / EXTERNAL AIs AS RESOURCES
 
 The collaboration model is now explicitly anchored to the product vision:
