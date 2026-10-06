@@ -1,3 +1,20 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 RETURN AFTER DISK CLEANUP / LEARNING STATUS VERIFIED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-097-disk-cleanup-learning-reconciliation.md`
+
+The Windows disk cleanup recovered approximately **11.18 GiB**, increasing free C: space from **0.79 GiB to 11.97 GiB**. RQ13 worktrees/data/evidence and the current harness were preserved; no IABV runtime was executed.
+
+Learning-status reconciliation:
+- lower-layer adaptive learning path exists: `TaskOutcomeRecorder._record_learning() → ExperimentLab → persisted recommendation/learning state → later selector scoring`;
+- selector-level learned-state influence is evidenced;
+- strong causal learning — a real verified experience changing a later normal competitive production decision — remains **NOT PROVEN**.
+
+Therefore the project has **real learning machinery and partial learning evidence**, but not yet the stronger developmental claim.
+
+**CURRENT FIRST OPEN EDGE:** `C94D983D... → fresh human runtime authorization → one bounded RQ13 PCS/ObjectiveRepository attribution observation → independent verification`.
+
+Do not reopen historical L5 work or the prior Ollama diagnostic unless new evidence makes either the current first causal edge. Do not interpret disk cleanup or harness readiness as learning.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS READY / FRESH RUNTIME AUTHORIZATION GATE
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-096-rq13-harness-ready-fresh-authorization.md`
