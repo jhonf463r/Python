@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PROVIDER HEALTH BOOTSTRAP AUTHORIZATION BOUNDARY
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-089-uaal-rq13-provider-health-bootstrap-boundary.md`
+
+The aborted runtime correctly stopped when `OllamaExpertProvider.health_check()` logged a timeout. Baseline source reconciliation shows this health check can be causally induced by `EnvironmentSelfAwarenessService._build_model() → _provider_health() → LocalRoleRouter.health_snapshot() → general_provider.health_check()`. This is a bootstrap/environment observation, not provider inference for a user task.
+
+The prior authorization was internally ambiguous because it authorized baseline bootstrap observation effects but also said **no providers**. Codex correctly resolved the ambiguity conservatively by stopping before the target.
+
+**CLASSIFICATION:** `RUNTIME NOT OBSERVED / AUTHORIZATION CONTRACT CORRECTED`.
+
+**CURRENT FIRST OPEN EDGE:** `precise human authorization allowing only provider health checks causally induced by baseline bootstrap/environment scans → CODEX one bounded runtime observation`.
+
+No general provider inference, `answer_user`, `infer_task`, MCP, downstream provider execution or P0 is authorized by this reconciliation.
+
+**NEXT ACTOR: HUMAN AUTHORIZATION → CODEX.**
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 STABILIZATION HARNESS READY
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-088-uaal-rq13-stabilization-harness-ready.md`
