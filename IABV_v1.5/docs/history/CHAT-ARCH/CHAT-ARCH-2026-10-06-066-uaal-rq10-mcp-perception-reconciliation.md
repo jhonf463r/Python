@@ -1,3 +1,13 @@
+## SOURCE ADDENDUM — DECISION-CONTEXT RECONSTRUCTION BOUNDARY
+
+Subsequent direct inspection of executable baseline `e46d830...` identified an important source-level boundary after the RQ10 live observation.
+
+`AdaptiveTaskOrchestrator._refresh_session_metadata()` rebuilds a DecisionContext using the supplied PerceptionSnapshot, and `_refresh_perception_snapshot()` returns a copy of that snapshot with the reconstructed DecisionContext.
+
+Thus the normal orchestration path does not simply pass the exact pre-governance DecisionContext object unchanged through later stages. A runtime experiment must compare the evidence before and after this reconstruction.
+
+This refines, but does not close, the RQ10 open edge.
+
 # CHAT-ARCH-2026-10-06-066 — UAAL-RQ10 MCP → PERCEPTION SNAPSHOT RECONCILIATION
 
 ## TYPE
