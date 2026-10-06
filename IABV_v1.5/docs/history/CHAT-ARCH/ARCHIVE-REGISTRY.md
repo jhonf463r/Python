@@ -1,3 +1,21 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 SOURCE WORKTREE TARGET-PATH ATTRIBUTABLE
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-103-rq13-source-worktree-attributable.md`
+
+Type:
+`RECONCILIATION / ARTIFACT-READINESS / RUNTIME-NOT-AUTHORIZED / SYMBIOSIS`
+
+State:
+`SOURCE WORKTREE DIRTY BUT TARGET PATH BASELINE ATTRIBUTABLE`
+
+Finding:
+The RQ13 worktree has many dirty entries, but its `src/` changes are bytecode/cache-only and the focal source files remain baseline-identical. The target path is therefore attributable under the current evidence contract.
+
+Current routing:
+`fresh human authorization naming harness 60EC734D... → bounded RQ13 runtime → independent verification`
+
+No runtime or learning evidence follows from this readiness classification.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 SOURCE WORKTREE READINESS GATE
 
 Canonical record:
