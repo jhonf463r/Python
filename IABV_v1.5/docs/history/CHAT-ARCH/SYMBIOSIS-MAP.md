@@ -2415,3 +2415,20 @@ and any preview/read-only claim must be checked against the complete call chain 
 Current UAAL RQ10/RQ11 routing remains **CODEX** because the open edge is repository/worktree/runtime provenance archaeology. No runtime authorization is implied, and no downstream DecisionContext experiment should begin until the provenance gate is resolved.
 
 Historical next-step recommendations remain evidence from their original state, not authority for the current route.
+
+
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ11B PROVENANCE LIMIT / STOP ARCHAEOLOGY
+
+RQ11B produced a meta-method correction: when a historical execution lacks an execution-time fingerprint that cannot be reconstructed from surviving artifacts, further retrospective archaeology should stop once the classification is bounded rather than repeatedly re-running the same question.
+
+The valid transfer is:
+
+`strong corroborating provenance ≠ exact executable fingerprint`
+
+and:
+
+`nonrecoverable historical evidence gap → preserve bounded uncertainty → design stronger future evidence contract`.
+
+For future material runtime episodes, source/process provenance must be captured inside the executing process before the observed action. Current RQ12 should therefore capture module/source fingerprints in-process, rather than attempting to infer them after execution.
+
+The current actor remains CODEX by capability-fit for the clean Windows/MCP baseline observation, but runtime authorization must be fresh and explicit.
