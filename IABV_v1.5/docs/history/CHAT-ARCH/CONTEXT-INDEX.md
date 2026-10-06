@@ -1,4 +1,14 @@
-## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PROVIDER HEALTH AUTHORIZATION BOUNDARY
+## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 AUTHORIZATION DECISION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-109-rq13-no-safe-boundary-authorization-decision.md`
+
+Current first open edge:
+`human decision on narrowly expanded bootstrap authorization → exact SHA/effect-scoped authorization → one bounded RQ13 runtime`.
+
+The safe-boundary search is closed. Do not reopen it through additional static archaeology unless new evidence identifies a previously missed supported mechanism.
+
+Current routing authority remains `CURRENT-STATE.md`.## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PROVIDER HEALTH AUTHORIZATION BOUNDARY
 
 Canonical episode:
 `CHAT-ARCH-2026-10-06-108-rq13-provider-health-authorization-boundary.md`
