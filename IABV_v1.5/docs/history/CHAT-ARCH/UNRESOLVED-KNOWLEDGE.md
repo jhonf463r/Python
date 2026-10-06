@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE FRONTIER — RQ10 EXECUTION ARTIFACT ATTRIBUTION
+
+**QUESTION:** Did the RQ10 MCP process execute pure baseline `e46d830...`, the RQ05 uncommitted candidate overlay, or a mixed/indeterminate artifact?
+
+**STATUS:** OPEN / PROVENANCE BLOCK.
+
+**KNOWN:** The RQ10 worktree is reported dirty in `server.py` and `task_context_assembler.py`. RQ05's canonical record identifies those same files as an uncommitted no-refresh candidate. Canonical `e46d830...` source differs from that candidate behavior.
+
+**MINIMUM ACTION:** statically capture the exact dirty diff, compare it against the RQ05 candidate, and inspect available runtime/session artifacts for an executable/source fingerprint attributable to the RQ10 process.
+
+**CLASSIFICATION REQUIRED:** baseline-attributable | candidate-overlay-attributable | mixed/indeterminate.
+
+**AUTHORIZATION:** no runtime authorization required for this phase; runtime re-execution is prohibited until provenance is closed and, if needed, separately authorized.
+
+**STOP:** do not use RQ10 to close a baseline technical edge while executable provenance remains unresolved.
+
 ## 2026-10-06 REFINED FRONTIER — LIVE DECISION-CONTEXT LINEAGE
 
 **QUESTION:** Does the normal adaptive orchestration path preserve the semantically relevant evidence from the live PerceptionSnapshot's pre-governance DecisionContext when it reconstructs the post-governance DecisionContext and refreshed PerceptionSnapshot?
