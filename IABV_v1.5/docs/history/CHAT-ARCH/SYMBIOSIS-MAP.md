@@ -1,3 +1,18 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 SOURCE WORKTREE READINESS
+
+Episode 102 adds a readiness gate distinct from harness readiness:
+
+`harness self-test PASS ≠ executable artifact provenance ready`.
+
+A dirty worktree with modified Python source may contain an executable overlay even when HEAD remains at the expected baseline and focal files match.
+
+New routing:
+`worktree forensic inventory → executable/impact assessment → artifact attribution decision → only then fresh authorization`.
+
+Do not clean or normalize the worktree merely to pass the experiment. The current state itself is evidence and must be characterized first.
+
+No learning claim follows.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PERSISTED PACKAGE / SOURCE CORRELATION
 
 Episode 101 separates three layers:
