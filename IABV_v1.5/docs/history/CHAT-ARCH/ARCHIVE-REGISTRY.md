@@ -1,3 +1,22 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 HARNESS PATH CORRECTION READY
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-099-rq13-harness-path-correction-ready.md`
+
+Type:
+`RECONCILIATION / HARNESS-READINESS / RUNTIME-NOT-AUTHORIZED / SYMBIOSIS`
+
+State:
+`HARNESS PROVENANCE PATH CORRECTED / SELF-TESTED / RUNTIME NOT AUTHORIZED`
+
+New external harness SHA:
+`50779B1DD321258729E1BB9ABEBA4D04ACBBFCC45CF0FDFDD0555AE5F6C1FA37`
+
+Current routing:
+`fresh human authorization naming exact new SHA → CODEX one bounded RQ13 attribution runtime → independent verification`
+
+No target runtime or learning evidence was produced.
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 HARNESS PROVENANCE GATE FAILURE
 
 Canonical record:
