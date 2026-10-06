@@ -1,3 +1,39 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ10 MCP → PERCEPTION SNAPSHOT RECONCILIATION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-066-uaal-rq10-mcp-perception-reconciliation.md`
+
+RQ10 materially advances the UAAL runtime frontier.
+
+Observed in one freshly authorized candidate MCP run:
+`latest.json before startup = MCP in-memory WorldModel after bootstrap = 4350a718-4ec6-420c-a3bb-8062eb70f376`.
+
+During bootstrap, a later monitor full scan produced:
+`fa38d348-33d1-4530-99e1-9b2e2a3f7c4a`.
+
+The single live `cognitive_frame_translate` invocation overlapped that scan and its returned `PerceptionSnapshot` incorporated `fa38d348...`. Final in-memory and persisted WorldModel state matched that ID.
+
+Therefore the former RQ09 frontier is no longer:
+`persisted snapshot → MCP → PerceptionSnapshot`.
+
+That handoff is now **LIVE-OBSERVED / PARTIALLY CLOSED** in the bounded candidate run, with the important qualifier that the original RQ09 producer snapshot was not preserved unchanged: the MCP/runtime path observed a later monitor-generated replacement.
+
+Independent source verification at code baseline `e46d830...` confirmed:
+- `cognitive_frame_translate` calls `TaskContextAssembler.build_perception_snapshot`;
+- `build_perception_snapshot` constructs `DecisionContext` inside the returned `PerceptionSnapshot`;
+- `TaskContextAssembler._world_model()` reads `current_model()` and then performs the normal perception refresh;
+- `orchestrator_preview` calls `build_decision_context_preview()`, which returns `perception.decision_context`.
+
+**CURRENT FIRST OPEN TECHNICAL EDGE:**
+`live PerceptionSnapshot / embedded DecisionContext → live downstream DecisionContext consumer`.
+
+The smallest existing candidate consumer is the read-only `orchestrator_preview` path. This remains a runtime attribution experiment, not an architecture change.
+
+RQ10 authorization is consumed. A fresh explicit human authorization is required for the next MCP runtime invocation unless it is independently established that the selected invocation cannot mutate `latest.json`.
+
+**CURRENT TECHNICAL ACTOR: CODEX**, because the open edge requires direct MCP/runtime observation and identity correlation. ChatGPT remains coordinator/reconciler/writeback. Sonnet/Claude and Devin are not the capability-fit next actors for this seam.
+
+Do not repeat the RQ09 producer scan. Do not treat the final `fa38...` identity as proof of continuity of the earlier `4917...` producer snapshot. Do not advance to external-AI delegation or causal learning.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ09 PRODUCER / PERSISTENCE / MCP HANDOFF
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-065-uaal-rq09-producer-persistence-mcp-handoff-reconciliation.md`
@@ -39,7 +75,7 @@ Next minimum experiment: one fresh MCP run from the same candidate workspace, wi
 Independent causal caution:
 `MCP bootstrap caused the replacement` remains an inference because the exact call/consumer identity was not captured.
 
-Do not advance to DecisionContext, capability selection, external-AI delegation or causal learning until this edge is resolved.
+Historical RQ09 stop condition; superseded by RQ10: DecisionContext remains downstream, while external-AI delegation and causal learning remain out of scope.
 
 ## 2026-10-05 ACTIVE OVERLAY — RSK-01 CHAT RECONCILIATION / ELIGIBILITY + ORACLE DISCIPLINE
 
