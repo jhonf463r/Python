@@ -1,3 +1,26 @@
+## 2026-10-06 CLOSED FRONTIER — UAAL-RQ12 CLEAN-BASELINE MCP → PERCEPTION
+
+**STATUS:** LIVE-OBSERVED / BASELINE-ATTRIBUTABLE / CLOSED at the observation boundary.
+
+The clean `e46d830...` baseline was executed once with in-process module fingerprints. The single `cognitive_frame_translate` invocation produced PerceptionSnapshot `9e674020-5796-4ffe-852c-3af827255672` embedding WorldModel `96c0fc98-...`.
+
+## 2026-10-06 NEW ACTIVE FRONTIER — UAAL-RQ13 DECISION-CONTEXT RECONSTRUCTION
+
+**QUESTION:** Does the existing AdaptiveTaskOrchestrator preserve the relevant evidence from the live PerceptionSnapshot's pre-governance DecisionContext when it reconstructs and persists the downstream post-governance DecisionContext?
+
+**STATUS:** OPEN / RUNTIME CORRELATION REQUIRED.
+
+**KNOWN:** baseline source creates DecisionContext inside PerceptionSnapshot; normal orchestration later rebuilds DecisionContext and replaces the snapshot's embedded object during session metadata refresh.
+
+**MINIMUM ACTION:** one isolated runtime correlation through the existing orchestrator path, only after fresh authorization. Capture the pre-reconstruction PerceptionSnapshot/DecisionContext, reconstructed DecisionContext, replacement snapshot identity, and downstream governance fields.
+
+**CAUTION:** `orchestrator_preview` is not proven side-effect-free because the underlying perception assembler may request WorldModel refresh.
+
+**STOP:** any external execution, unexpected persistence outside authorized scope, identity loss that prevents correlation, or inability to separate pre- and post-reconstruction evidence.
+
+**NEXT ACTOR:** CODEX.
+
+RQ12 did not test this frontier and does not authorize it.
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ12 PHASE 2 AUTHORIZATION GATE
 
 **QUESTION:** Can the clean canonical executable baseline `e46d830...` produce one attributable live MCP → PerceptionSnapshot observation with in-process artifact provenance?
