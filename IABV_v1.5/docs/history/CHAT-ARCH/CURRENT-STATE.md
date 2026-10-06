@@ -2,6 +2,10 @@
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-065-uaal-rq09-producer-persistence-mcp-handoff-reconciliation.md`
 
+**CURRENT REMOTE MAIN TIP AT THIS RECONCILIATION:** `aa953cd778ace5bff5488ff666ea17197494b867`.
+Relative to code-bearing baseline `e46d8304167708bed0764d3bf2be8fd6643e8944`, the current main delta inspected in this reconciliation is documentation-only; the executable baseline remains `e46d830...`.
+
+
 RQ09 is reconciled as **INTEGRATION_LEVEL=2 / PARTIALLY_CLOSED**.
 
 Verified in one explicitly authorized read-only run:
