@@ -1,3 +1,17 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-074-uaal-rq13-portable-context-precondition-reconciliation.md`
+
+RQ13 cannot yet enter `handle_request`.
+
+The stale portable-context input is a real baseline precondition blocker: `build_perception_snapshot()` first builds TaskContext, which calls `current_package()`; stale `latest.json` causes synchronous `build_package()` with persistence when `allow_stale=False`.
+
+**FIRST OPEN ACTIONABLE EDGE:**
+`stale portable-context state → safe existing preconditioning/lifecycle path → valid P0 boundary`.
+
+**NEXT ACTOR: SONNET/CLAUDE — independent adversarial static audit.**
+
+Do not rerun Codex runtime yet. First determine whether the baseline provides a legitimate non-contaminating preconditioning path and exactly what runtime state must be recorded.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 SONNET ADVERSARIAL RECONCILIATION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-073-uaal-rq13-sonnet-static-adversarial-reconciliation.md`
