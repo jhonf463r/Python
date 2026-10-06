@@ -1769,3 +1769,16 @@ Also distinguish:
 A public preview may avoid downstream dispatch yet still traverse refresh/persistence mechanisms. Read-only claims therefore require source-level verification of the complete call chain and side effects, not only the endpoint's docstring.
 
 Historical `NEXT ACTOR` / `NEXT STEP` statements remain non-authoritative. Recompute routing from current verified truth, first open edge, capability fit, readiness and expected information gain after every material reconciliation.
+
+
+## 2026-10-06 METHOD AMENDMENT — NONRECOVERABLE RETROSPECTIVE PROVENANCE
+
+RQ11B establishes a stopping rule for historical artifact provenance: once surviving evidence is sufficient to bound attribution but lacks the execution-time fingerprint required by the evidence contract, do not repeatedly attempt to reconstruct an unavailable fact. Preserve the formal uncertainty and improve the next experiment's provenance contract.
+
+Required future runtime contract:
+
+`clean target artifact → in-process source/module fingerprint → process identity/import root → event chronology → observation → final identity → verification`.
+
+Corroborating timestamps/path evidence may strengthen an attribution but cannot substitute for an in-process fingerprint when exact loaded-byte identity is required.
+
+Routing consequence: after a nonrecoverable provenance gap, the next action should target the clean baseline property directly rather than endlessly reopening the historical run.
