@@ -1,4 +1,15 @@
-## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 DECISION-CONTEXT RECONSTRUCTION
+## 2026-10-06 LATEST ROUTING CORRECTION — UAAL UNIVERSAL CAPABILITY SEAM
+
+RQ13 returned/persisted package correspondence: RUNTIME VERIFIED / CLOSED.
+RQ13 DecisionContext reconstruction: valid secondary integrity frontier; not the first universal causal edge.
+
+Current first open causal edge:
+`live PerceptionSnapshot environment/world evidence → capability/affordance representation that materially affects capability or realization selection`.
+
+Next actor: CODEX, read-only composition archaeology across TaskContextAssembler, CapabilityReadinessService, StrategyPackRegistry, LocalRoleRouter and realization-ranking consumers.
+
+Do not route to DecisionContext runtime or provider execution before this earlier universal seam is resolved.
+Current routing authority remains `CURRENT-STATE.md`.## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 DECISION-CONTEXT RECONSTRUCTION
 
 Canonical episode:
 `CHAT-ARCH-2026-10-06-110-rq13-returned-persisted-correspondence-closed.md`
