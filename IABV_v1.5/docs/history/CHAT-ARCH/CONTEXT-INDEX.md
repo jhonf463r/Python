@@ -1,4 +1,14 @@
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 WRONG-CWD RUNTIME STOP
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-078-uaal-rq13-wrong-cwd-stop.md`.
+- Artifact readiness remains closed.
+- Bootstrap boundary remains historically closed when executed in the correct authorized context.
+- Latest attempt was invalid because process CWD was `C:\Python\IABV_v1.5` instead of the authorized `C:\temp\rq13-e46-artifact-ready\IABV_v1.5`.
+- In-process imported-source provenance matched the authorized worktree, but this does not satisfy complete execution-context provenance.
+- **First actionable edge:** launch from the exact authorized CWD before application initialization; then re-establish in-process provenance and proceed only under fresh authorization.
+- Next actor: CODEX.
+
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP BOUNDARY CLOSED
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-076-uaal-rq13-bootstrap-boundary-closed.md`.
