@@ -1,3 +1,25 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 PROVIDER HEALTH BOOTSTRAP AUTHORIZATION BOUNDARY
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-089-uaal-rq13-provider-health-bootstrap-boundary.md`
+
+Type:
+`RECONCILIATION / GOVERNANCE / RUNTIME READINESS`
+
+State:
+`CANONICAL SOURCE / RUNTIME TARGET NOT OBSERVED`
+
+Material finding:
+The unexpected `Ollama health check timeout` is source-attributable to the baseline EnvironmentSelfAwareness bootstrap scan path. It is a provider health observation, not provider task inference.
+
+Current routing:
+`precise human authorization allowing only bootstrap-induced provider health checks → CODEX bounded runtime observation`.
+
+No general provider execution is authorized.
+
+Next actor:
+**HUMAN AUTHORIZATION → CODEX**
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 STABILIZATION HARNESS READY
 
 Canonical record:
