@@ -1,3 +1,14 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP DIAGNOSTIC WATCHDOG READY
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-091-uaal-rq13-bootstrap-diagnostic-watchdog-ready.md`.
+- Baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- New external harness SHA-256: `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C` (actor-reported; independent filesystem read-back not yet performed).
+- Self-tests passed; no IABV runtime executed during self-test.
+- **First open edge:** `fresh human authorization naming exact harness SHA → one bounded diagnostic AppBootstrap execution`.
+- **Next actor:** HUMAN AUTHORIZATION → CODEX.
+- Diagnostic only: capture progress + main/observer stacks; stop before all RQ13 target operations.
+- Permit only unavoidable baseline bootstrap observation effects, including provider health checks induced by baseline scans; no provider inference/generation, MCP, TASK mutation, SQLite/oracles, `latest_active`, `current_package`, P0 or downstream RQ13 execution.
+
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP STALL UNLOCALIZED
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-090-uaal-rq13-bootstrap-stall-unlocalized.md`.
