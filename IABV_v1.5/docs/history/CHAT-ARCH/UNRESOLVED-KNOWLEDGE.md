@@ -1,3 +1,16 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 PORTABLE-CONTEXT READINESS
+
+**STATUS:** BLOCKED / RUNTIME-INPUT PRECONDITION GATE.
+
+**QUESTION:** Can the stale portable-context runtime state be safely preconditioned using an existing baseline lifecycle mechanism without contaminating the RQ13 observation?
+
+**ESTABLISHED:** `latest.json` is stale relative to the 300-second freshness rule; `current_package(allow_stale=False)` rebuilds and persists when stale; `build_perception_snapshot()` reaches this path before P0 exists.
+
+**MINIMUM ACTION:** independent Sonnet/Claude source audit of existing portable-context refresh/readiness paths and contamination boundary.
+
+**NEXT ACTOR:** SONNET/CLAUDE.
+
+**AUTHORIZATION:** no runtime authorization for preconditioning or request execution.
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 BOUNDED RUNTIME STOP EXPERIMENT
 
 **STATUS:** BLOCK NARROWED / RUNTIME EXPERIMENT DESIGN READY / NOT AUTHORIZED.
