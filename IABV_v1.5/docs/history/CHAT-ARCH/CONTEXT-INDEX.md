@@ -1,3 +1,14 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-075-uaal-rq13-portable-context-preconditioning-reconciliation.md`
+- RQ12: baseline MCP → PerceptionSnapshot closed / attributable.
+- RQ13 DecisionContext reconstruction remains open.
+- Stale portable context is a real P0 precondition blocker.
+- Existing preconditioning mechanism: `portable_context_get(refresh=True)`.
+- First actionable runtime edge: precondition → fingerprint → align request site/objective → verify no rebuild.
+- Next actor: CODEX.
+- Fresh authorization must cover preconditioning plus the subsequent single request.
+- No downstream DecisionContext claim yet.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-074-uaal-rq13-portable-context-precondition-reconciliation.md`
