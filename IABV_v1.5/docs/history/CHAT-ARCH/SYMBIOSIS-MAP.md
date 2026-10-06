@@ -1,3 +1,25 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 DIAGNOSTIC WATCHDOG READINESS
+
+RQ13 adds a collaboration-method distinction:
+
+`diagnostic harness self-test ≠ diagnostic runtime authorization`.
+
+The new external harness separates bootstrap diagnosis from downstream RQ13 operations by using a child process, bounded parent/child timeout and a standard-library watchdog that captures thread stacks and startup progress.
+
+New routing rule:
+
+`ready diagnostic artifact → fresh human authorization naming exact digest → CODEX bounded Windows diagnostic → stack/progress evidence → ChatGPT source reconciliation`.
+
+New attribution rule:
+
+`logger/provider observer signal ≠ main-thread causal attribution`.
+
+A provider health timeout may be correlated with bootstrap observer activity, while the exact stall cause requires direct main-thread stack/progress evidence. If stack capture is unavailable because of native/GIL blocking, timeout alone must remain non-localizing.
+
+The current artifact digest `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C` is external-harness provenance reported by CODEX, not yet independently re-read in this coordination session.
+
+No new organ, production seam or architecture is justified. The intervention remains purely diagnostic and capability-fit to CODEX.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 BOOTSTRAP STALL ATTRIBUTION
 
 RQ13 now distinguishes:
