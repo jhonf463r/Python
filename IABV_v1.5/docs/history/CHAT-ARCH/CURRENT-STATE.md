@@ -1,3 +1,21 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 IMPORT READINESS FAILURE / NO TARGET RUNTIME
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-104-rq13-import-readiness-failure.md`
+
+The freshly authorized execution using harness SHA `60EC734CD8694F8ABF797A2A78942F5DF60C464B10E5C27742097BAF2DFA422F` passed provenance but failed before AppBootstrap while importing `iabv_v15.bootstrap`: `ModuleNotFoundError: No module named 'iabv_v15'`.
+
+Process: PID `20404`, parent `19360`, Python `C:\\Users\\faber\\miniconda3\\python.exe`, version `3.13.2`.
+
+**CLASSIFICATION:** `HARNESS EXECUTION-ENVIRONMENT / IMPORT-READINESS FAILURE / NO TARGET RUNTIME`.
+
+No PCS, ObjectiveRepository, `current_package`, `latest_active` or package evidence was produced.
+
+**CURRENT FIRST OPEN EDGE:** `external harness import-readiness correction → self-test import-path construction without IABV import → new SHA → fresh human authorization → one bounded RQ13 runtime`.
+
+The prior SHA `60EC...` is superseded after modification; do not rerun it. No production change is justified.
+
+Learning status unchanged.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 SOURCE WORKTREE TARGET-PATH ATTRIBUTABLE
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-103-rq13-source-worktree-attributable.md`
