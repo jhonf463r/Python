@@ -1,3 +1,18 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PORTABLE-CONTEXT ATTRIBUTION UNRESOLVED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-085-uaal-rq13-portable-context-alignment-not-adjudicable.md`
+
+`current_package(refresh=True)` executed under correct provenance and persisted package `29268456-8e69-4ec0-b9ae-40ee2ea0ff07`. Returned and persisted package identities matched, but `active_objective_id` was empty despite the controlled TASK `f8b087e1-c1fe-477a-80e9-faaaedb61740` being present.
+
+Baseline source reconciliation shows `ObjectiveRepository` uses fresh AppDatabase connections per operation, while `PortableContextService._latest_objective()` catches every exception and returns `None`. Therefore the harness-reported connection-lifecycle issue does not by itself explain the empty field, but a swallowed repository exception also cannot be excluded from the runtime evidence.
+
+**CLASSIFICATION:** `PACKAGE OBSERVED / ACTIVE-OBJECTIVE ATTRIBUTION UNRESOLVED`.
+
+**CURRENT FIRST OPEN EDGE:** `transparent observation of ObjectiveRepository.latest_active success/failure inside current_package → attribution of active_objective_id`.
+
+No downstream P0/DecisionContext experiment is authorized by this reconciliation. Fresh runtime authorization is required after the harness-level attribution instrumentation is statically verified.
+
+**NEXT ACTOR: CODEX**.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 CONTROLLED TASK PRECONDITION CLOSED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-084-uaal-rq13-controlled-task-precondition-closed.md`
