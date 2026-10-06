@@ -1,3 +1,28 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PROVIDER HEALTH AUTHORIZATION BOUNDARY / RUNTIME NOT ENTERED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-108-rq13-provider-health-authorization-boundary.md`
+
+The attempted execution using harness `B16C15E566AD7BE14BABDA77A4D9188101794EF8E041051D627FFE5B813B3240` was correctly blocked before IABV import because the authorized scope explicitly excluded provider health checks, while the normal AppBootstrap path can transitively invoke them.
+
+Baseline reconciliation at `e46d830...` confirms:
+`AppBootstrap._wire_services() → EnvironmentSelfAwarenessService.request_refresh(reason='role_router_ready', full=False) → _provider_health() when no usable cached provider-health payload exists → LocalRoleRouter.health_snapshot() → _parallel_health_checks() → provider/embedding health_check()`.
+
+**CLASSIFICATION:** `BLOCKED — BOOTSTRAP PATH EXCEEDS CURRENT AUTHORIZATION SCOPE / NO RUNTIME`.
+
+No AppBootstrap, `current_package(refresh=True)`, `latest_active()`, provider health request or SQLite runtime occurred. The primary return-capture contract remains closed; this is an authorization/readiness boundary.
+
+**METHOD DELTA:** `technical readiness + capability fit ≠ authorization-safe intervention`. The readiness gate must include a transitive action/side-effect audit before execution.
+
+**CURRENT FIRST OPEN EDGE:** `authorization-safe bootstrap boundary that reaches the RQ13 target without provider health checks → static/self-test verification → fresh runtime contract`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows/runtime harness engineering + source-level control-flow audit.  
+**ACTION:** read-only identify the minimum existing external harness control, test hook or precondition that suppresses provider health checks while preserving the ordinary service-construction/target path. Do not modify production or execute runtime during this discovery step.
+
+Do not reuse the current runtime authorization until this boundary is explicitly represented in a fresh authorization.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PRIMARY RETURN CAPTURE CONTRACT COMPLETE / RUNTIME NOT AUTHORIZED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-107-rq13-primary-return-capture-contract-complete.md`
