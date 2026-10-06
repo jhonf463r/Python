@@ -1,3 +1,9 @@
+## 2026-10-06 MEMORY ABSORPTION — CHAT-ARCH-2026-10-06-094
+
+The complete 883-line source chat `Se ha pegado el markdown(20261006-002329).md` has been reconciled against the current canonical repository. Its durable methodological lessons are already absorbed by the 2026-10-05/2026-10-06 canonical RSK-01/RQ13 records; this absorption introduces **no change to the current technical frontier or actor**.
+
+Important routing correction: the source chat's historical suggestion to obtain a second RSK-01 eligible participant is **not current routing**. RSK-01 remains separately gated by artifact/provenance/oracle/isolation readiness. Current technical routing remains the top RQ13 overlay below.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP COMPLETION / FRONTIER RETURN
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-093-uaal-rq13-bootstrap-completion-frontier-return.md`
