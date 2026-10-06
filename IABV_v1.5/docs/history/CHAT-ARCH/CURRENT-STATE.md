@@ -30,6 +30,8 @@ Therefore the first open technical edge is now:
 
 Do **not** repeat the producer scan. The producer/persistence edge is already closed for this controlled observation.
 
+The RQ09 one-scan authorization is consumed. Any new MCP startup that can refresh/write World Model state requires a fresh explicit human authorization before execution.
+
 **CURRENT TECHNICAL ACTOR: CODEX.**
 
 Next minimum experiment: one fresh MCP run from the same candidate workspace, without another producer scan, capturing persisted ID before startup, bootstrap replacement reason/mode, MCP in-memory WorldModel ID, one `cognitive_frame_translate` result and the first identity break.
