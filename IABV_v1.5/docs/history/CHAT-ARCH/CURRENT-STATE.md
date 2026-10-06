@@ -1,3 +1,31 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ12 RUNTIME RECONCILIATION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-071-uaal-rq12-runtime-reconciliation.md`
+
+RQ12 Phase 2 is now **LIVE-OBSERVED / BASELINE-ATTRIBUTABLE**.
+
+- executable baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`
+- one MCP `cognitive_frame_translate` invocation
+- process provenance captured in-process
+- relevant source fingerprints matched clean baseline
+- MCP exited successfully
+- captured `PerceptionSnapshot`: `9e674020-5796-4ffe-852c-3af827255672`
+- embedded WorldModel: `96c0fc98-9d59-4cbe-925b-402cb5a9211e`
+- later `perception_cycle` result: `94775c5f-...`, completed after perception capture
+
+**RQ12 CLOSED EDGES:**
+`clean baseline → attributable MCP artifact`
+and
+`MCP → live PerceptionSnapshot`.
+
+The captured perception used the already-persisted `scheduled_light` WorldModel. At baseline source level, `_world_model()` reads `current_model()` before requesting `perception_cycle`; runtime chronology confirms that the later refresh completed after the capture.
+
+Therefore do not describe the later `perception_cycle` result as the producer of this captured PerceptionSnapshot.
+
+**CURRENT FIRST OPEN EDGE:**
+`live PerceptionSnapshot / embedded pre-governance DecisionContext → existing AdaptiveTaskOrchestrator reconstruction → post-governance DecisionContext / downstream governance`.
+
+RQ12 authorization is consumed. No second translation is authorized by this reconciliation.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ12 CLEAN-BASELINE STATIC READINESS
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-070-uaal-rq12-clean-baseline-static-readiness.md`
