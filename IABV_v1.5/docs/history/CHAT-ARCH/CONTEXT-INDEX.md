@@ -1,3 +1,12 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 HARNESS CONTRACT GAP
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-095-rq13-harness-readiness-reconciliation.md`.
+- Runtime was not executed.
+- Current harness lacks the required persisted-package fingerprint and its legacy runtime route includes excluded service-stop/oracle behavior.
+- **First open edge:** `authorized experiment contract → compliant harness artifact → self-test → fresh authorization → bounded runtime observation`.
+- **Next actor:** CODEX, external harness correction/self-test only.
+- No runtime authorization is inherited by a modified harness.
+
 # 2026-10-06 LATEST MEMORY ABSORPTION POINTER — CHAT-ARCH-2026-10-06-094
 
 - Source: `Se ha pegado el markdown(20261006-002329).md`, read in full (883 lines).
