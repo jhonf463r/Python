@@ -1,3 +1,18 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS CONTRACT GAP
+
+The latest CODEX result establishes a readiness boundary, not a runtime result.
+
+New invariant:
+`instrumentation exists ≠ evidence contract implemented`.
+
+The current RQ13 harness contains portions of the required observation machinery but lacks the persisted-package fingerprint required by the evidence contract and retains a legacy route with excluded service-stop/oracle behavior.
+
+Routing rule:
+`incomplete evidence artifact → correct/self-test harness → new artifact SHA → fresh authorization → runtime`.
+
+Do not weaken the experiment contract to fit an existing harness. Do not interpret harness correction as learning. Preserve the larger target:
+`verified experience → reusable knowledge/method → future decision/behavior change → reuse`.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — FULL CHAT ABSORPTION / NO ROUTING DRIFT
 
 The full 883-line source chat was reconciled against canonical `main`. Durable transfers now explicitly preserve:
