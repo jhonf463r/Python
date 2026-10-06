@@ -1,3 +1,11 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 PRIMARY RESULT CAPTURE CONTRACT GAP
+
+- Canonical record: `CHAT-ARCH-2026-10-06-106-rq13-primary-result-capture-contract-gap.md`.
+- One authorized attempt with SHA `771FBF...` stopped before IABV import because the returned-package reporter omitted required fields.
+- **First open edge:** complete `emit_returned_package()` contract and self-test it without IABV import.
+- **Next actor:** CODEX.
+- No runtime evidence or learning evidence was produced.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 IMPORT READINESS CORRECTED
 
 - Canonical record: `CHAT-ARCH-2026-10-06-105-rq13-import-readiness-corrected.md`.
