@@ -1,4 +1,21 @@
-## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 IMPORT READINESS CORRECTED
+## 2026-10-06 METHOD DELTA — RQ13 TRANSITIVE AUTHORIZATION BOUNDARY
+
+RQ13 exposed a reusable collaboration invariant: `normal lifecycle path ≠ authorization-safe intervention`.
+
+A runtime experiment is not ready when only the direct target call is understood. The readiness/authorization contract must account for transitive externally observable or side-effecting operations reachable before the target, including bootstrap-triggered provider health probes.
+
+Refined readiness sequence:
+`experiment contract → artifact/input readiness → provenance → transitive action/side-effect audit → isolation/blinding → oracle/verification readiness → authorization → actor execution`.
+
+For RQ13 specifically, baseline source confirms:
+`AppBootstrap._wire_services() → EnvironmentSelfAwarenessService.request_refresh(role_router_ready) → provider-health path when cache is absent → LocalRoleRouter.health_snapshot() → _parallel_health_checks() → provider/embedding health_check()`.
+
+Therefore capability-fit and technical readiness are necessary but insufficient; the proposed action must also be authorization-safe under its transitive call graph.
+
+Current routing consequence:
+`authorization-safe bootstrap boundary without provider health checks → static/self-test → fresh authorization → bounded RQ13 runtime`.
+
+This delta does not justify a production redesign or a new organ.## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 IMPORT READINESS CORRECTED
 
 Episode 105 closes the launch/import readiness defect identified in episode 104.
 
