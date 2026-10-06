@@ -1,3 +1,18 @@
+## 2026-10-06 TRANSFER — UAAL-RQ12 BASELINE RUNTIME PROVENANCE CLOSED
+
+RQ12 operationalizes the provenance method from RQ11B:
+
+`clean artifact → in-process fingerprint → process/import identity → temporal WorldModel trace → single observation → PerceptionSnapshot identity → final verification`.
+
+New verified method lesson:
+
+`current_model read → PerceptionSnapshot capture → refresh request → refresh completion`
+
+must be temporally distinguished. A later refresh completion must not be retroactively assigned as the producer of an earlier captured semantic object.
+
+RQ12 demonstrates live MCP → PerceptionSnapshot on the clean `e46d830...` baseline. This replaces RQ10's variant/indeterminate baseline limitation for this edge; RQ10 itself remains variant evidence.
+
+The next collaboration frontier is now the existing pre-governance DecisionContext → orchestrator reconstruction boundary. No new cognitive subsystem is justified.
 ## 2026-10-06 TRANSFER — UAAL-RQ12 CLEAN-BASELINE PROVENANCE READINESS
 
 RQ12 converts the RQ11B provenance lesson into an executable evidence contract.
