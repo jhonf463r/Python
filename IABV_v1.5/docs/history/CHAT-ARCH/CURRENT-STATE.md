@@ -1,3 +1,20 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 IMPORT READINESS CORRECTED / RUNTIME NOT AUTHORIZED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-105-rq13-import-readiness-corrected.md`
+
+CODEX reports that the external harness now derives the application `src` from the actual application root and places it first in both process `sys.path` and inherited `PYTHONPATH`. New reported SHA-256:
+`771FBFDB26765CEB364D5D485D97A63270C018B8713360FB38FF567B6F464FFC` (53,654 bytes).
+
+Reported syntax/self-tests pass, including an isolated synthetic import-path probe. No IABV import, AppBootstrap or runtime occurred.
+
+**CLASSIFICATION:** `PYTHON IMPORT READINESS CORRECTED / SELF-TESTED / RUNTIME NOT AUTHORIZED`.
+
+The harness SHA `60EC...` is superseded.
+
+**CURRENT FIRST OPEN EDGE:** `fresh human authorization naming exact SHA 771FBF... → one bounded RQ13 runtime → returned-package capture before trace processing → independent verification`.
+
+Harness bytes/SHA remain CODEX-reported, not independently byte-read here. Learning status unchanged.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 IMPORT READINESS FAILURE / NO TARGET RUNTIME
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-104-rq13-import-readiness-failure.md`
