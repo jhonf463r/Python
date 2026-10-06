@@ -1,4 +1,14 @@
-## 2026-10-06 METHOD DELTA — RQ13 RETURN/PERSISTENCE CORRESPONDENCE CLOSED
+## 2026-10-06 UNIVERSAL ROUTING CORRECTION — RQ13 DECISION-CONTEXT IS SECONDARY
+
+RQ13 returned/persisted package correspondence is closed.
+The subsequent DecisionContext reconstruction audit is valid but is not the first universal causal edge because capability evaluation occurs before `_refresh_session_metadata()` and baseline `CapabilityReadinessService` does not directly consume `environment_self_model` or `world_model`.
+
+Current first universal causal edge:
+`live environmental/world evidence → normalized capability/affordance representation → context-conditioned realization selection`.
+
+Method rule:
+`downstream integrity seam ≠ earliest unresolved universal causal seam`.
+Route from the universal sequence, not from the latest discovered implementation seam.## 2026-10-06 METHOD DELTA — RQ13 RETURN/PERSISTENCE CORRESPONDENCE CLOSED
 
 RQ13 runtime verification closed the evidence gap between source-level package return/persistence semantics and actual runtime correspondence.
 
