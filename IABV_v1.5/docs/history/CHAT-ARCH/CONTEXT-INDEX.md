@@ -219,6 +219,13 @@ Stop after the first missing causal seam and one minimum discriminating experime
 | **Human-machine shared knowledge field / collaborative traceability** | `HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md`, `MEMORY-OPERATING-PROTOCOL.md`, `SYMBIOSIS-MAP.md`, `UNRESOLVED-KNOWLEDGE.md` | human objective/intuition, AI interpretation, verification, Knowledge/Relation/Routing/Method deltas, provenance and future-frame writeback | What human intent, AI experience and verified evidence materially changed the shared IABV model, and what must the next participant inherit? |
 | **Deep research result gate / scientific absorption** | `DEEP-RESEARCH-RESULT-ADJUDICATION-2026-09-30.md`, `CHAT-ARCH-2026-09-30-001-resonant-self-knowledge-retrieval-fabric.md`, `HUMAN-MACHINE-KNOWLEDGE-COORDINATION-2026-09-30.md` | scientific research brief vs executed result, source/citation audit, IABV reconciliation, Knowledge Delta and frontier-driven routing | Has the actual scientific research result arrived, and what findings can legitimately be absorbed into IABV? |
 
+## 2026-10-06 RQ09 RESULT / CURRENT TECHNICAL FRONTIER
+Canonical record: `CHAT-ARCH-2026-10-06-065-uaal-rq09-producer-persistence-mcp-handoff-reconciliation.md`
+RQ09 closed `CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → fresh persisted snapshot` under one explicitly authorized read-only light scan.
+First open edge: `fresh persisted producer snapshot → fresh MCP bootstrap/consumer → exact consumer WorldModel snapshot → PerceptionSnapshot`.
+Current actor: **CODEX**.
+Negative knowledge: do not repeat the producer scan; do not treat a new MCP process or new persisted snapshot as proof that the authorized producer snapshot was consumed.
+
 ## CROSS-CUTTING ACTIVATION — ALWAYS CONSIDER WHEN MATERIAL
 
 ### Provenance
