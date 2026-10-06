@@ -1,3 +1,22 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS PATH CORRECTION READY / RUNTIME NOT AUTHORIZED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-099-rq13-harness-path-correction-ready.md`
+
+CODEX reports the external harness was corrected and self-tested after episode 098. New reported SHA-256:
+`50779B1DD321258729E1BB9ABEBA4D04ACBBFCC45CF0FDFDD0555AE5F6C1FA37` (44,485 bytes).
+
+The correction derives the actual Git root, maps application-relative source paths through the CWD/Git-root relationship, uses `git show <baseline>:<repo-relative-path>`, reconstructs the Git blob SHA-1, and records the resolved repository path. The reported self-test covers both direct-root and nested-checkout layouts and verifies the real RQ13 baseline path `IABV_v1.5/src/iabv_v15/bootstrap.py` against blob `e4befa6b683fc87aed7481f377f1332f5753e2c3`.
+
+GitHub independently confirms that canonical baseline path and blob. The Windows harness bytes/SHA and self-test remain CODEX-reported, not independently byte-read in this coordination session.
+
+**CLASSIFICATION:** `HARNESS PROVENANCE PATH CORRECTED / SELF-TESTED / RUNTIME NOT AUTHORIZED`.
+
+**CURRENT FIRST OPEN EDGE:** `new harness SHA 50779B1D... → fresh human authorization → one bounded RQ13 PCS/ObjectiveRepository attribution runtime → independent verification`.
+
+Do not reuse authorization for `C94D...`. Do not execute runtime, modify production, or infer learning from harness correction.
+
+Existing learning status is unchanged: lower-layer mechanism present; selector-level influence evidenced; strong causal future-decision learning NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS PROVENANCE GATE FAILURE / NO TARGET RUNTIME
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-098-rq13-harness-provenance-gate-failure.md`
