@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS PROVENANCE FAILURE
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-082-uaal-rq13-harness-provenance-failure-reconciliation.md`
+
+The latest authorized RQ13 attempt was blocked before the controlled TASK precondition because the external harness `C:\\temp\\rq13_task_precondition.py` raised `TypeError: emit() got multiple values for argument 'name'` while registering source provenance.
+
+The harness is outside the artifact-ready IABV checkout and not part of executable baseline `e46d8304167708bed0764d3bf2be8fd6643e8944`. No ObjectiveRepository read, TASK creation/persistence, `current_package(refresh=True)`, `handle_request`, or MCP observation occurred in this episode.
+
+**CLASSIFICATION:** `HARNESS CONTROL-PLANE DEFECT / TARGET OPERATION NOT OBSERVED`.
+
+**CURRENT FIRST OPEN EDGE:** `harness provenance self-test → exact corrected harness → fresh authorization → pre-mutation state capture → controlled TASK precondition`.
+
+A corrected runtime attempt requires fresh human authorization. Do not infer TASK presence/absence, persistence, portable-context alignment or DecisionContext reconstruction from this blocked episode.
+
+**NEXT ACTOR: CODEX** for the narrow external-harness correction and self-test. No production source modification is indicated.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 NO PRE-EXISTING OBJECTIVE
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-081-uaal-rq13-no-preexisting-objective-reconciliation.md`
