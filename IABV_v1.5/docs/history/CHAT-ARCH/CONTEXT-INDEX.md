@@ -1,3 +1,13 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 CONTROLLED TASK ESTABLISHED
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-084-uaal-rq13-controlled-task-precondition-closed.md`.
+- Pre-mutation ObjectiveRepository state: 0 OBJECTIVE / 0 PROJECT / 0 TASK / 0 SUBTASK.
+- Exactly one controlled active TASK now exists: `f8b087e1-c1fe-477a-80e9-faaaedb61740`.
+- Persistence was independently verified through a fresh SQLite read-only connection and JSON/ObjectNode validation.
+- Exact requested Unicode title provenance remains unresolved.
+- **First actionable edge:** controlled active TASK → portable_context package alignment → package identity/fingerprint.
+- Fresh authorization is required for downstream runtime execution.
+- Next actor: CODEX.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 HARNESS READY
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-083-uaal-rq13-harness-readiness-reconciliation.md`.
