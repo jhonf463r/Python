@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PRIMARY RESULT CAPTURE CONTRACT GAP / NO RUNTIME
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-106-rq13-primary-result-capture-contract-gap.md`
+
+The freshly authorized attempt using harness `771FBF...` stopped before importing IABV because `emit_returned_package()` did not satisfy the evidence contract: it omitted `created_at_utc`, `updated_at_utc`, `package_path`, `markdown_path` and complete relevant metadata.
+
+**CLASSIFICATION:** `PRIMARY RETURN CAPTURE CONTRACT GAP / RUNTIME NOT ENTERED`.
+
+No AppBootstrap, `current_package`, `latest_active` or target runtime occurred.
+
+**CURRENT FIRST OPEN EDGE:** `complete primary-result capture contract → self-test → new SHA → fresh authorization → bounded RQ13 runtime`.
+
+Next actor: **CODEX**, external harness correction/self-test only. Preserve all prior provenance/import/trace safeguards.
+
+Learning status unchanged.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 IMPORT READINESS CORRECTED / RUNTIME NOT AUTHORIZED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-105-rq13-import-readiness-corrected.md`
