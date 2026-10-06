@@ -1,3 +1,23 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS READY / STATE-BOUNDARY RETURN
+
+The harness defect is closed as an evidence-method boundary.
+
+New routing invariant:
+
+`harness self-test passed ≠ target runtime authorized`
+
+and:
+
+`previous runtime state observation ≠ current runtime state observation`.
+
+The next valid intervention therefore returns to the domain frontier only after fresh human authorization:
+
+`authorized pre-mutation state → controlled TASK precondition → independent read-back`.
+
+No downstream portable-context or DecisionContext claim follows until that edge is observed and reconciled.
+
+This is a method/routing delta, not proof of autonomous runtime learning.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS-AS-PRECONDITION
 
 RQ13 adds a methodological invariant:
