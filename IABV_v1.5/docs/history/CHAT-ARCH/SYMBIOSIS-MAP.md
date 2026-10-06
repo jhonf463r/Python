@@ -1,3 +1,18 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PERSISTED PACKAGE / SOURCE CORRELATION
+
+Episode 101 separates three layers:
+`persisted artifact evidence`,
+`source return/persistence semantics`,
+`direct runtime return evidence`.
+
+The persisted package and controlled TASK alignment are strongly supported, and baseline source shows `build_package()` persists `latest.json` before returning the same package object. Nevertheless:
+`semantic continuity ≠ direct runtime return capture`.
+
+New routing:
+`fix reporting collision → self-test → new SHA → fresh authorization → new bounded runtime`.
+
+No target rerun is permitted merely to repair the old run. No learning claim follows.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 TARGET REACHED / REPORTING BOUNDARY FAILURE
 
 Episode 100 materially advances RQ13.
