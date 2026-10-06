@@ -1,3 +1,13 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 IMPORT READINESS FAILURE
+
+- Canonical record: `CHAT-ARCH-2026-10-06-104-rq13-import-readiness-failure.md`.
+- One authorized run with SHA `60EC734D...` passed provenance but failed at `import iabv_v15.bootstrap` with `ModuleNotFoundError`.
+- AppBootstrap and target RQ13 operations were not entered.
+- **First open edge:** correct external harness import-path readiness and self-test it without importing IABV.
+- **Next actor:** CODEX, external harness correction/self-test only.
+- A modified harness will require a new SHA and fresh authorization.
+- No target or learning evidence was produced.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 TARGET-PATH ATTRIBUTABLE
 
 - Canonical record: `CHAT-ARCH-2026-10-06-103-rq13-source-worktree-attributable.md`.
