@@ -1,4 +1,16 @@
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP BOUNDARY CLOSED
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-076-uaal-rq13-bootstrap-boundary-closed.md`.
+- Artifact readiness: closed at `e46d830...`; clean isolated tree verified.
+- Bootstrap/setup: closed / live-observed / baseline-attributable.
+- `POST_BOOTSTRAP_BOUNDARY` reached.
+- Harness-blocked direct connectivity probes contaminate only the EnvironmentSelfModel connectivity field; do not treat `connected=false` as host truth.
+- RQ13 DecisionContext reconstruction remains open.
+- **First actionable edge:** `POST_BOOTSTRAP_BOUNDARY → completed portable-context precondition → package fingerprint → request alignment → zero rebuild during P0`.
+- Next actor: CODEX.
+- Fresh runtime authorization required for the new run; bootstrap-only authorization is consumed.
+
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-075-uaal-rq13-portable-context-preconditioning-reconciliation.md`
 - RQ12: baseline MCP → PerceptionSnapshot closed / attributable.
