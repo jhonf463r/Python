@@ -1,3 +1,11 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 HARNESS PROVENANCE BLOCK
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-082-uaal-rq13-harness-provenance-failure-reconciliation.md`.
+- The latest authorized attempt stopped before the TASK precondition because the external provenance harness raised `TypeError: emit() got multiple values for argument 'name'`.
+- The harness is external to the artifact-ready checkout and no target operation was observed.
+- **First actionable edge:** correct and self-test the external provenance harness before requesting fresh runtime authorization.
+- Then, and only then, resume the existing controlled TASK-precondition route.
+- Do not infer current TASK state from the blocked episode.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 NO PRE-EXISTING OBJECTIVE
 
