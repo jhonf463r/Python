@@ -1,3 +1,27 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ12 CLEAN-BASELINE STATIC READINESS
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-070-uaal-rq12-clean-baseline-static-readiness.md`
+
+RQ12 Phase 1 is reconciled and ready for authorized runtime.
+
+- isolated worktree: `C:\\Users\\faber\\.codex\\worktrees\\rq12-clean-baseline\\Python\\IABV_v1.5`
+- HEAD: `e46d8304167708bed0764d3bf2be8fd6643e8944`
+- Git status: clean
+- relevant baseline blobs confirmed
+- source fingerprints captured from the clean checkout
+- no RQ05/RQ10 overlay present
+- in-process fingerprint harness is feasible without production changes
+
+**CURRENT FIRST ACTIONABLE EDGE:**
+`fresh human authorization → clean e46d830 execution → in-process artifact fingerprint → WorldModel identity/chronology → PerceptionSnapshot identity/provenance`
+
+Runtime authorization is still **NOT GRANTED**. Do not execute RQ12 from this document alone.
+
+Important refinement: Git cleanliness is source-artifact cleanliness, not runtime-state freshness. `latest.json` must be treated as an explicit pre-existing runtime input and fingerprinted before bootstrap without manual normalization or scanning.
+
+Natural refresh requests are expected from baseline code. RQ12 must distinguish refresh requested from scan executed and stop only on effects outside the explicit authorization contract, especially external execution or an additional MCP observation.
+
+Stop after the first attributable PerceptionSnapshot/WorldModel observation and final identity capture; do not test downstream DecisionContext in the same experiment.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ11B PROVENANCE FINAL RECONCILIATION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-069-uaal-rq11b-rq10-provenance-final-reconciliation.md`
