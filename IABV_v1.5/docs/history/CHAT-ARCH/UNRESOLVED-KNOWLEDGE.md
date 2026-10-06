@@ -1,16 +1,23 @@
-## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 HARNESS EVIDENCE-CONTRACT READINESS
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 FRESH RUNTIME AUTHORIZATION
 
-**STATUS:** BLOCKED / RUNTIME NOT AUTHORIZED.
+**STATUS:** REPORTED READY / RUNTIME NOT AUTHORIZED.
 
-**QUESTION:** Does the external RQ13 harness implement the complete authorized evidence contract for PCS/ObjectiveRepository/latest_active/package alignment?
+**QUESTION:** Does the corrected external harness enable an admissible runtime observation of PCS/ObjectiveRepository/latest_active/package alignment?
 
-**RESULT:** NO. Codex found the current harness lacks the required persisted-package fingerprint and its legacy runtime route includes excluded service-stop/oracle behavior.
+**REPORTED:** CODEX says the harness now includes the persisted-package SHA-256 fingerprint, isolates excluded service-stop/SQLite-oracle operations from the authorized route, preserves PCS/ObjectiveRepository identity tracing and transparent `latest_active`, performs one `current_package(refresh=True)`, and passes `contract-self-test` without executing IABV.
 
-**FIRST OPEN EDGE:** `authorized experiment contract → compliant harness artifact → harness self-test`.
+**ARTIFACT IDENTITY:** `C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA`.
 
-**MINIMUM ACTION:** CODEX may modify only the external harness, add the persisted-package fingerprint, remove/isolate excluded legacy paths without weakening the contract, self-test the complete route, and return a new SHA-256. No IABV runtime is authorized until a fresh human authorization names that new SHA.
+**VERIFICATION LIMIT:** the external Windows file and its new SHA were not independently byte-read in this coordination session.
 
-**UNIVERSAL ALIGNMENT:** this is measurement readiness only; it does not advance claims about learning, reuse or autonomous coordination.
+**FIRST OPEN EDGE:** `new harness SHA → fresh human runtime authorization → bounded attribution runtime`.
+
+**MINIMUM RUNTIME ACTION AFTER AUTHORIZATION:**
+one bounded run from the exact executable baseline `e46d8304167708bed0764d3bf2be8fd6643e8944`; verify CWD/source provenance; complete AppBootstrap once; capture PCS and ObjectiveRepository identities; perform exactly one `current_package(refresh=True)`; transparently capture `latest_active()`; capture returned/persisted package IDs, `site_id`, `active_objective_id`, persisted artifact fingerprint and match status; stop before TASK/objective mutation, MCP/provider execution, P0, `handle_request` or DecisionContext reconstruction.
+
+**NOT AUTHORIZED:** no inference of learning, autonomous actor selection, causal reuse or decision influence from this readiness state.
+
+**NEXT ACTOR:** HUMAN AUTHORIZATION → CODEX.
 
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 RETURN TO CONTEXT/DECISION CAUSAL SEAM
 
