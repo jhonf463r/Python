@@ -1,3 +1,14 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ12 CLEAN-BASELINE STATIC READINESS
+
+`CHAT-ARCH-2026-10-06-070-uaal-rq12-clean-baseline-static-readiness.md`
+
+**Type:** CANONICAL RECONCILIATION / STATIC READINESS / ROUTING
+
+**Preserves:** clean isolated RQ12 worktree at executable baseline `e46d830...`, exact relevant source blobs and checkout fingerprints, the in-process provenance harness contract, the distinction between Git-clean source and pre-existing runtime state, and the fresh authorization gate for Phase 2.
+
+**Routing:** activate for the authorized clean-baseline MCP provenance observation, including in-process source/cache fingerprinting, WorldModel temporal identity, PerceptionSnapshot identity, and refresh-vs-scan chronology.
+
+**Next actor:** CODEX, only after fresh human runtime authorization.
 ## 2026-10-06 REGISTRATION — UAAL-RQ10 PROVENANCE CORRECTION
 
 `CHAT-ARCH-2026-10-06-067-uaal-rq10-provenance-correction.md`
