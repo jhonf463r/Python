@@ -1,3 +1,11 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP OBSERVATION AUTHORIZATION BOUNDARY
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-086-uaal-rq13-bootstrap-observation-authorization-boundary.md`.
+- Baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- Harness SHA: `C8DACA7DC0E9E21C63455FA29BA6DB75D579730D101ADDE55340A4933912D14C`.
+- Independent source audit: no existing inspected AppBootstrap route satisfies the current authorization while excluding EnvironmentSelfAwareness/WorldModel observation effects.
+- **First open edge:** `human authorization contract → attributable baseline AppBootstrap observation boundary`.
+- **Next actor:** HUMAN.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT ATTRIBUTION UNRESOLVED
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-085-uaal-rq13-portable-context-alignment-not-adjudicable.md`.
