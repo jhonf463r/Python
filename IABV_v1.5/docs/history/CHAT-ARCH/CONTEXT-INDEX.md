@@ -1,3 +1,12 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 IMPORT READINESS CORRECTED
+
+- Canonical record: `CHAT-ARCH-2026-10-06-105-rq13-import-readiness-corrected.md`.
+- New harness SHA reported by CODEX: `771FBFDB26765CEB364D5D485D97A63270C018B8713360FB38FF567B6F464FFC`.
+- Reported self-test confirms deterministic derivation of `IABV_v1.5/src` and isolated synthetic import success without IABV import.
+- **First open edge:** fresh human authorization for exact new SHA → one bounded RQ13 runtime → primary returned-package capture → independent verification.
+- No authorization transfers from `60EC...`.
+- No target runtime evidence or learning evidence was produced by this correction.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 IMPORT READINESS FAILURE
 
 - Canonical record: `CHAT-ARCH-2026-10-06-104-rq13-import-readiness-failure.md`.
