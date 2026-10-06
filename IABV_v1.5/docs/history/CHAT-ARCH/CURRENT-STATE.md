@@ -1,3 +1,25 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ11B PROVENANCE FINAL RECONCILIATION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-069-uaal-rq11b-rq10-provenance-final-reconciliation.md`
+
+RQ11B recovered materially stronger RQ10 artifact evidence, but formal artifact attribution remains `MIXED/INDETERMINATE` because the executing PID did not capture an in-process cryptographic module fingerprint.
+
+The evidence strongly implicates the RQ05 candidate overlay:
+- relevant source files were dirty and predated RQ10 start;
+- cached bytecode metadata matched those source timestamps/sizes;
+- RQ10 CWD/import root and `inspect.getfile()` paths pointed to the candidate worktree;
+- observed behavior is consistent with the no-refresh overlay.
+
+However, no direct in-process digest proves which exact bytes PID `21668` loaded.
+
+**Routing correction:** do not spend more cycles trying to manufacture this missing historical fingerprint. Preserve RQ10 as variant/indeterminate evidence and obtain a fresh clean-baseline observation with in-process fingerprints when separately authorized.
+
+**CURRENT FIRST ACTIONABLE EDGE:**
+`clean e46d830 baseline → fresh MCP execution → in-process module fingerprint → WorldModel identity → PerceptionSnapshot identity/provenance`
+
+No fresh runtime authorization currently exists.
+
+Do not execute RQ12 from this document alone.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ11 STATIC READINESS RECONCILIATION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-068-uaal-rq11-static-readiness-reconciliation.md`
