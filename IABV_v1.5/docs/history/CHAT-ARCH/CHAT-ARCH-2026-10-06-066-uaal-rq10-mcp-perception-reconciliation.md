@@ -1,3 +1,19 @@
+## PROVENANCE CORRECTION — SEE RQ10 RECORD 067
+
+The subsequent RQ11 Phase 1 reconciliation established that this RQ10 observation cannot currently be attributed cleanly to executable baseline `e46d830...`.
+
+The Codex worktree used for RQ10 is reported dirty in `server.py` and `task_context_assembler.py`, the same two files previously documented by RQ05 as an uncommitted candidate no-refresh observation seam.
+
+Therefore the runtime facts recorded here remain valid as **candidate-worktree runtime evidence**, but the earlier baseline-attribution interpretation is superseded.
+
+Canonical correction:
+`CHAT-ARCH-2026-10-06-067-uaal-rq10-provenance-correction.md`
+
+Current status:
+`LIVE-OBSERVED / CANDIDATE-VARIANT EVIDENCE / BASELINE ATTRIBUTION OPEN`
+
+Do not use this record alone to claim baseline `e46d830...` runtime behavior.
+
 ## SOURCE ADDENDUM — DECISION-CONTEXT RECONSTRUCTION BOUNDARY
 
 Subsequent direct inspection of executable baseline `e46d830...` identified an important source-level boundary after the RQ10 live observation.
