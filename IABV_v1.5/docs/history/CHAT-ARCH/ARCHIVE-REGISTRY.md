@@ -1,4 +1,15 @@
-## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-110
+## 2026-10-06 REGISTRATION — UNIVERSAL FRONTIER RECONCILIATION 111
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-111-universal-frontier-reconciliation.md`
+
+Material delta:
+- RQ13 package return/persistence correspondence remains closed;
+- DecisionContext reconstruction is retained as a secondary integrity edge;
+- first open universal causal edge is restored to environment/world evidence → capability/affordance → selection;
+- no new organ or provider-specific architecture is justified.
+
+Routing authority: `CURRENT-STATE.md`.## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-110
 
 Registered canonical episode:
 `CHAT-ARCH-2026-10-06-110-rq13-returned-persisted-correspondence-closed.md`
