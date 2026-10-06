@@ -1,4 +1,16 @@
-## 2026-10-06 METHOD DELTA — RQ13 NO SAFE BOUNDARY / TRANSITIVE AUTHORIZATION
+## 2026-10-06 METHOD DELTA — RQ13 RETURN/PERSISTENCE CORRESPONDENCE CLOSED
+
+RQ13 runtime verification closed the evidence gap between source-level package return/persistence semantics and actual runtime correspondence.
+
+Observed:
+`current_package(refresh=True)` (exactly once) → returned package captured before trace → persisted `latest.json` → semantic comparison.
+
+Reusable rule:
+`source semantics ≠ runtime proof`; when the returned object is the primary result, capture it before secondary logging and compare it with an independently reread persisted artifact.
+
+The package/objective attribution edge is also closed for this execution through transparent `latest_active()` observation: OBJECTIVE empty → PROJECT empty → TASK active.
+
+Current frontier moves to live DecisionContext lineage. No learning inference follows from package persistence or correspondence.## 2026-10-06 METHOD DELTA — RQ13 NO SAFE BOUNDARY / TRANSITIVE AUTHORIZATION
 
 RQ13 now closes the technical search for an existing supported bootstrap boundary that excludes provider health checks while preserving the ordinary service path and target reachability.
 
