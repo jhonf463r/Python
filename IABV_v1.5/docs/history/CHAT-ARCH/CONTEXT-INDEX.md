@@ -1,3 +1,14 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 RETURN AFTER DISK CLEANUP / LEARNING STATUS
+
+- Canonical record: `CHAT-ARCH-2026-10-06-097-disk-cleanup-learning-reconciliation.md`.
+- Disk cleanup recovered approximately 11.18 GiB; C: free space is about 11.97 GiB.
+- Learning status: lower-layer adaptive learning exists and selector-level learned-state influence is evidenced; strong future-decision causal learning remains NOT PROVEN.
+- RQ13 remains the current technical frontier.
+- Current route: `new harness SHA C94D983D... → fresh human runtime authorization → one bounded PCS/ObjectiveRepository attribution runtime → independent verification`.
+- Do not inherit prior harness authorizations.
+- Do not reopen Ollama/bootstrap diagnostics unless reproduced as a blocker.
+- Do not reinterpret cleanup or harness readiness as learning.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 HARNESS READY / FRESH AUTHORIZATION
 
 - Canonical record: `CHAT-ARCH-2026-10-06-096-rq13-harness-ready-fresh-authorization.md`.
