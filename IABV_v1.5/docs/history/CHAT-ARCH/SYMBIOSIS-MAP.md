@@ -1,3 +1,17 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 IMPORT READINESS CORRECTED
+
+Episode 105 closes the launch/import readiness defect identified in episode 104.
+
+New invariant:
+`Git/source provenance ready ≠ interpreter import ready`.
+
+The corrected harness reports explicit source-root derivation, process `sys.path` preparation and inherited `PYTHONPATH` preparation, with synthetic-module self-test coverage.
+
+New routing:
+`new SHA 771FBF... → fresh authorization → one bounded RQ13 runtime → capture primary target return before trace processing`.
+
+No runtime or learning claim follows from this episode.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 IMPORT READINESS
 
 Episode 104 adds a separate launch-readiness layer:
