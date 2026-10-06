@@ -1,3 +1,13 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 STATIC BLOCK
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-072-uaal-rq13-static-block-reconciliation.md`
+- RQ12 baseline MCP → PerceptionSnapshot: closed / attributable.
+- RQ13 preview path: does not reach post-governance reconstruction.
+- RQ13 normal request path: reaches reconstruction but crosses conditional `_parallel_ia_comparison` and later recording/persistence.
+- First open actionable edge: prove an existing safe path to post-governance reconstruction without out-of-scope effects.
+- Next actor: SONNET/CLAUDE for independent adversarial source audit.
+- Runtime authorization: none.
+- Do not run MCP, `orchestrator_preview`, or `handle_request` during this audit.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ12 CLOSED / RQ13 OPEN
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-071-uaal-rq12-runtime-reconciliation.md`
