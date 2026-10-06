@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 SOURCE WORKTREE TARGET-PATH ATTRIBUTABLE
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-103-rq13-source-worktree-attributable.md`
+
+CODEX forensic inspection classifies the RQ13 worktree as `SOURCE WORKTREE DIRTY BUT TARGET PATH BASELINE ATTRIBUTABLE`: 421 total Git status entries, but under `IABV_v1.5/src/` there are only `.pyc` changes/cache artifacts and **0 modified/deleted/renamed/untracked `.py` sources**. The four focal Python sources match baseline blobs, and the inspected Python 3.13/3.14 bytecodes are reported source-equivalent.
+
+**CLASSIFICATION:** readiness gate closed as **B**.
+
+Residual caveat: this does not prove which exact cache file a future process will load. It does establish that no divergent Python source overlay was identified on the authorized RQ13 path.
+
+**CURRENT FIRST OPEN EDGE:** `fresh authorization naming harness 60EC734D... → one bounded RQ13 runtime → capture primary returned package before trace reporting → persisted fingerprint → independent verification`.
+
+No authorization is implied by this readiness result. Preserve dirty worktree; do not clean it.
+
+Learning status unchanged.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 SOURCE WORKTREE READINESS UNRESOLVED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-102-rq13-source-worktree-readiness-gate.md`
