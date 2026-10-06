@@ -1,3 +1,7 @@
+## 2026-10-06 CANONICAL ABSORPTION — CHAT-ARCH-2026-10-06-094
+
+Source chat `Se ha pegado el markdown(20261006-002329).md` was fully scanned (883 lines) and reconciled. Durable knowledge is preserved in `CHAT-ARCH-2026-10-06-094-chat-full-absorption-universal-routing-reconciliation.md` and reflected in the current routing/method surfaces. The historical RSK-01 second-participant suggestion is preserved as non-current candidate routing; the active technical route remains governed by the latest `CURRENT-STATE.md` RQ13 overlay.
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP COMPLETION / FRONTIER RETURN
 
 Canonical record:
