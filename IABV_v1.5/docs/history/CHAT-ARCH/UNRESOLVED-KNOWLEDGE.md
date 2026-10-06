@@ -2473,3 +2473,34 @@ Required next evidence:
 `authorized read-only producer scan → fresh snapshot → persistence attribution → fresh MCP consumer → PerceptionSnapshot correlation`.
 
 No scan without explicit authorization. No architectural bypass.
+
+
+## 2026-10-06 ACTIVE ITEM — UAAL-RQ09 MCP HANDOFF / PERCEPTION CORRELATION
+
+**QUESTION:** Does the exact fresh Windows producer snapshot survive the fresh MCP bootstrap and reach the MCP consumer's WorldModel and the resulting PerceptionSnapshot?
+
+**STATUS:** OPEN / RQ09 PRODUCER-PERSISTENCE EDGE CLOSED / MCP HANDOFF UNVERIFIED.
+
+RQ09 verified one explicitly authorized light scan and exact in-memory-to-disk persistence:
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → fresh persisted snapshot`.
+
+Producer snapshot:
+`4917b081-ae7b-49c7-b24e-4307079573bf` at `2026-10-06T00:17:32.194384Z`.
+
+Fresh MCP bootstrap was followed by a distinct persisted snapshot:
+`4350a718-4ec6-420c-a3bb-8062eb70f376` at `2026-10-06T00:20:53.537976Z`.
+
+Exact MCP in-memory snapshot ID was not captured and no PerceptionSnapshot was observed.
+
+Source at the code-bearing baseline contains a bootstrap `world_model_service.request_refresh(reason='role_router_ready', full=False)` path, making startup replacement plausible, but the exact causal call was not captured during RQ09.
+
+Therefore the first open edge is:
+`fresh persisted producer snapshot → MCP bootstrap/consumer → exact consumer WorldModel snapshot → PerceptionSnapshot`.
+
+Required next evidence:
+`persisted ID before MCP startup → bootstrap replacement reason/mode → MCP in-memory WorldModel ID → one cognitive_frame_translate result → PerceptionSnapshot identity/provenance → first identity break`.
+
+Do not repeat the producer scan. Do not use a compensating refresh. Do not advance to DecisionContext/capability/external-AI/learning claims.
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-065-uaal-rq09-producer-persistence-mcp-handoff-reconciliation.md`
