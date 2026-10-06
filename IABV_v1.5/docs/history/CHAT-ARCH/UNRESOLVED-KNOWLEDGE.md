@@ -1,3 +1,17 @@
+## 2026-10-06 REFINED FRONTIER — LIVE DECISION-CONTEXT LINEAGE
+
+**QUESTION:** Does the normal adaptive orchestration path preserve the semantically relevant evidence from the live PerceptionSnapshot's pre-governance DecisionContext when it reconstructs the post-governance DecisionContext and refreshed PerceptionSnapshot?
+
+**SOURCE FACT:** `_refresh_session_metadata()` rebuilds a DecisionContext using `_build_decision_context(..., perception_snapshot=perception_snapshot)`, then `_refresh_perception_snapshot()` replaces the snapshot's DecisionContext with that reconstructed object.
+
+**STATUS:** OPEN / RUNTIME ATTRIBUTION REQUIRED.
+
+**MINIMUM ACTION:** determine whether the existing public orchestration path can be exercised in a non-executing/local mode; capture the pre-reconstruction evidence and the resulting reconstructed DecisionContext, then correlate fields originating from the PerceptionSnapshot/WorldModel.
+
+**AUTHORIZATION:** required before any runtime path that can refresh or persist WorldModel state; static archaeology may proceed without it.
+
+**STOP:** if the public path cannot be safely isolated from external execution or persistent mutation, do not invent a new consumer seam; return the first blocking precondition.
+
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ10 POST-TRANSLATION DECISION-CONTEXT HANDOFF
 
 **QUESTION:** After a live MCP invocation constructs a `PerceptionSnapshot` containing a `DecisionContext`, can the existing downstream orchestrator consumer receive and expose that DecisionContext with attributable live WorldModel evidence?
