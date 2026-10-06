@@ -1,3 +1,21 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 TARGET-PATH BASELINE ATTRIBUTABLE
+
+Episode 103 closes the source-worktree readiness gate at classification B.
+
+New invariant:
+`dirty worktree ≠ automatically invalid`,
+provided executable Python source is inventoried and no divergent source overlay affects the target path.
+
+The current evidence supports:
+`dirty worktree + baseline Python source + source-equivalent inspected bytecode → target-path baseline attributable`.
+
+Residual exact-cache-load uncertainty remains an explicit epistemic caveat.
+
+New routing:
+`fresh authorization for harness 60EC734D... → one bounded RQ13 runtime → capture target return before trace processing → verify persistence`.
+
+No learning claim follows.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 SOURCE WORKTREE READINESS
 
 Episode 102 adds a readiness gate distinct from harness readiness:
