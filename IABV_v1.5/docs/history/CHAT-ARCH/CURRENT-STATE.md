@@ -1,3 +1,26 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 RETURNED/PERSISTED PACKAGE CORRESPONDENCE CLOSED / DECISION-CONTEXT FRONTIER
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-110-rq13-returned-persisted-correspondence-closed.md`
+
+A single freshly authorized runtime using harness `B16C15E566AD7BE14BABDA77A4D9188101794EF8E041051D627FFE5B813B3240` and baseline `e46d8304167708bed0764d3bf2be8fd6643e8944` reached `bootstrap_init_done`, verified `pcs.objective_repository is boot.objective_repository`, performed exactly one `current_package(refresh=True)`, captured the return before secondary trace processing, and demonstrated semantic equality with the persisted `portable_context/latest.json` after UTC timestamp normalization.
+
+Returned/persisted package ID: `90a59561-2f7b-4ded-87be-ad99392d0369`.
+`active_objective_id` matched controlled TASK `f8b087e1-c1fe-477a-80e9-faaaedb61740`; `site_id` was empty in both.
+12 designated top-level fields and 42 package sections matched; zero semantic differences remained after normalizing `+00:00` and `Z` UTC timestamp representations.
+Persisted artifact SHA-256: `368dd31c38a0d54c34ca9e99f43fa5e3c2d29ac7e770c43fa785c68eff0ca461`; recorded hash was reread and matched.
+`latest_active()` was observed transparently as OBJECTIVE empty → PROJECT empty → TASK active, with no exception.
+
+**CLASSIFICATION:** `RQ13 PACKAGE RETURN/PERSISTENCE CORRESPONDENCE — RUNTIME VERIFIED / CLOSED`.
+
+This closes the specific runtime-proof edge from returned `PortableContextPackage` to persisted artifact for this execution. It does not prove DecisionContext reconstruction, downstream decision influence, learning or future reuse.
+
+**CURRENT FIRST OPEN EDGE:** `live PerceptionSnapshot pre-governance DecisionContext → normal adaptive orchestration reconstruction → post-governance DecisionContext / refreshed PerceptionSnapshot`.
+
+**IA DESTINO:** CODEX
+**CAPABILITY:** read-only source/control-flow audit + Windows runtime-boundary engineering.
+**NEXT ACTION:** determine whether an existing public/non-executing orchestration entry can reach the real `_refresh_session_metadata()` / `_refresh_perception_snapshot()` path without provider inference/generation or unrelated external execution. Do not run runtime or modify production in this discovery step. `orchestrator_preview` is not assumed side-effect-free.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning NOT PROVEN.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 NO EXISTING SAFE BOUNDARY / AUTHORIZATION DECISION OPEN
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-109-rq13-no-safe-boundary-authorization-decision.md`
