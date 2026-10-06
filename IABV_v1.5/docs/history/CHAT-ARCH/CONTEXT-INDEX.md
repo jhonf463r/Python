@@ -1,3 +1,13 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOUNDED RUNTIME EXPERIMENT
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-073-uaal-rq13-sonnet-static-adversarial-reconciliation.md`
+- RQ12: baseline MCP → PerceptionSnapshot closed / attributable.
+- Codex RQ13 block: narrowed by independent Sonnet/Claude audit.
+- Existing conversational intent can avoid `_parallel_ia_comparison` under the audited baseline conditions.
+- Safe stop after reconstruction remains runtime-unproven because no production hook exists.
+- First open edge: prove conversational bypass + capture object lineage + sentinel stop before `record`.
+- Next actor: CODEX.
+- Runtime authorization: not granted.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 STATIC BLOCK
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-072-uaal-rq13-static-block-reconciliation.md`
