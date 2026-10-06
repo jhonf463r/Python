@@ -1,3 +1,18 @@
+## 2026-10-06 TRANSFER — UAAL-RQ13 BLOCK → INDEPENDENT ADVERSARIAL AUDIT
+
+RQ13 adds a collaboration routing lesson:
+
+After one actor establishes a credible runtime-boundary block, the next actor should not automatically repeat the same archaeology. Route the remaining uncertainty to an actor whose capability adds independence and discriminating power.
+
+Current distinction:
+
+`Codex primary source archaeology`
+→ `Sonnet/Claude independent adversarial audit`
+→ `only if the boundary becomes provably safe: fresh runtime experiment`.
+
+The specific audit question is whether existing baseline configuration/state can disable `_parallel_ia_comparison` and whether an existing boundary can stop immediately after post-governance DecisionContext reconstruction before external execution or recording/persistence.
+
+No new organ or architecture is justified.
 ## 2026-10-06 TRANSFER — UAAL-RQ12 BASELINE RUNTIME PROVENANCE CLOSED
 
 RQ12 operationalizes the provenance method from RQ11B:
