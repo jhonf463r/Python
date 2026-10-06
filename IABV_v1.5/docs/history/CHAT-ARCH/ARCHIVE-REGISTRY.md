@@ -1,3 +1,22 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 HARNESS PROVENANCE GATE FAILURE
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-098-rq13-harness-provenance-gate-failure.md`
+
+Type:
+`RECONCILIATION / HARNESS-BOUNDARY-FAILURE / RUNTIME-NOT-OBSERVED / SYMBIOSIS`
+
+State:
+`AUTHORIZED EXECUTION STOPPED BEFORE TARGET RUNTIME`
+
+Finding:
+The external harness SHA `C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA` was freshly authorized and executed once, but its own Git provenance gate failed because it resolved the baseline file as `src/iabv_v15/bootstrap.py` from a checkout whose application root is `IABV_v1.5/`.
+
+Current routing:
+`correct harness Git-path provenance → self-test → new SHA → fresh authorization → bounded RQ13 attribution runtime`.
+
+No target runtime or learning evidence was produced.
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 HARNESS READY / FRESH AUTHORIZATION GATE
 
 Canonical record:
