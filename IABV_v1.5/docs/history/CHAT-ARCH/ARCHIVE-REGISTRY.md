@@ -1,4 +1,15 @@
-## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-109
+## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-110
+
+Registered canonical episode:
+`CHAT-ARCH-2026-10-06-110-rq13-returned-persisted-correspondence-closed.md`
+
+Material closure:
+- RQ13 returned/persisted package correspondence runtime-verified and closed;
+- controlled TASK attribution observed;
+- no downstream DecisionContext runtime, provider task execution or learning evidence;
+- next frontier is live pre-governance → post-governance DecisionContext reconstruction.
+
+`CURRENT-STATE.md` remains the routing authority.## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-109
 
 Registered:
 `CHAT-ARCH-2026-10-06-109-rq13-no-safe-boundary-authorization-decision.md`
