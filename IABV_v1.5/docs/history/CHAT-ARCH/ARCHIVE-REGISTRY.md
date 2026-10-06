@@ -1,3 +1,27 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP STALL LOCATION IDENTIFIED
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-092-uaal-rq13-bootstrap-stall-location-identified.md`
+
+Type:
+`RECONCILIATION / RUNTIME LOCATION IDENTIFIED / CAUSAL MECHANISM OPEN`
+
+State:
+`CANONICAL SOURCE / RUNTIME TARGET NOT OBSERVED`
+
+Finding:
+The diagnostic runtime directly localized the AppBootstrap MainThread to the synchronous `ollama list` subprocess path inside EnvironmentSelfAwarenessService construction. Baseline source confirms the synchronous call chain and the configured two-second subprocess timeout.
+
+The exact cause of non-return remains open; the Ollama health-check logger event is not treated as causally identical without thread/process correlation.
+
+Current routing:
+`_run_command([ollama,'list'], timeout=2s) → subprocess/process-tree non-return mechanism`.
+
+Next actor:
+**HUMAN AUTHORIZATION → CODEX**
+
+Fresh authorization is required for the next subprocess-localization runtime intervention.
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP STALL UNLOCALIZED
 
 Canonical record:
