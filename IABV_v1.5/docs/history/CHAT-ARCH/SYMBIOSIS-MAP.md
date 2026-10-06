@@ -1,3 +1,29 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS CONTRACT NOW REPORTED READY
+
+The latest CODEX correction addresses the exact static gap recorded in 095.
+
+Reported closure:
+- persisted PortableContext package fingerprint added;
+- excluded service-stop and SQLite/oracle operations removed from the authorized route;
+- PCS/AppBootstrap ObjectiveRepository identity correlation preserved;
+- transparent `latest_active` trace preserved;
+- one `current_package(refresh=True)` call preserved;
+- contract self-test passed without IABV runtime;
+- production Python-source integrity reported clean.
+
+The new external artifact identity is:
+`C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA`.
+
+Important evidence boundary:
+`CODEX reports SHA/readiness ≠ ChatGPT independently read the Windows bytes ≠ runtime evidence`.
+
+Therefore the static gate is **reported closed**, but runtime remains unauthorized.
+
+New routing:
+`new exact harness SHA → fresh human authorization → one bounded Windows RQ13 attribution run → independent reconciliation`.
+
+Do not return to the old diagnostic/Ollama route unless the new runtime makes it causally relevant. Do not treat harness correction as learning or package fingerprinting as alignment proof.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS CONTRACT GAP
 
 The latest CODEX result establishes a readiness boundary, not a runtime result.
