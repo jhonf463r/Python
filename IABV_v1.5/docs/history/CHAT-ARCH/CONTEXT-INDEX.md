@@ -1,3 +1,14 @@
+# 2026-10-06 LATEST ROUTING POINTER — RQ11B / RQ12
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-069-uaal-rq11b-rq10-provenance-final-reconciliation.md`
+- RQ10 formal attribution: `MIXED/INDETERMINATE`.
+- RQ10 remains variant/indeterminate evidence; do not promote to baseline.
+- Retrospective PID-21668 exact-loaded-bytes proof is not recoverable from current surviving artifacts; stop archaeology.
+- Next actionable technical edge: clean baseline `e46d830...` → fresh MCP → in-process module fingerprint → WorldModel → PerceptionSnapshot.
+- Actor: CODEX.
+- Runtime authorization: not currently granted.
+- A separate fresh human authorization is required before RQ12 execution.
+
 # 2026-10-06 LATEST ROUTING POINTER — RQ11
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-068-uaal-rq11-static-readiness-reconciliation.md`
