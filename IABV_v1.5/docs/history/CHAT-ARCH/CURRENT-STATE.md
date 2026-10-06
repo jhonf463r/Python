@@ -1,3 +1,22 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 SONNET ADVERSARIAL RECONCILIATION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-073-uaal-rq13-sonnet-static-adversarial-reconciliation.md`
+
+RQ13 Phase 1 is now **BLOCK NARROWED**, not fully blocked.
+
+Independent Sonnet/Claude audit confirms:
+- `orchestrator_preview` does not reach post-governance reconstruction;
+- `_parallel_ia_comparison` has a concrete bypass path for conversational intents such as `general.assistance` / `knowledge.query`;
+- `TaskOutcomeRecorder.record` is after `_refresh_session_metadata`;
+- no production stop hook exists;
+- a disposable instance-level wrapper + sentinel can potentially stop immediately after reconstruction.
+
+**CURRENT FIRST OPEN ACTIONABLE EDGE:**
+`existing conversational baseline conditions → prove no parallel comparison → reach reconstruction → capture P0/DC_pre/DC_post1/P1 → sentinel stop before record`.
+
+**NEXT ACTOR: CODEX**, because the remaining uncertainty is now a bounded Windows/runtime experiment rather than general source archaeology.
+
+No new runtime authorization is granted by this reconciliation.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 STATIC BLOCK / INDEPENDENT AUDIT
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-072-uaal-rq13-static-block-reconciliation.md`
