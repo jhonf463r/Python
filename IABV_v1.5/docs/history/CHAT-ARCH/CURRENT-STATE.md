@@ -1,3 +1,17 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 SOURCE WORKTREE READINESS UNRESOLVED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-102-rq13-source-worktree-readiness-gate.md`
+
+CODEX reports that the RQ13 artifact worktree currently contains modifications under `src/`, including Python files and cache artifacts. No runtime was executed during the latest harness correction.
+
+This introduces a new readiness question: `HEAD=e46d830...` does not by itself prove `executed artifact=e46d830...` when executable Python overlays may exist in the worktree.
+
+**CLASSIFICATION:** `HARNESS SELF-TESTED / RUNTIME NOT AUTHORIZED / SOURCE-WORKTREE READINESS UNRESOLVED`.
+
+**CURRENT FIRST OPEN EDGE:** `read-only source-worktree forensic inventory → identify executable Python modifications → determine impact on authorized RQ13 import path → readiness classification → authorization decision`.
+
+Next actor: **CODEX**, read-only forensic inspection. Do not clean, delete, modify, import or execute anything.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PERSISTED PACKAGE RECOVERED / SOURCE-CORRELATED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-101-rq13-persisted-package-source-correlation.md`
