@@ -1,3 +1,18 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS PROVENANCE GATE FAILURE
+
+The latest authorized RQ13 attempt stopped before the target boundary. The external evidence harness correctly proved its own failure mode but did not produce target runtime evidence.
+
+New invariant:
+`harness SHA verified + baseline blobs matched ≠ target runtime attributable` when the harness's Git path resolution is wrong.
+
+Specific failure:
+`e46d830...:src/iabv_v15/bootstrap.py` was resolved from the worktree CWD rather than the repository root layout, where the application is under `IABV_v1.5/`.
+
+New routing:
+`harness provenance defect → external correction/self-test → new harness SHA → fresh human authorization → bounded RQ13 runtime`.
+
+Do not modify production IABV, do not reuse the failed SHA, and do not infer any runtime semantic state or learning from the pre-target stop.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — DISK CLEANUP + LEARNING STATUS / RQ13 RETURN
 
 The Windows cleanup recovered approximately 11.18 GiB without deleting RQ13 worktrees, current harness, IABV data/evidence or Git history.
