@@ -1,3 +1,14 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ12 RUNTIME RECONCILIATION
+
+`CHAT-ARCH-2026-10-06-071-uaal-rq12-runtime-reconciliation.md`
+
+**Type:** CANONICAL RECONCILIATION / RUNTIME EVIDENCE / PROVENANCE CLOSURE / ROUTING
+
+**Preserves:** clean-baseline in-process attribution, successful single MCP observation, WorldModel temporal identity, PerceptionSnapshot identity, and the correction that the later `perception_cycle` completion did not supply the already-captured PerceptionSnapshot.
+
+**Routing:** activate for the existing downstream PerceptionSnapshot/DecisionContext reconstruction frontier.
+
+**Next actor:** CODEX, after fresh runtime authorization.
 ## 2026-10-06 REGISTRATION — UAAL-RQ12 CLEAN-BASELINE STATIC READINESS
 
 `CHAT-ARCH-2026-10-06-070-uaal-rq12-clean-baseline-static-readiness.md`
