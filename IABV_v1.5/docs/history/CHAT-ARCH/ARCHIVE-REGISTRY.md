@@ -1,3 +1,21 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 SOURCE WORKTREE READINESS GATE
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-102-rq13-source-worktree-readiness-gate.md`
+
+Type:
+`RECONCILIATION / ARTIFACT-READINESS / RUNTIME-NOT-AUTHORIZED / SYMBIOSIS`
+
+State:
+`HARNESS SELF-TESTED / SOURCE-WORKTREE READINESS UNRESOLVED`
+
+Finding:
+The corrected external harness is self-tested (reported SHA `60EC734D...`), but CODEX reports additional `.py` modifications under `src/` in the target worktree.
+
+Current routing:
+`read-only source-worktree forensic inventory → impact classification → readiness decision → fresh runtime authorization`.
+
+No runtime authorization is transferred or implied.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 PERSISTED PACKAGE SOURCE CORRELATION
 
 Canonical record:
