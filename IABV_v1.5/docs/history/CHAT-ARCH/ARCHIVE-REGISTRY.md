@@ -1100,3 +1100,16 @@ Type: `RECONCILIATION / EVIDENCE DISCIPLINE / META-METHOD / RSK-01`
 State: `CANONICAL SOURCE / HISTORICAL TRANSCRIPT RECONCILED AGAINST CURRENT MAIN`
 
 Material delta: participant status is gated by eligibility/artifact evidence; oracle validity requires original identity/access, integrity and corpus alignment; historical NEXT ACTION is not routable without promotion in CURRENT-STATE.
+
+## 2026-10-06 REGISTRATION — UAAL-RQ09 PRODUCER / PERSISTENCE / MCP HANDOFF
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-065-uaal-rq09-producer-persistence-mcp-handoff-reconciliation.md`
+
+Type: `RECONCILIATION / RUNTIME-EVIDENCE / SYMBIOSIS / METHODOLOGY`
+
+State: `CANONICAL SOURCE / INTEGRATION_LEVEL=2 / PARTIALLY_CLOSED`
+
+Closed relation: `CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → fresh persisted snapshot`.
+Open relation: `persisted producer snapshot → MCP consumer → PerceptionSnapshot`.
+Current actor: **Codex**.
