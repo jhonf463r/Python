@@ -1,3 +1,24 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP STALL UNLOCALIZED
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-090-uaal-rq13-bootstrap-stall-unlocalized.md`
+
+Type:
+`RECONCILIATION / RUNTIME ABORT / STALL ATTRIBUTION`
+
+State:
+`CANONICAL SOURCE / TARGET NOT OBSERVED`
+
+Finding:
+The runtime reached `phase_tools_adapters_done` but did not complete AppBootstrap within the observed window. The Ollama health timeout is attributable to bootstrap-induced EnvironmentSelfAwareness provider-health observation, but is not proven as the main-thread stall cause.
+
+Current routing:
+`phase_tools_adapters_done → exact main-thread stall location`.
+
+Next actor:
+**CODEX**
+
+No target runtime retry is authorized from the prior execution.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 PROVIDER HEALTH BOOTSTRAP AUTHORIZATION BOUNDARY
 
 Canonical record:
