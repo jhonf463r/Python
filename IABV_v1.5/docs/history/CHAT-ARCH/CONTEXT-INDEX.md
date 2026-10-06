@@ -1,3 +1,12 @@
+## 2026-10-06 ROUTING REFINEMENT — RQ10 DECISION-CONTEXT LINEAGE
+
+The current frontier is now narrower than the generic `PerceptionSnapshot → DecisionContext` relation. The DecisionContext is constructed inside the PerceptionSnapshot, while the normal AdaptiveTaskOrchestrator later reconstructs a DecisionContext during `_refresh_session_metadata()` and replaces the snapshot's DecisionContext before persisting session metadata.
+
+**CURRENT FIRST OPEN EDGE:**
+`live PerceptionSnapshot pre-governance evidence → reconstructed DecisionContext → downstream route/governance state`.
+
+Do not treat `orchestrator_preview` alone as closure of this edge; it previews/returns a DecisionContext but does not exercise the normal post-governance reconstruction.
+
 ## 2026-10-06 ACTIVE ROUTING — UAAL-RQ10 / PERCEPTION → DECISION-CONTEXT CONSUMER
 
 Canonical reconciliation:
