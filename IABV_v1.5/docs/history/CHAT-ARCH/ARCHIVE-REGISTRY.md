@@ -1,3 +1,22 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 TARGET REACHED ONCE / POST-TARGET REPORTING FAILURE
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-100-rq13-post-target-reporting-failure.md`
+
+Type:
+`RECONCILIATION / RUNTIME-PROGRESS / EVIDENCE-REPORTING-FAILURE / SYMBIOSIS`
+
+State:
+`TARGET REACHED ONCE / PACKAGE ATTRIBUTION INCOMPLETE`
+
+Finding:
+Harness `50779B1D...` passed provenance, reached `bootstrap_init_done`, observed runtime PCS/AppBootstrap ObjectiveRepository equivalence, and then failed in post-target evidence emission due to an `event` argument collision.
+
+Current routing:
+`read-only completed-run artifact recovery → independent verification`
+
+No second target execution is authorized by this episode, and no learning evidence was produced.
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 HARNESS PATH CORRECTION READY
 
 Canonical record:
