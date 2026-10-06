@@ -1136,3 +1136,14 @@ State: `CANONICAL SOURCE / INTEGRATION_LEVEL=2 / PARTIALLY_CLOSED`
 Closed relation: `CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → fresh persisted snapshot`.
 Open relation: `persisted producer snapshot → MCP consumer → PerceptionSnapshot`.
 Current actor: **Codex**.
+
+
+## 2026-10-06 — CHAT-ARCH-2026-10-06-068
+
+- **File:** `CHAT-ARCH-2026-10-06-068-uaal-rq11-static-readiness-reconciliation.md`
+- **Role:** canonical RQ11 static-readiness/provenance reconciliation
+- **Parent:** `CHAT-ARCH-2026-10-06-067-uaal-rq10-provenance-correction.md`
+- **Main at writeback start:** `5255e3fdbb4ade8a3b5dae0dcfe75e89460d508e`
+- **Status:** current / provenance gate remains open
+- **Knowledge delta:** capability-fit does not imply execution readiness; dirty worktree requires execution-time artifact attribution; non-executing preview is not automatically side-effect-free.
+- **Routing delta:** CODEX static provenance archaeology only; no runtime authorization and no downstream RQ11 execution yet.
