@@ -1,3 +1,12 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION RECONCILIATION
+
+`CHAT-ARCH-2026-10-06-074-uaal-rq13-portable-context-precondition-reconciliation.md`
+
+**Type:** CANONICAL RECONCILIATION / RUNTIME-INPUT PRECONDITION / ACTOR REROUTING
+
+**Preserves:** the stale portable-context blocker, independent source confirmation of the freshness/persistence path, and rerouting to Sonnet/Claude for an adversarial readiness audit.
+
+**Next actor:** SONNET/CLAUDE.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 SONNET STATIC ADVERSARIAL RECONCILIATION
 
 `CHAT-ARCH-2026-10-06-073-uaal-rq13-sonnet-static-adversarial-reconciliation.md`
