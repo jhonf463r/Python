@@ -1,4 +1,14 @@
-## 2026-10-06 ROUTING POINTER — UAAL-RQ13 PRIMARY RESULT CAPTURE CONTRACT GAP
+## 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PROVIDER HEALTH AUTHORIZATION BOUNDARY
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-108-rq13-provider-health-authorization-boundary.md`
+
+Current first open edge:
+`authorization-safe bootstrap boundary that reaches the RQ13 target without provider health checks → static/self-test verification → fresh runtime authorization`.
+
+The provider-health finding is a transitive authorization/readiness constraint. It does not invalidate the closed primary return-capture contract.
+
+Current routing authority remains `CURRENT-STATE.md`.## 2026-10-06 ROUTING POINTER — UAAL-RQ13 PRIMARY RESULT CAPTURE CONTRACT GAP
 
 - Canonical record: `CHAT-ARCH-2026-10-06-106-rq13-primary-result-capture-contract-gap.md`.
 - One authorized attempt with SHA `771FBF...` stopped before IABV import because the returned-package reporter omitted required fields.
