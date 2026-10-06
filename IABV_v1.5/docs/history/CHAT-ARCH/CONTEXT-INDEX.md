@@ -1,3 +1,11 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PROVIDER HEALTH BOOTSTRAP AUTHORIZATION BOUNDARY
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-089-uaal-rq13-provider-health-bootstrap-boundary.md`.
+- Baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- Harness: `CDDEA79069BB4D90F84BD01AE3269AC1500E6E4471FABEC29AEA4B8F585588A8`.
+- Aborted runtime produced no target observation; Ollama health timeout was source-attributable to the EnvironmentSelfAwareness bootstrap scan path.
+- **Current first open edge:** precise human authorization allowing only bootstrap-induced provider health checks → CODEX bounded runtime observation.
+- **Next actor:** HUMAN AUTHORIZATION → CODEX.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 STABILIZATION HARNESS READY
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-088-uaal-rq13-stabilization-harness-ready.md`.
