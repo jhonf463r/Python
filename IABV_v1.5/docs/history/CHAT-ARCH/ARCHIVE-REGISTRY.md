@@ -1,3 +1,22 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 HARNESS READY / FRESH AUTHORIZATION GATE
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-096-rq13-harness-ready-fresh-authorization.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT READINESS / RUNTIME-NOT-AUTHORIZED / SYMBIOSIS`
+
+State:
+`STATIC CONTRACT REPORTED CLOSED / EXTERNAL-HARNESS-DIGEST-NOT-INDEPENDENTLY-READ-BACK`
+
+The latest CODEX correction reports a compliant external harness with persisted-package SHA-256 fingerprinting, excluded service-stop/oracle path isolation, PCS/AppBootstrap ObjectiveRepository identity checks, transparent `latest_active` tracing and contract self-tests. New reported harness SHA:
+`C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA`.
+
+Current routing:
+`fresh human authorization naming exact new harness SHA → CODEX one bounded RQ13 attribution runtime → independent reconciliation`.
+
+No runtime authorization is implied. No old harness authorization transfers to the new artifact.
+
 ## 2026-10-06 CANONICAL REGISTRATION — RQ13 HARNESS CONTRACT GAP
 
 `CHAT-ARCH-2026-10-06-095-rq13-harness-readiness-reconciliation.md` records a readiness failure before RQ13 runtime: the current external harness lacks the required persisted-package fingerprint and its legacy runtime path crosses excluded service-stop/oracle operations. The current route is therefore harness correction/self-test first, then fresh authorization with the new artifact SHA.
