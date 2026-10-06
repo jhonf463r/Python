@@ -1,3 +1,25 @@
+## 2026-10-06 ACTIVE ROUTING — UAAL-RQ10 / PERCEPTION → DECISION-CONTEXT CONSUMER
+
+Canonical reconciliation:
+`CHAT-ARCH-2026-10-06-066-uaal-rq10-mcp-perception-reconciliation.md`
+
+Activate this record for objectives involving live WorldModel → PerceptionSnapshot → DecisionContext, MCP cognitive-frame translation, orchestrator preview, temporal snapshot identity changes, and runtime provenance.
+
+### Current domain frontier
+
+`live PerceptionSnapshot / embedded DecisionContext → live downstream DecisionContext consumer`
+
+### Retrieval before technical prompt
+
+Read `CURRENT-STATE.md`, `MEMORY-OPERATING-PROTOCOL.md`, `SYMBIOSIS-MAP.md`, RQ09 and RQ10 reconciliations, and exact executable baseline `e46d830...`.
+
+Then recompute:
+`objective → exact state/provenance → closed edges → first open edge → required capability → actor-fit → minimum experiment → verification → writeback`.
+
+### Current actor routing
+
+**CODEX** is capability-fit because this edge requires MCP/runtime observation, process control and identity-level evidence. Actor choice is capability-based, not rotation or inheritance.
+
 ## 2026-10-05 ACTIVE ROUTING — UAAL-RQ01–RQ04 + IABV INTERMEDIARY FRAME
 
 Canonical reconciliation:
