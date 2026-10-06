@@ -1,3 +1,17 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS CONTRACT GAP / RUNTIME BLOCKED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-095-rq13-harness-readiness-reconciliation.md`
+
+Latest CODEX readiness check did not execute runtime. The exact harness `C:\\temp\\rq13_task_precondition.py` (reported SHA `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C`) lacks the required persisted-package fingerprint and its legacy runtime route crosses excluded service-stop/oracle behavior.
+
+**CLASSIFICATION:** `BLOCKED — AUTHORIZED EXPERIMENT CONTRACT NOT IMPLEMENTED`.
+
+**CURRENT FIRST OPEN EDGE:** `authorized RQ13 experiment contract → compliant harness artifact → harness self-test → fresh authorization → bounded runtime observation`.
+
+**NEXT ACTOR:** CODEX, external harness correction/self-test only.
+
+No runtime authorization is implied. A modified harness requires a new exact SHA and fresh authorization before runtime.
+
 ## 2026-10-06 MEMORY ABSORPTION — CHAT-ARCH-2026-10-06-094
 
 The complete 883-line source chat `Se ha pegado el markdown(20261006-002329).md` has been reconciled against the current canonical repository. Its durable methodological lessons are already absorbed by the 2026-10-05/2026-10-06 canonical RSK-01/RQ13 records; this absorption introduces **no change to the current technical frontier or actor**.
