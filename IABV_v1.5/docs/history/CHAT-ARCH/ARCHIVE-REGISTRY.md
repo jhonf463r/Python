@@ -1,3 +1,24 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP OBSERVATION AUTHORIZATION BOUNDARY
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-086-uaal-rq13-bootstrap-observation-authorization-boundary.md`
+
+Type:
+`RECONCILIATION / METHODOLOGY / GOVERNANCE / RUNTIME READINESS`
+
+State:
+`CANONICAL SOURCE / RUNTIME NOT AUTHORIZED`
+
+Material finding:
+Within the independently inspected source scope at executable baseline `e46d8304167708bed0764d3bf2be8fd6643e8944`, no existing AppBootstrap route satisfies the current contract while excluding EnvironmentSelfAwarenessService and WorldModelService observation effects.
+
+Current routing:
+`human authorization contract → attributable baseline AppBootstrap observation boundary`.
+
+Next actor:
+**HUMAN**
+
+No runtime execution is authorized by this registration.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
 
 `CHAT-ARCH-2026-10-06-075-uaal-rq13-portable-context-preconditioning-reconciliation.md`
