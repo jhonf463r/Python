@@ -1,3 +1,16 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 IMPORT READINESS
+
+Episode 104 adds a separate launch-readiness layer:
+
+`Git provenance ready ≠ Python import ready ≠ application runtime ready`.
+
+The latest execution never entered IABV because the harness's interpreter could not resolve `iabv_v15`.
+
+New routing:
+`import-path defect → external harness correction/self-test → new SHA → fresh authorization → bounded runtime`.
+
+Do not alter production or experiment semantics to accommodate the launch defect. No learning claim follows.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 TARGET-PATH BASELINE ATTRIBUTABLE
 
 Episode 103 closes the source-worktree readiness gate at classification B.
