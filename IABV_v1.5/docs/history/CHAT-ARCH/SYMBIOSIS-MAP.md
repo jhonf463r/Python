@@ -1,3 +1,20 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS PATH CORRECTION READY
+
+Episode 099 closes the specific Git-path defect observed in episode 098 at the reported harness/self-test level.
+
+New method invariant:
+`GitHub-confirmed repository path + reported harness self-test ≠ independently byte-read Windows harness`.
+
+The repository itself independently confirms the nested application path:
+`IABV_v1.5/src/iabv_v15/bootstrap.py`.
+
+The corrected harness reports deterministic root/CWD path mapping for both direct-root and nested-checkout layouts and reports the expected baseline blob.
+
+New routing:
+`new harness SHA 50779B1D... → fresh human authorization → one bounded RQ13 runtime → independent verification`.
+
+No production change, runtime target observation, or learning claim follows from this correction.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS PROVENANCE GATE FAILURE
 
 The latest authorized RQ13 attempt stopped before the target boundary. The external evidence harness correctly proved its own failure mode but did not produce target runtime evidence.
