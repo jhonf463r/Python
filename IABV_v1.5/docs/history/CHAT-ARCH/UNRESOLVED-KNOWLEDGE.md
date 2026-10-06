@@ -1,3 +1,20 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 STATIC SAFETY-BOUNDARY AUDIT
+
+**QUESTION:** Can the existing baseline `handle_request` path reach post-governance DecisionContext reconstruction while provably preventing `_parallel_ia_comparison`, `TaskOutcomeRecorder.record`, external execution and out-of-scope persistence?
+
+**STATUS:** OPEN / STATIC ADVERSARIAL AUDIT.
+
+**CODEX RESULT:** `BLOCKED` because preview stops before reconstruction and normal request flow crosses a conditional comparison boundary and later recording.
+
+**MINIMUM ACTION:** independent Sonnet/Claude source audit of exact baseline `e46d830...` to determine whether existing configuration/state can disable the comparison and whether an existing safe-stop boundary exists immediately after reconstruction.
+
+**AUTHORIZATION:** none for this audit.
+
+**STOP:** do not execute MCP, `orchestrator_preview`, or `handle_request`.
+
+**NEXT ACTOR:** SONNET/CLAUDE.
+
+**DOWNSTREAM:** no runtime DecisionContext claim until the static safety-boundary question is resolved.
 ## 2026-10-06 CLOSED FRONTIER — UAAL-RQ12 CLEAN-BASELINE MCP → PERCEPTION
 
 **STATUS:** LIVE-OBSERVED / BASELINE-ATTRIBUTABLE / CLOSED at the observation boundary.
