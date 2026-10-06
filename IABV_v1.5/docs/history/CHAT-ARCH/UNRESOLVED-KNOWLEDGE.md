@@ -1,3 +1,30 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ11 STATIC READINESS / RQ10 ARTIFACT ATTRIBUTION
+
+**QUESTION:** Can the RQ10 runtime observation be attributed to clean executable baseline `e46d830...`, to the RQ05 candidate overlay, or to a mixed/indeterminate artifact?
+
+**STATUS:** OPEN / PROVENANCE GATE.
+
+**RQ11 RESULT:** static source archaeology reconstructed the downstream pre-governance → post-governance DecisionContext boundary, but it did not establish execution-time artifact attribution and did not establish a public side-effect-free path through that boundary.
+
+**KNOWN:**
+- Codex reported RQ10's worktree dirty in `server.py` and `task_context_assembler.py`.
+- Those files are the same RQ05 no-refresh candidate files.
+- Canonical `e46d830...` differs from that candidate in WorldModel-refresh semantics.
+- `orchestrator_preview` does not exercise normal post-governance reconstruction and is not proven side-effect-free because the underlying perception assembler may request refresh.
+
+**MINIMUM ACTION:** static provenance archaeology only: exact worktree/diff + RQ05 correlation + execution-time fingerprint/temporal evidence → one of `BASELINE-ATTRIBUTABLE`, `CANDIDATE-OVERLAY-ATTRIBUTABLE`, or `MIXED/INDETERMINATE`.
+
+**AUTHORIZATION:** none required for this static phase; runtime remains prohibited until the provenance gate is closed and, if necessary, separately authorized.
+
+**STOP:** do not use RQ10 to close any baseline runtime edge while attribution remains unresolved.
+
+## 2026-10-06 SECONDARY FRONTIER — LIVE DECISION-CONTEXT RECONSTRUCTION
+
+**QUESTION:** Does the live PerceptionSnapshot evidence survive the existing pre-governance → post-governance DecisionContext reconstruction?
+
+**STATUS:** SECONDARY / BLOCKED BY PROVENANCE.
+
+Source-level facts are established at `e46d830...`, but a live test remains unjustified until the RQ10 executed artifact is attributable and an isolated runtime path is shown to exist.
 ## 2026-10-06 ACTIVE FRONTIER — RQ10 EXECUTION ARTIFACT ATTRIBUTION
 
 **QUESTION:** Did the RQ10 MCP process execute pure baseline `e46d830...`, the RQ05 uncommitted candidate overlay, or a mixed/indeterminate artifact?
