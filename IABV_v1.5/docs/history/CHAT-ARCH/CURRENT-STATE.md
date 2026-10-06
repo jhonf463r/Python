@@ -1,3 +1,14 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 NO PRE-EXISTING OBJECTIVE
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-081-uaal-rq13-no-preexisting-objective-reconciliation.md`
+
+Read-only runtime inspection of the authorized Windows worktree found zero persisted OBJECTIVE, PROJECT or TASK rows in ObjectiveRepository: all `latest_active` and `list_recent` queries were empty and `objective_nodes` contained zero rows.
+
+Direct source reconciliation confirms `portable_context_get(refresh=True)` cannot receive task/objective context, while GoalEngine may create OBJECTIVE/PROJECT/TASK only inside `handle_request`, after P0 is constructed.
+
+**CURRENT FIRST OPEN EDGE:** `explicit experimental state precondition → real auditable active TASK/goal context before P0`.
+
+Do not invent an objective silently. Any objective-creating precondition requires fresh human authorization and must be labeled as controlled experimental state, not natural lifecycle state.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 OBJECTIVE MATERIALIZATION RECONCILIATION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-080-uaal-rq13-objective-materialization-reconciliation.md`
