@@ -1,3 +1,17 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PRE-STATE VS TARGET-REQUEST STATE
+
+New invariant:
+
+`request-created goal ≠ pre-request goal evidence`.
+
+RQ13 now demonstrates that a target request can depend on a pre-existing goal state for portable-context alignment, while the baseline GoalEngine creates/resolves that state only after P0.
+
+Therefore the collaboration method must distinguish:
+`natural/persisted pre-state → target observation`
+from
+`controlled experimental state precondition → target observation`.
+
+Creating an objective for an experiment, if later authorized, must be recorded as an explicit controlled input and must never be presented as untouched lifecycle evidence.
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 OBJECTIVE MATERIALIZATION / ALIGNMENT
 
 RQ13 adds a causal-order invariant:
