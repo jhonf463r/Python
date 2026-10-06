@@ -1,3 +1,15 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — DISK CLEANUP + LEARNING STATUS / RQ13 RETURN
+
+The Windows cleanup recovered approximately 11.18 GiB without deleting RQ13 worktrees, current harness, IABV data/evidence or Git history.
+
+Learning reconciliation:
+`lower-layer learning mechanism` is present;
+`selector-level learned-state influence` is evidenced;
+`strong causal future-decision change` remains not proven.
+
+Routing therefore returns to the current RQ13 enabling seam rather than reopening historical L5 or infrastructure anomalies:
+`C94D983D... → fresh human authorization → bounded PCS/ObjectiveRepository attribution runtime → independent verification`.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS CONTRACT NOW REPORTED READY
 
 The latest CODEX correction addresses the exact static gap recorded in 095.
