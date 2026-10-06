@@ -1,3 +1,40 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ09 PRODUCER / PERSISTENCE / MCP HANDOFF
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-065-uaal-rq09-producer-persistence-mcp-handoff-reconciliation.md`
+
+RQ09 is reconciled as **INTEGRATION_LEVEL=2 / PARTIALLY_CLOSED**.
+
+Verified in one explicitly authorized read-only run:
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → fresh in-memory snapshot → exact persisted latest.json`.
+
+Producer snapshot ID:
+`4917b081-ae7b-49c7-b24e-4307079573bf`
+
+Producer observation:
+`2026-10-06T00:17:32.194384Z`
+
+Freshness at observation:
+`3 ms`
+
+The subsequent fresh MCP bootstrap caused/revealed a different persisted snapshot ID:
+`4350a718-4ec6-420c-a3bb-8062eb70f376`
+
+Exact MCP in-memory snapshot identity was not captured and no PerceptionSnapshot result was captured.
+
+Therefore the first open technical edge is now:
+`fresh persisted producer snapshot → fresh MCP bootstrap/consumer → exact consumer WorldModel snapshot → PerceptionSnapshot`.
+
+Do **not** repeat the producer scan. The producer/persistence edge is already closed for this controlled observation.
+
+**CURRENT TECHNICAL ACTOR: CODEX.**
+
+Next minimum experiment: one fresh MCP run from the same candidate workspace, without another producer scan, capturing persisted ID before startup, bootstrap replacement reason/mode, MCP in-memory WorldModel ID, one `cognitive_frame_translate` result and the first identity break.
+
+Independent causal caution:
+`MCP bootstrap caused the replacement` remains an inference because the exact call/consumer identity was not captured.
+
+Do not advance to DecisionContext, capability selection, external-AI delegation or causal learning until this edge is resolved.
+
 ## 2026-10-05 ACTIVE OVERLAY — RSK-01 CHAT RECONCILIATION / ELIGIBILITY + ORACLE DISCIPLINE
 
 **Canonical record:** `CHAT-ARCH-2026-10-05-064-rsk01-chat-reconciliation-eligibility-oracle.md`
