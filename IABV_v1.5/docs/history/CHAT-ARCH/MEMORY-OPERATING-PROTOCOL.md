@@ -1,3 +1,20 @@
+## 2026-10-06 METHOD AMENDMENT — RUNTIME ARTIFACT PROVENANCE GATE
+
+A runtime observation may not inherit the evidentiary status of a Git SHA merely because HEAD points to that SHA.
+
+Before promoting runtime evidence to baseline truth, require:
+`runtime execution → executable fingerprint → clean/dirty worktree status → exact diff/overlay identity → artifact attribution → verification → Knowledge Delta`.
+
+When a candidate worktree contains uncommitted changes, classify the runtime result as variant-scoped or indeterminate until the exact executed artifact is established.
+
+This gate is especially mandatory when an earlier experiment created an uncommitted candidate seam in the same files used by a later runtime run.
+
+Preserve the distinction:
+`HEAD baseline ≠ executed artifact`
+when the worktree is dirty.
+
+This rule does not prohibit candidate experiments; it prevents candidate-runtime observations from silently becoming baseline-runtime proof.
+
 ## 2026-10-06 METHOD AMENDMENT — TEMPORAL IDENTITY TRACE AT RUNTIME HANDOFFS
 
 When a live experiment crosses process/service/representation boundaries, memory and routing must preserve identity at each boundary rather than relying on the final state.
