@@ -1,3 +1,20 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — FULL CHAT ABSORPTION / NO ROUTING DRIFT
+
+The full 883-line source chat was reconciled against canonical `main`. Durable transfers now explicitly preserve:
+- `label/report != artifact != independent evidence`;
+- participant eligibility is a gate, not a label;
+- oracle identity/access/integrity/alignment are separate gates;
+- `HEAD SHA = baseline != executed artifact = baseline` under dirty/ambiguous provenance;
+- `capability present != intervention ready`;
+- historical NEXT ACTION is not current routing;
+- `localized anomaly != project frontier`;
+- `bootstrap completion != learning` and `persistence != learning`;
+- learning requires later causal reuse in a future decision/behavior.
+
+No actor identity is made permanent. Blind RSK-01 remains an exceptional experiment, while normal symbiosis uses capability-fit routing.
+
+This record does not change the current RQ13 frontier; it strengthens the anti-drift/provenance method only.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 BOOTSTRAP COMPLETION / FRONTIER RETURN
 
 The latest diagnostic run prevents a local bootstrap anomaly from becoming the project objective.
