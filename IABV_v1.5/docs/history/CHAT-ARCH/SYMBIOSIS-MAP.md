@@ -1,3 +1,22 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 TARGET REACHED / REPORTING BOUNDARY FAILURE
+
+Episode 100 materially advances RQ13.
+
+Observed runtime seam:
+`AppBootstrap → PCS identity → ObjectiveRepository identity/equivalence`.
+
+New invariant:
+`target operation reached ≠ target evidence successfully serialized`.
+
+The harness failed after entering the target observation because a trace payload key `event` collided with the formal parameter of `emit`. This is an instrumentation/reporting defect, not evidence of an IABV semantic failure.
+
+New routing:
+`completed-run artifact recovery → exact package/trace evidence → independent verification`.
+
+Do not rerun the target operation merely to repair reporting. Read-only recovery has higher information gain and preserves the once-only experimental constraint.
+
+No learning claim follows from this episode.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS PATH CORRECTION READY
 
 Episode 099 closes the specific Git-path defect observed in episode 098 at the reported harness/self-test level.
