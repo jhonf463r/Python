@@ -1,3 +1,14 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 HARNESS PATH CORRECTION READY
+
+- Canonical record: `CHAT-ARCH-2026-10-06-099-rq13-harness-path-correction-ready.md`.
+- CODEX reports new external harness SHA: `50779B1DD321258729E1BB9ABEBA4D04ACBBFCC45CF0FDFDD0555AE5F6C1FA37`.
+- Reported self-test passed for direct-root and nested-checkout Git path semantics and real baseline `git show`.
+- GitHub independently confirms `IABV_v1.5/src/iabv_v15/bootstrap.py` and expected baseline blob.
+- **First open edge:** new harness SHA `50779B1D...` → fresh human authorization → bounded RQ13 attribution runtime → independent verification.
+- **Next actor:** HUMAN authorization → CODEX runtime.
+- Previous `C94D...` authorization does not transfer.
+- No runtime or learning evidence was produced by the correction.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 HARNESS PROVENANCE GATE FAILURE
 
 - Canonical record: `CHAT-ARCH-2026-10-06-098-rq13-harness-provenance-gate-failure.md`.
