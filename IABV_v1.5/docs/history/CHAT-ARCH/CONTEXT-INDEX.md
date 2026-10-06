@@ -1,3 +1,14 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ12 CLOSED / RQ13 OPEN
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-071-uaal-rq12-runtime-reconciliation.md`
+- RQ12: clean baseline runtime provenance **closed / baseline-attributable**.
+- MCP `cognitive_frame_translate` → live `PerceptionSnapshot`: **closed at observation boundary**.
+- Captured WorldModel: `96c0fc98-...` from prior `scheduled_light` scan.
+- Later `perception_cycle` result `94775c5f-...` completed after capture; do not assign it as producer of that snapshot.
+- RQ10 remains `MIXED/INDETERMINATE` variant evidence.
+- Current first open technical edge: live pre-governance PerceptionSnapshot/DecisionContext → existing AdaptiveTaskOrchestrator reconstruction → post-governance DecisionContext.
+- Next actor: CODEX.
+- RQ12 authorization consumed; fresh authorization required for RQ13 runtime.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ12 PHASE 1 READY
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-070-uaal-rq12-clean-baseline-static-readiness.md`
