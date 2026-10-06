@@ -1147,3 +1147,14 @@ Current actor: **Codex**.
 - **Status:** current / provenance gate remains open
 - **Knowledge delta:** capability-fit does not imply execution readiness; dirty worktree requires execution-time artifact attribution; non-executing preview is not automatically side-effect-free.
 - **Routing delta:** CODEX static provenance archaeology only; no runtime authorization and no downstream RQ11 execution yet.
+
+
+## 2026-10-06 — CHAT-ARCH-2026-10-06-069
+
+- **File:** `CHAT-ARCH-2026-10-06-069-uaal-rq11b-rq10-provenance-final-reconciliation.md`
+- **Role:** final RQ11B provenance reconciliation and clean-baseline rerouting
+- **Parent:** `CHAT-ARCH-2026-10-06-068-uaal-rq11-static-readiness-reconciliation.md`
+- **Status:** current
+- **RQ10 attribution:** `MIXED/INDETERMINATE`
+- **Decision:** stop retrospective fingerprint archaeology; preserve bounded uncertainty and prepare a stronger future clean-baseline observation.
+- **Routing:** CODEX, only after separate fresh runtime authorization.
