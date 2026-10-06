@@ -1,3 +1,14 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ10 PROVENANCE CORRECTION
+
+`CHAT-ARCH-2026-10-06-067-uaal-rq10-provenance-correction.md`
+
+**Type:** CANONICAL RECONCILIATION / PROVENANCE CORRECTION / ROUTING
+
+**Preserves:** the discovery that RQ10 was reported from a dirty Codex worktree containing the same two uncommitted candidate files previously created for RQ05, the resulting inability to attribute RQ10 cleanly to `e46d830...`, and the new provenance gate.
+
+**Routing:** activate for exact runtime artifact attribution, candidate-overlay reconciliation and promotion of RQ10 evidence.
+
+**Next actor:** CODEX, static provenance phase.
 ## 2026-10-06 REGISTRATION — UAAL-RQ10 MCP → PERCEPTION RECONCILIATION
 
 `CHAT-ARCH-2026-10-06-066-uaal-rq10-mcp-perception-reconciliation.md`
