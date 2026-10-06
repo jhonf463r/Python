@@ -1,3 +1,21 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS PROVENANCE GATE FAILURE / NO TARGET RUNTIME
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-098-rq13-harness-provenance-gate-failure.md`
+
+The freshly authorized execution of harness `C:\\temp\\rq13_task_precondition.py` (SHA-256 `C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA`) ran exactly once and stopped at the harness's own Git provenance gate before importing IABV. The target runtime boundary was therefore **NOT ENTERED**.
+
+Reported pre-execution checks still establish HEAD `e46d8304167708bed0764d3bf2be8fd6643e8944`, a dirty worktree, and matching relevant baseline source blobs. The failure is narrower: the harness resolved `e46d830...:src/iabv_v15/bootstrap.py` as though `src/` were at the Git root, while this checkout stores it under `IABV_v1.5/`.
+
+**CLASSIFICATION:** `HARNESS PROVENANCE GATE FAILURE / NO TARGET RUNTIME`.
+
+Therefore there is **no new observation** of AppBootstrap, PCS, ObjectiveRepository, `latest_active()`, `current_package(refresh=True)`, package alignment, TASK state, P0, DecisionContext or learning.
+
+**CURRENT FIRST OPEN EDGE:** `correct external harness Git-path provenance → self-test nested repository layout → new harness SHA → fresh human authorization → one bounded RQ13 PCS/ObjectiveRepository attribution runtime`.
+
+Capability-fit actor: **CODEX**. Correct only the external harness; do not patch production IABV or retry the failed target run with the existing SHA. A modified harness requires a new artifact SHA and fresh human authorization.
+
+Existing learning status is unchanged: lower-layer learning machinery is present; selector-level learned-state influence is evidenced; strong causal future-decision learning remains **NOT PROVEN**.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 RETURN AFTER DISK CLEANUP / LEARNING STATUS VERIFIED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-097-disk-cleanup-learning-reconciliation.md`
