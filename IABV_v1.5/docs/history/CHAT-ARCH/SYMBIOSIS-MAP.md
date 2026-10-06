@@ -1,3 +1,24 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 HARNESS-AS-PRECONDITION
+
+RQ13 adds a methodological invariant:
+
+`evidence-bearing target operation → evidence-bearing harness must be self-validating first`.
+
+A provenance instrument that can fail before entering its target observation boundary is itself an execution precondition and must be validated separately.
+
+Therefore distinguish:
+
+`harness blocked before target state → no target-state evidence`
+
+from
+
+`target state observed under attributable harness → runtime evidence`.
+
+Routing delta:
+`harness provenance self-test → fresh authorization → controlled TASK precondition`.
+
+This is a method/routing delta, not evidence of autonomous learning by IABV.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PRE-STATE VS TARGET-REQUEST STATE
 
 New invariant:
