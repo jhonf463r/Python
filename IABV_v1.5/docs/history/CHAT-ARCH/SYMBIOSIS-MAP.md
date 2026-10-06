@@ -1,3 +1,18 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 BOOTSTRAP STALL ATTRIBUTION
+
+RQ13 now distinguishes:
+
+`bootstrap-induced provider health observation != proven main-thread stall cause`.
+
+The observed `Ollama health check timeout` is source-attributable to the EnvironmentSelfAwareness scan path, but the runtime evidence did not establish that the main AppBootstrap thread was blocked on Ollama.
+
+New invariant:
+`observer-side signal != target-thread causal attribution`.
+
+New routing rule:
+`runtime stall unlocalized → minimal stack/progress instrumentation → new harness SHA → fresh authorization`.
+
+No target package, repository lookup, TASK alignment, P0, learning or autonomous symbiosis claim follows from this episode.
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PROVIDER HEALTH BOOTSTRAP BOUNDARY
 
 RQ13 reconciles the aborted runtime correctly:
