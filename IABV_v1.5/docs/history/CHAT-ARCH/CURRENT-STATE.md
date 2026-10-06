@@ -1,3 +1,16 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 OBJECTIVE MATERIALIZATION RECONCILIATION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-080-uaal-rq13-objective-materialization-reconciliation.md`
+
+Source reconciliation closes an important RQ13 semantic question on executable baseline `e46d830...`: `portable_context_get(refresh=True)` cannot accept task/objective context; it calls `current_package(refresh=True)` with `task_context=None`. The resulting package derives goal metadata from pre-existing objective repository state. Meanwhile `_handle_request_body()` builds P0 before `GoalEngine.attach_session_goal_context()`, and GoalEngine may create OBJECTIVE/PROJECT/TASK only later inside `handle_request`.
+
+Therefore the same first `handle_request` cannot create the ObjectiveNode and simultaneously prove that its pre-request P0 was aligned to that newly created node.
+
+**CLOSED:** artifact readiness; correct CWD/source provenance; bootstrap → `POST_BOOTSTRAP_BOUNDARY`; portable-context source semantics; P0-before-GoalEngine materialization ordering.
+
+**FIRST ACTIONABLE EDGE:** `authorized runtime state inspection → determine whether a real pre-existing active TASK/PROJECT/OBJECTIVE exists and record its site/id provenance`.
+
+Do not invent or create an objective for the target request. No fresh runtime authorization is implied.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PRECONDITION / GOAL ALIGNMENT
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-079-uaal-rq13-precondition-harness-and-goal-alignment.md`
