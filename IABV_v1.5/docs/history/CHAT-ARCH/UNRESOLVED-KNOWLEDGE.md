@@ -1,3 +1,22 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ12 PHASE 2 AUTHORIZATION GATE
+
+**QUESTION:** Can the clean canonical executable baseline `e46d830...` produce one attributable live MCP → PerceptionSnapshot observation with in-process artifact provenance?
+
+**STATUS:** READY FOR AUTHORIZED RUNTIME / NOT YET AUTHORIZED.
+
+**READINESS PROVEN:** dedicated clean worktree; exact baseline HEAD; exact relevant blobs; source SHA-256 fingerprints; disposable in-process provenance harness; single public observation target.
+
+**MINIMUM ACTION:** after fresh explicit human authorization, execute exactly one clean-baseline MCP observation and capture process/import provenance before `cognitive_frame_translate`.
+
+**RUNTIME INPUT:** fingerprint pre-existing `latest.json` (path/size/mtime/SHA-256 and WorldModel ID if readable) before bootstrap. Git cleanliness must not be confused with runtime-state cleanliness.
+
+**EVENT CONTRACT:** record natural refresh requests, monitor scans, reasons and identities; do not request a manual scan; distinguish requested refresh from executed scan.
+
+**STOP:** external provider/tool execution, second MCP observation, inability to attribute the executing modules, or any effect outside the explicit authorization scope. Stop after PerceptionSnapshot identity/provenance and final persistence capture.
+
+**NEXT ACTOR:** CODEX.
+
+**DOWNSTREAM DECISION-CONTEXT TESTING:** blocked until RQ12 attribution is complete and independently reconciled.
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ12 CLEAN-BASELINE PROVENANCE OBSERVATION
 
 **QUESTION:** Can the canonical executable baseline `e46d830...` produce an attributable live MCP → PerceptionSnapshot observation under a clean worktree with in-process artifact fingerprints?
