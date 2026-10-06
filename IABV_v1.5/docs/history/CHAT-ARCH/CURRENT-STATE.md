@@ -1,3 +1,25 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 TARGET REACHED ONCE / POST-TARGET REPORTING FAILURE
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-100-rq13-post-target-reporting-failure.md`
+
+The newly authorized harness `50779B1D...` passed provenance and entered runtime. AppBootstrap reached `bootstrap_init_done` (~29.2 s). Runtime PCS and ObjectiveRepository identities were captured, and `pcs.objective_repository is boot.objective_repository` was **true**; both referenced storage object `1536828289616`.
+
+The run then failed in the harness reporting layer at:
+`emit("LATEST_ACTIVE_TRACE", **item)`
+with `TypeError: emit() got multiple values for argument 'event'`.
+
+Execution had advanced into post-target trace iteration and did not emit `TARGET_EXCEPTION`, so `current_package(refresh=True)` is **strongly indicated as having been invoked once and returned**, but its exact result was not captured.
+
+**CLASSIFICATION:** `TARGET REACHED ONCE / POST-TARGET REPORTING FAILURE / PACKAGE ATTRIBUTION INCOMPLETE`.
+
+**CLOSED/PROGRESSED:** runtime PCS ↔ AppBootstrap ObjectiveRepository identity equivalence.
+
+**CURRENT FIRST OPEN EDGE:** `completed-run artifact recovery → exact persisted package/trace evidence from the same execution → independent verification`.
+
+Next actor: **CODEX**, read-only forensic inspection only. Do NOT rerun IABV or `current_package`; do not modify TASK/objective/P0/DecisionContext/MCP/provider state.
+
+Learning status unchanged: lower-layer learning present; selector-level influence evidenced; strong causal future-decision learning NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS PATH CORRECTION READY / RUNTIME NOT AUTHORIZED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-099-rq13-harness-path-correction-ready.md`
