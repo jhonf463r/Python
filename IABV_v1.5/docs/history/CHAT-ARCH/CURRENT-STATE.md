@@ -1,3 +1,18 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP STALL UNLOCALIZED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-090-uaal-rq13-bootstrap-stall-unlocalized.md`
+
+The latest authorized run passed provenance, entered real AppBootstrap, observed `wire_services_start` and `phase_tools_adapters_done`, then was aborted after prolonged lack of bootstrap completion. An Ollama health-check timeout was observed and is attributable to the baseline EnvironmentSelfAwareness provider-health observation path, but this does **not** prove that Ollama caused the main-thread stall.
+
+**CLASSIFICATION:** `RUNTIME ABORT / BOOTSTRAP STALL UNLOCALIZED`.
+
+**CURRENT FIRST OPEN EDGE:** `phase_tools_adapters_done → exact main-thread bootstrap stall location → AppBootstrap completion → runtime PCS/repository identity`.
+
+No retry or target observation is authorized from this episode. No causal attribution should be assigned to the Ollama timeout without stack/progress evidence.
+
+**NEXT ACTOR: CODEX.**
+
+Required intervention is limited to external-harness diagnostic instrumentation (standard-library stack/progress watchdog), followed by self-test and a new harness SHA. Fresh authorization is required before any diagnostic runtime execution.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PROVIDER HEALTH BOOTSTRAP AUTHORIZATION BOUNDARY
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-089-uaal-rq13-provider-health-bootstrap-boundary.md`
