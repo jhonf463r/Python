@@ -1,3 +1,26 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 CONTROLLED TASK PRECONDITION CLOSED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-084-uaal-rq13-controlled-task-precondition-closed.md`
+
+Fresh-authorized Windows execution from the artifact-ready worktree established pre-mutation ObjectiveRepository state as zero OBJECTIVE/PROJECT/TASK/SUBTASK rows and no active TASK. Exactly one controlled active TASK was then created through the existing baseline mechanism `GoalEngine._resolve_objective() → ObjectiveRepository.save()`.
+
+TASK ID:
+`f8b087e1-c1fe-477a-80e9-faaaedb61740`
+
+Verified by an independent SQLite read-only connection and JSON/ObjectNode validation. Persisted JSON SHA-256:
+`29CFA112C6D275648A0C45C173C1103DDCE7D40F70D32034F0AA9A7DD70CCAA4`.
+
+**CLOSED:** pre-mutation state capture; single controlled TASK creation; TASK identity; independent persistence/read-back; exact execution provenance.
+
+**UNRESOLVED:** exact Unicode/byte identity of the requested long title because process output rendered it with `�`, despite same-process read-back matching the creation value.
+
+The TASK is explicitly controlled experimental state, not natural lifecycle state.
+
+**CURRENT FIRST OPEN EDGE:** `controlled active TASK → portable_context package alignment → package identity/fingerprint`.
+
+No `current_package`, `portable_context_get`, `handle_request`, MCP, external provider, or second objective/task creation occurred. Any downstream runtime call requires fresh human authorization.
+
+**NEXT ACTOR: CODEX**.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS READY
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-083-uaal-rq13-harness-readiness-reconciliation.md`
