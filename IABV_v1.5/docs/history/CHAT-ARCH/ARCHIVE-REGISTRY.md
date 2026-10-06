@@ -1,3 +1,14 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 SONNET STATIC ADVERSARIAL RECONCILIATION
+
+`CHAT-ARCH-2026-10-06-073-uaal-rq13-sonnet-static-adversarial-reconciliation.md`
+
+**Type:** CANONICAL RECONCILIATION / INDEPENDENT ADVERSARIAL AUDIT / BLOCK NARROWED / ROUTING
+
+**Preserves:** Sonnet/Claude's independent validation and narrowing of the Codex block, the concrete conversational bypass condition for parallel comparison, and the bounded runtime experiment required to prove a stop before `record`.
+
+**Routing:** activate for the RQ13 bounded runtime DecisionContext reconstruction experiment.
+
+**Next actor:** CODEX, after fresh runtime authorization.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 STATIC BLOCK RECONCILIATION
 
 `CHAT-ARCH-2026-10-06-072-uaal-rq13-static-block-reconciliation.md`
