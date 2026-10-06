@@ -1,3 +1,26 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PRIMARY RETURN CAPTURE CONTRACT COMPLETE / RUNTIME NOT AUTHORIZED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-107-rq13-primary-return-capture-contract-complete.md`
+
+CODEX reports that the external harness `C:\\temp\\rq13_task_precondition.py` was corrected only at the primary returned-package capture layer. New reported SHA-256:
+`B16C15E566AD7BE14BABDA77A4D9188101794EF8E041051D627FFE5B813B3240` (59,919 bytes).
+
+The harness now captures the already-built returned package through `vars(package)`, recursively serializes covered values, emits complete `package_fields`, and emits the designated comparison fields including IDs, timestamps, paths and complete metadata. It does not invoke `model_dump()`, re-call the target, import IABV, or execute runtime during self-test.
+
+Reported checks: syntax PASS; contract self-test PASS; primary-result-before-trace ordering PASS; `iabv_imported=false`; `no_iabv_runtime=true`; `no_target_operation=true`; `sqlite_runtime_used=false`; production Python/test modifications 0.
+
+**CLASSIFICATION:** `PRIMARY RETURN CAPTURE CONTRACT COMPLETE / SELF-TESTED / RUNTIME NOT AUTHORIZED`.
+
+This closes the external harness evidence-contract edge. The real `PortableContextPackage` was intentionally not instantiated here, so live compatibility of the `vars()`-based recursive capture remains an assumption to be tested only by the authorized runtime.
+
+**CURRENT FIRST OPEN EDGE:** `fresh human runtime authorization naming exact harness SHA B16C15E566AD7BE14BABDA77A4D9188101794EF8E041051D627FFE5B813B3240 → one bounded RQ13 runtime → immediate returned-package capture → persisted fingerprint comparison → independent verification`.
+
+The prior harness SHA `771FBF...` is superseded and must not be reused. No downstream P0/DecisionContext/MCP/provider work is implicated.
+
+Harness SHA/bytes remain CODEX-reported, not independently byte-read here.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PRIMARY RESULT CAPTURE CONTRACT GAP / NO RUNTIME
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-106-rq13-primary-result-capture-contract-gap.md`
