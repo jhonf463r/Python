@@ -1,3 +1,19 @@
+## 2026-10-06 TRANSFER — UAAL-RQ12 CLEAN-BASELINE PROVENANCE READINESS
+
+RQ12 converts the RQ11B provenance lesson into an executable evidence contract.
+
+The reusable collaboration rule is now:
+
+`clean source artifact → pre-state runtime input capture → in-process source/cache fingerprint → process/import identity → event chronology → single observation → final identity → verification`.
+
+Two additional distinctions are now explicit:
+
+1. Git-clean worktree ≠ clean runtime state. Existing persisted state such as `latest.json` is an experiment input and must be fingerprinted rather than silently normalized.
+2. refresh requested ≠ scan executed. Natural bootstrap/assembler refresh requests may occur in baseline code; runtime traces must distinguish requests, monitor actions, and persistence transitions.
+
+Codex remains capability-fit for Phase 2 because the open edge requires Windows/MCP execution and in-process provenance. The runtime action remains authorization-gated.
+
+RQ12 must not test downstream DecisionContext in the same observation.
 ## 2026-10-06 TRANSFER — UAAL-RQ10 PROVENANCE GATE / DIRTY WORKTREE
 
 RQ11 exposed a reusable epistemic correction: **HEAD at the expected baseline does not prove that the runtime executed that baseline when the worktree is dirty**.
