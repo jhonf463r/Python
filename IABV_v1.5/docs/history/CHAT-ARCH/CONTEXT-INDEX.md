@@ -1,3 +1,12 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 SOURCE WORKTREE READINESS GATE
+
+- Canonical record: `CHAT-ARCH-2026-10-06-102-rq13-source-worktree-readiness-gate.md`.
+- Latest harness SHA reported by CODEX: `60EC734CD8694F8ABF797A2A78942F5DF60C464B10E5C27742097BAF2DFA422F`.
+- Harness self-test PASS, but runtime remains blocked because the target worktree reportedly contains `.py` modifications under `src/`.
+- **First open edge:** read-only inventory/classification of those changes and their impact on RQ13 provenance.
+- **Next actor:** CODEX, forensic read-only only.
+- No runtime authorization should be issued until this edge is resolved.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 PERSISTED PACKAGE SOURCE CORRELATION
 
 - Canonical record: `CHAT-ARCH-2026-10-06-101-rq13-persisted-package-source-correlation.md`.
