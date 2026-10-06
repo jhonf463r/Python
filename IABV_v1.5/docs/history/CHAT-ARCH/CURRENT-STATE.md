@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PRECONDITION / GOAL ALIGNMENT
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-079-uaal-rq13-precondition-harness-and-goal-alignment.md`
+
+The latest RQ13 run reached the correct CWD, matched in-process source fingerprints, and reached `POST_BOOTSTRAP_BOUNDARY`. Exactly one portable-context refresh/precondition ran and returned package `97da7e6d-0f13-4478-98a3-5946ca15ccda`, but normal `typeperf`, process and network probes were blocked by the harness during `build_package()`. Therefore the precondition is not an uncontaminated environmental observation.
+
+The returned package had `active_objective_id=""`, so request alignment failed and `handle_request` did not run.
+
+Direct baseline source reconciliation adds an important contract fact: MCP `portable_context_get(refresh=True)` calls `current_package(refresh=True)` without `task_context`; `build_package(task_context=None)` derives objective metadata from the objective repository and a recent-session fallback. The fallback can supply a tentative active title but does not necessarily provide an active objective ID.
+
+**CLOSED:** artifact readiness; correct CWD/source provenance; bootstrap → `POST_BOOTSTRAP_BOUNDARY`.
+
+**FIRST OPEN EDGE:** `existing baseline portable-context refresh surface → legitimate aligned task/goal context without production change or repeated refresh`.
+
+**NEXT ACTOR: SONNET/CLAUDE** for a narrow independent source/contract audit. No runtime authorization follows from this record.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 WRONG-CWD RUNTIME STOP
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-078-uaal-rq13-wrong-cwd-stop.md`
