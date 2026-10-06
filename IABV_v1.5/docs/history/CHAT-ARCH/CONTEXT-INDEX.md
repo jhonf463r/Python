@@ -1,3 +1,12 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 HARNESS READY / FRESH AUTHORIZATION
+
+- Canonical record: `CHAT-ARCH-2026-10-06-096-rq13-harness-ready-fresh-authorization.md`.
+- New external harness SHA reported by CODEX: `C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA`.
+- Reported readiness: persisted-package fingerprint present; excluded service-stop/oracle route isolated; contract self-test passed; no IABV runtime executed.
+- Verification boundary: harness bytes/SHA are not independently re-read from Windows in this coordination session.
+- Current route: fresh human authorization naming the exact new SHA → CODEX one bounded RQ13 attribution runtime → independent reconciliation.
+- Do not inherit any authorization from earlier harness SHAs.
+
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 HARNESS CONTRACT GAP
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-095-rq13-harness-readiness-reconciliation.md`.
