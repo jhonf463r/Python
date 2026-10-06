@@ -1,3 +1,12 @@
+## 2026-10-06 ADDENDUM — RQ10 / DECISION-CONTEXT RECONSTRUCTION
+
+The next collaboration lesson is a lineage distinction: the live PerceptionSnapshot contains a pre-governance DecisionContext, but the normal AdaptiveTaskOrchestrator later builds another DecisionContext and writes that reconstructed object back into the refreshed PerceptionSnapshot/session metadata.
+
+Future runtime traces must therefore distinguish:
+`DecisionContext before reconstruction → reconstructed DecisionContext → post-governance persisted context`.
+
+A returned preview object is not sufficient evidence that the normal downstream consumer preserved the same object or all of its evidence.
+
 ## 2026-10-06 TRANSFER — UAAL-RQ10 / LIVE MCP → PERCEPTION OBSERVABILITY
 
 RQ10 produced a new verified runtime transfer into the IABV coordination method.
