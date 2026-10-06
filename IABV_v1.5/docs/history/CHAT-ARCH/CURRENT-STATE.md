@@ -1,3 +1,18 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 STABILIZATION HARNESS READY
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-088-uaal-rq13-stabilization-harness-ready.md`
+
+The external RQ13 harness now implements the explicitly authorized post-bootstrap stabilization sequence using the existing `stop()` methods of EnvironmentSelfAwarenessService and WorldModelService. Syntax, wrapper, orphan-oracle, stabilization and runtime-gate self-tests passed; no IABV runtime was executed.
+
+**NEW HARNESS SHA:** `CDDEA79069BB4D90F84BD01AE3269AC1500E6E4471FABEC29AEA4B8F585588A8`
+
+**CLASSIFICATION:** `READY-FOR-FRESH-RUNTIME-AUTHORIZATION`.
+
+**CURRENT FIRST OPEN EDGE:** `fresh human authorization naming the new harness SHA → one bounded RQ13 runtime observation`.
+
+**NEXT ACTOR: HUMAN AUTHORIZATION → CODEX EXECUTION.**
+
+No authorization transfers from the previous harness SHA. No downstream P0/DecisionContext/MCP/provider execution is authorized by this state.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 AUTHORIZED STABILIZATION HARNESS GAP
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-087-uaal-rq13-authorized-stabilization-harness-gap.md`
