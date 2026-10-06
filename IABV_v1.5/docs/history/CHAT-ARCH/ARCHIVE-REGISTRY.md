@@ -1,3 +1,21 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 STABILIZATION HARNESS READY
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-088-uaal-rq13-stabilization-harness-ready.md`
+
+Type:
+`RECONCILIATION / HARNESS READINESS / RUNTIME GOVERNANCE`
+
+State:
+`CANONICAL SOURCE / READY-FOR-FRESH-RUNTIME-AUTHORIZATION`
+
+New harness SHA:
+`CDDEA79069BB4D90F84BD01AE3269AC1500E6E4471FABEC29AEA4B8F585588A8`
+
+Current routing:
+`fresh human authorization → CODEX execution`.
+
+No runtime authorization transfers automatically from the previous harness SHA.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP OBSERVATION AUTHORIZATION BOUNDARY
 
 Canonical record:
