@@ -1,3 +1,15 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ10 MCP → PERCEPTION RECONCILIATION
+
+`CHAT-ARCH-2026-10-06-066-uaal-rq10-mcp-perception-reconciliation.md`
+
+**Type:** CANONICAL RECONCILIATION / RUNTIME EVIDENCE / SYMBIOSIS / ROUTING
+
+**Preserves:** the first live MCP → PerceptionSnapshot observation after RQ09, snapshot identity transition `4350... → fa38...`, the limitation that the original RQ09 producer snapshot was not preserved unchanged, source verification at executable baseline `e46d830...`, and the new open edge toward downstream DecisionContext consumption.
+
+**Routing:** activate for live PerceptionSnapshot/DecisionContext runtime correlation, MCP `cognitive_frame_translate`, `orchestrator_preview`, WorldModel identity continuity, and temporal refresh attribution.
+
+**Next actor:** CODEX, after fresh runtime authorization.
+
 # IABV v1.5 — CHAT-ARCH Historical Record Registry
 
 ## PURPOSE
