@@ -85,6 +85,11 @@ Do not route to Sonnet/Claude yet: no new independently adjudicable artifact/cla
 
 Do not rerun the authorized producer scan.
 
+## AUTHORIZATION CONSUMPTION
+The RQ09 human authorization covered exactly one read-only light producer scan. That authorization is consumed and must not be silently reused for a later MCP startup if bootstrap can mutate `latest.json` through `request_refresh`.
+
+Therefore the immediate precondition for the next runtime experiment is a **fresh explicit authorization for the MCP-startup observation**, unless the operator independently establishes that the planned invocation cannot mutate persisted World Model state.
+
 ## MINIMUM NEXT EXPERIMENT
 Use a fresh candidate MCP subprocess from the same workspace without performing another producer scan.
 
