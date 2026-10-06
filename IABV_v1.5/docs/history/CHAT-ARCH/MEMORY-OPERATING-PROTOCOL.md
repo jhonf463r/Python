@@ -1746,3 +1746,26 @@ Preserve broad capability knowledge and use context, prerequisites, governance, 
 The objective is not capability minimization. It is **activation minimization under capability preservation**.
 
 A realization may be dormant, unavailable, unauthorized or temporarily blocked while remaining a valid future candidate.
+
+
+## 2026-10-06 METHOD AMENDMENT — RQ11 ARTIFACT/READINESS GATE
+
+RQ11 adds a durable execution-readiness refinement to the operating protocol.
+
+A material action may be assigned to a capability-fit actor only after artifact/input readiness, provenance, isolation/blinding, oracle/verification readiness and authorization conditions are satisfied. Therefore:
+
+`capability-fit + execution preconditions + evidence contract = valid intervention`.
+
+For any runtime result produced from a potentially dirty workspace, separate current workspace state from execution-time state and require temporal artifact attribution before promoting the observation to baseline truth.
+
+Reusable provenance chain:
+
+`runtime observation → executable/source fingerprint → worktree cleanliness → exact diff → temporal linkage → attribution → evidence classification`.
+
+Also distinguish:
+
+`non-executing route preview ≠ side-effect-free observation`.
+
+A public preview may avoid downstream dispatch yet still traverse refresh/persistence mechanisms. Read-only claims therefore require source-level verification of the complete call chain and side effects, not only the endpoint's docstring.
+
+Historical `NEXT ACTOR` / `NEXT STEP` statements remain non-authoritative. Recompute routing from current verified truth, first open edge, capability fit, readiness and expected information gain after every material reconciliation.
