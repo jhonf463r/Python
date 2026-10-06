@@ -1,3 +1,18 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 OBJECTIVE MATERIALIZATION / ALIGNMENT
+
+RQ13 adds a causal-order invariant:
+
+`P0 construction precedes GoalEngine objective materialization in handle_request`.
+
+Therefore:
+`request-created objective ≠ pre-request P0 alignment evidence`.
+
+Portable-context refreshability and request alignability are separate capabilities:
+`refreshable package != alignable package`.
+
+The next capability-fit intervention is a bounded read-only runtime inspection of pre-existing ObjectiveRepository state, not a new objective-creation mechanism.
+
+This is a method/contract delta, not proof of causal learning from persistent GitHub state.
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PRECONDITION CONTRACT NARROWING
 
 RQ13 adds a useful distinction between **refreshability** and **alignability**:
