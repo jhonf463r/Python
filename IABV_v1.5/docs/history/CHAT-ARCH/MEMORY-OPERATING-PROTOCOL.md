@@ -1,3 +1,19 @@
+## 2026-10-06 METHOD AMENDMENT — TEMPORAL IDENTITY TRACE AT RUNTIME HANDOFFS
+
+When a live experiment crosses process/service/representation boundaries, memory and routing must preserve identity at each boundary rather than relying on the final state.
+
+Required trace shape when material:
+`producer/previous state ID → persisted ID → consumer in-memory ID → derived/translated representation ID → final persisted ID`.
+
+Also preserve the temporal ordering of refresh/request events because bootstrap, monitors and perception assembly may replace state while an observation is in flight.
+
+A final representation matching final persistence does not prove preservation of an earlier representation, and a concurrent refresh does not by itself establish full causal attribution.
+
+For runtime handoff experiments, the evidence contract must therefore distinguish:
+`identity continuity | replacement | concurrency | persistence match | causal attribution`.
+
+The first open edge is the first boundary where identity, consumer attribution or causal ordering remains unresolved.
+
 
 ## 2026-10-05 METHOD AMENDMENT — SELF-CODE EVOLUTION / CAPABILITY-ORIENTED PLASTICITY
 
