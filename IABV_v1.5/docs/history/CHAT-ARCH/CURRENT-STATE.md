@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 WRONG-CWD RUNTIME STOP
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-078-uaal-rq13-wrong-cwd-stop.md`
+
+The latest RQ13 attempt loaded the expected four baseline modules from the authorized worktree with matching in-process fingerprints, but the Python process CWD was `C:\Python\IABV_v1.5` instead of the authorized `C:\temp\rq13-e46-artifact-ready\IABV_v1.5`. AppBootstrap started before interruption.
+
+Therefore the run is **INVALID / BLOCKED at execution-context provenance**. Source provenance does not erase a CWD authorization violation because relative paths, persistence targets and runtime behavior can depend on CWD.
+
+**CURRENT FIRST ACTIONABLE EDGE:**
+`verified artifact receipt → exact authorized CWD before process initialization → in-process provenance → normal bootstrap`.
+
+The attempt's runtime authorization is consumed because application startup occurred under the wrong execution scope. A fresh authorization is required before the corrected launch.
+
+Preserve invariant:
+`correct imported source != complete authorized runtime attribution`.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP BOUNDARY CLOSED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-076-uaal-rq13-bootstrap-boundary-closed.md`
