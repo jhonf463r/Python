@@ -1302,3 +1302,28 @@ Current actor: **Codex**.
 - **RQ10 attribution:** `MIXED/INDETERMINATE`
 - **Decision:** stop retrospective fingerprint archaeology; preserve bounded uncertainty and prepare a stronger future clean-baseline observation.
 - **Routing:** CODEX, only after separate fresh runtime authorization.
+
+## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP DIAGNOSTIC WATCHDOG READY
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-06-091-uaal-rq13-bootstrap-diagnostic-watchdog-ready.md`
+
+Type:
+`RECONCILIATION / DIAGNOSTIC-READINESS / RUNTIME-NOT-AUTHORIZED`
+
+State:
+`DIRECT_CANONICAL_SOURCE=YES / REMOTE_READBACK=YES / EXTERNAL-HARNESS-DIGEST-REPORTED-NOT-INDEPENDENTLY-READ-BACK`
+
+Purpose:
+Preserve the readiness transition after the RQ13 bootstrap stall remained unlocalized. The external harness now has a separate child-process `bootstrap-diagnostic` mode with bounded timeout, main/observer stack capture and startup-progress correlation. Self-tests are reported passing without IABV runtime execution.
+
+New harness SHA-256:
+`03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C`
+
+Current routing:
+`fresh human authorization naming exact harness digest → CODEX bounded Windows diagnostic → stack/progress evidence → ChatGPT reconciliation`.
+
+Authorization boundary:
+allow only unavoidable baseline AppBootstrap observation effects, including environment/world-model scans and provider health checks induced by those scans. Do not authorize provider inference/generation, MCP provider execution, TASK/objective mutation, SQLite/oracles, `latest_active`, `current_package`, P0 or downstream RQ13 operations.
+
+No claim about the exact stall cause follows from harness readiness alone.
