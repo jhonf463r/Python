@@ -1,4 +1,16 @@
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 OBJECTIVE MATERIALIZATION
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-080-uaal-rq13-objective-materialization-reconciliation.md`.
+- Artifact readiness: closed.
+- Correct CWD/source provenance: closed.
+- Bootstrap → `POST_BOOTSTRAP_BOUNDARY`: closed.
+- Portable-context refresh surface is not alignable by passing task/objective context through MCP.
+- `handle_request` builds P0 before GoalEngine materializes OBJECTIVE/PROJECT/TASK.
+- Empty `active_objective_id` therefore cannot be solved by having the same first request create the goal.
+- **First actionable edge:** read-only determine whether a real pre-existing active objective exists in the runtime objective repository; capture site/id provenance without mutating it.
+- Next actor: CODEX.
+- Fresh authorization required for this new runtime read.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 PRECONDITION / GOAL ALIGNMENT
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-079-uaal-rq13-precondition-harness-and-goal-alignment.md`.
