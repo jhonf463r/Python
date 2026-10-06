@@ -1,4 +1,16 @@
-## 2026-10-06 REGISTRATION — UAAL-RQ13 IMPORT READINESS CORRECTED
+## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-108
+
+Registered canonical episode:
+`CHAT-ARCH-2026-10-06-108-rq13-provider-health-authorization-boundary.md`
+
+Material delta:
+- normal AppBootstrap can transitively execute provider/embedding health checks;
+- the latest RQ13 authorization explicitly excluded those checks;
+- execution therefore stopped before IABV import/runtime;
+- primary return-capture contract remains closed;
+- next frontier is an authorization-safe bootstrap boundary, not another return-capture correction.
+
+Routing remains governed by `CURRENT-STATE.md`.## 2026-10-06 REGISTRATION — UAAL-RQ13 IMPORT READINESS CORRECTED
 
 Canonical record:
 `CHAT-ARCH-2026-10-06-105-rq13-import-readiness-corrected.md`
