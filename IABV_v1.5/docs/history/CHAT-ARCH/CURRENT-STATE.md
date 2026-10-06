@@ -1,3 +1,23 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP DIAGNOSTIC WATCHDOG READY
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-091-uaal-rq13-bootstrap-diagnostic-watchdog-ready.md`
+
+The external RQ13 harness now reports an isolated `bootstrap-diagnostic` mode with a child-process timeout and a pre-AppBootstrap standard-library thread watchdog. Self-tests passed without importing IABV or executing AppBootstrap.
+
+**NEW HARNESS SHA-256:** `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C`
+
+The harness digest is actor-reported and not independently re-read from the Windows filesystem in this reconciliation. The IABV artifact worktree is also reported dirty with approximately 260 entries, so diagnostic execution must re-establish exact executable-source provenance before launch.
+
+**CLASSIFICATION:** `DIAGNOSTIC HARNESS READY / RUNTIME NOT AUTHORIZED`.
+
+**CURRENT FIRST OPEN EDGE:** `fresh human authorization naming harness SHA 03406AFF... → one bounded diagnostic bootstrap execution → exact main-thread stall/completion evidence`.
+
+**NEXT ACTOR: HUMAN AUTHORIZATION → CODEX.**
+
+The diagnostic must stop at bootstrap diagnosis. Allow unavoidable baseline AppBootstrap observation effects, including EnvironmentSelfAwareness/WorldModel scans and provider **health checks** induced by those scans, but do not authorize provider inference/generation, MCP provider execution, TASK/objective mutation, SQLite/oracles, `latest_active`, `current_package`, P0 or downstream RQ13 operations.
+
+If AppBootstrap completes, classify `STALL NOT REPRODUCED / BOOTSTRAP COMPLETED`. If timeout captures a concrete main-thread call, classify `STALL LOCATION IDENTIFIED`. If the watchdog cannot obtain stacks because of a native/GIL-blocking operation, classify `STALL UNLOCALIZED / WATCHDOG STACK UNAVAILABLE` and do not infer the call from timeout alone.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP STALL UNLOCALIZED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-090-uaal-rq13-bootstrap-stall-unlocalized.md`
