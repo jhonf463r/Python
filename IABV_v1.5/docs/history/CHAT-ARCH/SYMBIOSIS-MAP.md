@@ -1,3 +1,33 @@
+## 2026-10-06 TRANSFER — UAAL-RQ10 / LIVE MCP → PERCEPTION OBSERVABILITY
+
+RQ10 produced a new verified runtime transfer into the IABV coordination method.
+
+### Runtime finding
+
+The candidate MCP process began from persisted WorldModel state, observed a later monitor-generated snapshot during bootstrap, and returned a live `PerceptionSnapshot` whose WorldModel evidence matched that later runtime snapshot. Final persistence also matched the later ID.
+
+This is stronger than static wiring: the MCP → PerceptionSnapshot boundary was observed live.
+
+### Epistemic boundary preserved
+
+The original RQ09 producer snapshot was **not** preserved unchanged.
+
+Identity evolution:
+`4917... → 4350... → fa38... → PerceptionSnapshot fa38...`
+
+Therefore:
+- live observation of a later representation ≠ preservation of an earlier representation;
+- concurrent refresh ≠ independently proven causal attribution of every transition;
+- PerceptionSnapshot containing DecisionContext ≠ proof that a downstream consumer used that exact live object.
+
+### Method delta
+
+For live environmental chains, sample identity at each semantic boundary and preserve event ordering. A final snapshot alone is insufficient for lineage.
+
+### Routing delta
+
+The capability-fit destination remains **Codex**. The next minimum intervention is the existing read-only `orchestrator_preview` path, with exact WorldModel/DecisionContext correlation and no external execution.
+
 ## 2026-10-05 TRANSFER — UAAL-RQ01–RQ04 / IABV CANONICAL FRAME AS INTERMEDIARY
 
 The latest collaboration sequence establishes a useful distinction between **coordination symbiosis** and **runtime causal symbiosis**.
