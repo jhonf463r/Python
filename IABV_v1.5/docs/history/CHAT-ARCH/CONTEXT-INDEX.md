@@ -1,3 +1,12 @@
+# 2026-10-06 LATEST ROUTING POINTER — RQ11
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-068-uaal-rq11-static-readiness-reconciliation.md`
+- Current primary frontier: RQ10 execution artifact provenance.
+- Current actor: CODEX, static provenance archaeology only.
+- Runtime authorization: none.
+- Do not advance to the DecisionContext runtime edge until RQ10 provenance is classified.
+- RQ11's source-level DecisionContext reconstruction finding is a secondary frontier, not the current routing authority.
+
 ## 2026-10-06 ACTIVE ROUTING — UAAL-RQ10 PROVENANCE CORRECTION
 
 Canonical record:
