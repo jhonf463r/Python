@@ -1,3 +1,13 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 PERSISTED PACKAGE SOURCE CORRELATION
+
+- Canonical record: `CHAT-ARCH-2026-10-06-101-rq13-persisted-package-source-correlation.md`.
+- Persisted package recovered from the already-executed PID `26220` run: `d3efa58a-7dd1-44e4-9302-055e3be8e510`.
+- `active_objective_id` matches controlled TASK `f8b087e1-c1fe-477a-80e9-faaaedb61740`; `site_id` is empty.
+- Baseline source semantically links package construction → persistence → return of the same in-memory package.
+- Runtime returned-object capture is still absent; exact returned/persisted equality remains NOT VERIFIED.
+- **Next actor:** CODEX, external harness reporting correction/self-test only.
+- Then fresh human authorization with new SHA before any new runtime.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 POST-TARGET REPORTING FAILURE
 
 - Canonical record: `CHAT-ARCH-2026-10-06-100-rq13-post-target-reporting-failure.md`.
