@@ -1,3 +1,16 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ12 PHASE 1 READY
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-070-uaal-rq12-clean-baseline-static-readiness.md`
+- RQ10 attribution: `MIXED/INDETERMINATE`; preserve as variant evidence.
+- Historical PID-21668 exact-loaded-bytes proof: bounded unresolved; no further archaeology.
+- RQ12 clean worktree: ready at executable baseline `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- Relevant source blobs/fingerprints confirmed.
+- Current technical edge: fresh human authorization → one clean MCP observation → in-process provenance → WorldModel → PerceptionSnapshot.
+- Actor: CODEX.
+- Runtime authorization: NOT GRANTED.
+- Git cleanliness does not imply runtime-state freshness; fingerprint `latest.json` before bootstrap.
+- Record refresh-request vs scan-executed chronology.
+- Stop after attributable PerceptionSnapshot identity/provenance; no downstream DecisionContext runtime test in RQ12.
 # 2026-10-06 LATEST ROUTING POINTER — RQ11B / RQ12
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-069-uaal-rq11b-rq10-provenance-final-reconciliation.md`
