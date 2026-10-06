@@ -1,3 +1,19 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PERSISTED PACKAGE RECOVERED / SOURCE-CORRELATED
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-101-rq13-persisted-package-source-correlation.md`
+
+For the single PID `26220` run, forensic read-only recovery found persisted PortableContext package `d3efa58a-7dd1-44e4-9302-055e3be8e510` in both history and `latest.json`, with `active_objective_id=f8b087e1-c1fe-477a-80e9-faaaedb61740` and empty `site_id`. The latest JSON fingerprint is `C777CF29353A7E9F09202A662BC1C8869BBADF6258C0D97281BCA2E0B510A171`.
+
+Independent source reconciliation shows baseline `current_package(refresh=True) → build_package() → persist latest.json → return same package object` semantics. This strongly supports semantic package continuity, but the runtime-returned object was not serialized; returned/persisted equality remains **NOT VERIFIED**.
+
+The prior run also directly observed runtime PCS ↔ AppBootstrap ObjectiveRepository object identity/equivalence.
+
+**CLASSIFICATION:** `RECOVERABLE PERSISTED ONLY / SOURCE-ASSISTED PACKAGE CORRELATION`.
+
+**CURRENT FIRST OPEN EDGE:** `external harness event-key reporting correction → self-test → new SHA → fresh authorization → one new bounded RQ13 run capturing returned/persisted correspondence`.
+
+Do not rerun the old run. Do not infer the old returned object from the persisted artifact alone. No learning status change.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 TARGET REACHED ONCE / POST-TARGET REPORTING FAILURE
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-100-rq13-post-target-reporting-failure.md`
