@@ -1,3 +1,18 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 BOUNDED RUNTIME STOP EXPERIMENT
+
+**STATUS:** BLOCK NARROWED / RUNTIME EXPERIMENT DESIGN READY / NOT AUTHORIZED.
+
+Sonnet/Claude independently narrowed Codex's block.
+
+**OPEN QUESTION:** Can a real conversational request in baseline `e46d830...` avoid `_parallel_ia_comparison`, reach `_refresh_session_metadata`, expose pre/post DecisionContext and PerceptionSnapshot identity, and stop before `TaskOutcomeRecorder.record` using only a disposable harness sentinel?
+
+**MINIMUM ACTION:** verify the conversational intent predicate before invocation, instrument only existing method seams, capture identities, raise a sentinel after `_refresh_session_metadata`, and prove `record` did not execute.
+
+**IMPORTANT:** refresh/persistence effects before the stop remain in scope and must be captured/authorized. The preview endpoint is not a substitute.
+
+**NEXT ACTOR:** CODEX.
+
+**AUTHORIZATION:** none currently granted.
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 STATIC SAFETY-BOUNDARY AUDIT
 
 **QUESTION:** Can the existing baseline `handle_request` path reach post-governance DecisionContext reconstruction while provably preventing `_parallel_ia_comparison`, `TaskOutcomeRecorder.record`, external execution and out-of-scope persistence?
