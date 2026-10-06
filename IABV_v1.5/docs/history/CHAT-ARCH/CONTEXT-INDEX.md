@@ -1,3 +1,12 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 TARGET-PATH ATTRIBUTABLE
+
+- Canonical record: `CHAT-ARCH-2026-10-06-103-rq13-source-worktree-attributable.md`.
+- Worktree remains dirty, but under `IABV_v1.5/src/` all changes are `.pyc`/cache artifacts; no divergent `.py` source exists.
+- Four focal source blobs match baseline `e46d830...`.
+- **First open edge:** fresh human authorization for harness SHA `60EC734CD8694F8ABF797A2A78942F5DF60C464B10E5C27742097BAF2DFA422F` → one bounded RQ13 runtime → return-before-trace capture → independent verification.
+- Residual cache-load uncertainty remains explicit.
+- No runtime authorization is inherited from earlier SHA `50779B1D...`.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 SOURCE WORKTREE READINESS GATE
 
 - Canonical record: `CHAT-ARCH-2026-10-06-102-rq13-source-worktree-readiness-gate.md`.
