@@ -1,3 +1,16 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PORTABLE-CONTEXT ATTRIBUTION GAP
+
+RQ13 now distinguishes:
+
+`package returned with empty active_objective_id != proven TASK non-alignment`.
+
+The baseline PortableContextService collapses ObjectiveRepository exceptions to `None`, while AppDatabase creates fresh connections for each repository operation. Therefore target-state attribution requires an observation boundary that records repository lookup success/failure without changing the underlying call semantics.
+
+New routing invariant:
+`observable package output → internal lookup attribution → semantic alignment claim`.
+
+No P0 or learning claim follows from the current package observation.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 CONTROLLED TASK STATE
 
 RQ13 closes the pre-state prerequisite:
