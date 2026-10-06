@@ -1,3 +1,22 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 BOOTSTRAP OBSERVATION AUTHORIZATION BOUNDARY
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-086-uaal-rq13-bootstrap-observation-authorization-boundary.md`
+
+Independent Sonnet/Claude source audit on executable baseline `e46d8304167708bed0764d3bf2be8fd6643e8944` concludes, within the inspected scope, that **no existing AppBootstrap route satisfies the current authorization while excluding EnvironmentSelfAwarenessService and WorldModelService observation effects**.
+
+`_defer_services=True` suppresses constructor-level bootstrap scans, but `_wire_services()` still issues `request_refresh()` calls; with live monitor threads these may scan asynchronously, and without a live thread `request_refresh()` falls through to synchronous `scan_now()`. `PYTEST_CURRENT_TEST` does not eliminate scans. `IABV_MCP_SUBPROCESS=1` does not suppress the relevant EnvironmentSelfAwareness refreshes.
+
+**CLASSIFICATION:** `BASELINE ROUTE NOT AVAILABLE UNDER CURRENT AUTHORIZATION`.
+
+**CLOSED:** controlled TASK persistence; source wiring; clean harness; transparent-wrapper self-test; independent orphan-oracle self-test; static bootstrap contamination audit.
+
+**CURRENT FIRST OPEN EDGE:** `human authorization contract → attributable baseline AppBootstrap observation boundary`.
+
+No runtime authorization is inferred from the previous harness authorization. No monkey-patching, private production modification, service substitution or hidden switch should be used to evade the boundary.
+
+**NEXT ACTOR: HUMAN.**
+
+The human decision is whether to authorize the baseline bootstrap observation effects. If authorized, the next runtime remains one bounded observation using harness SHA `C8DACA7DC0E9E21C63455FA29BA6DB75D579730D101ADDE55340A4933912D14C`, with explicit capture of bootstrap effects, independent orphan precondition, transparent `latest_active()` trace, and no downstream P0/DecisionContext/MCP/providers.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 PORTABLE-CONTEXT ATTRIBUTION UNRESOLVED
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-085-uaal-rq13-portable-context-alignment-not-adjudicable.md`
