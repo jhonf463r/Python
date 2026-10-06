@@ -1,3 +1,35 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ11 STATIC READINESS RECONCILIATION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-068-uaal-rq11-static-readiness-reconciliation.md`
+
+RQ11 Phase 1 has now been reconciled against executable baseline `e46d830...` and canonical memory.
+
+The result does **not** close RQ10 artifact provenance. Codex's report still leaves execution-time attribution unresolved because the RQ10 worktree was reported dirty in the same two files previously used by RQ05 for an uncommitted no-refresh candidate.
+
+**CURRENT FIRST OPEN EDGE remains:**
+`RQ10 runtime process → exact executable artifact / exact dirty-worktree diff → execution-time attribution`
+
+The downstream DecisionContext question is secondary until this provenance gate closes:
+`live PerceptionSnapshot pre-governance DecisionContext → existing orchestrator reconstruction → downstream route/governance`.
+
+### RQ11 source-level corrections now canonical
+
+Direct baseline read-back confirms:
+
+- `TaskContextAssembler.build_perception_snapshot()` constructs a `DecisionContext` inside `PerceptionSnapshot` at the pre-governance stage.
+- `TaskContextAssembler._world_model()` reads the current WorldModel and may immediately request a refresh; therefore an apparently observational/preview path is not automatically side-effect-free.
+- `AdaptiveTaskOrchestrator.build_decision_context_preview()` returns the embedded DecisionContext but does not exercise the normal `_refresh_session_metadata() → _build_decision_context() → _refresh_perception_snapshot()` reconstruction.
+- The normal path replaces the embedded DecisionContext with a reconstructed post-governance instance and does not retain the original pre-governance DecisionContext as a separate comparison record by default.
+- Therefore `non-executing route preview ≠ side-effect-free observation`.
+
+### Execution rule
+
+No fresh runtime authorization exists. Do not start MCP, scan WorldModel, invoke `cognitive_frame_translate`, or invoke `orchestrator_preview` for this provenance phase.
+
+Next action is **static Codex provenance archaeology only**: exact worktree identity, complete dirty diff, RQ05 comparison, execution-time artifacts/fingerprints, then one attribution classification:
+`BASELINE-ATTRIBUTABLE` | `CANDIDATE-OVERLAY-ATTRIBUTABLE` | `MIXED/INDETERMINATE`.
+
+Do not inherit a historical next actor/next step. Recompute routing only after reconciliation.
 ## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ10 PROVENANCE CORRECTION
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-067-uaal-rq10-provenance-correction.md`
