@@ -1,3 +1,26 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ10 PROVENANCE CORRECTION
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-067-uaal-rq10-provenance-correction.md`
+
+RQ11 Phase 1 revealed a material provenance defect in the interpretation of RQ10: the Codex candidate worktree used for the RQ10 report has uncommitted changes in `server.py` and `task_context_assembler.py`, exactly the two files previously documented by RQ05 as an uncommitted no-refresh observation candidate.
+
+Direct inspection of executable baseline `e46d830...` confirms the baseline contains the normal WorldModel refresh behavior and does not contain the reported no-refresh overlay.
+
+Therefore **RQ10 is NOT CLEANLY ATTRIBUTABLE to `e46d830...`**. Reclassify it as:
+`LIVE-OBSERVED / CANDIDATE-VARIANT EVIDENCE / BASELINE ATTRIBUTION OPEN`.
+
+The RQ10 runtime observation remains preserved, but only as candidate-worktree evidence until the exact executed artifact is reconciled.
+
+**CURRENT FIRST OPEN EDGE:**
+`RQ10 runtime process → exact executable artifact / exact worktree diff → attribution`.
+
+This provenance edge supersedes the previous downstream DecisionContext routing for the UAAL branch until resolved.
+
+No new runtime experiment is authorized or needed for this provenance phase. Static Codex archaeology is the minimum next action.
+
+**CURRENT TECHNICAL ACTOR: CODEX.**
+
+Do not repeat the RQ09 producer scan. Do not repeat RQ10 runtime. Do not promote candidate-overlay evidence to baseline truth.
 ## 2026-10-06 ADDENDUM — RQ10 SOURCE-LEVEL DECISION-CONTEXT LINEAGE
 
 Direct source inspection at executable baseline `e46d830...` narrows the open edge further.
