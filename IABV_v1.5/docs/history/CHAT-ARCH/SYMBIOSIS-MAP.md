@@ -2306,6 +2306,8 @@ Future handoff measurement must preserve identity across every boundary:
 
 Bootstrap is part of the causal measurement boundary; startup refresh must be separated from tool-induced refresh rather than suppressed.
 
+Authorization is part of the causal observation contract: a one-shot authorization is consumed by the authorized scan and must not silently authorize later MCP startup that can mutate persisted state.
+
 Current frontier remains the MCP handoff. Codex remains actor-fit because the open uncertainty is exact repository/runtime attribution. No independent verifier is warranted yet.
 
 ## 2026-10-05 TRANSFER — RQ08 / PRODUCER AUTHORIZATION AS A GOVERNED OBSERVATION
