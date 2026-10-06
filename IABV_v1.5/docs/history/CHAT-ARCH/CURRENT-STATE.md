@@ -1,3 +1,26 @@
+## 2026-10-05 ACTIVE OVERLAY — RSK-01 CHAT RECONCILIATION / ELIGIBILITY + ORACLE DISCIPLINE
+
+**Canonical record:** `CHAT-ARCH-2026-10-05-064-rsk01-chat-reconciliation-eligibility-oracle.md`
+
+The supplied RSK-01 transcript has been scanned in full and reconciled against current GitHub state.
+
+Material methodological deltas now canonical:
+- participant eligibility is a pre-execution gate; response-file count is not participant count;
+- labels/reports cannot override artifact/provenance evidence;
+- oracle readiness requires original identity/access, integrity provenance and corpus/experiment alignment;
+- historical NEXT ACTOR / NEXT ACTION fields are evidence/history, not current routing authority unless promoted by the active routing snapshot;
+- actor-fit must satisfy capability, access, independence, intervention cost, execution preconditions and the evidence contract;
+- material experiments must pass readiness before actor execution.
+
+The transcript's specific S1/S2 participant statuses remain reported transcript material unless independently verified; its proposed immediate second-participant action is not execution authorization.
+
+**CURRENT TECHNICAL FRONTIER IS UNCHANGED:**
+`CURRENT WINDOWS ENVIRONMENT → attributable WorldModel producer → fresh snapshot/persistence → fresh MCP consumer → PerceptionSnapshot correlation`
+
+**CURRENT TECHNICAL ACTOR: CODEX.**
+
+RSK-01 remains a secondary continuity track and is parked until its own artifact/oracle/isolation readiness gate closes.
+
 
 ## 2026-10-05 ACTIVE OVERLAY — UAAL-RQ05 CANDIDATE OBSERVABILITY SEAM
 
