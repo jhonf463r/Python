@@ -1,16 +1,35 @@
-## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS CONTRACT GAP / RUNTIME BLOCKED
+## 2026-10-06 ACTIVE OVERLAY — UAAL-RQ13 HARNESS READY / FRESH RUNTIME AUTHORIZATION GATE
 
-**Canonical record:** `CHAT-ARCH-2026-10-06-095-rq13-harness-readiness-reconciliation.md`
+**Canonical record:** `CHAT-ARCH-2026-10-06-096-rq13-harness-ready-fresh-authorization.md`
 
-Latest CODEX readiness check did not execute runtime. The exact harness `C:\\temp\\rq13_task_precondition.py` (reported SHA `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C`) lacks the required persisted-package fingerprint and its legacy runtime route crosses excluded service-stop/oracle behavior.
+CODEX reports that the external harness `C:\\temp\\rq13_task_precondition.py` was corrected and self-tested. Reported final SHA-256:
+`C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA`
+Final reported size: `41,617 bytes`.
 
-**CLASSIFICATION:** `BLOCKED — AUTHORIZED EXPERIMENT CONTRACT NOT IMPLEMENTED`.
+The corrected route reportedly:
+- no longer stops EnvironmentSelfAwarenessService/WorldModelService;
+- no longer calls the SQLite/oracle precondition;
+- verifies the PCS-owned ObjectiveRepository against the AppBootstrap repository;
+- preserves transparent `latest_active` observation;
+- performs exactly one `current_package(refresh=True)`;
+- fingerprints the persisted `portable_context/latest.json` bytes with SHA-256 and records package/site/objective metadata;
+- checks baseline source blobs before importing IABV;
+- passes `contract-self-test` without importing/executing IABV;
+- leaves production Python source unchanged according to CODEX's post-check.
 
-**CURRENT FIRST OPEN EDGE:** `authorized RQ13 experiment contract → compliant harness artifact → harness self-test → fresh authorization → bounded runtime observation`.
+**CLASSIFICATION:** `REPORTED READY FOR FRESH RUNTIME AUTHORIZATION / EXTERNAL HARNESS NOT INDEPENDENTLY BYTE-READ-BACK`.
 
-**NEXT ACTOR:** CODEX, external harness correction/self-test only.
+**CURRENT FIRST OPEN EDGE:** `new harness SHA C94D983D... → fresh human runtime authorization → one bounded RQ13 attribution runtime → independent verification`.
 
-No runtime authorization is implied. A modified harness requires a new exact SHA and fresh authorization before runtime.
+The previous harness SHA `03406AFF...` is superseded and must not be reused.
+
+No runtime authorization is implied by this result. No downstream P0/DecisionContext/MCP/provider execution is authorized.
+
+The next runtime, after fresh human authorization, should establish exact artifact/CWD provenance, complete normal AppBootstrap once, capture PCS/ObjectiveRepository identity, perform exactly one `current_package(refresh=True)`, transparently capture `latest_active()` outcome, capture returned/persisted package identity plus `site_id`, `active_objective_id` and persisted-package fingerprint, then stop.
+
+The previous Ollama/bootstrap diagnostic is secondary. Reopen it only if the fresh target run reproduces a blocking anomaly or makes it causally relevant.
+
+**UNIVERSAL ALIGNMENT:** this is measurement readiness inside RQ13; it is not learning. The project-level criterion remains `verified experience → reusable knowledge/method → future decision/behavior change → reuse`.
 
 ## 2026-10-06 MEMORY ABSORPTION — CHAT-ARCH-2026-10-06-094
 
