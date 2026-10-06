@@ -1,3 +1,15 @@
+## 2026-10-06 TRANSFER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION GATE
+
+RQ13 exposes another reusable continuity rule:
+
+`clean Git source` does not imply `experiment-ready runtime state`.
+
+A runtime input that is stale may trigger persistence before the semantic object under observation is even created.
+
+Current collaboration pattern:
+`Codex runtime preflight → ChatGPT source reconciliation → Sonnet/Claude adversarial audit → Codex bounded runtime`.
+
+Before reusing a runtime authorization, verify whether the blocked attempt actually entered the authorized observation. A preflight stop before execution does not itself consume the target observation authorization, but it does not automatically authorize a new side effect such as runtime-state preconditioning.
 ## 2026-10-06 TRANSFER — UAAL-RQ13 INDEPENDENT AUDIT → BOUNDED RUNTIME EXPERIMENT
 
 Sonnet/Claude added independent challenge and narrowed the Codex block.
