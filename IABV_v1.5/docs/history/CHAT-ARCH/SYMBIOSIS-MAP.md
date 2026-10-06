@@ -1,3 +1,17 @@
+## 2026-10-06 TRANSFER — UAAL-RQ10 PROVENANCE GATE / DIRTY WORKTREE
+
+RQ11 exposed a reusable epistemic correction: **HEAD at the expected baseline does not prove that the runtime executed that baseline when the worktree is dirty**.
+
+The correct lineage gate is:
+
+`runtime observation → executable fingerprint → clean/dirty status → exact diff → attribution → Knowledge Delta`.
+
+This is especially important when a prior candidate experiment created uncommitted changes in the same files used by the later runtime experiment.
+
+RQ05 had already recorded an uncommitted no-refresh candidate in `server.py` and `task_context_assembler.py`. RQ11 reports that those files are still modified in the RQ10 worktree. Therefore RQ10 must remain variant-scoped until artifact attribution is resolved.
+
+**Routing consequence:** Codex remains the capability-fit actor for the next static provenance reconciliation. No fresh runtime execution is warranted yet.
+
 ## 2026-10-06 ADDENDUM — RQ10 / DECISION-CONTEXT RECONSTRUCTION
 
 The next collaboration lesson is a lineage distinction: the live PerceptionSnapshot contains a pre-governance DecisionContext, but the normal AdaptiveTaskOrchestrator later builds another DecisionContext and writes that reconstructed object back into the refreshed PerceptionSnapshot/session metadata.
