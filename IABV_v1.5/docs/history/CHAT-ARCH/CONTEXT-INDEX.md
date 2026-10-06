@@ -1,3 +1,11 @@
+# 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 STABILIZATION HARNESS READY
+
+- Canonical episode: `CHAT-ARCH-2026-10-06-088-uaal-rq13-stabilization-harness-ready.md`.
+- Baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+- New harness SHA: `CDDEA79069BB4D90F84BD01AE3269AC1500E6E4471FABEC29AEA4B8F585588A8`.
+- Harness self-tests passed; no IABV runtime executed.
+- **First open edge:** `fresh human authorization naming new harness SHA → one bounded RQ13 runtime observation`.
+- **Next actor:** HUMAN AUTHORIZATION → CODEX EXECUTION.
 # 2026-10-06 LATEST ROUTING POINTER — UAAL-RQ13 BOOTSTRAP OBSERVATION AUTHORIZATION BOUNDARY
 
 - Canonical episode: `CHAT-ARCH-2026-10-06-086-uaal-rq13-bootstrap-observation-authorization-boundary.md`.
