@@ -1,3 +1,20 @@
+## 2026-10-06 METHOD AMENDMENT — REPORTED HARNESS READINESS / INDEPENDENT ARTIFACT VERIFICATION
+
+A harness result may advance the routing gate when the reported self-test directly covers the authorized evidence contract, but the coordination record must distinguish:
+`reported artifact identity/readiness ≠ independently re-read artifact ≠ runtime evidence`.
+
+For the current RQ13 harness:
+- CODEX reports SHA `C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA`;
+- CODEX reports the fingerprint, excluded-path isolation and contract self-tests passing;
+- no IABV runtime occurred in the correction;
+- the Windows bytes were not independently re-read here.
+
+Therefore the current state may be routed as **ready for a fresh authorization decision**, not as runtime-proven.
+
+Preserve:
+`new harness artifact → new exact SHA → fresh authorization`.
+Never inherit runtime authorization across harness modifications.
+
 ## 2026-10-06 METHOD AMENDMENT — EVIDENCE-CONTRACT COMPLETENESS GATE
 
 For any material experiment, an evidence contract is incomplete when a required output field cannot be produced by the authorized harness.
