@@ -1,3 +1,14 @@
+## 2026-10-06 ROUTING POINTER — UAAL-RQ13 HARNESS PROVENANCE GATE FAILURE
+
+- Canonical record: `CHAT-ARCH-2026-10-06-098-rq13-harness-provenance-gate-failure.md`.
+- Exactly one freshly authorized execution of harness SHA `C94D983D5A8B33C906807AA45B224D4F45430D616EB61E62DD140C32A15B50EA` occurred.
+- Target runtime was not entered: the harness stopped in its own Git provenance gate before IABV import.
+- Root cause: harness assumed `src/iabv_v15/bootstrap.py` was rooted directly at the Git checkout, but this worktree stores application sources below `IABV_v1.5/`.
+- **First open edge:** correct external harness Git-path provenance → self-test nested layout → new SHA → fresh authorization → bounded RQ13 runtime.
+- **Next actor:** CODEX, external harness correction/self-test only.
+- No claim about AppBootstrap, PCS, ObjectiveRepository, package alignment or learning follows from this run.
+- Existing learning status is unchanged.
+
 ## 2026-10-06 ROUTING POINTER — UAAL-RQ13 RETURN AFTER DISK CLEANUP / LEARNING STATUS
 
 - Canonical record: `CHAT-ARCH-2026-10-06-097-disk-cleanup-learning-reconciliation.md`.
