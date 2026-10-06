@@ -1,3 +1,22 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 BOOTSTRAP AUTHORIZATION BOUNDARY
+
+RQ13 now distinguishes:
+
+`baseline route unavailable under current evidence contract != implementation defect`.
+
+Independent source audit establishes, within the inspected scope, that `_defer_services=True` does not mean absence of environmental/world-model observation: deferred refresh requests still reach the services, asynchronously with active threads or synchronously when no thread is active.
+
+New invariants:
+- `deferred != absent`
+- `test-mode scan suppression != production-equivalent no-scan route`
+- `authorization contract != implementation convenience`
+
+New routing rule:
+`baseline route unavailable under current evidence contract → human authorization decision`.
+
+The next runtime observation, if explicitly authorized, must preserve the baseline behavior that causes the bootstrap observations and treat those effects as part of the experiment provenance rather than silently suppressing them.
+
+No claim of TASK alignment, learning, P0 continuity or autonomous symbiosis follows from this static reconciliation.
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ13 PORTABLE-CONTEXT ATTRIBUTION GAP
 
 RQ13 now distinguishes:
