@@ -1,3 +1,12 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITIONING
+
+`CHAT-ARCH-2026-10-06-075-uaal-rq13-portable-context-preconditioning-reconciliation.md`
+
+**Type:** CANONICAL RECONCILIATION / ADVERSARIAL VALIDATION / RUNTIME ROUTING
+
+**Preserves:** Sonnet/Claude's confirmation and narrowing of the stale portable-context blocker, the existing preconditioning mechanism, and the return to Codex for a bounded runtime cache/rebuild verification.
+
+**Next actor:** CODEX, after fresh authorization.
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION RECONCILIATION
 
 `CHAT-ARCH-2026-10-06-074-uaal-rq13-portable-context-precondition-reconciliation.md`
