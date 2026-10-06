@@ -1,3 +1,30 @@
+## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 BOOTSTRAP STALL DIAGNOSTIC
+
+**STATUS:** READY FOR FRESH AUTHORIZATION / RUNTIME NOT AUTHORIZED.
+
+**QUESTION:** After `phase_tools_adapters_done`, does the canonical AppBootstrap complete within a bounded diagnostic window, and if not, what concrete call is executing on the main thread at the stall boundary?
+
+**KNOWN:**
+- executable baseline: `e46d8304167708bed0764d3bf2be8fd6643e8944`;
+- prior runtime reached `wire_services_start` and `phase_tools_adapters_done` without completing bootstrap;
+- an Ollama health timeout is attributable to the EnvironmentSelfAwareness provider-health observation path but is not proven to block the main thread;
+- external harness diagnostic SHA: `03406AFF963B655D6D7437B1BB33BA1597F962E1E17F919F6F8359F1C0F9A50C` (actor-reported).
+
+**MINIMUM ACTION:** fresh human authorization naming the exact harness digest, followed by one bounded CODEX diagnostic run from the exact authorized CWD/source baseline. Capture startup milestones, main-thread stack, observer stacks, timeout/completion state, and no downstream RQ13 operations.
+
+**ALLOW:** unavoidable baseline AppBootstrap effects, including environment/world-model observation and provider health checks induced by those scans.
+
+**DO NOT ALLOW:** provider inference/generation, `answer_user`, `infer_task`, MCP provider execution, TASK/objective mutation, SQLite/oracles, `latest_active`, `current_package`, P0, DecisionContext reconstruction or downstream RQ13 target execution.
+
+**STOP:** no retry. At timeout, classify from the actual stack evidence:
+- concrete main-thread call observed → `STALL LOCATION IDENTIFIED`;
+- AppBootstrap completes → `STALL NOT REPRODUCED / BOOTSTRAP COMPLETED`;
+- no usable stack because of native/GIL blocking → `STALL UNLOCALIZED / WATCHDOG STACK UNAVAILABLE`.
+
+**NEXT ACTOR:** HUMAN AUTHORIZATION → CODEX.
+
+**CAUTION:** the Windows worktree is reported dirty with approximately 260 entries. Before launch, verify that relevant executable `src/`/`tests/` content still matches the authorized baseline; unrelated cache/runtime dirt must not be silently treated as source cleanliness.
+
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 PORTABLE-CONTEXT PRECONDITION → P0 READINESS
 
 **STATUS:** READY FOR BOUNDED RUNTIME / NOT AUTHORIZED.
