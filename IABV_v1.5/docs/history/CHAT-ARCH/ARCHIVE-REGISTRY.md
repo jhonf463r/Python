@@ -1,3 +1,26 @@
+## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP COMPLETION / FRONTIER RETURN
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-093-uaal-rq13-bootstrap-completion-frontier-return.md`
+
+Type:
+`RECONCILIATION / RUNTIME COMPLETION / ROUTING RESET`
+
+State:
+`CANONICAL SOURCE / BOOTSTRAP CLOSED / RQ13 DOWNSTREAM OPEN`
+
+Finding:
+A fresh bounded diagnostic execution on baseline `e46d830...` completed AppBootstrap and reached `APPBOOTSTRAP_COMPLETED` after approximately 33.2 seconds. The earlier `ollama list` non-return was not reproduced in this run and is therefore not treated as the current project blocker.
+
+Current routing:
+`completed bootstrap → runtime PCS/ObjectiveRepository identity → transparent latest_active attribution → package alignment`.
+
+Method note:
+The RQ13 bootstrap investigation remains an enabling substrate test, not the project's central learning objective. The central developmental criterion remains verified experience producing reusable knowledge that changes later decision/behavior with attributable evidence.
+
+Next actor:
+**HUMAN AUTHORIZATION → CODEX**
+
 ## 2026-10-06 REGISTRATION — UAAL-RQ13 BOOTSTRAP STALL LOCATION IDENTIFIED
 
 Canonical record:
