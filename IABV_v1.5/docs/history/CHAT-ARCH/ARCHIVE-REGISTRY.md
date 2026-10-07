@@ -1,3 +1,22 @@
+## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-113
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-113-uaal-rq14-safe-ab-readiness-blocked-multilayer-correspondence-pivot.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT-READINESS / UAAL / SYMBIOSIS`
+
+State:
+`RQ14 CAUSAL A/B BLOCKED — MULTILAYER CORRESPONDENCE PIVOT`
+
+Material delta:
+- no safe environmental A/B was identified;
+- exact snapshot→Synaptic attribution remains closed;
+- causal environment→ranking remains open;
+- routing pivots to a safer live cross-layer correspondence probe;
+- next actor is CODEX read-only.
+
+Routing authority remains `CURRENT-STATE.md`.
 ## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-112
 
 Canonical record:
