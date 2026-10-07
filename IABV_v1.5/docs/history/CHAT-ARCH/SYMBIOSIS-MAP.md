@@ -1,3 +1,23 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 READINESS GATE FAILURE IS NOT SENSOR EVIDENCE
+
+Episode 117 adds a pre-observation invariant:
+
+`provenance/oracle gate failure + sensor calls = 0 ⇒ no runtime correspondence evidence`.
+
+The latest attempt did not test `list_running_processes`. It exposed two readiness defects instead:
+- provenance was checked against a prior canonical digest rather than the exact declared executable digest;
+- the independent CIM oracle failed parsing before producing a validated process identity.
+
+Method delta:
+`sensor readiness ≠ sensor execution`.
+A failed readiness gate must remain separate from an inconclusive sensor result or environmental absence.
+
+Current route:
+`exact provenance + validated independent Windows identity → fresh authorization → existing list_running_processes → one synchronized correspondence probe`.
+
+Composition remains unchanged: reuse the existing process sensor; no new observer, no production patch.
+
+Capability-fit next actor: **CODEX**, for harness-only repair/self-test; no sensor execution during repair.
 ## 2026-10-07 SYMBIOSIS TRANSFER — METHOD BECOMES COMPOSITION-FIRST AND CUMULATIVE
 
 The collaboration method now explicitly treats IABV's own distributed architecture as an active source of candidate capabilities and anti-duplication knowledge.
