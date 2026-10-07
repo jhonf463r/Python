@@ -1999,3 +1999,16 @@ Material delta:
 
 Next actor:
 **SONNET / CLAUDE**.
+ 
+## 2026-10-07 REGISTRATION — UAAL / CAPABILITY → REALIZATION OPERATIVE ROUTING
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-131-capability-realization-routing-reconciliation.md`
+
+State:
+`CANONICAL SOURCE / STATIC / OPERATIVE ROUTING EDGE OPEN`
+
+Material delta:
+- episode 130 mismatch is rationale-only for inspected cases;
+- universal frontier pivots to required capability + viable realization → specific candidate → operative routing;
+- next actor is Codex for read-only trace, followed by independent Sonnet/Claude verification.
