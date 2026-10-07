@@ -1,3 +1,26 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-136
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-136-capability-realization-contract-reconciliation.md`
+
+Type:
+`RECONCILIATION / ROUTING / CAPABILITY / REALIZATION / DESIGN / SYMBIOSIS`
+
+State:
+`STATIC / DESIGN RECONCILED / IMPLEMENTATION NOT AUTHORIZED / INDEPENDENT REVIEW OPEN`
+
+Material delta:
+- Codex design reconciled against direct baseline source checks;
+- `ToolCard.realizes_capability_ids` accepted as the narrow realization contract;
+- `ToolTask.required_capability_ids` accepted for stable requirement identity;
+- readiness separated as decision-time snapshot;
+- `eligible_tool_ids` rejected as durable task truth;
+- capability eligibility made a hard boundary around all preference/override/fallback paths;
+- multi-ID requirements explicitly conjunctive for the minimum contract;
+- next actor is **SONNET / CLAUDE** for independent static contract challenge.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-135
 
 Canonical record:
