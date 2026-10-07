@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-137
+
+Canonical record:
+CHAT-ARCH-2026-10-07-137-capability-realization-empty-set-contract-audit.md
+
+Type:
+RECONCILIATION / ROUTING / CAPABILITY / REALIZATION / DESIGN / SYMBIOSIS
+
+State:
+STATIC / INDEPENDENTLY AUDITED / DESIGN OPEN / SINGLE FIRST-OPEN EDGE
+
+Material delta:
+- Sonnet/Claude independently verified the capability-aware realization design;
+- first-open edge is explicit empty-set → defer/fail-closed propagation;
+- existing ToolTaskStatus.DEFERRED discovered as reusable domain state candidate;
+- no current consumer of that status verified;
+- no new registry/organ justified.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-136
 
 Canonical record:
