@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-134
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-134-capability-identity-loss-cross-caller-reconciliation.md`
+
+Type:
+`RECONCILIATION / ROUTING / CAPABILITY / REALIZATION / SYMBIOSIS / PLASTICITY`
+
+State:
+`STATIC / TWO-NORMAL-CALLER CONVERGENCE / SHARED GAP BETTER LOCALIZED / INDEPENDENT VERIFICATION OPEN`
+
+Material delta:
+- `AdaptiveSession.capability_readiness` exists upstream but is not preserved as first-class identity by `build_task_for_session()`;
+- external consultation and ToolOperationalExecutor normal execution both converge on `ToolTeachService → ToolRegistry` without structured required-capability input to the picker;
+- reusable lower-level infrastructure exists, but the common semantic capability→realization join remains open;
+- two callers strengthen localization but do not prove repository-wide absence;
+- next actor is **SONNET / CLAUDE** for independent static verification.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-128
 
 Canonical record:
