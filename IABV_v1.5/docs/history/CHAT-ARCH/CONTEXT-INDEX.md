@@ -1,3 +1,16 @@
+## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION EMPTY-SET DESIGN CLOSED
+
+Canonical episode:
+CHAT-ARCH-2026-10-07-138-capability-realization-empty-set-claude-reconciliation.md
+
+Sonnet/Claude independently closed the empty-set semantic gate:
+capability-eligible realization set = ∅ → explicit NO_ELIGIBLE_REALIZATION → governed defer/fail-closed → no fallback resurrection.
+
+Implementation review is now the first open edge. Important prior invariant remains active: eligible_tool_ids is not durable ToolTask truth.
+
+Next actor:
+CODEX, exact minimal implementation-diff review. No implementation yet.
+
 ## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION EMPTY-SET CONTRACT
 
 Canonical episode:
