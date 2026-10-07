@@ -1,3 +1,20 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — CAPABILITY IDENTITY / REALIZATION ELIGIBILITY / ROUTE PRESERVATION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-136-capability-realization-contract-reconciliation.md`
+
+Reusable methodological delta:
+- Codex's design is accepted where it preserves abstract capability identity without conflating it with task kind or assistant family.
+- Direct source reconciliation identifies `InteractionModeSelector` as the operative composition surface.
+- The important semantic separation is now explicit: requirement identity, readiness snapshot, realization declaration, selection-time candidate state, and concrete route.
+- SynapticRouter and assistant preference are secondary ordering/preferences inside the capability-eligible set.
+- Fail-closed behavior at `ToolRegistry` is required when a constrained task names an ineligible `tool_id`.
+
+No new capability registry/manager is warranted.
+
+Next actor:
+**SONNET / CLAUDE** for independent contract challenge.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — OPERATIVE SELECTOR REUSE CANDIDATE
 
 Canonical episode:
