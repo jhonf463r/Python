@@ -1,3 +1,35 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION IMPLEMENTATION BLOCKER UNDER INDEPENDENT CHALLENGE
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-140-capability-realization-implementation-review-blocker-reconciliation.md`
+
+CODEX implementation review was directly reconciled against the executable baseline. The review identifies a material contract blocker:
+
+`session/intent capability set → exact per-ToolTask required_capability_ids`
+
+is not currently derivable from an explicit existing semantic rule.
+
+Direct source facts supporting the blocker:
+- `CapabilityReadinessService.evaluate()` derives a requirement list from the full `TaskIntent`;
+- `AdaptiveSession.capability_readiness` stores that list;
+- `build_task_for_session()` reconstructs an `InferenceRequest` without transporting that readiness list;
+- `ToolTask` currently lacks first-class required capability identity;
+- the playbook has a single `PlaybookStep.capability_id`, but the planner populates the execution step with only the weakest unresolved capability (or first capability), which does not establish a conjunctive multi-capability task contract;
+- `ToolCapability` and `StrategyPack.required_capabilities` are not established as safe substitutes for exact task-level readiness identity.
+
+Therefore the conceptual empty-set contract remains closed, but implementation is not yet authorized.
+
+Current classification:
+`STATIC / CODEX REVIEW RECEIVED / BLOCKER CREDIBLE / INDEPENDENT CHALLENGE OPEN`
+
+Current first open edge:
+`TaskIntent / AdaptiveSession → exact ToolTask capability subset → constrained realization selection`
+
+Next actor:
+**SONNET / CLAUDE**, independent static semantic-contract challenge.
+
+No implementation, tests or runtime until that challenge determines whether an existing task-boundary rule can be reused/composed.
+
 ## 2026-10-07 ACTIVE OVERLAY — EXISTING CAPABILITY DOMAIN CONTRACT RECHECK
 
 Canonical record:
