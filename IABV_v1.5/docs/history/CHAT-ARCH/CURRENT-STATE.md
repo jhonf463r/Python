@@ -1,3 +1,31 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION EMPTY-SET CONTRACT CLOSED / IMPLEMENTATION REVIEW OPEN
+
+Canonical record:
+CHAT-ARCH-2026-10-07-138-capability-realization-empty-set-claude-reconciliation.md
+
+Independent Sonnet/Claude audit closes the conceptual edge:
+capability-eligible realization set = ∅ → explicit NO_ELIGIBLE_REALIZATION → governed defer/fail-closed → no fallback resurrection.
+
+Existing ToolTaskStatus.DEFERRED is a reusable domain state, but its runtime propagation is not yet wired.
+
+Important correction:
+do NOT persist eligible_tool_ids as durable ToolTask truth. Eligibility is selection-context state; recompute it from required capabilities/current inventory or pass it ephemerally to the selection/resolution call. Preserve the candidate set in structured trace.
+
+Remaining dependencies are explicitly out of this first implementation edge:
+- session-level capability_readiness → per-ToolTask requirement subset;
+- potential tools.local.* readiness/realization circularity.
+
+Current classification:
+STATIC / INDEPENDENTLY VERIFIED / EMPTY-SET CONTRACT CLOSED / IMPLEMENTATION REVIEW READY
+
+Current first open implementation edge:
+exact minimal implementation diff that realizes the closed contract without durable eligible_tool_ids.
+
+Next actor:
+**CODEX**
+
+No source changes, tests or runtime until fresh human implementation authorization.
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION EMPTY-SET CONTRACT OPEN
 
 Canonical record:
