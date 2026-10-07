@@ -1,3 +1,23 @@
+## 2026-10-07 ACTIVE OVERLAY — TARGETED CAPABILITY → REALIZATION CALL-SITE TRACE
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-132-capability-to-realization-callsite-reconciliation.md`
+
+Episode 131 is reconciled: the capability identity is lost before concrete realization selection. Existing ToolRegistry/ToolTeach, SynapticRouter and adapters provide partial composition by tool ID or assistant kind, but no proven common required-capability → realization causal join.
+
+Current first open edge:
+`required capability + viable realization → specific candidate → operative routing`.
+
+Next action:
+trace one concrete required capability through its NORMAL caller to the inputs of `ToolRegistry.pick_card_for_task()` or equivalent, then through candidate/route/adapter boundary.
+
+Selection preference:
+use an external-assistant-relevant capability/path where practical, because this directly informs the nearer product target of IABV-mediated Codex/Claude/ChatGPT use, while keeping the trace narrow and static.
+
+Next actor:
+**CODEX** targeted call-site audit; then **SONNET/CLAUDE** independent verification.
+No runtime or code modification yet.
+
 ## 2026-10-07 ACTIVE OVERLAY — PIVOT TO CAPABILITY → REALIZATION ROUTING
 
 Canonical record:
