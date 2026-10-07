@@ -1,3 +1,19 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 READINESS FAILURE / NO SENSOR OBSERVATION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-117-uaal-rq15-readiness-provenance-oracle-gate-failure.md`
+
+Latest RQ15 attempt is `E — INCONCLUSIVE`, but **sensor calls = 0**. The provenance literal did not match the observed Python executable digest and the independent CIM oracle failed parsing before a validated `(PID, create_time)` identity existed.
+
+Therefore:
+- no OS→IABV correspondence evidence exists;
+- no sensor failure/discordance may be inferred;
+- the first open edge remains `independent OS process → existing IABV process observation helper`;
+- immediate edge is readiness repair: exact provenance + validated independent oracle → authorized sensor invocation;
+- next actor: **CODEX** for harness-only correction/self-test;
+- any new live observation requires fresh authorization.
+
+Current routing authority remains `CURRENT-STATE.md`.
 ## 2026-10-07 LATEST ROUTING POINTER — SYMBIOSIS-FIRST CUMULATIVE DEVELOPMENT
 
 Canonical method:
