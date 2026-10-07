@@ -1,3 +1,47 @@
+## 2026-10-07 ACTIVE METHOD OVERLAY — SYMBIOSIS-FIRST COMPOSITION / CUMULATIVE DEVELOPMENT
+
+Canonical method record:
+`CHAT-ARCH-2026-10-07-116-uaal-symbiosis-first-cumulative-development-method.md`
+
+A new durable method amendment is active: before selecting or implementing a mechanism, use IABV's distributed self-knowledge/composition surfaces to detect existing capabilities, semantic equivalents, duplicate contracts, provenance/governance boundaries and actual consumers.
+
+Construction decision must be explicitly classified:
+`REUSE | COMPOSE | WIRE/REPAIR | EXTEND | NEW`.
+
+`NEW` requires evidence that existing-organ archaeology and behavioral-equivalence analysis leave a real structural capability gap.
+
+Similarity must be checked beyond names:
+`purpose + inputs + outputs + semantics + identity + side effects + ownership + callers + consumers + lifecycle + governance + provenance + runtime evidence`.
+
+Every material external-AI prompt must explicitly state:
+`IA DESTINO`, `CAPABILITY REQUIRED`, `WHY THIS AI NOW`, and `INDEPENDENT VERIFIER` when applicable.
+
+Cumulative development state is:
+`experience → verified reusable knowledge → changed future routing/construction → changed experiment/implementation → observable reduction in duplication/error/rework`.
+
+Until that later behavioral link is verified, use `CUMULATIVE METHODOLOGICAL MEMORY`, not autonomous-learning language.
+
+### RQ15 CURRENT FRONTIER
+
+First open edge:
+`independent OS process → existing IABV process observation helper`.
+
+Selected existing sensor:
+`audit_tools_observation.list_running_processes(limit)`.
+
+No new process observer or process identity registry is justified.
+
+Readiness remains:
+`C — governed route not safely isolatable; direct helper acceptable only with explicit sensor-level authorization`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows runtime/provenance + IABV composition archaeology + bounded read-only experiment.  
+**WHY THIS AI NOW:** the remaining uncertainty is an exact Windows process-identity correspondence and execution-readiness boundary; Codex has the required runtime access and repository archaeology capability.  
+**INDEPENDENT VERIFIER:** independent Windows OS process oracle, not the same IABV helper.
+
+Next action: fresh readiness gate, then one live sensor-level `(PID, create_time)` correspondence probe only if authorization and oracle readiness are satisfied.
+
+Do not implement or modify production.
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 SYMBIOSIS COMPOSITION AUDIT / EXISTING PROCESS OBSERVER SELECTED
 
 A deeper composition audit was reconciled before accepting the next runtime candidate. Exact target `8425f03eb45abd11951938f6e3234459c1585b55` already contains multiple adjacent mechanisms for environment/process perception and cross-validation:
