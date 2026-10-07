@@ -1,3 +1,15 @@
+## 2026-10-07 ACTIVE FRONTIER — SECOND CALLER CAPABILITY CONTRAST
+
+Open question:
+Does `AdaptiveSession → ToolOperationalExecutor.build_task_for_session()` provide an existing capability-aware path into realization selection?
+
+This is the minimum static contrast after episode 132.
+
+If it preserves capability identity, it becomes the primary REUSE/COMPOSE candidate.
+If it does not, the shared gap is better localized across normal callers.
+
+No implementation or runtime yet.
+
 ## 2026-10-07 ACTIVE FRONTIER — NAMED CAPABILITY → CONCRETE REALIZATION
 
 Open question:
