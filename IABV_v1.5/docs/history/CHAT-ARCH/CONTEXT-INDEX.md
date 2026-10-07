@@ -1,3 +1,20 @@
+## 2026-10-07 LATEST ROUTING POINTER — RQ15 LIVE CORRESPONDENCE CLOSED / UNIVERSAL CONSUMER EDGE NEXT
+
+Canonical episode:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-127-rq15-live-observation-reconciled.md`
+
+RQ15 is proven at a bounded sensor-correspondence level:
+`independent Windows process identity → existing IABV process observation helper`.
+
+Scope limit: the tested target was the runner process itself; production IABV consumption and generalized arbitrary-process correspondence remain unproven.
+
+Current next universal edge:
+`live PerceptionSnapshot environment/world evidence → capability/affordance representation → realization selection`.
+
+Next actor: **CODEX** for static composition archaeology and consumer attribution.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 CODEX EXECUTION CHANNEL BLOCKED
 
 Canonical episode:
