@@ -1,3 +1,22 @@
+## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION EMPTY-SET CONTRACT
+
+Canonical episode:
+CHAT-ARCH-2026-10-07-137-capability-realization-empty-set-contract-audit.md
+
+Independent Sonnet/Claude static audit found the design still open at one exact edge:
+capability-eligible realization set = ∅ → explicit defer/fail-closed outcome.
+
+Existing reusable domain state:
+ToolTaskStatus.DEFERRED exists, but defined ≠ wired; no current consumer was verified.
+
+Next actor:
+**CODEX**
+
+Scope:
+read-only minimal archaeology of selector → task construction → registry resolution when no capability-eligible realization exists.
+
+Do not broaden into capability taxonomy, new routing architecture, runtime or implementation.
+
 ## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION CONTRACT RECONCILIATION
 
 Canonical episode:
