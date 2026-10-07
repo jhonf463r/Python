@@ -1,3 +1,22 @@
+## 2026-10-07 — CAPABILITY → REALIZATION IMPLEMENTATION REVIEW EDGE
+
+Conceptual empty-set edge is closed by independent Sonnet/Claude audit.
+
+Remaining implementation questions:
+- exact selector outcome representation;
+- propagation into ToolTaskStatus.DEFERRED;
+- blocking fallback resurrection at ToolTeachService, Synaptic, preference and ToolRegistry boundaries;
+- recognition by ToolOperationalExecutor/preflight;
+- provenance trace.
+
+Do not re-open eligible_tool_ids as durable task state.
+
+Dependencies retained separately:
+- session capability_readiness → per-task requirement subset;
+- tools.local.* readiness/realization circularity.
+
+These are not to be solved by inventing broad architecture in this implementation review.
+
 ## 2026-10-07 — CAPABILITY → REALIZATION EMPTY-SET GAP
 
 Independent audit result:
