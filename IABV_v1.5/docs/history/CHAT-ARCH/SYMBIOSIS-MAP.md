@@ -1,3 +1,32 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — M0 MEDIATED HANDOFF VS SELECTIVE ROUTING
+
+Episode 128 reconciles the product-front collaboration seam.
+
+New durable decomposition:
+`M0-A: explicit governed external handoff`
+vs
+`M0-B: assistant-unnamed objective → external capability inference`.
+
+The existing architecture already contains a composed external-consultation route and Codex automatic rollout capture. Therefore do not infer an architecture gap merely because the blind objective stayed in local KNOWLEDGE.
+
+New routing invariant:
+`handoff infrastructure readiness ≠ objective-to-capability routing readiness`.
+
+New execution invariant:
+`UI-channel blocked ≠ production-path broken`.
+
+For material M0 testing:
+`UI capability → channel admissibility → authorization → normal sendChat() → observe first open edge`.
+
+Information-gain order:
+1. prove M0-A through the normal UI;
+2. then test M0-B;
+3. only consider minimal `WIRE/REPAIR` if M0-B independently reproduces the semantic gap.
+
+Automatic Codex response capture is already implemented as the preferred path; manual pasteback remains fallback-only.
+
+M0 remains secondary to the project-wide post-RQ15 universal frontier. No new coordinator, bus, memory or observer is justified.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 SENSOR CORRESPONDENCE PROVEN / FRONTIER MOVES UP-LAYER
 
 Episode 127 closes the bounded RQ15 correspondence:
