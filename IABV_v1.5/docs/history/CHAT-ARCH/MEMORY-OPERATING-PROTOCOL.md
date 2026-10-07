@@ -2068,3 +2068,19 @@ For universal adaptation, prioritize the boundary that changes the ability to se
 
 The plasticity hypothesis remains:
 `verified experience/observation → reusable capability knowledge → composition/refinement/generalization → context-conditioned activation → later non-identical reuse → changed future decision`.
+ 
+## 2026-10-07 METHOD AMENDMENT — PIVOT TO OPERATIVE CAPABILITY → REALIZATION
+
+When a contract mismatch is shown to affect only rationale/metadata, abandon it as the immediate development frontier.
+
+Prioritize the first boundary that can change:
+`capability activation → candidate selection → operative route → execution`.
+
+Required trace:
+`required capability → readiness/source → candidate discovery → specific realization → operative route → adapter/invocation boundary`.
+
+A capability-to-realization bridge is proven only when the identity of the required capability (or an explicitly documented semantic transformation) can be followed into the specific selected realization. Task/intent text, availability alone, or token overlap do not prove this bridge.
+
+For plasticity-oriented development, prefer:
+`same abstract capability → multiple realizations → context-conditioned selection`
+over provider-specific branching. Later causal reuse must be demonstrated separately.
