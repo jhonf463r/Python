@@ -1,3 +1,18 @@
+## 2026-10-07 LATEST ROUTING POINTER — TARGETED CAPABILITY → REALIZATION TRACE
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-132-capability-to-realization-callsite-reconciliation.md`
+
+Episode 131 established that required-capability identity is not currently carried into ToolRegistry card selection; existing composition is partial via tool ID or assistant kind.
+
+Current edge:
+`named required capability → normal caller → ToolTask inputs → specific realization → route/adapter`.
+
+Next actor:
+**CODEX** static targeted trace, preferably an external-assistant-relevant capability/path. Then **SONNET/CLAUDE** independent verification.
+
+No runtime or implementation yet.
+
 ## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION ROUTING
 
 Canonical episode:
