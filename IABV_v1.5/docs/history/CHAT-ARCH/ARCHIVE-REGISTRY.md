@@ -1960,3 +1960,25 @@ Authorization boundary:
 allow only unavoidable baseline AppBootstrap observation effects, including environment/world-model scans and provider health checks induced by those scans. Do not authorize provider inference/generation, MCP provider execution, TASK/objective mutation, SQLite/oracles, `latest_active`, `current_package`, P0 or downstream RQ13 operations.
 
 No claim about the exact stall cause follows from harness readiness alone.
+
+
+## 2026-10-07 REGISTRATION — UAAL / UNIVERSAL CAPABILITY CONTRACT / PLASTICITY
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-129-universal-capability-vocabulary-plasticity-reconciliation.md`
+
+Type:
+`RECONCILIATION / METHODOLOGY / SYMBIOSIS / PLASTICITY / ROUTING`
+
+State:
+`CANONICAL SOURCE / STATIC / RUNTIME NOT REQUIRED YET`
+
+Material delta:
+- demand/supply/realization/readiness separation;
+- capability-vocabulary reconciliation as a prerequisite to code change;
+- exact readiness ↔ StrategyPack contract mismatches identified;
+- missing generic joins from EnvironmentCapability/ToolCard capability labels into readiness IDs remain open;
+- neuroplasticity retained as an engineering hypothesis implemented through capability acquisition/refinement/composition/generalization and later verified reuse, not as a biological or consciousness claim.
+
+Current next actor:
+**CODEX** for exact contract reconciliation, followed by **SONNET/CLAUDE** independent verification.
