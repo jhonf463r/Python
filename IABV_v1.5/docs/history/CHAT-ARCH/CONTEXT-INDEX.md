@@ -1,3 +1,14 @@
+## 2026-10-07 CURRENT REMOTE MAIN VERIFICATION
+
+Remote `main` directly verified at:
+`07ebffc8f866fc99a3f78091dcd1edd456a0da00`
+
+The 7 commits after the M0 reconciliation baseline `268c5748...` are documentation/history only; no executable Python source changes were introduced in that interval.
+
+For current-state questions use:
+`07ebffc8...` = current remote tip
+`268c5748...` = historical M0 reconciliation baseline
+
 ## 2026-10-07 LATEST ROUTING POINTER — M0 CAUSAL ROUTING RECONCILED / MEDIATED VS SELECTIVE HANDOFF
 
 Canonical episode:
