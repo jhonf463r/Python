@@ -1,3 +1,35 @@
+## 2026-10-07 LATEST ROUTING POINTER — M0 CAUSAL ROUTING RECONCILED / MEDIATED VS SELECTIVE HANDOFF
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-128-m0-causal-routing-reconciliation.md`
+
+Current main:
+`268c5748c3300cf9847c62deb7254df6c7b14024`
+tree:
+`02ca12005dd547a5dc0cc34a1162c1cff6120143`.
+
+Static audit snapshot `74b366c9...` is 12 commits behind, but none of the 12 commits changed the focal M0 production sources. The audit remains attributable to current main.
+
+Key M0 state:
+- external consultation / Codex realization / automatic rollout capture exists statically;
+- manual pasteback is fallback only;
+- prior blind objective routed to local KNOWLEDGE;
+- generic objective → external code-assistance capability remains unproven;
+- prior M0 live attempt was blocked by UI execution-channel capability;
+- no production repair is justified.
+
+M0 is now explicitly split:
+`M0-A = explicit governed external handoff`
+`M0-B = assistant-unnamed objective → external capability inference`.
+
+Immediate M0 execution requirement:
+`UI-capable Windows execution surface → real ControlCenterViewModel.sendChat()`.
+
+Do not use private methods or CLI substitutes.
+
+Project-wide universal frontier remains:
+`live PerceptionSnapshot environment/world evidence → capability/affordance representation → realization selection`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — RQ15 LIVE CORRESPONDENCE CLOSED / UNIVERSAL CONSUMER EDGE NEXT
 
 Canonical episode:
