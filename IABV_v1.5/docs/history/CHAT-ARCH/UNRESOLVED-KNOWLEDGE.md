@@ -1,3 +1,15 @@
+## 2026-10-07 ACTIVE FRONTIER — NAMED CAPABILITY → CONCRETE REALIZATION
+
+Open question:
+For one normal request path, can a named required capability be traced into the concrete ToolCard/assistant/adapter selected by IABV, or does capability identity disappear before realization selection?
+
+Minimum next evidence:
+`named capability → normal caller → ToolTask inputs → picker/router → specific realization → route → adapter boundary`.
+
+Prefer an external-assistant-relevant representative to connect this frontier to the product goal, but do not widen the experiment.
+
+No runtime until a concrete source path and safe discriminating runtime contract are identified.
+
 ## 2026-10-07 ACTIVE FRONTIER — CAPABILITY → REALIZATION OPERATIVE ROUTING
 
 Episode 130 closed the readiness/StrategyPack mismatch as rationale-only for the inspected cases.
