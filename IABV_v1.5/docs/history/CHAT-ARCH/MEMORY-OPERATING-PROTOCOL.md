@@ -1,3 +1,17 @@
+## 2026-10-07 METHOD DELTA — EMPTY-SET CONTRACT CLOSURE
+
+A capability-constrained empty set must become an explicit governed negative outcome, not an unconstrained selection.
+
+Reusable existing state:
+ToolTaskStatus.DEFERRED.
+
+New implementation invariant:
+selector NO_ELIGIBLE_REALIZATION → task deferred when materialized → every downstream selection/fallback path preserves the negative decision.
+
+Candidate eligibility remains ephemeral selection state. Do not persist eligible_tool_ids as durable ToolTask truth.
+
+Defined ≠ wired ≠ proven remains active.
+
 ## 2026-10-07 METHOD DELTA — CAPABILITY-CONSTRAINED EMPTY SET
 
 New invariant:
