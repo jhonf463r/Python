@@ -1,3 +1,27 @@
+## 2026-10-07 ACTIVE FRONTIER — MINIMAL CAPABILITY-AWARE OPERATIVE SELECTION / CONTRACT MICRO-GATE
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-136-capability-realization-contract-reconciliation.md`
+
+Design reconciliation established:
+- exact required capability IDs remain authoritative;
+- realization is explicitly declared by ToolCard;
+- ToolTask carries stable required-capability identity;
+- readiness is preserved as a decision-time snapshot;
+- candidate eligibility is selection-time state, not durable task semantics;
+- capability eligibility is hard and precedes preference/override/fallback;
+- multi-ID requirements are conjunctive for the minimum contract.
+
+Still open before implementation:
+1. independent adversarial verification of the four contract guards;
+2. inventory of all ToolCard registration/construction sites and their declaration coverage;
+3. exact behavior when no capability-eligible realization exists;
+4. route/provenance assertions at the final `ToolRegistry → adapter` boundary.
+
+Next actor:
+**SONNET / CLAUDE**.
+No runtime and no implementation.
+
 ## 2026-10-07 ACTIVE FRONTIER — MINIMAL CAPABILITY-AWARE OPERATIVE SELECTION
 
 Canonical episode:
