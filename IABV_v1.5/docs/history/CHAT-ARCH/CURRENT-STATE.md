@@ -1,3 +1,35 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION CONTRACT RECONCILED / MICRO-GATE OPEN
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-136-capability-realization-contract-reconciliation.md`
+
+Codex design response is reconciled against direct baseline source checks.
+
+Closed at design level:
+- exact required capability identity is preserved;
+- first-class realization declaration on ToolCard is justified;
+- ToolTask should carry stable requirement identity;
+- capability eligibility is a hard boundary;
+- preferences/overrides/fallbacks must remain inside that eligible set;
+- SynapticRouter remains complementary rather than a capability resolver;
+- no new universal registry/organ is justified.
+
+Important correction:
+`eligible_tool_ids` should not become a durable semantic property of ToolTask because candidate eligibility is selection-context state and can become stale. Preserve it in the structured selection trace instead.
+
+Additional contract guard:
+a flat `required_capability_ids` list is conjunctive for the minimum implementation; do not invent disjunctive semantics.
+
+Current classification:
+`STATIC / DESIGN RECONCILED / IMPLEMENTATION NOT AUTHORIZED`
+
+Current open edge:
+`required capability IDs + readiness snapshot → capability-eligible realizations → constrained operative selection`
+
+Next actor:
+**SONNET / CLAUDE**, independent static contract challenge.
+No runtime and no implementation yet.
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION GAP VERIFIED / DESIGN GATE
 
 Canonical record:
