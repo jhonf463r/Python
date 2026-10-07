@@ -1,3 +1,22 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 EXISTING OBSERVATION COMPOSITION RECONCILED
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
+
+Symbiosis archaeology found no need for a new process observer. Exact-target existing mechanisms include:
+`audit_tools_observation.list_running_processes` (psutil, PID/create_time),
+`list_open_windows` (HWND/PID),
+`PerceptionCrossValidator` (processes vs tool availability / windows vs WorldModel, with possible auto-correction),
+and `PerceptionGroundTruthComparator` (window/capture/DOM comparison, not process identity).
+`SystemIdentityRegistry` is source/subsystem identity, not runtime OS process identity.
+
+Current first open edge:
+`independent OS process → existing IABV process observation helper`.
+
+Next actor: CODEX. First fresh readiness gate, then one sensor-level live correspondence using `list_running_processes`, ideally matching `(PID, create_time)` to an independent Windows oracle. Direct helper invocation bypasses MCP governance and must be explicitly scoped; do not confuse this with production `PerceptionSnapshot` integration.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 /v DISCRIMINATING CONTROL CLOSED
 
 Canonical episode:
