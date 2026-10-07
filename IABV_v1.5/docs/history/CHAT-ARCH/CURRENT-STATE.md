@@ -1,3 +1,43 @@
+## 2026-10-07 ACTIVE OVERLAY — RQ15 LIVE CORRESPONDENCE PROVEN / UNIVERSAL FRONTIER RECOMPUTE
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-127-rq15-live-observation-reconciled.md`
+
+A fresh authorized execution of the corrected runner `E231D...` completed one bounded Phase-B observation.
+
+Bounded result:
+`PROVEN — SENSOR-LEVEL PROCESS-IDENTITY CORRESPONDENCE`
+
+Proven edge:
+`independent Windows process identity → existing audit_tools_observation.list_running_processes`
+
+Observed:
+- independent CIM oracle before/after: PID 5268, same create_time;
+- existing sensor: one real call, 301 returned rows, target found;
+- PID/create_time/name/executable/PPID all matched;
+- no IABV/AppBootstrap/MCP/WorldModel/ToolRegistry/SynapticRouter/provider/network/persistence activity;
+- worktree remained clean.
+
+Important scope limitation:
+The target was the runner process itself. This closes the bounded sensor correspondence edge, not arbitrary-process generalization and not production IABV consumption of the sensor.
+
+RQ15 is therefore no longer the project-wide first open technical edge.
+
+## NEXT UNIVERSAL FRONTIER AFTER RQ15
+
+`live PerceptionSnapshot environment/world evidence → capability/affordance representation → realization selection`
+
+Immediate action:
+static composition archaeology of existing consumers, especially where `environment_self_model` and `world_model` enter or disappear before `CapabilityReadinessService` / realization selection.
+
+Next actor:
+**CODEX**
+
+Capability:
+repository-wide control-flow/composition archaeology and source-level consumer attribution.
+
+Do not add architecture or start another runtime experiment until this consumer seam is understood.
+
 ## 2026-10-07 ACTIVE OVERLAY — RQ15 NEW RUNNER IDENTITY / AUTHORIZATION MISMATCH
 
 Canonical record:
