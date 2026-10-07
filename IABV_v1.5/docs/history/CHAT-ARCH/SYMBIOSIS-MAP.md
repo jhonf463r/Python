@@ -1,3 +1,20 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 FULL PRE-LIVE CONTRACT NOW CLOSED
+
+Episode 122 closes the evidence-capability gap.
+
+Reusable sequence is now:
+`artifact identity → runtime capability → evidence capability → self-test → fresh authorization → live observation`.
+
+The repeated RQ15 stop-before-sensor episodes are now recognized as readiness-engineering evidence, not sensor failures.
+
+New routing invariant:
+once all pre-live contract dimensions are closed, do not create more harness layers without new evidence; move to authorization and the actual discriminating observation.
+
+Current open edge:
+`independent Windows process identity → existing IABV process observation`.
+
+Next actor: **CODEX**, one live observation after fresh authorization.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 RUNTIME CAPABILITY ≠ EVIDENCE CAPABILITY
 
 Episode 121 adds a durable experiment invariant:
