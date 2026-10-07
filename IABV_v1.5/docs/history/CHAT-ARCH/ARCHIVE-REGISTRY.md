@@ -1,3 +1,24 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-127
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-127-rq15-live-observation-reconciled.md`
+
+Type:
+`RECONCILIATION / RUNTIME-OBSERVATION / WINDOWS / PROVENANCE / SYMBIOSIS`
+
+State:
+`RQ15 BOUNDED SENSOR CORRESPONDENCE PROVEN — UNIVERSAL CONSUMER EDGE NEXT`
+
+Material delta:
+- exact corrected runner `E231D...` executed under fresh authorization;
+- independent Windows CIM oracle and existing process sensor agreed on PID/create_time before and after one sensor call;
+- no IABV runtime side effects occurred;
+- RQ15 closes at sensor correspondence level;
+- generalized arbitrary-process correspondence and production consumption remain unproven;
+- next universal frontier is environmental/world evidence → capability/affordance → realization selection.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-126
 
 Canonical record:
