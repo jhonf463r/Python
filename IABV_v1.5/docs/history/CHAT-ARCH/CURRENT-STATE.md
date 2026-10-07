@@ -1,3 +1,46 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PHASE-B RUNNER VERIFIED / FRESH AUTHORIZATION PENDING
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-120-uaal-rq15-phase-b-runner-verified.md`
+
+Phase-B runner is now verified by self-test but **live execution has not occurred**.
+
+Runner:
+`C:\temp\rq15_phase_b_runner_20261006.py`
+
+SHA-256:
+`15DF88E873E9CF7288ABFBDFD066C14D98E089774D14C3ECC14CA51400BF6979`
+
+It passed:
+- exact target provenance;
+- Python provenance;
+- Phase-A syntax/contract tests;
+- fail-closed provenance/oracle/authorization gates;
+- structural Phase-B path self-test.
+
+It has a connected path:
+`provenance → independent Windows oracle → authorization → one guarded existing sensor call → post-oracle → comparison`.
+
+But:
+`live_oracle_called = false`
+`live_sensor_called = false`
+`sensor_call_count = 0`.
+
+**CURRENT FIRST OPEN EDGE:**
+`independent Windows process identity → existing audit_tools_observation.list_running_processes`
+
+**IMMEDIATE AUTHORIZATION EDGE:**
+`exact Phase-B runner identity/capability → fresh human authorization`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows live runtime/provenance + one bounded correspondence execution.  
+**WHY THIS AI NOW:** the runner is ready; remaining work is one Windows runtime observation.  
+**INDEPENDENT VERIFIER:** independent Windows CIM/Win32 process oracle.
+
+A fresh authorization must name the exact runner/hash and one-observation scope. Do not execute until that authorization is explicit.
+
+No production changes or higher-layer experiments are justified.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PHASE-B RUNNER GAP / NO LIVE OBSERVATION
 
 Canonical record:
