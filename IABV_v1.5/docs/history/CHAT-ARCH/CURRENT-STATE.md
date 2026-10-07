@@ -1,3 +1,27 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ15 TASKLIST COMMAND EXECUTION HANG / INTERNAL CAUSE OPEN
+
+The follow-up read-only Codex experiment directly observed the child `tasklist.exe` (PID `22696`) still alive at the six-second timeout for the exact production command `tasklist /fo csv /v /nh`. The child emitted 1590 bytes of partial stdout, including PID 4, and had no descendants. It was terminated only after PID/state capture; its subsequent code 1 was therefore forced termination, not a natural exit.
+
+**CLASSIFICATION:** `RQ15 TASKLIST MECHANISM — A / COMMAND EXECUTION HANG; INTERNAL CAUSE STILL OPEN`.
+
+This closes the prior B hypothesis in this path: the evidence does not show a terminated child with a blocked parent-side capture. The strongest supported statement is that `tasklist.exe` itself, or an OS query/completion path it invokes, remains active beyond six seconds.
+
+The earlier IABV `process_count=0` therefore remains a failure-collapsed observation: `scan_tool_context()` converts the `TimeoutExpired` to an empty process list. It is not evidence that the target process was absent.
+
+**CURRENT FIRST OPEN MECHANISM EDGE:** `tasklist /fo csv /v /nh remains alive → discriminating cause`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows command/process forensics and controlled read-only runtime experimentation.
+
+**NEXT ACTION:** run the minimum external control `tasklist /fo csv /nh` (remove only `/v`) with the same six-second boundary, independent child-PID oracle, timestamps, natural exit status and output measurements. Stop immediately if this discriminates the mechanism. Only if it does not discriminate, compare the output-capture mode required to test pipe contribution.
+
+Do not import IABV, modify production, invoke AppBootstrap/WorldModel/ToolRegistry/SynapticRouter, providers/network/MCP, persistence or credentials. Do not increase the production timeout. Do not treat a successful control as proof of semantic correspondence.
+
+After the mechanism is understood, return to the original frontier:
+`independent OS process → IABV process representation`.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning/reuse NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ15 INTERNAL TASKLIST ENUMERATION FAILURE / CORRESPONDENCE STILL OPEN
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
