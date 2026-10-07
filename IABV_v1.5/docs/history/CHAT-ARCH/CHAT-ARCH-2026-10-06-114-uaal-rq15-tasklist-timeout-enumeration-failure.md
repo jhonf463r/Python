@@ -180,3 +180,73 @@ using a **safe, completing observation channel that does not depend on verbose `
 The experiment must not modify production. Candidate channels must first be statically audited for existing organs and side effects. Prefer the existing Win32 process enumeration already used elsewhere in IABV if a provenance-safe, independent/correspondable boundary exists.
 
 No claim is made that replacing `/v` in production is justified; that would be an implementation decision requiring separate evidence.
+
+
+## 2026-10-07 SYMBIOSIS COMPOSITION AUDIT — EXISTING IABV ORGANS RECONCILED
+
+The static archaeology was expanded beyond name matching to inspect adjacent IABV composition surfaces on exact target `8425f03...`.
+
+### Existing mechanisms that must not be rebuilt
+
+1. `infra/mcp/audit_tools_observation.list_running_processes(limit)`
+   - existing low-level process observer;
+   - uses `psutil.process_iter`;
+   - identity-bearing fields: `pid`, `ppid`, `name`, `exe`, `status`, `create_time`, `username`;
+   - sanitizes command line;
+   - no persistence, network, provider or MCP call inside the helper;
+   - production MCP wrapper adds governance separately.
+
+2. `infra/mcp/audit_tools_observation.list_open_windows()`
+   - existing window observer;
+   - uses pywin32;
+   - identity-bearing fields include `hwnd`, `pid`, title and visibility;
+   - useful later for process↔window correspondence.
+
+3. `services/evolution/perception_cross_validator.PerceptionCrossValidator`
+   - existing cross-sensor composition organ;
+   - explicitly compares processes vs tool availability and windows vs WorldModel;
+   - **not** suitable as the first process-identity oracle because `run_cross_validation()` may auto-correct ToolRegistry availability when a registry is supplied and its process/tool matching is textual/heuristic;
+   - with no ToolRegistry it does not supply the desired process correspondence.
+
+4. `services/capture/perception_ground_truth_comparator.PerceptionGroundTruthComparator`
+   - existing perception-vs-ground-truth comparator;
+   - compares window title/capture/DOM/login and WorldModel window evidence;
+   - does **not** directly establish process PID identity;
+   - its perception side uses `UniversalPerceptionService.build_signal()`, which reaches the problematic verbose `tasklist /v` path under the current target;
+   - therefore it is a later composition layer, not the safe first process sensor.
+
+5. `services/system_identity_registry.SystemIdentityRegistry`
+   - existing system/subsystem identity registry;
+   - classifies IABV source subsystems and their wiring/status;
+   - it is **not** a runtime OS process identity registry.
+
+6. Existing historical trust-boundary work identifies `(PID, process_start_time)` as the stronger process-instance identity against PID reuse; the current process observer already exposes `create_time`, so no new identity organ is justified.
+
+### Method Delta
+
+The symbiosis rule is strengthened:
+
+`semantic similarity/name similarity → candidate`
+is insufficient.
+
+Before selecting or implementing anything, reconcile:
+`existing sensor → existing comparator → existing cross-validator → existing identity/provenance mechanism → governance boundary → actual consumer`.
+
+This confirms that introducing a new process observer would duplicate an existing IABV capability.
+
+### Routing
+
+The selected sensor for the next minimum experiment is the existing `audit_tools_observation.list_running_processes`, but the evidence claim must be scoped correctly:
+
+`OS process oracle → existing IABV observation helper`
+
+not yet:
+
+`OS process → production PerceptionSnapshot`
+and not:
+
+`process → tool identity`.
+
+Direct helper invocation bypasses the MCP server's governance wrapper. That is acceptable only as a separately authorized sensor-level observation experiment; it must not be reported as proof that the governed MCP production route consumed the observation.
+
+The first runtime experiment should prove one identity-bearing correspondence using `(PID, create_time)` where possible, with an independent external Windows oracle and exact target provenance. A safe target is preferable to launching an unrelated application.
