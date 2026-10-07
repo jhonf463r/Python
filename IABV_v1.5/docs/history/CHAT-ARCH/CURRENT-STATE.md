@@ -1,3 +1,30 @@
+## 2026-10-07 ACTIVE OVERLAY — RQ15 NEW RUNNER IDENTITY / AUTHORIZATION MISMATCH
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-126-rq15-runner-sha-mismatch-corrected-artifact.md`
+
+Devin correctly stopped before runtime because:
+- authorized runner SHA = `E70D9215B4528ECBC315C0DCA0953AD832071F2E57FB255003698569072F5485`;
+- actual corrected runner SHA = `E231D144714115478DA3B0FCCF5FEC0EE0D7FCC0193E0D21977A90E5058CC15E`.
+
+Target HEAD/tree/worktree remain verified.
+
+Classification:
+`RQ15 BLOCKED AT RUNNER IDENTITY / AUTHORIZATION MATCH`
+
+The corrected runner is a new artifact. Do not inherit authorization.
+
+Immediate next edge:
+`E231D... corrected runner → full readiness/evidence-contract self-test`.
+
+Next actor:
+**DEVIN**, read-only readiness verification only.
+
+Fresh human authorization is required only after the corrected runner passes readiness and its exact SHA is bound to the new authorization.
+
+Do not restore the old runner merely to satisfy the stale authorization.
+Do not execute live observation under either SHA until the artifact is explicitly authorized.
+
 ## 2026-10-07 SECONDARY OVERLAY — M0 UI ENTRYPOINT BLOCKED / DOES NOT SUPERCede RQ15
 
 Canonical record:
