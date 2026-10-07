@@ -1,3 +1,16 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — OPERATIVE SELECTOR REUSE CANDIDATE
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-135-capability-realization-shared-gap-independent-verification.md`
+
+Independent verification establishes:
+- the shared capability-blind boundary is real for the inspected callers;
+- `InteractionModeSelector` is an actual normal operative selector and should be preferred as a composition candidate over modifying lower-level selection blindly;
+- it still requires a contract bridge from readiness capability identity;
+- do not conflate task kind, assistant strength, tool action labels and abstract capability.
+
+Routing:
+**Codex** for minimal design archaeology, then independent review if a material contract change is proposed.
 ## 2026-10-07 SYMBIOSIS TRANSFER — CAPABILITY IDENTITY LOSS / TWO NORMAL CALLERS
 
 Canonical episode:

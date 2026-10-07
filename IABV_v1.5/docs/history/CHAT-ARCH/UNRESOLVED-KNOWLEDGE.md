@@ -1,3 +1,22 @@
+## 2026-10-07 ACTIVE FRONTIER — MINIMAL CAPABILITY-AWARE OPERATIVE SELECTION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-135-capability-realization-shared-gap-independent-verification.md`
+
+Established:
+- two normal callers lose first-class required-capability identity before concrete ToolCard selection;
+- an existing partial SynapticRouter task-kind→assistant-family bridge exists;
+- InteractionModeSelector is an actual normal selector and is the leading REUSE/COMPOSE candidate;
+- no new universal registry/organ is justified.
+
+Unresolved:
+1. exact contract for preserving readiness capability identity into the operative selector;
+2. exact realization declaration/mapping with unambiguous semantics;
+3. how suggested/external tool preferences interact with capability eligibility;
+4. minimum route-impact test before implementation.
+
+Next actor:
+**CODEX**, design-level composition archaeology.
 ## 2026-10-07 ACTIVE FRONTIER — SHARED CAPABILITY-BLIND REALIZATION BOUNDARY
 
 Episode 133 is now closed as a caller contrast.

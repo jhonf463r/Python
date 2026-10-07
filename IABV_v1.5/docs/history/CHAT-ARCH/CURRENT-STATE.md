@@ -1,3 +1,23 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION GAP VERIFIED / DESIGN GATE
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-135-capability-realization-shared-gap-independent-verification.md`
+
+Independent Sonnet/Claude verification closes the shared-gap question for the inspected normal callers.
+
+Important refinement:
+`InteractionModeSelector` is an actual normal selector used through `ToolTeachService._select_mode()`, so it is a stronger reuse/composition candidate than previously established. However, its current contract does not receive `AdaptiveSession.capability_readiness` and may be dominated by suggested/external tool selection.
+
+Current classification:
+`STATIC / INDEPENDENTLY VERIFIED / COMPOSE + WIRE-REPAIR CANDIDATE / DESIGN OPEN`
+
+Current open edge:
+`required capability/readiness ID → existing realization-fit representation → viable realization → operative route`.
+
+Next actor:
+**CODEX**, minimal design archaeology.
+No runtime or implementation yet.
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY IDENTITY LOSS / TWO-CALLER CONVERGENCE
 
 Canonical record:

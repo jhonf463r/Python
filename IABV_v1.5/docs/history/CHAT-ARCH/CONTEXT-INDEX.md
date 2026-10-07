@@ -1,3 +1,18 @@
+## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION DESIGN GATE
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-135-capability-realization-shared-gap-independent-verification.md`
+
+Independent verification confirms the shared first-class capability-identity loss before concrete ToolCard selection.
+
+New important reusable candidate:
+`InteractionModeSelector` is a normal operational selector, but its existing contract is task/context/tool oriented rather than readiness-capability oriented.
+
+Current edge:
+`required capability/readiness ID → existing fit vocabulary → viable realization → operative route`.
+
+Next actor:
+**CODEX**, design-level minimal composition archaeology.
 ## 2026-10-07 LATEST ROUTING POINTER — TWO-CALLER CAPABILITY IDENTITY LOSS
 
 Canonical episode:

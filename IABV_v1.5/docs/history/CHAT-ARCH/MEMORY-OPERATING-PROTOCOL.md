@@ -1,3 +1,23 @@
+## 2026-10-07 METHOD AMENDMENT — VERIFY THE OPERATIVE SELECTOR BEFORE WIRING
+
+A mechanism is a valid composition candidate only after its actual normal call path is confirmed.
+
+For the current frontier:
+`ToolTeachService._select_mode() → InteractionModeSelector.select()`
+is an actual normal selection path and therefore must be considered before proposing changes to `ToolRegistry`.
+
+However:
+`selector exists ≠ selector already consumes required capability`.
+
+Before implementation verify:
+- actual input dominance (`suggested_tool_id`, explicit external preference, task kind, availability);
+- capability identity preservation;
+- route impact;
+- readiness/availability separation.
+
+Construction remains:
+`REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`.
+
 ## 2026-10-07 METHOD AMENDMENT — TWO-CALLER SHARED-GAP GATE
 
 A single targeted caller showing capability loss is not sufficient to claim a shared architectural gap.

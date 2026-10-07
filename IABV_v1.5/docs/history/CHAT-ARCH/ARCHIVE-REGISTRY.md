@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-135
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-135-capability-realization-shared-gap-independent-verification.md`
+
+Type:
+`RECONCILIATION / ROUTING / CAPABILITY / REALIZATION / SYMBIOSIS / PLASTICITY`
+
+State:
+`STATIC / INDEPENDENTLY VERIFIED / COMPOSE + WIRE-REPAIR CANDIDATE / DESIGN OPEN`
+
+Material delta:
+- shared capability identity loss is confirmed for the inspected normal callers;
+- InteractionModeSelector is confirmed as an actual normal operative selection mechanism and becomes the leading REUSE/COMPOSE candidate;
+- SynapticRouter remains a partial assistant-fit mechanism, not a required-capability resolver;
+- no new universal capability registry/organ is justified;
+- next actor is **CODEX** for minimal design archaeology.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-134
 
 Canonical record:
