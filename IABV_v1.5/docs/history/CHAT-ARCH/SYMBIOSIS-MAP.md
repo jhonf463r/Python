@@ -1,3 +1,31 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 PHASE-B RUNNER VERIFIED
+
+Episode 120 closes the runner-capability gap identified in episode 119.
+
+Reusable method:
+`Phase-A readiness`
+→
+`Phase-B capability self-test`
+→
+`exact artifact identity`
+→
+`fresh authorization`
+→
+`live observation`.
+
+New invariant:
+`runtime-capable artifact ≠ authorized live execution`.
+
+The existing `list_running_processes` remains the selected reusable sensor. No new observer is justified.
+
+Current frontier:
+`independent Windows process identity → existing IABV process observation`.
+
+Immediate boundary:
+fresh authorization for exact Phase-B runner/hash.
+
+Next actor: **CODEX**.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 PHASE-A ≠ PHASE-B CAPABILITY
 
 Episode 119 adds a durable experiment-contract invariant:
