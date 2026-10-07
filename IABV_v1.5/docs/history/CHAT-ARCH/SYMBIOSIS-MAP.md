@@ -1,3 +1,26 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — METHOD BECOMES COMPOSITION-FIRST AND CUMULATIVE
+
+The collaboration method now explicitly treats IABV's own distributed architecture as an active source of candidate capabilities and anti-duplication knowledge.
+
+Before constructing anything:
+`objective → activate relevant self-knowledge → existing-organ map → behavioral-equivalence audit → producers/consumers/contracts/side-effects/governance/provenance → first open edge`.
+
+Construction preference:
+`REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`.
+
+A new mechanism must survive a semantic/behavioral equivalence audit; different names or locations do not establish novelty.
+
+Cross-AI experience is durable only when:
+`episode → verified delta → method/routing/construction change → later reuse`.
+
+New invariant:
+`IABV self-analysis = candidate generator / composition map, not sole authority`.
+
+New prompt invariant:
+`operational prompt → explicit IA DESTINO + CAPABILITY + WHY NOW + INDEPENDENT VERIFIER`.
+
+RQ15 applies this method concretely: the existing `list_running_processes`, `list_open_windows`, `PerceptionCrossValidator`, `PerceptionGroundTruthComparator`, `SystemIdentityRegistry` and identity history were reconciled before selecting the sensor. No new process observer is justified.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 EXISTING OBSERVATION COMPOSITION
 
 The X-ray method now has an explicit pre-selection composition pass.
