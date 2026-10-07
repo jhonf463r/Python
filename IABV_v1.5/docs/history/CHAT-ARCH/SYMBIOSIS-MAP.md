@@ -5131,3 +5131,20 @@ Routing:
 `required capability + viable realization → specific candidate → operative routing`.
 
 This remains subordinate to the broader goal of context-conditioned capability composition and future verified plasticity.
+ 
+## 2026-10-07 SYMBIOSIS TRANSFER — PIVOT TO CAPABILITY → REALIZATION
+
+Episode 130 closed the capability/StrategyPack mismatch as rationale-only for the inspected cases.
+
+New routing focus:
+`required capability + viable realization → specific candidate → operative routing`.
+
+This is the more direct bridge for the product vision:
+`human objective → IABV capability/resource selection → governed external/local realization → capture → verification`.
+
+Developmental plasticity implication:
+`abstract capability → multiple realizations → context-conditioned activation`
+is preferred over permanently binding a capability to one provider/application/OS.
+
+Next actor:
+**CODEX** static trace; **SONNET/CLAUDE** independent verification afterward.
