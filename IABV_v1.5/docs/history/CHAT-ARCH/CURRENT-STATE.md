@@ -1,17 +1,17 @@
-## 2026-10-07 CURRENT REMOTE MAIN VERIFICATION
+## 2026-10-07 CURRENT REMOTE MAIN / SOURCE-BEARING BASELINE VERIFICATION
 
-Verified directly against remote `refs/heads/main`:
-
-- current main HEAD: `07ebffc8f866fc99a3f78091dcd1edd456a0da00`
-- latest commit: `docs: point duplicate M0 record to canonical episode 128`
-- the 7 commits after `268c5748c3300cf9847c62deb7254df6c7b14024` are documentation/history changes only;
-- compare `268c5748...` → `07ebffc8...` shows no executable Python source changes.
+Direct verification established:
+- source-bearing verification tip: `07ebffc8f866fc99a3f78091dcd1edd456a0da00`;
+- the source-bearing verification tip contains the M0 duplicate cleanup and all preceding RQ15/M0 documentation writebacks;
+- compare `268c5748...` → `07ebffc8...` shows documentation/history changes only, with no executable Python source changes;
+- subsequent commits in this chat are also documentation-only writebacks.
 
 Therefore:
 `268c5748...` remains the historical M0 reconciliation baseline;
-`07ebffc8...` is the current remote main tip.
+`07ebffc8...` is the verified source-bearing documentation state used for the M0 reconciliation;
+later HEAD movement caused solely by these writebacks does not change that executable-source conclusion.
 
-The superseded M0 duplicate is now a pointer-only file and must not be treated as independent evidence.
+The superseded M0 duplicate is pointer-only and must not be treated as independent evidence.
 
 ## 2026-10-07 ACTIVE OVERLAY — M0 CAUSAL ROUTING RECONCILED / STATIC HANDOFF SUBSTANTIALLY READY
 
