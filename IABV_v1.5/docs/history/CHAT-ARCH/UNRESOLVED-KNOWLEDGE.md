@@ -1,3 +1,22 @@
+## 2026-10-07 ACTIVE FRONTIER — POST-RQ15 ENVIRONMENTAL EVIDENCE → CAPABILITY/SELECTION CONSUMPTION
+
+RQ15 sensor correspondence is bounded-proven and no longer the immediate unresolved technical edge.
+
+Open question:
+Can existing live environmental/process evidence represented by `PerceptionSnapshot.environment_self_model` / `world_model` be consumed by existing capability/affordance and realization-selection organs in a way that materially changes readiness/selection?
+
+Required distinction:
+- evidence present;
+- evidence consumed;
+- evidence semantically effective;
+- evidence causally changes selection.
+
+Minimum next action:
+static composition archaeology first; no runtime until a concrete consumer boundary and safe discriminating experiment are identified.
+
+Next capability-fit actor:
+**CODEX**.
+
 ## 2026-10-06 ACTIVE FRONTIER — UAAL-RQ13 FRESH RUNTIME AUTHORIZATION
 
 **STATUS:** REPORTED READY / RUNTIME NOT AUTHORIZED.
