@@ -1,3 +1,22 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ14 EXACT SNAPSHOT ATTRIBUTION CLOSED
+
+Episode 112 closes the narrow attribution edge:
+`real WorldModelService.current_model() return object → exact isolated SynapticRouter.decide() scoring path`.
+
+Method delta:
+`exact attribution precedes causal intervention`.
+
+The successful probe used a clean isolated target worktree, disabled WorldModel scanning/autostart, exactly one provider read and one decision call, and transient in-memory observation. No production or external effects occurred.
+
+Negative knowledge:
+stale persisted snapshot ≠ fresh environmental observation;
+object attribution ≠ environmental causality;
+decision scoring ≠ selection impact;
+routing-disabled probe ≠ realization change.
+
+Current universal causal frontier:
+`safe/reversible live environmental state A/B → attributable snapshot A/B → changed Synaptic availability/ranking → selection impact`.
+
 ## 2026-10-06 UNIVERSAL ROUTING CORRECTION — RQ13 DECISION-CONTEXT IS SECONDARY
 
 RQ13 returned/persisted package correspondence is closed.
