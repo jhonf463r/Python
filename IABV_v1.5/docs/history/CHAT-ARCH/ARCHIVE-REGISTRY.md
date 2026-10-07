@@ -1,3 +1,23 @@
+## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-114
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
+
+Type:
+`RECONCILIATION / RUNTIME-CORRESPONDENCE / WINDOWS-PROVENANCE / EXPERIMENT-READINESS / SYMBIOSIS`
+
+State:
+`RQ15 INTERNAL TASKLIST ENUMERATION FAILURE — LIVE CORRESPONDENCE STILL OPEN`
+
+Material delta:
+- internal `tasklist` timed out after six seconds;
+- `scan_tool_context()` collapsed the exception into an empty process list;
+- independent oracle observed Windows `System` PID 4 before and after the scan;
+- live OS-process → IABV correspondence remains unproven;
+- next actor is CODEX for one read-only subprocess/process-tree localization experiment.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-113
 
 Canonical record:
