@@ -1,13 +1,14 @@
-## 2026-10-07 CURRENT REMOTE MAIN VERIFICATION
+## 2026-10-07 SOURCE-BEARING MAIN VERIFICATION
 
-Remote `main` directly verified at:
-`07ebffc8f866fc99a3f78091dcd1edd456a0da00`
+Direct verification established:
+`07ebffc8f866fc99a3f78091dcd1edd456a0da00` as the source-bearing documentation state used for the M0 reconciliation.
 
-The 7 commits after the M0 reconciliation baseline `268c5748...` are documentation/history only; no executable Python source changes were introduced in that interval.
+The commits written after that verification in this coordination pass are documentation-only. No executable Python-source change is claimed from them.
 
-For current-state questions use:
-`07ebffc8...` = current remote tip
+For current-state questions distinguish:
+`07ebffc8...` = verified source-bearing documentation state
 `268c5748...` = historical M0 reconciliation baseline
+latest HEAD after writeback = documentation tip, not a new executable baseline
 
 ## 2026-10-07 LATEST ROUTING POINTER — M0 CAUSAL ROUTING RECONCILED / MEDIATED VS SELECTIVE HANDOFF
 
