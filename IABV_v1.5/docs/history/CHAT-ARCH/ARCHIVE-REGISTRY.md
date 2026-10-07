@@ -2012,3 +2012,18 @@ Material delta:
 - episode 130 mismatch is rationale-only for inspected cases;
 - universal frontier pivots to required capability + viable realization → specific candidate → operative routing;
 - next actor is Codex for read-only trace, followed by independent Sonnet/Claude verification.
+
+## 2026-10-07 REGISTRATION — UAAL / CAPABILITY → REALIZATION CALLSITE TRACE
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-132-capability-to-realization-callsite-reconciliation.md`
+
+State:
+`CANONICAL SOURCE / STATIC / CALL-SITE TRACE OPEN`
+
+Material delta:
+- episode 131 established missing common required-capability → realization identity preservation;
+- next action is one narrow normal call-site trace;
+- external-assistant-relevant path is preferred for information gain;
+- Sonnet/Claude follows as independent verifier;
+- no runtime/code change yet.
