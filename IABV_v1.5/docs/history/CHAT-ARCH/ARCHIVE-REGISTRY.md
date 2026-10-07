@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-124
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-124-uaal-rq15-codex-execution-channel-policy-block.md`
+
+Type:
+`RECONCILIATION / ROUTING / WINDOWS-RUNTIME / EXECUTION-CHANNEL / SYMBIOSIS`
+
+State:
+`CODEX EXECUTION CHANNEL BLOCKED — RUNNER READY — LIVE EDGE OPEN`
+
+Material delta:
+- exact runner provenance passed;
+- Codex launch rejected by policy before execution;
+- no oracle/sensor evidence;
+- execution-channel admissibility is now an explicit readiness dimension;
+- next actor is DEVIN for the same unmodified runner.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-123
 
 Canonical record:
