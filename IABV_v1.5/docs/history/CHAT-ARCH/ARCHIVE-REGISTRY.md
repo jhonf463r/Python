@@ -1,3 +1,24 @@
+## 2026-10-07 REGISTRATION — RQ15 /v DISCRIMINATING CONTROL
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
+
+Type:
+`RECONCILIATION / WINDOWS-PROVENANCE / EXPERIMENT-MECHANISM / SYMBIOSIS`
+
+State:
+`RQ15 /v DISCRIMINATING CONTROL CLOSED — OS→IABV CORRESPONDENCE OPEN`
+
+Material delta:
+- `tasklist /fo csv /nh` exited naturally in 0.316 s with code 0;
+- prior `tasklist /fo csv /v /nh` remained alive beyond 6 s;
+- `/v` is the observed discriminating factor in this pair;
+- capture-mode testing is therefore deferred/not required at this edge;
+- current first open edge is independent OS process → IABV process representation;
+- next actor is CODEX for safe process-enumeration archaeology/correspondence.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-114
 
 Canonical record:
