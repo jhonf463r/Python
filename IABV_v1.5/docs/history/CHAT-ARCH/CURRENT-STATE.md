@@ -1,3 +1,33 @@
+## 2026-10-07 SECONDARY OVERLAY — M0 UI ENTRYPOINT BLOCKED / DOES NOT SUPERCede RQ15
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-125-m0-ui-entrypoint-channel-block.md`
+
+Devin attempted the M0 live experiment using the required production entrypoint `ControlCenterViewModel.sendChat()`, but its execution channel cannot interact with the PySide6 + QML UI.
+
+Classification:
+`M0 BLOCKED AT EXECUTION CHANNEL / UI ENTRYPOINT`
+
+This is an actor/channel limitation, not evidence of a production wire/repair gap.
+
+Do not:
+- modify production to fit Devin;
+- create an artificial CLI substitute;
+- call private consultation methods;
+- treat M0 as functionally disproven.
+
+M0 functional closure remains unobserved.
+
+**Important routing separation:** this M0 branch is secondary. It does **not** supersede the canonical technical frontier maintained immediately above for RQ15.
+
+M0 open edge:
+`human/UI-capable execution surface → real sendChat() observation`
+
+Canonical technical frontier remains:
+`independent Windows process identity → existing IABV process observation helper`
+
+For that frontier, Devin remains the capability-fit actor because RQ15's runner does not require PySide6/QML interaction.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 CODEX EXECUTION CHANNEL BLOCKED BY POLICY
 
 Canonical record:
