@@ -1982,3 +1982,20 @@ Material delta:
 
 Current next actor:
 **CODEX** for exact contract reconciliation, followed by **SONNET/CLAUDE** independent verification.
+
+## 2026-10-07 REGISTRATION — UAAL / CAPABILITY CONTRACT IMPACT GATE
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-130-capability-contract-impact-reconciliation.md`
+
+State:
+`CANONICAL SOURCE / STATIC / DECISION IMPACT OPEN`
+
+Material delta:
+- source mismatches are real but their operative effect is unproven;
+- next verification traces `session.chosen_pack_id` and fallback pack consumers;
+- no capability-ID repair yet;
+- conditional pivot to capability→realization routing if no decision impact is found.
+
+Next actor:
+**SONNET / CLAUDE**.
