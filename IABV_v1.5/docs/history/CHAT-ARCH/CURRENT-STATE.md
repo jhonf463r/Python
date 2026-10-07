@@ -1,3 +1,40 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 READINESS GATE FAILURE / SENSOR NOT INVOKED
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-117-uaal-rq15-readiness-provenance-oracle-gate-failure.md`
+
+RQ15 does **not** have a failed sensor observation. The latest live attempt stopped before sensor invocation because the experiment readiness contract was not satisfied.
+
+**CLASSIFICATION:** `E — INCONCLUSIVE / READINESS FAILURE BEFORE SENSOR INVOCATION`.
+
+Observed:
+- exact target provenance remained clean at `8425f03eb45abd11951938f6e3234459c1585b55`;
+- observed Python executable SHA-256 was `DC7BD562DBD2F2B75EB8C95268828422EF7F9D6FC1AC40C9B281DBDE11CB6580`;
+- the harness compared against a prior canonical digest rather than the exact digest literal declared for this run, so the literal provenance gate was not satisfied;
+- independent CIM parsing failed with `JSONDecodeError` before a usable oracle identity existed;
+- `audit_tools_observation.list_running_processes` was called zero times;
+- no PID/create_time comparison, correspondence, discordance or environmental absence observation exists;
+- no code changes occurred.
+
+**CURRENT FIRST OPEN EDGE:** `independent OS process → existing IABV process observation helper`.
+
+**Immediate readiness edge:** `exact artifact provenance + validated independent Windows oracle → authorized sensor invocation`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows provenance/runtime harness correction, parser validation, repository archaeology, strict read-only readiness testing.  
+**WHY THIS AI NOW:** the current uncertainty is entirely in experiment readiness and Windows oracle/provenance mechanics; no production semantics need to be changed.  
+**INDEPENDENT VERIFIER:** independent Windows OS process oracle.
+
+Next action:
+1. repair/self-test the harness only;
+2. verify exact executable/source digests against the declared literals;
+3. validate a Windows oracle identity as `(PID, create_time)`;
+4. prove the harness stops before any sensor call if either gate fails;
+5. only after those gates pass, obtain **fresh authorization** for one live sensor-level correspondence probe.
+
+Do not run the sensor during readiness repair. Do not modify `UniversalPerceptionService`. Do not invoke AppBootstrap, MCP, WorldModel, ToolRegistry, SynapticRouter, providers/network, persistence or credentials.
+
+No production implementation is justified.
 ## 2026-10-07 ACTIVE METHOD OVERLAY — SYMBIOSIS-FIRST COMPOSITION / CUMULATIVE DEVELOPMENT
 
 Canonical method record:
