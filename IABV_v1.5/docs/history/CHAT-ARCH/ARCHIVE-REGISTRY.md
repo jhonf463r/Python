@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-119
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-119-uaal-rq15-phase-b-runner-not-runtime-capable.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT-READINESS / HARNESS-CONTRACT / AUTHORIZATION / SYMBIOSIS`
+
+State:
+`RQ15 PHASE-A HARNESS VERIFIED — PHASE-B RUNNER GAP — CORRESPONDENCE OPEN`
+
+Material delta:
+- authorized artifact is readiness-only;
+- no live oracle/sensor path exists in that artifact;
+- no correspondence evidence was produced;
+- immediate route is runtime-capable harness construction and self-test;
+- new live authorization must bind the exact Phase-B artifact/hash.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-118
 
 Canonical record:
