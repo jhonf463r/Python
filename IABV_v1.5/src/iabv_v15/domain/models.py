@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -1250,6 +1250,7 @@ class ToolCard(BaseModel):
     requires_human_approval: bool = False
     supports_rollback: bool = False
     capabilities: list[str] = Field(default_factory=list)
+    realizes_capability_ids: list[str] = Field(default_factory=list)
     success_count: int = 0
     failure_count: int = 0
     last_result_id: str | None = None
@@ -1313,6 +1314,7 @@ class ToolTask(BaseModel):
     run_id: str | None = None
     pack_id: str = ""
     expected_outcome: str = ""
+    required_capability_ids: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -1632,6 +1634,7 @@ class ModeSelectionDecision(BaseModel):
     selected_mode: InteractionMode = InteractionMode.FALLBACK
     selected_tool_id: str = ""
     selected_tool_type: ToolType = ToolType.CUSTOM
+    selection_outcome: Literal['selected', 'no_eligible_realization', 'no_allowed_tool'] = 'selected'
     adapter_exists: bool = False
     available: bool = False
     fallback_used: bool = False

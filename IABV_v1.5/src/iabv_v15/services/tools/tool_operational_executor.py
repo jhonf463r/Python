@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from iabv_v15.domain.models import AdaptiveSession, ApprovalDecision, RunStatus, TaskRole
+from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
 from iabv_v15.services.adaptive.execution_playbook_service import OperationalExecutorResult
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 
@@ -11,18 +12,28 @@ class ToolOperationalExecutor:
     def __init__(self, tool_teach_service: ToolTeachService) -> None:
         self.tool_teach_service = tool_teach_service
 
-    def supports(self, session: AdaptiveSession) -> bool:
+    def preflight_status(self, session: AdaptiveSession) -> str:
         if not (session.intent.detected_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} or session.chosen_pack_id.startswith('tools.')):
-            return False
+            return 'not_applicable'
         preview_task = self.tool_teach_service.build_task_for_session(session)
+        if preview_task.metadata.get('mode_selection', {}).get('selection_outcome') == 'no_eligible_realization':
+            return 'no_eligible_realization'
+        if preview_task.metadata.get('mode_selection', {}).get('selection_outcome') == 'no_allowed_tool':
+            return 'no_allowed_tool'
         card = self.tool_teach_service.registry.pick_card_for_task(preview_task)
         if card is None:
-            return False
+            return 'adapter_missing'
         adapter = self.tool_teach_service.adapters.get(card.adapter_key)
-        return bool(adapter and adapter.is_available(card))
+        return 'ready' if bool(adapter and adapter.is_available(card)) else 'adapter_missing'
+
+    def supports(self, session: AdaptiveSession) -> bool:
+        return self.preflight_status(session) == 'ready'
 
     def describe(self, session: AdaptiveSession) -> str:
-        if not self.supports(session):
+        status = self.preflight_status(session)
+        if status in {'no_eligible_realization', 'no_allowed_tool'}:
+            return 'No hay una ToolCard elegible dentro del alcance permitido para realizar la tarea.'
+        if status != 'ready':
             pack = session.chosen_pack_title or session.chosen_pack_id or 'esta tarea'
             return f'No hay un executor de herramientas aplicable para {pack}; sigue faltando un adaptador operativo del dominio.'
         preview_task = self.tool_teach_service.build_task_for_session(session)
@@ -35,7 +46,26 @@ class ToolOperationalExecutor:
         return f'{card.title} esta listo para ejecutar la tarea en local-first, pasando primero por sandbox y validacion.'
 
     def execute(self, session: AdaptiveSession) -> OperationalExecutorResult:
-        if not self.supports(session):
+        preflight = self.preflight_status(session)
+        if preflight in {'no_eligible_realization', 'no_allowed_tool'}:
+            return OperationalExecutorResult(
+                executed=False,
+                status=RunStatus.PARTIAL,
+                summary='No hay una ToolCard elegible dentro del alcance permitido para realizar la tarea.',
+                next_actions=['Revisar capabilities requeridas y realizaciones declaradas.'],
+                metadata={
+                    'mode': preflight,
+                    'selection_outcome': preflight,
+                    'required_capability_ids': list(
+                        CapabilityReadinessService.operational_task_requirements(
+                            intent=session.intent,
+                            readiness=list(session.capability_readiness or []),
+                        )[2]
+                    ),
+                    'session_id': session.session_id,
+                },
+            )
+        if preflight != 'ready':
             return OperationalExecutorResult(executed=False, status=RunStatus.PARTIAL, summary=self.describe(session), next_actions=['Simular', 'Preparar Codex'], metadata={'mode': 'adapter_missing'})
         task = self.tool_teach_service.build_task_for_session(session)
         approved = not any(item.decision == ApprovalDecision.PENDING for item in session.approval_checkpoints)

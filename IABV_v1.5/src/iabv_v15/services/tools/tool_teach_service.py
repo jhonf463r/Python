@@ -29,11 +29,13 @@ from iabv_v15.domain.models import (
     ToolCapability,
     ToolResult,
     ToolTask,
+    ToolTaskStatus,
     ToolType,
     ToolValidationStatus,
     canonical_external_state_flags,
 )
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
+from iabv_v15.services.adaptive.capability_readiness_service import CapabilityReadinessService
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
@@ -534,25 +536,39 @@ class ToolTeachService:
         )
         return route, result
 
-    def build_task_from_request(self, request: InferenceRequest) -> ToolTask:
+    def build_task_from_request(
+        self,
+        request: InferenceRequest,
+        *,
+        required_capability_ids: list[str] | None = None,
+        capability_requirement_provenance: dict[str, Any] | None = None,
+    ) -> ToolTask:
         goal_parameters = request.goal_parameters or {}
         suggested_tool_id = str(goal_parameters.get('tool_id') or self._suggest_tool_id(request.user_goal))
         title = str(request.goal_parameters.get('title') or request.user_goal[:80])
         expected = str(request.goal_parameters.get('expected_outcome') or 'Resultado validado de la herramienta.')
         site_id = str(request.goal_parameters.get('site_id') or request.site_hint or '') or None
-        selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
-        synaptic_decision = self._synaptic_decision_for_request(request)
+        required_ids = list(dict.fromkeys(str(item).strip() for item in (required_capability_ids or []) if str(item).strip()))
+        selection = self._select_mode(
+            request=request,
+            suggested_tool_id=suggested_tool_id,
+            site_id=site_id,
+            required_capability_ids=required_ids,
+        )
+        selection_blocked = selection.selection_outcome in {'no_eligible_realization', 'no_allowed_tool'}
+        synaptic_decision = {} if selection_blocked else self._synaptic_decision_for_request(request)
         synaptic_preferred_assistant_kind = str(synaptic_decision.get('selected_assistant_kind') or '')
         
         # Indicador de que synaptic routing tiene autoridad sobre la selección
         synaptic_selection_authoritative = False
-        if synaptic_preferred_assistant_kind and not str(goal_parameters.get('tool_id') or '').strip():
+        if not selection_blocked and synaptic_preferred_assistant_kind and not str(goal_parameters.get('tool_id') or '').strip():
             preferred_card = self.registry.pick_card_for_task(
                 ToolTask(
                     tool_id='',
                     title=title,
                     objective=request.user_goal,
                     requested_by_role=request.task_role if request.task_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} else TaskRole.TOOL_USE,
+                    required_capability_ids=required_ids,
                 ),
                 preferred_assistant_kind=synaptic_preferred_assistant_kind,
             )
@@ -561,19 +577,32 @@ class ToolTeachService:
                 suggested_tool_id = preferred_card.tool_id
                 synaptic_selection_authoritative = True
                 # Llamar a _select_mode() para metadata, pero ignorar su selected_tool_id
-                selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
+                selection = self._select_mode(
+                    request=request,
+                    suggested_tool_id=suggested_tool_id,
+                    site_id=site_id,
+                    required_capability_ids=required_ids,
+                )
         
         # Si synaptic routing no tiene autoridad, permitir que _enforce_explicit_external_selection() modifique
-        if not synaptic_selection_authoritative:
-            selection = self._enforce_explicit_external_selection(request=request, selection=selection, suggested_tool_id=suggested_tool_id)
-        
-        # Si synaptic routing tiene autoridad, usar su tool_id directamente
-        if synaptic_selection_authoritative:
-            tool_id = suggested_tool_id
-        else:
+        if selection_blocked:
+            tool_id = ''
+        elif not synaptic_selection_authoritative:
+            selection = self._enforce_explicit_external_selection(
+                request=request,
+                selection=selection,
+                suggested_tool_id=suggested_tool_id,
+                required_capability_ids=required_ids,
+            )
             tool_id = str(selection.selected_tool_id or suggested_tool_id)
+        else:
+            # Si synaptic routing tiene autoridad, usar su tool_id directamente.
+            tool_id = suggested_tool_id
+        selection_blocked = selection.selection_outcome in {'no_eligible_realization', 'no_allowed_tool'}
+        if selection_blocked:
+            tool_id = ''
         reusable_pattern = self._pattern_from_selection(selection)
-        actions = self._build_actions(request, tool_id, reusable_pattern)
+        actions = [] if selection_blocked else self._build_actions(request, tool_id, reusable_pattern)
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
             request=request,
@@ -602,14 +631,18 @@ class ToolTeachService:
             title=title,
             objective=request.user_goal,
             requested_by_role=request.task_role if request.task_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} else TaskRole.TOOL_USE,
+            status=ToolTaskStatus.DEFERRED if selection_blocked else ToolTaskStatus.PENDING,
             actions=actions,
-            rollback_actions=self._build_rollback_actions(request, tool_id),
+            rollback_actions=[] if selection_blocked else self._build_rollback_actions(request, tool_id),
             execution_scope=str(request.goal_parameters.get('execution_scope') or 'read_only'),
             sandbox_first=True,
             site_id=site_id,
             expected_outcome=expected,
+            required_capability_ids=required_ids,
             metadata={
                 'goal_parameters': dict(request.goal_parameters),
+                'capability_requirement_provenance': dict(capability_requirement_provenance or {}),
+                'required_capability_ids': required_ids,
                 'created_at_utc': now,
                 'updated_at_utc': now,
                 'mode_selection': selection.model_dump(mode='json'),
@@ -668,6 +701,11 @@ class ToolTeachService:
 
     def build_task_for_session(self, session) -> ToolTask:
         goal_parameters = dict(session.metadata.get('goal_parameters') or {})
+        raw_ids, excluded_ids, required_ids = CapabilityReadinessService.operational_task_requirements(
+            intent=session.intent,
+            readiness=list(session.capability_readiness or []),
+        )
+        requirement_source = 'session.capability_readiness' if session.capability_readiness else 'canonical_intent_mapping_fallback'
         request = InferenceRequest(
             user_goal=session.user_goal,
             prompt=session.user_goal,
@@ -676,13 +714,32 @@ class ToolTeachService:
             site_hint=session.intent.site_hint,
             metadata={'adaptive_session_id': session.session_id},
         )
-        task = self.build_task_from_request(request)
+        task = self.build_task_from_request(
+            request,
+            required_capability_ids=required_ids,
+            capability_requirement_provenance={
+                'intent_key': session.intent.intent_key,
+                'source': requirement_source,
+                'original_readiness_ids': raw_ids,
+                'excluded_system_readiness_ids': excluded_ids,
+                'required_capability_ids': required_ids,
+            },
+        )
+        requirement_metadata = {
+            **dict(task.metadata.get('capability_requirement_provenance') or {}),
+            'session_id': session.session_id,
+            'task_id': task.task_id,
+        }
         return task.model_copy(
             update={
                 'session_id': session.session_id,
                 'run_id': session.run_id,
                 'pack_id': session.chosen_pack_id,
                 'site_id': session.context.site_id or session.intent.site_hint,
+                'metadata': {
+                    **dict(task.metadata or {}),
+                    'capability_requirement_provenance': requirement_metadata,
+                },
             }
         )
 
@@ -747,6 +804,30 @@ class ToolTeachService:
         return stored_task, result, preview
 
     def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
+        if task.required_capability_ids and not self.registry.eligible_cards_for_task(task):
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=task.tool_id,
+                tool_type=self._tool_type_for_unknown(task.tool_id),
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='no_eligible_realization',
+                    detail='Ninguna ToolCard declara todas las capabilities requeridas por esta tarea.',
+                    destructive_blocked=True,
+                    metadata={'required_capability_ids': list(task.required_capability_ids)},
+                ),
+                error_message='no_eligible_realization',
+            )
+            self.memory.audit_event(
+                tool_id=task.tool_id or 'unrealized_task',
+                task_id=task.task_id,
+                action_type='preflight',
+                state='no_eligible_realization',
+                payload={'required_capability_ids': list(task.required_capability_ids), 'objective': task.objective},
+            )
+            self.memory.repository.save_result(result)
+            return result
         card = self.registry.pick_card_for_task(
             task,
             preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
@@ -1207,9 +1288,55 @@ class ToolTeachService:
                 base += ' La respuesta vuelve por captura automatica o por resultado directo de la herramienta.'
         return base
 
-    def _select_mode(self, *, request: InferenceRequest, suggested_tool_id: str, site_id: str | None) -> ModeSelectionDecision:
+    def _select_mode(
+        self,
+        *,
+        request: InferenceRequest,
+        suggested_tool_id: str,
+        site_id: str | None,
+        required_capability_ids: list[str] | None = None,
+    ) -> ModeSelectionDecision:
+        required_ids = list(required_capability_ids or [])
+        goal_parameters = dict(request.goal_parameters or {})
+        allowed_tool_ids: list[str] | None = None
+        if 'allowed_tool_ids' in goal_parameters and goal_parameters.get('allowed_tool_ids') is not None:
+            raw_allowed = goal_parameters.get('allowed_tool_ids')
+            allowed_tool_ids = [str(item) for item in raw_allowed if str(item)] if isinstance(raw_allowed, list) else []
+        elif request.task_role == TaskRole.TOOL_SANDBOX and suggested_tool_id:
+            allowed_tool_ids = [suggested_tool_id]
         if self.mode_selector is None:
-            return ModeSelectionDecision(selected_tool_id=suggested_tool_id, reason='Mode selector no configurado; se uso heuristica local.')
+            draft = ToolTask(
+                tool_id=suggested_tool_id,
+                title=str(goal_parameters.get('title') or request.user_goal[:80]),
+                objective=request.user_goal,
+                required_capability_ids=required_ids,
+                metadata={'goal_parameters': goal_parameters},
+            )
+            eligible = self.registry.eligible_cards_for_task(draft, allowed_tool_ids=allowed_tool_ids)
+            selected = next((item for item in eligible if item.tool_id == suggested_tool_id), eligible[0] if eligible else None)
+            if selected is None:
+                no_realization = bool(required_ids)
+                empty_scope = allowed_tool_ids == []
+                return ModeSelectionDecision(
+                    selected_tool_id='',
+                    selection_outcome='no_eligible_realization' if no_realization else 'no_allowed_tool' if empty_scope else 'selected',
+                    fallback_used=True,
+                    reason='No existe ToolCard elegible para las capabilities y el alcance permitidos.',
+                    metadata={
+                        'required_capability_ids': required_ids,
+                        'allowed_tool_ids': allowed_tool_ids,
+                        'eligible_tool_ids': [],
+                        'selection_policy': 'no_eligible_realization' if no_realization else 'no_allowed_tool' if empty_scope else 'empty_registry',
+                    },
+                )
+            return ModeSelectionDecision(
+                selected_tool_id=selected.tool_id,
+                selected_tool_type=selected.tool_type,
+                adapter_exists=selected.adapter_key in self.registry.adapters,
+                available=selected.available,
+                reason='Mode selector no configurado; se uso la seleccion local dentro del conjunto elegible.',
+                metadata={'required_capability_ids': required_ids, 'allowed_tool_ids': allowed_tool_ids, 'eligible_tool_ids': [item.tool_id for item in eligible]},
+            )
         draft_task = ToolTask(
             tool_id=suggested_tool_id,
             title=str(request.goal_parameters.get('title') or request.user_goal[:80]),
@@ -1218,16 +1345,14 @@ class ToolTeachService:
             execution_scope=str(request.goal_parameters.get('execution_scope') or 'read_only'),
             site_id=site_id,
             expected_outcome=str(request.goal_parameters.get('expected_outcome') or ''),
+            required_capability_ids=required_ids,
             metadata={'goal_parameters': dict(request.goal_parameters)},
         )
-        allowed_tool_ids = [str(item) for item in (request.goal_parameters.get('allowed_tool_ids') or []) if str(item)]
-        if not allowed_tool_ids and request.task_role == TaskRole.TOOL_SANDBOX and suggested_tool_id:
-            allowed_tool_ids = [suggested_tool_id]
         return self.mode_selector.select(
             request=request,
             draft_task=draft_task,
             suggested_tool_id=suggested_tool_id,
-            allowed_tool_ids=allowed_tool_ids or None,
+            allowed_tool_ids=allowed_tool_ids,
         )
 
     def _synaptic_decision_for_request(self, request: InferenceRequest) -> dict[str, Any]:
@@ -1257,6 +1382,7 @@ class ToolTeachService:
         request: InferenceRequest,
         selection: ModeSelectionDecision,
         suggested_tool_id: str,
+        required_capability_ids: list[str] | None = None,
     ) -> ModeSelectionDecision:
         goal_parameters = dict(request.goal_parameters or {})
         if str(goal_parameters.get('consultation_scope') or '').strip().lower() != 'external_assistant':
@@ -1280,6 +1406,7 @@ class ToolTeachService:
             override_card = self._resolve_available_family_card(
                 tool_id=preferred_tool_id,
                 request=request,
+                required_capability_ids=required_capability_ids,
             )
             if override_card is not None:
                 return self._override_selection_with_card(
@@ -1296,6 +1423,7 @@ class ToolTeachService:
             requested_assistant=requested_assistant,
             request=request,
             exclude_tool_id=preferred_tool_id,
+            required_capability_ids=required_capability_ids,
         )
         if fallback_card is not None:
             return self._override_selection_with_card(
@@ -1315,11 +1443,22 @@ class ToolTeachService:
             preferred_tool_id=preferred_tool_id,
         )
 
-    def _resolve_available_family_card(self, *, tool_id: str, request: InferenceRequest):
+    def _resolve_available_family_card(
+        self,
+        *,
+        tool_id: str,
+        request: InferenceRequest,
+        required_capability_ids: list[str] | None = None,
+    ):
         if not tool_id:
             return None
         card = self.registry.get_card(tool_id)
         if card is None:
+            return None
+        if not set(required_capability_ids or []).issubset(set(card.realizes_capability_ids)):
+            return None
+        allowed_tool_ids = request.goal_parameters.get('allowed_tool_ids')
+        if isinstance(allowed_tool_ids, list) and tool_id not in {str(item) for item in allowed_tool_ids}:
             return None
         card = self.registry.refresh_card(card, force=True)
         adapter_exists = card.adapter_key in self.registry.adapters
@@ -1340,13 +1479,18 @@ class ToolTeachService:
         requested_assistant: str,
         request: InferenceRequest,
         exclude_tool_id: str,
+        required_capability_ids: list[str] | None = None,
     ):
         for candidate in self.registry.list_cards():
             if candidate.tool_id == exclude_tool_id:
                 continue
             if self._assistant_family_for_tool_id(candidate.tool_id) != requested_assistant:
                 continue
-            card = self._resolve_available_family_card(tool_id=candidate.tool_id, request=request)
+            card = self._resolve_available_family_card(
+                tool_id=candidate.tool_id,
+                request=request,
+                required_capability_ids=required_capability_ids,
+            )
             if card is not None:
                 return card
         return None

@@ -59,16 +59,31 @@ class ExecutionPlaybookService:
     def annotate_execution_capability(self, session: AdaptiveSession) -> AdaptiveSession:
         execute_step = self._execute_step(session)
         simulation_only = bool(execute_step.simulation_only) if execute_step is not None else False
-        executor_available = bool(execute_step is not None and not simulation_only and self.executor.supports(session))
+        preflight = getattr(self.executor, 'preflight_status', None)
+        preflight_status = (
+            preflight(session)
+            if execute_step is not None and not simulation_only and callable(preflight)
+            else None
+        )
+        executor_available = bool(
+            execute_step is not None
+            and not simulation_only
+            and (preflight_status == 'ready' if preflight_status is not None else self.executor.supports(session))
+        )
         state = 'not_applicable'
         if execute_step is not None:
-            if simulation_only:
+            if preflight_status in {'no_eligible_realization', 'no_allowed_tool'}:
+                state = preflight_status
+            elif simulation_only:
                 state = 'simulation_only'
             elif executor_available:
                 state = 'ready'
             else:
                 state = 'adapter_missing'
-        detail = self._describe_execution_capability(session, execute_step, executor_available, simulation_only)
+        if preflight_status in {'no_eligible_realization', 'no_allowed_tool'}:
+            detail = 'No hay una ToolCard elegible dentro del alcance permitido para realizar la tarea.'
+        else:
+            detail = self._describe_execution_capability(session, execute_step, executor_available, simulation_only)
         execution_state = {
             'state': state,
             'executor_name': getattr(self.executor, 'name', 'unknown'),
@@ -77,6 +92,8 @@ class ExecutionPlaybookService:
             'detail': detail,
             'execute_step_present': bool(execute_step is not None),
         }
+        if preflight_status in {'no_eligible_realization', 'no_allowed_tool'}:
+            execution_state['selection_outcome'] = preflight_status
         session.metadata['execution_state'] = execution_state
         if execute_step is not None:
             execute_step.metadata['execution_state'] = execution_state
@@ -155,6 +172,22 @@ class ExecutionPlaybookService:
                 summary='La sesion no declaro una fase ejecutable; solo queda lista para revision o siguiente ajuste.',
                 next_actions=['Simular', 'Ver evolutivo'],
                 metadata={'mode': 'execute_not_applicable'},
+            )
+        elif execution_state.get('state') in {'no_eligible_realization', 'no_allowed_tool'}:
+            state = str(execution_state['state'])
+            detail = str(execution_state.get('detail') or 'No existe una herramienta elegible dentro del alcance permitido.')
+            self._update_execution_state(
+                session,
+                state=state,
+                detail=detail,
+                last_action='execute',
+            )
+            session.status = AdaptiveSessionStatus.READY_TO_EXECUTE
+            session.outcome = TaskOutcome(
+                status=RunStatus.PARTIAL,
+                summary=detail,
+                next_actions=['Revisar capabilities requeridas y realizaciones declaradas.'],
+                metadata={'mode': state, 'selection_outcome': state},
             )
         elif bool(execution_state.get('simulation_only')):
             self._update_execution_state(

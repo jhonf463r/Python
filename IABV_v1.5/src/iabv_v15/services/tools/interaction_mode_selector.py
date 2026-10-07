@@ -48,19 +48,60 @@ class InteractionModeSelector:
         worker_pool: dict[str, Any] | None = None,
     ) -> ModeSelectionDecision:
         desired_modes = self._desired_modes(request)
-        cards = [self.registry.refresh_card(item) for item in self.registry.list_cards()]
-        if allowed_tool_ids:
-            allowed = set(allowed_tool_ids)
-            cards = [item for item in cards if item.tool_id in allowed]
+        all_cards = self.registry.list_cards()
+        effective_allowed_tool_ids = allowed_tool_ids
+        if effective_allowed_tool_ids is None and draft_task is not None:
+            stored_scope = dict(draft_task.metadata.get('goal_parameters') or {}).get('allowed_tool_ids')
+            if stored_scope is not None:
+                effective_allowed_tool_ids = [str(item) for item in stored_scope if str(item)] if isinstance(stored_scope, list) else []
+        if draft_task is not None:
+            candidates = self.registry.eligible_cards_for_task(
+                draft_task,
+                allowed_tool_ids=effective_allowed_tool_ids,
+            )
+        else:
+            allowed = set(effective_allowed_tool_ids) if effective_allowed_tool_ids is not None else None
+            candidates = [item for item in all_cards if allowed is None or item.tool_id in allowed]
+        cards = [self.registry.refresh_card(item) for item in candidates]
+        required_capabilities = list(draft_task.required_capability_ids) if draft_task is not None else []
+        eligible_ids = {item.tool_id for item in candidates}
+        excluded_cards = []
+        for card in all_cards:
+            if card.tool_id in eligible_ids:
+                continue
+            reasons = []
+            if effective_allowed_tool_ids is not None and card.tool_id not in set(effective_allowed_tool_ids):
+                reasons.append('outside_allowed_tool_scope')
+            missing = sorted(set(required_capabilities) - set(card.realizes_capability_ids))
+            if missing:
+                reasons.append('missing_required_capabilities')
+            excluded_cards.append({'tool_id': card.tool_id, 'reasons': reasons, 'missing_capability_ids': missing})
+        selection_provenance = {
+            'required_capability_ids': required_capabilities,
+            'allowed_tool_ids': list(effective_allowed_tool_ids) if effective_allowed_tool_ids is not None else None,
+            'eligible_tool_ids': [item.tool_id for item in candidates],
+            'eligible_tool_cards': [
+                {
+                    'tool_id': item.tool_id,
+                    'realizes_capability_ids': list(item.realizes_capability_ids),
+                    'available': item.available,
+                    'adapter_key': item.adapter_key,
+                    'adapter_exists': item.adapter_key in self.registry.adapters,
+                }
+                for item in cards
+            ],
+            'excluded_tool_cards': excluded_cards,
+        }
         preferred_external = self._preferred_external_decision(
             request=request,
             draft_task=draft_task,
             suggested_tool_id=suggested_tool_id,
-            allowed_tool_ids=allowed_tool_ids,
+            allowed_tool_ids=effective_allowed_tool_ids,
             desired_modes=desired_modes,
             cards=cards,
         )
         if preferred_external is not None:
+            preferred_external.metadata = {**preferred_external.metadata, **selection_provenance}
             return preferred_external
         task_kind = self._detect_task_kind(request)
         assessments = [
@@ -70,17 +111,27 @@ class InteractionModeSelector:
         assessments.sort(key=lambda item: item.total_score, reverse=True)
         best = assessments[0] if assessments else None
         if best is None:
+            no_realization = bool(required_capabilities)
+            empty_scope = effective_allowed_tool_ids == []
+            selection_outcome = 'no_eligible_realization' if no_realization else 'no_allowed_tool' if empty_scope else 'selected'
             return ModeSelectionDecision(
                 selected_mode=InteractionMode.FALLBACK,
                 fallback_used=True,
-                reason='No hay ToolCards registradas para resolver esta tarea.',
+                selection_outcome=selection_outcome,
+                reason=(
+                    'No existe una ToolCard elegible para realizar todas las capabilities requeridas.'
+                    if no_realization
+                    else 'No hay ToolCards registradas dentro del alcance permitido para resolver esta tarea.'
+                ),
+                metadata={**selection_provenance, 'selection_policy': selection_outcome if selection_outcome != 'selected' else 'empty_registry'},
             )
         fallback_used = (
             best.mode not in desired_modes
             or not best.card.available
-            or (bool(allowed_tool_ids) and bool(suggested_tool_id) and best.card.tool_id != suggested_tool_id)
+            or (effective_allowed_tool_ids is not None and bool(suggested_tool_id) and best.card.tool_id != suggested_tool_id)
         )
         metadata: dict[str, Any] = {
+            **selection_provenance,
             'desired_modes': [item.value for item in desired_modes],
             'candidate_ranking': [
                 {
@@ -133,7 +184,7 @@ class InteractionModeSelector:
         preferred_tool_id = str(suggested_tool_id or request.goal_parameters.get('tool_id') or '').strip()
         if not preferred_tool_id:
             return None
-        if allowed_tool_ids and preferred_tool_id not in set(allowed_tool_ids):
+        if allowed_tool_ids is not None and preferred_tool_id not in set(allowed_tool_ids):
             return None
         preferred = next((item for item in cards if item.tool_id == preferred_tool_id), None)
         if preferred is None:
