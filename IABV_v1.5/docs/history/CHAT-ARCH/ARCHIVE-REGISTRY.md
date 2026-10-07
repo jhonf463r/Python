@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-125
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-125-m0-ui-entrypoint-channel-block.md`
+
+Type:
+`RECONCILIATION / ROUTING / M0 / WINDOWS-UI / EXECUTION-CHANNEL / SYMBIOSIS`
+
+State:
+`M0 BLOCKED AT EXECUTION CHANNEL / UI ENTRYPOINT — NO PRODUCTION DEFECT ESTABLISHED`
+
+Material delta:
+- Devin could not observe/interact with the required PySide6 + QML `sendChat()` entrypoint;
+- M0 functional handoff remains unobserved;
+- no production wire/repair is justified;
+- M0 is a secondary product-front branch;
+- canonical technical routing remains RQ15.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-124
 
 Canonical record:
