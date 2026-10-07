@@ -5161,3 +5161,11 @@ External AI paths are useful representatives because Codex/Claude/ChatGPT should
 
 Next actor:
 **CODEX** static trace; **SONNET/CLAUDE** independent verification afterward.
+ 
+## 2026-10-07 SYMBIOSIS TRANSFER — CALLER CONTRAST BEFORE NEW CAPABILITY BRIDGE
+
+Episode 133 adds a routing rule:
+one caller's capability identity loss is insufficient to justify a new bridge. First compare another existing normal caller that may already preserve the identity.
+
+This supports the universal/plasticity principle:
+prefer reuse of an existing capability-aware path over provider-specific or duplicate wiring.
