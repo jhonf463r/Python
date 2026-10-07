@@ -1,3 +1,18 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 STOP HARNESSING / MOVE TO LIVE EDGE
+
+Episode 123 converts repeated readiness experience into a routing rule:
+
+`pre-live contract complete + no new evidence → execute the minimum live experiment`.
+
+The repeated prior stops are now treated as cumulative methodological evidence about harness construction, not as sensor failures.
+
+Current first open edge:
+`independent Windows process identity → existing audit_tools_observation.list_running_processes`.
+
+Capability-fit actor: **CODEX**.
+
+Claude/Sonnet remains a conditional adversarial verifier for contradictions/anomalies, not the default next actor, because the remaining edge is Windows execution.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 FULL PRE-LIVE CONTRACT NOW CLOSED
 
 Episode 122 closes the evidence-capability gap.
