@@ -1,3 +1,25 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY CONTRACT IMPACT STILL UNPROVEN
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-130-capability-contract-impact-reconciliation.md`
+
+Latest reconciliation changed the interpretation of episode 129:
+- capability/readiness ↔ StrategyPack mismatches are real in source for several intents;
+- however, `StrategyPack.required_capabilities` is consumed in `_candidate_rationale` and the latest audit did not prove those mismatches alter the operative final route;
+- therefore `contract inconsistency ≠ decision impact`.
+
+Current immediate edge:
+`session.chosen_pack_id / browser.generic fallback → downstream consumer → operative route or executable strategy`.
+
+Do not modify capability IDs yet.
+Do not treat rationale/metadata defects as universal plasticity bottlenecks.
+If no operative impact is found, pivot to:
+`required capability + viable realization → specific candidate → operative routing`,
+which is more directly relevant to heterogeneous resource selection and future IABV-mediated collaboration.
+
+Next actor:
+**SONNET / CLAUDE**, fresh independent downstream-impact verifier.
+
 ## 2026-10-07 ACTIVE OVERLAY — UNIVERSAL CAPABILITY CONTRACT / PLASTICITY RECONCILIATION
 
 Canonical record:
