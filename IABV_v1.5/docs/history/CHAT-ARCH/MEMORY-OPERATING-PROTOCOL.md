@@ -2024,3 +2024,30 @@ The developmental method is successful when repeated episodes show:
 → `observable reduction in duplication/error/rework`.
 
 Until the later behavioral link is observed, call the state **cumulative methodological memory**, not autonomous learning.
+
+
+## 2026-10-07 METHOD AMENDMENT — UNIVERSAL CAPABILITY CONTRACT / PLASTICITY
+
+Capability composition must distinguish:
+`demand ≠ supply ≠ realization ≠ readiness`.
+
+Operational chain:
+`objective/intent → required capability → available/authorized realizations → readiness/feasibility → governed routing → action → observation → verification → reusable knowledge`.
+
+A capability vocabulary bridge is proven only by an explicit producer → transformation/mapping → caller → consumer path. Name similarity, co-location, interfaces, tests or generic availability do not prove semantic equivalence.
+
+Preserve:
+`same concept ≠ same ID ≠ same contract`.
+
+For capability-oriented self-development, the desired plasticity loop is:
+`verified deficit/experience → capability hypothesis → existing-organ composition → isolated change → verification → governed promotion/rejection/rollback → capability/method/relation/routing delta → later non-identical reuse`.
+
+The repertoire should remain broad:
+`capability inventory != active capability set`;
+`selection != deletion`;
+`unavailable now != useless generally`.
+
+This is a software-development target inspired by plasticity, not a claim of biological neural plasticity or consciousness.
+
+Before changing any capability contract, reconcile all known vocabularies and their consumers. Prefer:
+`REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`.
