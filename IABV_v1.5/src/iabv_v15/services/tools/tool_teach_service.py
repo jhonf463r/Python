@@ -603,6 +603,17 @@ class ToolTeachService:
         reusable_pattern = self._pattern_from_selection(selection)
         if reusable_pattern is not None and reusable_pattern.tool_id != tool_id:
             reusable_pattern = None
+        reuse_metadata_coherent = bool(tool_id) and selection.selected_tool_id == tool_id
+        if selection.reusable_pattern_id and reusable_pattern is None:
+            reuse_metadata_coherent = False
+        effective_reuse_guard_active = reuse_metadata_coherent and bool(
+            selection.already_resolved or selection.equivalent_pattern_exists
+        )
+        effective_reused_pattern_id = (
+            selection.reusable_pattern_id or ''
+            if reuse_metadata_coherent
+            else ''
+        )
         actions = self._build_actions(request, tool_id, reusable_pattern) if tool_id else []
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
@@ -650,8 +661,8 @@ class ToolTeachService:
                 'already_resolved': selection.already_resolved,
                 'equivalent_pattern_exists': selection.equivalent_pattern_exists,
                 'improvement_already_implemented': selection.improvement_already_implemented,
-                'reuse_guard_active': bool(selection.already_resolved or selection.equivalent_pattern_exists),
-                'reused_pattern_id': selection.reusable_pattern_id or '',
+                'reuse_guard_active': effective_reuse_guard_active,
+                'reused_pattern_id': effective_reused_pattern_id,
                 'reused_episode_id': selection.reusable_episode_id or '',
                 'adapter_exists': selection.adapter_exists,
                 'selected_mode': selection.selected_mode.value,

@@ -61,6 +61,36 @@ def _registry(tmp_path: Path) -> tuple[ToolRegistry, ToolRecordRepository]:
     return registry, repository
 
 
+def _tool_teach_service(
+    registry: ToolRegistry,
+    repository: ToolRecordRepository,
+    tmp_path: Path,
+    *,
+    synaptic_family: str | None = None,
+) -> ToolTeachService:
+    learning = InteractionLearningService(repository)
+    synaptic_router = None
+    if synaptic_family:
+        synaptic_router = type('SynapticStub', (), {
+            'decide': lambda self, **_kwargs: type('Decision', (), {
+                'model_dump': lambda self, **_inner: {'selected_assistant_kind': synaptic_family},
+            })(),
+        })()
+    return ToolTeachService(
+        registry=registry,
+        memory=ToolMemory(repository, learning),
+        sandbox=ToolSandbox(ToolValidator()),
+        validator=ToolValidator(),
+        approval_policy=ToolApprovalPolicy(),
+        rollback_manager=ToolRollbackManager(),
+        adapters={'adapter': _Adapter()},
+        workspace_root=str(tmp_path),
+        interaction_learning_service=learning,
+        mode_selector=InteractionModeSelector(registry, repository),
+        synaptic_router=synaptic_router,
+    )
+
+
 def _task(*, required: list[str], tool_id: str = 'ineligible_b', goal_parameters: dict[str, Any] | None = None) -> ToolTask:
     return ToolTask(
         tool_id=tool_id,
@@ -235,24 +265,7 @@ def test_session_readiness_is_transported_to_tooltask_and_synaptic_stays_gated(t
 
 def test_synaptic_selection_preserves_requirements_and_rejects_cross_tool_pattern(tmp_path: Path) -> None:
     registry, repository = _registry(tmp_path)
-    learning = InteractionLearningService(repository)
-    service = ToolTeachService(
-        registry=registry,
-        memory=ToolMemory(repository, learning),
-        sandbox=ToolSandbox(ToolValidator()),
-        validator=ToolValidator(),
-        approval_policy=ToolApprovalPolicy(),
-        rollback_manager=ToolRollbackManager(),
-        adapters={'adapter': _Adapter()},
-        workspace_root=str(tmp_path),
-        interaction_learning_service=learning,
-        mode_selector=InteractionModeSelector(registry, repository),
-        synaptic_router=type('SynapticStub', (), {
-            'decide': lambda self, **_kwargs: type('Decision', (), {
-                'model_dump': lambda self, **_inner: {'selected_assistant_kind': 'family_a'},
-            })(),
-        })(),
-    )
+    service = _tool_teach_service(registry, repository, tmp_path, synaptic_family='family_a')
     pattern = InteractionPattern(
         signature='rq21.10.cross-tool-pattern',
         title='Pattern belonging to B',
@@ -279,6 +292,9 @@ def test_synaptic_selection_preserves_requirements_and_rejects_cross_tool_patter
         return ModeSelectionDecision(
             selected_tool_id=selected_tool_id,
             selected_tool_type=ToolType.CUSTOM,
+            already_resolved=True,
+            equivalent_pattern_exists=True,
+            reusable_episode_id='episode-b',
             reusable_pattern_id=pattern.pattern_id,
         )
 
@@ -292,6 +308,134 @@ def test_synaptic_selection_preserves_requirements_and_rejects_cross_tool_patter
     assert selection_inputs[-1][0] == ['cap.a']
     assert 'ineligible_b' not in selection_inputs[-1][1]
     assert task.metadata['mode_selection']['selected_tool_id'] == 'eligible_a'
+    assert task.metadata['already_resolved'] is True
+    assert task.metadata['equivalent_pattern_exists'] is True
+    assert task.metadata['reuse_guard_active'] is False
+    assert task.metadata['reused_pattern_id'] == ''
+    assert task.metadata['reused_episode_id'] == 'episode-b'
+    assert task.metadata['reused_actions_from_pattern'] is False
     assert task.actions
     assert all(action.action_type != ToolActionType.OPEN_URL for action in task.actions)
     assert all(not action.metadata.get('reused_from_pattern') for action in task.actions)
+
+
+def test_reuse_metadata_requires_selection_and_pattern_to_match_final_tool(tmp_path: Path) -> None:
+    def build_task(
+        root: Path,
+        *,
+        selected_tool_id: str,
+        pattern_tool_id: str,
+    ) -> tuple[ToolTask, list[dict[str, Any]]]:
+        root.mkdir(parents=True, exist_ok=True)
+        registry, repository = _registry(root)
+        service = _tool_teach_service(registry, repository, root, synaptic_family='family_a')
+        pattern = InteractionPattern(
+            signature=f'rq21.13.{selected_tool_id}.{pattern_tool_id}',
+            title=f'Pattern for {pattern_tool_id}',
+            channel=InteractionChannel.UI,
+            tool_id=pattern_tool_id,
+            tool_type=ToolType.CUSTOM,
+            operations=[UniversalInteractionStep(
+                channel=InteractionChannel.UI,
+                operation=ToolActionType.OPEN_URL.value,
+                target=f'https://{pattern_tool_id}.example/',
+            )],
+        )
+        repository.save_interaction_pattern(pattern)
+        selector_calls: list[dict[str, Any]] = []
+        decisions = [
+            ModeSelectionDecision(selected_tool_id='eligible_a', selected_tool_type=ToolType.CUSTOM),
+            ModeSelectionDecision(
+                selected_tool_id=selected_tool_id,
+                selected_tool_type=ToolType.CUSTOM,
+                already_resolved=True,
+                equivalent_pattern_exists=True,
+                reusable_pattern_id=pattern.pattern_id,
+                reusable_episode_id=f'episode-{selected_tool_id}',
+            ),
+        ]
+
+        def select(*, request, draft_task, suggested_tool_id, **_kwargs):
+            selector_calls.append({
+                'suggested_tool_id': suggested_tool_id,
+                'required_capability_ids': list(draft_task.required_capability_ids),
+            })
+            return decisions.pop(0)
+
+        service.mode_selector.select = select
+        task = service.build_task_from_request(
+            InferenceRequest(user_goal='reuse metadata coherence', task_role=TaskRole.TOOL_USE),
+        )
+        assert len(selector_calls) == 2
+        assert selector_calls[1]['suggested_tool_id'] == 'eligible_a'
+        assert task.tool_id == 'eligible_a'
+        assert task.metadata['synaptic_preferred_assistant_kind'] == 'family_a'
+        return task, selector_calls
+
+    mismatched, _ = build_task(
+        tmp_path / 'mismatched',
+        selected_tool_id='ineligible_b',
+        pattern_tool_id='ineligible_b',
+    )
+    assert mismatched.metadata['mode_selection']['selected_tool_id'] == 'ineligible_b'
+    assert mismatched.metadata['already_resolved'] is True
+    assert mismatched.metadata['equivalent_pattern_exists'] is True
+    assert mismatched.metadata['reuse_guard_active'] is False
+    assert mismatched.metadata['reused_pattern_id'] == ''
+    assert mismatched.metadata['reused_actions_from_pattern'] is False
+
+    coherent, _ = build_task(
+        tmp_path / 'coherent',
+        selected_tool_id='eligible_a',
+        pattern_tool_id='eligible_a',
+    )
+    assert coherent.metadata['mode_selection']['selected_tool_id'] == 'eligible_a'
+    assert coherent.metadata['reuse_guard_active'] is True
+    assert coherent.metadata['reused_pattern_id']
+    assert coherent.metadata['reused_actions_from_pattern'] is True
+    assert coherent.actions[0].metadata['reused_from_pattern'] is True
+
+
+def test_external_override_clears_pattern_reuse_metadata_for_original_tool(tmp_path: Path) -> None:
+    registry, repository = _registry(tmp_path)
+    service = _tool_teach_service(registry, repository, tmp_path)
+    pattern = InteractionPattern(
+        signature='rq21.13.external-override-original-tool',
+        title='Pattern for A',
+        channel=InteractionChannel.UI,
+        tool_id='eligible_a',
+        tool_type=ToolType.CUSTOM,
+        operations=[UniversalInteractionStep(
+            channel=InteractionChannel.UI,
+            operation=ToolActionType.OPEN_URL.value,
+            target='https://eligible-a.example/',
+        )],
+    )
+    repository.save_interaction_pattern(pattern)
+    service.mode_selector.select = lambda **_kwargs: ModeSelectionDecision(
+        selected_tool_id='eligible_a',
+        selected_tool_type=ToolType.CUSTOM,
+        already_resolved=True,
+        equivalent_pattern_exists=True,
+        reusable_pattern_id=pattern.pattern_id,
+        reusable_episode_id='episode-original-a',
+    )
+
+    task = service.build_task_from_request(InferenceRequest(
+        user_goal='external assistant task',
+        task_role=TaskRole.TOOL_USE,
+        goal_parameters={
+            'consultation_scope': 'external_assistant',
+            'assistant_preference': 'ineligible',
+            'tool_id': 'ineligible_b',
+        },
+    ))
+
+    assert task.tool_id == 'ineligible_b'
+    assert task.metadata['mode_selection']['selected_tool_id'] == 'ineligible_b'
+    assert task.metadata['already_resolved'] is True
+    assert task.metadata['equivalent_pattern_exists'] is True
+    assert task.metadata['reuse_guard_active'] is False
+    assert task.metadata['reused_pattern_id'] == ''
+    assert task.metadata['reused_episode_id'] == 'episode-original-a'
+    assert task.metadata['reused_actions_from_pattern'] is False
