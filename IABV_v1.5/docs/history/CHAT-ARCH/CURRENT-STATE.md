@@ -1,3 +1,39 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY IDENTITY LOSS / TWO-CALLER CONVERGENCE
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-134-capability-identity-loss-cross-caller-reconciliation.md`
+
+Episode 133 is reconciled.
+
+Codex's second normal caller, `AdaptiveSession → ToolOperationalExecutor.build_task_for_session()`, confirms:
+`session.capability_readiness` exists upstream but is not transferred as a first-class capability/readiness input into `ToolTask` or `ToolRegistry.pick_card_for_task()`.
+
+Combined with the already-audited external consultation path, two normal callers now converge on the same realization-selection boundary without first-class required-capability identity.
+
+What remains reusable:
+`ToolTeachService → ToolRegistry → adapters`.
+
+What remains open:
+the semantic join
+`required capability → concrete realization selection`.
+
+This is stronger structural localization, not a repository-wide absence proof.
+
+Current status:
+`STATIC / TWO-NORMAL-CALLER CONVERGENCE / SHARED GAP BETTER LOCALIZED / INDEPENDENT VERIFICATION OPEN`
+
+Next actor:
+**SONNET / CLAUDE** for independent adversarial static verification of hidden alternative callers, indirect capability encodings, and any existing capability-aware composition contract.
+
+Decision rule:
+- if Sonnet finds an existing capability-aware contract: REUSE/COMPOSE it;
+- if not: specify the smallest existing-organ composition gap;
+- no new universal registry/organ and no runtime before verification.
+
+The verified executable-source baseline remains:
+`07ebffc8f866fc99a3f78091dcd1edd456a0da00`.
+Current `main` movement in this coordination line remains documentation-only.
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY IDENTITY CONTRAST / TOOL OPERATIONAL EXECUTOR
 
 Canonical record:
