@@ -1,3 +1,20 @@
+## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY CONTRACT IMPACT VERIFICATION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-130-capability-contract-impact-reconciliation.md`
+
+Episode 130 correction:
+the readiness/StrategyPack mismatches are source-real, but decision impact is not yet demonstrated. `required_capabilities` currently feeds candidate rationale/state aggregation rather than proven final route selection.
+
+Current open edge:
+`session.chosen_pack_id / browser.generic fallback → downstream consumer → operative route`.
+
+Next actor:
+**SONNET / CLAUDE** for fresh independent adversarial verification.
+
+Conditional pivot:
+if no operative impact → `required capability → viable realization → operative routing`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UNIVERSAL CAPABILITY CONTRACT / PLASTICITY RECONCILIATION
 
 Canonical episode:
