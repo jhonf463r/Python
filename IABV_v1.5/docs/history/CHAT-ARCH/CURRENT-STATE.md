@@ -1,3 +1,34 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 CODEX EXECUTION CHANNEL BLOCKED BY POLICY
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-124-uaal-rq15-codex-execution-channel-policy-block.md`
+
+RQ15 evidence-complete runner remains:
+`C:\temp\rq15_phase_b_evidence_runner_20261006.py`
+SHA-256:
+`E70D9215B4528ECBC315C0DCA0953AD832071F2E57FB255003698569072F5485`
+
+Target provenance passed. The Codex execution tool then rejected the exact runner launch as `blocked by policy` before execution.
+
+Therefore:
+`live_oracle = 0`
+`real_sensor_call_count = 0`
+`correspondence = unobserved`.
+
+**NEW OPEN READINESS EDGE:**
+`execution-channel admissibility for exact RQ15 runner`.
+
+The runner itself is not the current defect.
+
+**IA DESTINO:** DEVIN
+**CAPABILITY:** Windows runtime execution + exact provenance + bounded read-only experiment.
+**WHY THIS AI NOW:** Codex's execution channel is the observed blocker; the remaining task is Windows execution through a different capability-fit channel.
+**INDEPENDENT VERIFIER:** independent Windows process oracle built into the exact evidence-complete runner.
+
+Next action: use a fresh Devin Windows runtime channel, first verify exact runner/target provenance and launch capability, then execute the existing runner exactly once if the channel is admissible.
+
+Do not modify the runner.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PRE-LIVE CONTRACT CLOSED / LIVE OBSERVATION NEXT
 
 Canonical record:
