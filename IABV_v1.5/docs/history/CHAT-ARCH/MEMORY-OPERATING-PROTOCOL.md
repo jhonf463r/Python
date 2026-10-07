@@ -2051,3 +2051,20 @@ This is a software-development target inspired by plasticity, not a claim of bio
 
 Before changing any capability contract, reconcile all known vocabularies and their consumers. Prefer:
 `REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`.
+
+## 2026-10-07 METHOD AMENDMENT — CONTRACT INCONSISTENCY ≠ DECISION IMPACT
+
+A source-level contract mismatch must not be promoted into an architectural or plasticity bottleneck until its downstream operative effect is established.
+
+Required sequence:
+`contract inconsistency → trace downstream consumer → determine executable/route impact → only then repair`.
+
+Preserve:
+`rationale defect ≠ route defect`
+`metadata mismatch ≠ decision change`
+`declared requirement ≠ consumed requirement`.
+
+For universal adaptation, prioritize the boundary that changes the ability to select/compose a viable realization, not the boundary that only changes descriptive text.
+
+The plasticity hypothesis remains:
+`verified experience/observation → reusable capability knowledge → composition/refinement/generalization → context-conditioned activation → later non-identical reuse → changed future decision`.
