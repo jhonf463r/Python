@@ -1,3 +1,23 @@
+## 2026-10-06 REGISTRATION — CHAT-ARCH-2026-10-06-112
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-112-uaal-rq14-snapshot-synaptic-attribution-reconciliation.md`
+
+Type:
+`RECONCILIATION / RUNTIME-ATTRIBUTION / UAAL / SYMBIOSIS`
+
+State:
+`EXACT WORLDMODEL→SYNAPTIC SNAPSHOT ATTRIBUTION OBSERVED`
+
+Material delta:
+- target `8425f03...` executed from a clean isolated worktree;
+- exact real `current_model()` return object was observed flowing through one `SynapticRouter.decide()`;
+- snapshot was stale persisted state and routing was disabled;
+- environmental A/B causality and selection impact remain open;
+- next routing is CODEX experiment-readiness discovery for a safe/reversible environmental A/B.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-06 REGISTRATION — UNIVERSAL FRONTIER RECONCILIATION 111
 
 Canonical episode:
