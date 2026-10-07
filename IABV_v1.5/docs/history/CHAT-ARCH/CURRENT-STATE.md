@@ -1,3 +1,41 @@
+## 2026-10-07 ACTIVE OVERLAY — UNIVERSAL CAPABILITY CONTRACT / PLASTICITY RECONCILIATION
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-129-universal-capability-vocabulary-plasticity-reconciliation.md`
+
+Newly reconciled state:
+- Codex + independent Sonnet challenge establish that `environment → required capability` was too narrow.
+- Preserve demand/supply separation:
+  `objective/intent → required capability`
+  and
+  `world/environment/resource state → readiness/availability/feasibility`.
+- The current concrete representational edge is:
+  `intent → readiness capability IDs → StrategyPack.required_capabilities`.
+- Static audit found exact-ID inconsistencies in several intent/pack cases and no explicit general source-level join from ToolCard capabilities or EnvironmentCapability IDs into readiness IDs.
+- This is a composition/contract problem, not evidence for a new organ.
+- Universal construction remains `REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`.
+
+### DEVELOPMENTAL / PLASTICITY PRINCIPLE
+
+IABV's target “neuroplasticity” is treated as an engineering hypothesis: preserve a broad capability repertoire while allowing context-conditioned activation, acquisition, refinement, composition, generalization, consolidation and rollback. Do not delete or narrow capabilities merely because the current task does not need them.
+
+Target developmental loop:
+`observation/experience → verified reusable capability knowledge → composition/refinement/generalization → context-conditioned activation → later non-identical reuse → changed future decision/implementation`.
+
+This remains a design target; causal autonomous learning and biological equivalence are not proven.
+
+### PRODUCT / SYMBIOSIS CONSEQUENCE
+
+ChatGPT, Codex, Claude and other tools remain realizations/resources selected by IABV, not the center of its intelligence. The nearer practical target remains:
+`human objective → IABV capability/resource selection → governed external round trip → capture → verification → continued objective loop`.
+S2 runtime delegation, S3 dynamic multi-AI collaboration and S4 verified delegated learning remain unproven.
+
+### CURRENT NEXT EDGE
+
+`intent → readiness capability IDs → StrategyPack.required_capabilities`
+
+Next action: read-only exact contract reconciliation, then independent Sonnet verification before any code change.
+
 ## 2026-10-07 CURRENT REMOTE MAIN / SOURCE-BEARING BASELINE VERIFICATION
 
 Direct verification established:
