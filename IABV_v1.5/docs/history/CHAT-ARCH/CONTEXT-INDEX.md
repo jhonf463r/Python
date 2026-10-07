@@ -1,3 +1,26 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 PHASE-B RUNNER VERIFIED / AUTHORIZATION PENDING
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-120-uaal-rq15-phase-b-runner-verified.md`
+
+Phase-B runner:
+`C:\temp\rq15_phase_b_runner_20261006.py`
+
+SHA-256:
+`15DF88E873E9CF7288ABFBDFD066C14D98E089774D14C3ECC14CA51400BF6979`
+
+Runner capability is verified; no live oracle or sensor was executed.
+
+Current first open edge:
+`independent Windows process identity → existing IABV process observation helper`.
+
+Immediate next edge:
+`exact Phase-B runner → fresh authorization`.
+
+Next actor: **CODEX** for one live bounded observation only after explicit authorization.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 PHASE-B RUNNER NOT CAPABLE OF LIVE EXECUTION
 
 Canonical episode:
