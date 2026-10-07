@@ -44,19 +44,44 @@ class ToolRegistry:
     def get_card(self, tool_id: str) -> ToolCard | None:
         return self.repository.get_card(tool_id)
 
+    def eligible_cards_for_task(
+        self,
+        task: ToolTask,
+        *,
+        allowed_tool_ids: list[str] | None = None,
+    ) -> list[ToolCard]:
+        """Apply explicit scope and conjunctive realization before preferences."""
+        goal_parameters = dict(task.metadata.get('goal_parameters') or {})
+        scope = allowed_tool_ids
+        if scope is None:
+            stored_scope = goal_parameters.get('allowed_tool_ids')
+            if stored_scope is not None:
+                scope = [str(item) for item in stored_scope if str(item)] if isinstance(stored_scope, list) else []
+        allowed = set(scope) if scope is not None else None
+        required = set(task.required_capability_ids)
+        return [
+            card for card in self.list_cards()
+            if (allowed is None or card.tool_id in allowed)
+            and required.issubset(set(card.realizes_capability_ids))
+        ]
+
     def pick_card_for_task(self, task: ToolTask, *, preferred_assistant_kind: str = '') -> ToolCard | None:
+        cards = self.eligible_cards_for_task(task)
+        if not cards:
+            return None
+        cards_by_id = {card.tool_id: card for card in cards}
         if task.tool_id:
-            card = self.get_card(task.tool_id)
+            card = cards_by_id.get(task.tool_id)
             if card is not None:
                 return self.refresh_card(card)
         preferred_assistant_kind = str(preferred_assistant_kind or '').strip().lower()
         if preferred_assistant_kind:
-            for card in self.list_cards():
+            for card in cards:
                 card_kind = str(card.metadata.get('assistant_kind') or '').strip().lower()
                 if card_kind == preferred_assistant_kind:
                     return self.refresh_card(card)
         objective = (task.objective + ' ' + task.title).lower()
-        for card in self.list_cards():
+        for card in cards:
             score = 0
             joined = ' '.join([card.title, card.description, card.adapter_key, ' '.join(card.capabilities)]).lower()
             for token in objective.split():
@@ -64,7 +89,6 @@ class ToolRegistry:
                     score += 1
             if score > 0:
                 return self.refresh_card(card)
-        cards = self.list_cards()
         return self.refresh_card(cards[0]) if cards else None
 
     def refresh_card(self, card: ToolCard, *, force: bool = False, max_age_seconds: float | None = None) -> ToolCard:
@@ -170,6 +194,7 @@ class ToolRegistry:
                 supports_rollback=True,
                 requires_human_approval=True,
                 capabilities=['open_url', 'click', 'type_text', 'extract_text', 'screenshot'],
+                realizes_capability_ids=['browser.generic.navigation'],
             ),
             ToolCard(
                 tool_id='ollama_llm',
@@ -179,6 +204,7 @@ class ToolRegistry:
                 adapter_key='ollama',
                 supports_sandbox=True,
                 capabilities=['llm_query', 'summarize', 'classify'],
+                realizes_capability_ids=['assistant.local.chat'],
                 metadata={
                     'assistant_kind': 'ollama',
                     'launch_mode': 'local_provider',
@@ -708,6 +734,11 @@ class ToolRegistry:
                         'supports_rollback': card.supports_rollback,
                         'requires_human_approval': card.requires_human_approval,
                         'capabilities': card.capabilities,
+                        'realizes_capability_ids': (
+                            current.realizes_capability_ids
+                            if 'realizes_capability_ids' in current.model_fields_set
+                            else card.realizes_capability_ids
+                        ),
                         'metadata': merged_metadata,
                     }
                 )
@@ -724,4 +755,3 @@ class ToolRegistry:
                     self.repository.save_card(card)
                 except Exception as exc:
                     logger.warning('seed_defaults: save_card failed for %s: %s', card.tool_id, exc)
-

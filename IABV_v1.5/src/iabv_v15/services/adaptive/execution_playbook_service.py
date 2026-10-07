@@ -59,13 +59,21 @@ class ExecutionPlaybookService:
     def annotate_execution_capability(self, session: AdaptiveSession) -> AdaptiveSession:
         execute_step = self._execute_step(session)
         simulation_only = bool(execute_step.simulation_only) if execute_step is not None else False
-        executor_available = bool(execute_step is not None and not simulation_only and self.executor.supports(session))
+        preflight = getattr(self.executor, 'preflight_status', None)
+        preflight_status = str(preflight(session)) if execute_step is not None and not simulation_only and callable(preflight) else ''
+        executor_available = bool(
+            execute_step is not None
+            and not simulation_only
+            and (preflight_status == 'ready' if preflight_status else self.executor.supports(session))
+        )
         state = 'not_applicable'
         if execute_step is not None:
             if simulation_only:
                 state = 'simulation_only'
             elif executor_available:
                 state = 'ready'
+            elif preflight_status in {'no_eligible_realization', 'no_allowed_tool'}:
+                state = preflight_status
             else:
                 state = 'adapter_missing'
         detail = self._describe_execution_capability(session, execute_step, executor_available, simulation_only)
@@ -76,6 +84,7 @@ class ExecutionPlaybookService:
             'simulation_only': simulation_only,
             'detail': detail,
             'execute_step_present': bool(execute_step is not None),
+            'preflight_status': preflight_status,
         }
         session.metadata['execution_state'] = execution_state
         if execute_step is not None:
@@ -171,16 +180,18 @@ class ExecutionPlaybookService:
                 metadata={'mode': 'execute_simulation_only'},
             )
         elif not bool(execution_state.get('executor_available')):
+            blocked_state = str(execution_state.get('state') or 'adapter_missing')
+            blocked_summary = self.executor.describe(session)
             result = OperationalExecutorResult(
                 executed=False,
                 status=RunStatus.PARTIAL,
-                summary=self.executor.describe(session),
+                summary=blocked_summary,
                 next_actions=['Simular', 'Ver evolutivo', 'Preparar Codex'],
-                metadata={'mode': 'adapter_missing'},
+                metadata={'mode': blocked_state},
             )
             self._update_execution_state(
                 session,
-                state='adapter_missing',
+                state=blocked_state,
                 detail=result.summary,
                 last_action='execute',
             )
@@ -189,7 +200,7 @@ class ExecutionPlaybookService:
                 status=result.status,
                 summary='La estrategia quedo lista, pero no hay un adaptador operativo real para ejecutar esta fase todavia.',
                 next_actions=result.next_actions or ['Simular', 'Preparar Codex'],
-                metadata={'mode': 'execute_waiting_adapter', **result.metadata},
+                metadata={'mode': f'execute_{blocked_state}', **result.metadata},
             )
         else:
             self._update_execution_state(

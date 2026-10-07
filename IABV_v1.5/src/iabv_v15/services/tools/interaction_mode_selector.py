@@ -48,10 +48,34 @@ class InteractionModeSelector:
         worker_pool: dict[str, Any] | None = None,
     ) -> ModeSelectionDecision:
         desired_modes = self._desired_modes(request)
-        cards = [self.registry.refresh_card(item) for item in self.registry.list_cards()]
-        if allowed_tool_ids:
-            allowed = set(allowed_tool_ids)
-            cards = [item for item in cards if item.tool_id in allowed]
+        draft_task = draft_task or ToolTask(
+            title=str(request.goal_parameters.get('title') or request.user_goal[:80]),
+            objective=request.user_goal,
+            required_capability_ids=[],
+            metadata={'goal_parameters': dict(request.goal_parameters or {})},
+        )
+        cards = self.registry.eligible_cards_for_task(draft_task, allowed_tool_ids=allowed_tool_ids)
+        if not cards:
+            all_cards = self.registry.list_cards()
+            explicit_scope = allowed_tool_ids
+            if explicit_scope is None:
+                stored_scope = dict(request.goal_parameters or {}).get('allowed_tool_ids')
+                if isinstance(stored_scope, list):
+                    explicit_scope = [str(item) for item in stored_scope]
+            scoped_cards = [item for item in all_cards if explicit_scope is None or item.tool_id in set(explicit_scope)]
+            outcome = 'no_allowed_tool' if not scoped_cards else 'no_eligible_realization'
+            return ModeSelectionDecision(
+                selected_mode=InteractionMode.FALLBACK,
+                selection_outcome=outcome,
+                fallback_used=True,
+                reason=(
+                    'No hay herramientas dentro del alcance permitido.'
+                    if outcome == 'no_allowed_tool'
+                    else 'Ninguna ToolCard realiza todas las capabilities requeridas.'
+                ),
+                metadata={'selection_outcome': outcome, 'required_capability_ids': list(draft_task.required_capability_ids)},
+            )
+        cards = [self.registry.refresh_card(item) for item in cards]
         preferred_external = self._preferred_external_decision(
             request=request,
             draft_task=draft_task,
@@ -78,7 +102,7 @@ class InteractionModeSelector:
         fallback_used = (
             best.mode not in desired_modes
             or not best.card.available
-            or (bool(allowed_tool_ids) and bool(suggested_tool_id) and best.card.tool_id != suggested_tool_id)
+            or (allowed_tool_ids is not None and bool(suggested_tool_id) and best.card.tool_id != suggested_tool_id)
         )
         metadata: dict[str, Any] = {
             'desired_modes': [item.value for item in desired_modes],
@@ -133,7 +157,7 @@ class InteractionModeSelector:
         preferred_tool_id = str(suggested_tool_id or request.goal_parameters.get('tool_id') or '').strip()
         if not preferred_tool_id:
             return None
-        if allowed_tool_ids and preferred_tool_id not in set(allowed_tool_ids):
+        if allowed_tool_ids is not None and preferred_tool_id not in set(allowed_tool_ids):
             return None
         preferred = next((item for item in cards if item.tool_id == preferred_tool_id), None)
         if preferred is None:

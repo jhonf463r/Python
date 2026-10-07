@@ -6,6 +6,11 @@ from iabv_v15.infra.persistence.tool_record_repository import ToolRecordReposito
 
 
 class CapabilityReadinessService:
+    SYSTEM_READINESS_CAPABILITY_IDS = frozenset({
+        'tools.local.registry',
+        'tools.local.execution',
+        'tools.local.sandbox',
+    })
     STATUS_SCORE = {
         CapabilityStatus.INSUFFICIENT: 0,
         CapabilityStatus.PARTIAL: 1,
@@ -49,7 +54,8 @@ class CapabilityReadinessService:
         self.capability_repository.save_many(capabilities)
         return capabilities
 
-    def _required_capabilities(self, intent: TaskIntent) -> list[str]:
+    @staticmethod
+    def _required_capabilities(intent: TaskIntent) -> list[str]:
         mapping = {
             'wplay.core': ['wplay.session.restore', 'browser.generic.navigation'],
             'wplay.login': ['wplay.login', 'wplay.session.restore'],
@@ -66,6 +72,28 @@ class CapabilityReadinessService:
             'tools.sandbox': ['tools.local.registry', 'tools.local.sandbox'],
         }
         return mapping.get(intent.intent_key, ['assistant.local.chat'])
+
+    @classmethod
+    def operational_task_requirements(
+        cls,
+        *,
+        intent: TaskIntent,
+        readiness: list[CapabilityReadiness] | None,
+    ) -> tuple[list[str], list[str], list[str]]:
+        """Return ordered readiness IDs, excluded system IDs and task requirements.
+
+        Persisted session readiness is used when present. Older sessions fall
+        back to the same canonical intent mapping used by ``evaluate``.
+        """
+        raw_ids = (
+            [str(item.capability_id).strip() for item in readiness]
+            if readiness
+            else cls._required_capabilities(intent)
+        )
+        ordered_raw_ids = list(dict.fromkeys(item for item in raw_ids if item))
+        excluded_ids = [item for item in ordered_raw_ids if item in cls.SYSTEM_READINESS_CAPABILITY_IDS]
+        required_ids = [item for item in ordered_raw_ids if item not in cls.SYSTEM_READINESS_CAPABILITY_IDS]
+        return ordered_raw_ids, excluded_ids, required_ids
 
     def _derive_capability(self, *, capability_id: str, intent: TaskIntent, context: TaskContext) -> CapabilityReadiness:
         site_id = context.site_id or intent.site_hint
