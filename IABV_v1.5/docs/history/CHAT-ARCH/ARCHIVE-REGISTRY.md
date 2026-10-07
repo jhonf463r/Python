@@ -1,3 +1,24 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-122
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-122-uaal-rq15-evidence-complete-runner-ready.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT-READINESS / EVIDENCE-CONTRACT / WINDOWS-RUNTIME / SYMBIOSIS`
+
+State:
+`EVIDENCE-COMPLETE PHASE-B RUNNER READY — LIVE CORRESPONDENCE OPEN — FRESH AUTHORIZATION REQUIRED`
+
+Material delta:
+- Phase-A readiness closed;
+- Phase-B runtime capability closed;
+- Phase-B evidence capability closed;
+- exact new runner/hash established;
+- no live oracle/sensor execution occurred;
+- next action is fresh authorization for one observation.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-121
 
 Canonical record:
