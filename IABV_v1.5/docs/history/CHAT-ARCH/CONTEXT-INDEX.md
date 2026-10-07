@@ -1,3 +1,22 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 PHASE-B RUNNER NOT CAPABLE OF LIVE EXECUTION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-119-uaal-rq15-phase-b-runner-not-runtime-capable.md`
+
+The previously authorized harness is Phase-A only. It correctly validates provenance/parser/fail-closed gates but contains no live Windows oracle/sensor path.
+
+Result:
+`E — INCONCLUSIVE / READINESS FAILURE BEFORE SENSOR INVOCATION`.
+
+No correspondence evidence exists.
+
+Immediate next edge:
+`runtime-capable Phase-B harness → fresh authorization`.
+
+Next actor: **CODEX**. Harness construction/self-test only; no live oracle or sensor execution during this correction.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 READINESS HARNESS VERIFIED
 
 Canonical episode:
