@@ -1,3 +1,21 @@
+## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION CONTRACT RECONCILIATION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-136-capability-realization-contract-reconciliation.md`
+
+Design-level closure from Codex, independently reconciled against the verified executable baseline:
+- `ToolCard.realizes_capability_ids` is the accepted minimal realization contract;
+- `ToolTask.required_capability_ids` preserves requirement identity;
+- readiness is a decision-time snapshot;
+- capability-eligible candidates are selection-time state, not durable task truth;
+- preference/override/fallback paths must fail closed outside the eligible set.
+
+Remaining gate:
+independent challenge of multi-capability semantics, snapshot semantics, candidate-set lifetime, and all override paths.
+
+Next actor:
+**SONNET / CLAUDE**.
+
 ## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION DESIGN GATE
 
 Canonical episode:
