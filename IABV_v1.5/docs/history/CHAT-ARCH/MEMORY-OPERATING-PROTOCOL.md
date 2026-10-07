@@ -1810,3 +1810,217 @@ Required future runtime contract:
 Corroborating timestamps/path evidence may strengthen an attribution but cannot substitute for an in-process fingerprint when exact loaded-byte identity is required.
 
 Routing consequence: after a nonrecoverable provenance gap, the next action should target the clean baseline property directly rather than endlessly reopening the historical run.
+
+
+## 2026-10-07 ACTIVE METHOD AMENDMENT — SYMBIOSIS-FIRST COMPOSITION / CUMULATIVE DEVELOPMENTAL EXPERIENCE
+
+This amendment is active for future IABV development, experiment design, routing and cross-chat continuity.
+
+### A. IABV must be consulted before construction
+
+Before proposing, designing or implementing a new function, service, organ, registry, comparator, observer, protocol, data structure or architecture, perform an explicit **IABV self-composition gate**.
+
+The gate must first inspect, as applicable:
+
+`CURRENT-STATE`
+→ relevant canonical memory/history
+→ `SystemIdentityRegistry`
+→ `SelfCodeAnalysis`
+→ relevant capability/tool registries
+→ relevant domain models/contracts
+→ existing producers/consumers
+→ comparators/cross-validators
+→ provenance/identity mechanisms
+→ governance/authorization paths
+→ tests and known failures
+→ systemic-integrity synthesis (M7) when material.
+
+This is a retrieval/composition requirement, not a claim that runtime IABV currently performs the entire process autonomously.
+
+### B. Similarity is not equivalence
+
+A candidate must not be considered "new" merely because its name differs.
+
+Before creating it, compare existing mechanisms by:
+
+`purpose + inputs + outputs + semantics + identity + side effects + ownership + callers + consumers + lifecycle + governance + provenance + runtime evidence`.
+
+Also search:
+- aliases and historical names;
+- conceptually equivalent terms;
+- behaviorally equivalent helpers;
+- duplicated data contracts;
+- parallel registries;
+- existing cross-organ links.
+
+The rule is:
+
+`different name ≠ different capability`
+
+and:
+
+`same purpose ≠ interchangeable mechanism`.
+
+### C. Existing-organ composition has priority over new-organ creation
+
+Prefer, in order:
+
+1. reuse an existing organ unchanged;
+2. compose multiple existing organs;
+3. repair a missing wiring/contract between existing organs;
+4. extend an existing organ when the capability is genuinely the same;
+5. create a new organ only when archaeology proves a structural capability gap and the new boundary is independently justified.
+
+No new "brain", universal coordinator, duplicate memory, duplicate registry, generic bus or parallel observer may be introduced merely because composition has not yet been attempted.
+
+### D. Self-use must be separated from self-authority
+
+IABV's own self-analysis can be used as a **candidate generator, composition map and hypothesis source**.
+
+It is not automatically authoritative.
+
+For material claims:
+
+`IABV self-analysis → hypothesis/candidate`
+
+then:
+
+`independent source/runtime verification → evidence promotion`.
+
+The system must not use its own recommendation as proof of its own correctness.
+
+### E. Developmental experience is a cumulative object
+
+Every material collaboration should be transformed into:
+
+`objective → context activation → hypothesis → action → observation → verification → reconciliation → Knowledge Delta → Method Delta → Routing Delta → durable writeback → later retrieval → later decision`.
+
+The durable object is therefore not the chat transcript or AI answer alone. It is the **verified reusable delta**.
+
+A stronger claim of learning requires a later decision/action that actually uses the retained delta under an independently testable condition.
+
+Preserve the distinction:
+
+`writeback ≠ learning`
+
+`retrieval ≠ learning`
+
+`recommendation ≠ reuse`
+
+`reuse ≠ behavioral change`
+
+### F. Cross-IA symbiosis must produce method improvement
+
+For each material multi-AI episode preserve:
+
+`SOURCE_AI`
+→ `INITIAL_INTERPRETATION`
+→ `CHALLENGER/INDEPENDENT_VIEW`
+→ `CONTRADICTION_OR_SUPPORT`
+→ `EXPERIMENTER/IMPLEMENTER`
+→ `OBSERVATION`
+→ `RECONCILIATION`
+→ `NEW_INVARIANT`
+→ `METHOD_CHANGE`
+→ `NEXT_ROUTING`.
+
+The next actor must be selected after reconciliation, not inherited from the prior actor.
+
+### G. Prompt routing must always be explicit
+
+Every generated external-AI prompt must state, near the beginning:
+
+`IA DESTINO = <specific AI>`
+
+and:
+
+`CAPABILITY REQUIRED = <specific capability>`
+
+and:
+
+`WHY THIS AI NOW = <why this actor fits the current open edge>`.
+
+If a different AI is required as an independent verifier, state it separately:
+
+`INDEPENDENT VERIFIER = <specific AI/capability>`.
+
+Never emit an operational prompt whose destination AI is implicit or recoverable only from conversational history.
+
+### H. The prompt itself must carry the active protocol
+
+For material tasks the prompt must include, as applicable:
+
+`OBJECTIVE`
+`CURRENT VERIFIED TRUTH`
+`PROVENANCE`
+`CLOSED EDGES`
+`FIRST OPEN EDGE`
+`RELEVANT EXISTING ORGANS`
+`DUPLICATION / EQUIVALENCE CHECK`
+`REQUIRED CAPABILITY`
+`IA DESTINO`
+`READINESS GATE`
+`EXPERIMENT CONTRACT`
+`INDEPENDENT ORACLE`
+`STOP CONDITIONS`
+`NO-SCOPE-CREEP`
+`EVIDENCE CONTRACT`
+`RECONCILIATION FORMAT`
+`WRITEBACK EXPECTATION`.
+
+This keeps the external AI inside the same cumulative method instead of resetting methodology at each handoff.
+
+### I. Construction gate
+
+No implementation should begin until the construction decision can be stated as one of:
+
+- `REUSE` — existing organ already satisfies the need;
+- `COMPOSE` — existing organs jointly satisfy it;
+- `WIRE/REPAIR` — capability exists but the causal contract/wiring is missing;
+- `EXTEND` — an existing organ owns the same semantic capability but lacks a necessary bounded feature;
+- `NEW` — a real structural gap survives equivalence/composition archaeology.
+
+For `NEW`, the evidence must include why each closest existing organ cannot satisfy the contract.
+
+### J. Experience replay for future development
+
+When a future objective touches a previously encountered domain, activate the relevant prior deltas before deciding the next implementation or experiment.
+
+At minimum replay:
+- previously rejected approaches;
+- previously discovered existing organs;
+- provenance traps;
+- governance traps;
+- false-positive patterns;
+- side-effect discoveries;
+- actor-capability corrections;
+- successful discriminating experiments.
+
+This is the intended cumulative developmental substrate.
+
+### K. Current RQ15 application
+
+For the present frontier, the cumulative lesson is:
+
+`tasklist /v` failure
+→ observation-mechanism diagnosis
+→ existing-process-observer archaeology
+→ discovery of `list_running_processes`
+→ discovery of existing `PerceptionCrossValidator` and `PerceptionGroundTruthComparator`
+→ rejection of premature new process observer
+→ identity reuse via existing `create_time`
+→ direct helper selected only because governed route is not safely isolatable.
+
+This sequence is now a reusable method for future development domains.
+
+### L. Success condition for "living IABV"
+
+The developmental method is successful when repeated episodes show:
+
+`experience`
+→ `verified reusable knowledge`
+→ `changed future routing/construction`
+→ `changed future experiment or implementation`
+→ `observable reduction in duplication/error/rework`.
+
+Until the later behavioral link is observed, call the state **cumulative methodological memory**, not autonomous learning.
