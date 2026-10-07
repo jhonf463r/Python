@@ -1,3 +1,16 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — CLAUDE EMPTY-SET CLOSURE
+
+Sonnet/Claude adversarial review closed the conceptual capability-empty edge.
+
+Transfer:
+- explicit selector outcome is required;
+- existing ToolTaskStatus.DEFERRED can be reused at task lifecycle;
+- ToolTeachService, Synaptic, preferences, registry fallback and executor preflight must preserve fail-closed semantics;
+- eligible candidate sets remain decision-time state, not durable task truth.
+
+Next capability-fit actor:
+CODEX for exact implementation-diff review, with no source modification until fresh authorization.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — EMPTY CAPABILITY-ELIGIBLE SET
 
 Sonnet/Claude independently challenged the capability → realization contract and localized the first-open edge to empty-set semantics.
