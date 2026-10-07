@@ -1,3 +1,25 @@
+## 2026-10-07 — CAPABILITY → REALIZATION EMPTY-SET GAP
+
+Independent audit result:
+The capability-aware realization design remains open only at the first contract boundary where no eligible realization exists.
+
+Open question:
+What is the minimum existing-domain representation that carries
+capability-eligible candidate set = ∅
+through selection, task construction and registry resolution without fallback resurrection?
+
+Known reusable candidate:
+ToolTaskStatus.DEFERRED exists in the domain model.
+
+Negative knowledge:
+No current executable consumer of ToolTaskStatus.DEFERRED was verified in the inspected baseline, so it cannot yet be claimed as the closed mechanism.
+
+Dependent questions, intentionally deferred:
+- which subset of session capabilities belongs to each ToolTask;
+- policy for capability IDs with zero declared realizers, including tools.local.* circular readiness.
+
+Do not broaden scope until the empty-set contract is closed.
+
 ## 2026-10-07 ACTIVE FRONTIER — MINIMAL CAPABILITY-AWARE OPERATIVE SELECTION / CONTRACT MICRO-GATE
 
 Canonical episode:
