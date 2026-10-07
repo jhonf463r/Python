@@ -5148,3 +5148,16 @@ is preferred over permanently binding a capability to one provider/application/O
 
 Next actor:
 **CODEX** static trace; **SONNET/CLAUDE** independent verification afterward.
+
+## 2026-10-07 SYMBIOSIS TRANSFER — TARGETED CAPABILITY → REALIZATION TRACE
+
+Episode 132 turns the universal frontier into a concrete call-site question:
+does a named abstract required capability survive into the normal inputs that select a ToolCard/assistant realization?
+
+This directly tests the reusable-plasticity principle:
+`abstract capability → multiple realizations → context-conditioned selection`.
+
+External AI paths are useful representatives because Codex/Claude/ChatGPT should remain resources inside IABV's broader adaptive substrate, not the substrate itself.
+
+Next actor:
+**CODEX** static trace; **SONNET/CLAUDE** independent verification afterward.
