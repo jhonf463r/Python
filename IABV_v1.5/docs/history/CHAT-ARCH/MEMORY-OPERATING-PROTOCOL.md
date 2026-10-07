@@ -2084,3 +2084,15 @@ A capability-to-realization bridge is proven only when the identity of the requi
 For plasticity-oriented development, prefer:
 `same abstract capability → multiple realizations → context-conditioned selection`
 over provider-specific branching. Later causal reuse must be demonstrated separately.
+
+## 2026-10-07 METHOD AMENDMENT — CAPABILITY IDENTITY TRACE TO REALIZATION
+
+When assessing universal capability composition, do not stop at a registry or candidate abstraction. Follow one named capability through the normal caller into the concrete inputs that determine realization selection.
+
+Required trace:
+`named capability → request/intent → normal caller → ToolTask/selection inputs → candidate/assistant/tool identity → operative route → adapter invocation boundary`.
+
+A common capability-to-realization bridge is proven only when the abstract capability, or an explicit documented semantic transformation, can be followed into the selected realization. Tool IDs, assistant kinds, task text or token overlap alone do not prove that causal bridge.
+
+For product routing, prefer a narrow external-assistant-relevant trace when it provides higher information gain for the target:
+`human objective → IABV capability/resource selection → governed external round trip`.
