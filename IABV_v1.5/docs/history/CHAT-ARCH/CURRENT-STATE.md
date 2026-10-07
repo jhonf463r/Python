@@ -1,3 +1,42 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 EVIDENCE-COMPLETE PHASE-B RUNNER READY / LIVE AUTHORIZATION PENDING
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-122-uaal-rq15-evidence-complete-runner-ready.md`
+
+New external runner:
+`C:\temp\rq15_phase_b_evidence_runner_20261006.py`
+
+SHA-256:
+`E70D9215B4528ECBC315C0DCA0953AD832071F2E57FB255003698569072F5485`
+
+Size:
+`33,832` bytes.
+
+The runner passed:
+`SYNTAX_OK`
+`PHASE_A_SELF_TEST_PASS`
+`EVIDENCE_SCHEMA_PASS`
+`SYNTHETIC_INSTRUMENTATION_PASS`
+`FAIL_CLOSED_PASS`
+`PHASE_B_PATH_PRESENT`
+
+All self-tests kept:
+`REAL_SENSOR_CALL_COUNT = 0`.
+
+The live path now contains required oracle, sensor timing, row-count, call-count, comparison and runtime-boundary evidence.
+
+**CURRENT FIRST OPEN EDGE:**
+`independent Windows process identity → existing audit_tools_observation.list_running_processes`.
+
+The remaining blocker is no longer runner readiness. It is the **fresh authorization boundary for this exact evidence-complete runner**.
+
+**IA DESTINO:** CODEX
+**CAPABILITY:** Windows live runtime/provenance and one bounded direct sensor observation.
+**WHY THIS AI NOW:** all experiment-readiness dimensions are now closed; only the live Windows observation remains.
+**INDEPENDENT VERIFIER:** independent Windows CIM/Win32 process oracle.
+
+Do not execute live observation until a new authorization explicitly binds the exact runner/hash and one-observation scope.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PHASE-B EVIDENCE CONTRACT GAP / NO LIVE OBSERVATION
 
 Canonical record:
