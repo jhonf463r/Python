@@ -1,3 +1,16 @@
+## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY IDENTITY CONTRAST
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-133-tool-operational-executor-capability-contrast.md`
+
+Episode 132 established that the external consultation path loses required-capability identity before concrete realization selection.
+
+Current question:
+does `AdaptiveSession → ToolOperationalExecutor.build_task_for_session()` preserve capability/readiness into ToolTask and picker inputs?
+
+Next actor:
+**CODEX** static contrast only.
+
 ## 2026-10-07 LATEST ROUTING POINTER — TARGETED CAPABILITY → REALIZATION TRACE
 
 Canonical episode:
