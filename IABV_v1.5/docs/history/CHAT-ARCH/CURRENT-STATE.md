@@ -1,3 +1,31 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ14 EXACT WORLDMODEL→SYNAPTIC ATTRIBUTION CLOSED / ENVIRONMENTAL CAUSALITY OPEN
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-112-uaal-rq14-snapshot-synaptic-attribution-reconciliation.md`
+
+The prior RQ15/RQ14 static archaeology and independent Claude audit established a partial provenance gap. A bounded Codex runtime identity probe then executed target SHA `8425f03eb45abd11951938f6e3234459c1585b55` from a clean isolated worktree `C:\\temp\\wm-synaptic-8425`.
+
+The probe used real `WorldModelService.current_model()` with `bootstrap_scan=False` and `auto_start=False`, exactly one provider invocation and exactly one `SynapticRouter.decide()` invocation. The provider-returned snapshot object identity and `snapshot_id=f5842440-147d-486a-9416-b197634a64e2` were observed at every availability calculation in that decision. Source and runtime evidence agree that the exact object returned by `current_model()` was the object consumed by that `decide()` call.
+
+**CLASSIFICATION:** `A — EXACT SNAPSHOT ATTRIBUTION OBSERVED`, narrowly scoped to persisted baseline snapshot object flow within one isolated process.
+
+Important qualification: the snapshot was stale persisted state from `latest.json` (`last_updated=2026-04-20T02:20:55.454126+00:00`), not a fresh physical-environment scan. Routing was disabled, so no assistant selection occurred. No ToolTask or external realization executed.
+
+This closes the attribution edge:
+`real current_model() return object → exact isolated SynapticRouter.decide() scoring path`.
+
+It does NOT close:
+`live environmental change → distinct WorldModelSnapshot → changed ranking → changed selected realization`.
+
+**CURRENT FIRST OPEN CAUSAL EDGE:** `safe/reversible live environmental state A/B → attributable WorldModelSnapshot A/B → changed Synaptic availability/ranking under fixed remaining inputs`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows/runtime experiment-readiness engineering and safe environmental A/B discovery.  
+**NEXT ACTION:** identify a genuinely eligible, safe, reversible, independently observable environmental transition and an observation boundary that can measure snapshot A/B and ranking A/B without modifying production or allowing uncontrolled external side effects. Prefer natural/reversible state changes over destructive interventions. Do not execute the A/B until readiness and authorization are explicit.
+
+**METHOD DELTA:** exact attribution precedes causal intervention; stale persisted state can validate object flow but cannot validate environmental causality.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning/reuse NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UNIVERSAL FRONTIER RECONCILIATION / RQ13 DECISION-CONTEXT SECONDARY
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-111-universal-frontier-reconciliation.md`
