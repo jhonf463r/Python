@@ -1,3 +1,24 @@
+## 2026-10-07 LATEST ROUTING POINTER — TWO-CALLER CAPABILITY IDENTITY LOSS
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-134-capability-identity-loss-cross-caller-reconciliation.md`
+
+Episode 133 is closed as a targeted contrast:
+`AdaptiveSession.capability_readiness` is real upstream state, but `build_task_for_session()` does not carry it into `ToolTask)/picker selection.
+
+Together with the external consultation path, two normal callers converge at `ToolTeachService → ToolRegistry` without a first-class required-capability/readiness input.
+
+Current open edge:
+`required capability → concrete realization selection`.
+
+Next actor:
+**SONNET / CLAUDE** independent static verifier.
+
+Verification focus:
+hidden alternative callers, indirect capability encodings, and any existing capability-aware composition that can be reused.
+
+No runtime and no implementation yet.
+
 ## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY IDENTITY CONTRAST
 
 Canonical episode:
