@@ -1,3 +1,19 @@
+## 2026-10-07 ACTIVE FRONTIER — CAPABILITY → REALIZATION OPERATIVE ROUTING
+
+Episode 130 closed the readiness/StrategyPack mismatch as rationale-only for the inspected cases.
+
+Current open question:
+Can an abstract required capability be followed into a specific viable realization and then into the operative route, using existing organs and no new universal registry?
+
+Required distinctions:
+`capability identity ≠ readiness ≠ availability ≠ candidate identity ≠ final route ≠ execution`.
+
+Minimum next action:
+static trace for representative local-tool, browser, and external-assistant realizations.
+
+Conditional next frontier:
+If this bridge exists statically, runtime proof of actual selection/execution follows. If it does not, identify the smallest existing-organ composition gap before any implementation.
+
 ## 2026-10-07 ACTIVE FRONTIER — CONTRACT IMPACT GATE
 
 Open question:
