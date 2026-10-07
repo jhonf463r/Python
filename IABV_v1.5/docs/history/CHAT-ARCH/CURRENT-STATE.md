@@ -1,3 +1,18 @@
+## 2026-10-07 CURRENT REMOTE MAIN VERIFICATION
+
+Verified directly against remote `refs/heads/main`:
+
+- current main HEAD: `07ebffc8f866fc99a3f78091dcd1edd456a0da00`
+- latest commit: `docs: point duplicate M0 record to canonical episode 128`
+- the 7 commits after `268c5748c3300cf9847c62deb7254df6c7b14024` are documentation/history changes only;
+- compare `268c5748...` → `07ebffc8...` shows no executable Python source changes.
+
+Therefore:
+`268c5748...` remains the historical M0 reconciliation baseline;
+`07ebffc8...` is the current remote main tip.
+
+The superseded M0 duplicate is now a pointer-only file and must not be treated as independent evidence.
+
 ## 2026-10-07 ACTIVE OVERLAY — M0 CAUSAL ROUTING RECONCILED / STATIC HANDOFF SUBSTANTIALLY READY
 
 Canonical record:
