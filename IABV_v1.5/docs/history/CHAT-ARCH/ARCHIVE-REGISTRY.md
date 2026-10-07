@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-118
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-118-uaal-rq15-readiness-harness-verified.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT-READINESS / PROVENANCE / WINDOWS-ORACLE / AUTHORIZATION`
+
+State:
+`RQ15 READINESS HARNESS VERIFIED — LIVE CORRESPONDENCE OPEN — FRESH AUTHORIZATION REQUIRED`
+
+Material delta:
+- exact per-run provenance verification is now demonstrated;
+- parser fixtures and fail-closed gates pass;
+- sensor call count remained zero;
+- no live correspondence evidence exists;
+- next live observation is authorization-gated.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-117
 
 Canonical record:
