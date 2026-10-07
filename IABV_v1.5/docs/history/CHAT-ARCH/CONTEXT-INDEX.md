@@ -1,3 +1,29 @@
+## 2026-10-07 LATEST ROUTING POINTER — UNIVERSAL CAPABILITY CONTRACT / PLASTICITY RECONCILIATION
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-129-universal-capability-vocabulary-plasticity-reconciliation.md`
+
+Material delta:
+- The earlier `environment/world → required capability` framing is superseded as too narrow.
+- Current conceptual separation:
+  `objective/intent → required capability`
+  `environment/world/resource state → readiness/availability/feasibility`
+  `required capability + viable realization → governed routing`.
+- Multiple capability vocabularies coexist: readiness IDs, EnvironmentCapability, ToolCard capabilities, AssistantStrength/task-kind, and StrategyPack requirements.
+- Static follow-up found concrete ID mismatches between readiness and StrategyPack requirements plus missing explicit capability joins.
+- No new universal capability organ is justified.
+
+Current first open representational edge:
+`intent → readiness capability IDs → StrategyPack.required_capabilities`.
+
+Developmental target:
+broad capability preservation + context-conditioned activation + verified acquisition/refinement/composition/generalization + later non-identical reuse.
+
+Next actor:
+**CODEX**, read-only exact ID/contract reconciliation. After that, **SONNET/CLAUDE** independently verifies the reconciled contract.
+
+Do not inherit historical actor fields from prior records as routing authority.
+
 ## 2026-10-07 SOURCE-BEARING MAIN VERIFICATION
 
 Direct verification established:
