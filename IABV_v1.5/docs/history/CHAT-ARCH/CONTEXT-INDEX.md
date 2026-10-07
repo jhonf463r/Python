@@ -4,7 +4,7 @@ Canonical episode:
 `CHAT-ARCH-2026-10-07-134-capability-identity-loss-cross-caller-reconciliation.md`
 
 Episode 133 is closed as a targeted contrast:
-`AdaptiveSession.capability_readiness` is real upstream state, but `build_task_for_session()` does not carry it into `ToolTask)/picker selection.
+`AdaptiveSession.capability_readiness` is real upstream state, but `build_task_for_session()` does not carry it into `ToolTask`/picker selection.
 
 Together with the external consultation path, two normal callers converge at `ToolTeachService → ToolRegistry` without a first-class required-capability/readiness input.
 
