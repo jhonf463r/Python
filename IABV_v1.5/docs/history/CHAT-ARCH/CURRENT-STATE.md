@@ -1,3 +1,42 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 READINESS HARNESS VERIFIED / LIVE OBSERVATION AUTHORIZATION PENDING
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-118-uaal-rq15-readiness-harness-verified.md`
+
+Phase-A readiness is now **verified**.
+
+**FACT:**
+- external harness `C:\temp\rq15_readiness_gate_20261006.py`
+- SHA-256 `AE9599922D18070BFA308790B39CFA2BDDE54900810BBAF93D03A0CAC8E197F3`
+- exact target HEAD/tree/blob provenance reverified;
+- Python executable/version/SHA reverified literally;
+- helper SHA reverified;
+- static helper resolution succeeded;
+- parser fixtures all passed;
+- fail-closed provenance/oracle/authorization gates all passed;
+- `sensor_call_count = 0`;
+- no IABV/AppBootstrap/MCP/CIM/Win32 live query/sensor invocation occurred;
+- worktree remained clean.
+
+**CLASSIFICATION:**
+`READY_FOR_FRESH_AUTHORIZATION` for the eventual live correspondence probe.
+
+This does **not** close or weaken the actual RQ15 evidence edge:
+`independent OS process → existing IABV process observation helper`.
+
+There is still no live PID/create_time correspondence evidence.
+
+**CURRENT FIRST OPEN EDGE:** `independent OS process → existing audit_tools_observation.list_running_processes`.
+
+**IA DESTINO:** CODEX for the eventual live probe.  
+**CAPABILITY:** Windows runtime/provenance + bounded read-only correspondence.  
+**WHY THIS AI NOW:** only Windows runtime execution remains.  
+**INDEPENDENT VERIFIER:** independent Windows process oracle.
+
+**AUTHORIZATION:** NO fresh authorization is inferred. The next live execution requires explicit human authorization covering the exact target, exact harness/executable/helper identities, direct helper invocation outside MCP governance, one independent Windows oracle and one bounded observation.
+
+Do not execute live observation yet.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 READINESS GATE FAILURE / SENSOR NOT INVOKED
 
 Canonical record:
