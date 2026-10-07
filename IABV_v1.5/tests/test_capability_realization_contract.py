@@ -433,9 +433,83 @@ def test_external_override_clears_pattern_reuse_metadata_for_original_tool(tmp_p
 
     assert task.tool_id == 'ineligible_b'
     assert task.metadata['mode_selection']['selected_tool_id'] == 'ineligible_b'
-    assert task.metadata['already_resolved'] is True
-    assert task.metadata['equivalent_pattern_exists'] is True
+    assert task.metadata['already_resolved'] is False
+    assert task.metadata['equivalent_pattern_exists'] is False
     assert task.metadata['reuse_guard_active'] is False
     assert task.metadata['reused_pattern_id'] == ''
-    assert task.metadata['reused_episode_id'] == 'episode-original-a'
+    assert task.metadata['reused_episode_id'] == ''
     assert task.metadata['reused_actions_from_pattern'] is False
+
+
+def test_external_override_invalidates_reuse_metadata_without_pattern(tmp_path: Path) -> None:
+    registry, repository = _registry(tmp_path)
+    service = _tool_teach_service(registry, repository, tmp_path)
+    service.mode_selector.select = lambda **_kwargs: ModeSelectionDecision(
+        selected_tool_id='eligible_a',
+        selected_tool_type=ToolType.CUSTOM,
+        already_resolved=True,
+        equivalent_pattern_exists=False,
+        improvement_already_implemented=True,
+        reusable_pattern_id=None,
+        reusable_episode_id='episode-original-a',
+    )
+
+    task = service.build_task_from_request(InferenceRequest(
+        user_goal='external assistant task without pattern',
+        task_role=TaskRole.TOOL_USE,
+        goal_parameters={
+            'consultation_scope': 'external_assistant',
+            'assistant_preference': 'ineligible',
+            'tool_id': 'ineligible_b',
+        },
+    ))
+
+    assert task.tool_id == 'ineligible_b'
+    assert task.metadata['mode_selection']['selected_tool_id'] == 'ineligible_b'
+    assert task.metadata['mode_selection']['already_resolved'] is False
+    assert task.metadata['mode_selection']['equivalent_pattern_exists'] is False
+    assert task.metadata['mode_selection']['improvement_already_implemented'] is False
+    assert task.metadata['mode_selection']['reusable_pattern_id'] is None
+    assert task.metadata['mode_selection']['reusable_episode_id'] is None
+    assert task.metadata['already_resolved'] is False
+    assert task.metadata['equivalent_pattern_exists'] is False
+    assert task.metadata['improvement_already_implemented'] is False
+    assert task.metadata['reuse_guard_active'] is False
+    assert task.metadata['reused_pattern_id'] == ''
+    assert task.metadata['reused_episode_id'] == ''
+
+
+def test_synaptic_tool_mismatch_invalidates_reuse_guard_without_pattern(tmp_path: Path) -> None:
+    registry, repository = _registry(tmp_path)
+    service = _tool_teach_service(registry, repository, tmp_path, synaptic_family='family_a')
+    selector_calls: list[str] = []
+    decisions = [
+        ModeSelectionDecision(selected_tool_id='eligible_a', selected_tool_type=ToolType.CUSTOM),
+        ModeSelectionDecision(
+            selected_tool_id='ineligible_b',
+            selected_tool_type=ToolType.CUSTOM,
+            already_resolved=True,
+            equivalent_pattern_exists=False,
+            reusable_pattern_id=None,
+        ),
+    ]
+
+    def select(*, suggested_tool_id, **_kwargs):
+        selector_calls.append(suggested_tool_id)
+        return decisions.pop(0)
+
+    service.mode_selector.select = select
+    task = service.build_task_from_request(
+        InferenceRequest(user_goal='synaptic mismatch without a pattern', task_role=TaskRole.TOOL_USE),
+        required_capability_ids=['cap.a'],
+    )
+
+    assert len(selector_calls) == 2
+    assert selector_calls[1] == 'eligible_a'
+    assert task.metadata['synaptic_preferred_assistant_kind'] == 'family_a'
+    assert task.metadata['mode_selection']['selected_tool_id'] == 'ineligible_b'
+    assert task.tool_id == 'eligible_a'
+    assert task.metadata['already_resolved'] is True
+    assert task.metadata['equivalent_pattern_exists'] is False
+    assert task.metadata['reuse_guard_active'] is False
+    assert task.metadata['reused_pattern_id'] == ''

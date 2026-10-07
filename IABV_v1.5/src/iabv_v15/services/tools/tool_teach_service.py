@@ -1499,17 +1499,30 @@ class ToolTeachService:
         if metadata_overrides:
             metadata.update(metadata_overrides)
         adapter_exists = card.adapter_key in self.registry.adapters
+        selection_tool_id = str(selection.selected_tool_id or '').strip()
+        reuse_inherited = bool(selection_tool_id and selection_tool_id != card.tool_id)
+        updates = {
+            'selected_mode': self._selection_mode_for_tool_type(card.tool_type),
+            'selected_tool_id': card.tool_id,
+            'selected_tool_type': card.tool_type,
+            'adapter_exists': adapter_exists,
+            'available': card.available,
+            'fallback_used': False,
+            'reason': (selection.reason + ' | ' + reason_tag).strip(' |'),
+            'metadata': metadata,
+        }
+        if reuse_inherited:
+            updates.update(
+                {
+                    'already_resolved': False,
+                    'equivalent_pattern_exists': False,
+                    'improvement_already_implemented': False,
+                    'reusable_pattern_id': None,
+                    'reusable_episode_id': None,
+                }
+            )
         return selection.model_copy(
-            update={
-                'selected_mode': self._selection_mode_for_tool_type(card.tool_type),
-                'selected_tool_id': card.tool_id,
-                'selected_tool_type': card.tool_type,
-                'adapter_exists': adapter_exists,
-                'available': card.available,
-                'fallback_used': False,
-                'reason': (selection.reason + ' | ' + reason_tag).strip(' |'),
-                'metadata': metadata,
-            }
+            update=updates
         )
 
     def _block_selection_for_unavailable_preference(
