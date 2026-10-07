@@ -1,3 +1,21 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — EXECUTION-CHANNEL ADMISSIBILITY
+
+Episode 124 adds a capability-routing invariant:
+
+`capability-fit actor ≠ execution-ready actor`.
+
+The RQ15 artifact is evidence-complete and the experiment contract is closed, but Codex's execution channel rejected the exact runner before execution.
+
+Method:
+`actor capability`
++
+`execution-channel admissibility`
+must both be satisfied before live action.
+
+Routing changes to **DEVIN** for the same exact runner and target, with no artifact modification.
+
+The goal is not to use more AIs; it is to select the execution channel that can actually realize the already-closed experiment contract.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 STOP HARNESSING / MOVE TO LIVE EDGE
 
 Episode 123 converts repeated readiness experience into a routing rule:
