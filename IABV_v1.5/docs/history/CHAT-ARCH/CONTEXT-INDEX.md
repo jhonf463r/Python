@@ -1,3 +1,17 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 /v DISCRIMINATING CONTROL CLOSED
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
+
+The external control `tasklist /fo csv /nh` completed naturally in 0.316 s, while the prior exact `/v` command remained alive beyond six seconds. `/v` is therefore the observed discriminating factor in this pair. Capture-mode testing is not currently needed.
+
+Current first open evidence edge:
+`independent OS process → IABV process representation`.
+
+Next actor: CODEX. First statically identify an existing completing process-enumeration path and then run the smallest provenance-safe correspondence probe. Do not alter production or assume that changing `/v` is itself a justified fix.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-06 LATEST ROUTING POINTER — UAAL/RQ15 INTERNAL TASKLIST ENUMERATION FAILURE / CORRESPONDENCE STILL OPEN
 
 Canonical episode:
