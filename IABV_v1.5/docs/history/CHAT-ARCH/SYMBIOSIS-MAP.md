@@ -1,3 +1,19 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — EMPTY CAPABILITY-ELIGIBLE SET
+
+Sonnet/Claude independently challenged the capability → realization contract and localized the first-open edge to empty-set semantics.
+
+Transferred knowledge:
+- capability eligibility must be a hard gate;
+- empty eligible set must be a positive governed outcome, never implicit unconstrained selection;
+- ToolTaskStatus.DEFERRED is an existing reusable domain state candidate;
+- defined status without a consumer is not operational closure;
+- fallback resurrection at selector/request/registry boundaries is the critical causal escape.
+
+Next capability-fit actor:
+CODEX for narrow static contract archaeology of defer propagation and fail-closed behavior.
+
+No implementation/runtime authorization follows from this audit.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — CAPABILITY IDENTITY / REALIZATION ELIGIBILITY / ROUTE PRESERVATION
 
 Canonical episode:
