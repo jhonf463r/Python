@@ -1,3 +1,30 @@
+## 2026-10-07 METHOD AMENDMENT — TWO-CALLER SHARED-GAP GATE
+
+A single targeted caller showing capability loss is not sufficient to claim a shared architectural gap.
+
+Before construction, contrast a second normal caller and check whether both converge on the same concrete selection boundary.
+
+When both callers show:
+`structured capability/readiness upstream → ToolTask → realization picker`
+without first-class capability identity at the picker, classify this as **stronger structural localization**, not repository-wide proof.
+
+Preserve the distinction:
+`upstream capability influence ≠ capability identity at realization selection`.
+
+The independent verifier must still challenge:
+- uninspected normal callers;
+- indirect encodings through tool IDs, assistant kinds, task kinds or text;
+- existing capability-aware contracts that can be reused/composed.
+
+Construction remains:
+`REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`.
+
+No new universal registry/mega-organ is justified merely by two caller contrasts.
+
+Routing after episode 134:
+**SONNET / CLAUDE** for independent static verification of the shared capability-blind boundary.
+No runtime and no code change before that verification.
+
 ## 2026-10-06 METHOD AMENDMENT — REPORTED HARNESS READINESS / INDEPENDENT ARTIFACT VERIFICATION
 
 A harness result may advance the routing gate when the reported self-test directly covers the authorized evidence contract, but the coordination record must distinguish:
