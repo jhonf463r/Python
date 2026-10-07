@@ -1,3 +1,24 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 /v DISCRIMINATING CONTROL CLOSED / OS→IABV CORRESPONDENCE OPEN
+
+The external read-only control `tasklist /fo csv /nh` completed naturally in `0.316 s` with exit code `0` and 14,133 bytes of stdout. The prior production-shaped `tasklist /fo csv /v /nh` remained alive beyond six seconds and produced only 1,590 bytes before diagnostic termination.
+
+**CLASSIFICATION:** `RQ15 TASKLIST MECHANISM — /v IS DISCRIMINATING IN THE OBSERVED PAIR`.
+
+This closes the need to test output-capture mode before reconciling the command-line factor. The evidence is strong for `/v` as the observed discriminant, but it is not a universal root-cause proof because the two runs occurred at different times.
+
+The earlier IABV zero-process result remains a failure-collapsed observation and must not be used as environmental absence.
+
+**CURRENT FIRST OPEN EVIDENCE EDGE:** `independent OS process → IABV process representation`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows perception/process archaeology and safe read-only runtime verification.
+
+**NEXT ACTION:** statically identify an existing completing process-enumeration path that can be exercised without verbose `tasklist /v`, and test the smallest provenance-safe correspondence from an independently observed OS PID to an IABV process representation. Prefer an already-existing Win32 process-enumeration capability if it provides a clean, independently verifiable boundary. Do not change production yet.
+
+Do not rerun the closed verbose-tasklist mechanism experiment. Do not modify `UniversalPerceptionService` merely to make the command pass. No AppBootstrap, WorldModel scan, ToolRegistry refresh, SynapticRouter, provider/network, MCP, persistence or credentials.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning/reuse NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ15 TASKLIST COMMAND EXECUTION HANG / INTERNAL CAUSE OPEN
 
 The follow-up read-only Codex experiment directly observed the child `tasklist.exe` (PID `22696`) still alive at the six-second timeout for the exact production command `tasklist /fo csv /v /nh`. The child emitted 1590 bytes of partial stdout, including PID 4, and had no descendants. It was terminated only after PID/state capture; its subsequent code 1 was therefore forced termination, not a natural exit.
