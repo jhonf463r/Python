@@ -4747,3 +4747,15 @@ Do not repeat the producer scan. Do not use a compensating refresh. Do not advan
 
 Canonical record:
 `CHAT-ARCH-2026-10-06-065-uaal-rq09-producer-persistence-mcp-handoff-reconciliation.md`
+
+## 2026-10-07 OPEN KNOWLEDGE — PER-TASK CAPABILITY SUBSET
+
+`AdaptiveSession.capability_readiness` provides a session/intent-level capability set, but the current `build_task_for_session()` path does not establish how that set partitions into one `ToolTask`. The execution playbook exposes a single `capability_id` per step, currently populated from the weakest unresolved capability or first capability, which is not sufficient proof for conjunctive multi-capability requirements.
+
+Open edge:
+`TaskIntent / AdaptiveSession → exact ToolTask required capability subset → capability-eligible realization set`.
+
+Current status:
+`CREDIBLE BLOCKER / INDEPENDENT CHALLENGE OPEN`.
+
+Do not substitute `ToolCapability`, `StrategyPack.required_capabilities`, task text, or heuristic weakest-capability selection without explicit semantic evidence.
