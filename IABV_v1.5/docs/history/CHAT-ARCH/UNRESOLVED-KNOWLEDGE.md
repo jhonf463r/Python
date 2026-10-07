@@ -1,3 +1,29 @@
+## 2026-10-07 ACTIVE FRONTIER — CAPABILITY CONTRACT / PLASTICITY COMPOSITION
+
+Open question:
+Can IABV's existing capability vocabularies be reconciled into a coherent request-time composition without creating a new capability mega-organ?
+
+Current first representational edge:
+`intent → readiness capability IDs → StrategyPack.required_capabilities`.
+
+Observed static issues include exact-ID mismatches for multiple intent/pack cases and absent explicit joins from `ToolCard.capabilities` / `EnvironmentCapability` into readiness capability IDs.
+
+Required next evidence:
+read-only exact contract reconciliation across:
+- all `_required_capabilities` entries;
+- all StrategyPack intent/requirement declarations;
+- exact candidate/rationale consumers;
+- downstream path from a reconciled requirement to a specific ToolCard/assistant realization.
+
+Then independent Sonnet verification before implementation.
+
+Developmental target:
+`observation/experience → verified capability knowledge → composition/refinement/generalization → context-conditioned activation → later non-identical reuse → changed future decision`.
+
+This operationalizes the desired “neuroplasticity” as a software-development hypothesis. It is not yet proof of autonomous learning or biological neural plasticity.
+
+Do not treat external AIs as IABV's center. ChatGPT/Codex/Claude are realizations/resources inside the broader adaptive system.
+
 ## 2026-10-07 ACTIVE FRONTIER — POST-RQ15 ENVIRONMENTAL EVIDENCE → CAPABILITY/SELECTION CONSUMPTION
 
 RQ15 sensor correspondence is bounded-proven and no longer the immediate unresolved technical edge.
