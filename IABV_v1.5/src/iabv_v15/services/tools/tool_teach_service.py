@@ -577,7 +577,12 @@ class ToolTeachService:
                 suggested_tool_id = preferred_card.tool_id
                 synaptic_selection_authoritative = True
                 # Llamar a _select_mode() para metadata, pero ignorar su selected_tool_id
-                selection = self._select_mode(request=request, suggested_tool_id=suggested_tool_id, site_id=site_id)
+                selection = self._select_mode(
+                    request=request,
+                    suggested_tool_id=suggested_tool_id,
+                    site_id=site_id,
+                    required_capability_ids=required_capability_ids,
+                )
         
         # Si synaptic routing no tiene autoridad, permitir que _enforce_explicit_external_selection() modifique
         if not synaptic_selection_authoritative:
@@ -596,6 +601,8 @@ class ToolTeachService:
         else:
             tool_id = str(selection.selected_tool_id or suggested_tool_id)
         reusable_pattern = self._pattern_from_selection(selection)
+        if reusable_pattern is not None and reusable_pattern.tool_id != tool_id:
+            reusable_pattern = None
         actions = self._build_actions(request, tool_id, reusable_pattern) if tool_id else []
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(

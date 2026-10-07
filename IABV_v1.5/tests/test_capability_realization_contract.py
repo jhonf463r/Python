@@ -7,14 +7,19 @@ from iabv_v15.domain.models import (
     AdaptiveSession,
     CapabilityReadiness,
     ExecutionPlaybook,
+    InteractionChannel,
+    InteractionPattern,
     InferenceRequest,
     TaskIntent,
     TaskRole,
     ToolCard,
+    ToolActionType,
     ToolTask,
     ToolTaskStatus,
     ToolType,
     PlaybookStep,
+    UniversalInteractionStep,
+    ModeSelectionDecision,
 )
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
@@ -226,3 +231,67 @@ def test_session_readiness_is_transported_to_tooltask_and_synaptic_stays_gated(t
     assert executor.preflight_status(blocked_session) == 'no_eligible_realization'
     annotated = ExecutionPlaybookService(executor).annotate_execution_capability(blocked_session)
     assert annotated.metadata['execution_state']['state'] == 'no_eligible_realization'
+
+
+def test_synaptic_selection_preserves_requirements_and_rejects_cross_tool_pattern(tmp_path: Path) -> None:
+    registry, repository = _registry(tmp_path)
+    learning = InteractionLearningService(repository)
+    service = ToolTeachService(
+        registry=registry,
+        memory=ToolMemory(repository, learning),
+        sandbox=ToolSandbox(ToolValidator()),
+        validator=ToolValidator(),
+        approval_policy=ToolApprovalPolicy(),
+        rollback_manager=ToolRollbackManager(),
+        adapters={'adapter': _Adapter()},
+        workspace_root=str(tmp_path),
+        interaction_learning_service=learning,
+        mode_selector=InteractionModeSelector(registry, repository),
+        synaptic_router=type('SynapticStub', (), {
+            'decide': lambda self, **_kwargs: type('Decision', (), {
+                'model_dump': lambda self, **_inner: {'selected_assistant_kind': 'family_a'},
+            })(),
+        })(),
+    )
+    pattern = InteractionPattern(
+        signature='rq21.10.cross-tool-pattern',
+        title='Pattern belonging to B',
+        channel=InteractionChannel.UI,
+        tool_id='ineligible_b',
+        tool_type=ToolType.CUSTOM,
+        operations=[UniversalInteractionStep(
+            channel=InteractionChannel.UI,
+            operation=ToolActionType.OPEN_URL.value,
+            target='https://pattern-b.example/',
+        )],
+    )
+    repository.save_interaction_pattern(pattern)
+
+    selection_inputs: list[tuple[list[str], set[str]]] = []
+
+    def select_with_reusable_pattern(*, request, draft_task, **_kwargs):
+        eligible_ids = {card.tool_id for card in registry.eligible_cards_for_task(draft_task)}
+        selection_inputs.append((list(draft_task.required_capability_ids), eligible_ids))
+        # With no propagated requirement B becomes a candidate. When the
+        # requirement is preserved, A is selected, but the reusable-pattern
+        # metadata still points to B so the downstream identity guard is tested.
+        selected_tool_id = 'ineligible_b' if 'ineligible_b' in eligible_ids else 'eligible_a'
+        return ModeSelectionDecision(
+            selected_tool_id=selected_tool_id,
+            selected_tool_type=ToolType.CUSTOM,
+            reusable_pattern_id=pattern.pattern_id,
+        )
+
+    service.mode_selector.select = select_with_reusable_pattern
+    task = service.build_task_from_request(
+        InferenceRequest(user_goal='perform the capability-constrained task', task_role=TaskRole.TOOL_USE),
+        required_capability_ids=['cap.a'],
+    )
+
+    assert task.tool_id == 'eligible_a'
+    assert selection_inputs[-1][0] == ['cap.a']
+    assert 'ineligible_b' not in selection_inputs[-1][1]
+    assert task.metadata['mode_selection']['selected_tool_id'] == 'eligible_a'
+    assert task.actions
+    assert all(action.action_type != ToolActionType.OPEN_URL for action in task.actions)
+    assert all(not action.metadata.get('reused_from_pattern') for action in task.actions)
