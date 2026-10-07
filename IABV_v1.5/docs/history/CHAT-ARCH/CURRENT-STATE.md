@@ -1,3 +1,27 @@
+## 2026-10-07 ACTIVE OVERLAY — EXISTING CAPABILITY DOMAIN CONTRACT RECHECK
+
+Canonical record:
+CHAT-ARCH-2026-10-07-139-capability-realization-existing-domain-contract-recheck.md
+
+Direct static recheck found two existing domain constructs that must not be misinterpreted:
+- ToolCapability is actively used as coarse RoleRoute.tool_chain / role capability vocabulary, not as CapabilityReadiness capability identity or ToolCard realization declaration.
+- CapabilityDescriptor contains capability_id + tool_ids but has no verified executable construction/consumer in the baseline; it is defined but operationally orphaned.
+
+Therefore neither is a behaviorally proven bridge for the current capability → realization edge.
+
+The previously accepted ToolCard.realizes_capability_ids contract remains the narrow justified extension.
+
+Important invariant remains:
+eligible_tool_ids is ephemeral selection state, not durable ToolTask truth.
+
+Current first open implementation edge:
+exact minimal diff for NO_ELIGIBLE_REALIZATION → ToolTaskStatus.DEFERRED and fail-closed propagation through selector, ToolTeachService, Synaptic/preferences, ToolRegistry and executor preflight.
+
+Next actor:
+**CODEX**, implementation-review/diff design only.
+
+No source modification, tests or runtime until fresh human authorization.
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION EMPTY-SET CONTRACT CLOSED / IMPLEMENTATION REVIEW OPEN
 
 Canonical record:
