@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-126
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-126-rq15-runner-sha-mismatch-corrected-artifact.md`
+
+Type:
+`RECONCILIATION / ROUTING / EXPERIMENT-READINESS / PROVENANCE / SYMBIOSIS`
+
+State:
+`RQ15 BLOCKED AT RUNNER IDENTITY / AUTHORIZATION MATCH — NEW CORRECTED ARTIFACT REQUIRES READINESS + FRESH AUTHORIZATION`
+
+Material delta:
+- authorized SHA `E70D...` does not equal actual runner SHA `E231D...`;
+- target provenance remains verified;
+- no runtime/sensor/oracle execution occurred;
+- corrected runner cannot inherit prior authorization;
+- next actor is Devin for read-only readiness verification of the corrected artifact.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-125
 
 Canonical record:
