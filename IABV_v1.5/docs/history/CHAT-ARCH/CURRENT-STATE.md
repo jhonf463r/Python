@@ -1,3 +1,42 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PHASE-B RUNNER GAP / NO LIVE OBSERVATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-119-uaal-rq15-phase-b-runner-not-runtime-capable.md`
+
+The authorized RQ15 artifact was verified as a Phase-A readiness harness but was not runtime-capable for the authorized Phase-B live observation.
+
+**FACT:**
+- authorized harness:
+  `C:\temp\rq15_readiness_gate_20261006.py`
+- SHA-256:
+  `AE9599922D18070BFA308790B39CFA2BDDE54900810BBAF93D03A0CAC8E197F3`
+- target HEAD/tree and focal/helper provenance remained exact;
+- Python executable digest remained exact;
+- no live oracle was queried;
+- `list_running_processes()` was invoked zero times;
+- no IABV/AppBootstrap/MCP activity occurred;
+- worktree remained clean.
+
+**CLASSIFICATION:**
+`E — INCONCLUSIVE / READINESS FAILURE: AUTHORIZED ARTIFACT NOT RUNTIME-CAPABLE`.
+
+This is not sensor evidence and not process absence.
+
+**CURRENT FIRST OPEN EDGE:**
+`independent OS process → existing audit_tools_observation.list_running_processes`
+
+**IMMEDIATE READINESS EDGE:**
+`runtime-capable Phase-B harness → fresh authorization → one live observation`.
+
+**IA DESTINO:** CODEX
+**CAPABILITY:** Windows runtime harness construction, independent oracle execution, exact provenance and bounded sensor-call orchestration.
+**WHY THIS AI NOW:** the remaining defect is in the external experiment runner; production IABV remains outside scope.
+**INDEPENDENT VERIFIER:** independent Windows process oracle.
+
+Next action is harness-only: create/adapt a runtime-capable Phase-B harness, self-test its live-path capability without executing the live observation, establish exact hash, then wait for a new authorization.
+
+No live sensor execution is authorized by this episode.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 READINESS HARNESS VERIFIED / LIVE OBSERVATION AUTHORIZATION PENDING
 
 Canonical record:
