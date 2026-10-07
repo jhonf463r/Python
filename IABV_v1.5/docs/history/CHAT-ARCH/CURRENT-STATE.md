@@ -1,3 +1,34 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION EMPTY-SET CONTRACT OPEN
+
+Canonical record:
+CHAT-ARCH-2026-10-07-137-capability-realization-empty-set-contract-audit.md
+
+Independent Sonnet/Claude audit confirms the capability-aware realization design but finds one first-open contract edge:
+capability-eligible realization set = ∅ must produce an explicit governed defer/fail-closed outcome and must not be reinterpreted as unrestricted selection.
+
+Direct source reconciliation adds a reusable existing domain state:
+ToolTaskStatus.DEFERRED already exists in domain/models.py, but no current consumer of ToolTaskStatus.DEFERRED was found in the inspected executable baseline. Therefore this is REUSE candidate, not yet a proven solution.
+
+Critical current escapes:
+- InteractionModeSelector can return no candidate while downstream code resurrects suggested_tool_id;
+- ToolRegistry can fall through to assistant-family, lexical or first-card selection;
+- Synaptic and explicit assistant/family fallback paths can resolve outside capability eligibility;
+- empty allowed-tool intersection can become unrestricted.
+
+Current classification:
+STATIC / INDEPENDENTLY AUDITED / DESIGN OPEN
+
+Current first-open edge:
+capability-eligible candidate set = ∅ → explicit typed/deferred outcome → no fallback resurrection
+
+Next actor:
+**CODEX**
+
+Required capability:
+minimal static contract archaeology for empty-set/defer propagation using existing domain state; no new status/registry/organ.
+
+No implementation or runtime yet.
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION CONTRACT RECONCILED / MICRO-GATE OPEN
 
 Canonical record:
