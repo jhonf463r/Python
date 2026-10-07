@@ -1,3 +1,25 @@
+## 2026-10-07 METHOD DELTA — CAPABILITY-CONSTRAINED EMPTY SET
+
+New invariant:
+capability-constrained empty set ≠ unconstrained selection.
+
+When a required capability has no eligible realization, downstream fallback semantics must not silently convert the empty set into unrestricted selection.
+
+Existing domain reuse candidate:
+ToolTaskStatus.DEFERRED already exists, but its use in this selection path is not currently wired/proven.
+
+Routing rule:
+first close empty-set/defer propagation before adding broader capability vocabulary, plasticity or runtime behavior.
+
+Preserve:
+required capability identity
+≠ readiness
+≠ availability
+≠ candidate set
+≠ route.
+
+No new architecture unless exact source evidence proves existing-organ composition impossible.
+
 ## 2026-10-07 METHOD AMENDMENT — CAPABILITY CONTRACT MUST SEPARATE STABLE REQUIREMENT FROM EPHEMERAL CANDIDATES
 
 For capability-aware routing, distinguish:
