@@ -1,3 +1,19 @@
+## 2026-10-07 ACTIVE FRONTIER — CONTRACT IMPACT GATE
+
+Open question:
+Do the readiness/StrategyPack mismatches identified in episode 129 change an operative strategy/route, or only candidate rationale/metadata?
+
+Immediate static edge:
+`session.chosen_pack_id / browser.generic fallback → downstream consumer → operative route`.
+
+No code change is justified until this is resolved.
+
+Conditional next frontier:
+`required capability + viable realization → specific candidate → operative routing`.
+
+Developmental interpretation:
+Only a capability-contract defect that changes actual activation/realization selection is a strong candidate for the universal plasticity frontier. A rationale-only mismatch is not.
+
 ## 2026-10-07 ACTIVE FRONTIER — CAPABILITY CONTRACT / PLASTICITY COMPOSITION
 
 Open question:
