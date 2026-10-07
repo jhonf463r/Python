@@ -1,3 +1,22 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 PHASE-A ≠ PHASE-B CAPABILITY
+
+Episode 119 adds a durable experiment-contract invariant:
+
+`authorized artifact identity ≠ authorized action capability`.
+
+The RQ15 readiness harness is useful and verified, but its capability boundary stops before live oracle/sensor execution.
+
+Method update:
+`artifact provenance`
+→ `artifact capability contract`
+→ `self-test required runtime path`
+→ `authorization`
+→ `live execution`.
+
+No new IABV observer is justified. The next construction is an external test harness adaptation, not a production organ.
+
+Capability-fit actor remains CODEX for Windows runner construction and exact provenance control.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 READINESS HARNESS VERIFIED
 
 Episode 118 verifies a reusable pre-runtime composition:
