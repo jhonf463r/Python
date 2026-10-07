@@ -1,3 +1,19 @@
+## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION ROUTING
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-131-capability-realization-routing-reconciliation.md`
+
+Episode 130 closed the pack/capability mismatch as rationale-only for the inspected cases.
+
+Current first open edge:
+`required capability + viable realization → specific candidate → operative routing`.
+
+Next actor:
+**CODEX** for read-only source tracing across representative local, browser and external-AI realization paths.
+
+Afterward:
+**SONNET/CLAUDE** independently verifies any common routing contract/gap before implementation.
+
 ## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY CONTRACT IMPACT VERIFICATION
 
 Canonical episode:
