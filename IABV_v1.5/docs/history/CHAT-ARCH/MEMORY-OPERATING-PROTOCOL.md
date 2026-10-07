@@ -2096,3 +2096,17 @@ A common capability-to-realization bridge is proven only when the abstract capab
 
 For product routing, prefer a narrow external-assistant-relevant trace when it provides higher information gain for the target:
 `human objective → IABV capability/resource selection → governed external round trip`.
+ 
+## 2026-10-07 METHOD AMENDMENT — CONTRAST EXISTING CALLERS BEFORE BRIDGING
+
+When a capability-to-realization identity loss is found in one normal caller, inspect a second existing normal caller before proposing a bridge.
+
+Required logic:
+`caller A loses capability identity`
+→
+`contrast caller B`
+→
+if B preserves it, REUSE/COMPOSE B;
+if B also loses it, strengthen the evidence for a shared composition gap.
+
+Do not create a bridge solely because one caller omits a field.
