@@ -1,3 +1,17 @@
+## 2026-10-06 LATEST ROUTING POINTER — UAAL/RQ15 INTERNAL TASKLIST ENUMERATION FAILURE / CORRESPONDENCE STILL OPEN
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
+
+The follow-up probe established that the previous zero-process result was caused by the internal `tasklist /fo csv /v /nh` invocation timing out after six seconds; `scan_tool_context()` collapses that exception to an empty process list. An independent oracle observed Windows `System` PID 4 before and after the scan.
+
+Current first open evidence/mechanism edge:
+`internal tasklist timeout → subprocess/process-tree termination mechanism and pre-timeout output`.
+
+Next actor: CODEX, Windows subprocess/process-tree forensic read-only experiment. After mechanism reconciliation, re-establish deterministic OS process → IABV process correspondence.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-06 LATEST ROUTING POINTER — UAAL/RQ14 A/B READINESS BLOCKED / MULTILAYER CORRESPONDENCE PIVOT
 
 Canonical episode:
