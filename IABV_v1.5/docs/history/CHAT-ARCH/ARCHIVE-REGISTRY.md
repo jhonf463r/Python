@@ -2027,3 +2027,15 @@ Material delta:
 - external-assistant-relevant path is preferred for information gain;
 - Sonnet/Claude follows as independent verifier;
 - no runtime/code change yet.
+ 
+## 2026-10-07 REGISTRATION — UAAL / TOOL OPERATIONAL EXECUTOR CAPABILITY CONTRAST
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-133-tool-operational-executor-capability-contrast.md`
+
+State:
+`CANONICAL SOURCE / STATIC / CALLER-CONTRAST OPEN`
+
+Next actor:
+**CODEX**.
+Purpose: determine whether an existing normal caller already preserves capability/readiness identity into concrete realization selection, avoiding premature architecture changes.
