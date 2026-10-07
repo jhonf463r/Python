@@ -1,3 +1,28 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 SYMBIOSIS COMPOSITION AUDIT / EXISTING PROCESS OBSERVER SELECTED
+
+A deeper composition audit was reconciled before accepting the next runtime candidate. Exact target `8425f03eb45abd11951938f6e3234459c1585b55` already contains multiple adjacent mechanisms for environment/process perception and cross-validation:
+
+- `audit_tools_observation.list_running_processes(limit)`: existing `psutil` process observer with `pid`, `ppid`, `name`, `exe`, `status`, `create_time`, `username`.
+- `audit_tools_observation.list_open_windows()`: existing pywin32 window observer with HWND + PID + title.
+- `PerceptionCrossValidator`: existing cross-sensor validator for processes/tool availability and windows/WorldModel, but it can auto-correct availability and uses heuristic process/tool matching, so it is not the first identity oracle.
+- `PerceptionGroundTruthComparator`: existing perception-vs-ground-truth comparator for window/capture/DOM evidence; it ultimately depends on `UniversalPerceptionService.build_signal()` and therefore is not the clean first process observer here.
+- `SystemIdentityRegistry`: existing IABV subsystem/code identity registry, not runtime OS process identity.
+
+**SYMBIOSIS/METHOD DELTA:** before creating or selecting a mechanism, reconcile not only names but `sensor → comparator → cross-validator → identity/provenance → governance → consumer`. This confirms that a new process observer would duplicate existing IABV capability.
+
+**CURRENT FIRST OPEN EDGE:** `independent OS process → existing IABV process observation helper`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows runtime/provenance + IABV composition archaeology.
+
+**NEXT ACTION:** prepare a fresh readiness gate for one sensor-level live correspondence experiment using the existing `audit_tools_observation.list_running_processes(limit)`. Prefer a safe existing target; compare independent OS identity against IABV output using `(PID, create_time)` where available. Treat this strictly as sensor-level evidence, not production `PerceptionSnapshot` integration.
+
+Direct helper invocation bypasses the MCP server governance wrapper, so the readiness contract must explicitly authorize that scope or identify an existing governed invocation boundary that can be exercised without AppBootstrap side effects.
+
+Do not implement a new observer. Do not modify `UniversalPerceptionService`. Do not execute `PerceptionCrossValidator.run_cross_validation()` for this experiment because its configured path can mutate ToolRegistry availability caches/refreshes.
+
+Learning status unchanged.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 /v DISCRIMINATING CONTROL CLOSED / OS→IABV CORRESPONDENCE OPEN
 
 The external read-only control `tasklist /fo csv /nh` completed naturally in `0.316 s` with exit code `0` and 14,133 bytes of stdout. The prior production-shaped `tasklist /fo csv /v /nh` remained alive beyond six seconds and produced only 1,590 bytes before diagnostic termination.
