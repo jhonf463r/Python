@@ -1,3 +1,22 @@
+## 2026-10-07 ACTIVE OVERLAY — PIVOT TO CAPABILITY → REALIZATION ROUTING
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-131-capability-realization-routing-reconciliation.md`
+
+Episode 130 is now closed: readiness/StrategyPack mismatches are rationale/metadata-only for the inspected cases, with no demonstrated route or execution impact. Preserve:
+`contract inconsistency ≠ decision impact`.
+
+The first open universal edge is now:
+`required capability + viable realization → specific candidate → operative routing`.
+
+Next action:
+static trace of representative local-tool, browser, and external-assistant paths from capability/readiness to concrete realization, route and adapter invocation boundary.
+
+Next actor:
+**CODEX**, read-only. After a concrete trace/gap exists, **SONNET/CLAUDE** independently challenges it.
+
+This edge is directly relevant to the long-horizon goal of context-conditioned, reusable capabilities across heterogeneous realizations. It remains an engineering/development target; no causal learning or autonomous multi-AI delegation is yet proven.
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY CONTRACT IMPACT STILL UNPROVEN
 
 Canonical record:
