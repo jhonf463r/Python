@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-116
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-116-uaal-symbiosis-first-cumulative-development-method.md`
+
+Type:
+`METHOD / ROUTING / COMPOSITION-ARCHAEOLOGY / CROSS-IA-SYMBIOSIS`
+
+State:
+`SYMBIOSIS-FIRST COMPOSITION + CUMULATIVE METHODOLOGICAL MEMORY ACTIVE`
+
+Material delta:
+- IABV self-knowledge/composition audit is now a required pre-construction gate;
+- behavioral equivalence must be checked beyond names;
+- construction decisions use `REUSE | COMPOSE | WIRE/REPAIR | EXTEND | NEW`;
+- every external-AI prompt must explicitly name destination AI and required capability;
+- cross-AI episodes must produce durable knowledge/method/routing deltas;
+- RQ15 uses existing `list_running_processes` rather than a new process observer.
+
+Routing authority remains `CURRENT-STATE.md`.
 ## 2026-10-07 REGISTRATION — RQ15 SYMBIOSIS COMPOSITION AUDIT
 
 Canonical record:
