@@ -1,3 +1,19 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ15 TASKLIST ENUMERATION FAILURE
+
+Episode 114 sharpens the X-ray correspondence method:
+
+`perceptual empty result ≠ environmental absence` when an observation helper converts enumeration exceptions into an empty collection.
+
+The independent Windows oracle observed `System` PID 4 before and after the scan; the internal `tasklist` invocation timed out after six seconds, and the exception was hidden by the process-enumeration helper. Therefore the previous discrepancy is explained at the observation-mechanism level, but process correspondence is still unproven.
+
+Current first open edge:
+`internal tasklist timeout → exact subprocess/process-tree termination mechanism and pre-timeout output`.
+
+Capability-fit: CODEX. The next intervention is a read-only Windows subprocess forensic experiment; no production change, no new organ and no higher-layer semantic/selection experiment yet.
+
+New method invariant:
+`oracle agreement on environment + internal observer failure ≠ cross-layer correspondence`.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ14 A/B READINESS BLOCKED / SAFER MULTILAYER PIVOT
 
 Episode 113 demonstrates useful negative knowledge: a causal environmental A/B should not be forced when no intervention satisfies identity, reversibility, oracle and side-effect gates.
