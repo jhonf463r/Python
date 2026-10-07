@@ -4570,3 +4570,13 @@ one explicitly authorized read-only light World Model scan, followed by producer
 
 Method invariant:
 `producer capability exists != producer currently operating != producer attributable to consumer snapshot`.
+
+## 2026-10-07 — CODEX IMPLEMENTATION-REVIEW BLOCKER / INDEPENDENT CHALLENGE OPEN
+
+Canonical record: `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-140-capability-realization-implementation-review-blocker-reconciliation.md`
+
+CODEX now identifies a specific first implementation blocker: the exact capability subset required by an individual `ToolTask` is not derivable from the current semantic contracts. This is credible against direct source reconciliation but remains pending independent challenge.
+
+Preserve: `session.capability_readiness ≠ automatically per-ToolTask requirements`; `PlaybookStep.capability_id` is currently singular and does not establish conjunctive task requirements; `ToolCapability` is not the universal readiness vocabulary; `eligible_tool_ids` remains ephemeral.
+
+Next actor: **SONNET / CLAUDE**. Question: can existing task/playbook/session composition derive the exact subset without invented semantics? If no, keep the blocker. No implementation yet.
