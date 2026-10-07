@@ -1,3 +1,21 @@
+## 2026-10-07 ACTIVE FRONTIER — SHARED CAPABILITY-BLIND REALIZATION BOUNDARY
+
+Episode 133 is now closed as a caller contrast.
+
+Established across two normal paths:
+`capability/readiness upstream → ToolTask → ToolRegistry picker`
+does not preserve a first-class required-capability identity into concrete ToolCard selection.
+
+Still unresolved:
+1. whether another uninspected normal caller already preserves capability identity;
+2. whether an indirect encoding via `tool_id`, assistant kind, task kind, or text is a semantically equivalent existing contract;
+3. whether existing organs can compose a capability-aware selection without a new registry/organ.
+
+Minimum next evidence:
+**SONNET / CLAUDE** independent static adversarial verification of those three questions.
+
+No runtime or code change until that verification produces an attributable contract/gap.
+
 ## 2026-10-07 ACTIVE FRONTIER — SECOND CALLER CAPABILITY CONTRAST
 
 Open question:
