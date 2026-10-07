@@ -1,3 +1,22 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 CODEX EXECUTION CHANNEL BLOCKED
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-124-uaal-rq15-codex-execution-channel-policy-block.md`
+
+Evidence-complete runner and target provenance passed, but Codex's execution tool rejected the launch as `blocked by policy`. No oracle or sensor executed.
+
+Current first open edge remains:
+`independent Windows process identity → existing IABV process observation`.
+
+Immediate readiness edge:
+`execution-channel admissibility for exact runner`.
+
+Next actor: **DEVIN**, for Windows runtime execution through a different execution channel.
+
+Do not alter the runner or retry the same blocked Codex launch without new evidence.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 PRE-LIVE CONTRACT CLOSED
 
 Canonical episode:
