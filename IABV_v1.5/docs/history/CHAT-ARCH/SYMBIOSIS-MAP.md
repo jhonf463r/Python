@@ -1,3 +1,19 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 SENSOR CORRESPONDENCE PROVEN / FRONTIER MOVES UP-LAYER
+
+Episode 127 closes the bounded RQ15 correspondence:
+`independent Windows process identity → existing audit_tools_observation.list_running_processes`.
+
+Observed with independent CIM before/after and one real helper call:
+same PID/create_time plus corroborating name/executable/PPID.
+
+Durable lesson:
+`identity correspondence ≠ downstream causal consumption`.
+
+The result closes the need for a new process observer at this boundary, but does not prove production IABV perception or capability-selection consumption.
+
+Routing now moves upward to:
+`live PerceptionSnapshot environment/world evidence → capability/affordance representation → realization selection`.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — EXECUTION-CHANNEL ADMISSIBILITY
 
 Episode 124 adds a capability-routing invariant:
