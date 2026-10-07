@@ -1,3 +1,24 @@
+## 2026-10-07 REGISTRATION — RQ15 SYMBIOSIS COMPOSITION AUDIT
+
+Canonical record:
+`CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
+
+Type:
+`RECONCILIATION / COMPOSITION-ARCHAEOLOGY / PERCEPTION / PROVENANCE / SYMBIOSIS`
+
+State:
+`EXISTING PROCESS OBSERVER IDENTIFIED — NO NEW ORGAN JUSTIFIED`
+
+Material delta:
+- existing psutil process observer has PID/create_time identity fields;
+- existing Win32 window observer has HWND/PID/title;
+- existing PerceptionCrossValidator already composes process/tool/window evidence but can auto-correct and uses heuristics;
+- existing PerceptionGroundTruthComparator is window/WorldModel oriented and not a process identity oracle;
+- SystemIdentityRegistry is subsystem/code identity, not OS process identity;
+- next edge is existing observer → independently verified live OS process identity.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — RQ15 /v DISCRIMINATING CONTROL
 
 Canonical record:
