@@ -1,3 +1,75 @@
+## 2026-10-07 ACTIVE OVERLAY — M0 CAUSAL ROUTING RECONCILED / STATIC HANDOFF SUBSTANTIALLY READY
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-128-m0-causal-routing-reconciliation.md`
+
+Current main at reconciliation:
+`268c5748c3300cf9847c62deb7254df6c7b14024`
+tree:
+`02ca12005dd547a5dc0cc34a1162c1cff6120143`
+
+The M0 static audit was performed against `74b366c9...` / tree `d2683...`.
+GitHub compare shows main is 12 commits ahead, with **no changes to the focal M0 production Python sources**. The static M0 findings therefore remain attributable to current main.
+
+### M0 PRODUCT FRONT
+
+Existing static external-consultation path is substantially present:
+
+`objective → consultation decision → ToolTeachService → ToolRegistry → governance → ExternalAssistantToolAdapter → UIExecutionRunner → Codex → rollout/thread capture → ToolResult → ingestion`.
+
+The Codex realization already uses automatic rollout capture when available; `manual_pasteback` is a fallback, not a structural requirement.
+
+### CRITICAL M0 DISTINCTION
+
+The prior blind objective was observed in the local `KNOWLEDGE` route and did not demonstrate external code-assistance inference.
+
+Therefore separate:
+
+**M0-A — mediated handoff**
+`explicit external preference → governed handoff → Codex → capture → ingestion`
+
+from:
+
+**M0-B — selective routing**
+`assistant-unnamed objective → required external capability → candidate → Codex`.
+
+M0-A isolates the existing handoff circuit. M0-B isolates objective-to-capability routing. A failure of B does not invalidate A.
+
+### M0 STATUS
+
+- external consultation infrastructure: **SUBSTANTIALLY READY STATICALLY**
+- automatic Codex capture: **DEFINED / NOT RUNTIME-PROVEN**
+- manual pasteback: **FALLBACK ONLY**
+- generic objective → external capability: **NOT PROVEN**
+- end-to-end M0: **NOT PROVEN**
+- previous live M0 attempt: **BLOCKED AT UI EXECUTION CHANNEL**
+- production wire/repair: **NOT JUSTIFIED**
+
+### OPEN EDGES
+
+Immediate experiment-readiness:
+`UI-capable Windows execution surface → real ControlCenterViewModel.sendChat()`
+
+First production semantic edge:
+`OBJECTIVE → REQUIRED CAPABILITY`
+
+Do not modify the classifier or create new architecture before a UI-capable discriminating experiment.
+
+### M0 ROUTING
+
+For M0, actor selection now requires:
+`capability fit + execution-channel admissibility`.
+
+First live sequence:
+1. M0-A explicit external preference, to prove the handoff circuit.
+2. M0-B unnamed technical objective, to test objective-to-capability routing.
+
+Stop at the first divergent edge. No CLI/private-method substitutes.
+
+M0 remains a secondary product-front branch. The project-wide universal frontier after RQ15 remains:
+`live PerceptionSnapshot environment/world evidence → capability/affordance representation → realization selection`.
+
+
 ## 2026-10-07 ACTIVE OVERLAY — RQ15 LIVE CORRESPONDENCE PROVEN / UNIVERSAL FRONTIER RECOMPUTE
 
 Canonical record:
