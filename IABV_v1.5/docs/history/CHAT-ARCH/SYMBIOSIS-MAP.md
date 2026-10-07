@@ -1,3 +1,17 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 RUNTIME CAPABILITY ≠ EVIDENCE CAPABILITY
+
+Episode 121 adds a durable experiment invariant:
+
+`runtime-capable ≠ evidence-complete`.
+
+The Phase-B runner can reach the intended live path, but its actual output contract omits required sensor timing and row-count evidence. The correct response is not to weaken the evidence contract or accept incomplete observation.
+
+Refined route:
+`artifact identity → runtime capability → evidence capability → evidence-contract self-test → fresh authorization → live execution`.
+
+No production observer change is justified.
+Next actor remains **CODEX** for external runner correction.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 PHASE-B RUNNER VERIFIED
 
 Episode 120 closes the runner-capability gap identified in episode 119.
