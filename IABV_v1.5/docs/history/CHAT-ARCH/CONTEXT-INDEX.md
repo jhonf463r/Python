@@ -1,3 +1,25 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 EVIDENCE-COMPLETE RUNNER READY
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-122-uaal-rq15-evidence-complete-runner-ready.md`
+
+Runner:
+`C:\temp\rq15_phase_b_evidence_runner_20261006.py`
+
+SHA-256:
+`E70D9215B4528ECBC315C0DCA0953AD832071F2E57FB255003698569072F5485`
+
+Phase-A, Phase-B runtime-capability and evidence-capability readiness are all closed.
+
+Actual OS→IABV correspondence remains unobserved.
+
+Immediate next edge:
+`exact evidence-complete runner → fresh authorization`.
+
+Next actor: **CODEX** for exactly one bounded live observation after authorization.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 EVIDENCE CONTRACT INCOMPLETE
 
 Canonical episode:
