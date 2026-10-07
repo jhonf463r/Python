@@ -1,3 +1,28 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ14 SAFE ENVIRONMENTAL A/B BLOCKED / MULTILAYER CORRESPONDENCE PIVOT
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-113-uaal-rq14-safe-ab-readiness-blocked-multilayer-correspondence-pivot.md`
+
+Codex completed readiness discovery for the live environmental A/B. No candidate was shown to satisfy all required gates simultaneously: exact identity match, attributable change of the scored availability field, safe/reversible intervention, independent oracle, and controlled transitive effects. No A/B runtime was executed.
+
+**CLASSIFICATION:** `RQ14 CAUSAL A/B BLOCKED — NO SAFE ENVIRONMENTAL A/B IDENTIFIED`.
+
+Closed edge remains:
+`real current_model() return object → exact isolated SynapticRouter.decide() scoring path`.
+
+Open causal edge:
+`live environmental state change → attributable fresh WorldModelSnapshot A/B → changed Synaptic availability/ranking`.
+
+Because that edge is not experiment-ready, the universal frontier pivots to a safer correspondence question rather than forcing intervention:
+`independent live layer-A observation ↔ existing IABV layer-B perception signal/correspondence`.
+
+**IA DESTINO:** CODEX
+**CAPABILITY:** Windows read-only runtime boundary + repository archaeology + independent process/window observation.
+**NEXT ACTION:** statically audit the candidate `UniversalPerceptionService.scan_tool_context(tool_registry=None)` boundary and all transitive helpers for side effects, then determine whether a minimal live window/process correspondence probe can be executed without WorldModel scan, ToolRegistry refresh, provider/network calls or persistence.
+
+Do not execute until experiment contract, artifact/input readiness, provenance, transitive side-effect audit, isolation, oracle readiness and authorization are satisfied.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning/reuse NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ14 EXACT WORLDMODEL→SYNAPTIC ATTRIBUTION CLOSED / ENVIRONMENTAL CAUSALITY OPEN
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-112-uaal-rq14-snapshot-synaptic-attribution-reconciliation.md`
