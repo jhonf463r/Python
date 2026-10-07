@@ -1,3 +1,30 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PRE-LIVE CONTRACT CLOSED / LIVE OBSERVATION NEXT
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-123-uaal-rq15-pre-live-contract-closed-live-edge.md`
+
+All pre-live RQ15 dimensions are closed:
+`exact provenance → runtime capability → evidence capability → self-test`.
+
+The evidence-complete runner is:
+`C:\temp\rq15_phase_b_evidence_runner_20261006.py`
+SHA-256:
+`E70D9215B4528ECBC315C0DCA0953AD832071F2E57FB255003698569072F5485`
+
+The current first open edge remains:
+`independent Windows process identity → existing audit_tools_observation.list_running_processes`.
+
+**Metacognitive routing correction:** do not add another harness/audit layer without new evidence. The minimum-information action is now one live bounded observation, contingent on fresh explicit authorization for the exact runner.
+
+**IA DESTINO:** CODEX
+**CAPABILITY:** Windows live runtime/provenance + one direct sensor observation.
+**WHY THIS AI NOW:** all pre-live readiness dimensions are closed and only the Windows runtime edge remains.
+**INDEPENDENT VERIFIER:** independent Windows process oracle.
+
+Claude/Sonnet is not routed pre-live because the current uncertainty is execution, not semantic/source auditing. Use adversarial audit only if the live result creates a contradiction or evidence anomaly.
+
+No live execution is authorized by this record.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 EVIDENCE-COMPLETE PHASE-B RUNNER READY / LIVE AUTHORIZATION PENDING
 
 Canonical record:
