@@ -1,3 +1,22 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-123
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-123-uaal-rq15-pre-live-contract-closed-live-edge.md`
+
+Type:
+`RECONCILIATION / ROUTING / EXPERIMENT-READINESS / SYMBIOSIS / WINDOWS-RUNTIME`
+
+State:
+`ALL PRE-LIVE CONTRACTS CLOSED — LIVE OS→IABV EDGE OPEN — FRESH AUTHORIZATION REQUIRED`
+
+Material delta:
+- no additional pre-live harness layer is justified;
+- live observation is now the minimum-information action;
+- next actor is CODEX;
+- fresh authorization must bind exact evidence-complete runner/hash.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-122
 
 Canonical record:
