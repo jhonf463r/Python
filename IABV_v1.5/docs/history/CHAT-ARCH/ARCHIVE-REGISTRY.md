@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-121
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-121-uaal-rq15-phase-b-evidence-contract-gap.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT-READINESS / EVIDENCE-CONTRACT / HARNESS / SYMBIOSIS`
+
+State:
+`PHASE-B RUNTIME-CAPABLE BUT EVIDENCE-INCOMPLETE — CORRESPONDENCE OPEN`
+
+Material delta:
+- authorized runner lacked required live sensor timing and row-count evidence;
+- no oracle/sensor executed;
+- no correspondence evidence exists;
+- immediate route is evidence-contract correction/self-test;
+- fresh authorization must bind the corrected runner hash.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-120
 
 Canonical record:
