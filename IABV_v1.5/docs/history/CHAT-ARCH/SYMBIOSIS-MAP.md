@@ -5089,3 +5089,28 @@ and:
 For future material runtime episodes, source/process provenance must be captured inside the executing process before the observed action. Current RQ12 should therefore capture module/source fingerprints in-process, rather than attempting to infer them after execution.
 
 The current actor remains CODEX by capability-fit for the clean Windows/MCP baseline observation, but runtime authorization must be fresh and explicit.
+
+## 2026-10-07 SYMBIOSIS TRANSFER — CAPABILITY VOCABULARY / PLASTICITY RECONCILIATION
+
+Episode 129 establishes a new cross-IA lesson:
+Codex's first edge `environment → required capability` was independently narrowed by Sonnet into a demand/supply composition problem, then Codex mapped the capability vocabularies.
+
+Durable distinction:
+`objective/intent → required capability`
+vs
+`environment/resource state → readiness/availability/feasibility`.
+
+Static finding:
+readiness IDs, EnvironmentCapability IDs, ToolCard capability labels, AssistantStrength/task-kind and StrategyPack requirements are only partially joined.
+
+Routing invariant:
+`external-AI/tool availability ≠ required-capability identity ≠ final realization selection`.
+
+Developmental plasticity invariant:
+`broad capability repertoire + sparse/context-conditioned activation + verified reuse`
+is preferred over shrinking or duplicating the repertoire for each task/provider.
+
+The intended long-term progression remains:
+`observe → interpret → represent capability/affordance → discover/compose realization → act → observe → verify → learn → reuse → adapt`.
+
+No new coordinator/brain/core is justified by this finding.
