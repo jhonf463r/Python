@@ -1,3 +1,18 @@
+## 2026-10-07 LATEST ROUTING POINTER — SYMBIOSIS-FIRST CUMULATIVE DEVELOPMENT
+
+Canonical method:
+`CHAT-ARCH-2026-10-07-116-uaal-symbiosis-first-cumulative-development-method.md`
+
+Permanent routing rule: before choosing/creating a mechanism, activate relevant IABV self-knowledge and inspect existing sensors, comparators, cross-validators, identity/provenance, governance and consumers. Check behavioral equivalence, not only names. Classify construction as `REUSE|COMPOSE|WIRE/REPAIR|EXTEND|NEW`; `NEW` requires a proven structural gap.
+
+Prompt-routing rule: every external-AI prompt explicitly declares `IA DESTINO`, `CAPABILITY REQUIRED`, `WHY THIS AI NOW`, and independent verifier where relevant.
+
+Current RQ15 first open edge:
+`independent OS process → existing IABV process observation helper`.
+
+Next actor: **CODEX**. Readiness C for direct `audit_tools_observation.list_running_processes`; one synchronized `(PID, create_time)` live correspondence probe is next only after explicit sensor-level authorization.
+
+Current routing authority remains `CURRENT-STATE.md`.
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 EXISTING OBSERVATION COMPOSITION RECONCILED
 
 Canonical episode:
