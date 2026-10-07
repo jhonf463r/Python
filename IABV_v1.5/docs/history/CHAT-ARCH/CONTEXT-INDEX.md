@@ -1,3 +1,17 @@
+## 2026-10-06 LATEST ROUTING POINTER — UAAL/RQ14 A/B READINESS BLOCKED / MULTILAYER CORRESPONDENCE PIVOT
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-113-uaal-rq14-safe-ab-readiness-blocked-multilayer-correspondence-pivot.md`
+
+RQ14 live environmental A/B readiness is blocked: no candidate simultaneously satisfied identity match, attributable `available` change, safe reversibility, independent oracle and controlled side effects. No A/B runtime was executed.
+
+Closed attribution:
+`real current_model() return object → exact isolated SynapticRouter.decide()`.
+
+Current first open edge:
+`independent live layer-A observation ↔ existing IABV layer-B perception signal/correspondence`.
+
+Next actor: CODEX. First audit the candidate `UniversalPerceptionService.scan_tool_context(tool_registry=None)` and transitive helpers for side effects and a minimal live process/window correspondence boundary. Current routing authority remains `CURRENT-STATE.md`.
 ## 2026-10-06 LATEST ROUTING POINTER — UAAL/RQ14 EXACT WORLDMODEL→SYNAPTIC ATTRIBUTION CLOSED
 
 Canonical episode:
