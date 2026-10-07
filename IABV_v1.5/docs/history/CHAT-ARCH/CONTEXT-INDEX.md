@@ -1,3 +1,20 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 READINESS HARNESS VERIFIED
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-118-uaal-rq15-readiness-harness-verified.md`
+
+Phase-A readiness is closed: exact provenance validation, parser fixtures and fail-closed provenance/oracle/authorization gates all passed with `sensor_call_count=0`.
+
+The actual RQ15 correspondence remains open and unobserved.
+
+Next live action is blocked on **fresh human authorization**. Once authorized, CODEX may perform exactly one bounded synchronized observation using:
+`independent Windows oracle ↔ existing audit_tools_observation.list_running_processes`
+with `PID + create_time`.
+
+Do not infer sensor correctness or failure from readiness.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 READINESS FAILURE / NO SENSOR OBSERVATION
 
 Canonical episode:
