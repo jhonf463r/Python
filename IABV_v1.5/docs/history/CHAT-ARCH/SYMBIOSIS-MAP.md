@@ -5114,3 +5114,20 @@ The intended long-term progression remains:
 `observe → interpret → represent capability/affordance → discover/compose realization → act → observe → verify → learn → reuse → adapt`.
 
 No new coordinator/brain/core is justified by this finding.
+
+## 2026-10-07 SYMBIOSIS TRANSFER — CAPABILITY CONTRACT IMPACT GATE
+
+Episode 130 adds:
+`contract inconsistency ≠ decision impact`.
+
+A capability mismatch must be traced through:
+`consumer → operative strategy/route → execution`
+before any repair is justified.
+
+This prevents spending interventions on rationale-only defects when a more central capability-to-realization join remains open.
+
+Routing:
+**SONNET/CLAUDE** performs the fresh adversarial downstream-impact verification; if no operative impact is found, the universal frontier pivots to:
+`required capability + viable realization → specific candidate → operative routing`.
+
+This remains subordinate to the broader goal of context-conditioned capability composition and future verified plasticity.
