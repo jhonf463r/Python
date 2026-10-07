@@ -1,3 +1,20 @@
+## 2026-10-06 LATEST ROUTING POINTER — UAAL/RQ14 EXACT WORLDMODEL→SYNAPTIC ATTRIBUTION CLOSED
+
+Canonical episode:
+`CHAT-ARCH-2026-10-06-112-uaal-rq14-snapshot-synaptic-attribution-reconciliation.md`
+
+Bounded runtime attribution is now verified on target `8425f03eb45abd11951938f6e3234459c1585b55`: one real `WorldModelService.current_model()` provider invocation returned snapshot `f5842440-147d-486a-9416-b197634a64e2`, and the same returned object was consumed by the single `SynapticRouter.decide()` scoring call.
+
+Qualification: the snapshot was stale persisted baseline state; routing was disabled; this proves object attribution, not fresh environmental causality or selection impact.
+
+Current first open edge:
+`safe/reversible live environmental state A/B → attributable WorldModelSnapshot A/B → changed Synaptic availability/ranking under fixed remaining inputs`.
+
+Next actor: CODEX.
+Mode: experiment-readiness discovery; identify a safe/reversible environmental A/B and a side-effect-bounded observation boundary before any causal runtime.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-06 LATEST ROUTING CORRECTION — UAAL UNIVERSAL CAPABILITY SEAM
 
 RQ13 returned/persisted package correspondence: RUNTIME VERIFIED / CLOSED.
