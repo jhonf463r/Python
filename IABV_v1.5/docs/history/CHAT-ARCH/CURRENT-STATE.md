@@ -1,3 +1,39 @@
+## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PHASE-B EVIDENCE CONTRACT GAP / NO LIVE OBSERVATION
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-121-uaal-rq15-phase-b-evidence-contract-gap.md`
+
+The Phase-B runner was previously verified as runtime-capable, but the fresh authorized execution correctly stopped before live observation because the exact runner does not emit all required observation evidence.
+
+**FACT:**
+- exact runner/hash matched authorization;
+- target provenance matched;
+- worktree was clean;
+- independent oracle was not executed;
+- `list_running_processes()` was not executed;
+- `sensor_call_count = 0`;
+- the live path lacks explicit sensor invocation start/end, elapsed time and returned row count.
+
+**CLASSIFICATION:**
+`E — INCONCLUSIVE / READINESS FAILURE: EVIDENCE CONTRACT INCOMPLETE`.
+
+This is not sensor evidence.
+
+**CURRENT FIRST OPEN EDGE:**
+`independent Windows process identity → existing IABV process observation`.
+
+**IMMEDIATE READINESS EDGE:**
+`evidence-complete Phase-B runner → fresh authorization`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** external runner correction, Windows timing/row-count capture, evidence-contract self-test, exact provenance.  
+**WHY THIS AI NOW:** the remaining defect is entirely in the external experiment runner; production IABV remains out of scope.  
+**INDEPENDENT VERIFIER:** independent Windows process oracle.
+
+Next action is harness-only: make the actual Phase-B execution path emit every required evidence field, self-test that contract without live sensor execution, establish a new exact hash, then require fresh authorization.
+
+Do not execute the live oracle or sensor during the correction.
+
 ## 2026-10-07 ACTIVE OVERLAY — UAAL/RQ15 PHASE-B RUNNER VERIFIED / FRESH AUTHORIZATION PENDING
 
 Canonical record:
