@@ -1,3 +1,26 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-128
+
+Canonical record:
+`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-07-128-m0-causal-routing-reconciliation.md`
+
+Type:
+`RECONCILIATION / ROUTING / M0 / HANDOFF / UI-EXECUTION / PROVENANCE / SYMBIOSIS`
+
+State:
+`M0 STATIC HANDOFF SUBSTANTIALLY READY / END-TO-END UNPROVEN / UI EXECUTION EDGE OPEN`
+
+Material delta:
+- current main `268c5748...` is 12 commits ahead of M0 audit snapshot `74b366c9...`;
+- no focal M0 production Python sources changed across those 12 commits;
+- existing external consultation and Codex rollout-capture path is statically present;
+- manual pasteback is fallback-only;
+- blind objective remained in local KNOWLEDGE;
+- M0 is split into mediated handoff (M0-A) and selective routing (M0-B);
+- previous live M0 attempt was blocked by UI execution-channel capability, not a demonstrated production defect;
+- no production wire/repair is justified.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-127
 
 Canonical record:
