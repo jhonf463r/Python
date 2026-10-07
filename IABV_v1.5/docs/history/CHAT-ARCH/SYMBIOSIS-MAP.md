@@ -1,3 +1,25 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — CAPABILITY IDENTITY LOSS / TWO NORMAL CALLERS
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-134-capability-identity-loss-cross-caller-reconciliation.md`
+
+Codex contributed a targeted second-caller contrast after the prior external-consultation trace.
+
+Transferable knowledge:
+- `AdaptiveSession.capability_readiness` is available upstream;
+- `ToolOperationalExecutor.build_task_for_session()` does not preserve it into `ToolTask) as a first-class capability/readiness identity;
+- the execution path converges on the same `ToolTeachService → ToolRegistry.pick_card_for_task()` composition already used by external consultation;
+- therefore two normal callers exhibit the same semantic loss before concrete realization selection.
+
+Method transfer:
+`one caller loss → second-caller contrast → shared-boundary candidate → independent verifier`.
+
+Routing transfer:
+**Codex → ChatGPT reconciliation → Sonnet/Claude independent verification**.
+
+Construction rule remains:
+reuse existing executor/registry/adapter infrastructure; do not create a new capability mega-organ from this static finding.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — M0 MEDIATED HANDOFF VS SELECTIVE ROUTING
 
 Episode 128 reconciles the product-front collaboration seam.
