@@ -1,3 +1,22 @@
+## 2026-10-07 ACTIVE OVERLAY — CAPABILITY IDENTITY CONTRAST / TOOL OPERATIONAL EXECUTOR
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-133-tool-operational-executor-capability-contrast.md`
+
+Episode 132 established that the analyzed external consultation path reaches Codex/other external-assistant realizations through `tool_id`, `assistant_kind` and task text, without carrying a required-capability ID into ToolTask or ToolRegistry selection.
+
+Current unresolved question:
+whether the alternative normal `AdaptiveSession → ToolOperationalExecutor.build_task_for_session()` path already preserves `session.capability_readiness` into ToolTask/realization selection.
+
+Decision rule:
+- if yes: REUSE/COMPOSE that existing path;
+- if no: the missing capability-to-realization join is more strongly localized;
+- either way, no new architecture or implementation before independent verification.
+
+Current actor:
+**CODEX**, narrow static contrast.
+Then **SONNET/CLAUDE** independently verifies any common contract/gap.
+
 ## 2026-10-07 ACTIVE OVERLAY — TARGETED CAPABILITY → REALIZATION CALL-SITE TRACE
 
 Canonical record:
