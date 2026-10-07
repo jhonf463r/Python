@@ -1,3 +1,29 @@
+## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ15 INTERNAL TASKLIST ENUMERATION FAILURE / CORRESPONDENCE STILL OPEN
+
+**Canonical record:** `CHAT-ARCH-2026-10-06-114-uaal-rq15-tasklist-timeout-enumeration-failure.md`
+
+The follow-up Codex probe reconciled the previous oracle discrepancy on target `8425f03eb45abd11951938f6e3234459c1585b55`. The independent Windows oracle observed the `System` process PID `4` both before and after the scan, while the single internal `tasklist /fo csv /v /nh` invocation timed out after six seconds. `scan_tool_context()` converts that exception to an empty process list, so the perceptual `process_count=0` was a failure-collapsed result rather than evidence of process absence.
+
+**CLASSIFICATION:** `RQ15 CORRESPONDENCE — INTERNAL ENUMERATION FAILURE; LIVE CORRESPONDENCE NOT OBSERVED`.
+
+This closes the earlier ambiguity about the immediate cause of the zero-process result, but it does **not** close:
+`independent OS process → IABV process representation`.
+
+No window was associated with PID 4. Process/window → tool identity remains heuristic and was not evaluated as a tool-identity claim.
+
+**CURRENT FIRST OPEN EVIDENCE/MECHANISM EDGE:** `internal tasklist timeout → subprocess/process-tree termination mechanism and pre-timeout output`.
+
+**IA DESTINO:** CODEX  
+**CAPABILITY:** Windows subprocess/process-tree forensics, read-only runtime instrumentation and provenance verification.
+
+**NEXT ACTION:** one narrowly bounded read-only localization experiment for the `tasklist` timeout. Preserve exact target SHA/tree/worktree. Capture child process identity, start/end timestamps, timeout boundary, process-tree state while running, and raw stdout/stderr or pipe state sufficient to discriminate command execution vs pipe/read vs process-termination behavior.
+
+Do not modify production semantics. Do not invoke AppBootstrap, WorldModel scan, ToolRegistry refresh, SynapticRouter, providers/network, MCP, persistence, credentials or deliberate application launches. Do not use the timeout as proof of environmental absence.
+
+After the timeout mechanism is reconciled, re-establish a deterministic process correspondence observation before advancing to process/window → tool/application identity.
+
+Learning status unchanged: lower-layer adaptive learning PRESENT/OBSERVED; selector-level learned-state influence EVIDENCED; strong causal future-decision learning/reuse NOT PROVEN.
+
 ## 2026-10-06 ACTIVE OVERLAY — UAAL/RQ14 SAFE ENVIRONMENTAL A/B BLOCKED / MULTILAYER CORRESPONDENCE PIVOT
 
 **Canonical record:** `CHAT-ARCH-2026-10-06-113-uaal-rq14-safe-ab-readiness-blocked-multilayer-correspondence-pivot.md`
