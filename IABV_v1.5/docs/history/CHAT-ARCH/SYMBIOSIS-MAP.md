@@ -1,3 +1,16 @@
+## 2026-10-06 SYMBIOSIS TRANSFER — RQ14 A/B READINESS BLOCKED / SAFER MULTILAYER PIVOT
+
+Episode 113 demonstrates useful negative knowledge: a causal environmental A/B should not be forced when no intervention satisfies identity, reversibility, oracle and side-effect gates.
+
+Method delta:
+`blocked causal intervention → pivot to smallest safe information-gain correspondence probe`.
+
+The exact snapshot→Synaptic attribution edge is already closed and must not be repeated.
+
+Current frontier:
+`independent live layer-A observation ↔ existing IABV layer-B perception correspondence`.
+
+Next actor: CODEX, read-only Windows/perception-boundary audit.
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ14 EXACT SNAPSHOT ATTRIBUTION CLOSED
 
 Episode 112 closes the narrow attribution edge:
