@@ -1,3 +1,22 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-120
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-120-uaal-rq15-phase-b-runner-verified.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT-READINESS / HARNESS-CONTRACT / WINDOWS-RUNTIME / AUTHORIZATION`
+
+State:
+`PHASE-B RUNNER VERIFIED — LIVE CORRESPONDENCE OPEN — FRESH AUTHORIZATION PENDING`
+
+Material delta:
+- runtime-capable Phase-B runner verified;
+- live oracle/sensor remain unexecuted;
+- exact runner hash must be bound to the next authorization;
+- current OS→IABV correspondence remains open.
+
+Routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-119
 
 Canonical record:
