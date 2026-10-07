@@ -1,3 +1,23 @@
+## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-117
+
+Canonical record:
+`CHAT-ARCH-2026-10-07-117-uaal-rq15-readiness-provenance-oracle-gate-failure.md`
+
+Type:
+`RECONCILIATION / EXPERIMENT-READINESS / PROVENANCE / WINDOWS-ORACLE / SYMBIOSIS`
+
+State:
+`RQ15 READINESS FAILURE — SENSOR NOT INVOKED — CORRESPONDENCE STILL OPEN`
+
+Material delta:
+- provenance gate compared against the wrong digest literal;
+- independent CIM oracle failed before producing a validated identity;
+- existing process sensor was invoked zero times;
+- therefore no correspondence evidence exists;
+- immediate route is harness-only readiness correction/self-test;
+- fresh authorization is required before any new sensor observation.
+
+Routing authority remains `CURRENT-STATE.md`.
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-116
 
 Canonical record:
