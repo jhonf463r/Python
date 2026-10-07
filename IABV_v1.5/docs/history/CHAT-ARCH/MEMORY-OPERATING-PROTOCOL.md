@@ -1,3 +1,25 @@
+## 2026-10-07 METHOD AMENDMENT — CAPABILITY CONTRACT MUST SEPARATE STABLE REQUIREMENT FROM EPHEMERAL CANDIDATES
+
+For capability-aware routing, distinguish:
+
+`required capability identity` = stable task semantic requirement;
+
+`readiness snapshot` = decision-time evidence/state about satisfying that requirement;
+
+`realization declaration` = stable ToolCard claim of what the card can realize;
+
+`capability-eligible candidate set` = ephemeral selection result derived from the above plus current inventory/scope;
+
+`route` = selected concrete ToolCard/tool ID and its adapter.
+
+Do not persist an ephemeral candidate set as if it were an invariant of the task.
+
+Minimum multi-requirement rule:
+`required_capability_ids ⊆ realizes_capability_ids` for conjunctive requirements. Do not infer OR semantics from list membership.
+
+Routing rule:
+capability eligibility is a hard gate before preference, Synaptic selection, lexical fallback or concrete route fixation.
+
 ## 2026-10-07 METHOD AMENDMENT — VERIFY THE OPERATIVE SELECTOR BEFORE WIRING
 
 A mechanism is a valid composition candidate only after its actual normal call path is confirmed.
