@@ -7,7 +7,7 @@ Codex contributed a targeted second-caller contrast after the prior external-con
 
 Transferable knowledge:
 - `AdaptiveSession.capability_readiness` is available upstream;
-- `ToolOperationalExecutor.build_task_for_session()` does not preserve it into `ToolTask) as a first-class capability/readiness identity;
+- `ToolOperationalExecutor.build_task_for_session()` does not preserve it into `ToolTask` as a first-class capability/readiness identity;
 - the execution path converges on the same `ToolTeachService → ToolRegistry.pick_card_for_task()` composition already used by external consultation;
 - therefore two normal callers exhibit the same semantic loss before concrete realization selection.
 
