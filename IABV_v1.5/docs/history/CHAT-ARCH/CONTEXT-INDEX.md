@@ -1,3 +1,22 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 EVIDENCE CONTRACT INCOMPLETE
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-121-uaal-rq15-phase-b-evidence-contract-gap.md`
+
+The exact authorized Phase-B runner is runtime-capable but evidence-incomplete: it lacks sensor invocation start/end, elapsed time and explicit returned row count in the actual live output path.
+
+Result:
+`E — INCONCLUSIVE / READINESS FAILURE BEFORE SENSOR INVOCATION`.
+
+No correspondence evidence exists.
+
+Immediate edge:
+`evidence-complete Phase-B runner → fresh authorization`.
+
+Next actor: **CODEX**, harness-only correction/self-test. No live oracle or sensor execution until a new exact runner hash is authorized.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 PHASE-B RUNNER VERIFIED / AUTHORIZATION PENDING
 
 Canonical episode:
