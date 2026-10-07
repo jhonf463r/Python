@@ -419,6 +419,10 @@ def test_external_override_clears_pattern_reuse_metadata_for_original_tool(tmp_p
         equivalent_pattern_exists=True,
         reusable_pattern_id=pattern.pattern_id,
         reusable_episode_id='episode-original-a',
+        metadata={
+            'reusable_pattern_id': pattern.pattern_id,
+            'reusable_episode_id': 'episode-original-a',
+        },
     )
 
     task = service.build_task_from_request(InferenceRequest(
@@ -433,12 +437,47 @@ def test_external_override_clears_pattern_reuse_metadata_for_original_tool(tmp_p
 
     assert task.tool_id == 'ineligible_b'
     assert task.metadata['mode_selection']['selected_tool_id'] == 'ineligible_b'
+    assert task.metadata['mode_selection']['reusable_pattern_id'] is None
+    assert task.metadata['mode_selection']['reusable_episode_id'] is None
+    assert 'reusable_pattern_id' not in task.metadata['mode_selection']['metadata']
+    assert 'reusable_episode_id' not in task.metadata['mode_selection']['metadata']
     assert task.metadata['already_resolved'] is False
     assert task.metadata['equivalent_pattern_exists'] is False
     assert task.metadata['reuse_guard_active'] is False
     assert task.metadata['reused_pattern_id'] == ''
     assert task.metadata['reused_episode_id'] == ''
     assert task.metadata['reused_actions_from_pattern'] is False
+
+
+def test_same_card_override_preserves_nested_reuse_metadata(tmp_path: Path) -> None:
+    registry, repository = _registry(tmp_path)
+    service = _tool_teach_service(registry, repository, tmp_path)
+    card = registry.get_card('eligible_a')
+    selection = ModeSelectionDecision(
+        selected_tool_id='eligible_a',
+        selected_tool_type=ToolType.CUSTOM,
+        already_resolved=True,
+        equivalent_pattern_exists=True,
+        reusable_pattern_id='pattern-a',
+        reusable_episode_id='episode-a',
+        metadata={
+            'reusable_pattern_id': 'pattern-a',
+            'reusable_episode_id': 'episode-a',
+        },
+    )
+
+    result = service._override_selection_with_card(
+        selection=selection,
+        card=card,
+        policy='same_card_test',
+        reason_tag='same_card',
+    )
+
+    assert result.selected_tool_id == 'eligible_a'
+    assert result.reusable_pattern_id == 'pattern-a'
+    assert result.reusable_episode_id == 'episode-a'
+    assert result.metadata['reusable_pattern_id'] == 'pattern-a'
+    assert result.metadata['reusable_episode_id'] == 'episode-a'
 
 
 def test_external_override_invalidates_reuse_metadata_without_pattern(tmp_path: Path) -> None:

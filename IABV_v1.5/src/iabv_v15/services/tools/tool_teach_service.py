@@ -1500,7 +1500,7 @@ class ToolTeachService:
             metadata.update(metadata_overrides)
         adapter_exists = card.adapter_key in self.registry.adapters
         selection_tool_id = str(selection.selected_tool_id or '').strip()
-        reuse_inherited = bool(selection_tool_id and selection_tool_id != card.tool_id)
+        reuse_inherited = selection_tool_id != card.tool_id
         updates = {
             'selected_mode': self._selection_mode_for_tool_type(card.tool_type),
             'selected_tool_id': card.tool_id,
@@ -1521,6 +1521,8 @@ class ToolTeachService:
                     'reusable_episode_id': None,
                 }
             )
+            metadata.pop('reusable_pattern_id', None)
+            metadata.pop('reusable_episode_id', None)
         return selection.model_copy(
             update=updates
         )
