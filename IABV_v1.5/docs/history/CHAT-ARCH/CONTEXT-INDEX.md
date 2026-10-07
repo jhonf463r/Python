@@ -1,3 +1,21 @@
+## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 PRE-LIVE CONTRACT CLOSED
+
+Canonical episode:
+`CHAT-ARCH-2026-10-07-123-uaal-rq15-pre-live-contract-closed-live-edge.md`
+
+RQ15 Phase-A readiness, Phase-B runtime capability and Phase-B evidence capability are all closed.
+
+Current first open edge:
+`independent Windows process identity → existing IABV process observation helper`.
+
+The minimum-information next action is one live bounded observation using the exact evidence-complete runner, but a new explicit human authorization is required first.
+
+Next actor: **CODEX**.
+
+Do not add another harness or pre-live AI audit without new evidence.
+
+Current routing authority remains `CURRENT-STATE.md`.
+
 ## 2026-10-07 LATEST ROUTING POINTER — UAAL/RQ15 EVIDENCE-COMPLETE RUNNER READY
 
 Canonical episode:
