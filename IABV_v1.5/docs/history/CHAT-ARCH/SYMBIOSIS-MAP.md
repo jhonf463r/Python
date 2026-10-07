@@ -1,3 +1,23 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 /v DISCRIMINATING CONTROL
+
+Episode 114 now closes the immediate tasklist command-line uncertainty.
+
+Observed:
+`tasklist /fo csv /v /nh` → alive >6 s with partial output.
+`tasklist /fo csv /nh` → natural exit in 0.316 s, exit 0, 14,133 bytes stdout.
+
+Method delta:
+`control discriminates observed factor ≠ universal root cause`.
+
+The leading factor is `/v`. Because the control already discriminated, output-capture comparison is not currently justified.
+
+Current universal correspondence frontier:
+`independent OS process → IABV process representation`.
+
+Next capability-fit actor: CODEX, first read-only source archaeology for an existing completing process-enumeration boundary, then the smallest synchronized correspondence experiment.
+
+No production replacement of `/v`, new organ, tool-identity claim, selection claim or learning claim is justified by this evidence alone.
+
 ## 2026-10-06 SYMBIOSIS TRANSFER — RQ15 TASKLIST ENUMERATION FAILURE
 
 Episode 114 sharpens the X-ray correspondence method:
