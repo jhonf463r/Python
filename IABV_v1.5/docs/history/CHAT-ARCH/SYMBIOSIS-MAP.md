@@ -1,3 +1,29 @@
+## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 EXISTING OBSERVATION COMPOSITION
+
+The X-ray method now has an explicit pre-selection composition pass.
+
+Before creating or selecting a mechanism, reconcile:
+`existing sensor → existing comparator → existing cross-validator → identity/provenance → governance → actual consumer`.
+
+Exact target archaeology found:
+- `audit_tools_observation.list_running_processes`: reusable PID/create_time-bearing process sensor;
+- `list_open_windows`: reusable HWND/PID-bearing window sensor;
+- `PerceptionCrossValidator`: already composes multiple sensors but its full path can auto-correct ToolRegistry availability, so it is not a neutral identity oracle;
+- `PerceptionGroundTruthComparator`: already compares UniversalPerception against WorldModel/window ground truth, but it is not a process-PID comparator and invokes the problematic perception path;
+- `SystemIdentityRegistry`: identity of IABV subsystems/source composition, not runtime OS entities.
+
+New invariant:
+`same purpose ≠ same mechanism`, and `similar name ≠ interchangeable role`.
+
+No new process observer is justified.
+
+Current frontier:
+`independent OS process → existing IABV process observation helper`.
+
+Next actor remains CODEX. Use a fresh readiness contract before runtime and scope any direct-helper observation as sensor-level evidence because it bypasses the MCP governance wrapper.
+
+No architecture, new organ, selection or learning claim follows.
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — RQ15 /v DISCRIMINATING CONTROL
 
 Episode 114 now closes the immediate tasklist command-line uncertainty.
