@@ -1,3 +1,23 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-158
+
+Canonical:
+CHAT-ARCH-2026-10-08-158-rq21-43-human-capability-adjudication.md
+
+Type:
+DOMAIN-ADJUDICATION / SEMANTIC-CONTRACT / CAPABILITY / ROUTING / SYMBIOSIS / METHOD
+
+State:
+RQ21.43 PARTIALLY CLOSED / HUMAN ADJUDICATION ACCEPTED / SONNET FALSIFICATION OPEN
+
+Material delta:
+- tools.sandbox capability meaning is human-adjudicated as realization-independent;
+- tools.local_workflow remains AMBIGUOUS;
+- system.metacognition remains AMBIGUOUS;
+- machine-readable capability ID remains unpromoted;
+- next edge is semantic falsification before code implementation.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-157
 
 Canonical:
