@@ -1,3 +1,37 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.28/RQ21.29 PRE-SELECTION CAPABILITY CONTRACT + PROVENANCE RECONCILIATION
+
+Canonical record:
+CHAT-ARCH-2026-10-08-142-rq21-29-preselection-capability-contract-reconciliation.md
+
+Current remote main is verified at:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+Important provenance correction:
+781f2f62da376cfbdd37e0ae847a4ccba12c7374 exists as a documentation-only child of 5b1d890... but remote main currently still points to 5b1d890.... Therefore the prior 141 panorama writeback is not canonical-main state. Its durable methodology is now absorbed by the 142 record and this overlay.
+
+RQ21.28 is CLOSED as D:
+no existing inspected semantic object defines an exact operative per-ToolTask R_task.
+
+RQ21.29 is CLOSED as C:
+pre-selection operation semantics can exist in InferenceRequest.goal_parameters.actions, but the inspected path has no operative transformation from those operations to abstract capability IDs.
+
+Critical correction:
+ToolTask.actions is MIXED. Explicit request actions may predate selection, but generated actions can depend on the selected tool_id. Therefore ToolTask.actions is not a safe universal independent source of R_task; using post-selection generated actions to justify the same selection would be circular.
+
+Current first open edge:
+concrete pre-selection operation semantics → consumed operation→capability transformation → exact R_task.
+
+Current classification:
+STATIC / CODEX RECONCILED / DEMAND-SIDE SEMANTIC TRANSLATION GAP / IMPLEMENTATION BLOCKED.
+
+Next actor:
+CODEX, one narrow read-only caller-provenance trace for tools.local_workflow, tools.sandbox and system.metacognition.
+
+No implementation, runtime, selector scoring change or RQ21.27C repetition is authorized by this overlay.
+
+
 ## 2026-10-07 ACTIVE OVERLAY — CAPABILITY → REALIZATION IMPLEMENTATION BLOCKER UNDER INDEPENDENT CHALLENGE
 
 Canonical record:
