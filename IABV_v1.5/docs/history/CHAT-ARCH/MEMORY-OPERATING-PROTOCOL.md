@@ -2215,3 +2215,65 @@ if B preserves it, REUSE/COMPOSE B;
 if B also loses it, strengthen the evidence for a shared composition gap.
 
 Do not create a bridge solely because one caller omits a field.
+
+
+## 2026-10-08 METHOD AMENDMENT — SYMBIOSIS AS CUMULATIVE DEVELOPMENTAL CONTROL LOOP
+
+The existing self-composition and cumulative-development rules are now operationalized as one longitudinal method.
+
+For each material episode:
+
+~~~
+objective
+→ context/provenance
+→ hypothesis
+→ capability-fit actor
+→ discriminating action
+→ observation
+→ independent verification
+→ reconciliation
+→ Knowledge Delta
+→ Method Delta
+→ Routing Delta
+→ canonical writeback
+→ later retrieval
+→ later non-identical reuse
+→ changed future decision
+~~~
+
+Use multiple AI perspectives as complementary observation instruments, not as a vote. Prefer orthogonal views when useful:
+semantic/domain, provenance/source-trace, adversarial challenge, runtime/evidence.
+
+Preserve the following:
+~~~
+agreement ≠ truth
+more data ≠ more certainty
+retrieval ≠ reuse
+reuse ≠ learning
+writeback ≠ learning
+~~~
+
+A durable learning claim requires the later decision/action to change because of the verified retained delta.
+
+Operational plasticity target:
+~~~
+verified deficit/experience
+→ capability hypothesis
+→ existing-organ composition
+→ isolated change
+→ verification
+→ governed promotion/rejection/rollback
+→ reusable delta
+→ later contextual reuse
+→ changed decision
+~~~
+
+Progress instrumentation is diagnostic only:
+- verification coverage;
+- later reuse coverage;
+- independently attributable changed decisions;
+- reduction in routine human coordination/rework after verified reuse.
+
+Do not collapse these into a single "intelligence score".
+
+Current frontier is still RQ21.35; this amendment changes methodology only and does not authorize executable implementation.
