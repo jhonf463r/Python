@@ -1,3 +1,25 @@
+## 2026-10-08 ROUTING UPDATE — FRESH-CHAT RECONCILIATION
+
+Verified remote main at reconciliation start:
+`d7bdf04567b9e0e683bd5fd67ad295931d24e719`.
+
+Latest canonical RQ21 record:
+RQ21.49 / Sonnet 5.5 owner-contract falsification.
+
+RQ21.50 is unpromoted and absent from remote canonical state.
+
+Current route:
+RQ21.49 owner-ratification boundary → HUMAN DOMAIN OWNER.
+
+Open normative set:
+R2 independent conformance/coverage evidence;
+R3 attributable effects / containment boundary;
+R8 X confidentiality;
+R6 evidence-integrity strength.
+
+Use CURRENT-STATE as the sole current routing authority. Historical Next Actor fields remain non-routable history.
+
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.49
 
 RQ21 capability-contract chain has reached the owner-ratification boundary after Sonnet 5.5 falsification.
