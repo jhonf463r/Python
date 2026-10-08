@@ -1,3 +1,28 @@
+## 2026-10-08 — RQ21.43A CURRENT FRONTIER
+
+Closed:
+- RQ21.43 = human/domain adjudication accepted
+- RQ21.43A = PASS WITH BOUNDED REPAIRS
+
+Surviving semantic states:
+- tools.local_workflow = AMBIGUOUS
+- tools.sandbox = KNOWN
+- system.metacognition = AMBIGUOUS
+
+Sandbox capability:
+C_SANDBOX_DYNAMIC_VALIDATION = evaluate a candidate execution under containment of protected effect set E, using expected behavior X, produce an interpretable validation result, with dynamic execution required.
+
+Semantic repairs R1-R4 are closed locally.
+
+Current first open edge:
+C_SANDBOX_DYNAMIC_VALIDATION → machine-readable capability identity / code-facing vocabulary → realization declaration → eligibility gate.
+
+Immediate discriminator:
+CODEX source-aware reconciliation limited to this one capability.
+
+Guard:
+semantic capability meaning is closed; machine ID, realization, readiness and routing remain unproven.
+Do not promote existing readiness IDs by string similarity.
 ## 2026-10-08 — RQ21.43 CURRENT FRONTIER
 
 Closed:
