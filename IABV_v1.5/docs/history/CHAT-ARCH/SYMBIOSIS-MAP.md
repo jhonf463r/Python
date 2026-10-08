@@ -1,3 +1,15 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — CLAUDE 5.5 MODEL-POOL ROUTING
+
+Durable Routing Delta:
+- Current accessible external Claude models: Sonnet 5.5 + Haiku 5.5.
+- Haiku 5.5 is optimized for fast/high-volume bounded work and has already supplied the RQ21.48 owner-contract review.
+- Sonnet 5.5 is the preferred current external challenger for material source/contract/architecture verification where sustained adversarial reasoning is required.
+- This does not make Sonnet 5.5 or Haiku 5.5 normative owners; the Human Domain Owner retains normative security/containment authority.
+- Opus 5.5 is not in the user's accessible pool and is therefore non-routable for current work, despite being a current Anthropic model.
+
+Current RQ21.48 route:
+Human Domain Owner → ChatGPT reconciliation → Sonnet 5.5 focused adversarial contract audit → ChatGPT reconciliation → Codex minimal implementation.
+Devin remains deferred until a proven runtime execution channel and oracle/provenance contract exist.
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.48 HAIKU 5.5 / OWNER CONTRACT
 
 Knowledge Delta:
