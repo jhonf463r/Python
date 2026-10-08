@@ -2384,3 +2384,24 @@ Material delta:
 - next actor CODEX for minimum reuse/composition census.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-155
+
+Canonical:
+CHAT-ARCH-2026-10-08-155-rq21-41-source-reconciliation-and-bounded-extension.md
+
+Type:
+SOURCE-RECONCILIATION / SEMANTIC-CONTRACT / ROUTING / SYMBIOSIS / METHOD
+
+State:
+RQ21.41 CLOSED-C / CODE-FACING CONTRACT SYNTHESIS NEXT / IMPLEMENTATION BLOCKED
+
+Material delta:
+- source archaeology located the exact bounded semantic seam;
+- CapabilityReadiness is reusable readiness/evidence infrastructure;
+- current intent→readiness mapping is not exact R_task;
+- current realization declarations are heterogeneous and lack authoritative abstract capability semantics;
+- next step is minimum code-facing contract, not implementation.
+
+Routing authority remains CURRENT-STATE.md.
