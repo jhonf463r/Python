@@ -1,3 +1,27 @@
+## 2026-10-08 METHOD AMENDMENT — FRESH-CHAT SPACE-TIME / REMOTE-STATE GATE
+
+A new chat is not a continuation of the previous prompt. It is a fresh state-reconstruction event.
+
+Before routing:
+1. establish temporal provenance (current local time + UTC equivalent);
+2. establish spatial/source provenance (repository, verified remote main tip, latest canonical episode);
+3. establish executable provenance (pinned baseline SHA + tree, and whether the current task is using that baseline as source truth);
+4. reconcile the material recent records and current memory surfaces;
+5. classify transcript claims as FACT / INFERENCE / ASSUMPTION / UNPROVEN;
+6. recompute the first open causal/evidential edge;
+7. select actor from capability-fit and readiness/evidence, not from the previous prompt.
+
+Important:
+`reported SHA ≠ verified remote SHA`;
+`proposed RQ/decision ≠ canonical RQ/decision`;
+`current main ≠ pinned executable baseline unless independently verified`.
+
+Do not describe a baseline→main diff as documentation-only unless the actual compare confirms it. A documentation-only reconciliation commit proves only that the reconciliation itself changed documentation, not that the entire repository delta from a historical baseline is documentation-only.
+
+Writeback rule:
+promote only material Knowledge Delta / Method Delta / Routing Delta. Avoid duplicate archive entries when no new durable information exists; create a reconciliation record when the fresh-state check itself adds provenance, correction or routing clarity.
+
+
 ## 2026-10-08 METHOD AMENDMENT — ADVERSARIAL CONTRACT REPAIR AFTER RQ21.49
 
 Once an independent challenger establishes PASS WITH BOUNDED REPAIRS, separate repairs into:
