@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.49
+
+RQ21 capability-contract chain has reached the owner-ratification boundary after Sonnet 5.5 falsification.
+
+Current path:
+RQ21.48 owner contract → RQ21.49 adversarial challenge → owner ratification R2/R3/R8 (+ R6 integrity) → minimal contract freeze → Codex implementation → Sonnet independent verification → runtime actor only when execution readiness exists.
+
+Relevant current-memory source:
+CHAT-ARCH-2026-10-08-167-rq21-49-sonnet-owner-contract-challenge.md
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.48 → HUMAN DOMAIN OWNER
 
 Canonical: CHAT-ARCH-2026-10-08-165-rq21-48-haiku-owner-contract.md
