@@ -1,3 +1,22 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.32 → RQ21.33
+
+Canonical:
+CHAT-ARCH-2026-10-08-145-rq21-32-taskintent-too-coarse-and-discrimination-test.md
+
+RQ21.32 = CLOSED-B.
+
+First open edge:
+TaskIntent / desired_modes / task_kind → discriminating operational representation independent of realization → exact R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+RQ21.33 one static pairwise discrimination test using two source-grounded tools.local_workflow requests.
+
+Cumulative rule:
+candidate semantic object must be tested for discrimination before being promoted toward task-contract authority.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.31 → RQ21.32
 
 Canonical:
