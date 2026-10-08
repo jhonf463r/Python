@@ -5474,3 +5474,18 @@ Sonnet/Claude now performs one focused re-challenge of the repaired contract; so
 
 Current edge:
 repaired semantic contract → focused independent challenge.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.39 FAIL / REPAIR NEEDED
+
+Knowledge Delta:
+the semantic contract still fails under strong counterexamples involving realization-universe dependence, empty/unknown demand, negative evidence and conjunctive false positives.
+
+Method Delta:
+retain only repairs needed for the current causal boundary; do not absorb a challenger's full ontology.
+
+Routing Delta:
+ChatGPT performs minimum-contract synthesis next; Sonnet/Claude then performs one final narrow falsification pass.
+
+Current edge:
+minimum surviving operation/capability/R_task contract → final adversarial challenge.
