@@ -1,3 +1,24 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.42A → DOMAIN ADJUDICATION
+
+Canonical:
+CHAT-ARCH-2026-10-08-157-rq21-42a-adversarial-reconciliation.md
+
+RQ21.42A = CLOSED / PASS WITH BOUNDED REPAIRS / IMPLEMENTATION NOT READY.
+
+Key correction:
+the code-facing contract is no longer blocked by generic architecture discovery; it is blocked by domain capability identity for the target task families.
+
+First open edge:
+domain operation / success predicate → realization-independent capability identity → exact R_task.
+
+Next actor:
+HUMAN / DOMAIN OWNER, with ChatGPT coordinating the contract table.
+
+Next validation:
+SONNET/CLAUDE focused falsification of the adjudicated rows.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.34 → RQ21.35
 
 Canonical:
