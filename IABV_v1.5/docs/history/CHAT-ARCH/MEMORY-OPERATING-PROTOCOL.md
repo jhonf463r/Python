@@ -1,3 +1,22 @@
+## 2026-10-08 METHOD AMENDMENT — CURRENT CLAUDE 5.5 ACTOR POOL AND MODEL-SPECIFIC ROUTING
+
+Current user-available Claude pool is Sonnet 5.5 + Haiku 5.5. Actor selection remains capability-fit and edge-driven; model names are not authority labels.
+
+Model routing guidance:
+- Sonnet 5.5: default external challenger for material claims requiring sustained reasoning, source archaeology, contract falsification, complex code review, bounded architecture review, and long-horizon investigation. Use when the information gain comes from a materially independent second judgment.
+- Haiku 5.5: default for high-volume/low-latency work, compaction, summarization, classification, triage, narrow repeatable checks, browser/computer-use substeps, and bounded subagent tasks. It may handle a focused architecture/security review when the scope is narrow, but such review does not transfer normative authority.
+- ChatGPT: coordinator/reconciler and canonical memory writer; do not use model preference as a substitute for evidence.
+- Codex: code/source actor after the code-facing edge is actually open and experiment/readiness constraints are met.
+- Devin: Windows/runtime/UI actor only when the required execution channel is available and provenance/oracle readiness is satisfied.
+
+Substitution rule:
+Opus 5.5 unavailable to the user → Haiku 5.5 only for the bounded class of review that Haiku was actually assigned. This is scoped substitution, not equivalence. Sonnet 5.5 is independently available and should not be demoted to Haiku for material adversarial verification merely because Haiku was used earlier.
+
+For RQ21.48 specifically:
+Haiku 5.5 already completed the bounded owner-contract review and returned OWNER-CONTRACT INCOMPLETE. Therefore the next AI challenge must not repeat the same audit. The user/domain owner must first close the normative decisions; then ChatGPT reconciles; then Sonnet 5.5 performs a focused adversarial challenge if the contract is material/changed; then Codex implements only the surviving minimal contract.
+
+Never inherit NEXT ACTOR mechanically. Recompute from:
+objective → current verified truth → first open edge → required capability → actor fit → readiness/evidence contract → minimum discriminating action.
 ## 2026-10-08 METHOD AMENDMENT — ACTOR SUBSTITUTION UNDER AVAILABILITY LOSS
 
 Actor availability is not the routing authority.
