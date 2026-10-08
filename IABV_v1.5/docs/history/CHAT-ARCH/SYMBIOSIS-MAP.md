@@ -1,3 +1,19 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.56 RESULT ADJUDICATION + EXPERIMENTAL API DISCOVERY
+
+Knowledge Delta:
+The supplied Windows-sandbox report is relevant to the broad domain but does not satisfy RQ21's complete seven-guarantee substrate object. Independent primary-source checking found Microsoft's experimental `Experimental_CreateProcessInSandbox` API family, a candidate for launch-side restrictions, not a verified complete substrate.
+
+Method Delta:
+A platform research result must map every authorized guarantee to primary-source API/policy, enforcement boundary, observation/evidence, uncovered channels, target-version availability and proof needed. Background security layers cannot be promoted to realization evidence merely by appearing in one report.
+
+Routing Delta:
+Preserve the Human Domain Owner's two open scope confirmations. Before implementation, audit the experimental API's availability and exact composition against the seven guarantees. Do not treat it as selected or proven.
+
+Source record:
+`CHAT-ARCH-2026-10-08-175-rq21-56-windows-substrate-research-adjudication.md`
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.55 DEEP-RESEARCH OBJECT-GATE FAILURE
 
 Knowledge Delta:
