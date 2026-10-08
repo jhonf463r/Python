@@ -9956,3 +9956,33 @@ FOLLOW-ON:
 one final focused Sonnet/Claude challenge, then source reconciliation if the contract survives.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 ACTIVE OVERLAY — RQ21.40 PASS / SOURCE RECONCILIATION
+
+Canonical record:
+CHAT-ARCH-2026-10-08-154-rq21-40-source-reconciliation.md
+
+RQ21.40 semantic result:
+PASS WITH ONE LOCAL REPAIR.
+
+Source reconciliation on pinned baseline now confirms:
+- CapabilityReadinessService._required_capabilities() maps broad TaskIntent.intent_key values to hard-coded readiness capability IDs;
+- this is not yet an exact operation-level, realization-independent R_task derivation;
+- CapabilityReadiness exists as readiness/evidence infrastructure;
+- ToolCapability and ToolCard.capabilities are separate, heterogeneous vocabularies;
+- ToolCard.capabilities is a free string list of concrete/action-oriented labels;
+- ToolTask has no first-class required-capability identity;
+- _select_mode()/tool and synaptic selection occur before _build_actions()/ToolTask construction;
+- current unknown-intent fallback returns assistant.local.chat rather than an explicit UNKNOWN demand state.
+
+Adjudication:
+semantic contract is ready for code-facing contract reconciliation, but implementation is NOT authorized.
+
+Current first open edge:
+existing demand/readiness inputs + explicit operation semantics → exact versioned R_task → constrained existing realization selection.
+
+Next actor:
+CODEX — narrow source-level reuse/composition census.
+
+No implementation/runtime/scoring change.
