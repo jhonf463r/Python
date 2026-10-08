@@ -1,3 +1,23 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.44A CODE-CONTRACT VERIFICATION
+
+Knowledge Delta:
+- independent code-contract review preserves the semantic contract but identifies declaration/evidence separation as mandatory;
+- E/X need realization-side coverage;
+- eligibility can be empty until evidence exists, so capability acquisition/testing must be governed separately;
+- unresolved explicit tool IDs are an additional fallback-resurrection route.
+
+Method Delta:
+- declaration ≠ evidence;
+- eligibility ≠ acquisition/test;
+- final resolver guard is a primary invariant boundary;
+- never derive demand from downstream task defaults;
+- never treat R_task={C} as universal whole-task sufficiency.
+
+Routing Delta:
+CHATGPT / HUMAN DOMAIN OWNER must now close the three remaining normative implementation decisions before Codex receives an implementation prompt.
+
+Current edge:
+owner authorization + bounded code contract → implementation.
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.44 CODE-FACING RECONCILIATION
 
 Knowledge Delta:
