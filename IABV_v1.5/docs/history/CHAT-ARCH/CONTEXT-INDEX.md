@@ -1,3 +1,23 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.34 → RQ21.35
+
+Canonical:
+CHAT-ARCH-2026-10-08-147-rq21-34-generic-action-transport-no-preselection-consumer.md
+
+RQ21.34 = CLOSED-C / GENERIC-PREVIEW-TRANSPORT.
+
+Important correction:
+goal_parameters.actions is transport-capable but not a pre-selection semantic contract on the inspected operative path.
+
+First open edge:
+existing pre-selection operation vocabulary/semantic discriminator → operative consumer → exact R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+RQ21.35 — narrow static census of existing structured operation vocabularies/discriminators already consumed before ToolCard selection.
+
+No implementation/runtime/scoring change.
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.33 → RQ21.34
 
 Canonical:
