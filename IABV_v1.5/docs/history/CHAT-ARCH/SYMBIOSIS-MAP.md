@@ -5519,3 +5519,18 @@ ChatGPT now synthesizes the minimum code-facing contract; Sonnet/Claude then att
 
 Current edge:
 R_task + demand_state + envelope → realization declaration → hard eligibility gate.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.42 CODE-FACING CONTRACT
+
+Knowledge Delta:
+the semantic contract has been translated into a bounded code-facing proposal without yet choosing implementation fields irrevocably.
+
+Method Delta:
+source-aware adversarial review must challenge field placement, vocabulary reuse and hard-gate coverage before implementation.
+
+Routing Delta:
+Sonnet/Claude now challenges the proposed code-facing seam; Codex returns only after the contract survives.
+
+Current edge:
+proposed code-facing demand/capability contract → source-aware adversarial challenge.
