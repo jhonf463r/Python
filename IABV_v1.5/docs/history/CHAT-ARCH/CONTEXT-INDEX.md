@@ -1,3 +1,20 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.44A → OWNER DECISION
+
+Canonical:
+CHAT-ARCH-2026-10-08-161-rq21-44a-code-contract-verification.md
+
+RQ21.44A = CLOSED / PASS WITH BOUNDED REPAIRS / MINIMAL CODE CONTRACT READY.
+
+Key repairs:
+declaration + evidence required for eligibility; realization must cover task E/X; final resolver guard is primary enforcement boundary; governed acquisition path must be distinct from eligibility; unresolved non-empty tool_id must not resurrect fallback.
+
+Next actor:
+CHATGPT / HUMAN DOMAIN OWNER.
+
+Next decision:
+authorize/reject machine ID; fix bounded E/X representation; confirm first validation-task boundary.
+
+No implementation yet.
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.44 → SONNET/CLAUDE
 
 Canonical:
