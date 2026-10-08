@@ -1,3 +1,25 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.46 CODEX BLOCKED / REALIZATION SUBSTRATE GAP
+
+Knowledge Delta:
+- contract closure does not imply realization feasibility;
+- `sandbox=True`, generic success and `SANDBOX_PASS` are insufficient for dynamic validation;
+- current baseline lacks a demonstrated E-observation/X-comparison path;
+- historical authority designs are candidates only until current executable source is verified.
+
+Method Delta:
+- add an explicit realization-substrate feasibility gate after contract closure;
+- when blocked, audit reuse/composition before introducing new containment/security machinery;
+- preserve `REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`;
+- do not convert historical reports into current implementation evidence.
+
+Routing Delta:
+CODEX is paused by a genuine substrate contradiction.
+SONNET/CLAUDE is next for independent forensic audit of current reusable containment/effect-observation mechanisms.
+Then ChatGPT reconciliation and, only after closure, CODEX implementation or owner authorization for a bounded new substrate.
+
+Current edge:
+`baseline contradiction → reusable current mechanism or minimal bounded new substrate → implementation`.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.45 OWNER DECISION
 
 Knowledge Delta:

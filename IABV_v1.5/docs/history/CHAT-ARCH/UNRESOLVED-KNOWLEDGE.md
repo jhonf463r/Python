@@ -1,3 +1,38 @@
+## 2026-10-08 RQ21.46 — CODEX BLOCKED / REALIZATION SUBSTRATE UNRESOLVED
+
+State:
+**BLOCKED — CONTRADICTION**
+
+Verified:
+- baseline `5b1d89022ee4cdc63c1f88e050f086b40a42875c` is clean and unchanged;
+- `ToolSandbox` forwards `sandbox=True` but current shell execution still invokes `subprocess.run()`;
+- `ToolValidator` does not validate against `X` or protected effects `E`;
+- current models do not carry the complete typed capability/E/X contract;
+- current registry fallback is not capability-constrained.
+
+Still unresolved:
+- whether any current executable containment/effect-observation mechanism is reusable;
+- whether historical authority/execution-context mechanisms survive as current source;
+- exact minimal substrate if no reusable mechanism exists.
+
+Negative knowledge:
+do not infer repository-wide absence from the bounded searches already performed.
+
+Current first open edge:
+`baseline contradiction → reusable containment/effect-observation mechanism or minimal bounded new substrate → implementation`.
+
+NEXT ACTOR:
+**SONNET / CLAUDE**
+
+RQ21.47 should independently determine:
+1. existing current containment/isolation primitives;
+2. current protected-effect observation primitives;
+3. authority/execution-context mechanisms actually present in executable source;
+4. the smallest reuse/composition seam;
+5. whether owner authorization is required for any genuinely new substrate.
+
+Do not implement or run runtime during this audit.
+
 ## 2026-10-08 RQ21.45 — OWNER DECISIONS CLOSED
 
 State:

@@ -1,3 +1,24 @@
+## 2026-10-08 METHOD AMENDMENT — REALIZATION-SUBSTRATE FEASIBILITY GATE
+
+A closed capability contract does not imply that the repository already has a faithful realization substrate.
+
+For material implementation attempts, preserve:
+`semantic/contract closure → realization-substrate feasibility → implementation → independent verification → runtime proof`.
+
+When a capability realization attempt is blocked by a real substrate contradiction:
+- first search for reusable/composable current executable mechanisms;
+- use historical records only as candidate generators, not as present evidence;
+- do not weaken the functional predicate;
+- do not create cosmetic gates around an uncontained execution path;
+- do not introduce a new universal organ/router/registry to mask the gap;
+- if a genuinely new containment/security substrate is required, obtain explicit owner authorization before implementation.
+
+Negative knowledge must remain bounded:
+`no mechanism found in audited scope ≠ repository-wide absence`.
+
+Routing rule:
+when the implementation actor reaches the substrate contradiction, prefer an independent forensic/source auditor before re-routing back to implementation.
+
 ## 2026-10-07 METHOD DELTA — EMPTY-SET CONTRACT CLOSURE
 
 A capability-constrained empty set must become an explicit governed negative outcome, not an unconstrained selection.

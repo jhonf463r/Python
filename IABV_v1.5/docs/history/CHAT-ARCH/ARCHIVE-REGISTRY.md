@@ -1,3 +1,4 @@
+- `CHAT-ARCH-2026-10-08-163-rq21-46-blocked-contradiction.md` — RQ21.46 CODEX implementation result: blocked by a verified realization-substrate contradiction at containment/E-observation/X-comparison; no source changed; next actor Sonnet/Claude for independent forensic substrate audit.
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-162
 
 Canonical:

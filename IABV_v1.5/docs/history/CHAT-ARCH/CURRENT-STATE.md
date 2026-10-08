@@ -1,3 +1,34 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.46 CODEX BLOCKED / REALIZATION SUBSTRATE CONTRADICTION
+
+Canonical:
+CHAT-ARCH-2026-10-08-163-rq21-46-blocked-contradiction.md
+
+RQ21.46 = **BLOCKED — CONTRADICTION**.
+
+No executable source was changed. Pinned executable baseline remains:
+`5b1d89022ee4cdc63c1f88e050f086b40a42875c`
+Tree:
+`ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61`
+
+Reconciled finding:
+the closed RQ21.45 contract cannot be faithfully realized by the current sandbox path because containment is not verified, `E` is not observed, `X` is not compared, and generic `SANDBOX_PASS` is derived from `success`.
+
+Current first open edge:
+`baseline contradiction → reusable containment/effect-observation mechanism or minimal bounded new substrate → implementation`
+
+**NEXT ACTOR: SONNET / CLAUDE**
+
+Next task:
+RQ21.47 — independent forensic realization-substrate audit. Determine whether an existing current executable mechanism can be reused/composed to satisfy the complete `candidate + X + E` validation predicate. If none exists, define the smallest bounded missing substrate without implementing it.
+
+No runtime. No semantic reopening. No readiness-ID promotion. No new universal router/registry/organ.
+
+After RQ21.47:
+- reusable mechanism found → ChatGPT reconciliation → CODEX implementation;
+- genuine substrate gap → ChatGPT/HUMAN DOMAIN OWNER authorization → CODEX implementation.
+
+Implementation proof and runtime proof remain separate.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.45 OWNER DECISION / IMPLEMENTATION CONTRACT UNLOCKED
 
 Canonical:

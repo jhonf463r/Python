@@ -1,3 +1,25 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.46 → SONNET/CLAUDE
+
+Canonical:
+`CHAT-ARCH-2026-10-08-163-rq21-46-blocked-contradiction.md`
+
+RQ21.46 = **BLOCKED — CONTRADICTION**.
+
+Verified baseline:
+`5b1d89022ee4cdc63c1f88e050f086b40a42875c` / `ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61`.
+
+Material blocker:
+current sandbox execution does not establish containment, protected-effect observation `E`, or behavior comparison against `X`; therefore the closed capability contract cannot yet be realized by routing-only changes.
+
+First open edge:
+`baseline contradiction → reusable containment/effect-observation mechanism or minimal bounded new substrate → implementation`.
+
+Next actor:
+**SONNET / CLAUDE**
+
+RQ21.47:
+independent current-source forensic audit of containment, effect observation, authority/execution context, and reuse/composition candidates. No implementation/runtime.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.45 → CODEX
 
 Canonical:
