@@ -5457,3 +5457,20 @@ ChatGPT/coordinator-synthesis now repairs the provisional contract; Sonnet/Claud
 
 Current edge:
 repaired operation/capability/R_task semantics → independent focused rechallenge.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.38 REPAIRED CONTRACT
+
+Knowledge Delta:
+RQ21.37's adversarial critique has been incorporated into a repaired provisional contract with explicit demand state, evidence basis, candidate-set invariance and failure attribution.
+
+Method Delta:
+the semantic contract is now challenged in two passes:
+1. core causal/semantic structure;
+2. logical closure, epistemic-state and anti-circularity repair.
+
+Routing Delta:
+Sonnet/Claude now performs one focused re-challenge of the repaired contract; source/runtime verification follows only if the semantic contract survives.
+
+Current edge:
+repaired semantic contract → focused independent challenge.
