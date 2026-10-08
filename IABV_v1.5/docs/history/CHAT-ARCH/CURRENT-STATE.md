@@ -1,3 +1,40 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.33 PAIR UNAVAILABLE / RQ21.34 ACTION-PRODUCER TRACE
+
+Canonical record:
+CHAT-ARCH-2026-10-08-146-rq21-33-pair-unavailable-and-action-producer-frontier.md
+
+Documentation main before this writeback:
+b262a3152b27e75f56d19c72712b7c546499798f
+
+Executable baseline:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.33 = CLOSED / PAIR-NOT-AVAILABLE:
+the inspected concrete evidence does not contain two valid same-intent tools.local_workflow requests with materially different operations. No synthetic pair is admitted.
+
+Critical epistemic guard:
+PAIR NOT AVAILABLE != H4 PROVEN.
+The inability to run the pairwise discriminator leaves operational discrimination UNPROVEN.
+
+Independent source recheck:
+ToolTeachService._build_actions() consumes goal_parameters.actions, but no production src construction of a typed goal_parameters.actions list was located in the bounded source search. The MCP orchestrator_preview entrypoint accepts arbitrary goal_parameters but is preview-only and does not establish an operative action producer.
+
+Current first open edge:
+real structured-operation producer → operative consumer → exact R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+RQ21.34 — one narrow static census of non-UI production entrypoints that can construct or transport goal_parameters.actions and trace only those that reach ToolTeachService.build_task_from_request() or an equivalent operative selector boundary.
+
+Method rule:
+bounded negative search → bounded absence only; never promote pair unavailability into semantic absence or H4 closure.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.32 TASKINTENT TOO COARSE / RQ21.33 DISCRIMINATION TEST
 
 Canonical record:
