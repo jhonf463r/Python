@@ -5042,3 +5042,28 @@ Critical guards:
 - no post-selection retroactive demand inference.
 
 Implementation remains blocked.
+
+
+## 2026-10-08 — RQ21.39 FAIL / MINIMUM REPAIR FRONTIER
+
+Closed:
+- RQ21.36 provisional contract;
+- RQ21.37 first adversarial repair pass;
+- RQ21.38 repaired contract proposal;
+- RQ21.39 focused rechallenge as FAIL-AS-WRITTEN.
+
+Remaining semantic knots:
+1. non-extensional operation identity;
+2. bounded capability/envelope without task swallowing;
+3. partial UNKNOWN with known lower-bound requirements;
+4. EMPTY based on success predicate;
+5. positive/negative/unknown capability evidence;
+6. fixed-vocabulary candidate-set independence;
+7. coverage vs workflow/data/interface sufficiency;
+8. relational verification.
+
+Guard:
+do not turn these into a new ontology or architecture unless required by the implementation boundary.
+
+Next:
+minimum semantic synthesis → final focused challenge → source reconciliation.
