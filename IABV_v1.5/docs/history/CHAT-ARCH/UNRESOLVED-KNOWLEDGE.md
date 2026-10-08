@@ -1,3 +1,21 @@
+## 2026-10-08 — FRESH-CHAT RECONCILIATION / RQ21.49
+
+[F] Remote main was independently checked at `d7bdf04567b9e0e683bd5fd67ad295931d24e719` before this reconciliation.
+
+[F] RQ21.49 remains the latest canonical RQ21 episode and is `PASS WITH BOUNDED REPAIRS`.
+
+[F] R2/R3/R8 and the normative component of R6 remain open owner decisions.
+
+[F] No RQ21.50 record exists on the verified remote default branch.
+
+[F] No owner ratification was supplied in this turn.
+
+[NP] Implementation readiness, actual containment enforceability, capability proof and runtime proof remain unresolved.
+
+Current first open edge:
+owner ratification → minimal authorized substrate contract → independent verification → Codex implementation.
+
+
 ## 2026-10-08 — RQ21.49 OPEN NORMATIVE QUESTIONS
 
 - R2: independent realization conformance/coverage evidence is not yet owner-ratified.
