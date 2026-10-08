@@ -1,3 +1,23 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-147
+
+Canonical:
+CHAT-ARCH-2026-10-08-147-rq21-34-generic-action-transport-no-preselection-consumer.md
+
+Type:
+RECONCILIATION / ROUTING / PROVENANCE / SEMANTIC-CONTRACT / METHOD / CAPABILITY
+
+State:
+RQ21.34 CLOSED-C / RQ21.35 OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- generic goal_parameters can transport actions-shaped data;
+- no observed bounded production typed-action producer reaches operative pre-selection;
+- _build_actions() consumes actions only after selection;
+- post-selection ToolTask.actions remains MIXED;
+- next edge moved from action-producer existence to reuse/composition search for existing pre-selection operation vocabularies.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-146
 
 Canonical:
