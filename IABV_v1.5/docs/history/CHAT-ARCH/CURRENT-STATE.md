@@ -1,3 +1,23 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.52 CODEX SUBSTRATE FEASIBILITY
+
+Canonical:
+CHAT-ARCH-2026-10-08-170-rq21-52-codex-substrate-feasibility.md
+
+RQ21.52 = CLOSED-C / NO FEASIBLE EXISTING SUBSTRATE / IMPLEMENTATION BLOCKED.
+
+Codex audited the pinned executable baseline and found no existing faithful substrate for the full ratified capability. No source or runtime changes were made.
+
+Missing guarantees include effective containment/attribution, structured E observation, authenticated evidence custody/integrity, hidden X custody, deterministic X validation, quiescent window closure, and candidate artifact binding.
+
+This establishes a bounded new containment/evidence trust boundary as a necessary realization substrate. That boundary requires explicit Human Domain Owner authorization before implementation.
+
+Current first open edge:
+Human Domain Owner authorization of bounded new substrate/trust boundary → ChatGPT minimal contract freeze → focused independent verification → Codex implementation.
+
+NEXT ACTOR: HUMAN DOMAIN OWNER.
+
+No Devin runtime.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.50 HUMAN DOMAIN OWNER RATIFICATION
 
 Canonical:
