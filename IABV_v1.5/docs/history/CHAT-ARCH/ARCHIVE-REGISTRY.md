@@ -1,3 +1,25 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-157
+
+Canonical:
+CHAT-ARCH-2026-10-08-157-rq21-42a-adversarial-reconciliation.md
+
+Type:
+RECONCILIATION / ROUTING / PROVENANCE / SEMANTIC-CONTRACT / CAPABILITY / METHOD / SYMBIOSIS
+
+State:
+RQ21.42A CLOSED / PASS WITH BOUNDED REPAIRS / IMPLEMENTATION NOT READY / DOMAIN ADJUDICATION OPEN
+
+Material delta:
+- readiness-ID reuse is now explicitly conditional on semantic class validation;
+- tools.local.* are not promoted to functional capability identity;
+- unknown intent cannot collapse to assistant.local.chat;
+- ToolCard.capabilities remains heterogeneous and separate from realization declaration;
+- multiple selection/fallback bypasses must be governed by the same capability invariant;
+- DEFERRED remains a reusable negative-outcome state but is not yet wired/proven;
+- first open edge moved upstream to domain operation/success predicate → realization-independent capability identity → R_task.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-147
 
 Canonical:
