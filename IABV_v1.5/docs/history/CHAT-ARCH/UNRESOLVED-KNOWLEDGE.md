@@ -1,3 +1,20 @@
+## 2026-10-08 — RQ21.50 OWNER RATIFICATION
+
+[F] Human Domain Owner explicitly ratified R2, R3, R8 and R6 as YES.
+
+[F] R2 requires objectively/tangibly verifiable evidence and rejects self-authenticating realization claims.
+
+[F] R3 includes direct, descendant and delegated attributable effects, including IPC/loopback/local-service paths.
+
+[F] R8 requires X to remain inaccessible/hidden from the candidate during validation.
+
+[F] R6 requires evidence integrity against unauthorized modification from outside the evidence trust/containment boundary.
+
+[NP] The exact implementation technology and runtime enforceability of those guarantees remain unproven.
+
+Current first open edge:
+owner-ratified contract → minimal executable substrate contract → independent focused challenge → implementation.
+
 ## 2026-10-08 — FRESH-CHAT RECONCILIATION / RQ21.49
 
 [F] Remote main was independently checked at `d7bdf04567b9e0e683bd5fd67ad295931d24e719` before this reconciliation.
