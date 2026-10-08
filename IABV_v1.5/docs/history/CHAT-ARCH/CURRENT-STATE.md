@@ -1,3 +1,32 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.57 OWNER SCOPE CONFIRMATIONS + CONTRACT FREEZE
+
+Canonical record:
+`CHAT-ARCH-2026-10-08-176-rq21-57-owner-scope-confirmations-and-contract-freeze.md`
+
+The Human Domain Owner accepted both RQ21.54 scope points:
+- R8: partition substrate guarantees, caller/interface obligations and explicitly declared residuals; unknown/uncovered relevant channels cannot support PASS.
+- temporal scope: candidate and attributable/delegated activities throughout the validation window; closure only after quiescence/termination and final-state verification; post-window behavior requires separate validation/control when relevant.
+
+RQ21.57 = **OWNER SCOPE CLOSED / MINIMAL CONTRACT FROZEN**.
+
+The seven guarantees and failure semantics remain unchanged: all guarantees require positive demonstration; missing/uncovered/ambiguous evidence yields `NOT VALIDATED`, never PASS-by-omission. No technology has been selected.
+
+Current executable baseline remains:
+`5b1d89022ee4cdc63c1f88e050f086b40a42875c`
+Tree:
+`ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61`
+
+Current first open edge:
+frozen contract → focused source/feasibility audit of `Experimental_CreateProcessInSandbox` and reusable IABV organs against all seven guarantees → exact-target availability/behavior check via a proven execution channel → independent verification → conditional Codex implementation.
+
+NEXT ACTOR: FOCUSED TECHNICAL FEASIBILITY REVIEW (not generic Deep Research; no implementation prompt yet).
+
+Current source still does not prove the capability: `ToolSandbox.run()` forwards `sandbox=True`; `ShellToolAdapter` still invokes `subprocess.run(..., shell=True)`; `ToolValidator` does not validate hidden `X` or protected effects `E`; `SandboxExperimentService` is only partial comparator infrastructure.
+
+No code/runtime changes were made by the owner decision or contract freeze.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.56 DEEP-RESEARCH RESULT ADJUDICATED / INCOMPLETE
 
 Canonical adjudication:
