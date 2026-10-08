@@ -4786,3 +4786,20 @@ Next actor:
 SONNET/CLAUDE.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.39 → MINIMUM SYNTHESIS → FINAL CHALLENGE
+
+Canonical:
+CHAT-ARCH-2026-10-08-153-rq21-39-focused-rechallenge-reconciled.md
+
+State:
+FAIL-AS-WRITTEN / LOCAL REPAIRS / IMPLEMENTATION BLOCKED.
+
+Next:
+ChatGPT minimum-contract synthesis.
+
+Then:
+Sonnet/Claude final focused falsification.
+
+No implementation/runtime/scoring change.
