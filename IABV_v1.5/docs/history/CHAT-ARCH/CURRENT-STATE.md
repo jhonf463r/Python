@@ -1,3 +1,21 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.54 SONNET 5.5 FOCUSED SUBSTRATE VERIFICATION
+
+Canonical:
+CHAT-ARCH-2026-10-08-172-rq21-54-sonnet-focused-substrate-verification.md
+
+RQ21.54 = PASS WITH BOUNDED REPAIRS.
+
+Sonnet found no contradiction requiring reopening R2/R3/R8/R6. It identified two remaining Owner scope confirmations:
+1. R8 partition: substrate-guaranteed channels vs caller/interface obligations vs declared residuals;
+2. adversary temporal scope: candidate/control/delegation during validation window, versus post-window promoted-candidate activity.
+
+Current first open edge:
+Owner confirmation of R8 partition + adversary temporal scope → ChatGPT final contract freeze → Codex implementation.
+
+NEXT ACTOR: HUMAN DOMAIN OWNER.
+
+No implementation/runtime yet.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.53 OWNER AUTHORIZATION + MINIMAL SUBSTRATE CONTRACT
 
 Canonical:
