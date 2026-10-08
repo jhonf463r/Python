@@ -2264,3 +2264,25 @@ Material delta:
 - no executable implementation is authorized by this record.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-149
+
+Canonical:
+CHAT-ARCH-2026-10-08-149-rq21-35-semantic-census-and-human-adjudication-frontier.md
+
+Type:
+RECONCILIATION / ROUTING / PROVENANCE / SEMANTIC-CONTRACT / SYMBIOSIS / METHOD
+
+State:
+RQ21.35 CLOSED-C / HUMAN SEMANTIC ADJUDICATION NEXT / IMPLEMENTATION BLOCKED
+
+Material delta:
+- bounded census found no existing pre-selection candidate sufficient for exact R_task;
+- ToolActionType remains post-selection in the traced path;
+- remaining uncertainty is normative/domain semantic contract, not merely source archaeology;
+- next actor is the human semantic/domain adjudicator;
+- independent adversarial challenge follows the human contract;
+- no implementation/runtime/scoring change.
+
+Routing authority remains CURRENT-STATE.md.
