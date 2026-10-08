@@ -5004,3 +5004,23 @@ Still unresolved:
 
 Next:
 independent adversarial challenge, then reconciliation.
+
+## 2026-10-08 — RQ21.37 PASS WITH REPAIRS / SEMANTIC CONTRACT REVISION
+
+Independent semantic challenge identified material design defects in the RQ21.36 proposal.
+
+Required next repairs:
+- non-circular functional anchor for operation/capability;
+- explicit demand-state alongside R_task;
+- capable/permitted/ready/available separation;
+- evidence basis for capability satisfaction;
+- governance-derived demand distinction;
+- success criterion/evidence requirement separation;
+- explicit single-realization conjunction boundary;
+- versioned/frozen R_task and anti-candidate-leakage rule;
+- failure attribution separation.
+
+Next open edge:
+provisional repaired operation → capability → R_task contract → focused independent rechallenge.
+
+Implementation remains blocked.
