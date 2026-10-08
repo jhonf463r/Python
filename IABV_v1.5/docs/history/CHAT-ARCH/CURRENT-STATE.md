@@ -1,3 +1,33 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.31 SEMANTIC-UNIT CLOSURE / RQ21.32 ROUTING
+
+Canonical record:
+CHAT-ARCH-2026-10-08-144-rq21-31-semantic-unit-closure-and-routing-improvement.md
+
+Current documentation main before this writeback:
+1345b9dba1f885fc4e0725691c21d0de09fcec4f
+
+Executable source baseline:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.31 = CLOSED / C:
+the real tools.local_workflow caller preserves user_goal but produces no stable typed pre-selection operation representation. Intent/readiness/pack/playbook remain broad, and tool-specific actions are generated after tool selection.
+
+Current first open edge:
+user_goal / heuristic intent representation → stable structured task semantic unit → exact R_task.
+
+Current next actor:
+CODEX.
+
+Routing reason:
+identify the existing first text-derived semantic normalizer consumed by InteractionModeSelector before ToolCard selection. This is the highest-information remaining source-level question; no runtime or implementation is needed.
+
+No implementation/runtime/scoring changes are authorized.
+
+Cumulative routing rule:
+actor result → reconciliation → deltas → writeback → actor selection → next prompt.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.30 CALLER PROVENANCE / CUMULATIVE ROUTING METHOD
 
 Canonical record:
