@@ -4716,3 +4716,24 @@ Current technical route remains:
 RQ21.35 — existing pre-selection operation vocabulary / semantic discriminator → operative consumer → exact R_task.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.35 → HUMAN SEMANTIC ADJUDICATION
+
+Canonical:
+CHAT-ARCH-2026-10-08-149-rq21-35-semantic-census-and-human-adjudication-frontier.md
+
+RQ21.35 = CLOSED-C.
+
+First open edge:
+operational task meaning → abstract capability requirement → exact R_task.
+
+Next actor:
+human semantic/domain adjudicator.
+
+Follow-on:
+independent adversarial semantic challenge → reconciliation → minimal implementation contract.
+
+Guard:
+do not treat bounded source absence as universal absence; do not reopen generic archaeology without a new discriminating hypothesis; do not implement before the semantic contract is explicit and independently challenged.
+
