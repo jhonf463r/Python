@@ -1,3 +1,29 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.45 OWNER DECISION / IMPLEMENTATION CONTRACT UNLOCKED
+
+Canonical:
+CHAT-ARCH-2026-10-08-162-rq21-45-owner-decision.md
+
+RQ21.45 = CLOSED.
+
+Owner-adopted decisions:
+1. Machine ID = A1, `capability.sandbox.dynamic_validation`, separate from readiness/state/availability/locality/mechanism/provider/adapter/governance vocabulary.
+2. E/X = CONFIRMED; `candidate`, `X` expected behaviour, and `E` protected effect set are task/validation inputs, not capability identity.
+3. Task boundary = C1; the first slice is a dedicated validation step/task with `R_task={capability.sandbox.dynamic_validation}`; this is not universal sufficiency for arbitrary composite ToolTask work.
+4. Evidence acquisition = CONFIRMED; governed capability-test/acquisition is separate from eligibility and does not weaken the evidence requirement.
+5. Negative semantics = CONFIRMED for both `KNOWN demand + eligible set = ∅` and `KNOWN demand + unresolved requested tool_id`; no fallback resurrection.
+
+Current first open edge:
+owner-adjudicated capability contract → minimal executable implementation → independent verification.
+
+NEXT ACTOR:
+CODEX.
+
+Next task:
+prepare/execute the minimal implementation against the pinned executable baseline, preserving the closed semantic contract and all RQ21.44A repairs.
+
+Implementation is now contract-unlocked, but runtime proof is not established and must not be implied by code presence.
+No runtime is authorized merely by RQ21.45.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.44A CODE-CONTRACT VERIFICATION / OWNER DECISIONS OPEN
 
 Canonical:
