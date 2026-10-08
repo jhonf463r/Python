@@ -2306,3 +2306,22 @@ Material delta:
 - no implementation/runtime/scoring change.
 
 Routing authority remains CURRENT-STATE.md.
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-151
+
+Canonical:
+CHAT-ARCH-2026-10-08-151-rq21-37-adversarial-challenge-reconciled.md
+
+Type:
+SEMANTIC-CONTRACT / ADVERSARIAL-REVIEW / RECONCILIATION / METHOD / ROUTING
+
+State:
+RQ21.37 PASS-WITH-REPAIRS / REVISE-THEN-RECHALLENGE / IMPLEMENTATION BLOCKED
+
+Material delta:
+- provisional semantic contract survived its core causal structure;
+- nine repair classes were identified;
+- next actor is ChatGPT for minimum semantic repair;
+- Sonnet/Claude then re-challenges the repaired contract.
+
+Routing authority remains CURRENT-STATE.md.
