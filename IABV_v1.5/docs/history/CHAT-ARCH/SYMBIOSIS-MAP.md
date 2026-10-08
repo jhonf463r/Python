@@ -5504,3 +5504,18 @@ CODEX now owns the narrow source-level join census because the remaining uncerta
 
 Current edge:
 existing demand/readiness inputs → exact R_task → constrained realization selection.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.41 SOURCE RECONCILIATION
+
+Knowledge Delta:
+the abstract semantic problem has become a bounded code-facing seam. The current system already has intent normalization, readiness/evidence, selector and realization records, but their semantic join is incomplete.
+
+Method Delta:
+separate existing vocabulary reuse from authoritative semantic identity; do not promote partial overlap into a universal join.
+
+Routing Delta:
+ChatGPT now synthesizes the minimum code-facing contract; Sonnet/Claude then attacks that contract against the source facts.
+
+Current edge:
+R_task + demand_state + envelope → realization declaration → hard eligibility gate.
