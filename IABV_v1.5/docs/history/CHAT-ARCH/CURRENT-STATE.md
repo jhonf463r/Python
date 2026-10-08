@@ -1,3 +1,48 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.35 CLOSED / HUMAN SEMANTIC ADJUDICATION REQUIRED
+
+Canonical record:
+CHAT-ARCH-2026-10-08-149-rq21-35-semantic-census-and-human-adjudication-frontier.md
+
+Executable baseline remains:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.35 = CLOSED / C — existing structured semantic objects exist, but none can reach exact R_task.
+
+Closed candidate findings:
+- TaskIntent = broad pre-selection semantic normalizer, too coarse for exact operation demand.
+- TaskRole = coarse execution family.
+- desired_modes = modality preference.
+- task_kind = broad heuristic classification.
+- StrategyPack/playbook = broad strategy/readiness semantics.
+- execution_scope = operative policy/risk scope, not operation identity.
+- ToolActionType = concrete operation vocabulary but produced/consumed post-selection in the traced path, therefore circular as pre-selection demand authority.
+
+First open semantic edge:
+operational task meaning → abstract capability requirement → exact R_task.
+
+The source-level archaeology is now sufficient to bound the engineering question. Do not reopen generic searches for the same vocabulary without a new discriminating hypothesis.
+
+NEXT ROUTE:
+human semantic/domain adjudication to define the intended operation→capability contract; then independent adversarial challenge; then implementation only after contract closure.
+
+Required adjudication must define:
+- what constitutes a concrete operation;
+- how operation semantics map to abstract capability identity;
+- realization independence;
+- minimum multi-capability semantics;
+- positive and negative examples;
+- failure/unknown semantics.
+
+Symbiosis rule:
+bounded source evidence establishes current operational behavior; it does not silently invent the abstract semantic contract. When the remaining uncertainty is normative/domain meaning, escalate explicitly rather than manufacturing certainty.
+
+Current cumulative-development target remains:
+verified experience → reusable delta → later non-identical reuse → changed decision → observable consequence.
+
+No implementation/runtime/scoring change authorized by this overlay.
+
 ## 2026-10-08 ACTIVE METHOD OVERLAY — SYMBIOSIS / CUMULATIVE DEVELOPMENTAL CONTROL LOOP
 
 Canonical record:
