@@ -3,6 +3,15 @@
 This directory is the canonical historical-memory layer for IABV. It preserves knowledge from ChatGPT / Claude / Devin / Codex and related engineering conversations without requiring future chats to retain the original transcript.
 
 ## OPERATIONAL MEMORY
+
+## 2026-10-08 ACTIVE RQ21 ROUTE — RQ21.58 WINDOWS FEASIBILITY AUDIT
+
+Canonical: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`.
+
+The focused source audit is accepted as bounded feasibility input with repairs; it does not prove a composed seven-guarantee substrate. The experimental API rejects non-NULL process/thread attributes and inherited handles. WFP SID filter conditions alone are not complete event evidence. Current IABV source remains unchanged from the pinned executable baseline.
+
+Next: establish a known-good non-elevated, read-only channel bound to exact target `10.0.26300.0` → P0 static native-path/export inspection → independent verification. No API-loading probe, candidate execution or Codex implementation until later readiness and authorization gates.
+
 ## 2026-10-08 ACTIVE RQ21 CONTRACT — OWNER SCOPE CLOSED
 
 Canonical: `CHAT-ARCH-2026-10-08-176-rq21-57-owner-scope-confirmations-and-contract-freeze.md`.
