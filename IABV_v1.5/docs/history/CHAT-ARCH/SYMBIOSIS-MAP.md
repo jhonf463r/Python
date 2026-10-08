@@ -1,3 +1,26 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.29 DEMAND-SIDE CAPABILITY TRANSLATION
+
+Knowledge Delta:
+- RQ21.28 closes the absence of an exact existing per-ToolTask requirement contract as D.
+- RQ21.29 refines that to C: concrete operation semantics can exist before selection, but no operative operation→abstract-capability transformation was found in the focal path.
+- ToolTask.actions is mixed and cannot be treated as a universal independent demand oracle.
+- post-selection generated actions must not be used to justify the selection that generated them.
+
+Method Delta:
+- apply a causal-order gate before inferring semantic requirements:
+pre-selection semantics → requirement transformation → eligibility → selection → realization-specific artifacts;
+- test same-intent/different-operation pairs to detect whether intent-level mappings are too coarse;
+- reject circular requirement inference from selected realization artifacts.
+
+Routing Delta:
+CODEX remains the capability-fit actor for the next read-only caller/provenance trace. No runtime or implementation.
+
+Current first open edge:
+concrete pre-selection operation semantics → consumed operation→capability transformation → exact R_task.
+
+No new organ/registry/manager is justified.
+
+
 ## 2026-10-07 SYMBIOSIS TRANSFER — CLAUDE EMPTY-SET CLOSURE
 
 Sonnet/Claude adversarial review closed the conceptual capability-empty edge.
