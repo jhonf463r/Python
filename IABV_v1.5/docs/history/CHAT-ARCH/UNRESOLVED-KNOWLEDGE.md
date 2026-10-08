@@ -1,3 +1,24 @@
+## 2026-10-08 — RQ21.57 OWNER SCOPE POINTS RESOLVED; REALIZATION STILL UNPROVEN
+
+[FACT] Human Domain Owner accepted R8's partition into substrate guarantees, caller/interface obligations, and explicitly declared residuals.
+
+[FACT] Any relevant channel whose coverage/confidentiality remains unknown, uncovered or not verifiably protected prevents PASS.
+
+[FACT] The threat window covers the candidate and attributable/delegated activities throughout validation. Closure requires termination/quiescence and a final-state check; post-window behavior is outside this validation window and needs separate validation/control where relevant.
+
+[FACT] The minimal seven-guarantee contract is frozen; no specific technology is approved.
+
+[FACT] The current audited path remains insufficient: `ToolSandbox` passes `sandbox=True`; `ShellToolAdapter` executes with `subprocess.run(..., shell=True)`; `ToolValidator` does not compare output against hidden `X` or verify protected effect coverage `E`; `SandboxExperimentService` is partial.
+
+[INFERENCE] A faithful bounded realization substrate remains necessary unless an explicit Windows/IABV composition is demonstrated to satisfy all seven guarantees.
+
+[UNPROVEN] Exact API availability/behavior on target build `10.0.26300.0`; complete composition coverage; implementation correctness; runtime proof.
+
+Source record:
+`CHAT-ARCH-2026-10-08-176-rq21-57-owner-scope-confirmations-and-contract-freeze.md`
+
+---
+
 ## 2026-10-08 — RQ21.56 RESULT NOT ACCEPTED AS COMPLETE / EXPERIMENTAL API UNPROVEN
 
 [FACT] The submitted report did not provide the required seven-guarantee source-audited comparison or a claim-level bibliography; it is not accepted as a complete RQ21 technical result.
