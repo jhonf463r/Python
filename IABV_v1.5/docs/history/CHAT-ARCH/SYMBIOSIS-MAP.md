@@ -1,3 +1,22 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.33 PAIR UNAVAILABLE
+
+Knowledge Delta:
+- The planned pairwise discrimination experiment could not be executed because the inspected baseline evidence did not contain two comparable tools.local_workflow requests with materially different operations.
+- This is a bounded evidence limitation, not proof that pre-selection signals are semantically incapable of discrimination.
+- A bounded source search found the generic goal_parameters.actions consumer in ToolTeachService, but no typed actions producer in the inspected production src surface.
+- orchestrator_preview accepts generic goal_parameters but remains preview-only; it does not establish an operative action producer.
+
+Method Delta:
+- Pair absence must be recorded separately from semantic refutation.
+- Do not promote H4 without a valid same-intent/different-operation pair or an equivalent direct semantic discriminator.
+- When a pair is unavailable, move one causal step backward: producer → transport → operative consumer → requirement derivation.
+
+Routing Delta:
+CODEX remains the capability-fit actor for RQ21.34 because the uncertainty is source-level producer/call-site provenance. Sonnet/Claude is deferred until a concrete semantic discriminator exists to challenge.
+
+Current edge:
+real structured-operation producer → operative consumer → exact R_task.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.32 TASKINTENT TOO COARSE
 
 Knowledge Delta:
