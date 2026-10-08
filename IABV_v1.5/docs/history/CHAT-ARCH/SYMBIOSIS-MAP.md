@@ -1,3 +1,22 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.34 GENERIC ACTION TRANSPORT / NO PRE-SELECTION CONSUMER
+
+Knowledge Delta:
+- Generic request parameter transport can preserve an actions-shaped payload into the operative task builder.
+- The current operative causal order is selection first, action construction/consumption second.
+- Therefore goal_parameters.actions is transport-capable but not a pre-selection requirement source in the inspected path.
+- ToolTask.actions remains MIXED and is unsafe as a universal independent R_task oracle.
+
+Method Delta:
+- Require proof of the full chain: produced → transported → consumed at the correct causal boundary → semantically scoped → mapped to requirement.
+- Explicitly distinguish transport capability from operative semantic consumption.
+- Preserve bounded-negative-search limits.
+
+Routing Delta:
+CODEX for RQ21.35: narrow static search for existing structured operation vocabularies/discriminators that are already consumed before ToolCard selection. Sonnet/Claude remains deferred until a concrete discriminator/contract candidate exists.
+
+Current edge:
+existing pre-selection operation vocabulary/semantic discriminator → operative consumer → exact R_task.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.33 PAIR UNAVAILABLE
 
 Knowledge Delta:
