@@ -1,3 +1,25 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.43A → CODEX
+
+Canonical:
+CHAT-ARCH-2026-10-08-159-rq21-43a-semantic-falsification.md
+
+RQ21.43A = CLOSED / PASS WITH BOUNDED REPAIRS.
+
+Semantic closure:
+tools.sandbox = KNOWN as dynamic validation under declared protected-effect containment; tools.local_workflow and system.metacognition remain AMBIGUOUS.
+
+Next actor:
+CODEX.
+
+Next experiment:
+source-aware code-facing reconciliation of C_SANDBOX_DYNAMIC_VALIDATION:
+- machine-ID mapping only;
+- minimum request/task seam;
+- realization declaration candidates;
+- hard eligibility gate locations;
+- DEFERRED implications;
+- no implementation.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.43 → SONNET/CLAUDE
 
 Canonical:
