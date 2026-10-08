@@ -1,3 +1,36 @@
+## 2026-10-08 ACTIVE OVERLAY — FRESH-CHAT CONTINUITY RECONCILIATION / RQ21.49
+
+Canonical reconciliation record:
+`CHAT-ARCH-2026-10-08-168-cross-chat-continuity-reconciliation-rq21-49.md`
+
+Temporal anchor:
+2026-10-08 15:21 America/Bogota / 20:21Z.
+
+Verified remote `main` at reconciliation start:
+`d7bdf04567b9e0e683bd5fd67ad295931d24e719`.
+
+Latest canonical episode:
+RQ21.49 / `CHAT-ARCH-2026-10-08-167-rq21-49-sonnet-owner-contract-challenge.md`.
+
+RQ21.50 is NOT canonical; no RQ21.50 record was found on remote main.
+
+RQ21.49 = PASS WITH BOUNDED REPAIRS.
+
+Open owner decisions:
+R2 — independent realization conformance/coverage evidence;
+R3 — attributable effects, descendants, delegation/IPC/loopback and undefeatable containment boundary;
+R8 — whether X is inaccessible/confidential to the candidate;
+R6 normative component — evidence-integrity strength against uncontained writers.
+
+Current first open edge:
+owner ratification of R2/R3/R8 (+ R6 integrity boundary) → minimal authorized substrate contract → Codex implementation.
+
+NEXT ACTOR: HUMAN DOMAIN OWNER.
+
+Fresh-chat rule:
+remote current state must be verified before inheriting any transcript SHA, RQ number, prompt, actor or decision. Proposed future RQs remain UNPROMOTED until canonical read-back. Do not duplicate already-absorbed writebacks.
+
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.49 SONNET 5.5 / OWNER CONTRACT FALSIFICATION
 
 Canonical: CHAT-ARCH-2026-10-08-167-rq21-49-sonnet-owner-contract-challenge.md
