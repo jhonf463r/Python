@@ -1,3 +1,40 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.43 HUMAN CAPABILITY ADJUDICATION / SANDBOX CAPABILITY CLOSED
+
+Canonical:
+CHAT-ARCH-2026-10-08-158-rq21-43-human-capability-adjudication.md
+
+Executable baseline remains:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.43 = PARTIALLY CLOSED / DOMAIN ADJUDICATION ACCEPTED.
+
+Human/domain decision:
+- tools.local_workflow = AMBIGUOUS; family does not define one capability.
+- tools.sandbox = KNOWN; capability meaning is "evaluate a candidate execution under effective isolation and produce an observable validation result."
+- system.metacognition = AMBIGUOUS; multiple materially different metacognitive operations remain plausible.
+
+Critical semantic boundary:
+family/intent != capability.
+Concrete functional operation + success predicate → abstract capability → R_task.
+
+The sandbox semantic meaning is closed, but its machine-readable capability ID is NOT yet authorized. Readiness IDs remain evidence/readiness and are not automatically capability identity.
+
+NEXT ACTOR:
+SONNET/CLAUDE — focused independent semantic falsification of the adjudicated table.
+
+Scope:
+- falsify realization independence of sandbox validation capability;
+- challenge determinant dimensions vs readiness/governance;
+- challenge the AMBIGUOUS classifications for tools.local_workflow and system.metacognition;
+- identify the minimum counterexample capable of invalidating a row.
+
+After survival of the sandbox row:
+CODEX for minimal code-facing contract reconciliation.
+
+No implementation/runtime/scoring change.
+No global capability-namespace promotion.
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.42A ADVERSARIAL RECONCILIATION / DOMAIN EDGE OPEN
 
 Canonical record:
