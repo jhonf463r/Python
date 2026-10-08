@@ -1,3 +1,4 @@
+| CHAT-ARCH-2026-10-08-170-rq21-52-codex-substrate-feasibility.md | RQ21.52 Codex feasibility stop; no faithful existing substrate for ratified dynamic-validation contract; owner authorization required for bounded new containment/evidence boundary | substrate feasibility / containment / evidence / routing / method / symbiosis |
 | CHAT-ARCH-2026-10-08-168-cross-chat-continuity-reconciliation-rq21-49.md | Fresh remote-state + space-time continuity reconciliation; verifies RQ21.49 remains canonical, RQ21.50 is unpromoted, and Human Domain Owner remains next actor | continuity / provenance / routing |
 
 | CHAT-ARCH-2026-10-08-167-rq21-49-sonnet-owner-contract-challenge.md | RQ21.49 Sonnet 5.5 adversarial owner-contract challenge; PASS WITH BOUNDED REPAIRS | owner-ratification frontier |
