@@ -1,3 +1,25 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.42A ADVERSARIAL RECONCILIATION
+
+Knowledge Delta:
+- readiness IDs were narrowed into functional, mixed/site-specific, precondition/availability, and empty/fallback classes;
+- the current session-reachable domain has no validated functional capability ID available for the target tools.* / system.metacognition tasks;
+- the selector graph contains multiple bypass classes;
+- DEFERRED is defined but not yet operationally propagated.
+
+Method Delta:
+- semantic class validation is now a prerequisite for capability-ID reuse;
+- lack of a mapped ID must not be treated as EMPTY or UNKNOWN without an explicit state contract;
+- global hard eligibility must cover every route that can make a realization authoritative;
+- implementation readiness requires domain semantics first.
+
+Routing Delta:
+HUMAN/DOMAIN OWNER → bounded capability adjudication;
+SONNET/CLAUDE → focused falsification of that table;
+CODEX → implementation contract only after semantic closure.
+
+Current edge:
+domain operation / success predicate → realization-independent capability identity → exact R_task.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.34 GENERIC ACTION TRANSPORT / NO PRE-SELECTION CONSUMER
 
 Knowledge Delta:
