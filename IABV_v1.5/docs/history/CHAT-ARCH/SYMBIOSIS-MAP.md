@@ -1,3 +1,23 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.45 OWNER DECISION
+
+Knowledge Delta:
+- owner-adopted machine identity is now separated from readiness/state vocabulary;
+- E/X are confirmed task/validation inputs;
+- first slice is explicitly a validation step, preventing universal-sufficiency overclaiming;
+- evidence acquisition is a governed path distinct from eligibility;
+- negative semantics cover empty eligibility and unresolved explicit realization.
+
+Method Delta:
+- owner authorization closes machine identity without semantic inference;
+- evidence bootstrap must never weaken hard eligibility;
+- task boundary must be explicit;
+- negative behavior is part of the capability contract.
+
+Routing Delta:
+CODEX is now the capability-fit implementation actor.
+Next edge:
+owner-adjudicated contract → minimal executable implementation → independent verification.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.44A CODE-CONTRACT VERIFICATION
 
 Knowledge Delta:
