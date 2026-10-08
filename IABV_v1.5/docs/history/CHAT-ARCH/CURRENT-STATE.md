@@ -1,3 +1,25 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.50 HUMAN DOMAIN OWNER RATIFICATION
+
+Canonical:
+CHAT-ARCH-2026-10-08-169-rq21-50-owner-ratification.md
+
+RQ21.50 = CLOSED / OWNER RATIFIED.
+
+Owner decisions:
+- R2 = YES: validation requires evidence with sufficient objective/tangible verifiability; a realization cannot self-authenticate its own conformance.
+- R3 = YES: attributable effects include descendants and delegated paths such as IPC, loopback and local services.
+- R8 = YES: X remains inaccessible/hidden from the candidate during validation so the candidate cannot tailor behaviour to the hidden test criterion.
+- R6 = YES: evidence must be protected against unauthorized modification by actors outside the evidence trust/containment boundary.
+
+These are Human Domain Owner decisions, not AI-inferred policy.
+
+Current first open edge:
+owner-ratified R2/R3/R8/R6 → minimal executable substrate contract → focused Sonnet 5.5 challenge → Codex implementation.
+
+NEXT ACTOR: CHATGPT.
+
+No implementation/runtime yet.
+
 ## 2026-10-08 ACTIVE OVERLAY — FRESH-CHAT CONTINUITY RECONCILIATION / RQ21.49
 
 Canonical reconciliation record:
