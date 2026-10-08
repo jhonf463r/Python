@@ -9901,3 +9901,29 @@ FOLLOW-ON:
 Sonnet/Claude one focused re-challenge of the repaired contract.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 ACTIVE OVERLAY — RQ21.38 REPAIRED CONTRACT / RECHALLENGE NEXT
+
+Canonical record:
+CHAT-ARCH-2026-10-08-152-rq21-38-repaired-semantic-contract.md
+
+RQ21.37 = PASS WITH REPAIRS.
+
+RQ21.38 is the coordinator's repaired semantic synthesis. It is provisional.
+
+Key repaired separations:
+- operation/capability definitions are non-circular;
+- R_task carries both requirements and demand state;
+- UNKNOWN is distinct from explicit EMPTY_CAPABILITY_DEMAND;
+- functionally capable, permitted, ready and available are distinct;
+- capability-satisfaction evidence is attached to realization × capability × parameter/envelope;
+- task demand may include legitimate functional constraints from the task/governance contract, but never from the selected realization;
+- success criterion is distinct from evidence requirement;
+- minimum conjunction is single-realization and leaves composition/order/data dependencies outside scope;
+- R_task is frozen/versioned before outcome observation and invariant to candidate-set visibility.
+
+NEXT ACTOR:
+SONNET/CLAUDE — focused re-challenge of RQ21.38.
+
+No implementation/runtime/scoring change.
