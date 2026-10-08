@@ -9927,3 +9927,32 @@ NEXT ACTOR:
 SONNET/CLAUDE — focused re-challenge of RQ21.38.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 ACTIVE OVERLAY — RQ21.39 FAIL / LOCAL SEMANTIC REPAIRS
+
+Canonical record:
+CHAT-ARCH-2026-10-08-153-rq21-39-focused-rechallenge-reconciled.md
+
+RQ21.39 = FAIL AS WRITTEN / LOCAL REPAIRS REQUIRED.
+
+The central causal separation survives, but the contract still has semantic defects:
+- operation identity must not depend on the extensional realization universe;
+- capability/envelope must not absorb the whole task;
+- UNKNOWN may carry known necessary lower bounds without certifying sufficiency;
+- EMPTY must be success-predicate based, not tool-absence based;
+- capability evidence needs positive/negative/unknown epistemic support;
+- candidate-set independence is relative to a fixed capability-vocabulary version;
+- conjunction gives necessary coverage, not automatic workflow/data/interface sufficiency;
+- relational verification cannot be reduced to self-verification.
+
+Coordinator rule:
+do not import the challenger's full formal ontology. Keep the contract minimal and close only the present semantic edge.
+
+NEXT ACTOR:
+ChatGPT/coordinator — minimum-contract synthesis.
+
+FOLLOW-ON:
+one final focused Sonnet/Claude challenge, then source reconciliation if the contract survives.
+
+No implementation/runtime/scoring change.
