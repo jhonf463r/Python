@@ -4837,3 +4837,17 @@ Follow-on:
 Sonnet/Claude source-aware adversarial challenge.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.42 → SONNET/CLAUDE
+
+Canonical:
+CHAT-ARCH-2026-10-08-156-rq21-42-code-facing-contract-proposal.md
+
+State:
+PROVISIONAL / SOURCE-AWARE ADVERSARIAL REVIEW OPEN / IMPLEMENTATION BLOCKED.
+
+Next actor:
+SONNET/CLAUDE.
+
+No implementation/runtime/scoring change.
