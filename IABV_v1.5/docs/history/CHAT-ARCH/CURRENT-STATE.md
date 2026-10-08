@@ -9868,4 +9868,36 @@ Therefore the current first open edge is narrowed to:
 
 The next experiment remains **CODEX**, but only after explicit human authorization for one read-only light World Model scan. No scan should be executed without that authorization.
 
-Do not move to MCP handoff, PerceptionSnapshot closure, Sonnet audit or external-AI delegation until this producer edge is closed or precisely failed.
+Do not move to MCP handoff, PerceptionSnapshot closure, Sonnet audit or external-AI delegation until this producer edge is closed or precisely failed.## 2026-10-08 ACTIVE OVERLAY — RQ21.37 PASS WITH REPAIRS / CONTRACT REVISION NEXT
+
+Canonical record:
+CHAT-ARCH-2026-10-08-151-rq21-37-adversarial-challenge-reconciled.md
+
+RQ21.36 remains PROVISIONAL.
+
+Independent Sonnet/Claude semantic challenge result:
+**PASS WITH REPAIRS / REVISE THEN RECHALLENGE**.
+
+Important scope:
+- semantic challenge only;
+- no repository inspection;
+- RQ21.35 source claims remain report-only within this episode.
+
+Critical repairs now required before implementation:
+- remove circular operation/capability definitions;
+- separate capable from permitted/ready/available;
+- represent R_task with both requirements and demand state;
+- distinguish UNKNOWN from KNOWN + no capable realization;
+- separate success criterion from evidence requirement;
+- preserve capability parameters/envelopes;
+- keep multi-realization composition outside the minimum single-realization contract;
+- freeze/version R_task before outcome observation and prevent candidate-set leakage;
+- separate demand-interpretation failure from realization/readiness/governance/execution/verification failure.
+
+NEXT ACTOR:
+ChatGPT/coordinator-synthesis — produce the minimum repaired provisional semantic contract.
+
+FOLLOW-ON:
+Sonnet/Claude one focused re-challenge of the repaired contract.
+
+No implementation/runtime/scoring change.
