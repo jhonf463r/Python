@@ -1,3 +1,23 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-159
+
+Canonical:
+CHAT-ARCH-2026-10-08-159-rq21-43a-semantic-falsification.md
+
+Type:
+SEMANTIC-FALSIFICATION / RECONCILIATION / CAPABILITY / ROUTING / METHOD / SYMBIOSIS
+
+State:
+RQ21.43A CLOSED / PASS WITH BOUNDED REPAIRS / CODE-FACING RECONCILIATION OPEN
+
+Material delta:
+- all three human demand states survive independent falsification;
+- sandbox capability receives bounded semantic repairs R1-R4;
+- static/formal validation remains outside its current scope;
+- no machine ID is promoted;
+- next edge is now code-facing reconciliation for one known capability.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-158
 
 Canonical:
