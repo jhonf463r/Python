@@ -1,3 +1,20 @@
+## 2026-10-08 — RQ21.31 CURRENT FRONTIER
+
+Closed:
+- RQ21.28 = D
+- RQ21.29 = C
+- RQ21.30 = C-global / D-actions-real-UI
+- RQ21.31 = C: actual tools.local_workflow path has free-form text + heuristic interpretation, not a stable structured pre-selection task unit.
+
+Current open edge:
+user_goal / heuristic intent representation → stable structured task semantic unit → R_task.
+
+Next:
+RQ21.32, CODEX, read-only trace of the first text-derived semantic feature consumed by InteractionModeSelector.
+
+Guard:
+do not assume that an existing selector feature is an authoritative task contract merely because it is structured; test producer, consumer, semantic scope and causal position first.
+
 ## 2026-10-08 — RQ21.30 CURRENT FRONTIER + CUMULATIVE MEMORY RULE
 
 ### Closed
