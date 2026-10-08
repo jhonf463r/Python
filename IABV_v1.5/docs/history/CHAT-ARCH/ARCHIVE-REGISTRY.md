@@ -1,3 +1,23 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-143
+
+Canonical record:
+CHAT-ARCH-2026-10-08-143-rq21-30-caller-provenance-and-cumulative-routing-method.md
+
+Type:
+RECONCILIATION / ROUTING / PROVENANCE / CAPABILITY / SEMANTIC-CONTRACT / SYMBIOSIS / METHOD
+
+State:
+RQ21.28 CLOSED-D / RQ21.29 CLOSED-C / RQ21.30 CLOSED-C-GLOBAL-D-ACTIONS / NEXT TRACE OPEN
+
+Material delta:
+- actual UI callers do not produce typed pre-selection actions;
+- user_goal is the principal pre-selection semantic signal;
+- intent metadata can be lost at session→request projection;
+- post-selection generated actions must not be used as R_task oracle;
+- cumulative actor-result → writeback → routing → prompt method is now explicit.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-142
 
 Canonical record:
