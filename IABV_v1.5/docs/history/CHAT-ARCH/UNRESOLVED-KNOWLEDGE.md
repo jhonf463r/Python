@@ -1,3 +1,30 @@
+## 2026-10-08 — RQ21.29 CURRENT KNOWLEDGE FRONTIER
+
+### Closed
+- RQ21.28: no inspected existing object provides exact operative R_task → D.
+- RQ21.29: operation semantics may exist pre-selection, but no valid operation→abstract-capability transform was found in the focal path → C.
+- ToolTask.actions is a mixed downstream/input representation and is unsafe as a universal independent requirement oracle.
+
+### Current unresolved edge
+pre-selection operation semantics → required capability identity
+
+### Immediate discriminator
+Trace one real caller per focal intent:
+tools.local_workflow, tools.sandbox, system.metacognition.
+
+Need to establish:
+1. whether explicit actions are produced before selection;
+2. whether they are stable semantic task input;
+3. whether any existing consumer transforms them into capability identity before selection.
+
+### Guard
+Do not infer repository-wide absence from a focal-path audit. Preserve:
+no mapping found in inspected path ≠ universal repository absence proof.
+
+### No-go
+No implementation, runtime, scoring change, or RQ21.27C repetition until the demand-side semantic join is closed.
+
+
 ## 2026-10-07 — CAPABILITY → REALIZATION IMPLEMENTATION REVIEW EDGE
 
 Conceptual empty-set edge is closed by independent Sonnet/Claude audit.
