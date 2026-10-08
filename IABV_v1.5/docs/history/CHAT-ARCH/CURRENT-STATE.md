@@ -9986,3 +9986,36 @@ Next actor:
 CODEX — narrow source-level reuse/composition census.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 ACTIVE OVERLAY — RQ21.41 CLOSED-C / CODE-FACING CONTRACT SYNTHESIS
+
+Canonical:
+CHAT-ARCH-2026-10-08-155-rq21-41-source-reconciliation-and-bounded-extension.md
+
+RQ21.40 semantic status:
+PASS WITH ONE LOCAL REPAIR.
+
+RQ21.41 source reconciliation:
+**C — existing organs are reusable but the semantic bridge requires a bounded extension.**
+
+Confirmed:
+- current semantic path is IntentUnderstandingService → TaskIntent → CapabilityReadinessService._required_capabilities() → CapabilityReadiness → StrategyPack;
+- current readiness mapping is intent-key → fixed capability IDs, not exact operation-level R_task;
+- ToolTask lacks first-class required-capability/demand-state/envelope fields in the inspected baseline;
+- ToolCapability, readiness IDs, EnvironmentCapability IDs and ToolCard.capabilities are distinct vocabularies;
+- ToolCard.capabilities is heterogeneous and realization-facing;
+- CapabilityReadiness is reusable readiness/evidence infrastructure;
+- current selector/registry lacks a proven hard abstract-capability eligibility gate;
+- unknown intent currently falls back to assistant.local.chat.
+
+First open implementation-contract edge:
+semantic task demand + demand_state + bounded envelope → stable required-capability identity → realization declaration → hard capability eligibility at existing selection boundary.
+
+NEXT ACTOR:
+ChatGPT/coordinator — formulate minimum code-facing contract.
+
+FOLLOW-ON:
+Sonnet/Claude source-aware adversarial challenge, then Codex implementation only if contract survives.
+
+No implementation/runtime/scoring change.
