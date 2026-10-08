@@ -1,3 +1,25 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.44 → SONNET/CLAUDE
+
+Canonical:
+CHAT-ARCH-2026-10-08-160-rq21-44-codex-code-facing-reconciliation.md
+
+RQ21.44 = READY FOR MINIMAL CODE CONTRACT.
+
+Key result:
+C_SANDBOX_DYNAMIC_VALIDATION is semantically closed, but no existing machine ID is safe and no realization is proven.
+
+Next actor:
+SONNET/CLAUDE.
+
+Next experiment:
+independent verification of the minimal code contract:
+- demand placement;
+- machine-ID constraints;
+- realization declaration;
+- candidate/final hard gate;
+- DEFERRED;
+- E/X envelope;
+- no implementation.
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.43A → CODEX
 
 Canonical:
