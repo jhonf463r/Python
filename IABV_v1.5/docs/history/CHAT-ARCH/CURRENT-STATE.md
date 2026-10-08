@@ -1,3 +1,38 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.44A CODE-CONTRACT VERIFICATION / OWNER DECISIONS OPEN
+
+Canonical:
+CHAT-ARCH-2026-10-08-161-rq21-44a-code-contract-verification.md
+
+Executable baseline remains:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.44A = PASS WITH BOUNDED REPAIRS / READY FOR MINIMAL CODE CONTRACT.
+
+Independent code-contract verification did not invalidate the contract. It added mandatory repairs:
+- RA: machine capability namespace must be separate from readiness/state/availability and realization-context terms; owner authorization remains separate.
+- RB: demand cannot be inferred retroactively from ToolTask fields/defaults.
+- RC: final resolution guard is a primary enforcement boundary for explicit/preference/fallback routes.
+- RD: realization declaration is opt-in claim-only, not evidence.
+- RE: eligibility requires declaration + capability evidence + readiness + governance; declaration/availability alone is insufficient. A governed capability-test/acquisition path is needed to avoid bootstrap deadlock.
+- RF: task E/X must be matched against realization-side coverage.
+- RG: R_task={C} is not universal task sufficiency; the first slice is a validation step/task whose predicate matches C, unless composition is separately specified.
+- RH: governed negative includes non-empty but unresolved tool_id.
+- RI: readiness/validation signals are not capability evidence unless the validator consumes X and checks the protected-effect channel.
+
+Current first open edge:
+owner-authorized machine identity + bounded E/X/evidence contract → final implementation contract.
+
+NEXT ACTOR:
+CHATGPT / HUMAN DOMAIN OWNER.
+
+Required owner decisions:
+1. authorize or reject a separate machine capability ID for C_SANDBOX_DYNAMIC_VALIDATION;
+2. confirm bounded representation of E/X;
+3. confirm first slice as a dedicated validation task/step rather than universal sufficiency for arbitrary ToolTask.
+
+No implementation/runtime/scoring change.
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.44 CODEX CODE-FACING RECONCILIATION / MINIMAL CONTRACT READY
 
 Canonical:
