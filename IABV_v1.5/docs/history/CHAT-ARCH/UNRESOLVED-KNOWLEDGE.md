@@ -1,3 +1,36 @@
+## 2026-10-08 — RQ21.30 CURRENT FRONTIER + CUMULATIVE MEMORY RULE
+
+### Closed
+- RQ21.28 = D: no exact existing per-ToolTask R_task contract.
+- RQ21.29 = C: operation semantics can exist pre-selection, but no operative operation→abstract-capability transform was found.
+- RQ21.30 = C globally, D for goal_parameters.actions in the actual UI callers.
+- ToolTask.actions is mixed and cannot be a universal independent requirement oracle.
+
+### New loss map
+- user_goal survives;
+- intent_key is not transported into the reconstructed InferenceRequest;
+- intent.metadata can be lost;
+- typed actions are not produced by the focal UI callers;
+- tool-specific actions appear after tool selection;
+- no R_task reaches the eligibility boundary.
+
+### Current first open edge
+user_goal/intent preselection → stable task-semantic unit → required capability identity.
+
+### Immediate next experiment
+One read-only trace beginning with a real tools.local_workflow caller.
+
+### Cumulative protocol rule
+Every material actor result must be:
+RECEIVED → RECONCILED → ADJUDICATED → DELTA-EXTRACTED → PROMOTED → ROUTED → PROMPTED.
+
+A prompt is not considered the next step until its preceding actor result is durably promoted.
+
+### Guard
+Do not infer repository-wide absence from a bounded caller audit.
+
+No implementation, runtime, scoring change, or repeat of RQ21.27C.
+
 ## 2026-10-08 — RQ21.29 CURRENT KNOWLEDGE FRONTIER
 
 ### Closed
