@@ -1,3 +1,32 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.30 CALLER PROVENANCE / CUMULATIVE ROUTING METHOD
+
+Canonical record:
+CHAT-ARCH-2026-10-08-143-rq21-30-caller-provenance-and-cumulative-routing-method.md
+
+Documentation main has advanced through the 143 writeback.
+Executable source baseline remains:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.30 result:
+C globally; D specifically for goal_parameters.actions in the three real UI callers.
+
+The actual UI caller path does not produce a stable typed pre-selection action list. It preserves user_goal text; intent classification supplies semantic labels; system.metacognition metadata can be produced upstream but is lost in build_task_for_session(); tool-specific actions are reconstructed after tool selection.
+
+Current first open edge:
+user_goal/intent preselection → stable task-semantic unit → required capability identity R_task.
+
+New cumulative continuity rule:
+actor result → canonical writeback → new first-open edge → capability-fit actor → next prompt.
+
+Do not generate the next prompt before promoting a material actor result into CURRENT-STATE and related memory surfaces.
+
+Next actor:
+CODEX, one narrow caller trace beginning with tools.local_workflow.
+
+No implementation/runtime/scoring changes are authorized.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.28/RQ21.29 PRE-SELECTION CAPABILITY CONTRACT + PROVENANCE RECONCILIATION
 
 Canonical record:
