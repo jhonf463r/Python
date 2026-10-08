@@ -1,3 +1,26 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.30 CUMULATIVE CALLER-PROVENANCE FRONTIER
+
+Canonical episode:
+CHAT-ARCH-2026-10-08-143-rq21-30-caller-provenance-and-cumulative-routing-method.md
+
+RQ21.28 = D
+RQ21.29 = C
+RQ21.30 = C globally / D for goal_parameters.actions in real UI callers
+
+First open edge:
+user_goal/intent preselection → stable task-semantic unit → R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+one narrow static trace beginning at a real tools.local_workflow caller.
+
+Cumulative continuity rule:
+never generate the next prompt before the material result from the previous actor has been reconciled and promoted into canonical memory.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.29 PRE-SELECTION CAPABILITY CONTRACT
 
 Canonical episode:
