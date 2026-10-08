@@ -1,3 +1,5 @@
+| CHAT-ARCH-2026-10-08-168-cross-chat-continuity-reconciliation-rq21-49.md | Fresh remote-state + space-time continuity reconciliation; verifies RQ21.49 remains canonical, RQ21.50 is unpromoted, and Human Domain Owner remains next actor | continuity / provenance / routing |
+
 | CHAT-ARCH-2026-10-08-167-rq21-49-sonnet-owner-contract-challenge.md | RQ21.49 Sonnet 5.5 adversarial owner-contract challenge; PASS WITH BOUNDED REPAIRS | owner-ratification frontier |
 - CHAT-ARCH-2026-10-08-165-rq21-48-haiku-owner-contract.md — Haiku 5.5 review after Opus 5 became unavailable; RQ21.48 remains OWNER-CONTRACT INCOMPLETE and routes to Human Domain Owner.
 - CHAT-ARCH-2026-10-08-164-rq21-47-forensic-substrate-audit.md — RQ21.47 independent substrate audit; verdict C, partial reusable infrastructure but bounded new containment/effect-observation substrate required; next actor ChatGPT/Human Domain Owner.
