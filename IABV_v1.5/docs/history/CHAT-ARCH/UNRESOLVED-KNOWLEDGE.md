@@ -1,3 +1,29 @@
+## 2026-10-08 — RQ21.33 CURRENT FRONTIER
+
+Closed:
+- RQ21.28 = D
+- RQ21.29 = C
+- RQ21.30 = C-global / D-actions-real-UI
+- RQ21.31 = C
+- RQ21.32 = B
+- RQ21.33 = PAIR-NOT-AVAILABLE: no valid same-intent/different-operation tools.local_workflow pair was found in the inspected concrete evidence.
+
+Important uncertainty:
+Pairwise operational discrimination remains UNPROVEN. Do not adjudicate H4 from pair absence.
+
+New first open edge:
+real structured-operation producer → operative consumer → exact R_task.
+
+Immediate discriminator:
+RQ21.34 — locate and trace one real non-UI production entrypoint capable of constructing/transporting goal_parameters.actions into the operative selection path.
+
+Guard:
+bounded search negative ≠ repository-wide absence.
+A generic request field existing ≠ a production caller producing it.
+A preview entrypoint accepting goal_parameters ≠ operative ToolTeach selection receiving typed actions.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 — RQ21.32 CURRENT FRONTIER
 
 Closed:
