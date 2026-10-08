@@ -5424,3 +5424,21 @@ human semantic/domain adjudication is now the capability-fit actor for the remai
 
 Current edge:
 operational task meaning → abstract capability requirement → exact R_task.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.36 PROVISIONAL SEMANTIC CONTRACT
+
+Knowledge Delta:
+- source archaeology established the need for an explicit semantic contract;
+- an AI-proposed contract now separates operation, capability, R_task, realization, readiness, availability and preference.
+
+Method Delta:
+- semantic design proposals must remain explicitly provisional until challenged;
+- distinguish domain adjudication from AI synthesis;
+- route semantic uncertainty to an adversarially independent actor after proposal, not directly to implementation.
+
+Routing Delta:
+SONNET/CLAUDE is now the fit actor because the open edge is contract falsification, not source archaeology.
+
+Current edge:
+proposed operation/capability/R_task contract → independent adversarial challenge → reconciled semantic contract.
