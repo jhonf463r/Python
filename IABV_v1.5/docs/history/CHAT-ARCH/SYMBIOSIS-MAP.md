@@ -1,3 +1,24 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.44 CODE-FACING RECONCILIATION
+
+Knowledge Delta:
+- source reconciliation closed the semantic→code mapping enough to define a bounded minimal contract;
+- no current readiness or routing ID is equivalent to C_SANDBOX_DYNAMIC_VALIDATION;
+- the earliest typed carrier is InferenceRequest;
+- final resolution through ToolRegistry is an enforcement backstop but not a complete demand contract;
+- current validator does not consume expected behavior X as a real predicate and current structures do not represent protected effects E.
+
+Method Delta:
+- semantic closure and machine vocabulary authorization remain separate gates;
+- code-contract readiness is distinct from implementation readiness;
+- candidate gate + final resolver guard is the minimum invariant shape when selection has bypass routes;
+- evidence/readiness must not be promoted into demand identity.
+
+Routing Delta:
+SONNET/CLAUDE now verifies the minimal code contract before any implementation prompt.
+CODEX implementation remains blocked until that verification passes and a machine ID is explicitly authorized.
+
+Current edge:
+minimal code contract → independent verification → implementation authorization.
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.43A SEMANTIC FALSIFICATION
 
 Knowledge Delta:
