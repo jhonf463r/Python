@@ -1,3 +1,32 @@
+## 2026-10-08 — RQ21.43 CURRENT FRONTIER
+
+Closed:
+- RQ21.35 = C
+- RQ21.36 = provisional semantic contract
+- RQ21.37 = adversarial repair cycle
+- RQ21.38 = repaired semantic contract
+- RQ21.39 = focused rechallenge
+- RQ21.40 = PASS WITH ONE LOCAL REPAIR
+- RQ21.41 = C / bounded extension
+- RQ21.42 = provisional code-facing contract
+- RQ21.42A = PASS WITH BOUNDED REPAIRS
+- RQ21.43 = PARTIALLY CLOSED / human/domain adjudication accepted
+
+Adjudicated:
+- tools.local_workflow = AMBIGUOUS
+- tools.sandbox = KNOWN with a realization-independent functional meaning: evaluate candidate execution under effective isolation and produce an observable validation result
+- system.metacognition = AMBIGUOUS
+
+Current first open edge:
+adjudicated functional capability meaning → machine-readable capability identity → realization declaration → eligibility gate.
+
+Immediate discriminator:
+SONNET/CLAUDE focused semantic falsification of RQ21.43, especially the sandbox capability and its determinant dimensions.
+
+Guard:
+semantic capability meaning can be closed while machine ID, realization, readiness, and routing remain unproven.
+
+No implementation/runtime/scoring change.
 ## 2026-10-08 — RQ21.42A CURRENT FRONTIER
 
 Closed:
