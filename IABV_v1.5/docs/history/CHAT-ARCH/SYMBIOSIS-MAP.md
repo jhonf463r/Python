@@ -1,3 +1,18 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.58 WINDOWS API FEASIBILITY + P0 READINESS
+
+Knowledge Delta:
+The experimental process-sandbox API's documented call contract rejects non-NULL process/thread attributes and inherited handles. WFP's AppContainer SID condition is a filter predicate, not proof of complete network-event acquisition. The current IABV sandbox path remains a flag/success-derived validation, not the frozen dynamic-validation predicate.
+
+Method Delta:
+Separate static file/export presence, DLL load, API operation, containment, E observation, evidence trust and final acceptance. Bind P0 to the native architecture/path and a known-good channel to the exact target; record tool identity and raw provenance. A hash is identity, not authority. Unknown values or any need for elevation stop P0.
+
+Routing Delta:
+RQ21.58 is bounded feasibility input with repairs; no technology selected. Establish exact-target non-elevated, read-only execution-channel readiness, then P0, then independent verification. Do not route to Codex or infer Devin availability until the channel is proven.
+
+Source record: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.58 BOUNDED API FEASIBILITY + P0 READINESS
 
 Knowledge Delta:
