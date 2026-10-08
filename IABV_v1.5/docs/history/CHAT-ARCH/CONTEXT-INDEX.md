@@ -1,3 +1,16 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.50 OWNER RATIFIED
+
+RQ21.50 is now canonical and closed.
+
+Owner decisions:
+R2=YES; R3=YES; R8=YES; R6=YES.
+
+Current route:
+owner-ratified R2/R3/R8/R6 → ChatGPT contract reconciliation → Sonnet 5.5 focused adversarial verification → Codex minimal implementation → independent implementation verification → runtime actor only after execution/evidence readiness.
+
+Use CURRENT-STATE as current routing authority.
+Historical Next Actor fields remain non-routable.
+
 ## 2026-10-08 ROUTING UPDATE — FRESH-CHAT RECONCILIATION
 
 Verified remote main at reconciliation start:
