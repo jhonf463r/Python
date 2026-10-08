@@ -1,3 +1,25 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-160
+
+Canonical:
+CHAT-ARCH-2026-10-08-160-rq21-44-codex-code-facing-reconciliation.md
+
+Type:
+CODE-FACING-RECONCILIATION / CAPABILITY / ROUTING / PROVENANCE / METHOD / SYMBIOSIS
+
+State:
+RQ21.44 CLOSED / READY FOR MINIMAL CODE CONTRACT / INDEPENDENT CODE-CONTRACT VERIFICATION OPEN
+
+Material delta:
+- semantic capability C_SANDBOX_DYNAMIC_VALIDATION maps to a bounded source-level contract;
+- no existing machine ID is promoted;
+- InferenceRequest becomes the leading pre-selection carrier;
+- ToolTask is an echo/persistence record;
+- distinct ToolCard realization declaration remains required;
+- capability enforcement needs candidate filtering plus final resolution guard;
+- DEFERRED and E/X remain bounded implementation extensions.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-159
 
 Canonical:
