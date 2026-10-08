@@ -1,3 +1,26 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-161
+
+Canonical:
+CHAT-ARCH-2026-10-08-161-rq21-44a-code-contract-verification.md
+
+Type:
+CODE-CONTRACT-VERIFICATION / RECONCILIATION / CAPABILITY / ROUTING / METHOD / SYMBIOSIS
+
+State:
+RQ21.44A CLOSED / PASS WITH BOUNDED REPAIRS / MINIMAL CODE CONTRACT READY / OWNER DECISION OPEN
+
+Material delta:
+- machine-ID reuse rejected for current readiness IDs;
+- demand remains pre-selection and not retroderived;
+- realization declaration is claim-only;
+- eligibility requires declaration + evidence + readiness + governance;
+- E/X require realization-side coverage;
+- governed acquisition/test path is required to avoid evidence bootstrap deadlock;
+- final resolver guard is primary enforcement;
+- unresolved non-empty tool_id joins the negative/fallback-resurrection guard set.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-160
 
 Canonical:
