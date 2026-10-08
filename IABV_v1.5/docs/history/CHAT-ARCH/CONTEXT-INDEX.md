@@ -1,3 +1,19 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.58 BOUNDED WINDOWS AUDIT / CHANNEL READINESS BLOCKER
+
+Canonical: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`.
+
+The focused report is accepted as bounded feasibility input with repairs, not as a complete substrate solution. Current source compare from pinned baseline `5b1d89022ee4cdc63c1f88e050f086b40a42875c` to pre-writeback main `c9df3ca393c1b7528f48988d0c4baf405c88cf16` found 44 changed files and no changes under `IABV_v1.5/src/`; seven source blobs were also read back identical.
+
+Corrections to preserve:
+- Microsoft documents the experimental launch API as experimental and imposes `processAttributes=NULL`, `threadAttributes=NULL`, `inheritHandles=FALSE`; generic process-attribute lists/inherited stdio must not be assumed compatible.
+- WFP's AppContainer SID filter condition is not proof of complete network effect event acquisition; ETW/WFP/Job Object mechanisms require explicit coverage/loss/lineage verification.
+- The owner's OS/kernel trust-boundary exclusion is already a canonical FACT, not an assumption.
+- Native architecture/path matters for P0; record process bitness and do not treat a DLL hash alone as trust or authority.
+
+Next route: identify a known-good non-elevated read-only channel bound to the exact target `10.0.26300.0` → P0 static DLL/export inspection → independent verification. No Codex implementation, no P1 LoadLibrary/GetProcAddress and no candidate execution until separately authorized and ready.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.57 OWNER DECISIONS CLOSED / CONTRACT FROZEN
 
 Human Domain Owner accepted the two RQ21.54 scope points. Canonical record:
