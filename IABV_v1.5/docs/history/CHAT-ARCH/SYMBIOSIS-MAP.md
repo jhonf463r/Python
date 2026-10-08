@@ -1,3 +1,22 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — FRESH-CHAT RECONCILIATION
+
+Knowledge Delta:
+The current collaborative state must be reconstructed from verified remote provenance plus the longitudinal memory surfaces, not from transcript continuity alone.
+
+Method Delta:
+Space-time continuity is operationalized as:
+`current local/UTC time + remote main tip + latest canonical episode + pinned executable baseline/tree + material recent deltas`.
+
+Traceability correction:
+A pinned executable baseline is a source-of-truth reference for the experiment, not proof that the current remote main contains no later executable changes. Repository-wide baseline comparisons must be interpreted from their actual changed-file evidence.
+
+Routing Delta:
+Do not inherit the previous actor or prompt mechanically. Recompute:
+`objective → verified current truth → first open edge → capability → actor fit → readiness/evidence → minimum discriminating action`.
+
+Current RQ21 route remains HUMAN DOMAIN OWNER because normative containment/evidence decisions are unresolved.
+
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.49 SONNET 5.5
 
 Knowledge Delta:
