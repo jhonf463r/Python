@@ -2325,3 +2325,22 @@ Material delta:
 - Sonnet/Claude then re-challenges the repaired contract.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-152
+
+Canonical:
+CHAT-ARCH-2026-10-08-152-rq21-38-repaired-semantic-contract.md
+
+Type:
+SEMANTIC-CONTRACT / REPAIR / RECHALLENGE / SYMBIOSIS / METHOD
+
+State:
+RQ21.38 PROVISIONAL / SONNET-RECHALLENGE OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- incorporated RQ21.37's circularity, demand-state, capability/precondition, evidence, candidate-set and failure-attribution repairs;
+- kept multi-realization composition out of the minimum contract;
+- next actor is Sonnet/Claude for focused re-challenge.
+
+Routing authority remains CURRENT-STATE.md.
