@@ -1,3 +1,41 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.42A ADVERSARIAL RECONCILIATION / DOMAIN EDGE OPEN
+
+Canonical record:
+CHAT-ARCH-2026-10-08-157-rq21-42a-adversarial-reconciliation.md
+
+Executable baseline remains:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.42A = PASS WITH BOUNDED REPAIRS / IMPLEMENTATION NOT READY.
+
+Material reconciliation:
+- readiness IDs cannot be treated as capability identity merely because they are emitted by CapabilityReadinessService;
+- unknown intent must not collapse into assistant.local.chat;
+- tools.local.* currently represent precondition/availability/governance semantics, not proven functional demand;
+- ToolCard.capabilities is heterogeneous/action-oriented and remains separate from any abstract realization declaration;
+- DEFERRED exists but its negative propagation is not wired/proven;
+- the realization graph has multiple bypass routes; one selector filter is not a global hard eligibility invariant;
+- current session-reachable readiness does not yet provide a validated functional capability namespace for the target tools.* / system.metacognition population.
+
+First open causal edge is now:
+domain operation / success predicate → realization-independent capability identity → exact R_task.
+
+NEXT ACTOR:
+HUMAN / DOMAIN OWNER, with ChatGPT as coordinator/contract recorder.
+
+Domain decision scope:
+tools.local_workflow, tools.sandbox, system.metacognition.
+
+After domain adjudication:
+SONNET/CLAUDE for one focused semantic falsification of the adjudicated capability table.
+Only then:
+CODEX for minimal implementation-contract/source wiring.
+
+No implementation/runtime/scoring change authorized.
+No capability-ID promotion or namespace unification authorized.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.36 PROVISIONAL CONTRACT / ADVERSARIAL CHALLENGE NEXT
 
 Canonical record:
