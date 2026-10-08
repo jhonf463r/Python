@@ -4803,3 +4803,20 @@ Then:
 Sonnet/Claude final focused falsification.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.40 → CODEX SOURCE RECONCILIATION
+
+Canonical:
+CHAT-ARCH-2026-10-08-154-rq21-40-source-reconciliation.md
+
+State:
+SEMANTIC CONTRACT READY FOR CODE-FACING RECONCILIATION / IMPLEMENTATION BLOCKED.
+
+Next actor:
+CODEX.
+
+Question:
+what is the smallest existing-organ composition that can express the repaired R_task contract without silently changing demand semantics?
+
+No implementation/runtime/scoring change.
