@@ -1,3 +1,23 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.43A SEMANTIC FALSIFICATION
+
+Knowledge Delta:
+- human semantic adjudication survived independent adversarial falsification;
+- sandbox capability survives as one conjunctive dynamic-validation capability with protected-effect set E and expected behavior X as task inputs;
+- workflow and metacognition remain deliberately ambiguous;
+- machine-readable capability identity remains unresolved.
+
+Method Delta:
+- semantic closure precedes ID selection;
+- envelope parameters are not capability identity;
+- partial realization is not capability satisfaction;
+- necessary capability is not universal task sufficiency.
+
+Routing Delta:
+CODEX is now the capability-fit actor for code-facing reconciliation of C_SANDBOX_DYNAMIC_VALIDATION only.
+After that reconciliation, independent verification remains required before implementation.
+
+Current edge:
+semantic capability → machine identity → realization declaration → eligibility.
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.43 HUMAN CAPABILITY ADJUDICATION
 
 Knowledge Delta:
