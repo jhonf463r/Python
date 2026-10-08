@@ -1,3 +1,26 @@
+## 2026-10-08 METHOD AMENDMENT — EXPERIENCE-ACTIVATION GATE BEFORE TASK/PROMPT CONSTRUCTION
+
+For every material IABV objective, do not construct a prompt for Deep Research, Sonnet, Codex, Devin or another actor until objective-conditioned IABV frame activation has happened.
+
+Mandatory sequence:
+1. verify current remote `main` and canonical routing authority;
+2. activate `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `README.md`, and this protocol;
+3. retrieve only objective-relevant historical/source records;
+4. extract prior failures, false positives, closed edges, rejected alternatives, negative knowledge, method deltas, actor/readiness lessons and existing-organ reuse candidates;
+5. reconcile current evidence and classify FACT / INFERENCE / ASSUMPTION / UNPROVEN;
+6. identify the first still-open causal/evidential edge;
+7. derive capability, access, independence and readiness requirements;
+8. compile each relevant past failure into a concrete prompt constraint, false-positive control, stop condition or acceptance gate;
+9. only then construct the task/prompt.
+
+The activated experience must change the task. Copying historical text into a prompt without converting relevant lessons into operational constraints does not satisfy this gate.
+
+RQ21.55 demonstrated wrong-object drift. RQ21.56 demonstrated that a broad report can remain on the general platform topic but fail to compare the specific required guarantees and cite auditable primary evidence. New prompts must explicitly lock the exact object and map every required guarantee to source/API, boundary, coverage gap and proof requirement.
+
+This protocol is a temporary cognitive/coordination method using existing memory organs. It does not assert that IABV runtime autonomously performs this process and does not justify a new universal coordinator/memory organ.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — FRESH-CHAT SPACE-TIME / REMOTE-STATE GATE
 
 A new chat is not a continuation of the previous prompt. It is a fresh state-reconstruction event.
