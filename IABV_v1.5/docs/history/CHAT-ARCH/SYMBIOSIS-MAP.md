@@ -5365,3 +5365,35 @@ one caller's capability identity loss is insufficient to justify a new bridge. F
 
 This supports the universal/plasticity principle:
 prefer reuse of an existing capability-aware path over provider-specific or duplicate wiring.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — CUMULATIVE DEVELOPMENTAL CONTROL LOOP
+
+Knowledge Delta:
+- The project already has source inspection, provenance, independent challenge, runtime observation, synthesis and durable writeback mechanisms; the new insight is to treat their composition as a longitudinal developmental substrate rather than as isolated handoffs.
+- AI perspectives are useful because they expose different observables and failure modes; agreement alone is not evidence.
+
+Method Delta:
+~~~
+episode → evidence → verification → reconciliation → K/M/R delta → writeback → later reuse test
+~~~
+
+The method should deliberately seek orthogonal perspectives when material:
+- semantic/domain;
+- provenance/source-trace;
+- adversarial;
+- runtime/evidence.
+
+The durable unit is the verified reusable delta, not the transcript.
+
+Routing Delta:
+- select an actor from the current first-open edge and required capability/independence/readiness;
+- do not inherit a historical actor merely because it participated previously;
+- use independent verification when self-analysis is part of the evidence chain.
+
+Plasticity criterion:
+~~~
+verified experience → reusable delta → later non-identical reuse → changed decision → observable consequence
+~~~
+
+The current RQ21.35 technical edge is unchanged. This method transfer is documentation-only.
