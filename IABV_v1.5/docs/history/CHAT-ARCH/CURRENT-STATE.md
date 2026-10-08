@@ -1,3 +1,35 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.43A SEMANTIC FALSIFICATION / CODE-FACING RECONCILIATION READY
+
+Canonical:
+CHAT-ARCH-2026-10-08-159-rq21-43a-semantic-falsification.md
+
+Executable baseline remains:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.43A = PASS WITH BOUNDED REPAIRS.
+
+Independent Sonnet/Claude falsification did not invalidate:
+- tools.local_workflow = AMBIGUOUS
+- tools.sandbox = KNOWN
+- system.metacognition = AMBIGUOUS
+
+Sandbox bounded repairs:
+R1 = protected effect set E belongs to the task envelope; capability says containment, not "effective" mechanism.
+R2 = candidate and expected behavior X are explicit inputs.
+R3 = capability is dynamic validation; static/formal validation is outside current scope.
+R4 = partial realizations do not satisfy the full capability; observation must cover the protected-effect channel as well as output behavior.
+
+First open edge:
+adjudicated C_SANDBOX_DYNAMIC_VALIDATION → machine-readable identity / existing semantic vocabulary → realization declaration → eligibility.
+
+NEXT ACTOR:
+CODEX — source-aware code-facing reconciliation for the single sandbox capability.
+
+Scope must not reopen semantic adjudication or general capability archaeology.
+No implementation yet.
+No promotion of tools.local.sandbox, tools.local.execution or tools.local.registry.
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.43 HUMAN CAPABILITY ADJUDICATION / SANDBOX CAPABILITY CLOSED
 
 Canonical:
