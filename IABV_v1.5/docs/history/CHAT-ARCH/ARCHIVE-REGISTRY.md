@@ -2286,3 +2286,23 @@ Material delta:
 - no implementation/runtime/scoring change.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-150
+
+Canonical:
+CHAT-ARCH-2026-10-08-150-rq21-36-provisional-semantic-contract.md
+
+Type:
+SEMANTIC-CONTRACT / SYMBIOSIS / RECONCILIATION / ROUTING / METHOD
+
+State:
+RQ21.36 PROVISIONAL / AI-PROPOSED / HUMAN ACCEPTANCE NOT EXPLICIT / SONNET-CHALLENGE OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- first explicit operation/capability/R_task semantic proposal produced;
+- proposal is not promoted to human-adjudicated truth;
+- independent adversarial semantic challenge is the next edge;
+- no implementation/runtime/scoring change.
+
+Routing authority remains CURRENT-STATE.md.
