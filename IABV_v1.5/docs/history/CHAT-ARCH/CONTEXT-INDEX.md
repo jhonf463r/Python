@@ -1,3 +1,12 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.52
+
+RQ21.52 = CLOSED-C / NO FEASIBLE EXISTING SUBSTRATE.
+
+Current route:
+Codex feasibility stop → HUMAN DOMAIN OWNER authorization of bounded new containment/evidence trust boundary → ChatGPT minimal substrate contract → Sonnet 5.5 focused verification → Codex implementation → independent implementation verification → runtime only after execution/evidence readiness.
+
+Do not reinterpret this result as repository-wide absence; it is bounded to the audited baseline/source scope.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.50 OWNER RATIFIED
 
 RQ21.50 is now canonical and closed.
