@@ -4938,3 +4938,40 @@ more records, more AI agreement or more stored data must not be promoted into "m
 
 Near-term developmental milestone:
 demonstrate one closed episode in which a verified prior delta changes a later, non-identical project decision for the relevant reason.
+
+
+## 2026-10-08 — RQ21.35 CLOSED / SEMANTIC CONTRACT IS THE NEXT OPEN EDGE
+
+RQ21.35 is closed as C:
+existing structured semantic candidates do not yield an exact realization-independent `R_task`.
+
+What source evidence establishes:
+- broad semantic normalization exists;
+- selection heuristics exist;
+- concrete `ToolActionType` semantics are downstream of selection;
+- no bounded pre-selection operation→abstract-capability mapping was found.
+
+What source evidence cannot legitimately decide:
+- the normative meaning of an abstract capability for every operation;
+- which distinctions the project wants to treat as one capability versus multiple capabilities;
+- the exact canonical contract for unknown/ambiguous operation demand.
+
+Therefore the next open edge is a domain/semantic decision, not another generic repository search.
+
+Required next adjudication:
+```
+operation meaning
+→ capability semantics
+→ exact R_task contract
+→ examples/counterexamples
+```
+
+After human adjudication:
+```
+human contract
+→ independent adversarial challenge
+→ reconciliation
+→ minimal implementation contract
+```
+
+Do not implement before those edges close.
