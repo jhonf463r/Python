@@ -1,3 +1,17 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.31 SEMANTIC NORMALIZATION FRONTIER
+
+Knowledge Delta:
+- actual UI tools.local_workflow does not supply typed pre-selection actions;
+- user_goal is the main semantic carrier before selection;
+- no stable structured semantic task unit with exact R_task exists on that path;
+- generated actions are downstream of realization selection.
+
+Method Delta:
+caller semantics → semantic normalization → capability derivation → eligibility → scoring → realization → realization-specific actions.
+
+Routing Delta:
+CODEX remains the fit actor for the next source trace, now narrowed to the first semantic feature extracted from user_goal and consumed by InteractionModeSelector.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.30 CALLER PROVENANCE + CUMULATIVE ROUTING METHOD
 
 Knowledge Delta:
