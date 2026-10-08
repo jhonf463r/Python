@@ -1,3 +1,22 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-145
+
+Canonical:
+CHAT-ARCH-2026-10-08-145-rq21-32-taskintent-too-coarse-and-discrimination-test.md
+
+Type:
+RECONCILIATION / ROUTING / SEMANTIC-CONTRACT / CAPABILITY / METHOD
+
+State:
+RQ21.32 CLOSED-B / RQ21.33 OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- TaskIntent confirmed as real pre-selection semantic normalization;
+- TaskIntent is too coarse for operation discrimination within tools.local_workflow;
+- desired_modes and task_kind are heuristic selector signals, not proven R_task;
+- next actor is explicitly routed to CODEX for one pairwise discrimination test.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-144
 
 Canonical:
