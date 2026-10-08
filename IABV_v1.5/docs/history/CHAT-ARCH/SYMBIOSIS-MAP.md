@@ -1,3 +1,21 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.32 TASKINTENT TOO COARSE
+
+Knowledge Delta:
+- TaskIntent is a real semantic normalizer but is broad/coarse.
+- desired_modes and task_kind are selector heuristics, not proven task-capability contracts.
+- suggested_tool_id is realization preference.
+- semantic normalization exists, but exact operational discrimination remains open.
+
+Method Delta:
+a candidate task semantic object must be tested for:
+exists → operative → semantically scoped → discriminating → realization-independent → capability-bearing.
+
+Routing Delta:
+CODEX for the next static pairwise discrimination test; Sonnet/Claude only after evidence exists to challenge semantic vs lexical causality.
+
+Current edge:
+discriminating operational semantics → R_task.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.31 SEMANTIC NORMALIZATION FRONTIER
 
 Knowledge Delta:
