@@ -1,3 +1,16 @@
+## 2026-10-08 — RQ21.53 OWNER AUTHORIZATION / SUBSTRATE CONTRACT
+
+[F] Human Domain Owner authorized the new bounded validation security/containment boundary.
+[F] Human Domain Owner authorized the seven minimum guarantees for containment, E observation, evidence integrity, X secrecy, deterministic X validation, quiescent closure, and candidate/environment binding.
+[F] Threat boundary explicitly excludes OS/kernel and host-administrative compromise from the first guarantee.
+[F] NOT VALIDATED is mandatory when required guarantees cannot be demonstrated.
+[F] Technology choice remains unselected.
+[INFERENCE] The next information-bearing action is independent verification of the frozen substrate contract, not implementation.
+[NP] Actual enforceability on Windows remains unproven.
+
+Current first open edge:
+frozen substrate contract → focused independent verification → implementation.
+
 ## 2026-10-08 — RQ21.52 CODEX SUBSTRATE FEASIBILITY
 
 [F] Codex reports NO FEASIBLE EXISTING SUBSTRATE on pinned baseline 5b1d89022ee4cdc63c1f88e050f086b40a42875c / tree ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61.
