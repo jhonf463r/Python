@@ -1,3 +1,23 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.43 HUMAN CAPABILITY ADJUDICATION
+
+Knowledge Delta:
+- one realization-independent functional capability is now domain-adjudicated: sandbox validation under effective isolation with observable validation result;
+- tools.local_workflow remains operation-dependent/AMBIGUOUS;
+- system.metacognition remains operation-dependent/AMBIGUOUS;
+- semantic meaning is explicitly separated from machine-readable capability IDs.
+
+Method Delta:
+- domain meaning precedes machine vocabulary;
+- family/intent labels cannot be promoted to capability identity;
+- AMBIGUOUS is used when multiple complete functional interpretations are known;
+- a closed semantic row still requires independent falsification before implementation.
+
+Routing Delta:
+SONNET/CLAUDE → focused semantic falsification;
+CODEX only after that for the minimal code-facing reconciliation of the surviving sandbox capability.
+
+Current edge:
+functional capability meaning → machine ID → realization declaration → eligibility.
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.42A ADVERSARIAL RECONCILIATION
 
 Knowledge Delta:
