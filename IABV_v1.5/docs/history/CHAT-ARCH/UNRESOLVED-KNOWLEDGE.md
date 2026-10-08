@@ -5067,3 +5067,20 @@ do not turn these into a new ontology or architecture unless required by the imp
 
 Next:
 minimum semantic synthesis → final focused challenge → source reconciliation.
+
+
+## 2026-10-08 — RQ21.40 SOURCE RECONCILIATION
+
+Semantic contract passed final focused falsification with one repair: define necessary requirements invariant to method/realization.
+
+Source reconciliation then found a code-facing mismatch:
+- current readiness derives broad capability IDs from TaskIntent.intent_key;
+- current path does not expose task-level R_task state;
+- unknown intent falls back to assistant.local.chat;
+- capability/readiness vocabularies are not yet joined by a proven operation-level semantic contract;
+- ToolTask lacks required capability identity in the inspected baseline.
+
+Next:
+CODEX, narrow reuse/composition census to determine the smallest existing-organ join and whether any existing path already supplies the repaired R_task semantics.
+
+Implementation remains blocked.
