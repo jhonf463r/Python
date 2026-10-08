@@ -1,3 +1,24 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.53 OWNER AUTHORIZATION + MINIMAL SUBSTRATE CONTRACT
+
+Canonical:
+CHAT-ARCH-2026-10-08-171-rq21-53-owner-authorization-and-minimal-substrate-contract.md
+
+RQ21.53 = CLOSED / OWNER AUTHORIZED / MINIMAL SUBSTRATE CONTRACT FROZEN.
+
+Owner decisions:
+- new bounded validation containment/evidence boundary = YES;
+- seven minimum realization guarantees = YES;
+- first threat boundary covers malicious candidate/delegated processes, while OS/kernel/host-admin compromise remain outside this first guarantee;
+- inability to demonstrate a required guarantee = NOT VALIDATED, never PASS by omission;
+- technology selection remains open.
+
+Current first open edge:
+frozen bounded substrate contract → focused Sonnet 5.5 verification → Codex implementation.
+
+NEXT ACTOR: SONNET 5.5.
+
+No source/runtime changes yet.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.52 CODEX SUBSTRATE FEASIBILITY
 
 Canonical:
