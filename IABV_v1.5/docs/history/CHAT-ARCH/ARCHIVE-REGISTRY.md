@@ -2344,3 +2344,23 @@ Material delta:
 - next actor is Sonnet/Claude for focused re-challenge.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-153
+
+Canonical:
+CHAT-ARCH-2026-10-08-153-rq21-39-focused-rechallenge-reconciled.md
+
+Type:
+SEMANTIC-CONTRACT / ADVERSARIAL-REVIEW / RECONCILIATION / METHOD / ROUTING
+
+State:
+RQ21.39 FAIL-AS-WRITTEN / LOCAL REPAIRS / FINAL SEMANTIC CHALLENGE OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- eight strong semantic counterexamples were recorded;
+- central demand/capability/realization separation survives;
+- coordinator must minimize rather than expand the ontology;
+- next actor is ChatGPT, followed by one final focused Sonnet/Claude challenge.
+
+Routing authority remains CURRENT-STATE.md.
