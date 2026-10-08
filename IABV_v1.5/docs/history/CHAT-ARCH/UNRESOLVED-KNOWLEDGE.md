@@ -1,3 +1,23 @@
+## 2026-10-08 — RQ21.58 BOUNDED AUDIT ACCEPTED; TARGET CHANNEL AND COMPOSITION UNPROVEN
+
+[FACT] GitHub main was verified at `c9df3ca393c1b7528f48988d0c4baf405c88cf16` before writeback. Comparing pinned baseline `5b1d89022ee4cdc63c1f88e050f086b40a42875c` to that main found 44 changed files and zero files under `IABV_v1.5/src/`; seven source-file blob SHAs match the baseline.
+
+[FACT] Microsoft documents the experimental CreateProcessInSandbox APIs with reserved process/thread-attribute parameters (non-NULL rejected) and no inherited handles (`inheritHandles=TRUE` rejected). Do not assume generic child-process policy attributes or inherited stdio compose with this API.
+
+[FACT] Microsoft's WFP condition identifier for an AppContainer SID establishes a possible filter predicate, not complete event acquisition or complete E observation by itself.
+
+[INFERENCE] The API is a partial candidate for launch-side restrictions only. AppContainer, Job Objects, ETW, WFP, ACLs and CNG primitives are not a complete substrate merely by being composed in a report.
+
+[FACT] The OS/kernel exclusion from the first trust boundary is already specified by the owner in RQ21.53/RQ21.57; it is not an assumption.
+
+[UNPROVEN] Exact-target `processmodel.dll` presence/exports/behavior on `10.0.26300.0`; execution-channel identity and access to that exact target; child/delegation/IPC/loopback/local-service containment; complete E observation; X secrecy; independent evidence custody; quiescence; artifact/environment binding; any seven-guarantee runtime PASS.
+
+Current edge: establish exact-target non-elevated read-only execution-channel readiness → P0 native-path/export-table inspection without DLL loading → independent verification. No P1, candidate execution or Codex implementation.
+
+Source record: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`
+
+---
+
 ## 2026-10-08 — RQ21.57 OWNER SCOPE POINTS RESOLVED; REALIZATION STILL UNPROVEN
 
 [FACT] Human Domain Owner accepted R8's partition into substrate guarantees, caller/interface obligations, and explicitly declared residuals.
