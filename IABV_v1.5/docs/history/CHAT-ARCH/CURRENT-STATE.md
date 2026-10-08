@@ -1,3 +1,31 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.44 CODEX CODE-FACING RECONCILIATION / MINIMAL CONTRACT READY
+
+Canonical:
+CHAT-ARCH-2026-10-08-160-rq21-44-codex-code-facing-reconciliation.md
+
+Executable baseline remains:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.44 = READY FOR MINIMAL CODE CONTRACT.
+
+Source reconciliation establishes:
+- no existing machine ID is semantically safe for C_SANDBOX_DYNAMIC_VALIDATION;
+- InferenceRequest is the earliest typed pre-selection carrier;
+- ToolTask is downstream and can only persist/echo the frozen demand;
+- ToolCard.capabilities remains heterogeneous; a distinct realization declaration remains the minimal bounded extension;
+- capability eligibility needs a pre-ranking gate plus final resolver guard;
+- DEFERRED exists but is not an operational negative-propagation path;
+- E and X require bounded task-envelope extension because current expected_outcome/validator semantics are insufficient.
+
+Important boundary:
+semantic capability closure ≠ machine ID authorization ≠ realization proof ≠ routing enforcement ≠ runtime proof.
+
+NEXT ACTOR:
+SONNET/CLAUDE — independent code-contract verification.
+
+No implementation yet.
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.43A SEMANTIC FALSIFICATION / CODE-FACING RECONCILIATION READY
 
 Canonical:
