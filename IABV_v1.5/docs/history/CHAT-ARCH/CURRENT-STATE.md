@@ -1,3 +1,38 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.34 GENERIC ACTION TRANSPORT / NO PRE-SELECTION CONSUMER
+
+Canonical record:
+CHAT-ARCH-2026-10-08-147-rq21-34-generic-action-transport-no-preselection-consumer.md
+
+Documentation main before this writeback:
+(previous RQ21.33/146 canonical documentation state)
+
+Executable baseline:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.34 = CLOSED / C-GENERIC-PREVIEW-TRANSPORT:
+generic goal_parameters can transport actions, but the inspected production surfaces do not provide an observed typed-action producer into operative pre-selection, and ToolTeach consumes supplied actions only after tool selection.
+
+Direct causal rule confirmed:
+_select_mode() / tool_id resolution → _build_actions()
+not:
+goal_parameters.actions → selector.
+
+Current first open edge:
+existing pre-selection operation vocabulary/semantic discriminator → operative consumer → exact R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+RQ21.35 — narrow static census of existing structured operation vocabularies/discriminators already consumed before ToolCard selection, without creating a new representation.
+
+Method rule:
+transport-capable ≠ semantically consumed at required causal boundary.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.33 PAIR UNAVAILABLE / RQ21.34 ACTION-PRODUCER TRACE
 
 Canonical record:
