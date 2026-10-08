@@ -1,3 +1,25 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.30 CALLER PROVENANCE + CUMULATIVE ROUTING METHOD
+
+Knowledge Delta:
+- the three actual UI callers do not produce typed goal_parameters.actions before selection;
+- user_goal remains the principal pre-selection semantic signal in that path;
+- system.metacognition may produce requires_mcp_tools metadata upstream, but it is lost at session→request projection;
+- tool-specific actions are generated after tool selection;
+- no operation→abstract-capability transform was found.
+
+Method Delta:
+- distinguish model-field availability from actual caller production;
+- distinguish metadata production, transport and consumption;
+- enforce causal ordering before defining any source as R_task;
+- promote every material actor result into canonical memory before constructing the next prompt;
+- route the next actor from the newly reconciled edge rather than historical task sequence.
+
+Routing Delta:
+CODEX remains the fit actor for the next single-caller source trace.
+
+Current edge:
+user_goal/intent preselection → stable task-semantic unit → R_task.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.29 DEMAND-SIDE CAPABILITY TRANSLATION
 
 Knowledge Delta:
