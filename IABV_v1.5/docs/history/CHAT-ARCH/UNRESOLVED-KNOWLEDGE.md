@@ -1,3 +1,12 @@
+## 2026-10-08 — RQ21.49 OPEN NORMATIVE QUESTIONS
+
+- R2: independent realization conformance/coverage evidence is not yet owner-ratified.
+- R3: attributable-effect/descendant/delegation/loopback semantics are not yet owner-ratified.
+- R8: X confidentiality/inaccessibility is not yet owner-ratified.
+- R6: exact evidence-integrity guarantee against uncontained writers remains partially normative and open.
+- actual Windows/IABV enforceability of E remains UNPROVEN.
+- no runtime proof exists for the eventual substrate.
+
 ## 2026-10-08 RQ21.48 — HAIKU 5.5 OWNER-CONTRACT REVIEW
 
 State: OWNER-CONTRACT INCOMPLETE
