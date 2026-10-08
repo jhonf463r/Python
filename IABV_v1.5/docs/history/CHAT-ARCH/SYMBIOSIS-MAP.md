@@ -1,3 +1,14 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.54 SONNET SUBSTRATE VERIFICATION
+
+Knowledge Delta:
+The owner-authorized substrate contract survives focused adversarial review, but R8 must explicitly separate substrate-guaranteed secrecy from caller-side/model-session limitations, and the adversary temporal scope must be stated.
+
+Method Delta:
+When a security contract survives challenge with bounded repairs, incorporate precision repairs without reopening normative semantics; route only genuinely remaining owner scope questions to the Owner.
+
+Routing Delta:
+Next actor is Human Domain Owner for the two bounded scope confirmations. Codex remains blocked until those are reconciled and the final minimal contract is frozen.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.53 OWNER AUTHORIZATION + CONTRACT FREEZE
 
 Knowledge Delta:
