@@ -4737,3 +4737,20 @@ independent adversarial semantic challenge → reconciliation → minimal implem
 Guard:
 do not treat bounded source absence as universal absence; do not reopen generic archaeology without a new discriminating hypothesis; do not implement before the semantic contract is explicit and independently challenged.
 
+
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.36 → SONNET/CLAUDE ADVERSARIAL CHALLENGE
+
+Canonical:
+CHAT-ARCH-2026-10-08-150-rq21-36-provisional-semantic-contract.md
+
+State:
+RQ21.36 PROVISIONAL / AI-PROPOSED / HUMAN ACCEPTANCE NOT YET EXPLICIT / ADVERSARIAL CHALLENGE OPEN.
+
+Open edge:
+proposed operation → capability → R_task semantics → independent falsification.
+
+Next actor:
+SONNET/CLAUDE.
+
+No implementation/runtime/scoring change.
