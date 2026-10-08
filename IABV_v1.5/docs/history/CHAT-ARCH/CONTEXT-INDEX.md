@@ -4754,3 +4754,21 @@ Next actor:
 SONNET/CLAUDE.
 
 No implementation/runtime/scoring change.
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.37 → REPAIR / RECHALLENGE
+
+Canonical:
+CHAT-ARCH-2026-10-08-151-rq21-37-adversarial-challenge-reconciled.md
+
+RQ21.37 = PASS WITH REPAIRS.
+
+Open edge:
+repaired non-circular operation/capability/R_task contract.
+
+Next actor:
+ChatGPT/coordinator-synthesis.
+
+Follow-on:
+Sonnet/Claude focused re-challenge.
+
+No implementation/runtime/scoring change.
