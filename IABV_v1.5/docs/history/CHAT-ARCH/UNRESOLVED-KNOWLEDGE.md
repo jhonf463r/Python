@@ -1,3 +1,45 @@
+## 2026-10-08 — RQ21.42A CURRENT FRONTIER
+
+Closed:
+- RQ21.28 = D
+- RQ21.29 = C
+- RQ21.30 = C-global / D-actions-real-UI
+- RQ21.31 = C
+- RQ21.32 = B
+- RQ21.33 = PAIR-NOT-AVAILABLE
+- RQ21.34 = C-GENERIC-PREVIEW-TRANSPORT
+- RQ21.35 = C
+- RQ21.36 = provisional semantic contract
+- RQ21.37 = adversarial repair cycle
+- RQ21.38 = repaired semantic contract
+- RQ21.39 = focused rechallenge / local repairs
+- RQ21.40 = semantic falsification PASS WITH ONE LOCAL REPAIR
+- RQ21.41 = C / bounded extension
+- RQ21.42 = provisional code-facing contract
+- RQ21.42A = PASS WITH BOUNDED REPAIRS / IMPLEMENTATION NOT READY
+
+Established by the latest source-aware adversarial pass:
+- readiness ID ≠ capability identity;
+- current readiness fallthrough can create concrete-looking identity from unknown intent;
+- tools.local.* are not presently validated as functional capability IDs;
+- ToolCard.capabilities is not an abstract realization vocabulary;
+- ToolTask is downstream of selection in the focal path;
+- no single existing choke point currently covers all realization/fallback routes;
+- DEFERRED is reusable conceptually but not a proven producer/consumer path;
+- unknown/ambiguous/empty must remain semantically distinct.
+
+Current first open edge:
+domain operation / success predicate → realization-independent capability identity → exact R_task for the target task family.
+
+Immediate discriminator:
+human/domain adjudication of the minimum capability table for:
+tools.local_workflow, tools.sandbox, system.metacognition.
+
+Guard:
+Do not reopen generic source archaeology until the domain capability contract has at least one adjudicated row.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 — RQ21.34 CURRENT FRONTIER
 
 Closed:
