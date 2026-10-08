@@ -1,3 +1,23 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.33 → RQ21.34
+
+Canonical:
+CHAT-ARCH-2026-10-08-146-rq21-33-pair-unavailable-and-action-producer-frontier.md
+
+RQ21.33 = CLOSED-PAIR-NOT-AVAILABLE.
+
+Important correction:
+Pairwise discrimination remains UNPROVEN; H4 is not closed.
+
+First open edge:
+real structured-operation producer → operative consumer → exact R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+RQ21.34 — narrow static trace of non-UI production entrypoints that can construct/transport goal_parameters.actions into the operative ToolTeach selection path.
+
+No implementation/runtime/scoring change.
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.32 → RQ21.33
 
 Canonical:
