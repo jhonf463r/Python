@@ -1,3 +1,28 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.47 CLOSED-C / BOUNDED NEW REALIZATION SUBSTRATE
+
+Canonical:
+CHAT-ARCH-2026-10-08-164-rq21-47-forensic-substrate-audit.md
+
+RQ21.47 = **CLOSED-C / BOUNDED NEW SUBSTRATE REQUIRED**.
+
+Sonnet/Claude independently confirms:
+- Codex's RQ21.46 blocker is valid in essence;
+- current executable source lacks effective containment of candidate effects E;
+- no structured protected-effect observation oracle is established;
+- current validation does not compare candidate behavior against X;
+- ExperimentLab is reusable only as a partial textual comparator;
+- historical authority/trusted-execution mechanisms are historical-only on the audited baseline.
+
+Current first open edge:
+`bounded containment/effect-observation gap → owner authorization / realization contract → minimal substrate design → implementation`
+
+**NEXT ACTOR: CHATGPT / HUMAN DOMAIN OWNER**
+
+Next task:
+RQ21.48 — decide E/threat-model scope, minimum containment guarantees, required effect oracle, and structured X validation/provenance boundary.
+
+No implementation/runtime yet.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.46 CODEX BLOCKED / REALIZATION SUBSTRATE CONTRADICTION
 
 Canonical:

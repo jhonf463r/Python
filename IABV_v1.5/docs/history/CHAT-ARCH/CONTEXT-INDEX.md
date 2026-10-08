@@ -1,3 +1,23 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.47 → CHATGPT / HUMAN DOMAIN OWNER
+
+Canonical:
+`CHAT-ARCH-2026-10-08-164-rq21-47-forensic-substrate-audit.md`
+
+RQ21.47 = **CLOSED-C / BOUNDED NEW SUBSTRATE REQUIRED**.
+
+Current first open edge:
+`bounded containment/effect-observation gap → owner authorization / realization contract → minimal substrate design → implementation`
+
+Next actor: **CHATGPT / HUMAN DOMAIN OWNER**
+
+RQ21.48 must close:
+- E/threat-model scope;
+- minimum containment guarantees;
+- effect-observation oracle requirements;
+- structured X validation/provenance.
+
+No Codex implementation or runtime yet.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.46 → SONNET/CLAUDE
 
 Canonical:

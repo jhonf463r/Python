@@ -1,3 +1,24 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.47 SUBSTRATE-CONTRADICTION GATE
+
+A complete capability contract may reveal a separate missing realization substrate.
+
+When this occurs:
+`contract closure → realization-substrate feasibility audit → owner authorization if new security/containment boundary is required → minimal implementation`.
+
+Independent forensic audit is required before introducing new containment/security machinery.
+
+Classify partial reuse by causal role:
+- comparator reuse does not equal containment;
+- policy/authorization does not equal containment;
+- metadata does not equal effect observation;
+- historical design does not equal current executable infrastructure.
+
+For new containment/security boundaries, the owner must explicitly authorize the bounded E/threat-model/isolation contract before implementation.
+
+Preserve:
+`REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW`
+and `implemented ≠ proven`.
+
 ## 2026-10-08 METHOD AMENDMENT — REALIZATION-SUBSTRATE FEASIBILITY GATE
 
 A closed capability contract does not imply that the repository already has a faithful realization substrate.

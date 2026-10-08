@@ -1,3 +1,30 @@
+## 2026-10-08 RQ21.47 — FORENSIC REALIZATION-SUBSTRATE AUDIT CLOSED-C
+
+State:
+**CLOSED-C / BOUNDED NEW SUBSTRATE REQUIRED**
+
+Closed:
+- Codex's RQ21.46 stop condition is valid in essence;
+- current containment is insufficient;
+- current E observation is insufficient;
+- current X validation is insufficient;
+- partial comparator infrastructure exists in ExperimentLab.
+
+Still unresolved:
+- exact E taxonomy;
+- threat model;
+- minimum isolation guarantees;
+- effect oracle contract;
+- structured X comparator/provenance;
+- technology choice;
+- runtime proof.
+
+Current first open edge:
+`bounded containment/effect-observation gap → owner authorization / realization contract → minimal substrate design → implementation`
+
+NEXT ACTOR:
+**CHATGPT / HUMAN DOMAIN OWNER**
+
 ## 2026-10-08 RQ21.46 — CODEX BLOCKED / REALIZATION SUBSTRATE UNRESOLVED
 
 State:
