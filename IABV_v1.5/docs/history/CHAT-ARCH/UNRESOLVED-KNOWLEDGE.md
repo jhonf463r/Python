@@ -4975,3 +4975,32 @@ human contract
 ```
 
 Do not implement before those edges close.
+
+
+## 2026-10-08 — RQ21.36 PROVISIONAL SEMANTIC CONTRACT / CHALLENGE OPEN
+
+A semantic contract has been proposed for:
+```
+operation → capability → R_task → realization
+```
+
+Status:
+PROVISIONAL / AI-PROPOSED / HUMAN ACCEPTANCE NOT YET EXPLICIT / ADVERSARIAL CHALLENGE OPEN.
+
+Potentially useful contract principles:
+- operation identity is based on functional effect/success, not tool/provider identity;
+- capability is realization-independent functional competence;
+- R_task is a conjunctive capability requirement set;
+- readiness, availability and preference are distinct from capability demand;
+- UNKNOWN must not become R_task=∅;
+- selection must not retrodefine demand.
+
+Still unresolved:
+- empty R_task semantics;
+- exact precondition/policy boundary;
+- whether verification belongs in the requirement set only conditionally;
+- required capability granularity across the wider domain;
+- whether the proposed examples and counterexamples are sufficient.
+
+Next:
+independent adversarial challenge, then reconciliation.
