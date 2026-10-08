@@ -1,3 +1,25 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-142
+
+Canonical record:
+CHAT-ARCH-2026-10-08-142-rq21-29-preselection-capability-contract-reconciliation.md
+
+Type:
+RECONCILIATION / PROVENANCE / CAPABILITY / REALIZATION / SEMANTIC-CONTRACT / SYMBIOSIS
+
+State:
+RQ21.28 CLOSED-D / RQ21.29 CLOSED-C / IMPLEMENTATION BLOCKED
+
+Material delta:
+- verified that remote main remains 5b1d890...;
+- absorbed the unpromoted 781f2f62... panorama writeback as historical knowledge rather than canonical-main state;
+- established that pre-selection operation semantics can exist through request actions;
+- established that no valid focal-path operation→abstract-capability transformation currently exists;
+- established ToolTask.actions as mixed and potentially circular if used as a requirement oracle;
+- narrowed first open edge to demand-side semantic translation.
+
+Routing authority remains CURRENT-STATE.md.
+
+
 ## 2026-10-07 REGISTRATION — CHAT-ARCH-2026-10-07-137
 
 Canonical record:
