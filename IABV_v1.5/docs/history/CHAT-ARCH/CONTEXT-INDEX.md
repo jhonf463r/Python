@@ -1,3 +1,22 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.29 PRE-SELECTION CAPABILITY CONTRACT
+
+Canonical episode:
+CHAT-ARCH-2026-10-08-142-rq21-29-preselection-capability-contract-reconciliation.md
+
+RQ21.28 = D; RQ21.29 = C.
+
+Current first open edge:
+concrete pre-selection operation semantics → consumed operation→capability transformation → exact R_task.
+
+Important guard:
+ToolTask.actions is mixed and cannot be used as a universal independent source of requirements.
+
+Current next actor:
+CODEX, narrow caller-provenance trace only.
+
+No implementation/runtime/scoring change before the semantic demand contract is closed.
+
+
 ## 2026-10-07 LATEST ROUTING POINTER — CAPABILITY → REALIZATION EMPTY-SET DESIGN CLOSED
 
 Canonical episode:
