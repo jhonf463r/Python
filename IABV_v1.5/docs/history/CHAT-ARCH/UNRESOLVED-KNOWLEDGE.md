@@ -5084,3 +5084,20 @@ Next:
 CODEX, narrow reuse/composition census to determine the smallest existing-organ join and whether any existing path already supplies the repaired R_task semantics.
 
 Implementation remains blocked.
+
+
+## 2026-10-08 — RQ21.41 SOURCE RECONCILIATION / BOUNDED EXTENSION
+
+RQ21.41 closes source archaeology at C:
+existing organs are reusable, but the exact semantic bridge is absent.
+
+Open contract questions:
+- exact location of R_task + demand_state;
+- authoritative capability ID vocabulary for the first slice;
+- realization declaration separate from heterogeneous ToolCard action labels;
+- hard eligibility gate before preference/Synaptic/explicit selection/fallback;
+- UNKNOWN/AMBIGUOUS/EMPTY semantics at runtime boundary;
+- preservation of readiness evidence separately from demand identity;
+- empty eligible set propagation without fallback resurrection.
+
+Do not implement until these are frozen and adversarially challenged.
