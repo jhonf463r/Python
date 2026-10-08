@@ -1,3 +1,17 @@
+## 2026-10-08 METHOD AMENDMENT — ADVERSARIAL CONTRACT REPAIR AFTER RQ21.49
+
+Once an independent challenger establishes PASS WITH BOUNDED REPAIRS, separate repairs into:
+- precision repairs that can be incorporated without new normative choice;
+- normative repairs that must be explicitly accepted by the Human Domain Owner.
+
+For RQ21.49:
+precision-oriented repairs: R1, R4, R5, R7;
+mixed precision/normative repair: R6;
+normative repairs: R2, R3, R8.
+
+Routing consequence:
+do not re-run a generic adversarial audit before the owner closes the normative set; after owner closure, ChatGPT freezes the contract, then the next implementation-facing actor may be selected.
+
 ## 2026-10-08 METHOD AMENDMENT — CURRENT CLAUDE 5.5 ACTOR POOL AND MODEL-SPECIFIC ROUTING
 
 Current user-available Claude pool is Sonnet 5.5 + Haiku 5.5. Actor selection remains capability-fit and edge-driven; model names are not authority labels.
