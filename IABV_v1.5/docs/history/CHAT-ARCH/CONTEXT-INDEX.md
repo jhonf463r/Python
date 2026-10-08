@@ -1,3 +1,20 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.57 OWNER DECISIONS CLOSED / CONTRACT FROZEN
+
+Human Domain Owner accepted the two RQ21.54 scope points. Canonical record:
+`CHAT-ARCH-2026-10-08-176-rq21-57-owner-scope-confirmations-and-contract-freeze.md`.
+
+R8 now has a frozen partition: substrate-guaranteed channels; caller/interface obligations; declared residuals. Unknown/uncovered relevant channels cannot support PASS. The temporal threat window covers the candidate and attributable/delegated actors throughout validation; closure requires termination/quiescence plus final-state verification.
+
+Next action is a **focused feasibility/composition audit**, not another generic Deep Research run and not implementation:
+- audit experimental `Experimental_CreateProcessInSandbox` APIs and existing IABV components against all seven guarantees;
+- separately confirm exact-target export/availability if a real Windows execution channel is ready;
+- independent verification;
+- implementation only if the composed contract can be realized faithfully.
+
+Keep the experimental API candidate-only. Current implementation remains unproven and the pinned source baseline has not been changed.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.56 RESEARCH ADJUDICATION
 
 RQ21.56 supplied report = **REJECTED AS COMPLETE / PARTIAL TOPIC DISCOVERY ONLY**. Do not absorb it as a complete substrate solution.
