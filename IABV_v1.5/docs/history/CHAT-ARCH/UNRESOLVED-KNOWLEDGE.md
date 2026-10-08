@@ -1,3 +1,29 @@
+## 2026-10-08 — RQ21.44A CURRENT FRONTIER
+
+Closed:
+- RQ21.43 = human/domain adjudication accepted
+- RQ21.43A = PASS WITH BOUNDED REPAIRS
+- RQ21.44 = READY FOR MINIMAL CODE CONTRACT
+- RQ21.44A = PASS WITH BOUNDED REPAIRS / READY FOR MINIMAL CODE CONTRACT
+
+Newly established:
+- no existing machine ID is semantically safe for C_SANDBOX_DYNAMIC_VALIDATION;
+- demand must be pre-selection and never inferred retroactively from ToolTask fields;
+- realization declaration is claim-only and must not substitute for evidence;
+- eligibility must include evidence and realization-side E/X coverage, not declaration/availability alone;
+- a governed capability-test/acquisition path is required if evidence is otherwise empty;
+- final resolver guard is an enforcement boundary;
+- known-demand negative handling must include unresolved non-empty tool_id;
+- R_task={C} does not imply universal task sufficiency.
+
+Current first open edge:
+owner-authorized machine identity + bounded E/X/evidence contract → final implementation contract.
+
+Immediate discriminator:
+human/domain owner decision on machine ID, E/X representation, and first-slice task boundary.
+
+Guard:
+do not weaken capability eligibility to solve bootstrap; use a distinct governed acquisition/test path.
 ## 2026-10-08 — RQ21.44 CURRENT FRONTIER
 
 Closed:
