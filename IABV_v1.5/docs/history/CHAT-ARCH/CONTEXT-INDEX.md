@@ -4699,3 +4699,20 @@ CODEX now identifies a specific first implementation blocker: the exact capabili
 Preserve: `session.capability_readiness ≠ automatically per-ToolTask requirements`; `PlaybookStep.capability_id` is currently singular and does not establish conjunctive task requirements; `ToolCapability` is not the universal readiness vocabulary; `eligible_tool_ids` remains ephemeral.
 
 Next actor: **SONNET / CLAUDE**. Question: can existing task/playbook/session composition derive the exact subset without invented semantics? If no, keep the blocker. No implementation yet.
+
+
+## 2026-10-08 DEVELOPMENTAL METHOD POINTER — SYMBIOSIS CONTROL LOOP
+
+Canonical:
+CHAT-ARCH-2026-10-08-148-symbiosis-cumulative-developmental-control-loop.md
+
+Role:
+methodological overlay governing future material episodes; it does not supersede the technical RQ21.35 route.
+
+Core loop:
+verified experience → Knowledge/Method/Routing Delta → writeback → later non-identical reuse → changed future decision → observable consequence.
+
+Current technical route remains:
+RQ21.35 — existing pre-selection operation vocabulary / semantic discriminator → operative consumer → exact R_task.
+
+No implementation/runtime/scoring change.
