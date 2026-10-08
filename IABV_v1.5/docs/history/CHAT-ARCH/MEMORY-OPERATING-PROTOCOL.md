@@ -2277,3 +2277,30 @@ Progress instrumentation is diagnostic only:
 Do not collapse these into a single "intelligence score".
 
 Current frontier is still RQ21.35; this amendment changes methodology only and does not authorize executable implementation.
+
+
+## 2026-10-08 METHOD AMENDMENT — SEMANTIC CONTRACT ESCALATION
+
+When bounded source archaeology closes all credible existing candidates but the remaining question is normative/domain meaning, do not continue generic code archaeology.
+
+Use this sequence:
+
+source-established behavior → explicit unresolved semantic choice → human/domain adjudication → positive/negative examples → independent adversarial challenge → reconciliation → minimal implementation contract
+
+The human adjudication must not invent implementation details. It defines only the semantic contract that source evidence cannot determine.
+
+Minimum contract questions:
+- What counts as an operationally distinct task?
+- Which operational distinctions require distinct abstract capabilities?
+- Which distinctions may share one capability?
+- Is the minimum requirement conjunctive across multiple capability IDs?
+- What is the contract for ambiguous/unknown demand?
+- Which examples are positive matches?
+- Which examples are explicit non-matches?
+- What evidence would falsify the proposed mapping?
+
+Once defined, the contract becomes a candidate hypothesis and must be independently challenged before implementation.
+
+This is a deliberate handoff: source evidence → human semantics → independent challenge → engineering.
+
+Do not let the implementation actor silently decide the domain semantics.
