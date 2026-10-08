@@ -5024,3 +5024,21 @@ Next open edge:
 provisional repaired operation → capability → R_task contract → focused independent rechallenge.
 
 Implementation remains blocked.
+
+
+## 2026-10-08 — RQ21.38 REPAIRED SEMANTIC CONTRACT / RECHALLENGE OPEN
+
+The coordinator revised RQ21.36 using RQ21.37's nine repair classes.
+
+Current open edge:
+repaired operation → capability → R_task contract → independent falsification.
+
+Critical guards:
+- candidate-set independence;
+- frozen/versioned R_task;
+- UNKNOWN != EMPTY;
+- capable != permitted != ready != available;
+- success criterion != evidence requirement;
+- no post-selection retroactive demand inference.
+
+Implementation remains blocked.
