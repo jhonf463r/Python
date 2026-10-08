@@ -10019,3 +10019,26 @@ FOLLOW-ON:
 Sonnet/Claude source-aware adversarial challenge, then Codex implementation only if contract survives.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 ACTIVE OVERLAY — RQ21.42 PROVISIONAL CODE-FACING CONTRACT
+
+Canonical:
+CHAT-ARCH-2026-10-08-156-rq21-42-code-facing-contract-proposal.md
+
+RQ21.41 = CLOSED-C.
+
+RQ21.42 proposes the minimum code-facing seam:
+- frozen pre-selection demand representation;
+- bounded reuse of validated capability-readiness IDs as first-slice capability identity;
+- separate ToolCard realization declaration;
+- hard capability eligibility before preference/Synaptic/explicit/lexical fallback;
+- preservation of UNKNOWN/AMBIGUOUS/EMPTY semantics;
+- reuse of existing readiness/evidence and ToolTaskStatus.DEFERRED where source-compatible.
+
+This remains PROVISIONAL.
+
+NEXT ACTOR:
+SONNET/CLAUDE — source-aware adversarial challenge of the proposed code-facing contract.
+
+No implementation/runtime/scoring change.
