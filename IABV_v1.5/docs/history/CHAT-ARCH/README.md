@@ -3,6 +3,12 @@
 This directory is the canonical historical-memory layer for IABV. It preserves knowledge from ChatGPT / Claude / Devin / Codex and related engineering conversations without requiring future chats to retain the original transcript.
 
 ## OPERATIONAL MEMORY
+## 2026-10-08 ACTIVE RQ21 CONTRACT — OWNER SCOPE CLOSED
+
+Canonical: `CHAT-ARCH-2026-10-08-176-rq21-57-owner-scope-confirmations-and-contract-freeze.md`.
+
+The Owner has closed R8 responsibility partitioning and the adversary's validation-window scope. The seven-guarantee minimal contract is frozen; technology selection, exact-target API availability and realization/runtime proof remain open. The next action is a focused guarantee-by-guarantee feasibility/composition audit, not implementation and not generic Deep Research.
+
 ## 2026-10-08 ACTIVE METHOD DELTA — FRAME ACTIVATION BEFORE PROMPT CONSTRUCTION
 
 Canonical method record:
