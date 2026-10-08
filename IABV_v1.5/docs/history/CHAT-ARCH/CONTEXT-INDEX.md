@@ -1,3 +1,24 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.43 → SONNET/CLAUDE
+
+Canonical:
+CHAT-ARCH-2026-10-08-158-rq21-43-human-capability-adjudication.md
+
+RQ21.43 = PARTIALLY CLOSED / DOMAIN ADJUDICATION ACCEPTED.
+
+Key decision:
+tools.sandbox is KNOWN with a realization-independent functional capability meaning.
+tools.local_workflow and system.metacognition remain AMBIGUOUS.
+
+First open edge:
+adjudicated capability meaning → machine-readable capability identity → realization declaration → hard eligibility.
+
+Next actor:
+SONNET/CLAUDE.
+
+Next experiment:
+focused semantic falsification of the three adjudicated rows; no general code archaeology.
+
+No implementation/runtime/scoring change.
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.42A → DOMAIN ADJUDICATION
 
 Canonical:
