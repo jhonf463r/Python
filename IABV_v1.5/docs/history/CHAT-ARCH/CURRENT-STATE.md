@@ -1,3 +1,32 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.36 PROVISIONAL CONTRACT / ADVERSARIAL CHALLENGE NEXT
+
+Canonical record:
+CHAT-ARCH-2026-10-08-150-rq21-36-provisional-semantic-contract.md
+
+RQ21.35 remains CLOSED-C:
+bounded source archaeology did not yield an exact realization-independent R_task.
+
+RQ21.36 result received:
+a coherent operation/capability/R_task/realization/readiness/availability/preference contract has been proposed.
+
+Epistemic correction:
+this is NOT yet "human/domain adjudication". It is an AI-proposed semantic contract requiring explicit human/domain acceptance and independent adversarial challenge.
+
+Proposed core:
+Task → semantic interpretation → R_task → capability-satisfaction filter → eligible realizations → readiness/availability/governance → governed selection.
+
+Important challenge points before implementation:
+- R_task = ∅ semantics must remain distinct from UNKNOWN;
+- permissions/policy/scope must remain separate from functional capability while still constraining execution;
+- verification capability should be required only where verification is itself part of the task contract;
+- conjunctive multi-capability semantics need adversarial checking;
+- capability granularity must survive replacement of realization.
+
+NEXT ACTOR:
+SONNET/CLAUDE — independent adversarial semantic-contract challenge.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.35 CLOSED / HUMAN SEMANTIC ADJUDICATION REQUIRED
 
 Canonical record:
