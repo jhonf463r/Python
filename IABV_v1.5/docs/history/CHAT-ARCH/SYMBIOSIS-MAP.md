@@ -5442,3 +5442,18 @@ SONNET/CLAUDE is now the fit actor because the open edge is contract falsificati
 
 Current edge:
 proposed operation/capability/R_task contract → independent adversarial challenge → reconciled semantic contract.
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.37 REPAIRS
+
+Knowledge Delta:
+- adversarial review exposed circularity, vacuous-set, epistemic-state and evidence-attribution weaknesses in the provisional semantic contract.
+
+Method Delta:
+- semantic contracts must be challenged for logical closure, not only capability granularity;
+- test demand-state loss, candidate-set leakage, governance-derived demand and post-result reinterpretation before implementation.
+
+Routing Delta:
+ChatGPT/coordinator-synthesis now repairs the provisional contract; Sonnet/Claude then re-challenges only the repaired clauses.
+
+Current edge:
+repaired operation/capability/R_task semantics → independent focused rechallenge.
