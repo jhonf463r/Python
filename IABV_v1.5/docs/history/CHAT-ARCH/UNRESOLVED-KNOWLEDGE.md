@@ -5101,3 +5101,16 @@ Open contract questions:
 - empty eligible set propagation without fallback resurrection.
 
 Do not implement until these are frozen and adversarially challenged.
+
+
+## 2026-10-08 — RQ21.42 PROVISIONAL CODE-FACING CONTRACT / ADVERSARIAL REVIEW OPEN
+
+Open questions:
+- whether readiness capability IDs can safely serve as first-slice capability identity;
+- exact typed placement of pre-selection R_task;
+- one common hard eligibility boundary across all current selection/override/fallback routes;
+- whether the first slice may defer envelope implementation safely;
+- preservation of UNKNOWN/AMBIGUOUS semantics;
+- reuse of ToolTaskStatus.DEFERRED for empty eligible realization propagation.
+
+Implementation remains blocked.
