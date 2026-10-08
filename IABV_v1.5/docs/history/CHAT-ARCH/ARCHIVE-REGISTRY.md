@@ -1,3 +1,23 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-162
+
+Canonical:
+CHAT-ARCH-2026-10-08-162-rq21-45-owner-decision.md
+
+Type:
+OWNER-DECISION / SEMANTIC-CONTRACT / CAPABILITY / ROUTING / METHOD / SYMBIOSIS
+
+State:
+RQ21.45 CLOSED / IMPLEMENTATION CONTRACT UNLOCKED / IMPLEMENTATION NOT YET EXECUTED
+
+Material delta:
+- authorized new machine identity `capability.sandbox.dynamic_validation`;
+- confirmed task envelope inputs E/X;
+- fixed first slice as dedicated validation-step boundary;
+- separated evidence acquisition from eligibility;
+- closed negative semantics for empty eligibility and unresolved requested tool IDs.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-161
 
 Canonical:
