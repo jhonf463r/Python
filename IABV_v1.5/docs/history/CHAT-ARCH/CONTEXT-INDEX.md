@@ -1,3 +1,14 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.53
+
+RQ21.53 is CLOSED at the normative/contract level.
+
+Current route:
+Owner-authorized bounded substrate contract → SONNET 5.5 focused verification → ChatGPT reconciliation → CODEX implementation → independent implementation verification → runtime only after execution/evidence readiness.
+
+Technology choice is deliberately deferred until the focused verification survives.
+
+Historical Next Actor fields remain non-routable; CURRENT-STATE is the current routing authority.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.52
 
 RQ21.52 = CLOSED-C / NO FEASIBLE EXISTING SUBSTRATE.
