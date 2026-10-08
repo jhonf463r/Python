@@ -1,3 +1,27 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.58 FEASIBILITY AUDIT ADJUDICATED / P0 CHANNEL NOT READY
+
+Canonical record:
+`CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`
+
+RQ21.58 = **ACCEPTED AS A BOUNDED FEASIBILITY AUDIT WITH REPAIRS; P0 EXECUTION READINESS NOT ESTABLISHED**.
+
+Verified pre-writeback remote main: `c9df3ca393c1b7528f48988d0c4baf405c88cf16`.
+The compare from pinned executable baseline `5b1d89022ee4cdc63c1f88e050f086b40a42875c` (tree `ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61`) to that main had 196 commits ahead, 44 changed files, and zero `IABV_v1.5/src/` changes. Seven current source files independently had identical blob SHAs to the pinned baseline.
+
+The experimental `Experimental_CreateProcessInSandbox` API remains a **partial candidate primitive**, not a selected or proven substrate. Important correction: the documented API rejects non-NULL process/thread attributes and `inheritHandles=TRUE`; do not assume generic child-process attribute lists or inherited stdio compose with it. WFP's AppContainer SID filter condition is not itself proof of a complete network-effect event stream. AppContainer, Job Objects, ETW, WFP, ACLs and CNG are separate partial primitives; their existence does not prove the seven-guarantee composition.
+
+The existing IABV source remains insufficient: `ToolSandbox` forwards `sandbox=True`; `ShellToolAdapter` executes with `subprocess.run(..., shell=True)`; `ToolValidator` can emit `SANDBOX_PASS` from `result.success`; `ExperimentLab` and `SandboxExperimentService` are partial, not the hidden-X/effect-E acceptor.
+
+**First open edge, with readiness gate:**
+1. Establish a known-good non-elevated, read-only execution channel bound to the exact target `10.0.26300.0` (currently UNPROVEN; do not assume Devin/Codex or another machine).
+2. Run P0 only: native-path/architecture-aware static inspection for `processmodel.dll` and both exports, preserving raw provenance. Do not load the DLL or run a candidate.
+3. Independently verify P0 before any later operational-feasibility experiment.
+4. Codex implementation remains conditional on feasibility and full seven-guarantee coverage.
+
+NEXT ACTOR: **NOT YET ASSIGNED** — exact-target access and actor/channel readiness remain unproven. No runtime, P1 DLL load, candidate execution or source changes are evidenced/authorized by RQ21.58.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.57 OWNER SCOPE CONFIRMATIONS + CONTRACT FREEZE
 
 Canonical record:
