@@ -2364,3 +2364,23 @@ Material delta:
 - next actor is ChatGPT, followed by one final focused Sonnet/Claude challenge.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-154
+
+Canonical:
+CHAT-ARCH-2026-10-08-154-rq21-40-source-reconciliation.md
+
+Type:
+SEMANTIC-CONTRACT / SOURCE-RECONCILIATION / ROUTING / SYMBIOSIS / METHOD
+
+State:
+RQ21.40 PASS-WITH-ONE-REPAIR / SOURCE CONTRACT CENSUS OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- semantic contract survived final focused challenge;
+- pinned source reconciliation found no current exact R_task join;
+- existing readiness and selector organs remain reusable candidates;
+- next actor CODEX for minimum reuse/composition census.
+
+Routing authority remains CURRENT-STATE.md.
