@@ -15,6 +15,22 @@ The coordinator is the existing IABV knowledge/control protocol:
 
 Until equivalent runtime behavior is causally proven inside IABV itself, GitHub-backed coordination is the externalized control surface.
 
+## MANDATORY PRE-TASK EXPERIENCE-ACTIVATION GATE
+
+The normal collaboration flow has a strict precondition: before constructing a task/prompt for another actor, activate the relevant IABV frame and prior experience.
+
+`objective → current canonical state → objective-conditioned retrieval → failure/false-positive history → negative knowledge + method deltas → first open edge → capability/actor/readiness → task/prompt`.
+
+Relevant prior failures must alter at least one concrete part of the task contract when applicable: object lock, scope exclusions, source requirements, test matrix, evidence requirement, stop condition or acceptance gate. Merely quoting history does not count.
+
+The current result adjudication examples are:
+- RQ21.55: the report changed the object to research about Deep Research itself;
+- RQ21.56: the report remained in the broad Windows sandbox domain but failed the required seven-guarantee composition and source contract.
+
+Historical actor order and historical `NEXT ACTOR` fields are not routing authority. Recompute from the first current open edge. Use existing organs; do not create another coordinator brain.
+
+---
+
 ## DEFAULT OPERATING MODE — NORMAL IABV WORK
 
 `HUMAN OBJECTIVE → IABV CANONICAL FRAME → RELEVANT KNOWLEDGE → CURRENT VERIFIED TRUTH → CLOSED EDGES → FIRST OPEN CAUSAL/EVIDENTIAL EDGE → REQUIRED CAPABILITY → CAPABILITY-FIT ACTOR/REALIZATION → EXACT TASK/PROMPT → ACTION → OBSERVATION → INDEPENDENT VERIFICATION → RECONCILIATION → KNOWLEDGE / METHOD / RELATION / ROUTING DELTA → WRITEBACK → NEXT FRONTIER`
