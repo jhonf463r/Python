@@ -1,3 +1,28 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.56 DEEP-RESEARCH RESULT ADJUDICATED / INCOMPLETE
+
+Canonical adjudication:
+`CHAT-ARCH-2026-10-08-175-rq21-56-windows-substrate-research-adjudication.md`
+
+RQ21.56 = **REJECTED AS A COMPLETE TECHNICAL RESEARCH DELIVERABLE; PARTIAL TOPIC DISCOVERY ONLY**.
+
+The submitted report concerns Windows sandboxing but does not establish the seven owner-authorized guarantees as a composed, source-audited substrate. It has no auditable claim-level bibliography, misses required mechanism/evidence comparisons, and contains at least two overbroad platform claims.
+
+Independent Microsoft Learn verification surfaced `Experimental_CreateProcessInSandbox` / `Experimental_CreateProcessAsUserInSandbox` as an **experimental Windows 11 candidate primitive** (`processmodel.dll`, no public header, subject to change). It may cover a subset of process-launch containment; it is not documented as supplying E observation, hidden X, deterministic comparison, independent evidence custody, quiescent closure or candidate/environment evidence binding. Actual export/behavior on target `10.0.26300.0` remains UNPROVEN.
+
+Pinned IABV executable baseline remains:
+`5b1d89022ee4cdc63c1f88e050f086b40a42875c`
+Tree:
+`ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61`
+
+Current first open edge:
+Owner confirmation of the R8 partition + temporal adversary scope → ChatGPT final contract freeze → focused exact-target feasibility/composition audit of the experimental sandbox API → independent verification → Codex implementation only if readiness/coverage support it.
+
+NEXT ACTOR: HUMAN DOMAIN OWNER.
+
+RQ21.56 does not change the normative contract or authorize implementation. No IABV source/runtime changes were made.
+
+---
+
 ## 2026-10-08 METHOD/RESEARCH OVERLAY — RQ21.55 DEEP-RESEARCH RESULT REJECTED
 
 A supplied Deep Research result failed the OBJECT-TARGET GATE: it researched Deep Research as a tool/methodology/ecosystem rather than the required Windows/IABV validation-substrate object.
