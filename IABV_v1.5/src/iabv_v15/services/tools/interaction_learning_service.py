@@ -96,6 +96,11 @@ class InteractionLearningService:
         confidence = self._confidence_for_result(result)
         evidence = self._build_evidence(task=task, result=result)
         selection = dict(task.metadata.get('mode_selection') or {})
+        selection_tool_id = str(selection.get('selected_tool_id') or '').strip()
+        selection_reuse_coherent = selection_tool_id == task.tool_id == card.tool_id
+        selection_reports_reuse = selection_reuse_coherent and bool(
+            selection.get('equivalent_pattern_exists') or selection.get('already_resolved')
+        )
         learning_signals = self._learning_signals(saved, result, evidence)
         interaction_result = InteractionResult(
             success=effective_success,
@@ -143,7 +148,7 @@ class InteractionLearningService:
             selector_name=str(selection.get('selector_name') or 'universal_mode_selector'),
             selector_reason=str(selection.get('reason') or task.metadata.get('selector_reason') or ''),
             pattern_id=saved.pattern_id,
-            reused_pattern=bool(selection.get('equivalent_pattern_exists') or selection.get('already_resolved') or reused_pattern),
+            reused_pattern=bool(selection_reports_reuse or reused_pattern),
             tool_id=card.tool_id,
             tool_type=card.tool_type,
             task_id=task.task_id,

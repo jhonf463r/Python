@@ -49,6 +49,40 @@ def _result(task: ToolTask, tool_type: ToolType, *, success: bool = True) -> Too
     )
 
 
+def _reuse_classification_task(
+    *,
+    tool_id: str,
+    selected_tool_id: str,
+    already_resolved: bool,
+    equivalent_pattern_exists: bool,
+    reusable_pattern_id: str | None = None,
+    reusable_episode_id: str | None = None,
+) -> ToolTask:
+    return ToolTask(
+        tool_id=tool_id,
+        title='Reuse classification task',
+        objective='Reuse classification objective',
+        actions=[ToolAction(action_type=ToolActionType.OPEN_URL, label='Open', target='https://example.com/reuse')],
+        metadata={
+            'mode_selection': {
+                'selected_tool_id': selected_tool_id,
+                'already_resolved': already_resolved,
+                'equivalent_pattern_exists': equivalent_pattern_exists,
+                'reusable_pattern_id': reusable_pattern_id,
+                'reusable_episode_id': reusable_episode_id,
+            },
+        },
+    )
+
+
+def _episode_for_task(repository: ToolRecordRepository, task: ToolTask):
+    return next(
+        episode
+        for episode in repository.list_interaction_episodes(tool_id=task.tool_id, limit=20)
+        if episode.task_id == task.task_id
+    )
+
+
 def test_interaction_learning_service_normalizes_ui_background_and_api() -> None:
     root = _workspace('interaction_learning_service')
     shutil.rmtree(root, ignore_errors=True)
@@ -141,6 +175,83 @@ def test_interaction_learning_service_matches_reusable_patterns() -> None:
         assert episodes[0].result.success is True
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_reuse_classification_accepts_coherent_selection(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    service = InteractionLearningService(repository)
+    card = ToolCard(tool_id='final_tool', title='Final tool', tool_type=ToolType.BROWSER, adapter_key='browser')
+    task = _reuse_classification_task(
+        tool_id='final_tool',
+        selected_tool_id='final_tool',
+        already_resolved=True,
+        equivalent_pattern_exists=True,
+        reusable_pattern_id='pattern-final',
+    )
+
+    service.learn_from_execution(card=card, task=task, result=_result(task, ToolType.BROWSER))
+
+    assert _episode_for_task(repository, task).reused_pattern is True
+
+
+def test_reuse_classification_rejects_synaptic_mismatch_with_reuse_flags(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    service = InteractionLearningService(repository)
+    card = ToolCard(tool_id='final_tool', title='Final tool', tool_type=ToolType.BROWSER, adapter_key='browser')
+    task = _reuse_classification_task(
+        tool_id='final_tool',
+        selected_tool_id='selected_elsewhere',
+        already_resolved=True,
+        equivalent_pattern_exists=True,
+        reusable_pattern_id='pattern-other-tool',
+        reusable_episode_id='episode-other-tool',
+    )
+
+    service.learn_from_execution(card=card, task=task, result=_result(task, ToolType.BROWSER))
+
+    episode = _episode_for_task(repository, task)
+    assert episode.reused_pattern is False
+    assert episode.metadata['reusable_episode_id'] == 'episode-other-tool'
+
+
+def test_reuse_classification_rejects_mismatch_without_pattern(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    service = InteractionLearningService(repository)
+    card = ToolCard(tool_id='final_tool', title='Final tool', tool_type=ToolType.BROWSER, adapter_key='browser')
+    task = _reuse_classification_task(
+        tool_id='final_tool',
+        selected_tool_id='selected_elsewhere',
+        already_resolved=True,
+        equivalent_pattern_exists=False,
+        reusable_episode_id='episode-other-tool',
+    )
+
+    service.learn_from_execution(card=card, task=task, result=_result(task, ToolType.BROWSER))
+
+    assert _episode_for_task(repository, task).reused_pattern is False
+
+
+def test_reuse_classification_preserves_existing_pattern_for_final_tool(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    service = InteractionLearningService(repository)
+    card = ToolCard(tool_id='final_tool', title='Final tool', tool_type=ToolType.BROWSER, adapter_key='browser')
+    first_task = ToolTask(
+        tool_id='final_tool',
+        title='Reuse classification task',
+        objective='Reuse classification objective',
+        actions=[ToolAction(action_type=ToolActionType.OPEN_URL, label='Open', target='https://example.com/reuse')],
+    )
+    service.learn_from_execution(card=card, task=first_task, result=_result(first_task, ToolType.BROWSER))
+
+    second_task = _reuse_classification_task(
+        tool_id='final_tool',
+        selected_tool_id='selected_elsewhere',
+        already_resolved=True,
+        equivalent_pattern_exists=False,
+    )
+    service.learn_from_execution(card=card, task=second_task, result=_result(second_task, ToolType.BROWSER))
+
+    assert _episode_for_task(repository, second_task).reused_pattern is True
 
 
 
