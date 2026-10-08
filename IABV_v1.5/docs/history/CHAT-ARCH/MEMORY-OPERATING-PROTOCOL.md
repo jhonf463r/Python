@@ -2304,3 +2304,24 @@ Once defined, the contract becomes a candidate hypothesis and must be independen
 This is a deliberate handoff: source evidence → human semantics → independent challenge → engineering.
 
 Do not let the implementation actor silently decide the domain semantics.
+
+## 2026-10-08 METHOD AMENDMENT — MINIMUM-REPAIR ADVERSARIAL CYCLE
+
+When an adversarial semantic review finds real defects, do not automatically import the reviewer's full ontology into the project.
+
+Use:
+source/corpus fact
+→ provisional semantic contract
+→ adversarial falsification
+→ reconcile only material defects
+→ minimum surviving contract
+→ focused re-challenge
+→ source reconciliation
+→ implementation contract.
+
+The repair stage must preserve reuse-first and anti-scope-creep:
+- repair the current causal boundary;
+- do not solve workflow composition, full uncertainty policy, evidence ontology or future capability taxonomy unless the current implementation boundary requires it;
+- distinguish a semantic necessity from a useful future extension.
+
+This protects the developmental method from ontology inflation while retaining adversarial learning.
