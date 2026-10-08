@@ -1,3 +1,33 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.32 TASKINTENT TOO COARSE / RQ21.33 DISCRIMINATION TEST
+
+Canonical record:
+CHAT-ARCH-2026-10-08-145-rq21-32-taskintent-too-coarse-and-discrimination-test.md
+
+Documentation main before this writeback:
+47572dd23099d00c98a0840f0e21d82eb1596dbf
+
+Executable baseline:
+5b1d89022ee4cdc63c1f88e050f086b40a42875c
+tree:
+ed1abcdaa7811582e26d7f5a0e2d7a2e82826b61
+
+RQ21.32 = CLOSED / B:
+TaskIntent is an existing structured semantic normalizer, but it is too coarse for operational discrimination inside tools.local_workflow.
+
+Current open edge:
+TaskIntent / desired_modes / task_kind → discriminating operational representation independent of realization → exact R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+RQ21.33, one static pairwise discrimination test using two source-grounded tools.local_workflow messages with materially different requested operations.
+
+Current method rule:
+exists → operative → semantically scoped → discriminating → realization-independent → capability-bearing.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.31 SEMANTIC-UNIT CLOSURE / RQ21.32 ROUTING
 
 Canonical record:
