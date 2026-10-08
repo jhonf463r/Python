@@ -1,3 +1,34 @@
+## 2026-10-08 ACTIVE ROUTING OVERLAY — CLAUDE 5.5 POOL RECONCILIATION
+
+Verified current accessible external-model pool for this collaboration:
+- Claude Sonnet 5.5 — primary external actor for material independent source/code/contract review, bounded architecture challenge, complex well-scoped coding review, and long-horizon investigation.
+- Claude Haiku 5.5 — fast/cost-efficient actor for high-volume classification, compaction, summarization, triage, narrow repeatable checks, and bounded subagent work; it may perform focused architecture/security review when explicitly routed, but does not inherit normative owner authority.
+- Opus 5.5 is a current Anthropic model, but is NOT part of the user's currently available actor pool and must not be routed by assumption.
+- ChatGPT — coordinator, reconciliation, evidence-boundary adjudication, delta synthesis and canonical writeback.
+- Codex — implementation/source archaeology when the first open edge is code-facing and the execution/evidence contract is ready.
+- Devin — Windows/runtime/UI execution only when the exact execution channel and evidence contract are ready.
+
+Routing rule remains:
+first open causal/evidential edge → required capability → capability-fit actor → minimum discriminating action.
+
+Current RQ21.48 remains:
+OWNER-CONTRACT INCOMPLETE.
+
+Current first open edge:
+owner normative boundary on E/threat/isolation/oracle → minimal authorized substrate contract → independent contract challenge → Codex implementation.
+
+NEXT ACTOR:
+HUMAN DOMAIN OWNER (the user) — no AI should silently decide the normative containment/security contract.
+
+After owner closure:
+CHATGPT reconciles the explicit decision package.
+Then SONNET 5.5 performs one focused adversarial contract audit because the claim is material and security/containment-sensitive.
+Only after that:
+CODEX receives the minimal implementation prompt.
+Implementation proof and runtime proof remain separate.
+
+Do not route by fixed model sequence or message count.
+Do not repeat Haiku 5.5's RQ21.48 audit merely because a second AI is available.
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.48 HAIKU 5.5 / OWNER CONTRACT STILL OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-165-rq21-48-haiku-owner-contract.md
