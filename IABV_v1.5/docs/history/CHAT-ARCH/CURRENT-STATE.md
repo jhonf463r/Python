@@ -1,3 +1,44 @@
+## 2026-10-08 ACTIVE METHOD OVERLAY — SYMBIOSIS / CUMULATIVE DEVELOPMENTAL CONTROL LOOP
+
+Canonical record:
+CHAT-ARCH-2026-10-08-148-symbiosis-cumulative-developmental-control-loop.md
+
+This overlay does not alter the current RQ21.35 technical frontier or authorize implementation. It makes the existing self-composition, cross-IA verification and cumulative-memory method the explicit developmental control loop for all future material work.
+
+Core developmental target:
+~~~
+verified experience
+→ Knowledge/Method/Routing Delta
+→ canonical writeback
+→ contextual retrieval
+→ later non-identical reuse
+→ changed future decision
+→ observable consequence
+~~~
+
+Required symbiosis practice:
+- use existing inspection, provenance, source-trace, verification and governance organs before proposing new architecture;
+- deliberately obtain orthogonal perspectives when a material claim benefits from them (semantic, provenance/source, adversarial, runtime/evidence);
+- treat AI agreement as support, not proof;
+- route actors by capability + independence + readiness/evidence fit;
+- preserve FACT / INFERENCE / ASSUMPTION / UNPROVEN;
+- do not equate additional stored data with additional certainty;
+- no scalar score may certify learning, intelligence, universality or neuroplasticity.
+
+Operational learning gate:
+~~~
+experience → verified reusable change → later non-identical reuse → changed decision → observable consequence
+~~~
+
+Until the later causal link is demonstrated, call the state cumulative methodological memory, not autonomous learning.
+
+Self-help threshold:
+IABV should eventually be able to detect a verified limitation, formulate the missing capability/uncertainty, select the minimum discriminating observation and actor, verify the result, update reusable knowledge/method/routing, and later reuse that change without the answer being manually supplied.
+
+Current technical frontier remains unchanged:
+RQ21.35 — existing pre-selection operation vocabulary / semantic discriminator → operative consumer → exact R_task.
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.34 GENERIC ACTION TRANSPORT / NO PRE-SELECTION CONSUMER
 
 Canonical record:
