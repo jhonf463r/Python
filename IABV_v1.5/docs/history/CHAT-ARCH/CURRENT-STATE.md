@@ -1,3 +1,14 @@
+## 2026-10-08 METHOD/RESEARCH OVERLAY — RQ21.55 DEEP-RESEARCH RESULT REJECTED
+
+A supplied Deep Research result failed the OBJECT-TARGET GATE: it researched Deep Research as a tool/methodology/ecosystem rather than the required Windows/IABV validation-substrate object.
+
+Do not absorb it as RQ21 technical evidence.
+
+Current first open edge remains:
+R8 scope partition + adversary temporal scope → final contract freeze → Codex implementation.
+
+Corrective action: rerun one bounded technical Deep Research execution with unique execution/object identities and a locked Windows validation-substrate object.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.54 SONNET 5.5 FOCUSED SUBSTRATE VERIFICATION
 
 Canonical:
