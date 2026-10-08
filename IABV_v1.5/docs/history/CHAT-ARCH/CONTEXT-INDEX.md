@@ -1,3 +1,21 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.31 → RQ21.32
+
+Canonical:
+CHAT-ARCH-2026-10-08-144-rq21-31-semantic-unit-closure-and-routing-improvement.md
+
+RQ21.31 = CLOSED-C.
+
+First open edge:
+user_goal / heuristic intent representation → stable structured task semantic unit → R_task.
+
+Next actor:
+CODEX.
+
+Next experiment:
+identify the first existing structured semantic feature derived from user_goal and consumed before ToolCard selection.
+
+Do not implement.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.30 CUMULATIVE CALLER-PROVENANCE FRONTIER
 
 Canonical episode:
