@@ -1,3 +1,18 @@
+## 2026-10-08 METHOD AMENDMENT — STATIC API AVAILABILITY IS NOT REALIZATION READINESS (RQ21.58)
+
+For Windows experimental-API work, keep these claims separate:
+`DLL present ≠ symbols present ≠ DLL loadable ≠ API operational ≠ containment enforced ≠ E completely observed ≠ seven-guarantee PASS`.
+
+P0 readiness must bind a known-good execution channel to the exact target before running even a read-only probe. Resolve native OS path/architecture and record collection-process bitness to avoid WOW64 redirection ambiguity. Preserve raw commands/output, timestamps, machine identity, tool version/hash, DLL identity and signature status. A hash is an identity, not authority; compare it to a trusted expected value only when such a reference exists. If the data cannot be read without elevation, record UNKNOWN and stop rather than elevate.
+
+Do not promote a WFP SID filter condition to complete network-effect observation without proof of event acquisition, attribution, allowed/denied-path coverage and loss handling. Do not assume generic `CreateProcess` attribute lists or inherited handles work with the experimental API when its contract rejects non-NULL process/thread attributes and `inheritHandles=TRUE`.
+
+RQ21.58 routing: first establish exact-target channel readiness → P0 static inspection → independent verification. P0 does not authorize DLL loading, API invocation, candidate execution or implementation. Preserve `implemented ≠ proven`, `hash ≠ authority`, and `API candidate ≠ composed substrate`.
+
+Source: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — EXPERIENCE-ACTIVATION GATE BEFORE TASK/PROMPT CONSTRUCTION
 
 For every material IABV objective, do not construct a prompt for Deep Research, Sonnet, Codex, Devin or another actor until objective-conditioned IABV frame activation has happened.
