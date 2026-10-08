@@ -1,3 +1,11 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.55 RESEARCH FAILURE
+
+The supplied Deep Research result is rejected at the object gate.
+
+Corrective route:
+bounded technical research object → ChatGPT Deep Research → object/coverage/source adjudication → owner scope decision → contract freeze → Codex.
+
+No generic/meta Deep Research rerun.
 ## 2026-10-08 ROUTING UPDATE — RQ21.54
 
 RQ21.54 = PASS WITH BOUNDED REPAIRS.
