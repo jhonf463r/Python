@@ -1,3 +1,13 @@
+## 2026-10-08 — RQ21.54 SONNET 5.5 FOCUSED SUBSTRATE VERIFICATION
+
+[F] Sonnet returned PASS WITH BOUNDED REPAIRS and did not reopen R2/R3/R8/R6.
+[F] Two scope confirmations remain open: R8 partition and adversary temporal scope.
+[F] Precision repairs include producer/acceptor separation, relevant-channel definition, boundary-membership lineage, R6 authenticated/comprehensive evidence records, and candidate/environment binding.
+[NP] Exact implementation technology and actual Windows enforceability remain unresolved.
+
+Current first open edge:
+Owner confirmation of the two scope points → ChatGPT contract freeze → implementation.
+
 ## 2026-10-08 — RQ21.53 OWNER AUTHORIZATION / SUBSTRATE CONTRACT
 
 [F] Human Domain Owner authorized the new bounded validation security/containment boundary.
