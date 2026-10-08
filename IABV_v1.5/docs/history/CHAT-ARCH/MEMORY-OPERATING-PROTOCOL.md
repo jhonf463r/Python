@@ -1,3 +1,15 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.58 EXPERIMENTAL API PROBE READINESS
+
+Keep `DLL presence`, `export presence`, `API loadability`, `API operational behavior`, `containment`, `complete E observation`, and `seven-guarantee PASS` as separate evidence claims.
+
+Before P0, bind a known-good non-elevated read-only execution channel to the exact target and record native OS path/architecture plus collection-process bitness. Preserve raw output, timestamps, target provenance, tool identity, file hash and signature status. A hash identifies a file; it does not establish trust by itself. If a fact needs elevation, mark UNKNOWN and stop.
+
+A WFP filter condition does not establish complete event coverage. An experimental API's generic-sounding name does not override its documented parameter restrictions. P0 is static file/export inspection only and does not authorize loading the DLL, invoking the API, executing a candidate, or implementation.
+
+Source: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — STATIC API AVAILABILITY IS NOT REALIZATION READINESS (RQ21.58)
 
 For Windows experimental-API work, keep these claims separate:
