@@ -1,3 +1,12 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.54
+
+RQ21.54 = PASS WITH BOUNDED REPAIRS.
+
+Current route:
+Sonnet focused substrate verification → HUMAN DOMAIN OWNER confirmation of two bounded scope points → ChatGPT final contract freeze → CODEX implementation → independent implementation verification → runtime only after execution/evidence readiness.
+
+Do not treat the two scope confirmations as new capability semantics. They bound the already-authorized substrate contract.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.53
 
 RQ21.53 is CLOSED at the normative/contract level.
