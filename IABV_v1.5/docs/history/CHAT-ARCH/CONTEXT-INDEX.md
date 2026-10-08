@@ -4772,3 +4772,17 @@ Follow-on:
 Sonnet/Claude focused re-challenge.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.38 → SONNET/CLAUDE RECHALLENGE
+
+Canonical:
+CHAT-ARCH-2026-10-08-152-rq21-38-repaired-semantic-contract.md
+
+State:
+PROVISIONAL / REPAIRED / INDEPENDENT RECHALLENGE OPEN.
+
+Next actor:
+SONNET/CLAUDE.
+
+No implementation/runtime/scoring change.
