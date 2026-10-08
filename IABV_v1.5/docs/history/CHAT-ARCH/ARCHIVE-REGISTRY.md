@@ -2242,3 +2242,25 @@ State:
 Next actor:
 **CODEX**.
 Purpose: determine whether an existing normal caller already preserves capability/readiness identity into concrete realization selection, avoiding premature architecture changes.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-148
+
+Canonical:
+CHAT-ARCH-2026-10-08-148-symbiosis-cumulative-developmental-control-loop.md
+
+Type:
+METHOD / SYMBIOSIS / CUMULATIVE-DEVELOPMENT / LEARNING-CONTRACT / ROUTING
+
+State:
+ACTIVE METHOD OVERLAY / RQ21.35 TECHNICAL FRONTIER UNCHANGED / IMPLEMENTATION BLOCKED
+
+Material delta:
+- existing self-composition and cumulative-experience rules are consolidated into an explicit developmental control loop;
+- orthogonal AI perspectives are treated as complementary evidence instruments, not voting authorities;
+- the durable developmental unit is the verified reusable Knowledge/Method/Routing Delta;
+- learning requires later non-identical reuse with an observable decision consequence;
+- no scalar score can certify learning/intelligence/universality;
+- no executable implementation is authorized by this record.
+
+Routing authority remains CURRENT-STATE.md.
