@@ -1,3 +1,24 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.56 RESEARCH ADJUDICATION
+
+RQ21.56 supplied report = **REJECTED AS COMPLETE / PARTIAL TOPIC DISCOVERY ONLY**. Do not absorb it as a complete substrate solution.
+
+New objective-specific candidate found independently in current Microsoft documentation:
+`Experimental_CreateProcessInSandbox` / `Experimental_CreateProcessAsUserInSandbox`. This is experimental, candidate-only, and unverified on the exact target runtime.
+
+For future RQ21 work activate:
+- `CHAT-ARCH-2026-10-08-175-rq21-56-windows-substrate-research-adjudication.md`;
+- `CHAT-ARCH-2026-10-08-174-iabv-frame-activation-experience-driven-task-construction.md`;
+- `DEEP-RESEARCH-PROMPT-CONSTRUCTION-AND-REUSE-PROTOCOL-2026-10-03.md`;
+- `MEMORY-OPERATING-PROTOCOL.md`;
+- RQ21.52-RQ21.54 owner/substrate contract records.
+
+Current route remains:
+Human Domain Owner confirms the two RQ21.54 scope points → ChatGPT contract freeze → exact-target experimental API/guarantee-coverage feasibility audit → independent verification → implementation only if ready.
+
+No generic Windows security survey and no implementation based on this report.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.55 RESEARCH FAILURE
 
 The supplied Deep Research result is rejected at the object gate.
