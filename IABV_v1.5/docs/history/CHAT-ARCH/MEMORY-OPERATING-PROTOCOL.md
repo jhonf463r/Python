@@ -1,3 +1,17 @@
+## 2026-10-08 METHOD AMENDMENT — ACTOR SUBSTITUTION UNDER AVAILABILITY LOSS
+
+Actor availability is not the routing authority.
+Whenever a designated actor becomes unavailable, record the loss explicitly and select the nearest capability-fit substitute only when required independence and evidence quality are preserved.
+
+Current scoped substitution:
+Opus 5 unavailable → Haiku 5.5
+for bounded architecture/security/adversarial contract review.
+
+Do not generalize this as universal model equivalence.
+Human Domain Owner remains the authority for normative security/containment decisions.
+
+Preserve: objective → uncertainty → capability → actor-fit → evidence readiness → action.
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.47 SUBSTRATE-CONTRADICTION GATE
 
 A complete capability contract may reveal a separate missing realization substrate.

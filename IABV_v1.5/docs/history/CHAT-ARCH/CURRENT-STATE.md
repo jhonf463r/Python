@@ -1,3 +1,21 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.48 HAIKU 5.5 / OWNER CONTRACT STILL OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-165-rq21-48-haiku-owner-contract.md
+
+Owner routing change:
+OPUS 5 is currently unavailable. HAIKU 5.5 is the bounded substitute for architecture/security/adversarial contract review. This substitution is task-scoped and does not transfer normative authority.
+
+RQ21.48 = OWNER-CONTRACT INCOMPLETE.
+
+Current first open edge:
+owner normative boundary on E/threat/isolation/oracle → minimal authorized substrate contract → Codex implementation
+
+NEXT ACTOR: HUMAN DOMAIN OWNER
+
+Open decisions: E scope; threat model; minimum containment guarantee; effect-oracle coverage; X validation/provenance; failure semantics; independent authority boundary.
+
+No implementation/runtime yet.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.47 CLOSED-C / BOUNDED NEW REALIZATION SUBSTRATE
 
 Canonical:

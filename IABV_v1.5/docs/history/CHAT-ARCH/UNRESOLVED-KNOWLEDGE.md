@@ -1,3 +1,28 @@
+## 2026-10-08 RQ21.48 — HAIKU 5.5 OWNER-CONTRACT REVIEW
+
+State: OWNER-CONTRACT INCOMPLETE
+
+Closed:
+- current architecture cannot faithfully close containment/E/X with existing mechanisms;
+- partial reusable comparator infrastructure is available;
+- capability meaning remains unchanged.
+
+Still unresolved:
+- exact E scope;
+- threat model;
+- minimum isolation guarantee;
+- effect-oracle coverage;
+- X validation/provenance;
+- failure semantics;
+- independent authority boundary;
+- technology choice;
+- runtime proof.
+
+Current first open edge:
+owner normative boundary on E/threat/isolation/oracle → minimal authorized substrate contract → Codex implementation
+
+NEXT ACTOR: HUMAN DOMAIN OWNER
+
 ## 2026-10-08 RQ21.47 — FORENSIC REALIZATION-SUBSTRATE AUDIT CLOSED-C
 
 State:

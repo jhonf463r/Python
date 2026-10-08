@@ -1,3 +1,16 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.48 → HUMAN DOMAIN OWNER
+
+Canonical: CHAT-ARCH-2026-10-08-165-rq21-48-haiku-owner-contract.md
+
+RQ21.48 = OWNER-CONTRACT INCOMPLETE.
+
+Routing change: Opus 5 unavailable; Haiku 5.5 is the bounded architecture/security review substitute for this cycle. This is not a universal equivalence.
+
+Current edge:
+owner normative boundary on E/threat/isolation/oracle → minimal authorized substrate contract → Codex implementation
+
+Next actor: HUMAN DOMAIN OWNER
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.47 → CHATGPT / HUMAN DOMAIN OWNER
 
 Canonical:
