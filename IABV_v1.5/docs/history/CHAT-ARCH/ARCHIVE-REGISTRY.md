@@ -2405,3 +2405,22 @@ Material delta:
 - next step is minimum code-facing contract, not implementation.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-156
+
+Canonical:
+CHAT-ARCH-2026-10-08-156-rq21-42-code-facing-contract-proposal.md
+
+Type:
+CODE-FACING-CONTRACT / SEMANTIC-CONTRACT / ADVERSARIAL-REVIEW / ROUTING / METHOD
+
+State:
+RQ21.42 PROVISIONAL / SONNET-CHALLENGE OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- abstract R_task semantics translated into a bounded code-facing proposal;
+- no new registry or readiness subsystem proposed;
+- exact field placement and hard eligibility boundary remain unproven.
+
+Routing authority remains CURRENT-STATE.md.
