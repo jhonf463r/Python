@@ -5489,3 +5489,18 @@ ChatGPT performs minimum-contract synthesis next; Sonnet/Claude then performs on
 
 Current edge:
 minimum surviving operation/capability/R_task contract → final adversarial challenge.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.40 SOURCE RECONCILIATION
+
+Knowledge Delta:
+the semantic contract survived focused challenge, but source inspection shows the current readiness mapping is broad intent→capability, not exact R_task.
+
+Method Delta:
+after semantic stabilization, reconcile the abstract contract against real fields, causal order and fallback behavior before implementation.
+
+Routing Delta:
+CODEX now owns the narrow source-level join census because the remaining uncertainty is exact code composition, not semantic theory.
+
+Current edge:
+existing demand/readiness inputs → exact R_task → constrained realization selection.
