@@ -1,3 +1,29 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.49 SONNET 5.5 / OWNER CONTRACT FALSIFICATION
+
+Canonical: CHAT-ARCH-2026-10-08-167-rq21-49-sonnet-owner-contract-challenge.md
+
+RQ21.49 = PASS WITH BOUNDED REPAIRS.
+
+Sonnet 5.5 independently challenged the frozen RQ21.48 contract and found:
+- strongest successful falsification: a realization could self-declare coverage and create indistinguishable PASS-like evidence without an independent conformance/coverage authority;
+- PASS lacked a positive definition;
+- literal E scope permitted delegated effects through IPC/loopback/local services;
+- observation-window closure, oracle aggregation and candidate-artifact identity were underspecified;
+- evidence integrity against uncontained writers and unlisted channels require explicit boundaries.
+
+Repairs R1-R8 are accepted as the minimal repair set for the next contract freeze, but normative portions must not be silently self-adopted by AI.
+
+Owner decisions now open:
+R2 — independent realization conformance/coverage evidence;
+R3 — attributable effects, descendants, delegation/IPC/loopback and undefeatable containment boundary;
+R8 — whether X must be inaccessible/confidential to the candidate;
+and the normative component of R6 — evidence-integrity strength against uncontained writers.
+
+Current first open edge:
+owner ratification of R2/R3/R8 (+ R6 integrity boundary) → minimal authorized substrate contract → Codex implementation.
+
+NEXT ACTOR: HUMAN DOMAIN OWNER.
+No repeat Sonnet/Haiku audit, no Codex implementation, no Devin runtime.
 ## 2026-10-08 ACTIVE ROUTING OVERLAY — CLAUDE 5.5 POOL RECONCILIATION
 
 Verified current accessible external-model pool for this collaboration:
