@@ -1,6 +1,33 @@
 # IABV v1.5 — DEEP RESEARCH PROMPT CONSTRUCTION AND REUSE PROTOCOL
 ## Method Delta from Repeated Deep-Research Execution Failures — 2026-10-03
 
+## MANDATORY PRE-PROMPT GATE — ACTIVATE EXPERIENCE BEFORE CONSTRUCTION
+
+Do not compose a Deep Research prompt by extending the previous prompt or by relying on the user's latest context dump alone.
+
+Before construction:
+1. enter the current IABV frame using `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `MEMORY-OPERATING-PROTOCOL.md`, and the objective-relevant source records;
+2. recover prior failures and false positives for this research class;
+3. retrieve negative knowledge and existing source/organ reuse candidates;
+4. identify which experience changes the research object, in/out scope, source plan, required coverage, stop conditions or acceptance gates;
+5. write the prompt only after these constraints are explicit.
+
+Mandatory evidence-derived controls from the RQ21.55/RQ21.56 failures:
+- A wrong-object report is rejected before source quality is assessed.
+- A report on the broad correct domain is still insufficient unless it answers the exact discriminating research object.
+- Every required technical guarantee must map to primary-source API/policy, enforcement boundary, observation/evidence, uncovered paths, target-version availability and proof requirement.
+- A bibliography category such as "Microsoft documentation" is not a verifiable citation. Require direct primary-source URLs and claim-level attribution.
+- A named API or mechanism found in documentation is a candidate, not proof of target availability or sufficient coverage.
+- Explicitly separate external documentation research from target-machine/runtime feasibility. The former cannot claim the latter without evidence from that runtime.
+- Do not infer that extensive prose, Mermaid diagrams, a roadmap, or current-sounding CVEs satisfy the required result signature.
+
+The result gates must remain ordered:
+`OBJECT ALIGNMENT → REQUIRED COVERAGE → SOURCE SUPPORT → EVIDENCE QUALITY → METHODOLOGICAL RIGOR → SYNTHESIS QUALITY`.
+
+Material prompt construction is blocked until the experience-activation gate is satisfied. This is a use of existing IABV memory/coordination organs, not a new research/memory subsystem.
+
+---
+
 ## PURPOSE
 
 Preserve the reusable method for constructing future Deep Research requests so new chats and future actors do not repeat prior semantic-substitution failures.
