@@ -1,3 +1,28 @@
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.45 → CODEX
+
+Canonical:
+CHAT-ARCH-2026-10-08-162-rq21-45-owner-decision.md
+
+RQ21.45 = CLOSED.
+
+Owner decisions:
+- machine ID = `capability.sandbox.dynamic_validation`;
+- E/X = CONFIRMED;
+- task boundary = dedicated validation step/task;
+- evidence acquisition remains separate from eligibility;
+- governed negative covers empty eligible set and unresolved requested tool ID.
+
+Current first open edge:
+`owner-adjudicated capability contract → minimal executable implementation → independent verification`
+
+Next actor:
+**CODEX**
+
+Next task:
+minimal implementation against the pinned executable baseline; preserve all RQ21.44A repairs and do not reinterpret capability semantics.
+
+Runtime remains downstream and is not implied by implementation.
+
 ## 2026-10-08 LATEST ROUTING POINTER — RQ21.44A → OWNER DECISION
 
 Canonical:
