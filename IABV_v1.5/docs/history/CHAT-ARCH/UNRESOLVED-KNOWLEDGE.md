@@ -1,3 +1,30 @@
+## 2026-10-08 RQ21.45 — OWNER DECISIONS CLOSED
+
+State:
+**CLOSED / IMPLEMENTATION CONTRACT UNLOCKED**
+
+Closed decisions:
+- machine identity = `capability.sandbox.dynamic_validation`;
+- E/X confirmed as task/validation envelope inputs;
+- first slice = dedicated validation step/task;
+- evidence acquisition separate from eligibility;
+- governed negative for empty eligible set and unresolved requested realization.
+
+Still unproven:
+- implementation correctness;
+- realization satisfaction/evidence;
+- runtime containment;
+- validation against X;
+- causal learning/reuse.
+
+Current first open edge:
+`owner-adjudicated contract → implementation → independent verification`
+
+Do not reopen:
+- tools.local.* semantic classification;
+- sandbox capability meaning;
+- RQ21.44A code-contract repairs.
+
 ## 2026-10-08 — RQ21.44A CURRENT FRONTIER
 
 Closed:
