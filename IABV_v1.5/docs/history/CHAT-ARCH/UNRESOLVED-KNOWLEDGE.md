@@ -1,3 +1,26 @@
+## 2026-10-08 — RQ21.56 RESULT NOT ACCEPTED AS COMPLETE / EXPERIMENTAL API UNPROVEN
+
+[FACT] The submitted report did not provide the required seven-guarantee source-audited comparison or a claim-level bibliography; it is not accepted as a complete RQ21 technical result.
+
+[FACT] Microsoft Learn documents `Experimental_CreateProcessInSandbox` and `Experimental_CreateProcessAsUserInSandbox` as experimental, subject to change, exported by `processmodel.dll`, with no public header and a documented Windows 11 (experimental) minimum.
+
+[FACT] Microsoft documents AppContainer for legacy/unpackaged apps; the claim that it only applies to Store/UWP apps is overbroad/incorrect.
+
+[FACT] Windows Sandbox networking is enabled by default but can be disabled in its configuration; default network exposure must not be described as an inability to isolate networking.
+
+[FACT] ETW can lose events and depends on instrumented/enabled providers; ETW presence alone cannot demonstrate complete protected-effect E coverage.
+
+[INFERENCE] The experimental process-sandbox API may provide a reusable launch-side restriction primitive, but cannot be considered the complete RQ21 substrate from its documented scope.
+
+[UNPROVEN] Availability/export of the experimental API on the exact target image `10.0.26300.0`; containment of all required descendants/delegated IPC/loopback/local-service paths; E completeness; X secrecy; independent evidence custody; deterministic X comparison; quiescence closure; and candidate/environment binding.
+
+[UNPROVEN] A complete composition meeting all seven guarantees on the target Windows environment.
+
+Source record:
+`CHAT-ARCH-2026-10-08-175-rq21-56-windows-substrate-research-adjudication.md`
+
+---
+
 ## 2026-10-08 — RQ21.55 DEEP-RESEARCH RESULT REJECTED
 
 [F] Returned report failed the Deep Research OBJECT-TARGET GATE.
