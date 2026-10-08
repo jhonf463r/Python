@@ -3,6 +3,18 @@
 This directory is the canonical historical-memory layer for IABV. It preserves knowledge from ChatGPT / Claude / Devin / Codex and related engineering conversations without requiring future chats to retain the original transcript.
 
 ## OPERATIONAL MEMORY
+## 2026-10-08 ACTIVE METHOD DELTA — FRAME ACTIVATION BEFORE PROMPT CONSTRUCTION
+
+Canonical method record:
+`CHAT-ARCH-2026-10-08-174-iabv-frame-activation-experience-driven-task-construction.md`
+
+Before any material actor prompt, a new chat must activate current canonical state, objective-relevant experience and negative knowledge, reconcile truth, identify the first open edge, and turn relevant prior failures into prompt constraints and acceptance gates. This is required before prompt construction, not merely after a result fails.
+
+Latest RQ21 research adjudication:
+`CHAT-ARCH-2026-10-08-175-rq21-56-windows-substrate-research-adjudication.md`
+
+RQ21.56 is not accepted as a complete technical result. It surfaced a broad Windows-sandbox overview but did not establish the seven authorized guarantees. A Microsoft-documented experimental process-sandbox API is a candidate only; exact target availability and full guarantee coverage remain unproven.
+
 ## 2026-10-03 ACTIVE DEVELOPMENTAL VISION — HUMAN-AWARE PLASTICITY
 
 Canonical reusable record: `CHAT-ARCH-2026-10-03-009-human-aware-plasticity-zero-friction-biosophia.md`
