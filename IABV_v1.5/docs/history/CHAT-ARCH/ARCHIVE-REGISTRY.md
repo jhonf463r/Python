@@ -1,3 +1,22 @@
+## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-144
+
+Canonical:
+CHAT-ARCH-2026-10-08-144-rq21-31-semantic-unit-closure-and-routing-improvement.md
+
+Type:
+RECONCILIATION / ROUTING / PROVENANCE / CAPABILITY / SEMANTIC-NORMALIZATION / METHOD
+
+State:
+RQ21.31 CLOSED-C / RQ21.32 OPEN / IMPLEMENTATION BLOCKED
+
+Material delta:
+- real tools.local_workflow caller has no typed pre-selection action contract;
+- user_goal is the principal pre-selection semantic carrier;
+- missing edge moved one level upstream from capability translation to semantic normalization;
+- next actor explicitly re-routed to CODEX for a single existing semantic-feature trace.
+
+Routing authority remains CURRENT-STATE.md.
+
 ## 2026-10-08 REGISTRATION — CHAT-ARCH-2026-10-08-143
 
 Canonical record:
