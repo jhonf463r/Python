@@ -1,3 +1,31 @@
+## 2026-10-08 — RQ21.44 CURRENT FRONTIER
+
+Closed:
+- RQ21.43 = human/domain adjudication accepted
+- RQ21.43A = PASS WITH BOUNDED REPAIRS
+- RQ21.44 = READY FOR MINIMAL CODE CONTRACT
+
+Established:
+- C_SANDBOX_DYNAMIC_VALIDATION is the only currently closed target capability;
+- no existing machine ID is safe for it;
+- InferenceRequest is the earliest typed pre-selection carrier;
+- ToolTask must be the persistence echo, not the demand source;
+- realization declaration remains a bounded extension separate from ToolCard.capabilities;
+- candidate eligibility and final resolution each need enforcement;
+- DEFERRED is reusable conceptually but not wired/proven;
+- E/X need bounded task-envelope representation.
+
+Current first open edge:
+minimal code contract → independent code-contract verification → implementation authorization.
+
+Immediate discriminator:
+SONNET/CLAUDE review of the minimal contract for internal consistency and hidden semantic/code contradictions.
+
+Guards:
+- do not choose a machine ID by string similarity;
+- do not treat readiness/availability as capability;
+- do not treat declaration as proof;
+- do not implement before independent contract verification.
 ## 2026-10-08 — RQ21.43A CURRENT FRONTIER
 
 Closed:
