@@ -4914,3 +4914,27 @@ Current status:
 `CREDIBLE BLOCKER / INDEPENDENT CHALLENGE OPEN`.
 
 Do not substitute `ToolCapability`, `StrategyPack.required_capabilities`, task text, or heuristic weakest-capability selection without explicit semantic evidence.
+
+
+## 2026-10-08 — CUMULATIVE DEVELOPMENTAL / SELF-HELP FRONTIER
+
+New methodological target:
+make existing IABV inspection, provenance, multi-IA challenge and writeback capabilities jointly support a causal learning loop.
+
+Known:
+- the protocol can preserve Knowledge/Method/Routing Deltas;
+- actor routing can be recomputed from capability-fit and the current open edge;
+- independent verification and provenance guards already exist methodologically;
+- RQ21.35 remains the current technical demand-side edge.
+
+Still unproven:
+- that runtime IABV autonomously activates these accumulated deltas;
+- that a retained delta causally changes a later non-identical decision;
+- that such reuse reduces routine human coordination;
+- that the full loop is executable without human arbitration at each material transition.
+
+Guard:
+more records, more AI agreement or more stored data must not be promoted into "more intelligence" without verification and later causal reuse evidence.
+
+Near-term developmental milestone:
+demonstrate one closed episode in which a verified prior delta changes a later, non-identical project decision for the relevant reason.
