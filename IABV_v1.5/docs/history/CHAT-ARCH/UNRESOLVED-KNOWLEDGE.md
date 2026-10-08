@@ -1,3 +1,35 @@
+## 2026-10-08 — RQ21.34 CURRENT FRONTIER
+
+Closed:
+- RQ21.28 = D
+- RQ21.29 = C
+- RQ21.30 = C-global / D-actions-real-UI
+- RQ21.31 = C
+- RQ21.32 = B
+- RQ21.33 = PAIR-NOT-AVAILABLE
+- RQ21.34 = C-GENERIC-PREVIEW-TRANSPORT
+
+Known:
+- InferenceRequest can carry generic goal_parameters.
+- AdaptiveSession preserves received goal_parameters.
+- build_task_for_session() preserves them into a reconstructed request.
+- build_task_from_request() resolves selection before _build_actions().
+- _build_actions() can consume supplied goal_parameters.actions, but that is post-selection consumption.
+- No observed bounded production caller constructs typed goal_parameters.actions for the operative selector path.
+
+Current first open edge:
+existing pre-selection operation vocabulary/semantic discriminator → operative consumer → exact R_task.
+
+Immediate discriminator:
+RQ21.35 — identify an existing structured operation vocabulary/discriminator already consumed before ToolCard selection; do not invent a new representation.
+
+Guard:
+transport-capable ≠ pre-selection semantic authority.
+Post-selection consumer ≠ demand oracle.
+Bounded census ≠ universal caller absence.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 — RQ21.33 CURRENT FRONTIER
 
 Closed:
