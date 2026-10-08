@@ -4820,3 +4820,20 @@ Question:
 what is the smallest existing-organ composition that can express the repaired R_task contract without silently changing demand semantics?
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-08 LATEST ROUTING POINTER — RQ21.41 → CODE-FACING CONTRACT
+
+Canonical:
+CHAT-ARCH-2026-10-08-155-rq21-41-source-reconciliation-and-bounded-extension.md
+
+State:
+RQ21.41 CLOSED-C / SEMANTIC BRIDGE BOUNDED EXTENSION / IMPLEMENTATION BLOCKED.
+
+Next:
+ChatGPT minimum code-facing contract synthesis.
+
+Follow-on:
+Sonnet/Claude source-aware adversarial challenge.
+
+No implementation/runtime/scoring change.
