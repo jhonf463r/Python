@@ -5397,3 +5397,30 @@ verified experience → reusable delta → later non-identical reuse → changed
 ~~~
 
 The current RQ21.35 technical edge is unchanged. This method transfer is documentation-only.
+
+
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.35 SEMANTIC LIMIT / HUMAN ADJUDICATION
+
+Knowledge Delta:
+- the bounded semantic census exhausted the main existing pre-selection candidates relevant to the current edge;
+- no candidate supplies exact operation-level realization-independent `R_task`;
+- `ToolActionType` cannot be promoted to a pre-selection authority because its traced construction is post-selection.
+
+Method Delta:
+```
+source archaeology
+→ bounded discrimination
+→ close what source evidence can establish
+→ identify irreducibly normative/domain semantics
+→ explicit human adjudication
+→ independent challenge
+→ implementation
+```
+
+Do not continue generic archaeology once the remaining uncertainty is the desired semantic contract rather than source behavior.
+
+Routing Delta:
+human semantic/domain adjudication is now the capability-fit actor for the remaining edge; Sonnet/Claude should challenge the explicit contract after it is defined; implementation actor comes only after reconciliation.
+
+Current edge:
+operational task meaning → abstract capability requirement → exact R_task.
