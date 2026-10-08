@@ -1,3 +1,23 @@
+## 2026-10-08 — RQ21.32 CURRENT FRONTIER
+
+Closed:
+- RQ21.28 = D
+- RQ21.29 = C
+- RQ21.30 = C-global / D-actions-real-UI
+- RQ21.31 = C
+- RQ21.32 = B: TaskIntent exists but is too coarse for operation discrimination.
+
+Current open edge:
+TaskIntent / desired_modes / task_kind → discriminating operational representation independent of realization → exact R_task.
+
+Immediate discriminator:
+RQ21.33 pairwise static comparison of two source-grounded tools.local_workflow messages with materially different requested operations.
+
+Guard:
+a selector feature changing score is not evidence that it is an authoritative task-capability contract.
+
+No implementation/runtime/scoring change.
+
 ## 2026-10-08 — RQ21.31 CURRENT FRONTIER
 
 Closed:
