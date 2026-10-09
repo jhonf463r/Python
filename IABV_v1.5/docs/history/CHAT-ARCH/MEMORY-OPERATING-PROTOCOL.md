@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — RQ218 OWNER POLICY PARTIAL / DO NOT EDIT YET
+
+Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
+
+- Owner adopted the conservative design direction: human Owner approval only; grant bound to operation/resource/exact scope; fail closed for absent, unknown, stale, malformed, denied, exceptional or mismatched state; unknown network blocks network-required actions; explicit Git allowlist, reject unrelated staged changes, no push in tranche one.
+- Future tranche-one authorization, if granted, is source-edit-only. Preserve the existing dirty/detached worktree; separate clean worktree only after an exact baseline is chosen.
+- Do not infer the allowed root/protected paths, the baseline, or a trusted human-approval producer/verifier. Those remain implementation blockers.
+- Next only a bounded read-only investigation of directly relevant existing authority/identity producer/verifier mechanisms may be prepared. Stop at larger auth systems; no recursion or code change.
+- No worktree creation/change, edits, Git mutation, tests/builds, runtime/MCP/process, DB/secrets/snapshot, install/download. Overall readiness remains blocked. RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ216 CONTRACT ACCEPTED AS DESIGN ONLY
 
 Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
