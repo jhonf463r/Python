@@ -1,3 +1,11 @@
+## 2026-10-09 ROUTING UPDATE — OWNER AUTHORIZED BOUNDED TRANSITIVE AUDIT WITH SYMBIOSIS
+
+Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
+
+The user authorized a bounded read-only audit of already-named direct dependencies and immediate effectful helpers, plus reconciliation against canonical memory/symbiosis records. This is a specific scope extension after RQ205, not permission for arbitrary recursive exploration. Codex must preserve the known dirty/detached worktree, follow known import/call-site edges, classify effects, and stop at further material dependencies outside scope. Include a risk matrix across provenance, bootstrap/observation, persistence, network, secrets/data flow, isolation, transport/session binding, lifecycle/rollback, false assurance and authorization sequencing. Ground each risk in source or mark it hypothesis.
+
+NEXT: Codex returns static report only; coordinator adjudicates. No MCP call/list, process interaction, runtime launch/reconnect, snapshot, providers, tests, compilation, DB/secrets access or mutation. Future startup and snapshot disclosure remain separate owner decisions. RQ21.200 remains a parallel, independent frontier.
+
 ## 2026-10-09 ROUTING UPDATE — STARTUP ISOLATION NOT ESTABLISHED; TRANSITIVE AUDIT OWNER GATE
 
 Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
