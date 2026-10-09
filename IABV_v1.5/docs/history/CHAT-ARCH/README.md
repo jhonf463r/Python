@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE ROUTE — BOUNDED TRANSITIVE MCP AUDIT WITH SYMBIOSIS
+
+Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
+
+Owner approved read-only audit of named direct dependencies and immediate effectful helpers, plus reconciliation with canonical memory/symbiosis records. The deliverable should include source-anchored effects and a risk matrix across provenance, startup, refresh, persistence, network, data flow, observation, transport/client association, shared state, lifecycle/rollback and authorization order.
+
+NEXT: Codex provides the static report only, follows known call sites, and stops at further material dependencies outside scope. No MCP call, process interaction, launch/reconnect, test, compilation or mutation. Coordinator adjudicates; future startup and snapshot disclosure need separate permission. RQ21.200 stays separate.
+
 ## 2026-10-09 ACTIVE ROUTE — MCP STARTUP PLAN BLOCKED; AUDIT DEPENDENCIES BEFORE ANY LAUNCH
 
 Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
