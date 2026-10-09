@@ -1,3 +1,13 @@
+## 2026-10-08 REGISTRATION — RQ21.185
+
+Canonical record: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`
+
+Summary: Static inspection reported that the diagnostic derives integrity from a group-list lookup and returns UNKNOWN when no matching SID is found. A direct TokenIntegrityLevel query is proposed, not implemented. Runtime SID and dynamic load remain unproven.
+
+Tags: RQ21 / detector / provenance / design / readiness
+
+---
+
 | CHAT-ARCH-2026-10-08-183-rq21-p1-contract-local-availability-reconciliation.md | Codex correctly stopped because the frozen contract was missing locally; remote contract verified to exist; next is read-only remote retrieval/hash verification then P1 if preconditions pass | RQ21 / P1 / contract artifact / local checkout / remote provenance / Codex / readiness |
 | CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md | Human Domain Owner authorization and frozen scope for one-shot LoadLibraryExW/GetProcAddress feasibility probe; Codex next; no API invocation or candidate launch | RQ21 / P1 / load-only / owner authorization / LoadLibraryExW / GetProcAddress / readiness / side effects |
 | CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md | Codex reports same-target dumpbin corroboration of both exports; P0 static availability accepted only; dynamic DLL load remains unauthorized pending experiment contract/readiness/Owner approval | RQ21 / P0 / dumpbin / export table / P1 gate / provenance / Owner authorization |
