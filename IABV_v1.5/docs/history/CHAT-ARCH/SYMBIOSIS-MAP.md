@@ -1,3 +1,17 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ218 POLICY DIRECTION ACCEPTED; TRUST ANCHOR STILL MISSING
+
+Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
+
+Cross-perspective synthesis:
+- Governance: human Owner approval must be explicit and bound to operation/resource/scope. The existing observation permission is not a trust anchor for mutation.
+- Integrity: path controls must be shared, scope-limited and tied to an explicitly selected root; Git must use an explicit allowlist, account for pre-staged/concurrent changes and not push in tranche one.
+- Safety: unknown/missing/stale/malformed/mismatched permission or verifier failure denies; unknown network blocks network-required eligibility, but connectivity never authorizes mutation.
+- Provenance: freeze an immutable baseline before changes; preserve the currently dirty/detached worktree and do not silently treat its files as baseline.
+- Remaining material blockers: source-backed authority producer/verifier, exact allowed workspace root/protected path list, and exact baseline.
+- Lifecycle/Uvicorn uncertainty, transitive bootstrap effects, the RQ13-111 causal learning frontier, and RQ21.200 remain separate.
+
+No source edits, worktree creation/change, tests/builds, runtime or MCP use authorized. This is policy direction, not implementation.
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ216 CONTRACT ACCEPTED; IMPLEMENTATION GATE OPEN
 
 Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
