@@ -1,3 +1,15 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR CANDIDATE STATICALLY PLAUSIBLE; NOT EXECUTABLE EVIDENCE
+
+Canonical: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`.
+
+Codex reports candidate `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate.ps1`, SHA-256 `80C060A2FDFC969D9C175BB338D10F2AC02A3DA7CF012264628B8792AE112D16`, 8,254 bytes; not compiled or run. The complete pasted source's static layout/API pattern appears plausible: direct current-process token, `GetTokenInformation(TokenIntegrityLevel)`, bounded SID interpretation and fail-closed outcomes. The coordinator has not verified the temp artifact bytes or hash independently.
+
+Known repair before a review-ready artifact: the `finally` block ignores `CloseHandle(token)` success/failure and does not preserve its last error in a separate cleanup field. Candidate remains `PROVISIONAL_STATIC_PLAUSIBILITY_WITH_CLEANUP_EVIDENCE_GAP`; no token query or runtime test has occurred.
+
+**NEXT: CODEX**, make only this cleanup-reporting refinement in a separate temporary artifact, preserve the primary integrity outcome, and return complete source/path/size/hash. Do not execute or compile it, query a token, alter the original script, or modify Git/IABV. Then reconcile the exact artifact and the Owner authorization boundary before any protected load attempt.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR PATH IDENTIFIED; CORRECTION NOT EXECUTED
 
 Canonical: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`.
