@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V2 DETECTOR STATIC REVIEW PASS; SONNET CHALLENGE NEXT
+
+Canonical: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`.
+
+The pasted v2 source adds explicit token-handle cleanup status/error fields while preserving the primary integrity-query result. Codex reports 11,467 bytes and SHA-256 `0F24FC0E88B17205512A786683F869E59694CC815C8399502FCD076E8D552A94`; it has not been compiled or executed, and the coordinator has not independently verified the temporary bytes.
+
+NEXT: Sonnet/Claude for static adversarial review of x64 ABI/layout, pointer/buffer bounds, SID formatting, error handling, and cleanup on every path. No runtime test or DLL load. Reconcile the Owner authorization separately after the review.
+
+---
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — DETECTOR CANDIDATE NEEDS CLEANUP-STATUS FIELD
 
 Canonical: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`.
