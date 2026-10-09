@@ -1,3 +1,17 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ214 PLAN ACCEPTED; INTERACTING RISKS RETAINED
+
+Canonical: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
+
+Cross-perspective synthesis:
+- Authorization: an existing observation-permission gate is not proof of human approval for each mutating operation; absent/unknown/stale/nonmatching gate behavior is a core security contract to decide and enforce.
+- Bootstrap: normal construction can reach observation, health checks, network probes and persistence; a flag or isolated handler does not prove all transitive paths are contained.
+- Mutation/data integrity: asymmetric path checks and broad Git defaults interact with a dirty worktree and possible concurrent changes.
+- Lifecycle: wrapper intent flags, observer stops and async task cleanup do not establish termination of every process/thread/transport; exact Uvicorn behavior remains unavailable in the inspected environment.
+- Provenance/confidentiality: launcher configuration, parentage and local hashes are distinct from code-as-loaded, session association and permission to disclose snapshots.
+- Universal adaptive causality remains a separate RQ13-111 frontier: environment/world evidence reaching representations does not prove causal influence on capability and realization selection.
+
+Method: provenance/worktree selection must be stage zero before source modification. The present dirty/detached worktree is not a safe implicit editing target. Static completion is not runtime readiness. RQ21.200 remains independent.
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ212 ADJUDICATED; CONFIGURATION IS NOT PROCESS ATTRIBUTION
 
 Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
