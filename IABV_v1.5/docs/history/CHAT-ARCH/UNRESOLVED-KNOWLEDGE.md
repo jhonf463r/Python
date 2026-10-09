@@ -1,3 +1,18 @@
+## 2026-10-09 — RQ212 STATIC EVIDENCE SUPPLEMENT AUTHORIZED; RESULTS PENDING
+
+Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
+
+[OWNER-AUTHORIZED]
+1. Inspect existing local static launcher/config/dependency files for interpreter defaults/overrides and transport selection.
+2. Determine whether exact Uvicorn version/source already exists locally; if absent, mark blocked.
+3. Hash local copies of the already-inspected RQ210 IABV files that lacked hashes, preserving exact path, line anchors and dirty-source provenance.
+
+[NOT AUTHORIZED]
+Runtime/process inspection or attribution, MCP use/start/reconnect, SDK imports/calls, probes, package install/manager/download, tests/builds, DB/secrets/snapshot reads, worktree changes or source mutation.
+
+[UNRESOLVED]
+Actual interpreter/transport used by any target process, exact Uvicorn shutdown behavior if source unavailable, and per-file hashes if local bytes cannot be accessed. Overall safe isolation/readiness remains unestablished. RQ21.200 remains separate.
+
 ## 2026-10-09 — RQ210 ADJUDICATED; GLOBAL MCP READINESS STILL BLOCKED
 
 Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
