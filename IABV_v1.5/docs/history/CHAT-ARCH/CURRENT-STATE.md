@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 V2 INDEPENDENT REVIEW STOPPED FOR MISSING SOURCE CONTEXT
+
+Canonical: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`.
+
+Sonnet/Claude's supplied result is `SOURCE_UNAVAILABLE_OR_INCOMPLETE`: its context did not include the complete v2 source and it could not access Codex's Windows temp path. This is a valid readiness stop but provides **no technical finding** on v2. The full source was already in the coordinator conversation; do not make the user repaste it.
+
+**NEXT: SONNET/CLAUDE**, repeat the independent static challenge with the full v2 source embedded inline in the reviewer prompt. Audit the pasted source; treat the temp file/hash as actor-reported, not byte-verified. Static only; no compilation, execution, token query, filesystem search, source/Git mutation, DLL load or exports. P1 authorization is still a separate unresolved decision for any future protected attempt.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR V2 CLEANUP GAP CLOSED STATically; CHALLENGE OPEN
 
 Canonical: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`.
