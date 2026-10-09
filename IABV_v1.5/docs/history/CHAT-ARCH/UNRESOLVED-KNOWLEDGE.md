@@ -1,3 +1,15 @@
+## 2026-10-09 — RQ224 TRUST SOURCE AND THREAT MODEL OWNER GATE
+
+Canonical: [CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md](CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md).
+
+**[BOUNDED FINDING ACCEPTED]** `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE`: the inspected remote MCP mutation paths use generic route governance and do not demonstrate a verifiable receipt that binds authenticated Owner authority to the exact mutation and is consumed before the first effect. This does not establish global absence of authentication.
+
+**[UNRESOLVED]** source of Owner identity/authority; receipt producer/verifier; validity and single-use consumption; replay/race and verifier/persistence failure handling; whether the required threat model trusts process/code integrity (A) or must resist a compromised process/verifier (B).
+
+**[NEXT OWNER GATE]** choose A/B and decide whether to authorize a separately bounded, read-only inspection of existing identity/authority sources beyond the reviewed broker/UI/mutator path. Do not choose a technology or authorize implementation implicitly. RQ218 root/protected-path policy, immutable baseline, exact edit scope, isolated worktree and separate verification authorization remain required gates.
+
+---
+
 ## 2026-10-09 — RQ223 CONTRACT RECONCILED; TRUST SOURCE AND RECEIPT REMAIN UNRESOLVED
 
 Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).

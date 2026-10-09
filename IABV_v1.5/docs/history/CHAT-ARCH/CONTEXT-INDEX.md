@@ -1,3 +1,13 @@
+## 2026-10-09 ROUTING UPDATE — RQ224 STATIC AUTHORITY AUDIT ADJUDICATED; OWNER GATE NEXT
+
+Canonical: [CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md](CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md).
+
+Accept `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE` for the bounded RQ224 source review. The inspected MCP mutators invoke generic route governance rather than a receipt producer/verifier bound to the exact mutation. The broker/UI and PR paths remain partial and do not demonstrate universal Owner mutation authority. Do not claim global absence of authentication.
+
+**Next:** Owner chooses threat model A (process/code integrity trusted) or B (process/verifier may be compromised), and decides whether to authorize a separately bounded read-only investigation of existing identity/authority sources. No implementation prompt or broad recursive auth search yet. RQ218 implementation gates remain open; global readiness remains blocked.
+
+---
+
 ## 2026-10-09 METHOD UPDATE — RQ226 FOLLOW-UP: RESIDUAL ENTRY ORDER CORRECTED
 
 Canonical follow-up: [CHAT-ARCH-2026-10-09-226-rq226-followup-residual-entry-sequence-reconciliation.md](CHAT-ARCH-2026-10-09-226-rq226-followup-residual-entry-sequence-reconciliation.md).
