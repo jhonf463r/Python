@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 DETECTOR CANDIDATE CLEANUP GAP
+
+Canonical: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`.
+
+The pasted detector candidate appears statically plausible, but it ignores `CloseHandle` success/failure and does not report cleanup error. Its temporary-file SHA/size are Codex-reported; the coordinator has not independently read its bytes. It has not been compiled or executed.
+
+NEXT: **CODEX**, produce a separate temp-file refinement that records cleanup status while preserving the primary result. No compilation, execution, token query, DLL load or repository mutation. Reconcile artifact identity and owner authorization before any later protected operation.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 P1 INTEGRITY DETECTOR STATIC CAUSE
 
 Canonical: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`.
