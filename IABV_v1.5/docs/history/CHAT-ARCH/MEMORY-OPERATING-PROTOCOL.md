@@ -1,3 +1,11 @@
+## 2026-10-08 METHOD AMENDMENT — OWNER-AUTHORIZED LOAD-ONLY PROBE CONTRACT (RQ21 P1)
+
+A Human Domain Owner may authorize a bounded dynamic DLL-load probe after P0 static exports are verified. Before execution, freeze exact target/file identity, medium-integrity preconditions, one allowed `LoadLibraryExW` call with restricted `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32` flags, two `GetProcAddress` resolutions, exact result classes, evidence capture and stop conditions.
+
+DLL load can execute module/dependency initialization. Use a fresh short-lived non-elevated process; do not explicitly unload, invoke exports, start a candidate, widen search paths, elevate or retry elsewhere. `LOAD_AND_BOTH_SYMBOLS_RESOLVED` proves only load/resolution, not function behavior or containment. A successful P1 does not authorize a subsequent experiment or implementation without a newly calculated edge and required authorization/readiness.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — P0 EXPORTS CLOSED; DYNAMIC LOAD IS A NEW GATE
 
 When a distinct, provenance-described PE reader reports both exact export names on the matching target, close the static file/export-presence property without repeating host/token/hash/signature checks. Record parser identity/version/hash and the raw report path/digest; distinguish an external-actor-reported artifact hash from a digest independently recomputed by the coordinator.
