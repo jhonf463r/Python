@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE ROUTE — RQ218 POLICY DIRECTION RECORDED; SOURCE EDITS BLOCKED
+
+Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
+
+Owner accepted the conservative design direction for the first tranche: human Owner approval per operation/resource/exact scope, fail-closed missing/unknown/malformed/stale/mismatched cases, explicit Git file allowlist, no push, unknown network blocks network-required routes, and preserve the existing dirty/detached worktree. Before any code change, a trusted approval producer/verifier, exact workspace root/protected-path policy and immutable baseline must be resolved and separately authorized. Source-edit phase remains distinct from tests/build/runtime. Overall MCP readiness is blocked; RQ13-111 and RQ21.200 are separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ216 CONTRACT ACCEPTED, OWNER DECISION REQUIRED
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md
