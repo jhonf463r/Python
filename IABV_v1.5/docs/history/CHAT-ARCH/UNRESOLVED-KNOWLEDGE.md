@@ -1,3 +1,14 @@
+## 2026-10-08 CONTINUITY CHECK — RQ21.198; CONSUMER IDENTITY STILL OPEN
+
+Canonical record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
+
+[UNRESOLVED] Exact authoritative consumer/runner source and intended v5-to-loader handoff are still not identified in the inspected evidence.
+[REPORTED] Codex reports v5 as a standalone integrity JSON detector; the known loader diagnostic reportedly uses its own WindowsIdentity.Groups/medium_integrity guard and does not consume v5 JSON. The coordinator has not independently read the complete saved Windows script.
+[ACCEPTED SOURCE LEVEL] Independent static review of the inline v5 source: STATIC_REVIEW_PASS.
+[ACTOR-REPORTED ARTIFACT IDENTITY] Codex reports 17,199 bytes and SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA, with normalized source-text match. Coordinator has not directly read back the Windows bytes.
+[NOT PROVEN] Consumer enforcement, strict output freshness/PID binding, Add-Type compilation, runtime/token behavior, current target readiness and DLL load/export result.
+[NEXT] Owner/operator identifies exact source path or repository URL+commit/ref and expected handoff. Then Codex audits that source read-only. No broad searches, arbitrary temp enumeration, substitute runner, runtime/token/DLL/export/candidate operation.
+
 ## 2026-10-08 — RQ21.197 CONSUMER SOURCE UNAVAILABLE; DOUBLE GATE UNPROVEN
 
 Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
