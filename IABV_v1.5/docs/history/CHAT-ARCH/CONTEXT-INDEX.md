@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — P0 RETEST STOPPED BEFORE EXPORT CORROBORATION
+
+Canonical: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
+
+The token-integrity script has a null-index bug: it yielded no integrity SID via `WindowsIdentity.Groups`. The run stopped before DLL recheck and independent export parsing. Treat integrity as UNKNOWN, not as evidence of elevation or a host defect.
+
+FIRST OPEN EDGE: null-safe `whoami /groups` integrity query; continue only with exactly one MEDIUM SID. No elevation, installations, P1, candidate execution, Codex or Devin.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 P0 EXPORT PRESENCE REPORTED; INDEPENDENT CHECK OPEN
 
 Canonical: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
