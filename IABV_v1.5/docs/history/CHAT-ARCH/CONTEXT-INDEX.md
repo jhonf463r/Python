@@ -1,3 +1,9 @@
+## 2026-10-09 ROUTING UPDATE — RQ219 AUTHORITY PRODUCER / VERIFIER DISCOVERY
+
+Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
+
+Codex may inspect only already-reviewed `server.py`, `self_update_tools.py`, `models.py` and `world_model_service.py`, plus direct imports/definitions/calls, to determine whether there is an existing trusted Human Domain Owner approval producer/verifier for mutation. Confirm/preserve dirty worktree. No broad auth subsystem search; stop at out-of-scope identity/authority dependencies. No edits, worktree change, tests/builds/runtime, MCP/process/state operations, install/download or Git mutation. Exact allowed root/protected paths and immutable baseline remain owner choices. Overall readiness remains blocked; RQ13-111 and RQ21.200 separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ218 CONSERVATIVE POLICY RECORDED; IMPLEMENTATION BLOCKED
 
 Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
