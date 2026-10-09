@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — READ-ONLY MCP STARTUP IMPACT PLAN AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
+
+Human Domain Owner explicitly authorized Codex to prepare a bounded, read-only static analysis of a prospective controlled MCP start/client association. This is planning-only authorization. No MCP call/list, endpoint request, process interaction, startup/restart/reconnect, operational snapshot, provider health check, refresh, test, compilation, filesystem search, or mutation is authorized.
+
+Inspect only the known `server.py`, `bootstrap.py`, `world_model_service.py`, `docs/mcp-bridge.md`, and RQ13-108/109 records. Record exact revision and dirty/detached worktree identity. Trace demonstrated/conditional/unresolved effects, isolation strategies, residual risks, preflight and fail-closed abort conditions. If a transitively called function is outside this authorized source set, record it as unresolved rather than broadening the search.
+
+NEXT: CODEX — produce the source-level startup-impact/isolation plan only. Coordinator reviews it before returning to the owner. Any future server start/reconnect and any later `world_model_snapshot(refresh=False, full=False)` disclosure require separate fresh explicit permission. A prospective run cannot prove what historical PID 16768 loaded.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — NO PASSIVE PROOF OF MCP SOURCE-AS-LOADED; OWNER DECISION NEXT
 
 Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
