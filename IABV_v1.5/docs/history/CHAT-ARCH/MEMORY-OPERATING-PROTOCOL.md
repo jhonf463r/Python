@@ -1,3 +1,12 @@
+## 2026-10-09 METHOD AMENDMENT — STARTUP PLAN BLOCKED; TRANSITIVE AUDIT NEEDS NEW SCOPE
+
+- Accept `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS` when inspected startup code reveals possible observation/network/persistence but effectful dependencies remain unaudited.
+- Do not infer harmless startup from `IABV_MCP_SUBPROCESS=1` or `IABV_DEFER_TOOL_PROBE=1`; identify exactly which branches those flags guard and which refresh/worker/tool-card paths remain.
+- Treat a dirty detached worktree as an identified source object, not as equivalent to remote main. Preserve its state.
+- RQ204 authorized a six-file static analysis only. A deeper dependency audit requires a fresh owner scope decision. If authorized, follow import/call-site evidence only to the named effectful implementations and immediate helpers; if further recursive exploration is necessary, stop and ask for another scope approval.
+- Never launch/reconnect to validate startup behavior while transitive effects are unresolved. A new process can provide prospective attribution, not historic PID attribution.
+- Keep future `world_model_snapshot(refresh=False, full=False)` disclosure separately permission-gated due to operational-state exposure.
+
 ## 2026-10-09 METHOD AMENDMENT — READ-ONLY STARTUP IMPACT PLAN AUTHORIZED; NO LAUNCH
 
 - Human Domain Owner approved only a bounded read-only static startup-impact/isolation plan; this is not permission to start, stop, restart, reconnect, or invoke MCP.
