@@ -61,7 +61,7 @@ A blind participant is used only when an experiment explicitly measures fresh re
 
 In blind mode, the experiment contract overrides normal frame entry so that prior IABV context is intentionally excluded.
 
-The current RSK-01 experiment is one such case.
+RSK-01 is a historical example of an explicitly scoped blind-mode exception. Any future blind experiment must follow its own current contract and readiness; this historical example does not determine current routing.
 
 Thus:
 
@@ -97,35 +97,27 @@ Enter this frame whenever the objective materially concerns:
 
 Do not activate unrelated historical material merely because it exists.
 
-## ENTRY SEQUENCE
+## ENTRY SEQUENCE — ALIGNED WITH THE CANONICAL README CONTRACT
 
-A new AI should perform:
+Use the single entry order defined in `README.md`; this protocol does not define a competing order:
 
-`OBJECTIVE
-→ CURRENT MAIN HEAD
-→ CURRENT CANONICAL MEMORY ENTRYPOINTS
-→ OBJECTIVE-SPECIFIC RETRIEVAL
-→ CURRENT VERIFIED TRUTH
-→ CLOSED EDGES
-→ FIRST OPEN CAUSAL EDGE
-→ REQUIRED CAPABILITY
-→ CAPABILITY-FIT ACTOR
-→ SMALLEST DISCRIMINATING ACTION`
+`verify remote main SHA → README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific retrieval`.
 
-Minimum canonical memory entrypoints:
+Minimum orientation surfaces are:
+1. `IABV_v1.5/docs/history/CHAT-ARCH/README.md`;
+2. `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`;
+3. `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`;
+4. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`.
 
-1. `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
-2. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
-3. `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`
-4. `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
-
-Then activate only the relevant:
-- `SYMBIOSIS-MAP.md`;
-- `UNRESOLVED-KNOWLEDGE.md`;
-- canonical absorbed records;
-- source records;
+Then activate only relevant:
+- `SYMBIOSIS-MAP.md` and `UNRESOLVED-KNOWLEDGE.md`;
+- canonical absorbed records and source records;
 - exact source/branch/SHA evidence;
 - runtime evidence when required.
+
+When the objective materially touches IABV's global vision, architecture, universal semantics/generalization, cross-domain composition, learning, memory/continuity or protocol design, explicitly activate `UAAL-ROOT-001`, the relevant Constitution sections and concept lineage. For narrow tasks, preserve the correct concept-parent link without loading the entire archive.
+
+For a supplied chat/transcript, use the `CHAT / TRANSCRIPT INTAKE CONTRACT` in `MEMORY-OPERATING-PROTOCOL.md`; disclose incomplete coverage rather than assuming a pasted artifact is complete.
 
 ## WHAT "ENTER THE FRAME" MEANS
 
