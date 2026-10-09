@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 P0 OUTPUT REPORTED; INDEPENDENT STATIC VERIFICATION OPEN
+
+[REPORTED FACT] User-pasted console output for host `MSI` reports Windows 11 26H2 build `10.0.26300.9550`, x64 OS/process, `C:\\WINDOWS\\System32\\processmodel.dll` present, length `417792`, File/Product version `10.0.26100.9549`, SHA-256 `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`, Authenticode `Valid` with Microsoft Windows signer, and both experimental exports found by the same in-script PE parser.
+
+[FACT — canonical method] RQ21.58 requires independent verification after P0 and forbids DLL loading, API invocation, candidate execution, or implementation at this stage.
+
+[UNPROVEN] Independent export-table corroboration; explicit non-elevated process integrity; PE parser version/hash; hashed raw-output artifact; exact target-channel attestation beyond pasted computer/build identity; expected catalog provenance for the reported file version; reason for Secure Boot/test-signing UNKNOWN; API loadability or behavior; containment and E/X/evidence/quiescence/artifact-binding guarantees.
+
+[ADJUDICATION] Treat this as a useful **reported static observation**, not P0 PASS. The host build matches Microsoft's published Windows 11 26H2 build 26300.9550; the reported DLL file version being 26100.9549 is not by itself dispositive. No claim about expected component version is made.
+
+Current edge: on the same non-elevated host, establish token integrity and independently check exports with an already-installed offline PE parser (e.g. `dumpbin /exports`); preserve tool identity and hashed output. If unavailable, stop without installing tools. Then reconcile exact file identity/signature. No P1 or candidate execution.
+
+Source: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
+
+---
+
 ## 2026-10-08 — RQ21.58 BOUNDED AUDIT ACCEPTED; TARGET CHANNEL AND COMPOSITION UNPROVEN
 
 [FACT] GitHub main was verified at `c9df3ca393c1b7528f48988d0c4baf405c88cf16` before writeback. Comparing pinned baseline `5b1d89022ee4cdc63c1f88e050f086b40a42875c` to that main found 44 changed files and zero files under `IABV_v1.5/src/`; seven current source-file blob SHAs match the baseline.
