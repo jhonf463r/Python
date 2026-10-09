@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.193 V4 CHALLENGE RECONCILED; CODEX V5 MINIMAL REPAIR NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
+
+Accepted reviewer classification: STATIC_REVIEW_PASS_WITH_REPAIRS, qualified by a source-handoff discrepancy. F8 is confirmed: observed Win32 error 122 is discarded when requiredLength is rejected (<16 or >84); preserve it on both TokenInformationLength branches. No false pass was demonstrated.
+
+N1: reviewer reports two triple-backtick lines inside its here-string, absent from the v4 source pasted to the coordinator. This does not prove those lines exist in the saved artifact; earlier nested Markdown fences may have contaminated the reviewer handoff.
+
+NEXT: CODEX verifies only the exact v4 path/size/SHA, investigates the fence discrepancy and produces separate v5 with F8 fixed and the F7 no-padding comment qualified. No compilation/execution/token query/alternate-temp search/Git mutation/DLL/export/runner preparation. Then reconcile v5 and route a fresh challenge with safe non-nested delimiters. Artifact bytes, compilation/runtime, consumer enforcement and readiness remain unverified. Record 182 authorization remains conditional and unconsumed.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.192 V4 SOURCE RECONCILED; INDEPENDENT CHALLENGE NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md.
