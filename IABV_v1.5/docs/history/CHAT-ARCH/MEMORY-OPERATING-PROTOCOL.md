@@ -1,3 +1,14 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.193 SOURCE-HANDOFF INTEGRITY AND ERROR PRESERVATION
+
+Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
+
+- The exact source audited by an independent reviewer must be reconciled with the intended source. Fence lines reported in reviewer input are not proof those lines exist in the saved artifact. Check only the exact reported path and verify byte size/hash before deriving a candidate.
+- Avoid nested triple-backtick delimiters when source is embedded in a formatted writing block. Use a distinct outer fence length or an actually accessible immutable attachment.
+- Preserve any Win32 error actually observed even when later length validation rejects the result. Keep error, validation stage and branch detail separate; error 122 paired with TokenInformationLength is not authorization to retry.
+- An unresolved native-handle acquisition is not clean evidence. Never close an unconfirmed handle merely to force cleanup success.
+- Keep Add-Type/type collision, process/PID/freshness provenance, compilation, saved bytes, runtime and consumer enforcement as separate states.
+- Material source revisions receive a fresh source-bound independent challenge. No static result authorizes the protected operation.
+ 
 ## 2026-10-08 METHOD AMENDMENT — RQ21.192 V4 SOURCE / LENGTH-ERROR RECONCILIATION
 
 For a native interop candidate after targeted repair:
