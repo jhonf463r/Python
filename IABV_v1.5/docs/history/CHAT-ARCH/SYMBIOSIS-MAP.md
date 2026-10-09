@@ -1,3 +1,20 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ210 ADJUDICATED; CONDITIONAL AUTHORIZATION GATE CONFIRMED
+
+Canonical: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md.
+
+Knowledge Delta:
+- An identified local SDK copy (`mcp 1.27.0`) does not identify the SDK loaded by a target process; manifests do not pin it, launcher override remains possible, and Uvicorn shutdown source/version was not located in the inspected default interpreter.
+- FastMCP/AnyIO/session-manager cleanup paths described in source do not alone prove the encompassing server process shuts down.
+- `WorldModelSnapshot.permission_gates` is reported as an observation-permission-derived list that can be empty or non-applicable to self-update. A gate field and callback-before-mutation do not guarantee mandatory human approval.
+- The report lacks SHA-256 for most IABV files; source claims are actor-reported and not independently hash-verified by the coordinator.
+
+Method Delta:
+- Keep Branch A `STOPPED_AT_OUT_OF_SCOPE_DEPENDENCY` and Branch B `COMPLETE_WITH_FINDINGS` separate.
+- Preserve demonstrated/conditional/unresolved boundaries; runtime occurrence and loaded-source attribution remain unproven.
+
+Routing Delta:
+- MCP readiness/isolation remains blocked. No runtime action, snapshot disclosure, or RQ21.200 scope change.
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ207-S ACCEPTED; READINESS STILL BLOCKED
 
 Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
