@@ -1,3 +1,12 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V5 STATIC PASS; ARTIFACT IDENTITY AND CONSUMER AUDIT NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
+
+Independent review reports STATIC_REVIEW_PASS for the complete inline v5 source; no repair is required. F1/F7/F8 are accepted. Treat the internal V4 type label as a non-blocking traceability note; interpret code 122 by failure stage; do not mistake a 64-bit layout guard for x64 verification. Saved bytes/hash, compilation/runtime, target readiness and real consumer enforcement remain unproven.
+
+NEXT: exact-path artifact byte read-back by Codex or a Windows-capable actor, then separate read-only inspection of actual runner/consumer enforcement. No path search, compile/run, token query or DLL/export action. Record 182 authorization remains conditional and unconsumed.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V5 SOURCE RECONCILED; SONNET CHALLENGE NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
