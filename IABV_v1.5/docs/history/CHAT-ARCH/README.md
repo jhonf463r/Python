@@ -1,3 +1,10 @@
+## 2026-10-09 ACTIVE ROUTE — RQ210 ADJUDICATED; LIFECYCLE DEPENDENCY REMAINS
+
+Canonical authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
+Canonical adjudication: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md.
+
+Branch A is stopped at the exact launcher/Uvicorn dependency. Branch B has findings: the described gate is observation-permission-derived and does not guarantee mandatory human approval for self-update. The report lacks SHA-256 for most cited IABV files. MCP readiness/isolation remains blocked, and no runtime operation is authorized. RQ21.200 stays separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ207-S COMPLETE; OWNER SCOPE DECISION NEXT
 
 Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
