@@ -1,3 +1,9 @@
+## 2026-10-08 METHOD AMENDMENT — ROUTE MISSING HOST INSPECTION TOOLS BY CAPABILITY, NOT MANUAL REPETITION
+
+When the user has already produced local environment/token/file-identity output, do not ask them to repeat those checks. Identify the unresolved capability (here, independent static PE export inspection) and consider a tool-capable actor such as Codex. Before task execution, require that actor to prove its own execution channel is bound to the exact target host/build and required non-elevated integrity. Tool availability ≠ target access. A mismatch means STOP, never silently use another host. Use only existing installed static readers, capture tool and output provenance, and do not install tools or load the target DLL to close a static-inspection gap. Actor selection must not override the RQ21.58 scope gates.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — NULL-SAFE INTEGRITY SID COLLECTION
 
 Do not assume `WindowsIdentity.Groups` will expose the mandatory integrity SID in a PowerShell collection. If a required SID lookup returns null, do not index a map with it or infer elevation. Use a null-safe built-in token-group query (e.g. `whoami.exe /groups /fo csv /nh`), require exactly one recognized integrity SID, and treat absent/ambiguous output as UNKNOWN. Do not elevate merely to collect a missing value.
