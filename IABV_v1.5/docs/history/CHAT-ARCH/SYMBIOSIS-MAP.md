@@ -1,3 +1,15 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21 P0 STATIC RESULT (PROVISIONAL)
+
+Knowledge Delta: user transcript reports `processmodel.dll` present and both experimental export names found on host `MSI` / OS `10.0.26300.9550` x64; hash/signature/version reported but not independently re-read. Independent corroboration is still open.
+
+Method Delta: a parser saying `COMPLETE` is not independent verification of its own output. Preserve token integrity, parser identity and hash, exact target provenance and a hashed report artifact. Keep unknown platform security states UNKNOWN; don't elevate.
+
+Routing Delta: next action is one local, static, independent export-table check using an already-installed tool, then read-back/reconciliation. No DLL loading, API invocation, candidate execution, Codex implementation or Devin runtime.
+
+Source: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.58 WINDOWS API FEASIBILITY + P0 READINESS
 
 Knowledge Delta:
