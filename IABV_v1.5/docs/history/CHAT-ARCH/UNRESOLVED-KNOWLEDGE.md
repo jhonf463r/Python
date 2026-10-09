@@ -1863,7 +1863,7 @@ REQUIRED EVIDENCE: `python314._pth`, user-site isolation, package/site-packages 
 
 QUESTION: Can a new chat discover the right historical knowledge from GitHub based on its objective without loading the complete archive?
 
-CURRENT STATUS: **OPEN — RSK-01A STATIC AUDIT COMPLETED; OPERATIONAL RELIABILITY NOT PROVEN.** Codex's audit of main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` classified the likely architectural gap primarily as B (missing integration), while A/C remain testable contributors. The next discriminating action is RSK-01B blind continuity testing.
+CURRENT STATUS: **OPEN — RSK-01A STATIC AUDIT COMPLETED; OPERATIONAL RELIABILITY NOT PROVEN.** Codex's audit of main `3de2bb4eddf4e43d9664e17b935d7a55b6ea9442` classified the likely architectural gap primarily as B (missing integration), while A/C remain testable contributors. RQ226 later found a real entry-order inconsistency and a missing uniform intake completeness contract; the canonical documentary projections have since been harmonized under `CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md`. That writeback does not close operational reliability. A separately scoped RSK-01B blind continuity test (or equivalent controlled new-chat test) remains a future discriminator, with artifact/readiness requirements revalidated against the current route before execution.
 
 SUCCESS CONDITION: Objective → complete relevant candidate retrieval → current reconciliation → activated context → correct routing without unnecessary historical flooding or stale actor capture.
 
