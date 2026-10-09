@@ -1,3 +1,11 @@
+## 2026-10-08 METHOD AMENDMENT — BIND AUDIT SOURCE INTO THE REVIEWER MESSAGE
+
+For independent code/source audits, include the complete source in the same reviewer prompt or attach an artifact the reviewer can actually access. Do not assume prior chat context transfers to another actor, and do not route by a path on an actor-specific local filesystem. A `SOURCE_UNAVAILABLE_OR_INCOMPLETE` result is a correct stop but supplies no technical finding about code correctness.
+
+If the complete source is already present upstream in the coordinator conversation, don't ask the user to paste it again. Reissue the bounded audit with source inline. Keep `source reviewed`, `saved file bytes verified`, `reported hash`, `compiled`, and `executed` epistemically separate.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — STATIC CHALLENGE GATE FOR NATIVE INTEROP CANDIDATES
 
 For native interop candidate scripts, distinguish:
