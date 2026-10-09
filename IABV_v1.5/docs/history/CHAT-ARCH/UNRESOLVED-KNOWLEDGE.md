@@ -1,3 +1,17 @@
+## 2026-10-08 — RQ21 P1 DETECTOR CANDIDATE REVIEW
+
+[ACTOR-REPORTED] Detector-only candidate saved outside the repository at `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate.ps1`, SHA-256 `80C060A2FDFC969D9C175BB338D10F2AC02A3DA7CF012264628B8792AE112D16`, 8,254 bytes; not compiled or run.
+
+[STATIC REVIEW OF PASTED SOURCE] Direct current-process token query via `OpenProcessToken` and `GetTokenInformation(TokenIntegrityLevel)`, length/bounds checks, and fail-closed outcome separation appear structurally plausible.
+
+[GAP] The candidate ignores the Boolean result of `CloseHandle` and does not record a cleanup error. Coordinator has not byte-read the temp candidate or independently recomputed its hash; compile/runtime behavior is unproven.
+
+[NEXT EDGE] Codex prepares a separate unexecuted artifact adding explicit cleanup status without overwriting the primary detector result. No compilation, execution, token query or DLL load.
+
+Source: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P1 STATIC DETECTOR CAUSE REPORTED; TOKEN STATE STILL UNKNOWN
 
 [ACTOR-REPORTED] Codex reports the exact diagnostic-script SHA-256 matches the expected digest and identifies the code path: search `WindowsIdentity.GetCurrent().Groups` for `S-1-16-*`, then assign `UNKNOWN` when no match is found. The script does not call `GetTokenInformation(TokenIntegrityLevel)`.
