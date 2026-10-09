@@ -1,3 +1,12 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V5 ARTIFACT IDENTITY MATCH; CONSUMER AUDIT NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
+
+Codex reports that exact v5 saved bytes match the expected 17,199-byte size and SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA, and that normalized text matches the reviewed source. Accepted as actor-observed identity evidence only. Compilation/runtime and actual consumer enforcement remain unproven.
+
+NEXT: Codex performs a read-only forensic audit of the actual runner/consumer and output handoff. If the true entrypoint cannot be identified, stop with CONSUMER_SOURCE_UNAVAILABLE; do not create a substitute runner or search arbitrary temp paths. No compile/run/token query/DLL/export/candidate launch. Record 182 authorization remains conditional and unconsumed.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V5 STATIC PASS; ARTIFACT IDENTITY AND CONSUMER AUDIT NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
