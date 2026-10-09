@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — NO PASSIVE PROOF OF MCP CODE-AS-LOADED
+
+- Accept `NO_PASSIVE_PROOF_IDENTIFIED` when already-identified passive evidence cannot authenticate the exact Python module/code loaded by the live MCP process.
+- Keep configured path, process parentage, effective CWD/environment, module origin, exact loaded bytes, client effective exposure, and permission to disclose operational state as separate propositions.
+- A tool description matching a local source diff, the current file's hash, or a configured `PYTHONPATH` is corroboration, not an attestation of the full live module.
+- Prefer a prospective, controlled attribution route over intrusive retroactive process inspection unless the Human Domain Owner has a specific need for historic-PID attribution. A new process cannot prove what an older PID loaded.
+- Before any new server start/reconnect, inventory AppBootstrap and transitive EnvironmentSelfAwareness/WorldModel scans, local persistence, provider health checks, client reconnection, isolation and rollback. Source-level planning is not startup permission.
+- Never attach, dump, suspend, or inject into the existing process merely to clear a provenance gate without a separate, method-specific authorization.
+- Any `world_model_snapshot(refresh=False, full=False)` call requires its own precise permission because its reviewed entrypoint lacks an explicit observation-permission gate and its response may disclose windows, focus, network, tools and other operational state. Tool exposure does not grant that permission.
+
 ## 2026-10-09 METHOD AMENDMENT — EFFECTIVE MCP EXPOSURE DOES NOT CLOSE SOURCE IDENTITY
 
 - Record the effective tool catalog of the intended Codex session separately from config-on-disk. A visible tool catalog can establish exposure for that session without proving exact server code loaded.
