@@ -1,3 +1,21 @@
+## 2026-10-09 SYMBIOSIS TRANSFER — OWNER AUTHORIZED READ-ONLY STARTUP IMPACT PLAN
+
+Canonical record: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
+
+Knowledge Delta:
+- The Human Domain Owner explicitly authorized a bounded read-only source-level startup-impact/isolation plan, and nothing beyond planning.
+- RQ202 remains `NO_PASSIVE_PROOF_IDENTIFIED`: no known passive artifact proves exact source-as-loaded for historical PID 16768.
+- A prospective process offers prospective attribution only; it cannot authenticate the historical process.
+
+Method Delta:
+- Trace direct and transitive startup effects across only the approved server/bootstrap/WorldModel source, MCP bridge docs and RQ13-108/109 records.
+- Label effects `DEMONSTRATED`, `CONDITIONAL` or `UNRESOLVED`. If a transitive callee lies outside scope, report it unresolved; do not widen search.
+- Preserve dirty/detached worktrees and do not execute probes, tests, compiles, process inspection or MCP calls.
+
+Routing Delta:
+- Codex delivers static call/effect inventory, isolation proposal, preflight requirements and fail-closed abort criteria.
+- Coordinator reviews before any new owner decision about launch/reconnect.
+- Snapshot disclosure requires a separate explicit permission; no runtime operation is authorized now.
 ## 2026-10-09 SYMBIOSIS TRANSFER — PASSIVE SOURCE ATTRIBUTION EXHAUSTED; OWNER GATE NEXT
 
 Canonical record: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
