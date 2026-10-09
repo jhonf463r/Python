@@ -1,4 +1,6 @@
-## 2026-10-08 — RQ21 P1 V3 INDEPENDENT CHALLENGE RECONCILIATION
+## 2026-10-08 — RQ21.191 V3 INDEPENDENT CHALLENGE RECONCILIATION
+
+Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.
 
 [REVIEW RESULT] User supplied Sonnet/Claude report classified the complete inline v3 source STATIC_REVIEW_PASS_WITH_REPAIRS; no definite defect reported. This finding applies to pasted source only.
 
