@@ -1,3 +1,15 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.194 V5 SOURCE RECONCILIATION
+
+Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
+
+- Reconcile the complete source and requested diff, then route a fresh independent challenge for each material native-interop revision.
+- A reported two-method SHA agreement remains actor-reported until the coordinator independently reads the exact saved bytes. Preserve source / artifact identity / compilation / runtime / consumer enforcement as separate evidence states.
+- F8 repair: preserve the Win32 error actually observed on both out-of-bound requiredLength branches while keeping the TokenInformationLength stage and specific branch detail; 122 does not authorize retry.
+- F7: a source comment may state the bound's derivation, but not turn an assumed layout ceiling into an undocumented API guarantee.
+- A stale internal type version label can be recorded as a traceability concern; do not expand a deliberately narrow repair unless a concrete collision/provenance consequence is shown.
+- Use non-nested source delimiters for independent audits and include the complete exact source in the reviewer message.
+- No source pass or writeback activates the protected operation; consumer, target readiness and Owner authorization remain distinct gates.
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.193 SOURCE-HANDOFF INTEGRITY AND ERROR PRESERVATION
 
 Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
