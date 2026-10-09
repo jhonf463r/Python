@@ -1,3 +1,15 @@
+## 2026-10-09 — FIRST IABV MCP USE: CLIENT / PROCESS ATTRIBUTION OPEN
+
+Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
+
+[COORDINATOR SOURCE-VERIFIED] At remote main d059f783a24d2166f40247f374164165fba15292, world_model_snapshot(refresh=False, full=False) uses current_model() and scan_stats, not request_refresh(), on the no-refresh branch. Its tool body does not enforce the explicit observation-permission gate used by other relevant routes.
+
+[CODEX-REPORTED] Local checkout C:\Python is dirty/detached; a configured Codex MCP entry points to another dirty detached worktree; two Python MCP server children exist, but CWD, source-as-loaded and client-session mapping are unknown; IABV tools are not present in the effective tool surface of the reporting chat.
+
+[NOT PROVEN] Exact in-memory code loaded by the running processes, PID-to-client association, IABV UI state, effective client tool exposure, observation permission, snapshot freshness.
+
+[NEXT] Codex performs a non-mutating attribution inspection of the two existing processes, the exact known config and exact configured worktree; no MCP handshake/call/reconnect. Only after coordinator review may the owner authorize one bounded snapshot disclosure. Starting MCP can invoke bootstrap scans, local persistence and conditional provider-health checks.
+
 ## 2026-10-08 — RQ21.200 CONSUMER DESIGN: OWNER / SCHEMA GATES OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
