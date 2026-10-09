@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 P1 STOPPED ON CHILD INTEGRITY `UNKNOWN`
+
+Canonical: `CHAT-ARCH-2026-10-08-184-rq21-p1-integrity-guard-stop-and-detector-readiness.md`.
+
+The frozen P1 contract was retrieved; the fresh diagnostic matched target/file/signature checks but could not verify `S-1-16-8192` inside its own process. The guard correctly stopped before `LoadLibraryExW`; no symbol was resolved. This is a preflight/detector question, not a DLL failure.
+
+NEXT: **CODEX — static, non-mutating inspection of the exact script bytes and integrity-SID detection/error path**. Verify script SHA first. Do not execute it, bypass the guard, load the DLL, invoke exports or modify Git. Reconcile authorization before any later load attempt.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — REMOTE P1 CONTRACT EXISTS; CODEX SHOULD READ CANONICAL REMOTE FILE
 
 Canonical: `CHAT-ARCH-2026-10-08-183-rq21-p1-contract-local-availability-reconciliation.md`.
