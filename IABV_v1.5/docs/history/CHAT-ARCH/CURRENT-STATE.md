@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ212 STATIC SUPPLEMENT AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
+
+Owner authorized a narrow read-only supplement limited to (A) existing static launch/config/dependency artifacts that may identify interpreter/transport and locally present exact Uvicorn source/version; (B) SHA-256 and line/source provenance for already-inspected RQ210 IABV files whose hashes were omitted. Preserve the dirty/detached worktree and re-confirm its identity; if artifacts/version/hash bytes are unavailable locally, report blocked rather than execute or fetch/install anything. No runtime/process inspection, MCP startup/calls, SDK execution, probes, DB/secrets/snapshot, tests/builds, package manager/install/download, worktree edits or source mutation. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ21.200 remains separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ210 ADJUDICATED; GLOBAL MCP READINESS STILL BLOCKED
 
 Canonical authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
