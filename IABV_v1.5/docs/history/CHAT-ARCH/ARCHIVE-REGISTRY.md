@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ226 CONTINUITY / KNOWLEDGE-ACQUISITION AUDIT
+
+Canonical record: `CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md`.
+
+Summary: Codex's bounded audit of 17 canonical documents at reported `main @ 3f176f2000d4157967bc7a399592c89b141e9e3f` is accepted as `RQ226_AUDIT_COMPLETE_WITH_FINDINGS`. Findings: inconsistent entry sequence across README/AI Frame/MOP; UAAL root activation trigger needs precision; supplied-chat intake lacks a uniform provenance/coverage/completeness contract; application and causal reuse remain unproven. Existing memory organs are sufficient; no parallel store/coordinator is justified. Documentary harmonization aligns the sequence, adds intake requirements and updates owning projections. Current technical route remains RQ224; readiness remains blocked.
+
+Tags: IABV continuity / frame entry / UAAL / transcript intake / provenance / symbiosis / method delta / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ219 ADJUDICATION / TRUSTED MUTATION AUTHORITY NOT FOUND IN SCOPE
 
 Canonical record: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md
