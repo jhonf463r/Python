@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V2 STATIC REVIEW PASS WITH MINIMUM REPAIRS
+
+Canonical: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`.
+
+The independent static review of the inline source found no definite defect in SID recognition. The temp-file hash remains actor-reported and runtime behavior is unproven. Next: Codex prepares a separate, unexecuted candidate with explicit token-open gating, independent cleanup status, clarified result/error fields and a literal here-string, plus the consuming readiness predicate. No compile/run or DLL load.
+
+The owner-authorized single loader invocation remains unperformed, so authorization remains scope-valid for at most that one exact call after all preconditions and consumer gates pass. No broader action or retry is authorized.
+
+---
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — RE-ISSUE V2 STATIC AUDIT WITH SOURCE INLINE
 
 Canonical: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`.
