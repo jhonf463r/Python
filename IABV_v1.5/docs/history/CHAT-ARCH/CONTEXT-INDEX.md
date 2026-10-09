@@ -1,3 +1,11 @@
+## 2026-10-09 ROUTING UPDATE — RQ214 PLAN ACCEPTED; OWNER SEMANTIC DECISIONS NEXT
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
+
+RQ214 is accepted as `STATIC_REMEDIATION_PLAN_COMPLETE_WITHIN_SCOPE` for planning only. It synthesizes known findings on mutator authorization, bootstrap/observation effects, filesystem/Git boundaries, lifecycle/transport, provenance, and confidentiality. No source changes or runtime work have occurred. Global MCP readiness remains blocked.
+
+NEXT: Owner must freeze the first security tranche contract and exact source baseline/worktree before implementation. Recommended initial scope: mandatory fail-closed per-operation/resource/scope permission for self-update mutators; consistent protected-path/workspace-root validation; explicit Git file allowlist and no push by default; network-required routes block on unknown state. Do not edit the existing dirty/detached worktree. Runtime, tests/builds and snapshot disclosure remain separately gated. RQ13-111 and RQ21.200 stay separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ212 ADJUDICATED; LAUNCHER FINDINGS CLOSED STATICALLY
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
