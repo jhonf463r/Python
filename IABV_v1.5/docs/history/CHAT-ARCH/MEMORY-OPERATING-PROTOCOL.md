@@ -1,3 +1,11 @@
+## 2026-10-08 METHOD AMENDMENT — CANONICAL CONTRACT MISSING LOCALLY BUT PRESENT REMOTELY
+
+If an actor stops because a required frozen document is absent from its local worktree, separately verify the authoritative remote path before treating the contract itself as unavailable. Prefer a read-only remote GitHub read; if a temporary copy is needed, place it outside the repository and validate the Git blob SHA. Do not ask the user to copy files manually or mutate the worktree/Git refs unless the next edge explicitly requires it.
+
+Preserve `stop reported` as `no execution occurred`; it is not a test failure. Once the remote contract is read and verified, the same actor may resume an already-authorized action if all remaining target-bound readiness gates are rechecked. Remote contract availability does not waive those gates.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — OWNER-AUTHORIZED LOAD-ONLY PROBE CONTRACT (RQ21 P1)
 
 A Human Domain Owner may authorize a bounded dynamic DLL-load probe after P0 static exports are verified. Before execution, freeze exact target/file identity, medium-integrity preconditions, one allowed `LoadLibraryExW` call with restricted `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32` flags, two `GetProcAddress` resolutions, exact result classes, evidence capture and stop conditions.
