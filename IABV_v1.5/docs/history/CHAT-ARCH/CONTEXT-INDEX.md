@@ -1,3 +1,11 @@
+## 2026-10-09 ROUTING UPDATE — RQ218 CONSERVATIVE POLICY RECORDED; IMPLEMENTATION BLOCKED
+
+Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
+
+The Owner accepted the conservative first-tranche direction: human Owner approval only; authorization per operation/resource/exact scope; deny on missing/unknown/stale/malformed/denied/mismatched conditions; no push; explicit Git file allowlist; unknown connectivity blocks network-required routes; preserve the current dirty worktree and do not authorize tests/runtime with the source-edit phase.
+
+Before any edit, still resolve the source-backed authority producer/verifier, exact canonical allowed root/protected-path policy, and immutable implementation baseline. The current dirty/detached worktree remains untouched. No implementation, worktree creation, tests/builds or runtime authorized. Overall status remains blocked; RQ13-111 and RQ21.200 are separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ216 DESIGN CONTRACT ACCEPTED; OWNER DECISION NEXT
 
 Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
