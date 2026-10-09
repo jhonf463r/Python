@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE ROUTE — RQ212 STATIC LAUNCHER / UVICORN / HASH SUPPLEMENT
+
+Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
+
+The Owner authorized only existing static artifacts that may identify launcher interpreter/transport and locally available Uvicorn version/source, plus hashes/provenance for RQ210-cited IABV files whose hashes were omitted. Confirm and preserve the dirty/detached worktree; stop if evidence is unavailable locally. No runtime/process inspection, MCP calls/start/reconnect, installation/download, tests/builds, DB/secrets/snapshot or source mutation. RQ21.200 remains separate; readiness remains blocked.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ210 ADJUDICATED; LIFECYCLE DEPENDENCY REMAINS
 
 Canonical authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
