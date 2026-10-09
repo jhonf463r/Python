@@ -1,3 +1,14 @@
+## 2026-10-09 METHOD AMENDMENT — RQ216 CONTRACT ACCEPTED AS DESIGN ONLY
+
+Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
+
+- Accept the RQ216 static contract proposal within scope; do not treat it as implementation approval.
+- Existing observation permission is not mutation approval. The target contract must bind authorization to each operation, canonical resource and exact scope; absent/unknown/stale/malformed/nonmatching permission or verifier failure must deny.
+- Filesystem checks must be consistent across implicated mutators. Git must use explicit file selection, reject unrelated staged changes and have no push in the first tranche. Unknown network state blocks network-required routes but is not mutation authorization.
+- A trusted mutation-authority producer/verifier remains unresolved; do not repurpose observation permission or invent an API.
+- Freeze exact immutable source baseline and isolated worktree before edits. Preserve existing dirty/detached worktree. No edits, worktree creation/change, tests/builds, runtime, MCP/process operations, DB/secrets/snapshot reads, package installation/download, or Git mutation until a separate scope authorization.
+- Owner decisions about approver, scope, roots/protected paths, baseline/worktree and phase boundaries must not be inferred. Global readiness remains blocked; RQ13-111 and RQ21.200 remain distinct.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ216 DESIGN CONTRACT ONLY
 
 Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
