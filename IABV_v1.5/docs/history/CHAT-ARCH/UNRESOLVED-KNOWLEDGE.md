@@ -1,3 +1,20 @@
+## 2026-10-09 — RQ219 STATIC AUTHORITY SOURCE DISCOVERY AUTHORIZED; RESULTS PENDING
+
+Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
+
+[POLICY DIRECTION ACCEPTED]
+Explicit human Owner approval per operation/canonical resource/exact scope; deny absent/unknown/stale/malformed/denied/exceptional/mismatched states; no push and explicit Git allowlist; preserve current dirty/detached worktree.
+
+[AUTHORIZED STATIC SCOPE]
+Inspect existing self-update mutators, governance callback, model and WorldModel permission-gate producer plus direct definitions/imports/calls needed to find an existing trusted Owner approval producer/verifier. Stop at any broader auth/identity subsystem. No code changes or runtime.
+
+[OPEN IMPLEMENTATION BLOCKERS]
+1. Trusted producer/verifier for approver identity, operation/resource/scope binding, freshness and auditable decision receipt.
+2. Exact canonical workspace root and protected-path/allowlist policy.
+3. Exact immutable implementation baseline and separate clean worktree decision.
+
+No implementation is authorized. Overall readiness remains blocked; RQ13-111 and RQ21.200 separate.
+
 ## 2026-10-09 — RQ218 OWNER POLICY PARTIAL; IMPLEMENTATION NOT AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
