@@ -1,3 +1,15 @@
+## 2026-10-08 — RQ21 V2 INDEPENDENT AUDIT SOURCE-HANDOFF STOP
+
+[FACT FROM REVIEWER REPORT] The independent reviewer returned `SOURCE_UNAVAILABLE_OR_INCOMPLETE`, because its prompt did not contain the full v2 source and its filesystem could not access Codex's Windows temp path.
+
+[ADJUDICATION] No v2 source-specific technical finding was made. This is not an audit pass or fail. The full source was present in the coordinator conversation and should be re-delivered inline without asking the user to repaste it.
+
+[NEXT EDGE] Sonnet/Claude performs the independent static challenge on the full source embedded in the same prompt. The reported temp file SHA/size remain actor-reported; source review of pasted text does not independently verify the saved file bytes. No compilation, execution, token query or DLL load.
+
+Source: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P1 V2 CLEANUP REPORTING ADDED; INDEPENDENT STATIC CHALLENGE OPEN
 
 [ACTOR-REPORTED] v2 candidate at `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v2.ps1`, 11,467 bytes, SHA-256 `0F24FC0E88B17205512A786683F869E59694CC815C8399502FCD076E8D552A94`; Codex reports two hash methods agreed. Candidate has not been compiled or executed. Coordinator has reviewed the complete source pasted in chat but has not read back the temporary file bytes.
