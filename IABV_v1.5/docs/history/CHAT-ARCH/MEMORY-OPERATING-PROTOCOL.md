@@ -1,3 +1,13 @@
+## 2026-10-08 METHOD AMENDMENT — USE TOKENINTEGRITYLEVEL FOR IN-PROCESS INTEGRITY GATES
+
+Do not derive a Windows integrity level solely by scanning `WindowsIdentity.Groups` for an `S-1-16-*` SID. A missing match there must not be mistaken for proof of a non-MEDIUM token or for a completed token observation.
+
+For an execution-local integrity gate, inspect a direct `GetTokenInformation(TokenIntegrityLevel)` query against the intended process token and parse its `TOKEN_MANDATORY_LABEL.Label.Sid` only after validating API returns, buffer lengths and SID validity. Preserve separate outcomes for a confirmed nonmatching integrity level and an unavailable/invalid query; failures remain fail-closed. Capture Win32 errors at the call boundary and account for native handle/buffer lifetime.
+
+A static diagnosis of a flawed detector explains a possible UNKNOWN path but cannot retroactively establish the previous process's true token SID. No corrected diagnostic is executed, and no protected operation is authorized, until artifact provenance, readiness and the explicit authorization boundary are reconciled.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — FAIL-CLOSED IN-PROCESS TOKEN READINESS (`UNKNOWN`)
 
 When an experiment requires a security-token property from the executing child process, an observation from another PowerShell/session does not satisfy that gate. If its detector returns `UNKNOWN`, preserve a pre-operation stop; do not infer either that the target property is false or that the underlying operation failed.
