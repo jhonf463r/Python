@@ -1,3 +1,23 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.195 INDEPENDENT V5 STATIC PASS
+
+Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
+
+Knowledge Delta:
+- Independent challenge reports no definite defect or required repair in the complete inline v5 source; F1/F7/F8 are accepted source-level outcomes.
+- Win32 error 122 must remain associated with its failure stage; a 64-bit layout guard alone does not verify x64 process architecture.
+- Artifact identity, compilation/runtime and actual consumer enforcement remain separate unproven predicates.
+
+Method Delta:
+- Static-pass reports apply to the reviewed source object only.
+- Verify the exact saved artifact before inspecting its actual consumer; never treat an actor-reported hash as coordinator byte evidence.
+- Interpret error stage, outcome and cleanup together; no error grants retry permission.
+
+Routing Delta:
+- Next: exact-path artifact identity/read-back by an actor with access to the Windows temp path.
+- Then: read-only inspection of the actual runner/consumer gate.
+- No compile/run/token query, temp-path search, file mutation, DLL load or export operation.
+
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.194 V5 SOURCE RECONCILED
 
 Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
