@@ -1,3 +1,25 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — GUARDED-PROBE SENSOR FAILURE VS TARGET FAILURE
+
+Knowledge Delta:
+- A guarded experiment can correctly stop because a required in-process measurement is UNKNOWN; this does not establish that the target violates the prerequisite or that the protected operation fails.
+- A negative admin-membership check is not evidence of a specific integrity level.
+- A pre-load stop contributes no dynamic evidence about DLL loadability or exports.
+
+Method Delta:
+- Preserve the observed gate outcome.
+- Verify the exact diagnostic artifact, then statically trace the sensor/query-to-parse-to-guard path before another experiment.
+- Never substitute an observation from a different process for an execution-local precondition.
+- Reconcile authorization separately from detector repair; a writeback does not authorize a protected retry.
+
+Routing Delta:
+- Codex is the fit actor for non-mutating inspection of the exact script on its Windows environment.
+- No second experimenter or broad research is needed while the concrete detector failure path is the first open edge.
+
+Current RQ21 P1 edge:
+`integrity SID UNKNOWN → exact detector root cause → corrected/readiness-verified detector → authorization reconciliation → (only then, if valid) one bounded load/symbol-resolution operation`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — P1 CONTRACT LOCAL-AVAILABILITY BLOCKER RESOLVED AT REMOTE SOURCE
 
 Knowledge Delta: Codex reported the frozen contract absent from local `C:\\Python`, but remote GitHub read-back confirms it exists at the expected canonical path and blob SHA `7184f7822920ee9068a21ab75c3564b10e32ea83`. Codex performed no dynamic test.
