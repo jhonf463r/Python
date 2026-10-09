@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ216 STATIC FIRST-TRANCHE CONTRACT
+
+Canonical direction: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
+
+Owner said "si procede" following RQ215. This authorizes only a read-only, source-grounded design contract for the first security tranche: fail-closed per-operation/resource/scope authorization for self-update mutators; consistent protected-path/workspace checks; explicit Git file scope and no push in the first tranche; unknown network state blocks network-required routes. No code edits, tests/builds, worktree creation/change, runtime, MCP operations or process inspection. Codex must present unresolved policy choices to the Owner rather than invent them. Existing dirty/detached worktree stays untouched. Global readiness remains TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ214 PLAN ACCEPTED; OWNER POLICY GATE NEXT
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
