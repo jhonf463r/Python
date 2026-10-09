@@ -1,3 +1,19 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — REVIEWER SOURCE AVAILABILITY IS AN INPUT GATE
+
+Knowledge Delta:
+- A source-unavailable audit cannot establish any code-specific result, even when another agent has already supplied source in a different context.
+
+Method Delta:
+- Bind the complete source to the reviewer message or an actually accessible attachment.
+- Do not ask the user to repaste source already present in the coordinator transcript.
+- Keep source-text review distinct from saved-file byte/hash verification and runtime evidence.
+
+Routing Delta:
+- Reissue the audit to the selected independent reviewer with the full source inline.
+- No actor change or technical redesign is justified by the source handoff failure alone.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — SECOND-VIEW CHALLENGE AFTER NATIVE DETECTOR REPAIR
 
 Knowledge Delta:
