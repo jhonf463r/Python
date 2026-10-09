@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V3 DETECTOR CANDIDATE, INDEPENDENT CHALLENGE OPEN
+
+Canonical: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`.
+
+Codex reports v3 size 14,281 bytes and SHA-256 `B6460A3CCB4C830822A75B262CE3F053C589EF847C1EBD69BEFA15AFFF4CD4C6`, not compiled/run. Inline source incorporates prior cleanup/status hardening. Saved bytes remain actor-reported; coordinator has reviewed only pasted source. The actual consumer predicate wiring is also unverified.
+
+NEXT: Sonnet/Claude for independent static challenge of the complete v3 source inline. No compile/run/token query/file/Git mutation/DLL load/exports/candidate. Original one-shot authorization remains conditional on acceptance of detector, consumer and all target preconditions; this record does not authorize execution.
+
+---
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V2 STATIC REVIEW PASS WITH MINIMUM REPAIRS
 
 Canonical: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`.
