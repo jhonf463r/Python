@@ -1,3 +1,14 @@
+## 2026-10-09 METHOD AMENDMENT — RQ212 COMPLETE WITH UVICORN / RUNTIME ATTRIBUTION UNRESOLVED
+
+Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
+
+- Accept the static launcher/config review as complete within scope and the reported local file hashes as actor-reported provenance; the coordinator did not independently hash the Windows worktree.
+- Configuration (default interpreter/transport) is not proof of which interpreter, transport or dependency a live process used.
+- Record the reported port-default discrepancy: script 8000 versus service/docs 8765. Do not infer its live effect.
+- Uvicorn was not found under the reported default interpreter's site-packages and is not pinned by the inspected manifests; exact version/source and HTTP shutdown semantics remain blocked.
+- `server.py` is dirty; current-worktree hash cannot authenticate its baseline blob. Do not substitute remote-main file hashes for local bytes.
+- Do not pursue runtime attribution, process inspection, package installation/download, MCP operations, snapshots, probes, tests/builds or mutation under RQ212. Preserve `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ21.200 remains independent.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ212 STATIC ARTIFACTS AND HASHES ONLY
 
 Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
