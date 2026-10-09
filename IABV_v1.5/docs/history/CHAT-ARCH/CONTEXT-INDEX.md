@@ -1,3 +1,11 @@
+## 2026-10-09 ROUTING UPDATE — OWNER AUTHORIZED READ-ONLY STARTUP IMPACT PLAN
+
+Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
+
+The Human Domain Owner approved a read-only static analysis of prospective MCP startup effects/isolation, not execution. Codex is limited to the already-known `server.py`, `bootstrap.py`, `world_model_service.py`, `docs/mcp-bridge.md`, and RQ13-108/109 records. Preserve dirty/detached worktrees; classify effects as demonstrated, conditional or unresolved; do not broaden source search if a transitive callee lies outside scope. No MCP call/list, process inspection, start/reconnect, provider check, refresh, tests, compilation or mutation.
+
+NEXT: Codex delivers call/effect inventory, isolation-option comparison, preflight, and fail-closed abort criteria. Coordinator adjudicates before requesting any separate future launch authorization. Operational snapshot disclosure remains independently unauthorized.
+
 ## 2026-10-09 ROUTING UPDATE — NO PASSIVE PROOF OF MCP SOURCE-AS-LOADED
 
 Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
