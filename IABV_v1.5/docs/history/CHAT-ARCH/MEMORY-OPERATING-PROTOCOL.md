@@ -1,3 +1,15 @@
+## 2026-10-08 METHOD AMENDMENT — RECONCILE INDEPENDENT NATIVE-INTEROP REVIEW
+
+A `STATIC_REVIEW_PASS_WITH_REPAIRS` applies only to the exact source text reviewed. Keep `inline source reviewed`, `saved bytes/hash independently verified`, `compiled`, and `executed` as separate evidence states. A failed source handoff is a stop, not a code finding; when source is already in the coordinator context, route it inline rather than asking the user to repeat it.
+
+For a detector whose native query is structurally plausible but whose review identifies robustness/evidence-clarity items, adopt only minimum repairs needed by the experiment contract. Preserve the primary measurement separately from cleanup status; the consumer must check both. Distinguish an actual Win32 error from "no Win32 error applicable", and distinguish requested access/source metadata from a successfully acquired handle.
+
+Before a protected operation, state the consumer's hard readiness predicate explicitly. Any query failure, invalid/incomplete result or cleanup state forbidden by the contract must stop before the operation. An unexecuted candidate or successful static review supplies no runtime result.
+
+RQ21 P1's previously authorized single loader call remains unconsumed because previous runs stopped before `LoadLibraryExW`; this authorizes no current execution. Use the existing scope only after corrected source, consumer gate, provenance and target-bound readiness are reconciled; never infer permission for additional calls or a broader operation.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — BIND AUDIT SOURCE INTO THE REVIEWER MESSAGE
 
 For independent code/source audits, include the complete source in the same reviewer prompt or attach an artifact the reviewer can actually access. Do not assume prior chat context transfers to another actor, and do not route by a path on an actor-specific local filesystem. A `SOURCE_UNAVAILABLE_OR_INCOMPLETE` result is a correct stop but supplies no technical finding about code correctness.
