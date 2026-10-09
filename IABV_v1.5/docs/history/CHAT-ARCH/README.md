@@ -402,18 +402,24 @@ The continuity target is not merely "the next AI sees the same files". It is:
 
 The first condition is retrieval/activation; the second is causal reuse. Both must be tested separately.
 
-## ENTRY ORDER FOR A NEW CHAT
+## ENTRY ORDER FOR A NEW CHAT — SINGLE CANONICAL SEQUENCE
 
-Use only four mandatory orientation surfaces:
+Before treating any repository content as current truth, resolve the remote `main` tip and pin source reads to the exact SHA. Do not silently substitute a local worktree for the remote canonical source.
 
-1. `CURRENT-STATE.md` — current truth + current routing snapshot.
-2. `MEMORY-OPERATING-PROTOCOL.md` — method, evidence and anti-repetition rules.
-3. `CONTEXT-INDEX.md` — objective-conditioned navigation.
-4. `README.md` — continuity/evidence contract (already being read here).
+Use this one sequence for normal IABV work:
 
-Then activate only the source records and specialized projections required by the current objective.
+1. `README.md` — read the continuity, authority-separation and evidence contract.
+2. `CURRENT-STATE.md` — read the top routing snapshot; it alone determines the current technical route.
+3. `CONTEXT-INDEX.md` — navigate from the current objective to relevant memory domains.
+4. `MEMORY-OPERATING-PROTOCOL.md` — apply progressive retrieval, provenance, prior-experience activation, epistemic classification and anti-repetition rules.
+5. Activate only objective-relevant records and projections: `SYMBIOSIS-MAP.md`, `UNRESOLVED-KNOWLEDGE.md`, `ARCHIVE-REGISTRY.md`, source/absorption records and exact revision evidence.
+6. Explicitly activate `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md` and the relevant concept lineage when the objective materially touches global vision, architecture, universal semantics/generalization, cross-domain composition, capability/realization selection, learning, memory/continuity or protocol design. For a narrow task, preserve the relevant parent-concept link without loading the entire conceptual corpus.
+7. Reconstruct verified truth, material recent deltas, prior relevant failures, negative knowledge, closed edges and the first open causal/evidential edge.
+8. Before constructing a prompt/action, compile relevant experience into concrete constraints, false-positive controls, required observations, stop conditions or acceptance gates.
 
-Do **not** automatically read dated overrides, every handoff, every protocol, or every historical record. Historical `NEXT ACTOR` statements are never current authority unless explicitly re-promoted through `CURRENT-STATE.md`.
+Do not automatically read the whole archive, every handoff or every historical record. Historical `NEXT ACTOR` fields remain non-routable unless current `CURRENT-STATE.md` explicitly re-promotes a route.
+
+The canonical schema for supplied-chat provenance and coverage is defined by the `CHAT / TRANSCRIPT INTAKE CONTRACT` in `MEMORY-OPERATING-PROTOCOL.md`.
 
 ## OBJECTIVE-CONDITIONED ACTIVATION
 
@@ -1042,7 +1048,11 @@ The archive has accumulated many historical handoffs, protocols and dated routin
 
 Therefore the canonical entry contract is now:
 
-`README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX relevant records → MEMORY-OPERATING-PROTOCOL method → objective-specific evidence`.
+`verify remote main SHA → README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX relevant records → MEMORY-OPERATING-PROTOCOL method → objective-specific evidence`.
+
+For objectives touching global vision, architecture, universal semantics/generalization, cross-domain composition, learning, memory/continuity or protocol design, explicitly activate `UAAL-ROOT-001` and the relevant portion of `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md` plus its lineage. A narrow task does not require indiscriminate reading of the whole archive or Constitution.
+
+For supplied chats/transcripts, use the `CHAT / TRANSCRIPT INTAKE CONTRACT` in `MEMORY-OPERATING-PROTOCOL.md`; an excerpt must never be described as a complete source.
 
 **Only the top routing snapshot in CURRENT-STATE is a current actor-routing authority.**
 
