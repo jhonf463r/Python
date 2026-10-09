@@ -1,3 +1,12 @@
+## 2026-10-08 REGISTRATION — RQ21.199 CONSUMER NOT IMPLEMENTED
+
+Canonical record: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md
+
+Summary: Operator declares no consumer implementation in the identified scope. Codex correctly stops with CONSUMER_SOURCE_UNAVAILABLE because no source object exists for audit. The first open edge moves to a bounded consumer contract/design proposal, including same-process/PID causal binding, before implementation. No protected operation authorized.
+
+Tags: RQ21 / P1 / consumer not implemented / design-first / process identity / causal binding / source audit stop / authorization boundary
+
+
 ## 2026-10-08 REGISTRATION — RQ21.198 CONTINUITY RECONCILIATION
 
 Canonical record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md
