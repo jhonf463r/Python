@@ -1,3 +1,25 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ223 CONTRACT RECONCILED; RQ224 TRUST-SOURCE DESIGN NEXT
+
+Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
+
+**Knowledge Delta**
+- The directed broker/UI trace agrees with `UI_APPROVAL_BRIDGE_NOT_FOUND_IN_REPOSITORY_SCOPE` for the inspected paths. Dashboard presentation is not an authenticated decision return.
+- The minimum conceptual authorization is bound to principal, operation, canonical resource, exact scope, approved data/delta, validity conditions and single-use identity: `A = (P, O, R, S, D, T, N)`.
+- Existing organs have partial roles only: the broker may transport a request; ApprovalMemory may support transparent/non-privileged learning; dashboard/UI presents requests; ToolTask persistence is not a mutation receipt; observation permission is not write authority.
+- No authenticated Owner trust source or trusted receipt producer/verifier has been demonstrated. This is a bounded finding, not proof that all authentication is absent from IABV.
+
+**Method Delta**
+- Do not repeat the already-bounded broker/UI search unless a concrete new caller, identity definition or receipt mechanism is identified.
+- Keep source-backed facts, actor-reported local provenance, conceptual contract and unproven trust technology distinct.
+- Define required semantics before implementation; do not invent a cryptographic mechanism or new general subsystem merely to fill an evidence gap.
+- No first effect until identity, exact operation/resource/scope/content, receipt validity and one-time consumption are verified; fail closed on unknown or unverifiable conditions.
+
+**Routing Delta**
+- RQ224 is now the next static design/adjudication front: determine the trust-source requirements and whether a concrete existing source can satisfy them; stop at any broad identity/authentication boundary.
+- RQ218 policy remains accepted, but root/protected paths, immutable baseline and isolated clean worktree still need Owner decisions. No implementation/runtime. Preserve dirty/detached worktree; RQ13-111 and RQ21.200 remain separate.
+
+---
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ219: OBSERVATION PERMISSION, HUMAN PRESENCE AND MUTATION AUTHORITY ARE DISTINCT
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.

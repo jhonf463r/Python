@@ -1,3 +1,15 @@
+## 2026-10-09 ROUTING UPDATE — RQ223 DESIGN RECONCILED; RQ224 TRUST SOURCE NEXT
+
+Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
+
+RQ223 closes the conceptual design deliverable within scope, not implementation or runtime readiness. Accept the bounded findings `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE` and `UI_APPROVAL_BRIDGE_NOT_FOUND_IN_REPOSITORY_SCOPE`; do not rerun the generic repository/UI archaeology. A new audit is justified only by a concrete newly identified caller of `approve(request_id, payload)`, direct identity/authority mechanism, or receipt producer/verifier.
+
+**Next exact frontier: RQ224 — trust-source design/adjudication.** Identify the guarantees required for authenticating the Human Domain Owner and issuing/verifying a receipt bound to the exact immutable mutation intent. If relying on existing IABV organs, use only demonstrated roles; `HumanApprovalBroker` may be a transport candidate but is not itself the trust root. Do not invent a root of trust. If resolution requires a broad identity subsystem, stop and ask for a separately bounded scope.
+
+No implementation prompt to Codex yet. Exact workspace root/protected paths, immutable baseline and isolated clean worktree remain unresolved Owner gates. Preserve dirty/detached worktree. Global readiness remains blocked; RQ13-111 and RQ21.200 are separate.
+
+---
+
 ## 2026-10-09 ROUTING UPDATE — RQ219 ADJUDICATED; NEXT EXACT EDGE IS BROKER UI AUTHORITY
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.

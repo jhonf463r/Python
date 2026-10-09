@@ -1,3 +1,32 @@
+## 2026-10-09 — RQ223 CONTRACT RECONCILED; TRUST SOURCE AND RECEIPT REMAIN UNRESOLVED
+
+Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
+
+**[ACCEPTED DESIGN RESULT]**
+RQ223 defines the conceptual contract for explicit Human Domain Owner authorization bound to authenticated principal, exact operation, canonical resource, scope, relevant content/delta, validity and single-use consumption. It requires verification before the first effect, revalidation of mutable resource conditions, fail-closed behavior, correlation/audit evidence, and the RQ218 first-tranche restrictions (explicit Git file allowlist, reject unrelated staged/concurrent changes, no push).
+
+**[BOUNDED FINDINGS ACCEPTED]**
+- `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE` remains the RQ219/RQ220 result.
+- `UI_APPROVAL_BRIDGE_NOT_FOUND_IN_REPOSITORY_SCOPE` is supported for the broker/UI path inspected in RQ223. Do not overclaim global absence of authentication or runtime behavior.
+- Generic route governance, WorldModel observation permissions, broker booleans/pre-approval, dashboard display, PR approval, and ToolTask approval/persistence do not by themselves satisfy the owner mutation-authority contract.
+
+**[UNRESOLVED MATERIAL DEPENDENCY]**
+No trusted source has been demonstrated that authenticates the Human Domain Owner and backs a verifiable decision/receipt tied to the exact mutation. The source of identity/authority, receipt production/verification, freshness, durable single-use consumption, replay/race handling, and behavior on verifier/persistence failure remain open.
+
+**[OWNER GATES BEFORE IMPLEMENTATION]**
+1. Identify or explicitly approve the trust-source design and its semantics.
+2. Select the canonical allowed workspace root and protected-path policy.
+3. Choose the exact immutable implementation baseline.
+4. Authorize a separate clean worktree and exact file/edit scope while preserving the current dirty/detached worktree.
+5. Decide the required audit/persistence guarantees and later verification phase boundaries.
+
+**[NEXT OWNER/COORDINATOR GATE]**
+RQ224: static design/adjudication of trust source and receipt producer/verifier. Do not issue an implementation prompt to Codex. Do not rerun broad RQ219/RQ220 or UI archaeology absent a specific new dependency. If the required identity path expands into a general auth subsystem, stop and obtain separately bounded scope.
+
+Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain independent. No code edits, tests/builds/runtime, MCP/process/state operations or worktree changes are authorized. Preserve dirty/detached worktree.
+
+---
+
 ## 2026-10-09 — RQ219 ADJUDICATED: NO TRUSTED MUTATION AUTHORITY FOUND IN SCOPE
 
 Canonical: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.

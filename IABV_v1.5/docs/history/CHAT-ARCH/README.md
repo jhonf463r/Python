@@ -1,3 +1,12 @@
+## 2026-10-09 ACTIVE ROUTE — RQ223 DESIGN RECONCILED; RQ224 TRUST-ANCHOR DESIGN NEXT
+
+Canonical record: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
+
+RQ223 reconciles the minimum conceptual contract for trusted MCP mutation authority. Implementation remains blocked: no authenticated Human Domain Owner trust source and mutation-bound verifiable receipt are demonstrated. Accept `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE` for RQ219/RQ220 and `UI_APPROVAL_BRIDGE_NOT_FOUND_IN_REPOSITORY_SCOPE` for the bounded UI composition path; do not repeat that broad search or claim global absence of authentication.
+
+NEXT: RQ224, static design/adjudication of the trust source and receipt producer/verifier. Keep existing organs as candidates for their demonstrated roles only. No implementation, code edits, tests/builds/runtime, MCP/process/state operations or worktree changes. Preserve the dirty/detached worktree. Workspace root/protected paths, immutable baseline and clean isolated worktree remain unresolved Owner gates. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain separate.
+
+---
 ## 2026-10-09 ACTIVE ROUTE — RQ219 ADJUDICATED; OWNER DECISION FOR EXACT UI TRUST EDGE
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.

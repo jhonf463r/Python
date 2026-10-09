@@ -1,3 +1,17 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ223 CONTRACT RECONCILED; TRUST SOURCE BLOCKS IMPLEMENTATION
+
+Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
+
+**Adjudication:** the conceptual contract is defined within the static design scope; implementation is `BLOCKED`. RQ219/RQ220 remain accepted as `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE`. The directed source reading supports `UI_APPROVAL_BRIDGE_NOT_FOUND_IN_REPOSITORY_SCOPE` for the inspected broker/UI composition. This does not prove absence of authentication or external wiring everywhere in IABV and does not identify historical loaded bytes.
+
+**Contract:** explicit Human Domain Owner approval; authenticated principal; exact operation, canonical resource, scope and approved content/delta; verifiable, fresh, single-use receipt; correlation from intent through decision, consumption and effect; required checks before first effect; fail-closed handling of missing, unknown, malformed, stale, consumed, exceptional or mismatched authority. WorldModel observation permission, generic route governance, ApprovalMemory pre-approval, dashboard presentation, ToolTask persistence and PR policy are not equivalent to this authority.
+
+**NEXT — RQ224:** design/adjudicate the trust source and receipt producer/verifier. Distinguish any source-grounded existing mechanism from a hypothetical option. Stop before recursively inspecting a broad identity/auth subsystem; reopen static inspection only if a concrete caller, identity definition or receipt producer is identified.
+
+RQ218 policy direction remains accepted but is not technology approval or implementation permission. Exact canonical workspace root/protected paths, immutable baseline, scope of editable files and separate clean worktree are still Owner gates. Preserve the current dirty/detached worktree. No source edits, worktree changes, tests/builds, runtime, MCP/process/state operations, installation/download or Git mutation beyond this documentation writeback. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain separate.
+
+---
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ219 ADJUDICATED; TRUSTED MUTATION AUTHORITY NOT FOUND IN SCOPE
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
