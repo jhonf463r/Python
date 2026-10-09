@@ -1,3 +1,22 @@
+## 2026-10-09 SYMBIOSIS TRANSFER — BOUNDED TRANSITIVE MCP AUDIT AUTHORIZED
+
+Canonical record: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
+
+Knowledge Delta:
+- RQ205 shows the authorized startup graph can reach environment/world-model refresh, host observation, network probes and local persistence; important transitive implementations are not yet audited.
+- The user explicitly authorized a read-only audit of only the direct dependencies already named and their immediate effectful helpers, along with reconciliation against canonical memory/symbiosis records.
+- This scope covers EnvironmentSelfAwarenessService, ToolRegistry.refresh_card, UniversalPerceptionService.scan_tool_context, AppDatabase, ArtifactStorage, config/secrets-loading source, logging/tracing, and relevant MCP self-update/transport startup; it does not allow reading secret values or the DB.
+- Cross-cutting metacognition is required, but every risk must be source-anchored or explicitly marked as hypothesis; it is not permission for broad recursive exploration.
+
+Method Delta:
+- Pair a call/effect graph with a bounded symbiosis risk matrix covering provenance, data flow, startup, scans, persistence, network/loopback, host observation, shared user profile, transport/session association, caching, process lifecycle, rollback and authorization gates.
+- Use known canonical RQ201–205 and RQ13-108/109/111 memory to retain negative knowledge. Keep RQ21.200 separate.
+- Stop at the next significant effectful dependency outside scope, report exact path/symbol, and request a further scope decision instead of recursively browsing.
+
+Routing Delta:
+- Codex: read-only audit of named direct dependencies/immediate helpers and memory reconciliation, no runtime action or Git writes.
+- Coordinator adjudicates; any extra recursive audit, future launch/reconnect, and future operational snapshot each require distinct human authorization.
+
 ## 2026-10-09 SYMBIOSIS TRANSFER — MCP STARTUP PLAN BLOCKED; NEW AUDIT SCOPE REQUIRED
 
 Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
