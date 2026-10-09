@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — DETECTOR CANDIDATE NEEDS CLEANUP-STATUS FIELD
+
+Canonical: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`.
+
+The candidate's pasted source appears statically plausible for direct token integrity querying, but its `finally` ignores `CloseHandle` status/error. Candidate path/hash/size are actor-reported; not compiled or executed.
+
+NEXT: Codex makes a separate, unexecuted temp-artifact refinement and returns complete source and hash. No token query, compile, DLL load, source changes or Git mutation. Resolve exact-artifact provenance and authorization before any subsequent protected operation.
+
+---
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — INTEGRITY DETECTOR CAUSE FOUND, CORRECTION DESIGN ONLY
 
 Canonical: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`.
