@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 P1 LOAD-ONLY PROBE EXPLICITLY AUTHORIZED; EXECUTION PENDING
+
+[FACT] Human Domain Owner authorized `P1_LOAD_ONLY = AUTORIZADO` after RQ21 P0 static export presence was adjudicated PASS.
+
+[FROZEN CONTRACT] Verify same target `MSI`, Windows `10.0.26300.9550` x64, MEDIUM `S-1-16-8192`, exact DLL hash and Valid Microsoft Windows Authenticode. In a fresh one-shot non-elevated process, call `LoadLibraryExW` once with the full DLL path and `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32`, then `GetProcAddress` for both exact names. Never invoke either pointer.
+
+[SIDE-EFFECT LIMIT] DLL/dependency initialization may execute; this does not prove containment. No broad-path retry, elevation, install/network, API invocation, candidate launch, source edit or follow-on experiment.
+
+[UNPROVEN] Load outcome, symbol-resolution outcome, raw artifact bytes as coordinator-read evidence, API functionality, candidate containment and all seven-guarantee claims.
+
+NEXT ACTOR: Codex for the single bounded probe; stop before load on any precondition mismatch. Record and independently reconcile raw evidence before routing again.
+
+Source: `CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P0 EXPORTS REPORTED PRESENT BY INDEPENDENT DUMPBIN; P1 NOT AUTHORIZED
 
 [REPORTED FACT] Codex reports matching target host `MSI` / Windows `10.0.26300.9550` x64 / MEDIUM integrity, matching DLL SHA-256 `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`, Authenticode `Valid`, and `dumpbin /EXPORTS` exit 0 with both exact names present.
