@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ206 EFFECT GRAPH ACCEPTED; DIRECT EDGES STILL OPEN
+
+Canonical record: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md
+
+Summary: Accept RQ206 as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. It reports source paths for scans, provider health, host observations, network probes, local persistence and registration of mutating self-update handlers. Runtime occurrence is not proven; adapter effects and per-handler governance remain insufficiently closed. Local missing continuity files do not supersede canonical remote memory. Next: bounded, read-only completion of actual ToolRegistry-bound adapters/immediate helpers, self-update governance coverage, and directly related transport/shutdown paths. No launch, MCP call, process interaction, secret/DB read, tests or mutation.
+
+Tags: IABV MCP / transitive audit / adapters / self-update governance / source provenance / canonical memory / symbiosis / no runtime
+
 ## 2026-10-09 REGISTRATION — BOUNDED TRANSITIVE MCP AUDIT AUTHORIZED
 
 Canonical record: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md
