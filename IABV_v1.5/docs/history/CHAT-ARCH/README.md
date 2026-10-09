@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE ROUTE — RQ214 PLAN ACCEPTED; OWNER DECISION BEFORE IMPLEMENTATION
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
+
+RQ214's static hardening/containment plan is accepted within scope; no code changes or runtime actions are authorized. Global readiness remains blocked. Next is the Owner's decision on exact source baseline/isolated worktree and the first mutation-governance tranche: mandatory fail-closed per-operation/resource/scope authorization, coherent protected-path/workspace checks, explicit Git file scope and no push by default. Preserve the existing dirty/detached worktree. RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ212 ADJUDICATED; NO FURTHER RUNTIME SCOPE
 
 Canonical authorization: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
