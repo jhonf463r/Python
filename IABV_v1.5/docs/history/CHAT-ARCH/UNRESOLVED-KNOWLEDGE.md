@@ -1,3 +1,18 @@
+## 2026-10-09 — RQ216 DESIGN-ONLY CONTRACT AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
+
+[AUTHORIZED] Draft a read-only source-grounded contract for:
+1. Per-operation/resource/scope mutation authorization on MCP self-update handlers.
+2. Fail-closed behavior for absent/unknown/stale/malformed/nonmatching permission.
+3. Consistent workspace/protected-path validation across implicated file mutators.
+4. Explicit Git file selection and no push in the first tranche.
+5. Unknown network state blocks network-required routes.
+
+[OWNER DECISIONS STILL REQUIRED] Approver authority; whether approval is per operation/resource/scope; permitted workspace roots/protected paths; final Git file-selection policy; selected source baseline and isolated worktree for any later implementation; whether and how a future verification phase is authorized.
+
+[NOT AUTHORIZED] Source edits, patches, worktree creation/change, Git mutation, tests/builds, runtime imports/execution, MCP operations, process inspection, DB/secrets/snapshot reads, installation/download. Global readiness remains blocked. RQ13-111 and RQ21.200 remain independent.
+
 ## 2026-10-09 — RQ214 STATIC REMEDIATION PLAN ACCEPTED; IMPLEMENTATION NOT AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
