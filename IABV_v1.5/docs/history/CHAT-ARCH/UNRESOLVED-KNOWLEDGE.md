@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 V2 INDEPENDENT STATIC REVIEW PASS WITH REPAIRS
+
+[REPORTED REVIEW RESULT] The independent review returned `STATIC_REVIEW_PASS_WITH_REPAIRS` on the complete inline v2 source; no definite defect in SID recognition was reported. Review scope does not include byte-level identity of the saved temp artifact, compilation, runtime token state or consumer behavior.
+
+[ACTOR-REPORTED ARTIFACT] v2 size 11,467 bytes, SHA-256 `0F24FC0E88B17205512A786683F869E59694CC815C8399502FCD076E8D552A94`; saved bytes are not independently verified by the coordinator.
+
+[MINIMUM REPAIRS] Gate token closure on confirmed acquisition; expose/consume cleanup status independently of primary outcome; clarify requested token source/access metadata; distinguish actual Win32 error from not-applicable; use a literal rather than expandable C# here-string. The data-call race fails closed. Consumer behavior remains unreviewed.
+
+[AUTHORIZATION] The single LoadLibraryExW action explicitly authorized in record 182 has not occurred. The prior authorization remains scope-valid for one such action only after corrected source, the consumer gate, exact target and all frozen readiness checks pass. No execution is authorized by this writeback.
+
+[NEXT] Codex prepares a separate, unexecuted, hash-verified minimally corrected candidate and states the hard consumer predicate. No compile, execution, token query or DLL operation.
+
+Source: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`.
+
+---
+
 ## 2026-10-08 — RQ21 V2 INDEPENDENT AUDIT SOURCE-HANDOFF STOP
 
 [FACT FROM REVIEWER REPORT] The independent reviewer returned `SOURCE_UNAVAILABLE_OR_INCOMPLETE`, because its prompt did not contain the full v2 source and its filesystem could not access Codex's Windows temp path.
