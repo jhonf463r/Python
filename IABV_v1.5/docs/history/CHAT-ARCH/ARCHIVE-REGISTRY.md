@@ -1,3 +1,13 @@
+## 2026-10-09 REGISTRATION — RQ226 FOLLOW-UP / RESIDUAL ENTRY-ORDER RECONCILIATION
+
+Canonical record: `CHAT-ARCH-2026-10-09-226-rq226-followup-residual-entry-sequence-reconciliation.md`.
+
+Summary: A bounded reread after the initial RQ226 documentation writeback found residual prescriptive entry sequences in Constitution §12, North Star §12, AI Frame continuity hardening and the MOP North-Star-first addendum. These blocks were changed to defer to the README canonical order. This corrects only the identified blocks; exhaustive absence of other variants and live activation reliability are not proven. RQ224 remains the next technical frontier; no implementation/runtime is authorized.
+
+Tags: IABV continuity / RQ226 follow-up / entry-order correction / method delta / bounded documentation / no runtime
+
+---
+
 ## 2026-10-09 REGISTRATION — RQ226 CONTINUITY / KNOWLEDGE-ACQUISITION AUDIT
 
 Canonical record: `CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md`.

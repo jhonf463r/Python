@@ -2,9 +2,10 @@
 
 Canonical adjudication: [CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md](CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md).
 
-- Use the single canonical entry order in `README.md`: verify remote `main` SHA → README → top of `CURRENT-STATE.md` → objective-relevant `CONTEXT-INDEX.md) retrieval → this protocol → selected evidence records. This protocol must not prescribe a conflicting order.
+- Use the single canonical entry order in `README.md`: verify remote `main` SHA → README → top of `CURRENT-STATE.md` → objective-relevant `CONTEXT-INDEX.md` retrieval → this protocol → selected evidence records. This protocol must not prescribe a conflicting order.
 - Explicitly activate `UAAL-ROOT-001` and relevant lineage for global vision, architecture, universal semantics/generalization, cross-domain composition, learning, memory/continuity or protocol-design objectives; do not load the whole archive for a narrow task.
 - For supplied conversations, use the `CHAT / TRANSCRIPT INTAKE CONTRACT` below. Declare actual source extent, inspected coverage, omissions and completeness status; never report full reading/absorption from a partial extract.
+- The RQ226 follow-up corrected residual entry-order instructions in Constitution §12, North Star §12, AI Frame continuity hardening and this protocol's North-Star addendum; all now defer to the README order. This closes those identified textual conflicts only, not the possibility of other historical variants or live activation failures.
 - Relevant prior experience must change an applicable task constraint, required observation, false-positive control, stop condition or acceptance criterion before prompt construction.
 - Persistence, retrieval, activation, decision impact and causal reuse remain separate evidence stages. Documentary harmonization does not prove operational reliability.
 - Existing canonical memory organs remain sufficient; no parallel memory or coordinator is justified. The technical route remains the top routing snapshot of `CURRENT-STATE.md`; RQ224 is not superseded by this method amendment.
@@ -1612,11 +1613,11 @@ The development target is not uncontrolled self-modification. It is governed, ob
 
 ## 2026-09-21 PROTOCOL ADDENDUM — GLOBAL DEVELOPMENT CONTINUITY
 
-For objectives involving biosofía artificial, autonomous development, scientific self-analysis, developmental acceleration, or reduction of routine human coordination, activate first:
+For objectives involving biosofía artificial, autonomous development, scientific self-analysis, developmental acceleration, or reduction of routine human coordination, first complete the canonical entry sequence defined by `README.md`. Only then activate the North Star as an objective-specific strategic source:
 
 `00-GLOBAL-DEVELOPMENT-NORTH-STAR-2026-09-21.md`
 
-Then reconcile `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `SYMBIOSIS-MAP.md`, `UNRESOLVED-KNOWLEDGE.md`, the relevant biosofía thesis/roadmap, and the exact current branch/SHA/runtime.
+Supplement the current-state orientation with the relevant `SYMBIOSIS-MAP.md`, `UNRESOLVED-KNOWLEDGE.md`, biosofía thesis/roadmap and exact branch/SHA/runtime evidence as required by the objective. The North Star is not an entry-order or current-routing authority.
 
 The strategic objective is not unrestricted autonomy. It is to make verified experience causally reusable while progressively removing routine human transport from the loop and preserving governance, security and independent verification.
 

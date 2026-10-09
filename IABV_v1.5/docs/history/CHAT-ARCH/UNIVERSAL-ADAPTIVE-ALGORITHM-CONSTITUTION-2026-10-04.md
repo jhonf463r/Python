@@ -219,8 +219,11 @@ Every significant development cycle should follow:
 
 Participating AIs are temporary participants in one developmental field.
 
-On entry:
-`README → CURRENT-STATE → UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific records`.
+On entry, follow the single canonical sequence defined in `README.md`; this Constitution is objective-conditioned conceptual context, not a competing entry step or routing authority:
+
+`verify remote main SHA → README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX relevant records → MEMORY-OPERATING-PROTOCOL method → objective-specific evidence`
+
+When the objective materially touches global vision, architecture, universal semantics/generalization, cross-domain composition, learning, memory/continuity or protocol design, activate `UAAL-ROOT-001`, the relevant Constitution sections and concept lineage at the objective-conditioned stage defined by README.
 
 Each AI must preserve:
 `what the human introduced → what the AI inferred → what was tested → what was observed → what was verified → what changed → what remains unresolved`.

@@ -1,3 +1,11 @@
+## 2026-10-09 METHOD DELTA — RQ226 FOLLOW-UP: RESIDUAL ENTRY ORDER
+
+Canonical: `CHAT-ARCH-2026-10-09-226-rq226-followup-residual-entry-sequence-reconciliation.md`.
+
+The first RQ226 writeback aligned the principal projections but left four identified imperative variants. Constitution §12, North Star §12, AI Frame continuity hardening and the MOP North-Star-first addendum now defer to the single README order. This is a correction of documentary instructions, not evidence that a fresh AI actually follows them. No new memory/store/coordinator is required; `CURRENT-STATE.md` remains the only current routing authority and RQ224 remains the next technical frontier.
+
+---
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ226 CONTINUITY / KNOWLEDGE-ACQUISITION AUDIT
 
 Canonical: `CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md`.

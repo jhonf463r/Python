@@ -1,10 +1,20 @@
+## 2026-10-09 METHOD UPDATE — RQ226 FOLLOW-UP: RESIDUAL ENTRY ORDER CORRECTED
+
+Canonical follow-up: [CHAT-ARCH-2026-10-09-226-rq226-followup-residual-entry-sequence-reconciliation.md](CHAT-ARCH-2026-10-09-226-rq226-followup-residual-entry-sequence-reconciliation.md).
+
+A post-writeback review found that specific prescriptive entry blocks survived in Constitution §12, North Star §12, AI Frame continuity hardening and the MOP North-Star-first addendum. Those identified blocks have now been changed to defer exclusively to the README's canonical order. This closes the named documentary conflicts only; it does not claim exhaustive review of all historical files or prove operational compliance.
+
+The parent audit remains [RQ226 adjudication](CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md). Existing memory responsibilities remain sufficient; no parallel memory/coordinator is justified. This method/navigation record does not supersede the technical route: `CURRENT-STATE.md` still routes RQ224 as the next technical frontier. Operational continuity and causal reuse remain unproven pending separate tests.
+
+---
+
 ## 2026-10-09 METHOD UPDATE — RQ226 CONTINUITY AUDIT ADJUDICATED
 
 Canonical adjudication: [CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md](CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md).
 
 Accepted within scope: `RQ226_AUDIT_COMPLETE_WITH_FINDINGS`. The audit found inconsistent orders for the entry surfaces, a need for an explicit objective-conditioned UAAL activation trigger, and no uniform intake contract for distinguishing complete supplied chats from partial extracts. Existing memory responsibilities remain sufficient; no parallel memory/coordinator is justified.
 
-Documentary projections have been harmonized. This entry is method/navigation evidence only and does not supersede the technical route: `CURRENT-STATE.md` still routes RQ224 as the next technical frontier. Operational continuity and causal reuse remain unproven pending a separate test.
+The initial writeback aligned several projections but did not remove every legacy entry instruction; the bounded follow-up is recorded above. Documentary changes do not prove operational retrieval reliability or causal reuse. This entry is method/navigation evidence only and does not supersede the technical route: `CURRENT-STATE.md` still routes RQ224 as the next technical frontier.
 
 ---
 ## 2026-10-09 ROUTING UPDATE — RQ223 DESIGN RECONCILED; RQ224 TRUST SOURCE NEXT

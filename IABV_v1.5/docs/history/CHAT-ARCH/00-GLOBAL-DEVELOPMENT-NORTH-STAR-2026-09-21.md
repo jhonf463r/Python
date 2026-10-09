@@ -167,16 +167,17 @@ Toda afirmación debe poder volver a objective → claim → artifact/source →
 
 ## 12. OPERATIVE LOOP FOR FUTURE CHATS
 
-1. Leer este documento.
-2. Leer MEMORY-OPERATING-PROTOCOL y CURRENT-STATE.
-3. Activar CONTEXT-INDEX / SYMBIOSIS-MAP / UNRESOLVED-KNOWLEDGE.
-4. Reconciliar branch + SHA + runtime.
-5. Clasificar el objetivo como scientific circuit, symbiosis/I0-I2, L5-L7 learning, systemic integrity, developmental A-D o autonomy A0-A10.
-6. Encontrar first open causal edge.
-7. Seleccionar capability-fit actor.
-8. Ejecutar el mínimo experimento discriminante.
-9. Verificar independientemente.
-10. Escribir ΔK/Δπ/ΔB/ΔY y el siguiente gate.
+Antes de aplicar este loop, completar exclusivamente la secuencia canónica definida por `README.md`; este documento estratégico no sustituye la verificación inicial de SHA ni ordena leerlo primero:
+
+`verify remote main SHA → README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX relevant records → MEMORY-OPERATING-PROTOCOL method → objective-specific evidence`
+
+Después de completar la entrada canónica, aplicar el loop operativo pertinente:
+1. Clasificar el objetivo como scientific circuit, symbiosis/I0-I2, L5-L7 learning, systemic integrity, developmental A-D o autonomy A0-A10.
+2. Encontrar first open causal edge.
+3. Seleccionar capability-fit actor.
+4. Ejecutar el mínimo experimento discriminante.
+5. Verificar independientemente.
+6. Escribir ΔK/Δπ/ΔB/ΔY y el siguiente gate.
 
 Nunca comenzar desde la cronología completa del chat.
 

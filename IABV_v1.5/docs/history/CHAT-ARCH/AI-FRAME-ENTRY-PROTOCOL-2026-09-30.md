@@ -365,10 +365,10 @@ Always report the concrete IA destination to the human.
 
 ## 2026-10-03 CONTINUITY ENTRY HARDENING
 
-Before activating any objective-specific protocol, historical handoff, or domain record, the participant must read the **CURRENT-STATE top routing snapshot**.
+Before activating any objective-specific protocol, historical handoff, or domain record, complete the single canonical entry sequence defined by `README.md`. This section is a reminder, not a separate abbreviated order; verify and pin the remote SHA before treating repository content as current truth.
 
-Required order:
-`README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific records`.
+Canonical order:
+`verify remote main SHA → README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX relevant records → MEMORY-OPERATING-PROTOCOL method → objective-specific evidence`
 
 Reason:
 a new chat may otherwise enter through a locally relevant protocol and omit a material recent delta stored elsewhere.
