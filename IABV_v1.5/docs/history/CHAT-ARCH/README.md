@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE ROUTE — READ-ONLY MCP STARTUP IMPACT PLAN AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
+
+Human Domain Owner approved Codex to prepare a read-only static startup-impact and isolation plan only. No server start/restart/reconnect, MCP call/list, process inspection, provider check, state refresh, test, compilation, or modification is authorized.
+
+Inspect only the known `server.py`, `bootstrap.py`, `world_model_service.py`, `docs/mcp-bridge.md`, and RQ13-108/109 records; preserve the exact dirty/detached worktree state. Trace effects as demonstrated/conditional/unresolved, evaluate isolation proposals and abort conditions, and stop at unresolved callees outside the approved set. Coordinator review comes before any separate future execution authorization.
+
 ## 2026-10-09 ACTIVE ROUTE — NO PASSIVE SOURCE PROOF; OWNER DECISION NEXT
 
 Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
