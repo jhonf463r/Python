@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 P1 PRELOAD STOP: INTEGRITY SID UNKNOWN
+
+[FACT FROM SUPPLIED OUTPUT] The diagnostic reported `integrity_sid=UNKNOWN`, `medium_integrity=false`, `is_administrator=false`, and stopped before DLL load.
+
+[ACTOR-REPORTED] Host/build/architecture, DLL SHA/signature checks, contract byte-hash verification, script/artifact hashes and no-load/no-export execution details were supplied by Codex; temporary artifact bytes have not been independently re-read by the coordinator.
+
+[INFERENCE] The process's integrity state may have failed the gate, or the token/SID detector may have failed to obtain or parse the state. Current evidence does not distinguish these cases. Non-administrator status alone does not establish MEDIUM integrity.
+
+[UNPROVEN] Actual integrity SID for the diagnostic process; exact detector root cause; LoadLibraryExW outcome; both dynamic symbol resolutions; API behavior and containment guarantees.
+
+[NEXT EDGE] Read-only, exact-byte-verified static inspection of the reported script and its integrity detection/guard branches by Codex. No protected operation or new experiment until reconciliation and an explicit authorization decision if needed.
+
+Source: `CHAT-ARCH-2026-10-08-184-rq21-p1-integrity-guard-stop-and-detector-readiness.md`.
+
+---
+
 ## 2026-10-08 — P1 STOP CLASSIFIED AS LOCAL CONTRACT AVAILABILITY; REMOTE CANONICAL EXISTS
 
 [REPORTED FACT] Codex could not find the frozen P1 contract in local `C:\\Python` and correctly returned `STOP_READINESS_MISMATCH`. It did not create/run a diagnostic or load/invoke anything.
