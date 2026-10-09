@@ -1,3 +1,9 @@
+## 2026-10-09 ROUTING UPDATE — RQ212 STATIC LAUNCHER / HASH SUPPLEMENT AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
+
+The Owner authorized only existing static launch/config/dependency artifacts for interpreter/transport and locally available exact Uvicorn version/source, plus SHA-256 for already-inspected RQ210 IABV source files whose hashes were omitted. Preserve and re-identify the dirty/detached worktree. Stop if evidence is not local; do not execute, inspect live processes, install/download, test/build or change files. No MCP runtime or operational snapshot. Overall readiness remains blocked; RQ21.200 is separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ210 ADJUDICATED; FASTMCP LIFECYCLE EDGE REMAINS OPEN
 
 Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
