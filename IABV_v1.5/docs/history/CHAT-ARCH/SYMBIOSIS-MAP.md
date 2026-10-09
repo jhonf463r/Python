@@ -1,3 +1,22 @@
+## 2026-10-09 SYMBIOSIS TRANSFER — MCP STARTUP PLAN BLOCKED; NEW AUDIT SCOPE REQUIRED
+
+Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
+
+Knowledge Delta:
+- Codex reports a bootstrap path that loads a local secrets file into the process environment, wires services and creates directories, requests EnvironmentSelfAwareness and WorldModel refresh, and can lead to snapshot persistence.
+- WorldModel scan paths can observe window/focus, enumerate host processes, refresh ToolCards and make network probes when cache conditions require.
+- `IABV_MCP_SUBPROCESS=1` and `IABV_DEFER_TOOL_PROBE=1` do not prove suppression of every scan/refresh/perception route.
+- Direct implementations of EnvironmentSelfAwareness, ToolRegistry, UniversalPerception, storage/DB, and some MCP/SDK paths are still unresolved.
+
+Method Delta:
+- Static source review does not establish runtime isolation while effectful callees are unresolved.
+- Scope expansion beyond RQ204's exact six paths requires separate owner authorization; no recursive or broad search.
+- Preserve the known dirty detached worktree; do not launch or reconnect.
+
+Routing Delta:
+- Obtain owner authorization for a bounded read-only follow-on audit of named direct dependencies and immediate effectful helpers, using only import/call-site paths. Stop and request new scope if deeper recursion is necessary.
+- No launch, MCP tool call, process inspection, tests, provider checks or mutations. Snapshot disclosure remains a separate permission.
+
 ## 2026-10-09 SYMBIOSIS TRANSFER — OWNER AUTHORIZED READ-ONLY STARTUP IMPACT PLAN
 
 Canonical record: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
