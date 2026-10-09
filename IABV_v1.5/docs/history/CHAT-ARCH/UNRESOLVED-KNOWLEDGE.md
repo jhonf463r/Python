@@ -1,3 +1,25 @@
+## 2026-10-09 — RQ216 CONTRACT PROPOSAL ADJUDICATED; OWNER POLICY PENDING
+
+Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
+
+[ACCEPTED] `RQ216` is complete as a design/contract proposal only.
+
+[OWNER DECISIONS REQUIRED BEFORE IMPLEMENTATION]
+1. Approver authority (recommended first tranche: explicit human Owner approval only).
+2. Per-operation/resource/exact-scope authorization (recommended: yes).
+3. Missing/unknown/stale/malformed/denied/nonmatching permission (recommended: deny).
+4. Canonical workspace roots and protected paths (Owner must name them; do not infer).
+5. Git policy (recommended explicit file allowlist, reject unrelated staged changes, no push in tranche one).
+6. Exact immutable source baseline (do not treat dirty `e46d830...` worktree as clean; consider the separately recorded pinned baseline `5b1d89022ee4cdc63c1f88e050f086b40a42875c` only if Owner chooses it).
+7. Separate clean worktree from chosen baseline for future edits; preserve current dirty/detached worktree.
+8. Phase boundary (recommended future implementation task allows source edits only; tests/build/runtime separately authorized).
+
+[UNRESOLVED MATERIAL DEPENDENCY]
+A trusted producer/verifier of mutation approval, authority identity and auditable decision receipt was not identified in the bounded source review. Do not substitute observation permission or invent an API; surface this as a scoped dependency if implementation requires it.
+
+[NOT AUTHORIZED]
+No source edits, patches, worktree creation/change, Git mutation, tests/builds, runtime, MCP, process inspection, DB/secrets/snapshot, installation/download. Global readiness remains blocked; RQ13-111 and RQ21.200 separate.
+
 ## 2026-10-09 — RQ216 DESIGN-ONLY CONTRACT AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
