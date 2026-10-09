@@ -1,3 +1,21 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.193 V4 CHALLENGE RECONCILED
+
+Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
+
+Knowledge Delta:
+- Independent review confirms loss of observed error 122 on invalid-length branches; failure remains fail-closed.
+- Claude reports triple-backtick lines in its input that are absent from coordinator-pasted v4 source. This is a handoff-integrity issue until exact saved bytes are checked.
+- F1 remains conservative under unresolved ownership; F7's 84-byte ceiling is retained but “no padding” is not proven.
+
+Method Delta:
+- Preserve observed native error codes even if subsequent validation fails.
+- Avoid nested Markdown source fences and verify exact artifact identity before deriving a candidate.
+- Never close an unconfirmed handle to manufacture cleanup success.
+
+Routing Delta:
+- Codex verifies the exact v4 artifact and produces separate v5 with F8 fixed and the F7 comment qualified.
+- A new static challenge follows on the complete v5 source with safe non-nested delimiters. No protected operation is authorized.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.192 V4 SOURCE RECONCILIATION
 
 Knowledge Delta:
