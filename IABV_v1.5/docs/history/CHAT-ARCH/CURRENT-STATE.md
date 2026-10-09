@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ214 PLAN ACCEPTED; OWNER POLICY GATE NEXT
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
+
+Accept `STATIC_REMEDIATION_PLAN_COMPLETE_WITHIN_SCOPE` for the plan only. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; isolation is not established. RQ214 appropriately cross-links mutation authorization, bootstrap side effects, write/Git boundaries, lifecycle/transport, provenance/confidentiality and RQ13-111's separate causal frontier.
+
+Before any code implementation, Owner must choose the exact source baseline/worktree, mutation authority and scope, fail-closed handling of absent/unknown/stale/nonmatching permission (recommended: block), allowed workspace/protected paths and Git push policy. Treat provenance as a stage-zero gate; do not modify the existing dirty/detached worktree. No runtime, MCP, tests/builds or mutation are authorized. RQ21.200 remains separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ212 ADJUDICATED; UVICORN REMAINS BLOCKED
 
 Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
