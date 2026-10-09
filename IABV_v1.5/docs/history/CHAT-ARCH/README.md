@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — RE-ISSUE V2 STATIC AUDIT WITH SOURCE INLINE
+
+Canonical: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`.
+
+The independent review returned `SOURCE_UNAVAILABLE_OR_INCOMPLETE` because it lacked the v2 source and could not access Codex's local Windows temp path. This establishes no code finding. Since the full source is already in the coordinator conversation, route it again inline rather than asking the user to repeat it.
+
+NEXT: Sonnet/Claude, independent static Win32/.NET interop challenge; no compile/run, token query, DLL load, export resolution, or Git mutation.
+
+---
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V2 DETECTOR STATIC REVIEW PASS; SONNET CHALLENGE NEXT
 
 Canonical: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`.
