@@ -1,3 +1,15 @@
+## 2026-10-08 ACTIVE OVERLAY — P0 INTEGRITY-CHECK SCRIPT FAILED BEFORE STATIC RECHECK
+
+Canonical record: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
+
+The 19:16:20 local console run on `MSI` reported PowerShell `5.1.26100.9549` and user `MSI\\faber`, then failed because `WindowsIdentity.Groups` produced no integrity SID and `$levels[$integritySid]` was indexed with null. The script did not reach DLL re-hash/signature checks, `dumpbin` discovery, independent export verification, or report artifact creation.
+
+**Status:** diagnostic-script defect; integrity level UNKNOWN. This failure is not evidence of a DLL or OS defect. RQ21.58 P0 remains provisional. Repair using null-safe `whoami.exe /groups /fo csv /nh`; proceed only if exactly one integrity SID is observed and it is `S-1-16-8192` (MEDIUM). Do not elevate, install tools, load the DLL, invoke the API, or execute a candidate.
+
+FIRST OPEN EDGE: corrected non-elevated token-integrity query → if MEDIUM, continue static hash/signature check and independent `dumpbin /exports` only if already installed; else stop. No Codex or Devin routing.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P0 STATIC EXPORT RESULT RECEIVED / INDEPENDENT VERIFICATION OPEN
 
 Canonical record: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
