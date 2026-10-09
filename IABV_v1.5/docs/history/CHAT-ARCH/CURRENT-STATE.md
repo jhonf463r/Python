@@ -1,3 +1,15 @@
+## 2026-10-09 ACTIVE OBJECTIVE — IABV MCP FIRST USE BLOCKED AT PROCESS / CLIENT ATTRIBUTION
+
+Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
+
+Codex's preflight is accepted as BLOCKED_BY_STARTUP_SIDE_EFFECTS. Remote source at observed main d059f783a24d2166f40247f374164165fba15292 confirms that world_model_snapshot(refresh=False, full=False) reads/decorates the in-memory WorldModel snapshot without requesting a refresh in that call, but the tool entrypoint has no explicit observation-permission gate. Starting/reconnecting the server can trigger AppBootstrap, EnvironmentSelfAwareness/WorldModel observation/persistence and conditionally provider health checks.
+
+Codex reports two MCP server child processes and a configured alternative worktree, but the loaded source, PID-to-session mapping, and effective current-client tool surface are not established. The current ChatGPT tool surface does not expose IABV MCP tools. Do not invoke world_model_snapshot, start/restart/reconnect the bridge, call orchestrator_preview/handle_request, or probe cloudflared.
+
+NEXT: CODEX — read-only attribution of the two already-running processes, exact configured worktree/source provenance, and tool availability in the same Codex client session. No MCP handshake or tool call. If provenance is closed, coordinator requests explicit human permission for one world_model_snapshot(refresh=False, full=False) read with disclosure boundaries for windows/focus/network/tool state. If the tool is unavailable and startup/reconnect is required, stop and re-present transitive effects for fresh authorization.
+
+RQ21.200 remains a separate open frontier: consumer design accepted, implementation blocked on thread-impersonation and TOCTOU decisions plus source-derived output schema/stream contract. Pinned executable baseline 5b1d89022ee4cdc63c1f88e050f086b40a42875c is distinct from current main.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.200 CONSUMER DESIGN ACCEPTED; CONTRACT GATES OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
