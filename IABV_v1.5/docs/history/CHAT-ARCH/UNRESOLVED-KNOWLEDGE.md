@@ -1,3 +1,17 @@
+## 2026-10-09 — RQ206 TRANSITIVE AUDIT BLOCKED; DIRECT ADAPTER / GOVERNANCE EDGES NEXT
+
+Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.
+
+[ACCEPTED CLASSIFICATION] `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+[CODEX-REPORTED SOURCE PATHS] Bootstrap constructs and wires DB/storage/repositories, EnvironmentSelfAwareness and WorldModel; the reported paths can reach provider health, tool-card adapters, environment/world scans, process/window data, network probes, local JSON/SQLite/log persistence and MCP self-update registration. These are source paths/conditional effects, not proven runtime occurrences.
+
+[METACOGNITIVE NOTE] Local Codex worktree searches failed to find RQ201–RQ206 memory terms, but coordinator verified the canonical records and projections on remote `main`; do not conflate stale/missing local docs with canonical memory. Dirty detached source at `e46d830...` and modified `server.py` must remain distinct from remote main and historical process code-as-loaded.
+
+[NEXT] Complete already-authorized direct edges only: identify the adapters bound to the inspected ToolRegistry route and read their immediate availability helpers; prove static guard coverage for self-update mutating handlers; inspect directly related transport selection and shutdown/cleanup. Provide path/lines/hash evidence. Stop at further material dependency requiring broader scope.
+
+[NOT AUTHORIZED] MCP calls, process interaction, launch/reconnect, scans/health checks, snapshot, DB/secrets read, tests/compilation, broad search or mutation. Future launch and operational snapshot disclosure require separate permission. RQ21.200 remains independent.
+
 ## 2026-10-09 — BOUNDED TRANSITIVE AUDIT AUTHORIZED; SCOPE GATES OPEN
 
 Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
