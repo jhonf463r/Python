@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE ROUTE — RQ219 ADJUDICATED; OWNER DECISION FOR EXACT UI TRUST EDGE
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
+
+RQ219 is accepted as `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE`: current examined mutators lack a verifiable owner authorization receipt bound to operation/resource/scope. WorldModel gates are observation permissions; broker approval can be auto-resolved and does not independently prove Owner identity. Do not claim that all authentication is absent. The next exact unresolved path is the UI registration of `HumanApprovalBroker.prompt_handler` and identity/caller context of `approve(request_id, payload)`.
+
+Await separate Owner authorization before inspecting that path. No edits, tests/builds, worktree changes, runtime/MCP/process/state access, installation/download or Git mutation. Overall readiness remains blocked. RQ13-111 and RQ21.200 stay separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ219 STATIC MUTATION-AUTHORITY DISCOVERY
 
 Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
