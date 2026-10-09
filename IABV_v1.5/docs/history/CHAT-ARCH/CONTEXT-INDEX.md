@@ -1,3 +1,12 @@
+## 2026-10-09 ROUTING UPDATE — NO PASSIVE PROOF OF MCP SOURCE-AS-LOADED
+
+Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
+
+Codex's bounded RQ202 analysis is accepted as `NO_PASSIVE_PROOF_IDENTIFIED`: process parentage and the same Codex session's effective IABV tool catalog do not prove the exact Python code loaded in the live process. No already-identified passive startup artifact records a verifiable source fingerprint. A modified local `server.py` and a compatible tool description are corroborating only.
+
+NEXT: Human Domain Owner chooses whether to authorize a read-only source-level startup-impact/isolation plan for prospective controlled attribution (recommended) or request a separate method-specific proposal for live-process inspection. Do not attach/dump/suspend/inject, call MCP, start/reconnect, or disclose operational state. A prospective process cannot prove what the historical PID loaded; any later snapshot read requires separate permission. RQ21.200 remains separate.
+
+
 ## 2026-10-09 ROUTING UPDATE — FIRST IABV MCP USE / ATTRIBUTION BEFORE AUTHORIZATION
 
 Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
