@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — NO PASSIVE PROOF OF MCP SOURCE-AS-LOADED; OWNER DECISION NEXT
+
+Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
+
+Codex's RQ202 feasibility report is accepted as `NO_PASSIVE_PROOF_IDENTIFIED`. Prior evidence associates observed MCP PID 16768 as a child of Codex PID 10600 and confirms that the same Codex session's effective catalog exposes five IABV tools. No already-identified passive artifact proves the exact Python module/code loaded in the server process. The modified, dirty/detached worktree and matching tool-description text are corroborating evidence only.
+
+Recommendation: do not attach to, dump, suspend, inject into, restart or reconnect the existing process merely to close this gap. Prefer evaluating a prospective controlled attribution path, which would be prospective and not retroactive. Before any launch/reconnect, Codex should prepare a read-only source-level inventory and isolation plan for AppBootstrap, EnvironmentSelfAwareness/WorldModel scans, persistence and conditional provider health checks. No launch is authorized. Any later `world_model_snapshot(refresh=False, full=False)` call also requires separate explicit permission for the operational state it may disclose.
+
+NEXT: Human Domain Owner chooses whether to authorize the bounded read-only startup-impact/isolation plan (recommended) or asks for a distinct proposal for live-process inspection. No MCP invocation, process intervention, startup/reconnect or snapshot disclosure is authorized by the current record. RQ21.200 remains separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — MCP TOOL EXPOSURE CONFIRMED; LOADED SOURCE STILL UNPROVEN
 
 Canonical: CHAT-ARCH-2026-10-09-202-iabv-mcp-source-attribution-still-unproven.md.
