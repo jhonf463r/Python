@@ -1,3 +1,12 @@
+## 2026-10-09 REGISTRATION — NO PASSIVE PROOF OF MCP SOURCE-AS-LOADED
+
+Canonical record: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md
+
+Summary: Codex's bounded feasibility report found no already-identified passive artifact proving the exact Python module/code loaded into MCP PID 16768. Process parentage and effective tool exposure are useful but do not close source identity. Coordinator accepts `NO_PASSIVE_PROOF_IDENTIFIED` and recommends not attaching/dumping/injecting into the old process merely to clear attribution. Next gate: owner decides whether to authorize a read-only source-level impact/isolation plan for prospective controlled attribution. No MCP call, startup/reconnect, process intervention, or operational snapshot is authorized.
+
+Tags: IABV MCP / no passive proof / source-as-loaded / prospective attribution / bootstrap effects / owner decision / no invocation
+
+
 ## 2026-10-09 REGISTRATION — MCP SOURCE ATTRIBUTION STILL UNPROVEN
 
 Canonical record: CHAT-ARCH-2026-10-09-202-iabv-mcp-source-attribution-still-unproven.md
