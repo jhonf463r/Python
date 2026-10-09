@@ -1,3 +1,11 @@
+## 2026-10-09 ROUTING UPDATE — RQ207 BLOCKED; BOUNDED DIRECT-SCOPE SUPPLEMENT NEXT
+
+Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.
+
+RQ207's `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES` is accepted. Coordinator review identified unclosed direct-scope details: omitted `local_cli`, unverified current-worktree hash for the lazy `site_explorer` service, fail-open network-state handling in the reported dirty server source, mutator path/repository scope, and incomplete lifecycle cleanup/race analysis.
+
+NEXT: Codex performs a targeted static supplement in the same dirty/detached worktree and existing RQ206/RQ207 scope. Exact file paths, line ranges, local hashes and source-vs-runtime labels required. Stop before SDK internals or permission-gate producer recursion; obtain a separate scope decision for those. No runtime/MCP operation. RQ21.200 remains separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ206 ACCEPTED; COMPLETE DIRECT ADAPTER / GOVERNANCE EDGES ONLY
 
 Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.

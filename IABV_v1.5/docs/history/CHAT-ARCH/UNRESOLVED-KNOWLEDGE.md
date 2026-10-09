@@ -1,3 +1,24 @@
+## 2026-10-09 — RQ207 ADJUDICATION: DIRECT-SCOPE GAPS / FAIL-OPEN AND LIFECYCLE RISKS
+
+Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.
+
+[ACCEPTED CLASSIFICATION] `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+[DIRECT SOURCE FINDINGS / CODEx-REPORTED DIRTY SERVER]
+- The reported network gate allows `network_status=None` to pass for `requires_network=True`; verify the exact dirty source excerpt/hash in a supplement.
+- `AppBootstrap.shutdown()` calls `self.stop()` despite no `AppBootstrap.stop` definition in the reported source; run-finally does not call EnvironmentSelfAwareness/WorldModel stop methods.
+- The untracked/unjoined `_deferred_mcp_start` daemon thread can race the finalizer and may create a tunnel after known handles were cleaned up.
+- `apply_text_patch` lacks the sensitive-path check applied by `write_repo_file`; the latter's denylist comparison is case-sensitive. `git_commit_and_push(files=".", push=True)` can stage/push unrelated changes if invoked against a dirty target worktree.
+- The adapter table omitted registered `local_cli`; exact local hash for `site_exploration_service.py` remains missing.
+
+[UNRESOLVED]
+- SDK-level `mcp.run` transport/container cleanup.
+- Whether an outside dynamic patch supplies `AppBootstrap.stop`.
+- Actual live card inventory, destination/config values, process/session attribution, and any actual runtime effects.
+- Whether every mutator call is guaranteed a required WorldModel human-approval gate.
+
+[NEXT] Codex targeted source-only supplement within RQ206/RQ207 scope; no execution. SDK or permission-gate-producer inspection requires further exact owner authorization. No launch/reconnect/snapshot; RQ21.200 remains distinct.
+
 ## 2026-10-09 — RQ206 TRANSITIVE AUDIT BLOCKED; DIRECT ADAPTER / GOVERNANCE EDGES NEXT
 
 Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.

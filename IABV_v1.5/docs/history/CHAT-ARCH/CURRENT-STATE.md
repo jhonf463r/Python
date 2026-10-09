@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ207 SUPPLEMENT: GOVERNANCE UNKNOWN-STATE AND LIFECYCLE GAPS
+
+Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.
+
+RQ207 remains classified `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. Coordinator reconciled the result against canonical remote projections and source at the reported worktree HEAD. The report is substantive, but direct-scope omissions and source-level issues need a narrow supplement: `local_cli` coverage, `site_explorer` current-worktree provenance, the dirty server network gate for unknown status, sensitive-path coverage in mutating handlers, and startup/shutdown thread cleanup.
+
+Key finding: the reported predicate for network-required routes allows `network_status=None` to pass. Key lifecycle concerns: `AppBootstrap.shutdown()` calls a `stop()` not defined in AppBootstrap, observer stop methods are not called from run-finally, and the deferred-start daemon thread can race with final cleanup. These are static/source findings, not evidence of occurrence in a live process.
+
+NEXT: CODEX, targeted read-only supplement within the already authorized RQ206/RQ207 source scope. Preserve the dirty/detached worktree and verify exact hashes/line ranges; do not repeat the complete audit. No launch/reconnect, MCP call, process interaction, DB/secrets read, test, compilation or mutation. SDK internals / permission-gate producer inspection need a separate exact scope decision. Snapshot disclosure and RQ21.200 remain separate.
+ 
 ## 2026-10-09 ACTIVE OBJECTIVE — TRANSITIVE MCP AUDIT BLOCKED AT ADAPTER / GOVERNANCE EDGES
 
 Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.

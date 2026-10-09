@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE ROUTE — RQ207 DIRECT-SCOPE SUPPLEMENT REQUIRED
+
+Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.
+
+RQ207 is accepted as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`, but the report has a few unclosed direct-scope edges and newly reconciled static risks: unknown network state can pass the reported network-required gate; self-update path protections are asymmetric; AppBootstrap cleanup does not close all observer/thread paths and has an apparent missing stop member plus a deferred-start race. `local_cli` is omitted from the adapter table, and the local site-exploration service hash is not supplied.
+
+NEXT: Codex gives a targeted static supplement only, preserving the dirty/detached worktree. Do not repeat RQ207 wholesale. Include exact source paths, line ranges and SHA-256; confirm direct service availability behavior; adjudicate mutation and lifecycle gaps. Stop at SDK-internal cleanup or deeper permission-gate implementation until a separate scope is authorized. No MCP call, process interaction, start/reconnect, DB/secrets read, test, compilation, snapshot or mutation. RQ21.200 is independent.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ206 OPEN EDGES
 
 Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.

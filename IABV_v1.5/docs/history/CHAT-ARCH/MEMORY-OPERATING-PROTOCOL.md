@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — RQ207 ADJUDICATION / DIRECT-SCOPE SUPPLEMENT
+
+- Accept the RQ207 primary classification `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`, but do not automatically treat every stated blocker as an uncloseable dependency: the report omitted at least one registered adapter and lacked current-worktree identity for the lazy site-explorer service.
+- A source-level network gate requiring connectivity must fail closed when the network-state object is absent. The reported predicate `requires_network and network is not None and not connected` allows the unknown state to pass; bind this claim to the dirty local `server.py` SHA/source excerpt and do not use remote HEAD as a substitute for the dirty file.
+- Inspect lifecycle paths metacognitively: a finalizer that terminates known process handles may race a detached startup thread that creates a later child, and observer services with stop/join methods are not closed merely because their threads are daemon threads.
+- For self-update handlers, separate governance-callback ordering from path scope and repository-state scope: a guard before mutation does not by itself establish sensitive-path protection, human consent per call, or safe selection of files to commit.
+- Preserve the known dirty detached worktree; keep remote canonical-memory provenance separate from current source provenance, and never infer historical PID 16768's loaded code from present files or tool descriptions.
+- Next: Codex provides only a targeted static supplement inside already authorized RQ206/RQ207 direct scope, with line ranges and SHA-256 for all referenced local files. No runtime work. SDK internals or deeper permission-gate producers require a new, exact owner scope.
+- No MCP calls/list, process interaction, start/reconnect, scans/health probes, operational snapshot, secrets/DB reads, tests, compilation or mutation. RQ21.200 remains independent.
+
 ## 2026-10-09 METHOD AMENDMENT — TRANSITIVE MCP AUDIT / CANONICAL MEMORY VS LOCAL WORKTREE
 
 - Accept RQ206 as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. Source-level paths connect bootstrap to EnvironmentSelfAwareness, WorldModel, provider health, adapters/perception, persistence/logging and MCP self-update registration, but this is not runtime evidence.

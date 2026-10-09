@@ -1,3 +1,22 @@
+## 2026-10-09 SYMBIOSIS TRANSFER — RQ207 ADJUDICATED; MUTATION / LIFECYCLE GAPS SHARPENED
+
+Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.
+
+Knowledge Delta:
+- Availability refreshes can conditionally connect bootstrap to provider HTTP calls, MCP initialize POSTs, local CLI/process/window probes, and cache/card/log/marker persistence. The report's adapter table omitted the registered `local_cli` key; the lazy `site_explorer` path needs current-worktree provenance.
+- The reported governance predicate accepts missing network status on a network-required route. Callback-before-mutation is a positive guard-order fact, but it does not prove per-call human authorization or sensitive-path safety.
+- `apply_text_patch` lacks the sensitive-path denylist used by `write_repo_file`; the write handler's string check is case-sensitive; `git_commit_and_push` defaults to staging `.` and pushing. A dirty-worktree collision is conditional, not an observed action.
+- `AppBootstrap.shutdown()` calls an apparently undefined `self.stop()`; run-finally does not stop/join EnvironmentSelfAwareness/WorldModel observers; an unjoined deferred-start daemon thread may create a process after cleanup. Runtime occurrence is unproven.
+- A normal bootstrap path remains unsuitable as an isolation proof. Snapshot persistence remains distinct from causal environment-to-selection learning (RQ13-111).
+
+Method Delta:
+- Close omitted direct helpers before authorizing wider inspection. For SDK cleanup semantics or the implementation that creates/guarantees permission gates, request a separately scoped review.
+- Keep source-level finding, current dirty bytes, historical code-as-loaded, and runtime occurrence as separate evidence classes.
+
+Routing Delta:
+- Codex: targeted static supplement only, same worktree/scope; no repeat full audit, tests, MCP calls, process interaction or mutation.
+- No startup/reconnect or operational snapshot. RQ21.200 remains separate.
+
 ## 2026-10-09 SYMBIOSIS TRANSFER — MCP EFFECT GRAPH RECONCILED; DIRECT EDGES STILL OPEN
 
 Canonical record: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.

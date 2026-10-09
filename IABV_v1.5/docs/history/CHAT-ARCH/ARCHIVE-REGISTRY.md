@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ207 ADJUDICATION / DIRECT-SCOPE SUPPLEMENT ROUTED
+
+Canonical record: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md
+
+Summary: Accept RQ207 as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`, with additional coordinator findings: the reported network-required governance predicate allows an unknown network state; the self-update patch handler lacks the write handler's sensitive-path denylist; the default git handler can stage all workspace changes; AppBootstrap shutdown calls an apparently undefined stop method; observer stop methods are not called by run-finally; and a deferred-start thread can race cleanup. Adapter completeness also requires the omitted local_cli row and current-worktree provenance for site_explorer's lazy service. Runtime occurrence is not established. Next: narrow Codex static supplement; no execution or mutation.
+
+Tags: IABV MCP / RQ207 adjudication / fail-closed governance / lifecycle / adapter provenance / self-update / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ206 EFFECT GRAPH ACCEPTED; DIRECT EDGES STILL OPEN
 
 Canonical record: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md
