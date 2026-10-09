@@ -2,7 +2,7 @@
 
 ## PURPOSE
 
-Reconcile the supplied cross-chat transcript against the current GitHub memory surfaces, re-establish the exact first open edge, and prevent status drift. This is a continuity checkpoint, not a new technical experiment or a replacement for RQ21.197.
+Reconcile the supplied cross-chat transcript against the current GitHub memory surfaces, re-establish the exact first open edge, and prevent status drift. This is an administrative CHAT-ARCH episode 198 and continuity checkpoint only, not a new technical RQ21 adjudication, experiment, or replacement for RQ21.197. Any projection that calls it the “RQ21.198 continuity checkpoint” uses that label for continuity bookkeeping only; the latest technical decision remains RQ21.197.
 
 Checkpoint context reported by the user: 2026-10-08, approximately 22:20 America/Bogota.
 
