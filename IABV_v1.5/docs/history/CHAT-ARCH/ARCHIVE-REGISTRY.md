@@ -1,3 +1,12 @@
+## 2026-10-09 REGISTRATION — IABV MCP FIRST-USE PREFLIGHT ADJUDICATION
+
+Canonical record: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md
+
+Summary: Codex preflight correctly stops with BLOCKED_BY_STARTUP_SIDE_EFFECTS. Remote source verifies the target tool's no-refresh branch, but the tool has no explicit observation-permission gate. Local process provenance is reported but not attributable to exact loaded source/client session; current chat does not expose IABV tools. Next: read-only attribution of existing server processes/config/worktree and the actual Codex client surface; later, if sufficient, explicit permission for one snapshot read. No tool call or server restart authorized.
+
+Tags: IABV MCP / first use / process attribution / client exposure / observation permission / bootstrap side effects / RQ13 / fail closed
+
+
 ## 2026-10-08 REGISTRATION — RQ21.200 CONSUMER CONTRACT DRAFT ADJUDICATION
 
 Canonical record: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md
