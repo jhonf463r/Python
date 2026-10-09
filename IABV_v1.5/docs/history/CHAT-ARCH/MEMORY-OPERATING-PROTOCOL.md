@@ -1,3 +1,15 @@
+## 2026-10-08 METHOD AMENDMENT — STATIC CHALLENGE GATE FOR NATIVE INTEROP CANDIDATES
+
+For native interop candidate scripts, distinguish:
+`source supplied → static plausibility → artifact bytes/hash verified → independent static challenge → compilation → runtime observation`.
+None implies the next.
+
+After repairing a definite source-level gap, require an independent adversarial review when ABI layout, unmanaged pointer/buffer boundaries, error semantics or cleanup behavior could invalidate a safety/readiness gate. The challenge must operate on the complete source and classify definite defects separately from robustness concerns. Unless exact bytes are actually read back, a hash/path supplied by its creator remains actor-reported.
+
+Keep the protected operation and its authorization boundary separate from detector design. Preparation, static review or even a compile result does not authorize a load/export/candidate experiment.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — NATIVE DIAGNOSTIC CLEANUP IS EVIDENCE
 
 For native interop diagnostic candidates, preserving the primary API result is not enough if cleanup can fail. Record success/failure of resource-release calls (including `CloseHandle`) and capture relevant error state immediately, in a separate cleanup field so cleanup reporting does not overwrite the primary measurement result. Ensure result reporting covers both normal and early-return paths.
