@@ -1,3 +1,9 @@
+## 2026-10-08 CONTINUITY ROUTING — RQ21.198; RQ21.197 REMAINS ACTIVE
+
+Canonical continuity record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
+
+The supplied transcript adds no new consumer source identity or runtime evidence. Continue from RQ21.197. NEXT: Human Domain Owner/operator identifies the authoritative consumer/runner's exact source path or repository URL+commit/ref and expected v5-to-loader link (or explicitly states no such consumer exists). THEN: Codex audits that exact source read-only. Stop if source identity remains unavailable; no substitute runner, generic temp search, compile/run/token query or DLL/export action. Historic RQ21.182 authorization remains conditional and unconsumed.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.197 CONSUMER SOURCE UNAVAILABLE; IDENTIFY AUTHORITATIVE RUNNER
 
 Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
