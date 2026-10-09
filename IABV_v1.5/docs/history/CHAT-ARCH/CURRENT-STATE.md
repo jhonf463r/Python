@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE OVERLAY — P1 STOP WAS LOCAL CONTRACT AVAILABILITY; REMOTE CONTRACT EXISTS
+
+Canonical: `CHAT-ARCH-2026-10-08-183-rq21-p1-contract-local-availability-reconciliation.md`.
+
+Codex stopped before creating/running the diagnostic because the frozen contract was not present in its local `C:\\Python` tree. Independent remote read-back confirms the exact contract exists on GitHub `main`, blob SHA `7184f7822920ee9068a21ab75c3564b10e32ea83`. The prior result is a correct no-execution stop, not an API failure and not evidence that authorization is missing.
+
+**NEXT ACTION: CODEX** reads the exact remote canonical contract read-only, verifies its identity (if materialized outside the repo, compare `git hash-object` to the known blob SHA), then rechecks preconditions inside the fresh child process and resumes the already-authorized single P1 probe only if all gates pass. Do not ask the user to manually copy the document or repeat host/hash/signature checks. No worktree/Git-ref/source changes, installs, elevation, export invocation or candidate launch.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 LOAD-ONLY CONTRACT FROZEN; OWNER AUTHORIZED
 
 Canonical: `CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md`.
