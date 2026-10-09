@@ -1,3 +1,9 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V4 CHALLENGE RECONCILED; CODEX V5 NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
+
+F8 is confirmed: observed Win32 error 122 is discarded when requiredLength is outside 16..84; preserve it with the TokenInformationLength stage. Claude also reports fence lines inside its reviewer input, absent from coordinator-pasted v4 source; Codex must verify the exact v4 path/size/SHA before deriving v5. Next v5 fixes F8 and qualifies the F7 comment. No compilation/runtime/token/DLL/export/runner operation; record 182 authorization remains conditional and unconsumed.
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V4 SOURCE RECONCILED; INDEPENDENT CHALLENGE NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md.
