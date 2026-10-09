@@ -1,3 +1,17 @@
+## 2026-10-08 — RQ21.200 CONSUMER DESIGN: OWNER / SCHEMA GATES OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
+
+[ACCEPTED DESIGN] Invoke v5 and perform the one authorized LoadLibraryExW call inside the same fresh, short-lived, non-elevated PowerShell process. The outer launcher does not load the DLL. The design is not an implementation and does not prove enforcement.
+
+[OWNER DECISION OPEN] v5 observes the process primary token but not a thread impersonation token. Recommended fail-closed rule: no impersonation on the thread performing the gate/load; if a token exists or absence cannot be established, stop. Do not RevertToSelf and continue without explicit contract authority.
+
+[OWNER DECISION OPEN] Hash/signature verification of a path immediately before LoadLibraryExW does not prove that exactly those bytes are the mapped image. Decide whether the narrow frozen probe accepts this disclosed TOCTOU residual or requires a stronger byte-identity mechanism.
+
+[IMPLEMENTATION CONTRACT OPEN] Freeze exact JSON allowed keys/types against v5 source, plus policy for all PowerShell streams, duplicate keys, multiple output objects, stale output, malformed or contradictory fields. Directly capture only the current invocation's output.
+
+[NEXT] Owner adjudications → source-derived schema/stream freeze → bounded implementation contract. No implementation/runtime/token/DLL/export/candidate work; RQ21.182 authorization remains conditional and unused.
+
 ## 2026-10-08 — RQ21.199 CONSUMER IMPLEMENTATION GAP / DESIGN OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
