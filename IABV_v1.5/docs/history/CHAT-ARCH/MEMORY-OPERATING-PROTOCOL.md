@@ -1,3 +1,14 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.197 CONSUMER/DETECTOR SEPARATION
+
+Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
+
+- A detector that measures a condition and emits JSON is not the runner/consumer that enforces that condition before a protected action.
+- Treat the reported known loader script as a separate path unless source evidence shows it launches v5, parses its output and requires both `outcome == MEDIUM_CONFIRMED` and `cleanup_clean == true`.
+- `CONSUMER_SOURCE_UNAVAILABLE` means linkage is not proven from inspected evidence; it does not prove no consumer exists anywhere.
+- Stop repeating generic searches. Obtain the authoritative consumer's exact path/repository URL/commit from owner/operator provenance or known project artifacts, then audit only that identified source read-only.
+- Do not invent a replacement runner, run code, query tokens or operate the DLL to compensate for missing source. Static source, artifact identity, consumer enforcement, target readiness and Owner authorization remain separate gates.
+
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.196 V5 ARTIFACT IDENTITY MATCH
 
 Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
