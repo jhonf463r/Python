@@ -1,3 +1,17 @@
+## 2026-10-08 — RQ21 P1 V2 CLEANUP REPORTING ADDED; INDEPENDENT STATIC CHALLENGE OPEN
+
+[ACTOR-REPORTED] v2 candidate at `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v2.ps1`, 11,467 bytes, SHA-256 `0F24FC0E88B17205512A786683F869E59694CC815C8399502FCD076E8D552A94`; Codex reports two hash methods agreed. Candidate has not been compiled or executed. Coordinator has reviewed the complete source pasted in chat but has not read back the temporary file bytes.
+
+[STATIC ADJUDICATION] v2 records `CloseHandle` success/failure and immediate Win32 error on failure in separate fields; it separately records a buffer-release exception and preserves the primary integrity outcome. The cleanup-reporting issue from record 186 is addressed in the pasted source.
+
+[UNPROVEN] Saved file matches pasted source; C# compiles; runtime ABI/layout behavior; integrity SID from any process; DLL loadability/symbol resolution; API behavior/containment.
+
+[NEXT EDGE] Independent Sonnet/Claude static challenge of the full source: native layout/alignment, pointer/buffer bounds, SID formatting, query/error and cleanup paths. No compilation, token query or DLL load. Afterwards reconcile authorization separately.
+
+Source: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P1 DETECTOR CANDIDATE REVIEW
 
 [ACTOR-REPORTED] Detector-only candidate saved outside the repository at `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate.ps1`, SHA-256 `80C060A2FDFC969D9C175BB338D10F2AC02A3DA7CF012264628B8792AE112D16`, 8,254 bytes; not compiled or run.
