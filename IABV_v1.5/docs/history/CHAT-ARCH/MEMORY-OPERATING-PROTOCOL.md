@@ -1,3 +1,16 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.195 V5 INDEPENDENT STATIC CHALLENGE
+
+Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
+
+- A reviewer STATIC_REVIEW_PASS applies only to the exact inline source received; it does not establish saved-byte identity, compilation, runtime correctness or consumer enforcement.
+- Route artifact identity verification and runner/consumer inspection as distinct, read-only edges. Verify only the specified path; absence or mismatch is a stop, not permission to search alternative temp files.
+- When the same Win32 error can occur at different stages, preserve and interpret failure_stage with outcome and cleanup status. A numeric error/detail string is not retry authorization.
+- A 64-bit structure guard does not independently establish x64 process architecture; keep the frozen host/architecture/build gate in runner evidence obligations.
+- Retain the F7 84-byte bound as a fail-closed policy while legitimate OS padding above the ceiling remains NOT_PROVEN. Do not widen it speculatively.
+- Do not revise a candidate/hash solely for a self-consistent stale internal type name without a concrete collision or provenance consequence.
+- Static review, artifact identity, compilation, runtime, target readiness and actual consumer enforcement remain separate predicates. No source pass activates the protected operation.
+
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.194 V5 SOURCE RECONCILIATION
 
 Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
