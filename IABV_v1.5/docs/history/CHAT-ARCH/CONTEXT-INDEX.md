@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 P1 V2 STATIC REVIEW
+
+Canonical: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`.
+
+The pasted v2 source addresses the prior `CloseHandle` evidence gap. Candidate hash/size are Codex-reported; not compiled/run and not byte-read by the coordinator. Static plausibility is not execution evidence.
+
+NEXT: **SONNET/CLAUDE** independently challenge native struct layout, returned-length/buffer/SID bounds, SID formatting, API error handling, and cleanup paths. Static only: no compile, token query, or DLL operation. Authorization for any later load remains a separate reconciliation gate.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 DETECTOR CANDIDATE CLEANUP GAP
 
 Canonical: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`.
