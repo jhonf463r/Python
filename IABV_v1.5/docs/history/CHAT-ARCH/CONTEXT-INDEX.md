@@ -1,3 +1,11 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.193 V4 CHALLENGE ADJUDICATED; CODEX V5 NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
+
+Sonnet/Claude's report is accepted as STATIC_REVIEW_PASS_WITH_REPAIRS for intended inline logic, qualified by N1 source-handoff discrepancy. F8 is confirmed: observed error 122 is lost when requiredLength falls outside 16..84. v4 artifact bytes remain actor-reported.
+
+NEXT: CODEX verifies only the exact reported v4 path, size and SHA, checks whether literal fence lines exist in that saved file, and prepares separate v5 with F8 fixed and the F7 comment qualified. No compile/run/token query/alternate artifact search/Git mutation/DLL/export/runner work. After coordinator reconciliation, send the exact v5 source for a new independent static challenge using non-nested Markdown delimiters.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.192 V4 SOURCE RECONCILED; SONNET CHALLENGE NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md.
