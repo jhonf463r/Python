@@ -1,3 +1,22 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — PRIMARY MEASUREMENT VS RESOURCE-CLEANUP EVIDENCE
+
+Knowledge Delta:
+- A native detector may have plausible measurement logic while still omitting evidence about cleanup operations.
+- Cleanup failure should not overwrite the primary measurement, but must remain observable as a separate field.
+
+Method Delta:
+- Review exact native signatures, buffer layout/bounds and error paths.
+- Preserve cleanup return/error details on early-return and success paths.
+- Distinguish saved/hash-reported candidate, source-reviewed candidate, compiled artifact and runtime-observed behavior.
+
+Routing Delta:
+- Route exact temporary-artifact refinement to Codex; do not execute or compile before the contract and authorization boundary are separately reconciled.
+
+Current edge:
+`plausible detector source → cleanup status captured → artifact hash read-back → authorization/readiness reconciliation`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — AUTHORITATIVE MEASUREMENT VS INDIRECT INFERENCE
 
 Knowledge Delta:
