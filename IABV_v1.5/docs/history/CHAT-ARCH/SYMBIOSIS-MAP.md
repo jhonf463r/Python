@@ -1,3 +1,21 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.196 V5 ARTIFACT IDENTITY MATCH
+
+Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
+
+Knowledge Delta:
+- Codex reports exact-path saved-byte size/hash match and source-text correspondence after newline normalization. Accept as actor-observed artifact identity evidence, not direct coordinator access.
+- Artifact identity does not prove compilation, runtime behavior or consumer enforcement.
+
+Method Delta:
+- Separate direct byte/hash evidence from normalized-text comparison and record the acting environment.
+- Audit the actual output consumer only after identity reconciliation; require source-traceable evidence for freshness, process binding, outcome AND cleanup, error stage and all readiness gates.
+
+Routing Delta:
+- Next: Codex read-only forensic inspection of actual runner/consumer and output handoff.
+- If the true entrypoint cannot be located in available source context, stop with CONSUMER_SOURCE_UNAVAILABLE; do not construct a substitute or search arbitrary temp paths.
+- No compile/run/token query, file mutation, DLL load, export lookup/invocation or candidate launch.
+
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.195 INDEPENDENT V5 STATIC PASS
 
 Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
