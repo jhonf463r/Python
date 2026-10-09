@@ -1,3 +1,18 @@
+## 2026-10-09 METHOD AMENDMENT — RQ223 CONTRACT RECONCILED; RQ224 TRUST SOURCE NEXT
+
+Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
+
+- RQ219/RQ220 remain accepted as `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE`; RQ223 supports `UI_APPROVAL_BRIDGE_NOT_FOUND_IN_REPOSITORY_SCOPE` for the bounded broker/UI paths inspected. Do not claim global absence of authentication or runtime attribution.
+- Do not repeat the broad broker/UI search. Reopen source discovery only if a concrete new caller of `approve(request_id, payload)`, direct identity/authority definition, or receipt producer/verifier is identified.
+- Keep current-source evidence, actor-reported local worktree provenance, conceptual contract, and unproven trust technology explicitly separate.
+- The conceptual authorization binds authenticated principal, operation, canonical resource, exact scope, approved content/delta where relevant, validity and single-use consumption. A UI prompt, Boolean, observation permission, learned pre-approval or audit log is not a substitute for a verifiable receipt consumed by the mutator before the first effect.
+- Existing organs may be reused only for demonstrated roles; do not invent a trust root or API to remove an evidence gap. `HumanApprovalBroker` is a transport candidate, not a demonstrated root of trust.
+- RQ218 policy direction remains accepted, but identity/authority source, receipt semantics, exact workspace root/protected paths, immutable baseline and isolated clean worktree remain blockers. Preserve the existing dirty/detached worktree.
+- **Next route: RQ224**, static design/adjudication of a trustworthy Owner identity/authority source and the receipt producer/verifier. Stop before traversing a general identity/auth subsystem unless separately scoped.
+- No implementation, worktree changes, tests/builds/runtime, MCP/process/state operations, install/download or Git mutation beyond authorized documentary writeback. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain separate.
+
+---
+
 ## 2026-10-09 METHOD AMENDMENT — RQ219 ADJUDICATED / DO NOT OVERCLAIM AUTHORITY ABSENCE
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
