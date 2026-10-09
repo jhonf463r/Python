@@ -1,3 +1,14 @@
+## 2026-10-09 METHOD AMENDMENT — RQ210 ADJUDICATION / KEEP SOURCE AND RUNTIME DISTINCT
+
+Canonical authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
+Canonical adjudication: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md.
+
+- Accept the supplied RQ210 report as `STOPPED_AT_OUT_OF_SCOPE_DEPENDENCY` for Branch A and `COMPLETE_WITH_FINDINGS` for Branch B within its bounded source scope.
+- The local `mcp 1.27.0` hash identifies only the reported installed SDK copy. Project manifests do not pin that version; the actual launch interpreter/transport and exact Uvicorn shutdown behavior remain unresolved.
+- A `permission_gates` field, an observation grant, or a governance callback before mutation is not proof of mandatory human approval. In the reported predicate, missing/empty/non-required/granted/nonmatching gates may not block a mutator. Human approval is conditional, not universally guaranteed by the inspected path.
+- The supplied report does not provide SHA-256 for most cited IABV files. Treat those details as actor-reported until exact file identities are supplied; do not claim coordinator rehashed the Windows worktree.
+- Preserve `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. Do not start/reconnect MCP, invoke SDK/runtime, inspect processes, read snapshots/DB/secrets, run probes/tests/builds, install packages, or modify the worktree. RQ21.200 stays separate.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ207-S SUPPLEMENT COMPLETE; DO NOT CONFUSE SCOPE PASS WITH READINESS
 
 - Accept `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE` for the bounded static supplement, while retaining the overall readiness classification `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. A completed audit can correctly conclude that the system is not ready.
