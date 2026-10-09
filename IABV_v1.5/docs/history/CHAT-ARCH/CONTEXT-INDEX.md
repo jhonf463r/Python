@@ -1,3 +1,9 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.199 CONSUMER NOT IMPLEMENTED; DESIGN ONLY
+
+Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
+
+Operator declares CONSUMER_NOT_IMPLEMENTED in the identified scope; Codex's CONSUMER_SOURCE_UNAVAILABLE is a correct stop because no source object is available to audit. Do not resend the audit prompt. NEXT: Codex drafts a bounded consumer contract/design only, anchored to RQ21.182 and RQ21.195–197, including same-process/PID causal binding of v5's measurement to the loader. Coordinator adjudicates before implementation. No code changes, compilation, runtime/token query, DLL/export or candidate operation. Historic authorization remains conditional and unconsumed.
+
 ## 2026-10-08 CONTINUITY ROUTING — RQ21.198; RQ21.197 REMAINS ACTIVE
 
 Canonical continuity record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
