@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ219 STATIC AUTHORITY DISCOVERY AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
+
+Following RQ218, Owner has authorized a bounded read-only discovery of whether an existing trusted approval/identity producer or verifier directly supports MCP self-update mutation authorization. Start only from the already-reviewed server.py, self_update_tools.py, models.py and world_model_service.py, and follow only direct definitions/imports/calls needed. Re-confirm and preserve the dirty/detached worktree. Stop at broader authorization/identity dependencies. No edits, worktree creation/change, tests/builds, runtime, MCP/process operations, probes, DB/secrets/snapshot, install/download or Git mutation.
+
+Accepted policy direction remains human Owner approval per operation/resource/scope; fail closed for missing/unknown/stale/malformed/denied/mismatched cases; no push; explicit Git allowlist. Exact workspace root/protected paths and immutable implementation baseline remain Owner decisions. Overall MCP readiness stays blocked; RQ13-111 and RQ21.200 separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ218 OWNER POLICY PARTIAL; SOURCE EDITS STILL BLOCKED
 
 Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
