@@ -4,6 +4,13 @@ This directory is the canonical historical-memory layer for IABV. It preserves k
 
 ## OPERATIONAL MEMORY
 
+## 2026-10-08 ACTIVE RQ21 ROUTE — P1 LOAD-ONLY PROBE AUTHORIZED
+
+Canonical: `CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md`.
+
+Human Domain Owner explicitly authorized one load-only test. Codex is next for a fresh, short-lived, non-elevated process on verified host `MSI`, restricted DLL search flags, and `GetProcAddress` checks of both export names. Never invoke exports or launch candidates. DLL initialization may execute, so capture raw evidence and treat this only as load/resolution—not containment proof. No implementation or later experiment is authorized.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — P0 EXPORT PRESENCE ACCEPTED; P1 DYNAMIC LOAD GATED
 
 Canonical: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
