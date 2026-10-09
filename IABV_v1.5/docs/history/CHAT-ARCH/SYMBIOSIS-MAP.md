@@ -1,3 +1,20 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.199 CONSUMER ABSENCE / DESIGN-FIRST ROUTING
+
+Canonical record: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
+
+Knowledge Delta:
+- Operator explicitly reports no consumer implementation in the identified scope. Codex stopped with CONSUMER_SOURCE_UNAVAILABLE because there was no source to audit; no source audit pass/fail occurred.
+- v5 remains accepted only at inline-source and actor-reported artifact-identity levels. Actual gate enforcement is absent in the identified scope.
+- The detector's process_id identifies the process measured. A different process cannot use that measurement as proof of its own token readiness without a separate gate.
+
+Method Delta:
+- When no consumer exists, change from source-audit routing to a separate bounded design/contract gate before implementation.
+- Make process identity and output freshness causal contract obligations, not mere timestamp correlation.
+
+Routing Delta:
+- Codex: consumer contract/design proposal only, no implementation.
+- ChatGPT/coordinator: reconcile contract against RQ21.182 and frozen boundaries before any implementation task.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — CONTINUITY RECONCILIATION RQ21.198
 
 Canonical record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
