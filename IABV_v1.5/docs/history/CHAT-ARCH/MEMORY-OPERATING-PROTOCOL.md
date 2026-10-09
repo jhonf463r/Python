@@ -1,3 +1,14 @@
+## 2026-10-09 METHOD AMENDMENT — RQ214 PLAN ACCEPTED, NOT IMPLEMENTED
+
+Canonical: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
+
+- Accept `STATIC_REMEDIATION_PLAN_COMPLETE_WITHIN_SCOPE` as a completed planning deliverable only. Keep global readiness `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+- The cross-perspective risk graph is useful because authorization, bootstrap effects, write/Git scope, lifecycle/transport and source/session provenance interact. Do not infer that static plan closure proves a runtime boundary.
+- Provenance is a stage-zero prerequisite for code work: choose the exact baseline/ref and isolated worktree before editing; preserve the existing dirty/detached worktree.
+- Before implementation, Owner must define who may approve which mutation classes/resources/scopes, the fail-closed handling of absent/unknown/stale/nonmatching gates (recommended block), permitted roots/protected paths, file selection and whether Git push is in scope (recommended no push in the first tranche).
+- Separate static source checks from runtime verification; any tests/builds, startup, MCP use or operational snapshot require their own scope/permission.
+- RQ13-111's universal causal frontier remains separate; RQ21.200 remains independent.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ212 COMPLETE WITH UVICORN / RUNTIME ATTRIBUTION UNRESOLVED
 
 Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
