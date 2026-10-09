@@ -1,3 +1,19 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ219: OBSERVATION PERMISSION, HUMAN PRESENCE AND MUTATION AUTHORITY ARE DISTINCT
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
+
+Cross-perspective reconciliation:
+- **Governance:** generic route callback and an `approved` Boolean do not prove authenticated Owner approval for a specific mutation.
+- **Model semantics:** WorldModel `ObservationPermissionGate` is generated from observation-permission state, not mutation authority.
+- **Human-in-the-loop:** `HumanApprovalBroker` contains a pre-approver path that may resolve without human presence; UI `prompt_handler` authentication/caller identity remains uninspected.
+- **Mutation integrity:** handlers do not consume a verifiable receipt bound to operation/canonical resource/exact scope before each effect. The PR workflow's branch/base/diff logic is not a general-purpose mutator approval contract.
+- **Provenance:** Windows worktree hashes and states are actor-reported; local `server.py` is modified and baseline findings use the reported HEAD blob. Do not attribute them to historical loaded code.
+- **Policy:** RQ218's fail-closed, owner-only, exact-scope target remains accepted but is not implemented or proven.
+
+Next edge is precisely the broker UI `prompt_handler` registration and trusted identity/caller path into `approve(request_id, payload)`. Obtain a separate Owner authorization; do not broaden into a general auth subsystem. Even a validated human identity would not itself establish operation/resource/scope binding, freshness or the required receipt.
+
+No source edits or runtime. MCP readiness remains blocked; RQ13-111 and RQ21.200 remain independent.
+
 ## 2026-10-09 SYMBIOSIS ROUTE — RQ219 TRUSTED MUTATION-AUTHORITY SOURCE DISCOVERY
 
 Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
