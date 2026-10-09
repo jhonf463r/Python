@@ -4,6 +4,13 @@ This directory is the canonical historical-memory layer for IABV. It preserves k
 
 ## OPERATIONAL MEMORY
 
+## 2026-10-08 ACTIVE RQ21 ROUTE — P0 EXPORT PRESENCE ACCEPTED; P1 DYNAMIC LOAD GATED
+
+Canonical: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
+
+Codex reports exact-target `dumpbin /EXPORTS` exit 0 with both exports present and matching DLL identity. Accept P0 for static symbol presence only; the temporary report path/hash are recorded, but its bytes were not directly read back by the coordinator. Next: a separate load-only experiment contract, side-effect/readiness assessment, and explicit Owner authorization. P1 is not authorized; no API call, candidate execution or implementation.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — CODEX MAY TEST EXACT-TARGET ACCESS FOR P0
 
 Canonical: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
