@@ -1,3 +1,21 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR V3 STATIC PASS; INDEPENDENT CHALLENGE OPEN
+
+Canonical: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`.
+
+Codex reports v3 at `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v3.ps1`, 14,281 bytes, SHA-256 `B6460A3CCB4C830822A75B262CE3F053C589EF847C1EBD69BEFA15AFFF4CD4C6`; two hash methods reportedly agree. v3 was not compiled/run. Coordinator has not independently read the saved bytes; this adjudication is for the complete pasted source only.
+
+The pasted code incorporates v2 repair classes F1/F2/F4/F5/F6: closes only a confirmed-acquired token, separates primary outcome from close/buffer cleanup, exposes `cleanup_clean`, distinguishes requested metadata from observed acquisition and uses nullable native-error metadata plus a literal here-string. Broad detector design remains statically plausible.
+
+Residual reporting concern: if the `OpenProcessToken` P/Invoke throws before the result fields are updated, acquisition remains null/`NOT_ATTEMPTED`; the current cleanup formula can still report `cleanup_clean=true`. The primary outcome is `INTEGRITY_QUERY_FAILED`, so this path does not meet the declared consumer predicate, but acquisition/cleanup evidence is ambiguous. Independent reviewer should challenge this and native bounds/error semantics.
+
+**NEXT ACTOR: SONNET/CLAUDE**, independent static falsification of the complete v3 source embedded inline in the handoff. No compile/run, token query, filesystem search, DLL load, export resolution/invocation, candidate launch or repository change. Missing source means stop without a technical claim.
+
+Consumer contract declared by Codex: `outcome == MEDIUM_CONFIRMED && cleanup_clean == true`. Actual consumer implementation/wiring remains uninspected. Other host/build/architecture/file/signature/flags/scope gates must be verified independently.
+
+**EXECUTION BOUNDARY:** record 182's owner-authorized single load-only operation remains scope-valid only after the corrected detector, consumer gate and every target precondition are accepted. No DLL load is authorized by this writeback; no repeat or broader operation is authorized.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 V2 INDEPENDENT STATIC REVIEW PASS WITH REPAIRS
 
 Canonical: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`.
