@@ -1,3 +1,9 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.200 CONSUMER DESIGN ACCEPTED; OWNER GATES FIRST
+
+Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
+
+The same-process v5 → strict output validation → exact one-shot LoadLibraryExW architecture is accepted as a design direction only. Do not route directly to Codex implementation. NEXT: Human Domain Owner decides the thread-impersonation rule and whether the frozen path-hash/signature check's TOCTOU residual is acceptable or a stronger byte-binding guarantee is required. Then coordinator freezes the precise v5 JSON schema and PowerShell stream policy against the reviewed source and issues a bounded implementation contract. No code, compile/run/token/DLL/export/candidate operation; RQ21.182 authorization remains conditional and unconsumed.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.199 CONSUMER NOT IMPLEMENTED; DESIGN ONLY
 
 Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
