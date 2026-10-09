@@ -1,3 +1,9 @@
+## 2026-10-08 CONTINUITY CHECKPOINT — RQ21.198; TECHNICAL CANON REMAINS RQ21.197
+
+Canonical continuity record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
+
+No new technical evidence was supplied beyond RQ21.197. Re-read canonical projections and reconcile the current remote history; the first open edge remains owner/operator identification of the authoritative consumer/runner source and intended v5-to-loader call path. Codex may inspect only that exact source, read-only, after its identity is supplied. v5 static source review and Codex-reported artifact identity are accepted only at their respective evidence levels; compilation/runtime, consumer enforcement and current target readiness remain unproven. RQ21.182 authorization remains conditional and unconsumed; no execution is authorized by this checkpoint.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.197 CONSUMER SOURCE UNAVAILABLE; INTEGRATION EDGE OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
