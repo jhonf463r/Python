@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — REMOTE P1 CONTRACT EXISTS; CODEX SHOULD READ CANONICAL REMOTE FILE
+
+Canonical: `CHAT-ARCH-2026-10-08-183-rq21-p1-contract-local-availability-reconciliation.md`.
+
+Codex stopped because the contract was missing from local `C:\\Python`, but the exact file exists on GitHub `main` with blob SHA `7184f7822920ee9068a21ab75c3564b10e32ea83`.
+
+NEXT: Codex reads/verifies the exact remote contract using a read-only route; only then rechecks host/token/file identity inside the diagnostic child and resumes the already-authorized load-only probe if ready. Do not repeat manual checks or update the worktree/Git refs. If exact remote content cannot be verified, stop.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 P1 OWNER AUTHORIZATION RECORDED; CODEX NEXT
 
 Canonical: `CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md`.
