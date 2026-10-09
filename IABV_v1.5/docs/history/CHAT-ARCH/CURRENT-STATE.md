@@ -1,3 +1,17 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 V2 INDEPENDENT STATIC REVIEW PASS WITH REPAIRS
+
+Canonical: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`.
+
+The supplied independent audit result is accepted as `STATIC_REVIEW_PASS_WITH_REPAIRS` for the **inline source text only**. It found no definite defect in SID recognition, buffer bounds, SID formatting or primary error semantics. The v2 file path/size/SHA remain Codex-reported; the saved bytes have not been coordinator-verified and the candidate has not been compiled/run.
+
+Minimum hardening before composing the detector into the P1 run: (F1) close only a confirmed-open token; (F2) preserve separate cleanup status and require it clean at the consumer gate; (F4) distinguish requested metadata from observed handle acquisition; (F5) distinguish no-applicable-error from an actual Win32 error; (F6) use a literal C# here-string. F3/F8/F9 are non-blocking for this target. F10 remains a consumer/readiness boundary, not a detector-code defect.
+
+**NEXT: CODEX**, return a separate, unexecuted, hash-verified detector candidate with only these repairs and an explicit consumer gate. No compile/run, token query, DLL load, export lookup/invocation, candidate launch or repository change.
+
+**AUTHORIZATION RECONCILIATION:** the owner-authorized single `LoadLibraryExW` operation has not occurred; all previous runs stopped before the load call. The original authorization remains scope-valid for at most one invocation within the exact host/file/flags/names contract, once the corrected detector, consuming gate and all other preconditions are accepted. This does not authorize a load now, any retry after a load call, alternate flags/hosts, export invocation, or broader experiment.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 V2 INDEPENDENT REVIEW STOPPED FOR MISSING SOURCE CONTEXT
 
 Canonical: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`.
