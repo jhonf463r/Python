@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE ROUTE — NO PASSIVE SOURCE PROOF; OWNER DECISION NEXT
+
+Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
+
+Codex reports `NO_PASSIVE_PROOF_IDENTIFIED`: prior evidence associates MCP PID 16768 with Codex PID 10600 and the same Codex session exposes five IABV tools, but no already-identified passive artifact proves the exact code loaded by that server. A matching tool description and current worktree diff are corroborating, not conclusive.
+
+NEXT: Human Domain Owner decides whether to authorize a read-only source-level startup-impact/isolation plan for a prospective controlled attribution route (recommended), or request a separate proposal for invasive live-process inspection. Do not attach/dump/suspend/inject into the current process; no start/reconnect or MCP call is authorized. Any future snapshot disclosure requires separate permission.
+
 ## 2026-10-09 ACTIVE ROUTE — MCP EXPOSURE CONFIRMED; LOADED SOURCE ATTRIBUTION OPEN
 
 Canonical: CHAT-ARCH-2026-10-09-202-iabv-mcp-source-attribution-still-unproven.md.
