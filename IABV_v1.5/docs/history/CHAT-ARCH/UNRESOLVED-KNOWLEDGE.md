@@ -1,3 +1,19 @@
+## 2026-10-08 — P1 STOP CLASSIFIED AS LOCAL CONTRACT AVAILABILITY; REMOTE CANONICAL EXISTS
+
+[REPORTED FACT] Codex could not find the frozen P1 contract in local `C:\\Python` and correctly returned `STOP_READINESS_MISMATCH`. It did not create/run a diagnostic or load/invoke anything.
+
+[VERIFIED FACT] Independent remote read-back finds the exact contract on GitHub `main` at blob SHA `7184f7822920ee9068a21ab75c3564b10e32ea83`. It contains the prior owner authorization and frozen restrictions.
+
+[ADJUDICATION] This was a local artifact-availability blocker, not a remote document absence and not an API failure. P1 remains authorized but unexecuted.
+
+[NEXT EDGE] Codex reads the exact remote file through a read-only route and verifies content identity; any temporary materialization must be outside the IABV repository and should match the Git blob SHA. Then recheck target/token/file preconditions inside the new one-shot child process and execute only the previously authorized load/symbol-resolution probe. If remote read/verification or any precondition fails, stop.
+
+No user manual copy, repeated token/hash/signature script, worktree sync, install, elevation, export invocation, candidate launch or implementation.
+
+Source: `CHAT-ARCH-2026-10-08-183-rq21-p1-contract-local-availability-reconciliation.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P1 LOAD-ONLY PROBE EXPLICITLY AUTHORIZED; EXECUTION PENDING
 
 [FACT] Human Domain Owner authorized `P1_LOAD_ONLY = AUTORIZADO` after RQ21 P0 static export presence was adjudicated PASS.
