@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — TRANSITIVE MCP AUDIT BLOCKED AT ADAPTER / GOVERNANCE EDGES
+
+Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.
+
+Codex's RQ206 report is accepted as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. It reports a source-level bootstrap chain spanning AppBootstrap, EnvironmentSelfAwareness, WorldModel, provider health, ToolRegistry/adapters, UniversalPerception, storage/logging and MCP self-update registration. These are reachable source paths, not proof of runtime effects.
+
+Important symbiosis finding: local worktree memory searches did not find RQ201–RQ206/RQ13, but the canonical records exist in remote `main`. Do not treat missing local projections as missing canonical knowledge. The inspected worktree remains dirty/detached at `e46d830...`; `server.py` is modified and cannot authenticate the historical process's loaded code.
+
+NEXT: complete only the already-authorized direct/immediate-helper edges: (1) adapters actually bound to the bootstrap ToolRegistry and reachable from EnvironmentSelfAwareness/refresh_card, (2) source-level governance checks on registered self-update mutating handlers, and (3) directly related transport selection plus shutdown/cleanup methods. Add exact path/line evidence and per-file hashes. Stop if this needs broader recursion. No MCP call/list, process interaction, launch/reconnect, refresh, provider checks, secret/DB reads, tests, compilation or mutation. Coordinator adjudicates before a separate future launch decision; snapshot disclosure still requires independent permission. RQ21.200 is separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — BOUNDED TRANSITIVE MCP AUDIT AUTHORIZED WITH SYMBIOSIS RECONCILIATION
 
 Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
