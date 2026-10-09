@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 P1 INTEGRITY DETECTOR STATIC CAUSE
+
+Canonical: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`.
+
+Codex reports the hash-matched script inferred integrity from `WindowsIdentity.GetCurrent().Groups` and converted a missing `S-1-16-*` match to UNKNOWN. The intended direct query is `GetTokenInformation(TokenIntegrityLevel)` with validation of `TOKEN_MANDATORY_LABEL.Label.Sid`. Static cause is reported; the actual prior token SID is still unproven.
+
+NEXT: **CODEX — design-only, non-executed correction artifact**, hash-verified and outside the repository. Do not query tokens or execute the script. Reconcile the one-shot Owner authorization separately before any later loader call.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 P1 STOPPED ON CHILD INTEGRITY `UNKNOWN`
 
 Canonical: `CHAT-ARCH-2026-10-08-184-rq21-p1-integrity-guard-stop-and-detector-readiness.md`.
