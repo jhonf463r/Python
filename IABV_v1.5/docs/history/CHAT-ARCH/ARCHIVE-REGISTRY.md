@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ212 STATIC SUPPLEMENT ADJUDICATED
+
+Canonical record: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md
+
+Summary: Static launcher review is accepted within scope. The script's reported defaults are Miniconda Python and `streamable-http`, with overrides; script/service/docs port defaults disagree (8000 vs 8765). Uvicorn was not found in the inspected default interpreter, and exact HTTP shutdown behavior remains unresolved. The report supplied SHA-256 values for the RQ210 source files, accepted as actor-reported rather than independently rehashed. `server.py` remains dirty. Overall MCP readiness/isolation remains blocked; no runtime action or mutation. RQ21.200 stays separate.
+
+Tags: IABV MCP / RQ212 / launcher / Uvicorn unresolved / source hashes / dirty worktree / static-only
+
 ## 2026-10-09 REGISTRATION — RQ212 OWNER-AUTHORIZED STATIC EVIDENCE SUPPLEMENT
 
 Canonical record: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md
