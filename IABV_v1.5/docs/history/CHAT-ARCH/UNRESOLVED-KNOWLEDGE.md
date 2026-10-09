@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 P1 DETECTOR V3 STATIC SOURCE RESULT
+
+[ACTOR-REPORTED] v3 saved to `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v3.ps1`; size 14,281 bytes; SHA-256 `B6460A3CCB4C830822A75B262CE3F053C589EF847C1EBD69BEFA15AFFF4CD4C6`; two hashing methods reportedly agreed. It was not compiled or run.
+
+[STATIC REVIEW OF INLINE SOURCE] The v3 source contains the previous cleanup/acquisition metadata repairs and a distinct `cleanup_clean` result. Its high-level direct TokenIntegrityLevel measurement remains plausible.
+
+[RESIDUAL CONCERN] If an exception occurs before `OpenProcessToken` returns normally, the acquisition state can remain null/`NOT_ATTEMPTED` and current cleanup logic can mark cleanup clean. The primary outcome remains `INTEGRITY_QUERY_FAILED`, so the stated consumer gate still blocks, but the report's acquisition/cleanup semantics merit independent challenge.
+
+[UNVERIFIED] Saved v3 bytes/hash from the coordinator perspective; compilation/ABI/runtime behavior; actual runner enforcement of the predicate; current token; DLL load and dynamic exports.
+
+[NEXT EDGE] Sonnet/Claude independent source-bound static review of the full v3 source. No run, compile, token query, file/Git mutation or DLL operation.
+
+Source: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`.
+
+---
+
 ## 2026-10-08 — RQ21 V2 INDEPENDENT STATIC REVIEW PASS WITH REPAIRS
 
 [REPORTED REVIEW RESULT] The independent review returned `STATIC_REVIEW_PASS_WITH_REPAIRS` on the complete inline v2 source; no definite defect in SID recognition was reported. Review scope does not include byte-level identity of the saved temp artifact, compilation, runtime token state or consumer behavior.
