@@ -1,5 +1,6 @@
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ210 ADJUDICATED; CONDITIONAL AUTHORIZATION GATE CONFIRMED
 
+Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
 Canonical: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md.
 
 Knowledge Delta:
