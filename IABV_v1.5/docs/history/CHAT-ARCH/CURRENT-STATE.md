@@ -1,3 +1,14 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.197 CONSUMER SOURCE UNAVAILABLE; INTEGRATION EDGE OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
+
+Codex reports the standalone v5 detector queries the current process primary token and emits JSON, but has no loader calls. The known diagnostic `rq21-p1-load-1791507015374-25122.ps1` reportedly has its own LoadLibraryExW path and uses WindowsIdentity.Groups/medium_integrity rather than consuming v5 JSON. No inspected evidence links v5 output to the protected decision. Accept `CONSUMER_SOURCE_UNAVAILABLE` for the evidence inspected; the double gate is not proven enforced. This is an integration/provenance gap, not a demonstrated v5 static defect.
+
+Artifact identity remains closed at actor-reported evidence level: Codex reports 17,199 bytes, SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA, and normalized-text match to reviewed source. Compilation/runtime, consumer wiring and current target readiness remain unproven.
+
+NEXT: identify the authoritative consumer/runner's exact source path or repository URL/commit and the intended v5-to-loader call path, using owner/operator provenance or known project artifacts. Do not repeat broad searches, enumerate arbitrary temp paths, or invent a runner. Then Codex performs read-only inspection of that exact source. No compile/run/token query/DLL/export/candidate launch. Record 182 authorization remains conditional, unconsumed and not current execution permission.
+
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.196 V5 ARTIFACT IDENTITY MATCH REPORTED; CONSUMER AUDIT NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
