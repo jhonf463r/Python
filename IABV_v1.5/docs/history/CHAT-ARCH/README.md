@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE ROUTE — RQ206 OPEN EDGES
+
+Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.
+
+RQ206 is classified as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. Source-reported paths connect bootstrap, EnvironmentSelfAwareness/WorldModel, provider health, tool adapters/perception, network probes and local persistence. Runtime occurrence is not proven. Canonical GitHub memory remains authoritative when local continuity files are missing.
+
+NEXT: complete the direct RQ206 edges only: actual ToolRegistry-bound adapters and immediate availability helpers; source-level governance for self-update mutation handlers; transport selection and direct shutdown/cleanup. Require line anchors and hashes. Stop if deeper dependencies exceed scope. Any future launch and snapshot disclosure require separate permission; RQ21.200 remains independent.
+
 ## 2026-10-09 ACTIVE ROUTE — BOUNDED TRANSITIVE MCP AUDIT WITH SYMBIOSIS
 
 Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
