@@ -1,3 +1,11 @@
+## 2026-10-08 METHOD AMENDMENT — NATIVE DIAGNOSTIC CLEANUP IS EVIDENCE
+
+For native interop diagnostic candidates, preserving the primary API result is not enough if cleanup can fail. Record success/failure of resource-release calls (including `CloseHandle`) and capture relevant error state immediately, in a separate cleanup field so cleanup reporting does not overwrite the primary measurement result. Ensure result reporting covers both normal and early-return paths.
+
+Static API plausibility, a source hash, or successful artifact creation does not establish compilation or runtime behavior. Keep candidate design separate from its execution contract and do not treat preparation as authorization for the protected operation.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — USE TOKENINTEGRITYLEVEL FOR IN-PROCESS INTEGRITY GATES
 
 Do not derive a Windows integrity level solely by scanning `WindowsIdentity.Groups` for an `S-1-16-*` SID. A missing match there must not be mistaken for proof of a non-MEDIUM token or for a completed token observation.
