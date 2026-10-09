@@ -1,3 +1,12 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.200 CONSUMER DESIGN / OPEN SECURITY CONTRACTS
+
+- A same-process design using the PowerShell call operator for v5 and performing LoadLibraryExW in that exact process is the correct direction for the detector-to-loader causal binding. The outer launcher observes/collects results only and never performs the protected load.
+- process_id equality is necessary consistency evidence, not a substitute for actual same-process execution and direct capture of this invocation's output.
+- v5 inspects the process primary token, not an impersonation token on the executing thread. Keep thread effective security context as a separate gate. Conservative default: require no thread impersonation; stop if a thread token is present or the state cannot be determined; do not silently change identity with RevertToSelf and proceed. Owner must ratify this contract.
+- A path hash and Authenticode check immediately before LoadLibraryExW do not atomically bind the verified bytes to the mapped image. Explicitly ask the owner whether the frozen operation accepts this residual TOCTOU risk or requires a stronger guarantee; do not claim the race is solved.
+- Freeze JSON field names/types against the actual reviewed v5 output and specify capture/acceptance rules for PowerShell success, error, information, warning, verbose, debug and progress streams. Reject missing/multiple/malformed/stale/duplicate-key/unexpected/contradictory output and do not use a prior report as authorization.
+- Keep consumer design, implementation, static review, saved-artifact identity, compilation/runtime, target readiness and owner authorization separate. Design acceptance grants no permission to implement or execute.
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.199 CONSUMER ABSENCE / DESIGN-FIRST GATE
 
 - If the operator says CONSUMER_NOT_IMPLEMENTED, and Codex correctly returns CONSUMER_SOURCE_UNAVAILABLE because no source object exists, stop the source-audit task. Do not repeat it and do not mark it as an audit pass/fail.
