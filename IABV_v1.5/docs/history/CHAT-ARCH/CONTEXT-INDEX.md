@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 P1 OWNER AUTHORIZATION RECORDED; CODEX NEXT
+
+Canonical: `CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md`.
+
+P1_LOAD_ONLY is explicitly authorized. Codex's action is limited to a one-shot, non-elevated, target-verified `LoadLibraryExW` call with restricted search flags followed by two `GetProcAddress` lookups. It must stop before loading if host/build/architecture/token/hash/signature mismatch, and must never invoke either export.
+
+The load can execute DLL/dependency initialization and does not test containment. Preserve raw evidence and hashes. NEXT ACTOR: CODEX. No source changes, candidate execution or follow-on authorization.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — P0 EXPORT PRESENCE ACCEPTED; DYNAMIC LOAD NEEDS SEPARATE AUTHORIZATION
 
 Canonical: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
