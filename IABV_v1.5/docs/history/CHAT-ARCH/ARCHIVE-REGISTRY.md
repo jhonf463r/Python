@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ218 CONSERVATIVE FIRST-TRANCHE POLICY DIRECTION
+
+Canonical record: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md
+
+Summary: Owner accepted a conservative design direction for the first self-update security tranche: explicit human Owner approval per operation/resource/scope; fail closed for absent/unknown/stale/malformed/denied/mismatched permissions; unknown network blocks network-required routes; explicit Git file scope, reject unrelated staged changes, no push. Existing dirty/detached worktree is to remain untouched; any later implementation must use a clean isolated worktree from a separately chosen immutable baseline. Trusted authority producer/verifier, exact root/protected paths and baseline remain unresolved. No code edits, worktree changes or runtime authorized.
+
+Tags: IABV MCP / RQ218 / owner policy / mutation authorization / fail closed / no push / implementation blocked
+
 ## 2026-10-09 RQ216 ADJUDICATION
 
 Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md
