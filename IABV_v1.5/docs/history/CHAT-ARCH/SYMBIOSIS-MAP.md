@@ -1,3 +1,20 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — CONTINUITY RECONCILIATION RQ21.198
+
+Canonical record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
+
+Knowledge Delta:
+- No new technical finding beyond RQ21.197; detector/consumer/protected operation remain distinct.
+- The v5 source review is source-level evidence; the saved-file identity is Codex-reported evidence; neither proves compilation, runtime behavior or consumer enforcement.
+- The owner-authorized operation remains conditional and unused.
+
+Method Delta:
+- New-chat intake rechecks current canonical GitHub projections and baseline comparison; actor reports are not silently upgraded to coordinator-observed facts.
+- Keep the latest technical adjudication distinct from a continuity checkpoint.
+
+Routing Delta:
+- Human Domain Owner/operator supplies exact consumer/runner source provenance and expected v5 handoff, or explicitly confirms no consumer exists.
+- Codex then performs read-only source tracing of that identified entrypoint only. No runtime or protected operation.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.197 CONSUMER/DETECTOR SEPARATION
 
 Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
