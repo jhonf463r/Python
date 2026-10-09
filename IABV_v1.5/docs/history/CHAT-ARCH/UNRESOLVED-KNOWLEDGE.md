@@ -1,3 +1,13 @@
+## 2026-10-08 — RQ21.196 V5 ARTIFACT IDENTITY MATCH; CONSUMER OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
+
+[ACTOR-OBSERVED REPORT] Codex reports IDENTITY_MATCH after ReadAllBytes on the exact path C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v5.ps1. Observed size 17,199 bytes; SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA. Both match the expected values. Codex also reports the saved text matches the complete v5 source from the conversation after newline normalization.
+[COORDINATOR BOUNDARY] The identity result is accepted as actor-observed evidence, but the coordinator has not directly accessed Windows bytes.
+[UNPROVEN] Compilation/Add-Type, token/runtime behavior, actual runner/consumer enforcement, output freshness/PID binding, current host/build/UBR/architecture/token and DLL readiness, and protected operation.
+[NEXT EDGE] Codex read-only audit of the actual runner/consumer and output handoff. If the real entrypoint cannot be identified, stop with CONSUMER_SOURCE_UNAVAILABLE; do not build a replacement or search arbitrary temp paths. No compile/run/token query/DLL/export/candidate launch.
+
+
 ## 2026-10-08 — RQ21.195 V5 STATIC CHALLENGE ACCEPTED; ARTIFACT IDENTITY/CONSUMER OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
