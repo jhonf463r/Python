@@ -1,3 +1,20 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.200 CONSUMER DESIGN / CONTRACT GATES
+
+Canonical record: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
+
+Knowledge Delta:
+- Codex's missing-consumer design is structurally aligned with the frozen load-only boundary: v5 and the single loader call must execute in the same one-shot OS process; the outer launcher must not load.
+- Contract remains incomplete for implementation: v5 measures the process primary token, not thread impersonation; path hash/signature checks are subject to a residual TOCTOU interval before mapping; exact JSON field/type and PowerShell stream policy must be source-derived.
+
+Method Delta:
+- Treat process identity, thread security context, file identity strength, strict parser schema and stream handling as separate contract predicates.
+- High-level design acceptance is not implementation readiness, runtime evidence or authorization.
+
+Routing Delta:
+- Human Domain Owner resolves thread impersonation and TOCTOU risk acceptance.
+- Coordinator freezes schema/stream handling against the exact reviewed v5 source; only then may a separate bounded implementation contract be issued.
+- No compile/run/token/DLL/export/candidate operation.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.199 CONSUMER ABSENCE / DESIGN-FIRST ROUTING
 
 Canonical record: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
