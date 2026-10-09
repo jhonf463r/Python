@@ -1,3 +1,11 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.199 CONSUMER ABSENCE / DESIGN-FIRST GATE
+
+- If the operator says CONSUMER_NOT_IMPLEMENTED, and Codex correctly returns CONSUMER_SOURCE_UNAVAILABLE because no source object exists, stop the source-audit task. Do not repeat it and do not mark it as an audit pass/fail.
+- Record the implementation gap for the identified scope; do not infer that no possible ad hoc program exists anywhere unless exhaustive provenance supports that broader claim.
+- Switch to a separate bounded consumer contract/design task before implementation. The previous read-only audit prompt is no longer appropriate when no consumer source exists.
+- Bind the detector measurement to the OS process that would perform the protected action. v5's process_id describes the process whose primary token it queried; a different parent's token cannot be inferred from a detector child result. Prefer same fresh one-shot process for detector invocation and the single authorized load, or independently verify the actual loader process's token in addition to the detector gate.
+- Keep source review, artifact identity, compilation/runtime, consumer enforcement, current target readiness and owner authorization distinct. Contract/design output does not authorize implementation or execution.
+
 ## 2026-10-08 METHOD AMENDMENT — NEW-CHAT RECONCILIATION RQ21.198
 
 - Re-read the latest default-branch CURRENT-STATE, latest episode, operating protocol, context index, symbiosis map, unresolved knowledge, archive registry and README before routing.
