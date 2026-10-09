@@ -1,3 +1,15 @@
+## 2026-10-09 SYMBIOSIS ROUTE — RQ216 MUTATION SECURITY CONTRACT
+
+Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
+
+Cross-perspective synthesis for the first security tranche:
+- Authorization must be valid for the concrete mutation/resource/scope; an observation gate is not a mutation approval.
+- Path validation and Git file selection must be consistent and must not let a dirty worktree broaden the mutation set.
+- Network-required policy is separate from mutation authorization; unknown network state must not count as approval.
+- Source/actor-reported evidence, the proposed contract and Owner policy decisions must remain distinct.
+
+This route authorizes contract design only. It does not authorize edits, verification, runtime, MCP use, worktree creation/changes or a readiness conclusion. Existing dirty/detached worktree is preserved; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ214 PLAN ACCEPTED; INTERACTING RISKS RETAINED
 
 Canonical: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
