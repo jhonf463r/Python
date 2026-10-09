@@ -1,3 +1,14 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.196 V5 ARTIFACT IDENTITY MATCH REPORTED; CONSUMER AUDIT NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
+
+Codex reports IDENTITY_MATCH for the exact v5 path after ReadAllBytes; observed size 17,199 bytes and SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA match expected values. Codex also reports the saved text matches the complete reviewed inline source after newline normalization. Coordinator accepts this as actor-observed artifact identity evidence, not direct coordinator access to Windows bytes.
+
+Static review is accepted for inline source; artifact identity is now closed at the reported actor-evidence level. Compilation/Add-Type, token/runtime behavior, actual runner/consumer enforcement and current target readiness remain unproven. The declared gate outcome == MEDIUM_CONFIRMED && cleanup_clean == true is not yet proven to be enforced by the real consumer.
+
+NEXT: CODEX performs a read-only forensic audit of the actual runner/consumer and output handoff, tracing fresh one-shot child/process identity, strict output parsing/staleness handling, both outcome and cleanup conditions, stage-aware errors, and all frozen target/DLL/scope checks. If the actual entrypoint/handoff cannot be identified, stop with CONSUMER_SOURCE_UNAVAILABLE; do not construct a substitute runner or search arbitrary temporary paths. No compile/run/token query/DLL/export/candidate launch. Record 182 authorization remains conditional, unconsumed and not current execution permission.
+
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.195 V5 INDEPENDENT STATIC CHALLENGE ACCEPTED; ARTIFACT/CONSUMER GATES NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
