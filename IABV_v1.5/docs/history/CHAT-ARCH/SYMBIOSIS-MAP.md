@@ -1,3 +1,25 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — SOURCE-BOUND PASS WITH REPAIRS
+
+Knowledge Delta:
+- An independent review can report no definite defect in the measurement logic while still identifying output-contract/robustness gaps.
+- Reviewing inline source does not verify the saved file's bytes/hash, compiler acceptance, execution or consumer behavior.
+- A source-unavailable stop and a source-level pass are distinct states; the latter applies only to supplied text.
+
+Method Delta:
+- Bind full source in the review request.
+- Separate primary measurement from cleanup outcome.
+- Make the consumer gate explicit and fail closed on incomplete/unclean evidence.
+- Apply minimum source repairs and keep artifact provenance, compilation and runtime evidence orthogonal.
+
+Routing Delta:
+- Codex performs the minimum unexecuted artifact refinement and states the exact consumer predicate.
+- Reconcile provenance/readiness before considering the unchanged, previously authorized single protected operation.
+
+Current edge:
+`inline source challenge → minimal hardening → artifact identity + consumer gate → readiness reconciliation → one bounded action if all gates pass`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — REVIEWER SOURCE AVAILABILITY IS AN INPUT GATE
 
 Knowledge Delta:
