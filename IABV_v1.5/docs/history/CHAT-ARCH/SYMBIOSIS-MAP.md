@@ -1,3 +1,15 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21 P0 STATIC EXPORT PRESENCE ACCEPTED
+
+Knowledge Delta: Codex reports same-target `dumpbin /EXPORTS`, exit 0, and both experimental names present; target DLL hash/signature match previous reports. Artifact path/hash are reported; coordinator-side raw-byte read-back remains unperformed.
+
+Method Delta: close static presence only, not loadability or sandbox suitability. Dynamic loading is a new experiment because initialization may execute; freeze its contract and readiness, obtain explicit Owner authorization, and capture raw evidence.
+
+Routing Delta: no repeated manual checks. Next edge is the load-only experiment contract and authorization. P1 NOT AUTHORIZED; no API invocation or candidate execution.
+
+Source: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — ROUTE P0 TOOL GAP TO CONDITIONAL CODEX CHECK
 
 Knowledge Delta: the latest local transcript confirms medium integrity and rechecks the same DLL hash/signature; `dumpbin` is absent.
