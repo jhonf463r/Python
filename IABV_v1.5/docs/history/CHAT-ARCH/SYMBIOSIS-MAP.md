@@ -1,3 +1,15 @@
+## 2026-10-09 SYMBIOSIS ROUTE — RQ219 TRUSTED MUTATION-AUTHORITY SOURCE DISCOVERY
+
+Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
+
+The first-tranche policy and the present-source trust anchor must remain separate:
+- Accepted target policy: explicit human Owner approval bound to operation/resource/scope; deny unknown or invalid authorization; no push and explicit Git allowlist.
+- Open question: existing code has not identified a trusted producer/verifier for that approval, identity, freshness and decision receipt.
+- ObservationPermissionGate is not mutation approval unless source proves a specific contract bridge; the current RQ210 report says it derives from observation permission.
+- Source discovery is limited to the already-reviewed mutation handlers, callback, model and gate producer with direct imports/calls. Stop at a broader authority subsystem.
+- Root/protected-path allowlist and immutable baseline remain Owner decisions; current dirty worktree must remain untouched.
+- No source edits or runtime. MCP readiness remains blocked; RQ13-111 and RQ21.200 remain independent.
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ218 POLICY DIRECTION ACCEPTED; TRUST ANCHOR STILL MISSING
 
 Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
