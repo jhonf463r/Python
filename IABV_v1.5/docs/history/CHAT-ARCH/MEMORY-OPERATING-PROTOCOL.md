@@ -1,3 +1,14 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.192 V4 SOURCE / LENGTH-ERROR RECONCILIATION
+
+For a native interop candidate after targeted repair:
+- Reconcile the exact complete source before routing a fresh independent challenge; do not infer saved-byte identity or runtime correctness from the supplied hash report.
+- Acquisition states must distinguish NOT_ATTEMPTED, ATTEMPT_IN_PROGRESS, confirmed success/failure and unresolved. Unresolved ownership is not clean evidence, and only a confirmed-acquired non-null handle may be closed.
+- Bound native output length before allocation using the frozen architecture, native structure layout, maximum variable field and any required padding; challenge the derivation of every hard cap.
+- Preserve the actual observed Win32 error even when a secondary validation rejects the returned required length. Keep the failure stage/detail and raw error semantically distinct.
+- Fresh-process execution, host/runtime identity, script provenance and output freshness must be runner-enforced and tied to the same child invocation. A declared output predicate alone is not proof of enforcement.
+- After material changes to gate-relevant source, require another source-bound independent challenge before artifact/consumer/readiness gates.
+- Static preparation and review do not consume or expand the frozen Owner authorization.
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.191 REVIEW-TO-REPAIR RECONCILIATION
 
 Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.

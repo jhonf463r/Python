@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.192 V4 SOURCE RECONCILED; INDEPENDENT CHALLENGE NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md.
+
+V4 complete inline source was reconciled against RQ21.191. F1 acquisition states and unresolved-cleanup handling are present; F7 rejects lengths above the proposed x64 16-byte label + 68-byte max SID = 84-byte bound before allocation, with a runtime layout check. The bound still needs independent source challenge against the exact native output contract.
+
+New low-severity source finding: the GetTokenInformation sizing call observes ERROR_INSUFFICIENT_BUFFER (122), but if requiredLength is outside [16,84], TokenInformationLength branches set win32_error=null and lose the observed error. The primary result remains INTEGRITY_QUERY_FAILED; no false pass is demonstrated. Preserve the actual error code while keeping the length-validation stage.
+
+NEXT ACTOR: SONNET/CLAUDE, independent challenge of complete v4 source inline. No compile/run/token query/temp-file search/file or Git mutation/DLL load/export/runner preparation. Saved file/hash are actor-reported; consumer enforcement and target readiness remain unproven. Record 182 authorization remains conditional, unconsumed and not current execution permission.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.191 V3 CHALLENGE RECONCILED; MINIMAL V4 STATIC REPAIR NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.

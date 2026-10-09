@@ -1,3 +1,15 @@
+## 2026-10-08 — RQ21.192 V4 SOURCE RECONCILIATION
+
+[INPUT] User supplied the complete v4 source and Codex-reported path/size/hash. Candidate path: C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v4.ps1; 16,998 bytes; SHA-256 DECC9BD4C030CB897A29EE1A474DC5F9828473EADF7CE36107758C385A8E2ADD. These identity details remain actor-reported from the coordinator's perspective.
+
+[STATIC RECONCILIATION] F1 appears implemented: ATTEMPT_IN_PROGRESS before OpenProcessToken; unresolved acquisition becomes UNRESOLVED and cleanup_clean=false; only confirmed success + non-null handle is closed. F7 appears implemented: x64/16-byte layout check and required/returned length cap of 84 bytes before/after allocation. The bound is plausible as 16 + documented 68-byte maximum SID but requires independent review against the exact TokenIntegrityLevel output contract.
+
+[ADDITIONAL SOURCE CONCERN] When the size query fails with ERROR_INSUFFICIENT_BUFFER (122) but requiredLength is <16 or >84, the code returns win32_error=null and discards an observed native error. Outcome remains INTEGRITY_QUERY_FAILED; no false pass demonstrated. Reviewer should validate and recommend preserving 122 while retaining the length-validation failure stage.
+
+[UNPROVEN] Saved artifact bytes/hash by direct read-back; compilation/runtime; real process token; actual consumer wiring; target preconditions; DLL load/exports.
+
+[NEXT EDGE] Sonnet/Claude independent challenge of full v4 source inline: F1/F7, 84-byte rationale, buffer/SID bounds, cleanup/interruption behavior, error preservation and all nine audit areas. Static only. No protected operation.
+
 ## 2026-10-08 — RQ21.191 V3 INDEPENDENT CHALLENGE RECONCILIATION
 
 Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.

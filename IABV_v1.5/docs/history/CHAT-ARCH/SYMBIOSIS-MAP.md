@@ -1,3 +1,19 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.192 V4 SOURCE RECONCILIATION
+
+Knowledge Delta:
+- v4 source visibly addresses unresolved acquisition semantics and caps output length before unmanaged allocation.
+- The 84-byte upper bound is structurally plausible (x64 TOKEN_MANDATORY_LABEL size 16 + maximum SID 68), but requires independent challenge against the exact native output contract.
+- A low-severity metadata gap remains: observed error 122 is discarded if the associated requiredLength violates the 16..84 bound. No false pass is demonstrated.
+
+Method Delta:
+- Independently challenge each materially revised native source, preserving source-vs-artifact-vs-runtime distinctions.
+- Do not discard an observed native error when subsequent semantic validation rejects length; preserve the error and distinct stage/detail.
+- Treat unresolved acquisition as unclean and never close an unconfirmed handle.
+
+Routing Delta:
+- Sonnet/Claude receives the full v4 source inline for static challenge; no compile/run or protected operation.
+- After the review, reconcile results, then verify artifact identity and actual consumer enforcement separately.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.191 INDEPENDENT V3 CHALLENGE RECONCILED
 
 Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.

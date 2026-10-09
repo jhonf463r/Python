@@ -1,3 +1,9 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V4 SOURCE RECONCILED; INDEPENDENT CHALLENGE NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md.
+
+Codex reports v4 at 16,998 bytes with SHA-256 DECC9BD4C030CB897A29EE1A474DC5F9828473EADF7CE36107758C385A8E2ADD; not compiled/run and not byte-read back by coordinator. F1/F7 are present in the complete inline source. Independent challenge next must verify the 84-byte cap and acquisition/cleanup paths. A low-severity source concern is that invalid-length branches discard observed Win32 error 122. Consumer enforcement and all readiness gates remain open; record 182 authorization is conditional and not current execution permission.
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — INDEPENDENT V3 CHALLENGE RECONCILED; V4 MINIMAL REPAIR NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.

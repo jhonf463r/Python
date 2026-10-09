@@ -1,3 +1,11 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.192 V4 SOURCE RECONCILED; SONNET CHALLENGE NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md.
+
+The complete pasted v4 source appears to implement F1 unresolved-acquisition states and F7 pre-allocation bounds, but neither saved bytes nor runtime is independently verified. Source challenge must verify the 84-byte derivation and interruption/cleanup behavior. A low-severity evidence concern is loss of observed error 122 when requiredLength is rejected as too small/large.
+
+NEXT: SONNET/CLAUDE reviews the complete v4 source inline, static only, also checking whether the error is preserved. No compile/run, token query, filesystem search, file/Git mutation, DLL/export operation or runner preparation. Actual consumer enforcement and target readiness remain separate.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.191 V3 CHALLENGE ACCEPTED; CODEX MINIMAL V4 REPAIR NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.

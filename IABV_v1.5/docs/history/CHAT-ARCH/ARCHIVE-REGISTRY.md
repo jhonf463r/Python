@@ -1,3 +1,11 @@
+## 2026-10-08 REGISTRATION — RQ21.192
+
+Canonical record: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md
+
+Summary: v4 inline source reconciliation finds F1/F7 visibly implemented; the 84-byte x64 layout-plus-maximum-SID bound needs independent challenge. The size-query path loses observed Win32 error 122 when requiredLength is rejected as out of bounds. Next: Sonnet/Claude static challenge of full v4 source. Artifact bytes, compilation/runtime, consumer enforcement and target readiness remain unverified; no protected operation authorized.
+
+Tags: RQ21 / P1 / v4 / static source reconciliation / F1 / F7 / allocation bound / Win32 error preservation / provenance / consumer gate / authorization
+
 ## 2026-10-08 REGISTRATION — RQ21.191
 
 Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md
