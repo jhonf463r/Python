@@ -1,3 +1,13 @@
+## 2026-10-08 REGISTRATION — RQ21.188
+
+Canonical record: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`
+
+Summary: Independent review returned SOURCE_UNAVAILABLE_OR_INCOMPLETE because its prompt/context lacked the v2 source. No technical finding. Re-route to Sonnet/Claude with full source inline; static only, no protected operation.
+
+Tags: RQ21 / P1 / v2 / source handoff / independent audit / provenance / readiness
+
+---
+
 ## 2026-10-08 REGISTRATION — RQ21.187
 
 Canonical record: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`
