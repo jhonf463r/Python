@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ219 BOUNDED STATIC MUTATION-AUTHORITY DISCOVERY
+
+Canonical record: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md
+
+Summary: Owner authorized static inspection of already-reviewed self-update mutators, governance callback, model and WorldModel permission-gate producer plus direct dependencies, solely to determine whether an existing trusted human Owner approval producer/verifier exists. Stop at broader authorization subsystems. Policy direction: per operation/resource/scope; deny missing/unknown/stale/malformed/denied/mismatched states; no push; explicit Git allowlist; preserve dirty worktree. Exact workspace root/protected paths and baseline remain open. No edits or runtime; readiness blocked.
+
+Tags: IABV MCP / RQ219 / mutation authority / static only / trust anchor / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ218 CONSERVATIVE FIRST-TRANCHE POLICY DIRECTION
 
 Canonical record: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md
