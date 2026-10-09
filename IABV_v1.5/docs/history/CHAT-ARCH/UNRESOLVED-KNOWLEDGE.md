@@ -2,7 +2,7 @@
 
 [REPORTED FACT] Codex reports matching target host `MSI` / Windows `10.0.26300.9550` x64 / MEDIUM integrity, matching DLL SHA-256 `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`, Authenticode `Valid`, and `dumpbin /EXPORTS` exit 0 with both exact names present.
 
-[REPORTED FACT] Tool version `14.50.35729.0`, SHA-256 `2B5C460E9A98D78F56F6DED4959F5B6F73001B71AEE4B52C5989C145C5B8AA78`, Authenticode `Valid`. Raw report path and reported SHA-256 `2730E67F45A2F2154F7203C05FC69308623F7BAAB4EF86D4E325BB4A57E9BFFD) are in the canonical record.
+[REPORTED FACT] Tool version `14.50.35729.0`, SHA-256 `2B5C460E9A98D78F56F6DED4959F5B6F73001B71AEE4B52C5989C145C5B8AA78`, Authenticode `Valid`. Raw report path and reported SHA-256 `2730E67F45A2F2154F7203C05FC69308623F7BAAB4EF86D4E325BB4A57E9BFFD` are in the canonical record.
 
 [ADJUDICATION] P0 PASS for static file/export presence only. The coordinator has not directly read the local report bytes or recomputed its hash; preserve that evidence limitation. Codex reports that the DLL was not loaded and neither API invoked.
 
