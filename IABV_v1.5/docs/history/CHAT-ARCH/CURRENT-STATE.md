@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ218 OWNER POLICY PARTIAL; SOURCE EDITS STILL BLOCKED
+
+Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
+
+Owner's "sí" is recorded as approval of conservative first-tranche design direction: explicit Human Domain Owner approval per operation/resource/exact scope; deny on missing/unknown/stale/malformed/denied/mismatched authority or permission; unknown network blocks network-required routes; explicit Git file allowlist, reject unrelated staged changes and no push; future initial implementation source-edits-only; preserve the existing dirty/detached worktree and use a separate clean worktree only after a baseline is explicitly chosen.
+
+Not yet resolved: verified authority producer/verifier, exact canonical allowed workspace root/protected paths, and exact immutable baseline. These are blockers before an implementation task. No code edits, worktree creation/change, tests/builds, runtime, MCP/process operations, DB/secrets/snapshot, package installation/download or Git mutation authorized. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ216 CONTRACT ACCEPTED; OWNER POLICY DECISIONS PENDING
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
