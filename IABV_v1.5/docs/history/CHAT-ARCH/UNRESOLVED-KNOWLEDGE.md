@@ -1,3 +1,21 @@
+## 2026-10-09 — RQ212 ADJUDICATED; EXACT UVICORN AND LIVE CONFIGURATION UNRESOLVED
+
+Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
+
+[ACCEPTED WITH LIMITS]
+- Static launcher configuration and source inventory were completed within scope.
+- Codex supplied SHA-256 values for the IABV source files previously missing them; coordinator did not independently read/hash the Windows worktree.
+- Reported port discrepancy: PowerShell default 8000, service/docs 8765.
+
+[UNRESOLVED]
+- Exact Uvicorn version/source and HTTP shutdown behavior for the selected environment; Uvicorn was not found in the inspected default interpreter.
+- Which interpreter/transport/dependencies any real target process used.
+- Effective impact of the port discrepancy on a real launch.
+- Whether any safe isolation boundary exists and whether runtime readiness can be established.
+- Historical PID 16768 loaded-source attribution and live ToolCard inventory/invocation remain separate.
+
+`server.py` is dirty; its reported local hash does not identify the baseline blob. RQ21.200 remains independent. No runtime or mutation authorized.
+
 ## 2026-10-09 — RQ212 STATIC EVIDENCE SUPPLEMENT AUTHORIZED; RESULTS PENDING
 
 Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
