@@ -1,3 +1,25 @@
+## 2026-10-09 — RQ219 ADJUDICATED: NO TRUSTED MUTATION AUTHORITY FOUND IN SCOPE
+
+Canonical: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
+
+[ACCEPTED RESULT] `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE`.
+
+[DEMONSTRATED IN REPORTED SOURCES]
+- In-scope self-update handlers use generic governance before side effects, not a verifiable owner approval receipt bound to operation/resource/exact scope.
+- WorldModel `ObservationPermissionGate` represents observation permission, lacking authenticated approver, mutating operation, canonical target/exact scope and expiration.
+- `HumanApprovalBroker` has request/result structures without demonstrated authenticated approver identity/expiry/effect receipt, and `pre_approver` can resolve without human presence.
+- PR approval policy is not a universal authorization contract for local file update, patch, stage/commit/push, checkout, pull or merge.
+
+[UNRESOLVED]
+1. UI registration of the broker `prompt_handler`, and identity/caller context behind `HumanApprovalBroker.approve(request_id, payload)`.
+2. Any additional authentication in that UI path; do not assume it exists, and do not claim it is absent across all IABV.
+3. A mutation-specific trusted authority/receipt contract and how a mutator verifies it before the first effect.
+4. Exact allowed workspace root/protected-path policy, explicit Git allowlist, and immutable implementation baseline.
+
+[NEXT OWNER GATE] Decide whether to authorize only the direct UI prompt-handler/caller identity path as a read-only static follow-up; stop at broader identity/authentication dependencies. Do not edit or test.
+
+Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain independent.
+
 ## 2026-10-09 — RQ219 STATIC AUTHORITY SOURCE DISCOVERY AUTHORIZED; RESULTS PENDING
 
 Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
