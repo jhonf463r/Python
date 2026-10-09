@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — MCP STARTUP PLAN BLOCKED BY TRANSITIVE EFFECTS
+
+Canonical record: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md
+
+Summary: Codex's read-only startup plan is accepted as `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS`. Source reports indicate refresh/scan paths, potential network probes, window/focus and process observation, and local snapshot persistence. Important callees remain unresolved; the existing subprocess/deferred-probe flags do not establish a safe boundary. Next: obtain new owner authorization for a narrow read-only audit of named direct dependencies and immediate effectful helpers. No launch, reconnect, MCP call, process interaction, runtime probe or mutation is authorized.
+
+Tags: IABV MCP / startup side effects / transitive audit / WorldModel / EnvironmentSelfAwareness / persistence / network / scope authorization / no launch
+
 ## 2026-10-09 REGISTRATION — READ-ONLY MCP STARTUP IMPACT PLAN AUTHORIZED
 
 Canonical record: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md
