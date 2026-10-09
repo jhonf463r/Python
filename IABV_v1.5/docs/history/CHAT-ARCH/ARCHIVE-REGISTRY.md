@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — READ-ONLY MCP STARTUP IMPACT PLAN AUTHORIZED
+
+Canonical record: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md
+
+Summary: Human Domain Owner explicitly authorized a bounded read-only source analysis of startup effects and isolation options. This is planning only; no MCP call, process inspection, server startup/reconnect, provider check, test, compilation, runtime observation or mutation is authorized. Codex must inspect only the known MCP server/bootstrap/WorldModel source, bridge docs and RQ13-108/109 records, identify demonstrated/conditional/unresolved transitive effects, and report isolation and abort conditions. Coordinator reviews before any future execution authorization.
+
+Tags: IABV MCP / owner-authorized read-only plan / startup side effects / AppBootstrap / isolation / no launch / no reconnect / no runtime
+
 ## 2026-10-09 REGISTRATION — NO PASSIVE PROOF OF MCP SOURCE-AS-LOADED
 
 Canonical record: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md
