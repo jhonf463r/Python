@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — RQ212 STATIC ARTIFACTS AND HASHES ONLY
+
+Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
+
+- Owner authorized only inspection of already-existing static artifacts for launcher/interpreter/transport and exact locally present Uvicorn version/source, plus SHA-256/provenance for RQ210-cited IABV files whose hashes were missing.
+- Re-confirm the exact dirty/detached worktree before reading; preserve it. Never inspect live processes or infer source-as-loaded from a configured launcher.
+- No runtime imports/calls, MCP start/reconnect, process interaction, probes, package manager/install/download, tests/builds, DB/secrets/snapshots, or source/worktree change. Do not retrieve unavailable evidence through execution or network.
+- If local artifacts do not establish the version/bytes, mark the exact subtask unavailable/blocked. Hash local bytes, not remote-main replacements; label modified-file status only where direct status/diff evidence exists.
+- Do not broaden into a fresh RQ210 audit. RQ21.200 remains separate and global MCP readiness remains blocked.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ210 ADJUDICATION / KEEP SOURCE AND RUNTIME DISTINCT
 
 Canonical authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
