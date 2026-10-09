@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ212 ADJUDICATED; UVICORN REMAINS BLOCKED
+
+Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
+
+Accept RQ212 launcher/interpreter/transport static review as complete within scope; accept its source hashes as actor-reported provenance for files available locally. Codex reports the script defaults to Miniconda Python and `streamable-http`, but supports overrides; it reports a port mismatch (PowerShell default 8000 versus service/docs 8765). The exact runtime configuration is not established. Uvicorn was not found in the inspected default interpreter and is not pinned in repository requirements; exact HTTP shutdown behavior remains blocked. `server.py` is locally modified, so its current hash does not identify baseline bytes.
+
+Overall remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; isolation/runtime readiness is not established. No runtime operations or worktree changes; RQ21.200 stays separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ212 STATIC SUPPLEMENT AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
