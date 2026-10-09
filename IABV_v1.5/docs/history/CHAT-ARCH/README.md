@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE ROUTE — RQ216 CONTRACT ACCEPTED, OWNER DECISION REQUIRED
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md
+
+The static security contract is accepted as a design proposal only. Before implementation, Owner must decide approver authority, per-operation/resource/scope policy, fail-closed behavior, allowed workspace roots/protected paths, exact baseline and isolated worktree, explicit Git scope/no push, and whether verification is a separate phase. Preserve the existing dirty/detached worktree. No code edits, tests/builds or runtime authorized. Global MCP readiness remains blocked; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ216 STATIC SECURITY CONTRACT ONLY
 
 Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
