@@ -8,6 +8,8 @@ Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md
 
 **NEXT — RQ224:** design/adjudicate the trust source and receipt producer/verifier. Distinguish any source-grounded existing mechanism from a hypothetical option. Stop before recursively inspecting a broad identity/auth subsystem; reopen static inspection only if a concrete caller, identity definition or receipt producer is identified.
 
+**Parallel continuity-method adjudication — RQ226 (does not supersede technical NEXT RQ224):** the supplied bounded audit is accepted as `RQ226_AUDIT_COMPLETE_WITH_FINDINGS`. It identified conflicting entry orders, an ambiguous UAAL activation trigger and the absence of a uniform source-coverage/completeness contract for arbitrary supplied chats. The documentary harmonization is recorded in [RQ226 adjudication](CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md). This writeback aligns existing protocols and projections; it does not prove operational retrieval reliability or causal reuse. A separate continuity test remains required. No new memory organ is introduced.
+
 RQ218 policy direction remains accepted but is not technology approval or implementation permission. Exact canonical workspace root/protected paths, immutable baseline, scope of editable files and separate clean worktree are still Owner gates. Preserve the current dirty/detached worktree. No source edits, worktree changes, tests/builds, runtime, MCP/process/state operations, installation/download or Git mutation beyond this documentation writeback. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain separate.
 
 ---
