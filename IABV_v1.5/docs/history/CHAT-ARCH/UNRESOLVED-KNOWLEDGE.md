@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 P0 MEDIUM TOKEN VERIFIED IN USER TRANSCRIPT; INDEPENDENT READER UNAVAILABLE
+
+[REPORTED FACT] Latest console output reports host `MSI`, PowerShell `5.1.26100.9549`, `whoami` exit 0, integrity SID `S-1-16-8192` (`MEDIUM`), DLL hash `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`, and Authenticode `Valid`.
+
+[REPORTED FACT] `dumpbin.exe` was not found; no independent export parser ran in this attempt.
+
+[INFERENCE] The local non-elevated static inspection path is workable for basic file identity checks, but an independent PE reader remains a missing local capability.
+
+[UNPROVEN] Codex's access to the exact same host; independent export table verification; full P0 evidence package; any API runtime or seven-guarantee claim.
+
+Routing: Codex may first prove exact-target channel readiness; if matched, inspect using an already-installed independent PE reader only. If mismatch or no reader, stop without installation. No source edits, DLL loading, API invocation or candidate execution.
+
+Source: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
+
+---
+
 ## 2026-10-08 — P0 RETEST ABORTED AT NULL INTEGRITY SID LOOKUP
 
 [REPORTED FACT] Console output for `MSI` at local `2026-10-08T19:16:20-05:00` / UTC `2026-10-09T00:16:20Z` shows PowerShell `5.1.26100.9549`, account `MSI\\faber`, then a null-index error at `$levels[$integritySid]`.
