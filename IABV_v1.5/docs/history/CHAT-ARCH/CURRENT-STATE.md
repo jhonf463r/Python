@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.194 V5 SOURCE RECONCILED; SONNET CHALLENGE NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
+
+The complete v5 source supplied inline contains the requested F8 correction (preserves observed error 122 on both invalid-length branches) and F7 comment qualification; F1 behavior is retained. Coordinator classification is source-reconciliation pass only, independent challenge open. The saved artifact path/size/SHA remain actor-reported and have not been independently byte-read from this environment.
+
+Minor traceability note: candidate filename says v5 but the class declaration/invocation still say Rq21P1IntegrityDetectorV4. They are self-consistent and the requested delta was deliberately narrow; independent reviewer should assess this as a non-blocking naming concern unless it has a concrete consequence.
+
+NEXT: SONNET/CLAUDE, independent static challenge of the complete v5 source in the same prompt, using safe non-nested formatting. No compile/run/token query/temp search/file or Git mutation/DLL/export/runner activity. Consumer enforcement and target readiness remain unproven; record 182 authorization remains conditional, unconsumed and not current execution permission.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.193 V4 CHALLENGE RECONCILED; CODEX V5 MINIMAL REPAIR NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
