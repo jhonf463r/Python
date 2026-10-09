@@ -1,3 +1,24 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — V3 DETECTOR SOURCE PASS, CONSUMER STILL UNPROVEN
+
+Knowledge Delta:
+- v3 incorporates separate cleanup state, explicit close result/error, acquisition observation fields, nullable native-error metadata and a literal here-string.
+- Inline-source review does not verify saved artifact identity, compilation, runtime behavior or consuming-runner enforcement.
+- An unresolved acquisition state must not be over-interpreted as confirmed clean, even when the primary failure outcome blocks the consumer.
+
+Method Delta:
+- After targeted repair, ask a distinct actor to challenge the exact changed source.
+- Preserve the distinctions `measurement outcome`, `resource cleanup`, `saved bytes`, `compile/runtime`, and `consumer enforcement`.
+- Treat only actual runner enforcement—not an authored description—as evidence that the readiness gate is wired.
+
+Routing Delta:
+- Sonnet/Claude independently challenges full v3 source inline.
+- Then reconcile the acquisition/cleanup ambiguity, exact artifact hash and actual consumer contract before reconsidering the already-bounded operation.
+
+Current edge:
+`v3 inline source → independent challenge → artifact provenance + actual consumer gate → readiness/authorization reconciliation`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — SOURCE-BOUND PASS WITH REPAIRS
 
 Knowledge Delta:
