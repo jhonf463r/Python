@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — INTEGRITY DETECTOR CAUSE FOUND, CORRECTION DESIGN ONLY
+
+Canonical: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`.
+
+Codex's static report attributes `UNKNOWN` to a lookup of `S-1-16-*` in `WindowsIdentity.GetCurrent().Groups`, with no direct `GetTokenInformation(TokenIntegrityLevel)` call. This explains the script's fail-closed path but does not establish the previous process's true token SID.
+
+NEXT: Codex prepares a design-only, unexecuted correction using the intended process token, `TokenIntegrityLevel`, and validated `TOKEN_MANDATORY_LABEL` SID parsing. Keep a separate hash-verified temp artifact outside the repo. No token query, DLL load or source changes. Reconcile the bounded Owner authorization separately before any later attempt.
+
+---
+
 # IABV v1.5 — CHAT-ARCH: Canonical Historical Knowledge Entry Point
 
 
