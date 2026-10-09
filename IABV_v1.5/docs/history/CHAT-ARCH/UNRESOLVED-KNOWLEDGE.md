@@ -1,3 +1,19 @@
+## 2026-10-08 — P0 RETEST ABORTED AT NULL INTEGRITY SID LOOKUP
+
+[REPORTED FACT] Console output for `MSI` at local `2026-10-08T19:16:20-05:00` / UTC `2026-10-09T00:16:20Z` shows PowerShell `5.1.26100.9549`, account `MSI\\faber`, then a null-index error at `$levels[$integritySid]`.
+
+[INFERENCE] `WindowsIdentity.Groups` yielded no `S-1-16-...` SID in the script's extraction. The diagnostic failed; process integrity remains UNKNOWN.
+
+[FACT ABOUT RUN CONTROL] Due `$ErrorActionPreference='Stop'`, the script aborted before checking DLL hash/signature, discovering `dumpbin`, or independently checking exports. None of these later observations were produced by this run.
+
+[UNPROVEN] Non-elevated token integrity; independent export corroboration; parser identity/output hash; DLL recheck; API loadability/operation; all runtime seven-guarantee claims.
+
+Next action: use `whoami.exe /groups /fo csv /nh` with null-safe parsing. Continue only if exactly one recognized SID is returned and it is MEDIUM. No elevation, installations, DLL load, API calls or candidate execution.
+
+Source: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P0 OUTPUT REPORTED; INDEPENDENT STATIC VERIFICATION OPEN
 
 [REPORTED FACT] User-pasted console output for host `MSI` reports Windows 11 26H2 build `10.0.26300.9550`, x64 OS/process, `C:\\WINDOWS\\System32\\processmodel.dll` present, length `417792`, File/Product version `10.0.26100.9549`, SHA-256 `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`, Authenticode `Valid` with Microsoft Windows signer, and both experimental exports found by the same in-script PE parser.
