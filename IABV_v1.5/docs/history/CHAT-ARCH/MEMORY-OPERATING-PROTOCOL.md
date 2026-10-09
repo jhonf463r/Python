@@ -1,3 +1,16 @@
+## 2026-10-08 METHOD AMENDMENT — CANDIDATE SOURCE, CLEANUP AND CONSUMER ARE SEPARATE GATES
+
+For a native diagnostic candidate, preserve these separate states:
+`source reviewed ≠ saved bytes verified ≠ compiled ≠ executed ≠ observed ≠ consumed by an enforcing runner`.
+
+A candidate's stated hash is actor-reported until the actual saved bytes can be independently read and hashed. Do not claim compile/runtime correctness from source review.
+
+A consumer gate that requires a verified measurement and clean resource cleanup should check both independently (for RQ21 v3: `outcome == MEDIUM_CONFIRMED && cleanup_clean == true`). But an authored predicate is only a contract until the actual runner wiring is inspected. All other target-bound readiness gates remain separate.
+
+If token acquisition fails or throws before status assignment, do not infer successful or clean acquisition. Preserve unknown/attempted distinctions; only close a confirmed-acquired handle, and do not classify unresolved acquisition as fully clean evidence. A failure outcome must still fail the consumer gate.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — RECONCILE INDEPENDENT NATIVE-INTEROP REVIEW
 
 A `STATIC_REVIEW_PASS_WITH_REPAIRS` applies only to the exact source text reviewed. Keep `inline source reviewed`, `saved bytes/hash independently verified`, `compiled`, and `executed` as separate evidence states. A failed source handoff is a stop, not a code finding; when source is already in the coordinator context, route it inline rather than asking the user to repeat it.
