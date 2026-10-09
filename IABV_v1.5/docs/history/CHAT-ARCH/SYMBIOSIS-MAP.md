@@ -1,3 +1,22 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.194 V5 SOURCE RECONCILED
+
+Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
+
+Knowledge Delta:
+- Complete pasted v5 source appears to preserve observed Win32 error 122 on both invalid-length branches and qualifies the F7 allocation-ceiling comment.
+- F1 acquisition/cleanup behavior is retained.
+- Saved-byte identity, compilation/runtime and actual consumer enforcement remain unverified.
+- Internal class name remains V4 in a v5-named artifact; it is self-consistent and currently only a traceability question.
+
+Method Delta:
+- Keep the source review, saved-byte identity, runtime and runner enforcement distinct.
+- Challenge every material native-interop source change independently using complete source with non-nested formatting.
+- Preserve observed native errors on validation failures and do not overstate the guarantees of a defensive size bound.
+
+Routing Delta:
+- Sonnet/Claude reviews the complete v5 source inline, static only. No compile/run/token query/temp search/Git mutation/DLL/export/runner work.
+- Artifact identity and actual consumer enforcement remain later gates; no protected operation authorized.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.193 V4 CHALLENGE RECONCILED
 
 Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
