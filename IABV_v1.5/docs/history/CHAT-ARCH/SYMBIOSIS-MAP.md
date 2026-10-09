@@ -1,3 +1,22 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.197 CONSUMER/DETECTOR SEPARATION
+
+Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
+
+Knowledge Delta:
+- v5 is reported as a detector that measures the current process primary token and emits JSON; it is not the protected loader or its consumer.
+- The known loader diagnostic reportedly uses a separate WindowsIdentity.Groups/medium_integrity guard and does not consume v5 JSON.
+- Therefore the actual consumer linkage and enforcement of the double gate are unproven. This is an integration/provenance gap, not a demonstrated v5 static defect.
+
+Method Delta:
+- Separate measuring component, decision-making consumer, and protected operation. Existence of a detector does not mean its output controls the operation.
+- On CONSUMER_SOURCE_UNAVAILABLE, obtain authoritative source identity rather than repeat broad searches or invent a substitute runner.
+
+Routing Delta:
+- Owner/operator supplies or confirms the exact authoritative consumer/runner path or repository URL/commit and intended v5-to-loader link.
+- Then Codex audits only that source read-only.
+- No compile/run/token query, arbitrary temp search, DLL/export/candidate operation.
+
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.196 V5 ARTIFACT IDENTITY MATCH
 
 Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
