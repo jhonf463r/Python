@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ216 DESIGN-ONLY SECURITY CONTRACT
+
+Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
+
+Summary: Owner said "si procede" to the next recommended step, interpreted narrowly as a read-only source-grounded contract proposal for first-tranche self-update mutation authorization, protected-path/workspace validation, explicit Git file scope/no push, and fail-closed unknown-network handling. No code edits, worktree changes, tests/builds or runtime. Owner policy decisions remain open and must be presented rather than inferred. Overall MCP readiness is still blocked.
+
+Tags: IABV MCP / RQ216 / mutation authorization / fail closed / Git scope / design only / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ214 STATIC REMEDIATION PLAN ACCEPTED
 
 Canonical record: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md
