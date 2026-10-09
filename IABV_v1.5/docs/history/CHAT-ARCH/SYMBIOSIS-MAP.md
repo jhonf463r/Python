@@ -1,3 +1,15 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — P1 LOAD-ONLY PROBE OWNER-AUTHORIZED
+
+Knowledge Delta: P0 static presence of both exports is accepted; Human Domain Owner explicitly authorizes one separate load-only and symbol-resolution probe.
+
+Method Delta: fixed exact target, file hash/signature, MEDIUM token, restricted loader flags, no export invocation, raw evidence and stop rules. DLL initialization can execute; success is not containment proof.
+
+Routing Delta: Codex executes this one-shot probe only on the verified target. No other AI handoff, no candidate launch, API invocation, source change or later experiment permission.
+
+Source: `CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21 P0 STATIC EXPORT PRESENCE ACCEPTED
 
 Knowledge Delta: Codex reports same-target `dumpbin /EXPORTS`, exit 0, and both experimental names present; target DLL hash/signature match previous reports. Artifact path/hash are reported; coordinator-side raw-byte read-back remains unperformed.
