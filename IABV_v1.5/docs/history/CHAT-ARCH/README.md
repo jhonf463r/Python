@@ -1,3 +1,12 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — CONSUMER SOURCE UNAVAILABLE; IDENTIFY AUTHORITATIVE RUNNER
+
+Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
+
+v5 static review is accepted and its saved-file identity is reported as matching the reviewed source. New finding: v5 is only a token-integrity detector emitting JSON; the known loader diagnostic reportedly uses its own WindowsIdentity.Groups/medium_integrity check and does not consume v5 JSON. No inspected source links v5's result to the protected loader decision. The double gate is not proven enforced; this is an integration/source-provenance gap, not a demonstrated v5 static defect.
+
+NEXT: obtain the exact authoritative consumer/runner path or repository URL/commit and intended v5-to-loader call path from owner/operator provenance or known project artifacts. Then Codex audits that exact source read-only. Do not repeat broad searches, enumerate arbitrary temp paths or invent a runner. No compile/run/token/DLL/export/candidate activity; record 182 authorization remains conditional and unconsumed.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V5 ARTIFACT IDENTITY MATCH; CONSUMER AUDIT NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
