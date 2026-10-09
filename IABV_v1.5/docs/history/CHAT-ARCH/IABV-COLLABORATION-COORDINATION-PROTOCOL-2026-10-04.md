@@ -17,9 +17,13 @@ Until equivalent runtime behavior is causally proven inside IABV itself, GitHub-
 
 ## MANDATORY PRE-TASK EXPERIENCE-ACTIVATION GATE
 
-The normal collaboration flow has a strict precondition: before constructing a task/prompt for another actor, activate the relevant IABV frame and prior experience.
+The normal collaboration flow has a strict precondition: before constructing a task/prompt for another actor, use the one canonical entry sequence in `README.md` (`verify remote main SHA → README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → objective-specific retrieval`) and activate prior experience.
 
-`objective → current canonical state → objective-conditioned retrieval → failure/false-positive history → negative knowledge + method deltas → first open edge → capability/actor/readiness → task/prompt`.
+For objectives touching global vision, architecture, universal semantics/generalization, cross-domain composition, learning, memory/continuity or protocol design, explicitly activate `UAAL-ROOT-001` and the relevant concept lineage. For a supplied chat, use the `CHAT / TRANSCRIPT INTAKE CONTRACT` in `MEMORY-OPERATING-PROTOCOL.md` and state any coverage limitations.
+
+`objective → canonical entry → objective-conditioned retrieval → failure/false-positive history → negative knowledge + method deltas → first open edge → capability/actor/readiness → task/prompt`.
+
+This harmonizes the collaboration protocol with the entry contract; it does not create a new coordinator or supersede `CURRENT-STATE.md` as routing authority.
 
 Relevant prior failures must alter at least one concrete part of the task contract when applicable: object lock, scope exclusions, source requirements, test matrix, evidence requirement, stop condition or acceptance gate. Merely quoting history does not count.
 
