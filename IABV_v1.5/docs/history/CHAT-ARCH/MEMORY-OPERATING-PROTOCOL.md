@@ -1,3 +1,15 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.196 V5 ARTIFACT IDENTITY MATCH
+
+Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
+
+- Accept Codex's exact-path ReadAllBytes/size/SHA report as actor-observed artifact-identity evidence; preserve the boundary that the coordinator has not accessed the Windows bytes directly.
+- Keep hash verification and normalized-text comparison to reviewed source as separately reported checks. Record newline normalization.
+- Artifact identity does not prove Add-Type compilation, runtime behavior, current target readiness or the real consumer gate.
+- Next inspect only the actual runner/consumer entrypoint and output handoff in read-only mode. Trace fresh child identity, output freshness/strict parsing, outcome AND cleanup conditions, failure_stage semantics and each frozen target/DLL/flags/scope gate.
+- If the actual consumer or handoff cannot be identified, stop with CONSUMER_SOURCE_UNAVAILABLE; do not infer enforcement, build a replacement runner or search arbitrary temporary paths.
+- No compile/run/token query/DLL/export/candidate launch. The Owner authorization remains a separate conditional gate.
+
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.195 V5 INDEPENDENT STATIC CHALLENGE
 
 Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
