@@ -1,3 +1,21 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ212 ADJUDICATED; CONFIGURATION IS NOT PROCESS ATTRIBUTION
+
+Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
+
+Knowledge Delta:
+- The launcher exposes `IABV_PYTHON` and `IABV_MCP_TRANSPORT`; reported defaults are Miniconda Python and `streamable-http`. These are config facts, not proof of live configuration.
+- Reported port defaults disagree: script 8000, bridge service/docs 8765. Actual effect is unresolved.
+- Uvicorn was absent from the inspected default interpreter's site-packages; project manifests do not pin it. HTTP shutdown remains unresolved.
+- RQ212 now provides local SHA-256 values for the previously missing RQ210 files, but the coordinator treats these as actor-reported rather than independently rehashed.
+- A dirty `server.py` hash is not baseline provenance.
+
+Method Delta:
+- Separate static configuration, local package metadata, source hash claims, and live process attribution.
+- If exact dependency/source is not locally available, preserve the blocked state; do not install/download or execute to fill gaps.
+
+Routing Delta:
+- No further action within RQ212; any runtime attribution or process inspection needs separate authorization and review. MCP readiness remains blocked; RQ21.200 separate.
+
 ## 2026-10-09 SYMBIOSIS ROUTE — RQ212 STATIC PROVENANCE SUPPLEMENT
 
 Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
