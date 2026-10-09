@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ219 ADJUDICATION / TRUSTED MUTATION AUTHORITY NOT FOUND IN SCOPE
+
+Canonical record: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md
+
+Summary: Accept `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE` for the bounded RQ219 inspection. Reported source evidence shows observation gates and generic broker/route approval are not a verifiable Human Domain Owner receipt bound to each mutation's operation, canonical resource and exact scope. A `pre_approver` may resolve without human presence. The prompt-handler UI registration and identity context of the broker approval caller remain unresolved; do not claim no authentication exists across IABV. Next decision: optionally authorize that exact UI/caller path as a bounded static follow-up. No implementation or runtime; global readiness remains blocked; RQ13-111 and RQ21.200 remain separate.
+
+Tags: IABV MCP / RQ219 adjudication / mutation authority / broker trust / static only / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ219 BOUNDED STATIC MUTATION-AUTHORITY DISCOVERY
 
 Canonical record: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md
