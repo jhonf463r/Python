@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — BOUNDED TRANSITIVE AUDIT + SYMBIOSIS METACOGNITION
+
+- Owner authorized the next read-only audit to include only already-named direct effectful dependencies and immediate helpers plus reconciliation against named canonical memory/symbiosis records. This is not blanket repository-wide recursive permission.
+- Preserve the exact dirty/detached worktree; record HEAD/status/file identity. Follow known import/call-site edges. If a further nested dependency has material effects and is outside scope, label it `UNRESOLVED`, name exact path/symbol and stop for a scope decision.
+- Build both the local call/effect graph and cross-cutting symbiosis matrix: provenance, startup scans, persistence, network/loopback, secrets, host observation, thread/subprocess behavior, logs/traces, transport/session binding, cache/state contamination, lifecycle/rollback, evidence quality, and authorization order.
+- Use prior negative knowledge from RQ201–205 and RQ13-108/109/111; do not conflate historical source attribution with a prospective run. Do not merge the independent RQ21.200 DLL consumer frontier into this MCP task.
+- A metacognitive hypothesis must be anchored to source or labeled as a hypothesis. Avoid speculative issue inflation. Distinguish DEMONSTRATED, CONDITIONAL and UNRESOLVED.
+- No MCP call/list, process interaction, start/reconnect, refresh, provider health check, UI/snapshot observation, secret/database read, testing/compilation, or mutation. Planning analysis grants no launch authorization.
+- Future startup/reconnect and operational snapshot disclosure remain separate, fresh permission gates.
+
 ## 2026-10-09 METHOD AMENDMENT — STARTUP PLAN BLOCKED; TRANSITIVE AUDIT NEEDS NEW SCOPE
 
 - Accept `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS` when inspected startup code reveals possible observation/network/persistence but effectful dependencies remain unaudited.
