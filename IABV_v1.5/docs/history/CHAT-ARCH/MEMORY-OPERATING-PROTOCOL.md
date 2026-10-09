@@ -1,3 +1,14 @@
+## 2026-10-09 METHOD AMENDMENT — RQ219 ADJUDICATED / DO NOT OVERCLAIM AUTHORITY ABSENCE
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
+
+- Accept `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE` for the exact bounded discovery, not as proof that no authentication exists anywhere in IABV.
+- In-scope handlers rely on generic governance inputs; WorldModel `ObservationPermissionGate` describes observation and cannot serve as Owner mutation authorization without a source-proven bridge.
+- Broker `approved` is not proof of Owner identity: `ApprovalResult` as reported has no authenticated approver identity/expiry/operation receipt, and `pre_approver` permits automatic resolution.
+- The direct UI `prompt_handler` registration and identity context for caller of `approve(request_id, payload)` are unresolved. Next scope must be a separate, bounded Owner decision; start only at those exact paths, stop at broader identity/auth subsystem.
+- Even a proven human prompt does not solve per-operation/resource/exact-scope binding and verifiable receipt. Preserve RQ218 target policy.
+- No code edit, worktree creation/change, Git mutation, tests/build/runtime, MCP/process/operational state access, DB/secrets/snapshot, install/download. Preserve dirty/detached worktree. Global readiness remains blocked; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ219 STATIC AUTHORITY DISCOVERY ONLY
 
 Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
