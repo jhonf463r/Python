@@ -453,16 +453,18 @@ Source: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudi
 
 For every material IABV objective, do not construct a prompt for Deep Research, Sonnet, Codex, Devin or another actor until objective-conditioned IABV frame activation has happened.
 
-Mandatory sequence:
-1. verify current remote `main` and canonical routing authority;
-2. activate `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `README.md`, and this protocol;
-3. retrieve only objective-relevant historical/source records;
-4. extract prior failures, false positives, closed edges, rejected alternatives, negative knowledge, method deltas, actor/readiness lessons and existing-organ reuse candidates;
-5. reconcile current evidence and classify FACT / INFERENCE / ASSUMPTION / UNPROVEN;
-6. identify the first still-open causal/evidential edge;
-7. derive capability, access, independence and readiness requirements;
-8. compile each relevant past failure into a concrete prompt constraint, false-positive control, stop condition or acceptance gate;
-9. only then construct the task/prompt.
+Mandatory entry and experience-activation sequence:
+1. verify the remote `main` SHA and pin source reads to that exact revision;
+2. read `README.md` for the entry, authority and evidence contract;
+3. read the top routing snapshot of `CURRENT-STATE.md`;
+4. use `CONTEXT-INDEX.md` to select objective-relevant domains and records;
+5. apply this `MEMORY-OPERATING-PROTOCOL.md` for progressive retrieval, provenance, evidence classification and experience activation;
+6. retrieve only relevant historical/source records, prior failures, false positives, closed edges, rejected alternatives, negative knowledge, method deltas, actor/readiness lessons and existing-organ reuse candidates;
+7. explicitly activate `UAAL-ROOT-001` and relevant lineage when the objective touches global vision, architecture, universal semantics/generalization, cross-domain composition, capability/realization selection, learning, memory/continuity or protocol design; retain a parent link for narrower tasks without loading the entire corpus;
+8. reconcile current evidence and classify FACT / REPORT / INFERENCE / HYPOTHESIS / DECISION / VERIFIED / UNPROVEN as appropriate;
+9. identify the first still-open causal/evidential edge and derive capability, access, independence and readiness requirements;
+10. compile each relevant past failure into a concrete prompt constraint, false-positive control, required observation, stop condition or acceptance gate;
+11. only then construct the task/prompt.
 
 The activated experience must change the task. Copying historical text into a prompt without converting relevant lessons into operational constraints does not satisfy this gate.
 
@@ -1288,6 +1290,28 @@ NO_MATERIAL_KNOWLEDGE_ONLY_IN_CHAT=YES
 An exact source archive remaining on a non-canonical branch is not, by itself, a deletion blocker when the material knowledge has been canonically absorbed and the source provenance remains recoverable.
 
 Conversely, a technical task being closed does not make a chat deletable if material historical knowledge is still only in the transcript.
+
+## CHAT / TRANSCRIPT INTAKE CONTRACT
+
+When a user supplies a prior conversation, pasted transcript, partial excerpt or chat artifact, preserve its source identity and be explicit about what was actually available and inspected. Use this contract before claiming the material was read completely or canonically absorbed.
+
+Record, as applicable:
+
+- `SOURCE_ID / SOURCE_NAME` and origin kind (pasted text, attachment, Library artifact, URL or other source);
+- source extent as declared and source extent actually accessible;
+- segments/pages/lines/bytes actually inspected, where measurable;
+- coverage summary and known omitted, inaccessible or uninspected portions;
+- byte-level SHA-256 only when the actual bytes were available and the digest was actually calculated; otherwise `UNKNOWN / NOT AVAILABLE`;
+- `COMPLETENESS_STATUS`: `FULL_WITHIN_DECLARED_ARTIFACT`, `PARTIAL_EXTRACT`, `SEGMENTED_INCOMPLETE` or `UNVERIFIABLE`;
+- original human objective, idea, intuition, correction and decision, separated from AI interpretation;
+- claims classified as report, fact, inference, hypothesis, decision, verified result or unresolved;
+- material errors, false positives, contradictions, rejected alternatives and negative knowledge;
+- the concrete future task constraint, experiment, stop condition or acceptance gate changed by each relevant lesson;
+- Knowledge / Relation / Method / Routing deltas, the canonical owner layer, source links and the next open edge.
+
+Do not require a cryptographic hash when the source bytes are unavailable. Do not describe a partial extract as a complete chat. Do not claim full reading, absorption, independent verification or causal learning beyond the actual source coverage and observations.
+
+Preserve source-archive identity separately from canonical synthesis identity. Store durable, decision-relevant knowledge in the responsible canonical projections rather than copying the entire transcript into every memory surface.
 
 ## CHAT-TO-CHAT CONTRACT
 
