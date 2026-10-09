@@ -1,3 +1,17 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR V2 CLEANUP GAP CLOSED STATically; CHALLENGE OPEN
+
+Canonical: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`.
+
+Codex reports v2 saved outside the repository at `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v2.ps1`, size 11,467 bytes, SHA-256 `0F24FC0E88B17205512A786683F869E59694CC815C8399502FCD076E8D552A94`; it was not compiled or run. From the complete source pasted by the user, v2 preserves the primary integrity result and separately records `CloseHandle` status/error plus buffer-release exceptions. The prior cleanup-reporting gap from record 186 is closed at source level. Temp-file byte identity remains actor-reported, not coordinator-verified.
+
+Adjudication: `V2_STATIC_REVIEW_PASS_WITH_RUNTIME_AND_ARTIFACT_IDENTITY_UNPROVEN`.
+
+**NEXT ACTOR: SONNET/CLAUDE**, independent static falsification of the complete v2 source, focusing on x64 native layout/alignment, buffer/SID bounds, error handling, and early-return/cleanup paths. Static-only; no compilation, token query, file/Git mutation, DLL load or export resolution.
+
+After the independent review, separately reconcile whether the frozen Owner authorization covers any corrected follow-up process. No load attempt is authorized by this writeback.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR CANDIDATE STATICALLY PLAUSIBLE; NOT EXECUTABLE EVIDENCE
 
 Canonical: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`.
