@@ -1,3 +1,9 @@
+## 2026-10-09 ROUTING UPDATE — RQ216 DESIGN CONTRACT ACCEPTED; OWNER DECISION NEXT
+
+Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
+
+The static proposal is accepted as design-only. Before source edits, Owner must freeze: approval authority, per-operation/resource/scope semantics, fail-closed treatment of missing/unknown/stale/malformed/mismatched permission, canonical workspace root/protected-path policy, exact immutable baseline, isolated worktree, explicit Git file allowlist/no push, and whether first implementation excludes tests/build/runtime. The proposal identifies the missing trusted mutation-authority producer/verifier as a material unresolved dependency. No code edits or runtime authorized; preserve current dirty/detached worktree. Global MCP readiness remains blocked; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ216 FIRST SECURITY-TRANCHE CONTRACT
 
 Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
