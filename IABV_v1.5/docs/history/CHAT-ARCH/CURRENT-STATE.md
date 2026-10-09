@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 LOAD-ONLY CONTRACT FROZEN; OWNER AUTHORIZED
+
+Canonical: `CHAT-ARCH-2026-10-08-182-rq21-p1-load-only-owner-authorization-and-experiment-contract.md`.
+
+Human Domain Owner explicitly authorized `P1_LOAD_ONLY = AUTORIZADO`. Frozen P1 objective: on host `MSI` / Windows `10.0.26300.9550` x64 / MEDIUM `S-1-16-8192`, verify exact DLL identity, call `LoadLibraryExW` once on `C:\\Windows\\System32\\processmodel.dll` using only `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32`, then resolve both names with `GetProcAddress`. Never invoke either export. Any precondition mismatch stops before load; no elevated retry or broader search path.
+
+**NEXT ACTOR: CODEX**, for this one-shot bounded diagnostic only. DLL load may execute initialization; this is not a containment test. Preserve full raw evidence and hashes. No source changes, candidate launch, API invocation or follow-on experiment authorization.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P0 STATIC EXPORT PRESENCE ACCEPTED; P1 NOT AUTHORIZED
 
 Canonical: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
