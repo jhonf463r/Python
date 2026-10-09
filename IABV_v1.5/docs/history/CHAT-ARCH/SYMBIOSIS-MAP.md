@@ -1,3 +1,18 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ216 CONTRACT ACCEPTED; IMPLEMENTATION GATE OPEN
+
+Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
+
+Cross-perspective synthesis:
+- Mutation governance: observation gate != mutation approval; a trusted decision producer/verifier and authority identity are missing.
+- Filesystem/Git: inconsistent sensitive-path checks interact with a dirty worktree and broad staging; canonical roots, explicit file allowlists, staged-diff review and no push in tranche one are target invariants.
+- Network: unknown connectivity blocks a network-required path, but connectivity is not authorization.
+- Lifecycle/bootstrap: this security tranche does not solve transitive bootstrap effects, incomplete cleanup, or missing Uvicorn contract; these remain separate blockers.
+- Provenance: existing worktree is dirty/detached; freeze an immutable baseline and isolated worktree before any edit.
+- Confidentiality: operational snapshot access/disclosure remains a separate permission gate.
+- Universal causal learning frontier from RQ13-111 and DLL consumer RQ21.200 remain separate.
+
+Method: Keep proposed contract separate from current behavior and from Owner policy. No code edits, worktree changes, tests, runtime or MCP use authorized by RQ216.
+
 ## 2026-10-09 SYMBIOSIS ROUTE — RQ216 MUTATION SECURITY CONTRACT
 
 Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
