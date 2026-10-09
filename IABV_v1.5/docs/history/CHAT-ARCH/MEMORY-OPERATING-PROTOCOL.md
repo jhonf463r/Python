@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — RQ216 DESIGN CONTRACT ONLY
+
+Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
+
+- Interpret the Owner's "si procede" as authorization to draft a read-only, source-grounded contract proposal; it does not authorize code edits, worktree creation or changes, tests/builds, or runtime.
+- First tranche scope only: per-operation/resource/scope mutation authorization with fail-closed behavior; consistent protected-path/workspace checks for the implicated handlers; explicit Git file allowlist and no push by default; network-required route denies unknown network state.
+- Keep existing source findings, proposed target semantics and Owner decisions separate. In particular, approver authority, permitted roots/protected paths, per-operation granularity, and future verification scope must not be silently inferred.
+- Preserve the current dirty/detached worktree. Any later implementation requires a separate explicit source-edit authorization naming baseline, isolated worktree, allowed files and forbidden effects.
+- Global readiness stays TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES; RQ13-111 and RQ21.200 remain distinct.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ214 PLAN ACCEPTED, NOT IMPLEMENTED
 
 Canonical: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
