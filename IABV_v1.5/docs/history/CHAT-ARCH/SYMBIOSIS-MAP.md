@@ -1,3 +1,23 @@
+## 2026-10-09 SYMBIOSIS TRANSFER — MCP EFFECT GRAPH RECONCILED; DIRECT EDGES STILL OPEN
+
+Canonical record: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.
+
+Knowledge Delta:
+- RQ206 reports connected source paths: bootstrap → EnvironmentSelfAwareness/WorldModel → provider health and ToolRegistry/perception paths → host observation/network probes/persistence → MCP transport and self-update tool registration.
+- This establishes reachable code paths at source-reported level, not that each effect occurred in a particular live process.
+- A local Codex checkout missing RQ201–RQ206 terms is not evidence that canonical memory is missing; remote `main` contains the records.
+- Registration of self-update handlers with write/patch/commit/push capabilities is a distinct risk from invocation; per-handler guard coverage needs source proof.
+- RQ13-111 still keeps environment/world evidence → capability/affordance → context-conditioned selection causality open. Snapshot persistence is not evidence of learning.
+
+Method Delta:
+- Complete only the direct RQ206 edges still under-inspected: actual ToolRegistry-bound adapters and immediate `is_available()` helpers; self-update per-handler governance; transport and direct shutdown/cleanup.
+- Require path/line anchors and hashes; separate configured code, current source and code-as-loaded.
+- Stop when a further material transitive dependency lies outside immediate-helper scope and request another scope decision.
+
+Routing Delta:
+- Codex: read-only completion of the named edges; no MCP calls, process interactions, startup/reconnect, tests, DB/secrets reads or mutation.
+- Coordinator adjudicates before any future runtime authorization. Snapshot disclosure and RQ21.200 remain separate gates.
+
 ## 2026-10-09 SYMBIOSIS TRANSFER — BOUNDED TRANSITIVE MCP AUDIT AUTHORIZED
 
 Canonical record: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
