@@ -1,3 +1,15 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P0 MEDIUM TOKEN CONFIRMED; CODEX CHANNEL CHECK IS CONDITIONAL
+
+Canonical record: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
+
+The user's second console output reports `whoami /groups` exit 0, integrity SID `S-1-16-8192` / `MEDIUM`, and the same `processmodel.dll` SHA-256 plus Authenticode `Valid`. `dumpbin.exe` was not found, so independent export verification did not run.
+
+Do not repeat token/hash/signature checks unless contradictory evidence appears. The remaining capability is independent static PE export inspection. **Codex is a candidate only if its own execution environment proves it is the same host `MSI`, OS build `10.0.26300.9550`, and non-elevated medium token**. If not, stop with CHANNEL_MISMATCH; do not inspect a substitute target. If matched, use only an already-installed independent PE reader and preserve output/tool provenance. No installation, repo/code change, DLL load, API invocation, candidate execution or P1.
+
+FIRST OPEN EDGE: Codex target identity/readiness → independent static export read → evidence reconciliation.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — P0 INTEGRITY-CHECK SCRIPT FAILED BEFORE STATIC RECHECK
 
 Canonical record: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
