@@ -1,3 +1,11 @@
+## 2026-10-09 — OWNER-AUTHORIZED READ-ONLY MCP STARTUP PLAN
+
+Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
+
+Owner approved static planning only. Codex may inspect the known MCP server, bootstrap, WorldModel service, MCP bridge documentation, and RQ13-108/109 records. It must report exact revision and dirty status, trace direct/transitive start effects, classify each as DEMONSTRATED, CONDITIONAL or UNRESOLVED, and propose isolation/preflight/abort criteria. Any callee outside the approved source set remains unresolved; no broader search.
+
+No tool invocation, process interaction, launch/reconnect, provider check, refresh, tests, compilation, runtime probe, or mutation is authorized. Coordinator review precedes any separate execution authorization; operational snapshot disclosure requires its own permission. A prospective process cannot prove the source loaded by historical PID 16768.
+
 ## 2026-10-09 — NO PASSIVE SOURCE-AS-LOADED PROOF; OWNER DECISION OPEN
 
 Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
