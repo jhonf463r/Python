@@ -1,3 +1,24 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ226 CONTINUITY / KNOWLEDGE-ACQUISITION AUDIT
+
+Canonical: `CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md`.
+
+**Knowledge / Method Delta**
+- Harmonize new-chat entry order rather than allowing README, AI Frame Entry and MOP to prescribe different sequences.
+- Explicitly activate `UAAL-ROOT-001` and relevant lineage when global vision, universal semantics, cross-domain composition, learning, memory/continuity or protocol design is materially involved.
+- For a supplied conversation, distinguish declared artifact extent from actual accessible/inspected coverage; never describe a partial extract as complete.
+- Compile relevant prior lessons into concrete prompt constraints, evidence requirements, stop conditions or acceptance gates before task construction.
+- Stored memory, retrieval, activation, decision impact and causal reuse remain distinct evidence stages.
+
+**Negative Knowledge**
+- Four inconsistent entry orders do not by themselves prove that a wrong decision was caused by order drift.
+- A document-prescribed process does not prove every AI executes it reliably.
+- A user-pasted excerpt is not proof of complete transcript coverage.
+- More memory surfaces or another coordinator do not solve an activation gap when existing organs can be harmonized.
+
+**Routing Boundary**
+This is a continuity-method update only. It does not replace `CURRENT-STATE.md` or change RQ224 as the technical frontier. General activation reliability and causal reuse remain unproven.
+
+---
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ223 CONTRACT RECONCILED; RQ224 TRUST-SOURCE DESIGN NEXT
 
 Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
