@@ -1,3 +1,14 @@
+## 2026-10-09 ACTIVE OBJECTIVE — MCP TOOL EXPOSURE CONFIRMED; LOADED SOURCE STILL UNPROVEN
+
+Canonical: CHAT-ARCH-2026-10-09-202-iabv-mcp-source-attribution-still-unproven.md.
+
+Codex's follow-up is accepted as `SERVER_SOURCE_ATTRIBUTION_UNPROVEN`. It reports that the current Codex process (PID 10600) has an existing MCP child (PID 16768), and this same Codex session's effective catalog exposes all five configured IABV tools. The configured server points to a dirty detached worktree; `server.py` differs from its local HEAD and the visible tool description is compatible with that modification, but exact bytes/code loaded by the process remain unproven.
+
+Do not invoke `world_model_snapshot`, run `tools/list`, reconnect/restart MCP, attach/dump the process, or infer source identity from configuration, command line, timestamp, hash of the current file, or tool description. The observation tool can disclose windows/focus/network/tool state and has no explicit permission gate in its reviewed entrypoint.
+
+NEXT: CODEX — read-only feasibility and intervention-impact review for source-as-loaded attribution using only already-known passive evidence; if passive proof is unavailable, describe minimal intervention options and side effects without performing them. Coordinator adjudicates; Human Domain Owner must separately authorize any source-attribution intervention and, later, one exact snapshot read. RQ21.200 remains a separate frontier.
+
+
 ## 2026-10-09 ACTIVE OBJECTIVE — IABV MCP FIRST USE BLOCKED AT PROCESS / CLIENT ATTRIBUTION
 
 Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
