@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE ROUTE — RQ216 STATIC SECURITY CONTRACT ONLY
+
+Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
+
+Prepare a source-grounded design contract for operation/resource/scope authorization of self-update mutations, fail-closed missing/unknown permissions, consistent path/workspace controls, explicit Git file scope and no push, and unknown network state handling. This is design-only: no edits, tests/builds, worktree creation/change or runtime. Present policy decisions to the Owner. Preserve the existing dirty/detached worktree. Global readiness remains blocked; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ214 PLAN ACCEPTED; OWNER DECISION BEFORE IMPLEMENTATION
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
