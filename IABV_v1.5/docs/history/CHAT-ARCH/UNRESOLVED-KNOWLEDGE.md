@@ -1,3 +1,25 @@
+## 2026-10-09 — RQ210 ADJUDICATED; GLOBAL MCP READINESS STILL BLOCKED
+
+Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
+Adjudication: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md.
+
+[BRANCH A — STOPPED_AT_OUT_OF_SCOPE_DEPENDENCY]
+A local `mcp 1.27.0` source copy was identified in the reported default interpreter, but the project does not pin it. Actual launch interpreter/transport and the exact Uvicorn lifecycle/shutdown implementation are unresolved. No server-process shutdown guarantee is established.
+
+[BRANCH B — COMPLETE_WITH_FINDINGS]
+The reported permission gate producer derives gates from observation-permission state. The governance callback blocks conditionally, and missing/empty/non-required/granted/nonmatching gates may pass without a gate block. Mandatory human approval for self-update is not established. The callback's pre-mutation position is ordering evidence only.
+
+[EVIDENCE LIMIT]
+The report did not provide per-file SHA-256 for most cited IABV files; those local source claims remain actor-reported rather than independently rehashed.
+
+[STILL UNRESOLVED]
+- Actual SDK/interpreter/transport loaded by a target process and Uvicorn cleanup semantics.
+- A mandatory, applicable human-approval barrier for self-update.
+- Any safe isolation boundary, runtime ToolCard inventory/invocation and historical PID 16768 source attribution.
+- RQ21.200 DLL-consumer contract remains separate.
+
+No runtime or mutation is authorized.
+
 ## 2026-10-09 — RQ207-S SUPPLEMENT ADJUDICATED; REMAINING SCOPE IS EXPLICIT
 
 Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
