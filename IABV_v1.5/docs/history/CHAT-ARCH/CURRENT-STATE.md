@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — MCP STARTUP PLAN BLOCKED BY UNRESOLVED TRANSITIVE EFFECTS
+
+Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
+
+Codex's RQ204 plan is accepted as `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS`. The reported code shows possible EnvironmentSelfAwareness/WorldModel observation, network probes, host process/window collection and local snapshot persistence. `IABV_MCP_SUBPROCESS=1` and `IABV_DEFER_TOOL_PROBE=1` do not suppress all these routes. Relevant implementations remain unaudited, and the approved RQ13-108/109 records were unavailable in the inspected worktree.
+
+No start/reconnect, MCP call, process inspection, tests or runtime action is authorized. RQ204's source list is exhausted for the current planning pass.
+
+NEXT: obtain explicit owner authorization for a narrowly bounded read-only audit of only the already-identified direct dependencies: EnvironmentSelfAwarenessService; ToolRegistry.refresh_card; UniversalPerceptionService.scan_tool_context; AppDatabase/ArtifactStorage; relevant secrets/config/logging/tracing setup; and MCP self-update/transport startup. Follow known imports/call sites only, inspect direct implementations and immediate effectful helpers, and stop if further recursion is required. Coordinator review precedes any future start authorization. Any snapshot disclosure needs separate permission.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — READ-ONLY MCP STARTUP IMPACT PLAN AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
