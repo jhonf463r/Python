@@ -1,3 +1,23 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — SECOND-VIEW CHALLENGE AFTER NATIVE DETECTOR REPAIR
+
+Knowledge Delta:
+- v2 adds cleanup status/error fields without replacing the primary integrity measurement result.
+- A candidate's saved path/hash is creator-reported until exact bytes are independently read back.
+- No compilation or runtime behavior is implied by a plausible C# P/Invoke source.
+
+Method Delta:
+- Repair a concrete gap, then ask an independent reviewer to falsify ABI/layout, pointer bounds, SID parsing, API error handling and early-return cleanup—not simply restate the same design.
+- Keep artifact provenance and source correctness separate from runtime evidence and operation authorization.
+
+Routing Delta:
+- Sonnet/Claude is the next actor for independent static challenge; Codex should not immediately self-certify its new candidate.
+- After the challenge, reconcile authorization before deciding on any protected operation.
+
+Current edge:
+`v2 source + actor-reported artifact hash → independent static challenge → provenance/readiness/authorization reconciliation`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — PRIMARY MEASUREMENT VS RESOURCE-CLEANUP EVIDENCE
 
 Knowledge Delta:
