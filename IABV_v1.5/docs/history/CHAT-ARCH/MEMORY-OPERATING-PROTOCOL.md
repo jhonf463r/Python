@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — IABV MCP FIRST-USE ATTRIBUTION GATE
+
+- Distinguish four separate predicates: MCP server configured, OS process exists, exact source/module loaded, and tool is exposed in the intended client. Observation permission is a fifth independent predicate.
+- Do not infer the exact loaded source or client-session mapping from a configuration entry, process command line, or another client’s tool list. Preserve dirty/detached worktrees; never reset or merge them as a shortcut.
+- world_model_snapshot(refresh=False, full=False) reads the current in-memory WorldModel snapshot in its source branch, without itself requesting a refresh. It still discloses operational details and its entrypoint has no explicit observation-permission gate; tool presence is not permission.
+- Normal AppBootstrap can reach EnvironmentSelfAwareness/WorldModel scans, local persistence and conditional provider health checks. IABV_MCP_SUBPROCESS=1 and deferred tool-probe settings are not evidence that all those effects are suppressed.
+- If the intended client lacks IABV tools and a reconnect/startup would be required, do not start/reconnect. First enumerate exact transitive effects, then request fresh bounded human authorization.
+- The first useful MCP probe must be explicitly narrow: only one authorized world_model_snapshot(refresh=False, full=False), after exact server/client attribution and observation-permission decision. No refresh/full scan, orchestrator_preview, handle_request, provider call or other tool.
+- The canonical GitHub frame remains the external coordination surface until runtime transfer of state/experience into the target AI session is actually verified.
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.200 CONSUMER DESIGN / OPEN SECURITY CONTRACTS
 
 - A same-process design using the PowerShell call operator for v5 and performing LoadLibraryExW in that exact process is the correct direction for the detector-to-loader causal binding. The outer launcher observes/collects results only and never performs the protected load.
