@@ -1,3 +1,10 @@
+## 2026-10-08 ACTIVE ROUTE — RQ21.199 CONSUMER DESIGN CONTRACT NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
+
+The operator reports that no v5 consumer/runner is implemented in the identified scope. Codex's CONSUMER_SOURCE_UNAVAILABLE is a correct stop because there was no source to audit. Do not repeat the prior audit prompt. NEXT: Codex drafts a bounded consumer contract/design only, including same-process/PID binding, strict v5 JSON gating and the frozen one-shot load-only scope. Coordinator adjudicates before implementation. Historic RQ21.182 authorization remains conditional and unconsumed; no runtime/DLL action.
+
+
 ## 2026-10-08 ACTIVE CONTINUITY ROUTE — RQ21.198; RQ21.197 TECHNICAL CANON
 
 Canonical continuity record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
