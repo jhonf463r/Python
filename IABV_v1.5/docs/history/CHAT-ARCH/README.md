@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE ROUTE — MCP STARTUP PLAN BLOCKED; AUDIT DEPENDENCIES BEFORE ANY LAUNCH
+
+Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
+
+Codex's static plan is accepted as `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS`. It reports possible environment/world-model refresh, window/focus/process observation, network probes and local persistence; EnvironmentSelfAwareness, tool-card/perception, storage and SDK effects remain incompletely audited. The existing subprocess/deferred-probe flags are not a guarantee of no side effects.
+
+NEXT: seek a new, explicit owner approval for a tightly bounded static audit of the named direct dependencies and immediate effectful helpers, following known import/call sites only. No MCP call, process interaction, launch/reconnect, provider checks, tests, compilation or mutation. The startup itself remains unauthorized; any later snapshot disclosure needs separate permission.
+
 ## 2026-10-09 ACTIVE ROUTE — READ-ONLY MCP STARTUP IMPACT PLAN AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
