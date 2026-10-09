@@ -1,3 +1,15 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 STOPPED BEFORE LOAD; INTEGRITY DETECTOR OPEN
+
+Canonical: `CHAT-ARCH-2026-10-08-184-rq21-p1-integrity-guard-stop-and-detector-readiness.md`.
+
+Codex retrieved the frozen contract (blob `7184f7822920ee9068a21ab75c3564b10e32ea83`, actor-reported byte verification) and ran one non-elevated PowerShell 7.6.5 diagnostic. The process matched host/build/architecture and reported the exact DLL hash/signature, but its own `integrity_sid` was `UNKNOWN`; therefore the required MEDIUM-integrity gate failed closed.
+
+**Adjudication: `STOP_READINESS_MISMATCH`.** `LoadLibraryExW` and `GetProcAddress` were not called. This is not a DLL load failure or export defect. Prior MEDIUM observations in another process are not substitutes for the child token.
+
+**NEXT ACTION: CODEX**, static inspection only of the exact temporary diagnostic script, first verifying its bytes against actor-reported SHA-256 `34BF0FAE29712A2340C76B7CBFB53D872A728E2E47B993DFCEEC69711A8BF7E9`. Identify the token/SID detector's concrete UNKNOWN path. No execution, code/Git changes, DLL load or new experiment. After root-cause reconciliation, decide whether a correction fits existing authorization or requires a fresh Owner decision. No dynamic retry is authorized by this writeback.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — P1 STOP WAS LOCAL CONTRACT AVAILABILITY; REMOTE CONTRACT EXISTS
 
 Canonical: `CHAT-ARCH-2026-10-08-183-rq21-p1-contract-local-availability-reconciliation.md`.
