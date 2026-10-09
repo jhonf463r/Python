@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 P1 V3 SOURCE CHALLENGE
+
+Canonical: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`.
+
+v3's complete inline source statically incorporates the v2 cleanup/acquisition-metadata hardening. Candidate bytes/hash and runtime remain actor-reported/unproven. Residual question: an exception before `OpenProcessToken` returns may leave acquisition `null/NOT_ATTEMPTED` while cleanup reports clean; outcome is still `INTEGRITY_QUERY_FAILED`, so the declared consumer predicate blocks it.
+
+NEXT: **SONNET/CLAUDE**, independent challenge of the complete v3 source inline. No compile/run, token query, file/Git mutation, DLL load or exports. The consumer predicate is declared, not yet verified in the actual runner.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 V2 INDEPENDENT AUDIT COMPLETE; MINIMUM REPAIRS NEXT
 
 Canonical: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`.
