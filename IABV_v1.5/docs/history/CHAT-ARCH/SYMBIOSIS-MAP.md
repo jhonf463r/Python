@@ -1,3 +1,15 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — ROUTE P0 TOOL GAP TO CONDITIONAL CODEX CHECK
+
+Knowledge Delta: the latest local transcript confirms medium integrity and rechecks the same DLL hash/signature; `dumpbin` is absent.
+
+Method Delta: do not repeat already-satisfied local checks. Assign the missing capability (independent static PE export inspection) to the best-fit actor, but require exact target-channel attestation before accepting evidence.
+
+Routing Delta: Codex may perform a read-only channel match and use a preinstalled independent static PE parser if (and only if) it operates on `MSI` / build `10.0.26300.9550` at MEDIUM integrity. Otherwise STOP with channel mismatch; no install, no code changes, no P1.
+
+Source: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — P0 TOKEN-INTEGRITY SCRIPT DEFECT
 
 Knowledge Delta: the second P0 run stopped at a null SID lookup before any DLL recheck or independent parser. It does not establish elevated/non-elevated state or contradict the earlier static report.
