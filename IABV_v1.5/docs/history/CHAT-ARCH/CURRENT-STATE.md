@@ -1,3 +1,9 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.199 CONSUMER NOT IMPLEMENTED; DESIGN CONTRACT NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
+
+Operator declares CONSUMER_NOT_IMPLEMENTED for the identified scope. Codex returned CONSUMER_SOURCE_UNAVAILABLE because no authoritative source existed to audit; this is a correct stop, not an audit pass/fail. No v5-to-protected-decision flow is present in the identified scope. The first open edge is a separate bounded consumer implementation contract, with explicit same-process/PID binding between v5's token measurement and the process that would load the DLL. Route Codex for design only, no implementation yet. RQ21.182 authorization remains conditional and unconsumed; no runtime/DLL action.
+
 ## 2026-10-08 CONTINUITY CHECKPOINT — RQ21.198; TECHNICAL CANON REMAINS RQ21.197
 
 Canonical continuity record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
