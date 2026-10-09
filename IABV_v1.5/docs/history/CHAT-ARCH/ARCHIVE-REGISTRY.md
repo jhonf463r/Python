@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ212 OWNER-AUTHORIZED STATIC EVIDENCE SUPPLEMENT
+
+Canonical record: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md
+
+Summary: Owner authorized a read-only supplement limited to existing static launcher/config/dependency artifacts for interpreter/transport and locally available exact Uvicorn version/source, plus SHA-256/provenance for RQ210-cited IABV files whose hashes were omitted. Preserve/reconfirm the dirty-detached worktree. If evidence is unavailable locally, report blocked; no runtime, process inspection, installation/download, tests/builds, snapshots, secrets or mutation. Overall MCP readiness remains blocked; RQ21.200 stays separate.
+
+Tags: IABV MCP / RQ212 / static source provenance / launcher / Uvicorn / SHA-256 / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ210 ADJUDICATION / LIFECYCLE AND PERMISSION GATE RESULTS
 
 Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md
