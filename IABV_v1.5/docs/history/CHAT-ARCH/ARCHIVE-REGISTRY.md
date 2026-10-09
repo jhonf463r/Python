@@ -1,3 +1,12 @@
+## 2026-10-08 REGISTRATION — RQ21.195
+
+Canonical record: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md
+
+Summary: Independent report classifies complete inline v5 source as STATIC_REVIEW_PASS; coordinator accepts for inline source only, with no required repair. F1/F7/F8 accepted; error 122 is stage-sensitive and 64-bit layout is not proof of x64. Internal V4 type name is non-blocking. Saved-byte identity, compilation/runtime and actual consumer enforcement remain unverified. Next: exact-path saved-artifact read-back/source correspondence, then separate read-only runner/consumer audit. No protected operation authorized.
+
+Tags: RQ21 / P1 / v5 / independent static challenge / F1 / F7 / F8 / error-stage semantics / artifact provenance / consumer gate / authorization
+
+
 ## 2026-10-08 REGISTRATION — RQ21.194
 
 Canonical record: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md
