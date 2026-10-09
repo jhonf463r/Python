@@ -1,3 +1,11 @@
+## 2026-10-09 ROUTING UPDATE — STARTUP ISOLATION NOT ESTABLISHED; TRANSITIVE AUDIT OWNER GATE
+
+Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
+
+Codex's static plan found direct/conditional WorldModel refresh, potential network probes, window/focus and process enumeration, local snapshot persistence and transitively unresolved tool-card, EnvironmentSelfAwareness, storage and MCP SDK effects. The examined flags do not disable all those paths. Classification accepted: `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS`.
+
+NEXT: request explicit owner authorization for a tightly scoped, read-only implementation audit of the direct dependencies already named by Codex; follow known call sites only, stop at further unapproved recursion. No MCP call, process inspection, launch/reconnect, tests, compilation, provider checks or mutation. Coordinator adjudicates before any future runtime authorization.
+
 ## 2026-10-09 ROUTING UPDATE — OWNER AUTHORIZED READ-ONLY STARTUP IMPACT PLAN
 
 Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
