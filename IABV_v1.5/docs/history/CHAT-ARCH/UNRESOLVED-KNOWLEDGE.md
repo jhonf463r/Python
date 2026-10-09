@@ -1,3 +1,11 @@
+## 2026-10-09 — BOUNDED TRANSITIVE AUDIT AUTHORIZED; SCOPE GATES OPEN
+
+Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
+
+Owner authorizes read-only inspection of the named direct startup dependencies and immediate effectful helpers, plus the existing canonical memory/symbiosis records. Codex must build a source-anchored call/effect graph and risk matrix, preserving dirty worktree identity. Follow known import/call-site evidence only; any further material dependency outside scope is unresolved and requires another owner decision.
+
+No MCP call, process interaction, launch/reconnect, refresh, snapshot, health check, test, compilation or mutation is authorized. Future startup and operational snapshot disclosure require separate permission.
+
 ## 2026-10-09 — MCP STARTUP ISOLATION NOT ESTABLISHED; TRANSITIVE EFFECTS OPEN
 
 Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
