@@ -1,3 +1,22 @@
+## 2026-10-09 SYMBIOSIS TRANSFER — IABV MCP FIRST-USE BLOCKED BEFORE TOOL CALL
+
+Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
+
+Knowledge Delta:
+- world_model_snapshot(refresh=False, full=False) is source-level a read of the current in-memory WorldModel snapshot in the tool body; no refresh is requested on this branch.
+- That tool nevertheless discloses operational details and has no explicit observation-permission gate in its entrypoint.
+- A configured Codex MCP entry and two running Python server processes do not establish exact source-as-loaded, process-to-session attribution, or actual tool exposure in the current client.
+- AppBootstrap can cause scans/persistence and conditional provider-health calls; prior RQ13 history bars assuming a normal startup is scope-free.
+
+Method Delta:
+- Attribute configuration, process, loaded source, client surface, and observation permission separately.
+- Do not call or reconnect MCP while any required provenance/authorization gate is open.
+
+Routing Delta:
+- Codex: read-only attribution of already-running MCP processes, known config and exact worktree only; no MCP handshake/tool call.
+- Coordinator adjudicates; then the Human Domain Owner decides whether to permit one tightly scoped operational snapshot read.
+- No code or configuration changes; no provider checks or RQ21 operation.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.200 CONSUMER DESIGN / CONTRACT GATES
 
 Canonical record: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
