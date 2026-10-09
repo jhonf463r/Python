@@ -1,3 +1,17 @@
+## 2026-10-09 — MCP STARTUP ISOLATION NOT ESTABLISHED; TRANSITIVE EFFECTS OPEN
+
+Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
+
+[ACCEPTED CLASSIFICATION] `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS`.
+
+[CODEX-REPORTED DIRECT PATHS] AppBootstrap reads `~/.iabv_secrets.ps1` into `os.environ`, configures/wires services, creates directories, builds DB/storage/repositories, constructs EnvironmentSelfAwareness and WorldModel services, and requests refresh. WorldModel can start a monitor thread, scan, persist `world_model/latest.json`, inspect window/focus/process data, refresh ToolCards and make network probes if the cache is stale. The MCP source fallback transport differs from the bridge doc's stated default and must be resolved before any future startup.
+
+[NOT PROVEN] Exact runtime effects of EnvironmentSelfAwarenessService, ToolRegistry.refresh_card, UniversalPerceptionService.scan_tool_context, AppDatabase/ArtifactStorage, logging/tracing, MCP self-update registration and the SDK transport; the RQ13-108/109 records were not in the known worktree. The exact effective future process environment is not known.
+
+[AUTHORIZATION BOUNDARY] RQ204 authorized only its specific source/document set. A follow-on dependency audit requires fresh owner approval; no launch/reconnect, process inspection, MCP call, network probe, refresh, test, compilation or mutation is authorized.
+
+[NEXT] Owner decision on a limited static audit of named direct dependencies and immediate effectful helpers. Follow known imports only; stop if deeper recursive audit is required. Even after audit, startup requires a separate explicit authorization and any snapshot read requires independent disclosure permission.
+
 ## 2026-10-09 — OWNER-AUTHORIZED READ-ONLY MCP STARTUP PLAN
 
 Canonical: CHAT-ARCH-2026-10-09-204-iabv-mcp-prospective-startup-impact-plan-authorization.md.
