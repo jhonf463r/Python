@@ -1,3 +1,12 @@
+## 2026-10-09 REGISTRATION — MCP SOURCE ATTRIBUTION STILL UNPROVEN
+
+Canonical record: CHAT-ARCH-2026-10-09-202-iabv-mcp-source-attribution-still-unproven.md
+
+Summary: Codex reports one MCP child process (PID 16768) under the current Codex process (PID 10600) and confirms that the same Codex session's effective tool catalog exposes the five IABV tools. The configured worktree is dirty/detached and the visible tool description is compatible with a `server.py` change, but exact bytes loaded by the running process remain unproven. Next: bounded read-only feasibility and intervention-impact review; no MCP call, attach/dump or reconnect. Owner permission for any intervention and later snapshot disclosure remains separate.
+
+Tags: IABV MCP / effective tool exposure / source-as-loaded unproven / process attribution / dirty detached worktree / observation permission / feasibility gate / no invocation
+
+
 ## 2026-10-09 REGISTRATION — IABV MCP FIRST-USE PREFLIGHT ADJUDICATION
 
 Canonical record: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md
