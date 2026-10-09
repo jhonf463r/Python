@@ -1,3 +1,12 @@
+## 2026-10-09 ACTIVE ROUTE — MCP EXPOSURE CONFIRMED; LOADED SOURCE ATTRIBUTION OPEN
+
+Canonical: CHAT-ARCH-2026-10-09-202-iabv-mcp-source-attribution-still-unproven.md.
+
+Codex reports that its current process (PID 10600) parents the currently observed MCP server (PID 16768), and that the same session's effective tool catalog exposes all five IABV tools. The alternative configured worktree is dirty/detached; its modified `server.py` is consistent with a visible tool description, but exact code loaded by the process is still unproven.
+
+NEXT: Codex read-only feasibility and intervention-impact review for source-as-loaded attribution, using only already-known passive evidence and describing interventions without performing them. No MCP tool call/list, attachment/dump, restart/reconnect or mutation. Coordinator adjudication and explicit owner authorization precede any intervention; one later operational snapshot read requires separate permission.
+
+
 ## 2026-10-09 ACTIVE ROUTE — IABV MCP FIRST USE / ATTRIBUTE BEFORE AUTHORIZING
 
 Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
