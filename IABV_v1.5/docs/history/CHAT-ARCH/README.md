@@ -1,3 +1,12 @@
+## 2026-10-09 ACTIVE ROUTE — IABV MCP FIRST USE / ATTRIBUTE BEFORE AUTHORIZING
+
+Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
+
+The preflight is accepted as BLOCKED_BY_STARTUP_SIDE_EFFECTS. A no-refresh WorldModel read exists in source, but operational state is disclosed and this tool's entrypoint lacks an explicit observation-permission gate. Two reported MCP processes and a configured dirty detached worktree do not prove exact source loaded or exposure in a specific client.
+
+NEXT: Codex performs read-only attribution of only the two already-running server processes, the known Codex config entry, and the exact configured worktree/source diffs; also verify the current Codex client's effective IABV tool surface without calling a tool or reconnecting. Do not start/restart MCP or cloudflared. After coordinator adjudication, seek explicit permission for a single snapshot read if all gates close.
+
+
 ## 2026-10-08 ACTIVE ROUTE — RQ21.200 CONSUMER DESIGN ACCEPTED; CONTRACT DECISIONS OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
