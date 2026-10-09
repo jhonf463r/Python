@@ -1,3 +1,14 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.195 V5 INDEPENDENT STATIC CHALLENGE ACCEPTED; ARTIFACT/CONSUMER GATES NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
+
+Sonnet/Claude reports STATIC_REVIEW_PASS for the complete inline v5 source, with no definite defect or repair required. Coordinator accepts the result for inline source only. F1/F7/F8 are accepted: unresolved acquisition cannot become clean, the 84-byte ceiling remains a qualified fail-closed bound, and both invalid-length sizing branches preserve error 122. The v5-named artifact's internal detector type still says V4; it is self-consistent and remains a non-blocking traceability note. Error 122 is stage-sensitive; IntPtr.Size == 8 is a 64-bit layout check, not proof of x64.
+
+Saved v5 bytes/hash remain actor-reported; coordinator byte read-back, compilation/runtime and actual consumer audit are unproven. The declared predicate remains a contract, not verified enforcement.
+
+NEXT: CODEX or a Windows-capable actor verifies only the exact reported v5 path, saved-byte size/SHA and correspondence to reviewed source. If missing or mismatched, stop; do not search alternative paths or modify the file. Then inspect actual consumer/runner wiring as a separate read-only edge. No compile/run/token query/DLL/export/runner preparation. Record 182 authorization remains conditional, unconsumed and not current execution permission.
+
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.194 V5 SOURCE RECONCILED; SONNET CHALLENGE NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
