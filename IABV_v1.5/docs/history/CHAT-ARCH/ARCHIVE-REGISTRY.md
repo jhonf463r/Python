@@ -1,3 +1,12 @@
+## 2026-10-08 REGISTRATION — RQ21.200 CONSUMER CONTRACT DRAFT ADJUDICATION
+
+Canonical record: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md
+
+Summary: Codex's same-process consumer architecture is accepted as a design direction, not implementation-ready. Owner decisions remain open for thread impersonation and the residual race between checking DLL hash/signature and mapping it; exact JSON schema and PowerShell stream policy must be frozen against the reviewed v5 source. Next: owner adjudication, then coordinator's source-specific contract. No protected operation authorized.
+
+Tags: RQ21 / P1 / consumer design / same-process PID binding / thread impersonation / TOCTOU / strict JSON / PowerShell streams / implementation blocked / authorization boundary
+
+
 ## 2026-10-08 REGISTRATION — RQ21.199 CONSUMER NOT IMPLEMENTED
 
 Canonical record: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md
