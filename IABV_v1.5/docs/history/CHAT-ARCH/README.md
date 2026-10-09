@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE ROUTE — RQ219 STATIC MUTATION-AUTHORITY DISCOVERY
+
+Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
+
+Inspect only the known self-update mutators, governance callback, model and WorldModel gate producer with direct dependencies to identify a verifiable human Owner approval mechanism. No recursive search. Preserve dirty/detached worktree. No source edits, worktree creation/change, tests/builds/runtime, MCP/process operations, installation/download or Git mutation. Exact workspace roots/protected paths and baseline remain Owner decisions. Overall readiness remains blocked; RQ13-111 and RQ21.200 separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ218 POLICY DIRECTION RECORDED; SOURCE EDITS BLOCKED
 
 Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
