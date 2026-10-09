@@ -1,3 +1,15 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P0 STATIC EXPORT PRESENCE ACCEPTED; P1 NOT AUTHORIZED
+
+Canonical: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
+
+Codex reports exact-target `CHANNEL_MATCH=YES` on `MSI`, Windows `26300.9550` x64, MEDIUM token `S-1-16-8192`; a distinct Microsoft `dumpbin /EXPORTS` run (exit 0) reports both experimental export names PRESENT. The reported DLL hash and Authenticode status match prior console results. Raw output path and hash are recorded in the canonical record; the assistant has not directly read the temporary report bytes.
+
+**P0: PASS for static file/export presence only.** This does not establish API loading, behavior, containment or the seven guarantees. Do not repeat completed token/hash/signature checks.
+
+**FIRST OPEN EDGE:** freeze a separate load-only operational-feasibility experiment contract, including loader side effects, readiness/evidence conditions, and explicit Human Domain Owner authorization. **P1 remains NOT AUTHORIZED.** No API invocation, candidate execution or implementation.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P0 MEDIUM TOKEN CONFIRMED; CODEX CHANNEL CHECK IS CONDITIONAL
 
 Canonical record: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
