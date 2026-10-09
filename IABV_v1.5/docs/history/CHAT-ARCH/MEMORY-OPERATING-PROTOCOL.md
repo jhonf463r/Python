@@ -1,3 +1,12 @@
+## 2026-10-08 METHOD AMENDMENT — NEW-CHAT RECONCILIATION RQ21.198
+
+- Re-read the latest default-branch CURRENT-STATE, latest episode, operating protocol, context index, symbiosis map, unresolved knowledge, archive registry and README before routing.
+- Verify the latest observed remote commit and compare it to both the recent checkpoint and pinned executable baseline; never conflate baseline with current main. State exactly what the comparison returned.
+- Separate coordinator-observed Git content, actor-reported Windows observations, reviewer conclusions about inline source, and items that remain unproven. Do not promote repeated transcript claims into new evidence.
+- Preserve RQ21.197 as the latest technical adjudication unless new source-bound evidence changes the decision. A continuity checkpoint does not itself create a new technical result.
+- For CONSUMER_SOURCE_UNAVAILABLE, do not perform repeated broad searches, enumerate arbitrary temp paths, infer that no consumer exists anywhere, or construct a replacement. Obtain exact owner/operator provenance (path or repository URL+commit/ref and expected call path) first; only then route a read-only audit to Codex.
+- Keep historic RQ21.182 authorization conditional/unconsumed. No compile/run, token query, DLL/export operation or candidate launch until separately adjudicated readiness and scope gates are satisfied.
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.197 CONSUMER/DETECTOR SEPARATION
 
 Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
