@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 P1 STATIC DETECTOR CAUSE REPORTED; TOKEN STATE STILL UNKNOWN
+
+[ACTOR-REPORTED] Codex reports the exact diagnostic-script SHA-256 matches the expected digest and identifies the code path: search `WindowsIdentity.GetCurrent().Groups` for `S-1-16-*`, then assign `UNKNOWN` when no match is found. The script does not call `GetTokenInformation(TokenIntegrityLevel)`.
+
+[ADJUDICATION] The identified code path can explain the observed UNKNOWN output. It does not prove the previous process's actual integrity SID or why the group collection lacked a match. Coordinator has not independently read the temporary script bytes/full source.
+
+[PROPOSED CORRECTION] Query the intended current process token using `GetTokenInformation(TokenIntegrityLevel)`; validate the result buffer and `TOKEN_MANDATORY_LABEL.Label.Sid`; separate verified non-MEDIUM from query failure. Not implemented or run.
+
+[UNPROVEN] Actual PID 19072 token SID; correction correctness in an executable artifact; load outcome; both dynamic symbol resolutions; API behavior and containment.
+
+[NEXT EDGE] Codex static/design-only preparation of a separate hash-verified replacement diagnostic outside the repository; do not execute. Then reconcile authorization before any later load attempt.
+
+Source: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P1 PRELOAD STOP: INTEGRITY SID UNKNOWN
 
 [FACT FROM SUPPLIED OUTPUT] The diagnostic reported `integrity_sid=UNKNOWN`, `medium_integrity=false`, `is_administrator=false`, and stopped before DLL load.
