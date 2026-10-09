@@ -4,6 +4,13 @@ This directory is the canonical historical-memory layer for IABV. It preserves k
 
 ## OPERATIONAL MEMORY
 
+## 2026-10-08 ACTIVE RQ21 ROUTE — P0 RETEST ABORTED BEFORE INDEPENDENT VERIFICATION
+
+Canonical: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
+
+The follow-up collector failed at a null integrity-SID lookup before DLL recheck or `dumpbin` parsing. Correct the query using `whoami /groups`; if token integrity is not positively MEDIUM, stop. No loading/invocation/candidate execution is authorized.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — P0 STATIC EXPORT RESULT IS PROVISIONAL
 
 Canonical: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
