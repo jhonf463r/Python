@@ -1,3 +1,26 @@
+## 2026-10-09 — RQ214 STATIC REMEDIATION PLAN ACCEPTED; IMPLEMENTATION NOT AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
+
+[ACCEPTED] `STATIC_REMEDIATION_PLAN_COMPLETE_WITHIN_SCOPE` for RQ214 planning only.
+
+[OWNER DECISIONS REQUIRED BEFORE CODE CHANGES]
+1. Exact baseline/ref and whether to create a new clean isolated worktree; preserve the existing dirty/detached worktree.
+2. Mutation authorities and scopes: who may approve which operation/resource, whether approval is per operation, and whether non-human policy routes are permitted.
+3. Missing/unknown/stale/nonmatching authorization gate: recommended outcome is deny.
+4. Permitted workspace roots, protected paths, Git file allowlists and whether push is permitted; recommendation is no push in the first tranche.
+5. Confirm code-only versus any later separately authorized verification phase.
+
+[STILL UNRESOLVED]
+- Exact Uvicorn/source/version and HTTP lifecycle contract.
+- A demonstrated startup side-effect boundary and process/session/runtime attribution.
+- Complete guaranteed human-approval barrier and validated filesystem/Git restrictions.
+- Safe isolation and runtime readiness.
+- RQ13-111 environmental evidence → capability/affordance → realization-selection causal bridge (separate frontier).
+- RQ21.200 DLL consumer contract (separate).
+
+No implementation, tests, build, MCP runtime or snapshot disclosure authorized by RQ214/RQ215.
+
 ## 2026-10-09 — RQ212 ADJUDICATED; EXACT UVICORN AND LIVE CONFIGURATION UNRESOLVED
 
 Canonical: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
