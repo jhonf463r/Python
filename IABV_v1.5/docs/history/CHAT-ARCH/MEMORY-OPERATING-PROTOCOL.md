@@ -1,3 +1,15 @@
+## 2026-10-08 METHOD AMENDMENT — RQ21.191 REVIEW-TO-REPAIR RECONCILIATION
+
+For independent static review of a native interop candidate:
+- Preserve the reviewer's classification as scoped to the complete source actually reviewed. Do not convert a static pass into byte, compiler, runtime or consumer evidence.
+- If acquisition begins but does not return a determinate status, represent ATTEMPT_IN_PROGRESS / unresolved acquisition distinctly. Do not report cleanup_clean=true merely because successful acquisition was not observed. Close only a confirmed-acquired non-null handle; unresolved ownership must fail or remain unknown.
+- Bound native output-length allocation before allocating. The bound must derive from the frozen architecture, structure size, maximum variable field size, and any required layout/padding. Reject anomalous or inconsistent lengths before allocation; do not use a large allocation as an experiment.
+- Keep environment/type collision constraints separate from detector correctness. A fresh one-shot process and a fail-closed missing-output gate satisfy the v2/v3 Add-Type collision concern only if the actual runner enforces them.
+- Process identity, build/UBR/architecture, timestamps, script hash, runtime identity and raw-output provenance may be runner-owned, but must be tied to the same child process and invocation.
+- A written consumer predicate is not evidence of enforcement. Inspect the actual runner before relying on it.
+- Optional detail-string improvements should not expand scope when outcome/stage/error fields already fail closed.
+- No static-review result or source repair authorizes the protected operation. Preserve the frozen Owner scope and separately adjudicate artifact bytes, consumer wiring and all target preconditions.
+
 ## 2026-10-08 METHOD AMENDMENT — CANDIDATE SOURCE, CLEANUP AND CONSUMER ARE SEPARATE GATES
 
 For a native diagnostic candidate, preserve these separate states:

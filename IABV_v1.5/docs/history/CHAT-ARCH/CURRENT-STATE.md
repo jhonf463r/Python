@@ -1,3 +1,23 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.191 V3 CHALLENGE RECONCILED; MINIMAL V4 STATIC REPAIR NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.
+
+Remote main predecessor verified before writeback: 39289251f2bcfa8077b72cf9eae43a7aa8abdbff. The supplied Sonnet/Claude report is accepted as STATIC_REVIEW_PASS_WITH_REPAIRS for the complete inline v3 source only; no definite defect was reported. This is not saved-byte verification, compilation, runtime evidence or consumer verification.
+
+Material repairs to carry forward:
+- F1: represent ATTEMPT_IN_PROGRESS before OpenProcessToken; keep unresolved acquisition distinct; do not mark cleanup_clean true while ownership/acquisition is unresolved; close only a confirmed-acquired non-null handle.
+- F7: bound requiredLength before AllocHGlobal using a target/layout-backed maximum; reject anomalous lengths before allocation.
+- F2 is handled by a fresh one-shot PowerShell process and missing-output stop; F5/F6 remain runner evidence/readiness obligations. F3 is optional diagnostic clarity; F4 requires the consumer to gate on outcome and cleanup, not medium_integrity alone.
+
+NEXT ACTOR: CODEX — separate v4 detector-only candidate with F1 and F7 repairs, complete source/path/size/reported hash, no compile/run/token query/temp-file search/Git mutation/DLL load/export/runner preparation.
+
+FIRST OPEN EDGE:
+minimal F1/F7 source repair → static reconcile → actual candidate byte provenance → inspect real consumer enforcement → target-bound readiness.
+
+EXECUTION BOUNDARY: Record 182's owner-authorized exact one-shot load-only operation remains unconsumed and conditional on every gate. This overlay authorizes no execution. No change to executable source.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR V3 STATIC PASS; INDEPENDENT CHALLENGE OPEN
 
 Canonical: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`.

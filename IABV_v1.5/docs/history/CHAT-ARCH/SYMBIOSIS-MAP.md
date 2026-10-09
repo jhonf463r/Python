@@ -1,3 +1,19 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.191 INDEPENDENT V3 CHALLENGE RECONCILED
+
+Knowledge Delta:
+- Sonnet/Claude reports no definite defect in the complete inline v3 source; result is STATIC_REVIEW_PASS_WITH_REPAIRS, scoped to that text.
+- Two bounded items remain: acquisition attempt/unresolved state must not be collapsed into clean cleanup, and requiredLength must be capped before allocation.
+- A detector's declared predicate is not proof the real consumer enforces it. Host identity/freshness may be runner-owned but must be bound to the same one-shot child invocation.
+
+Method Delta:
+- Turn reviewer findings into a minimum repair contract, rejecting both under-repair of epistemic ambiguity and scope creep.
+- Require a layout-backed allocation cap and fail closed on anomalous size.
+- Keep saved bytes, static source, compilation, runtime observation, consumer enforcement, target readiness and authorization as independent evidence states.
+
+Routing Delta:
+- Codex prepares separate uncompiled/unexecuted v4 containing only the F1/F7 repairs.
+- Next edge is v4 source reconciliation, then artifact identity and actual consumer gate; no protected action authorized.
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — V3 DETECTOR SOURCE PASS, CONSUMER STILL UNPROVEN
 
 Knowledge Delta:

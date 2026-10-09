@@ -1,3 +1,11 @@
+## 2026-10-08 REGISTRATION — RQ21.191
+
+Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md
+
+Summary: Sonnet/Claude's supplied independent review is accepted as STATIC_REVIEW_PASS_WITH_REPAIRS for inline v3 source only; no definite defect reported. Reconcile F1 acquisition/cleanup ambiguity and F7 bounded allocation in a separate unexecuted v4. Artifact bytes, compiler/runtime and consumer enforcement remain unverified; no protected operation authorized.
+
+Tags: RQ21 / P1 / v3 challenge / F1 acquisition state / F7 allocation bounds / provenance / consumer gate / authorization
+
 ## 2026-10-08 REGISTRATION — RQ21.190
 
 Canonical record: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`

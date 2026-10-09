@@ -1,3 +1,11 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.191 V3 CHALLENGE ACCEPTED; CODEX MINIMAL V4 REPAIR NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.
+
+Sonnet/Claude's supplied report is accepted as STATIC_REVIEW_PASS_WITH_REPAIRS for inline v3 source only. No definite defect reported; source bytes, compilation, runtime and consumer enforcement remain unverified.
+
+NEXT: CODEX, produce a separate v4 detector-only candidate correcting unresolved acquisition/cleanup state (F1) and bounding requiredLength allocation (F7). Do not compile/run, query a token, search or mutate files/Git, load the DLL, resolve exports, or prepare a runner. Fresh one-shot process, runner-owned provenance, actual consumer enforcement and the owner authorization remain distinct gates.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 P1 V3 SOURCE CHALLENGE
 
 Canonical: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`.

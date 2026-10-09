@@ -1,3 +1,15 @@
+## 2026-10-08 — RQ21 P1 V3 INDEPENDENT CHALLENGE RECONCILIATION
+
+[REVIEW RESULT] User supplied Sonnet/Claude report classified the complete inline v3 source STATIC_REVIEW_PASS_WITH_REPAIRS; no definite defect reported. This finding applies to pasted source only.
+
+[ACCEPTED REPAIR EDGE] F1 unresolved acquisition state: current source can leave NOT_ATTEMPTED/null and compute cleanup_clean=true when OpenProcessToken never returns normally. The combined MEDIUM_CONFIRMED predicate still fails closed on traced paths, but evidence fields remain ambiguous. Represent attempt-in-progress/unresolved and make cleanup_clean false/null while ownership is unresolved. Never close an unconfirmed handle.
+
+[ACCEPTED HARDENING] F7 allocation bound: checked conversion alone can still allow a very large HGlobal allocation. Add a maximum-size guard before allocation, derived from x64 TOKEN_MANDATORY_LABEL layout plus the maximum SID size and any required alignment/padding; reject anomalous values fail-closed. The precise cap must be layout-backed rather than assumed.
+
+[NONBLOCKING / RUNNER-OWNED] F2 type collision is addressed by enforcing a fresh one-shot PowerShell process and stopping on absent/unparseable output. F3 detail text may be clarified but is not a blocker. F4 means consumers must use outcome and cleanup fields. F5 provenance belongs in the runner evidence envelope. F6 compiler/language-mode policy remains untested and is a readiness gate. F8 stays NOT_PROVEN beyond the detector's own primary-process-token observation.
+
+[NEXT EDGE] Codex prepares a separate unexecuted detector-only v4 with F1/F7. Then reconcile exact artifact bytes/hash and inspect actual consumer enforcement. No compile/run/token query/file search/Git mutation/DLL load/export/runner preparation. No P1 execution from this adjudication.
+
 ## 2026-10-08 — RQ21 P1 DETECTOR V3 STATIC SOURCE RESULT
 
 [ACTOR-REPORTED] v3 saved to `C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v3.ps1`; size 14,281 bytes; SHA-256 `B6460A3CCB4C830822A75B262CE3F053C589EF847C1EBD69BEFA15AFFF4CD4C6`; two hashing methods reportedly agreed. It was not compiled or run.

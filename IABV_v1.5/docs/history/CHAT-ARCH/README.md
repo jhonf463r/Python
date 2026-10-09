@@ -1,3 +1,9 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — INDEPENDENT V3 CHALLENGE RECONCILED; V4 MINIMAL REPAIR NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.
+
+Sonnet/Claude's supplied report is accepted as STATIC_REVIEW_PASS_WITH_REPAIRS for inline source only; no definite defect reported. NEXT: Codex prepares a separate v4 detector-only candidate with F1 unresolved acquisition/cleanup state and F7 bounded allocation repairs. No compile/run/token query/file search/Git mutation/DLL operation/runner preparation. Actual consumer enforcement and artifact byte identity remain unverified. Record 182's one-shot authorization is conditional and unconsumed.
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V3 DETECTOR CANDIDATE, INDEPENDENT CHALLENGE OPEN
 
 Canonical: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`.
