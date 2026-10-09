@@ -1,5 +1,16 @@
 # IABV v1.5 — CHAT-ARCH: Canonical Historical Knowledge Entry Point
 
+
+## 2026-10-08 ACTIVE RQ21 ROUTE — P1 STOPPED BEFORE DLL LOAD
+
+Canonical: `CHAT-ARCH-2026-10-08-184-rq21-p1-integrity-guard-stop-and-detector-readiness.md`.
+
+The exact contract retrieval/hash was reported verified, but the child diagnostic emitted `integrity_sid=UNKNOWN`; its fail-closed guard prevented the only permitted load call. Therefore P1 remains unexecuted: no LoadLibraryExW, no GetProcAddress, no export invocation and no candidate launch.
+
+**NEXT ACTOR: CODEX**, for static-only inspection of the exact temporary script and its token-integrity detector after checking the script bytes against the reported hash. No execution or mutation. Resolve the detector cause, then explicitly reconcile whether another load attempt falls inside the frozen Owner authorization. Do not bypass the gate or use a separate console's MEDIUM result.
+
+---
+
 This directory is the canonical historical-memory layer for IABV. It preserves knowledge from ChatGPT / Claude / Devin / Codex and related engineering conversations without requiring future chats to retain the original transcript.
 
 ## OPERATIONAL MEMORY
