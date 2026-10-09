@@ -1,3 +1,11 @@
+## 2026-10-08 METHOD AMENDMENT — P0 EXPORTS CLOSED; DYNAMIC LOAD IS A NEW GATE
+
+When a distinct, provenance-described PE reader reports both exact export names on the matching target, close the static file/export-presence property without repeating host/token/hash/signature checks. Record parser identity/version/hash and the raw report path/digest; distinguish an external-actor-reported artifact hash from a digest independently recomputed by the coordinator.
+
+Static exports do not prove DLL loadability, API behavior, containment or the seven-guarantee predicate. A `LoadLibraryExW` / `GetProcAddress` check is a separate dynamic experiment because module initialization may execute. Require a frozen experiment contract, loader side-effect assessment, fresh short-lived non-elevated diagnostic process, raw result/error capture, readiness and explicit Human Domain Owner authorization. A load-only probe must not invoke exports or run a candidate.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — ROUTE MISSING HOST INSPECTION TOOLS BY CAPABILITY, NOT MANUAL REPETITION
 
 When the user has already produced local environment/token/file-identity output, do not ask them to repeat those checks. Identify the unresolved capability (here, independent static PE export inspection) and consider a tool-capable actor such as Codex. Before task execution, require that actor to prove its own execution channel is bound to the exact target host/build and required non-elevated integrity. Tool availability ≠ target access. A mismatch means STOP, never silently use another host. Use only existing installed static readers, capture tool and output provenance, and do not install tools or load the target DLL to close a static-inspection gap. Actor selection must not override the RQ21.58 scope gates.
