@@ -1,3 +1,13 @@
+## 2026-10-08 REGISTRATION — RQ21.187
+
+Canonical record: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`
+
+Summary: v2 source's CloseHandle reporting gap is addressed statically; candidate remains uncompiled/unexecuted and temp-file identity remains actor-reported. Independent native interop static challenge is next; no load authorization implied.
+
+Tags: RQ21 / P1 / TokenIntegrityLevel / PInvoke / cleanup / static review / adversarial verification / authorization
+
+---
+
 ## 2026-10-08 REGISTRATION — RQ21.186
 
 Canonical record: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`
