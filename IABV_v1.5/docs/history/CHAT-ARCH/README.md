@@ -1,3 +1,10 @@
+## 2026-10-08 ACTIVE ROUTE — RQ21.200 CONSUMER DESIGN ACCEPTED; CONTRACT DECISIONS OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
+
+The same-process design is directionally correct, but not ready for implementation. NEXT: Human Domain Owner adjudicates the thread-impersonation rule and the acceptable DLL hash/signature TOCTOU residual. Then the coordinator freezes the exact JSON schema and PowerShell stream policy against the reviewed v5 source and issues a separate implementation contract. No source creation, compile/run/token query, DLL/export operation or candidate launch. RQ21.182 authorization remains conditional and unconsumed.
+
+
 ## 2026-10-08 ACTIVE ROUTE — RQ21.199 CONSUMER DESIGN CONTRACT NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
