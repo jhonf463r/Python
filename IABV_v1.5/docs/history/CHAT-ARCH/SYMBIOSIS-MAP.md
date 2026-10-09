@@ -1,3 +1,15 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — P0 TOKEN-INTEGRITY SCRIPT DEFECT
+
+Knowledge Delta: the second P0 run stopped at a null SID lookup before any DLL recheck or independent parser. It does not establish elevated/non-elevated state or contradict the earlier static report.
+
+Method Delta: query the integrity label through `whoami /groups`, parse null-safely, and mark missing/ambiguous as UNKNOWN. Aborted downstream commands count as NOT RUN.
+
+Routing Delta: corrected local diagnostic only; continue static checks only after MEDIUM is positively observed. No AI implementation/runtime handoff.
+
+Source: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21 P0 STATIC RESULT (PROVISIONAL)
 
 Knowledge Delta: user transcript reports `processmodel.dll` present and both experimental export names found on host `MSI` / OS `10.0.26300.9550` x64; hash/signature/version reported but not independently re-read. Independent corroboration is still open.
