@@ -1,3 +1,13 @@
+## 2026-10-08 REGISTRATION — RQ21.190
+
+Canonical record: `CHAT-ARCH-2026-10-08-190-rq21-p1-integrity-detector-v3-static-adjudication.md`
+
+Summary: v3's complete inline detector source receives a static pass with residual acquisition/cleanup reporting concern and no runtime/artifact-byte verification. Next is an independent source-bound static challenge; consumer wiring and Owner-gated execution readiness remain open.
+
+Tags: RQ21 / P1 / v3 / TokenIntegrityLevel / source audit / cleanup / consumer gate / provenance / authorization
+
+---
+
 ## 2026-10-08 REGISTRATION — RQ21.189
 
 Canonical record: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`
