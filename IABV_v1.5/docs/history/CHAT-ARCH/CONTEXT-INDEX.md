@@ -1,3 +1,11 @@
+## 2026-10-09 ROUTING UPDATE — RQ219 ADJUDICATED; NEXT EXACT EDGE IS BROKER UI AUTHORITY
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
+
+RQ219 is accepted as `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE`. The reviewed self-update handlers, observation gates and HumanApprovalBroker do not demonstrate an authenticated Human Domain Owner approval receipt bound to each mutation's operation/resource/exact scope. The broker can auto-resolve via `pre_approver`; the PR approval path does not supply universal mutation authorization. This does not prove no authentication exists anywhere.
+
+Next decision: whether to authorize a bounded read-only trace of the exact `prompt_handler` registration and the identity/caller path for `HumanApprovalBroker.approve(request_id, payload)`. Stop at wider identity/auth systems. Any UI identity proof would still need the RQ218 operation/resource/scope binding and receipt contract. No implementation/runtime authorization; global readiness remains blocked. RQ13-111 and RQ21.200 separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ219 AUTHORITY PRODUCER / VERIFIER DISCOVERY
 
 Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
