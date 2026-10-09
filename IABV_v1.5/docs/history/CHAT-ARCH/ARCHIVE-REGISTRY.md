@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ207-S SUPPLEMENT ACCEPTED; DEEPER AUTHORIZATION BOUNDARY
+
+Canonical record: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md
+
+Summary: Accept Codex `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE` for the supplement only. Overall MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; isolation is not established. Source-level issues include a network gate that passes unknown network status, asymmetric sensitive-path handling and broad git staging defaults in self-update handlers, a shutdown call to an apparently undefined stop method, observer cleanup omitted from run-finally, and a possible race with the deferred-start thread. Next action is a separate Owner scope decision for exact versioned FastMCP lifecycle semantics and the direct WorldModel permission-gate producer/helpers. No runtime activity or mutation.
+
+Tags: IABV MCP / RQ207-S / static audit complete within scope / fail-open / self-update / lifecycle / permission gate / FastMCP / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ207 ADJUDICATION / DIRECT-SCOPE SUPPLEMENT ROUTED
 
 Canonical record: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md

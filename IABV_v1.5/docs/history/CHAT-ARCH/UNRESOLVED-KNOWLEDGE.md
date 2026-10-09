@@ -1,3 +1,25 @@
+## 2026-10-09 — RQ207-S SUPPLEMENT ADJUDICATED; REMAINING SCOPE IS EXPLICIT
+
+Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
+
+[ACCEPTED] `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE` for the static supplement.
+[OVERALL STATUS] `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; isolation is not established.
+
+[DIRECT SOURCE RISKS REPORTED]
+- Unknown `network_status=None` can pass a network-required governance condition.
+- `write_repo_file` sensitive denylist is case-sensitive; `apply_text_patch` lacks equivalent sensitive-path checks.
+- `git_commit_and_push(files=".", push=True)` may stage/push unrelated dirty-tree changes if invoked.
+- `AppBootstrap.shutdown()` calls an apparently undefined `stop()`; run-finally does not stop EnvironmentSelfAwareness/WorldModel; the deferred-start daemon thread can race cleanup.
+- The local_cli and site_explorer availability omissions are now addressed in the supplied source report.
+
+[UNRESOLVED / REQUIRES SEPARATE OWNER SCOPE]
+1. Exact versioned FastMCP SDK `run()` and container shutdown semantics.
+2. Exact producer/creation helpers for `WorldModelSnapshot.permission_gates`, to determine what guarantees an applicable human gate for mutating routes.
+3. Actual ToolCard inventory and which adapters ran; runtime configuration/effects; historical PID 16768 source attribution.
+4. Any safe isolation boundary.
+
+No runtime or mutation is authorized. No MCP launch/reconnect or snapshot read. RQ21.200 remains independent.
+
 ## 2026-10-09 — RQ207 ADJUDICATION: DIRECT-SCOPE GAPS / FAIL-OPEN AND LIFECYCLE RISKS
 
 Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.

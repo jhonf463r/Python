@@ -1,3 +1,11 @@
+## 2026-10-09 METHOD AMENDMENT — RQ207-S SUPPLEMENT COMPLETE; DO NOT CONFUSE SCOPE PASS WITH READINESS
+
+- Accept `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE` for the bounded static supplement, while retaining the overall readiness classification `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. A completed audit can correctly conclude that the system is not ready.
+- Preserve source/runtime distinctions: adapter availability is not task invocation; callback-before-mutation is not a complete authorization guarantee; source cleanup paths are not proof of observed cleanup; a configured transport is not historical process attribution.
+- Direct source risks accepted from the actor report: unknown network status can pass the network-required gate; self-update handlers have asymmetric sensitive-path checks and broad default git staging; AppBootstrap shutdown calls an apparently undefined stop method; observer stop methods are omitted from run-finally; deferred-start thread can race cleanup.
+- No further source recursion without explicit Human Domain Owner scope. The only proposed next static edges are the exact versioned FastMCP run/container lifecycle contract and the producer/helpers for WorldModelSnapshot.permission_gates. Identify the precise SDK version/path first and follow only direct helpers necessary to determine the contract.
+- Do not start/reconnect MCP, invoke tools, inspect processes, run probes, read DB/secrets/snapshot, test, compile or mutate. Runtime inventory and historical PID 16768 attribution are separate evidence questions. RQ21.200 remains independent.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ207 ADJUDICATION / DIRECT-SCOPE SUPPLEMENT
 
 - Accept the RQ207 primary classification `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`, but do not automatically treat every stated blocker as an uncloseable dependency: the report omitted at least one registered adapter and lacked current-worktree identity for the lazy site-explorer service.

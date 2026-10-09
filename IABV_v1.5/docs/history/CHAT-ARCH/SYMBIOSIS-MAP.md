@@ -1,3 +1,21 @@
+## 2026-10-09 SYMBIOSIS UPDATE — RQ207-S ACCEPTED; READINESS STILL BLOCKED
+
+Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
+
+Knowledge Delta:
+- The direct availability path for `local_cli` is path/PATH/glob existence resolution, not task subprocess execution. `site_explorer` availability resolves a lazy service object and checks `sync_playwright`; it does not itself browse or request network.
+- The dirty-source network gate described by Codex does not fail closed when `network_status` is absent.
+- Governance callback order is present, but path protection is asymmetric: case-sensitive string denylist in `write_repo_file`, no equivalent denylist in `apply_text_patch`, and broad defaults `files="."`, `push=True` in git self-update.
+- Lifecycle sources contain a missing `AppBootstrap.stop()` call target unless dynamically attached, observer services not stopped by run-finally, and an unjoined deferred-start thread that can race process cleanup.
+- None of these source facts establishes runtime occurrence, actual card inventory or the source loaded by PID 16768.
+
+Method Delta:
+- Treat `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE` as completion of that task only, not a readiness/pass for startup.
+- Further source recursion needs separate explicit scope: exact FastMCP SDK run/cleanup contract; direct producer/helpers for WorldModel permission gates.
+
+Routing Delta:
+- Next is Human Domain Owner's scope decision; no runtime operation. Snapshot disclosure and any MCP launch remain independent permission gates. RQ21.200 remains distinct.
+
 ## 2026-10-09 SYMBIOSIS TRANSFER — RQ207 ADJUDICATED; MUTATION / LIFECYCLE GAPS SHARPENED
 
 Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.

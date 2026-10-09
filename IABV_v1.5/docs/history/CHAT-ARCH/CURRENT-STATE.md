@@ -1,3 +1,11 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ207-S COMPLETE; DEEPER SCOPE DECISION REQUIRED
+
+Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
+
+Accept Codex's `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE` for the static supplement. The overall MCP readiness remains blocked: `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; isolation is not established. The report closes direct coverage gaps for `local_cli` and `site_explorer`, confirms the reported unknown-network fail-open in dirty `server.py`, identifies asymmetric self-update sensitive-path controls and broad git staging risks, and details incomplete shutdown/observer-thread cleanup plus an unjoined deferred-start thread race.
+
+NEXT: Human Domain Owner decision on whether to authorize two exact read-only source branches: (1) the exact versioned FastMCP SDK's `run()`/container lifecycle contract, and (2) the direct producer/model helpers that populate `WorldModelSnapshot.permission_gates`. No recursive exploration, runtime MCP use, process interaction, launch/reconnect, DB/secrets read, tests, compilation or mutation. Actual ToolCard runtime inventory and historical PID 16768 attribution remain separate/unproven. No operational snapshot permission; RQ21.200 remains separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ207 SUPPLEMENT: GOVERNANCE UNKNOWN-STATE AND LIFECYCLE GAPS
 
 Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.

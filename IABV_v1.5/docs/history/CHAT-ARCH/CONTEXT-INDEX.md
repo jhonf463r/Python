@@ -1,3 +1,13 @@
+## 2026-10-09 ROUTING UPDATE — RQ207-S COMPLETE; ASK OWNER FOR EXACT DEEPER STATIC SCOPE
+
+Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
+
+Codex's bounded supplement is accepted as `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE`. Do not repeat RQ206/RQ207. Overall isolation/readiness remains unproven and blocked. The next decision is whether to authorize source-only review of:
+1. exact versioned FastMCP SDK lifecycle/cleanup around `run()`;
+2. producer and immediately required helpers for `WorldModelSnapshot.permission_gates`.
+
+Those edges were explicitly outside the prior bounded scope. No work on them until separate explicit Owner authorization. No MCP runtime operations, launch/reconnect, process inspection, state/secret/database reads, tests, compilation or mutation. RQ21.200 remains separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ207 BLOCKED; BOUNDED DIRECT-SCOPE SUPPLEMENT NEXT
 
 Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.

@@ -1,3 +1,9 @@
+## 2026-10-09 ACTIVE ROUTE — RQ207-S COMPLETE; OWNER SCOPE DECISION NEXT
+
+Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
+
+Codex's bounded supplement is accepted as `RQ207_SUPPLEMENT_COMPLETE_WITHIN_SCOPE`; do not repeat RQ206/RQ207. This closes that static deliverable only. Overall MCP readiness remains blocked and isolation is not established. The next step is an explicit Owner decision on two exact additional static edges: the versioned FastMCP run/container cleanup contract and the producer/helpers that create WorldModel permission gates for mutating operations. No MCP call, process interaction, start/reconnect, runtime probes, operational snapshot, DB/secrets read, tests, compilation or mutation. RQ21.200 stays separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ207 DIRECT-SCOPE SUPPLEMENT REQUIRED
 
 Canonical: CHAT-ARCH-2026-10-09-208-rq207-adjudication-direct-findings-and-supplement-route.md.
