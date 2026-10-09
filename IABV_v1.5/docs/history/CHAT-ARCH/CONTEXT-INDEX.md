@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 V2 INDEPENDENT AUDIT COMPLETE; MINIMUM REPAIRS NEXT
+
+Canonical: `CHAT-ARCH-2026-10-08-189-rq21-p1-v2-independent-static-review-adjudication.md`.
+
+The supplied static reviewer result is `STATIC_REVIEW_PASS_WITH_REPAIRS` on inline v2 source; no definite SID-recognition defect was found. Disk path/size/hash remain actor-reported; no compile or run occurred. Apply only F1/F2/F4/F5/F6 hardening and define the consuming readiness gate; consumer behavior is still unreviewed.
+
+NEXT: **CODEX**, separate temporary candidate only, unexecuted, with complete source/path/size/hash and explicit consumer predicate. No repository/Git changes or protected operation. Owner authorization remains valid only for the single unperformed load call after all gates pass; this update does not itself authorize execution.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 V2 REVIEWER INPUT WAS INCOMPLETE
 
 Canonical: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`.
