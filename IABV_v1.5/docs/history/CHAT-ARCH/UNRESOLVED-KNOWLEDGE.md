@@ -1,3 +1,15 @@
+## 2026-10-08 — RQ21.195 V5 STATIC CHALLENGE ACCEPTED; ARTIFACT IDENTITY/CONSUMER OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
+
+[REVIEW REPORT] Reviewer classifies the complete inline v5 source STATIC_REVIEW_PASS, with no definite defect and no required repair; coordinator accepts for inline source only.
+[ACCEPTED SOURCE-LEVEL ITEMS] F1 unresolved acquisition remains unclean; F7's 84-byte ceiling remains a qualified fail-closed policy with >84-byte legitimate padding NOT_PROVEN; F8 preserves Win32 error 122 on both invalid-length branches; the V4 internal type label is non-blocking under a fresh one-shot process contract.
+[INFORMATIONAL] Code 122 can describe different stages; consumers must interpret failure_stage with outcome/cleanup. IntPtr.Size == 8 is a 64-bit layout check, not proof of x64.
+[ACTOR-REPORTED ARTIFACT] C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v5.ps1; 17,199 bytes; SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA. Coordinator has not independently read back the bytes or recomputed the digest.
+[UNPROVEN] Compilation/Add-Type behavior, live buffer/token state, actual consumer enforcement, output freshness/PID binding, host x64/build and protected operation.
+[NEXT EDGE] Exact-path artifact read-back and source correspondence; then actual runner/consumer source/wiring inspection, both read-only and separately recorded. No path search, compile/run, token query or DLL/export activity.
+
+
 ## 2026-10-08 — RQ21.194 V5 SOURCE RECONCILIATION
 
 Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
