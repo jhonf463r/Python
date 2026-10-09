@@ -4,6 +4,13 @@ This directory is the canonical historical-memory layer for IABV. It preserves k
 
 ## OPERATIONAL MEMORY
 
+## 2026-10-08 ACTIVE RQ21 ROUTE — P0 STATIC EXPORT RESULT IS PROVISIONAL
+
+Canonical: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
+
+The local console transcript reports `processmodel.dll` present and both experimental exports. This is not yet an independently verified P0 result: corroborate with a separate already-installed static PE tool and record token integrity, tool identity and a hash of the output. Secure Boot/test-signing remain UNKNOWN. Do not load the DLL, invoke the API, execute a candidate, install tools or elevate. Next actor is the local host operator for this bounded static verification only.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — RQ21.58 WINDOWS FEASIBILITY AUDIT
 
 Canonical: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`.
