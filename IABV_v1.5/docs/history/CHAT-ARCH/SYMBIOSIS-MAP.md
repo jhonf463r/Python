@@ -1,5 +1,7 @@
 ## 2026-10-08 SYMBIOSIS TRANSFER — RQ21.191 INDEPENDENT V3 CHALLENGE RECONCILED
 
+Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.
+
 Knowledge Delta:
 - Sonnet/Claude reports no definite defect in the complete inline v3 source; result is STATIC_REVIEW_PASS_WITH_REPAIRS, scoped to that text.
 - Two bounded items remain: acquisition attempt/unresolved state must not be collapsed into clean cleanup, and requiredLength must be capped before allocation.
