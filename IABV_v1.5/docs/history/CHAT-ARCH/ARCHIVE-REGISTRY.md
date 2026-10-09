@@ -1,3 +1,13 @@
+## 2026-10-08 REGISTRATION — RQ21.186
+
+Canonical record: `CHAT-ARCH-2026-10-08-186-rq21-p1-integrity-detector-candidate-static-review.md`
+
+Summary: Unexecuted direct TokenIntegrityLevel detector candidate is statically plausible from pasted source; cleanup-reporting gap remains because CloseHandle outcome/error is ignored. Next is a separate temp-artifact refinement only, not compile/run/load.
+
+Tags: RQ21 / P1 / detector / TokenIntegrityLevel / native interop / cleanup / provenance / authorization
+
+---
+
 ## 2026-10-08 REGISTRATION — RQ21.185
 
 Canonical record: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`
