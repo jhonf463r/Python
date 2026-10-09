@@ -1,3 +1,11 @@
+## 2026-10-08 ROUTING UPDATE — CODEX CONDITIONAL FOR P0 STATIC EXPORT VERIFICATION
+
+Canonical: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
+
+The user has already confirmed MEDIUM token integrity and a matching DLL hash/signature. `dumpbin.exe` is unavailable. Do not repeat those checks. Codex is the next capability-fit candidate only to test its own execution channel against host `MSI`, OS build `10.0.26300.9550` and MEDIUM integrity; only a match permits read-only inspection using an already-installed independent PE reader. Mismatch or no installed parser means STOP. No implementation/runtime work.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — P0 RETEST STOPPED BEFORE EXPORT CORROBORATION
 
 Canonical: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
