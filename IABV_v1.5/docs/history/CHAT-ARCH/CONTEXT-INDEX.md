@@ -1,3 +1,13 @@
+## 2026-10-09 ROUTING UPDATE — FIRST IABV MCP USE / ATTRIBUTION BEFORE AUTHORIZATION
+
+Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
+
+Codex reported BLOCKED_BY_STARTUP_SIDE_EFFECTS. Remote source confirms a bounded no-refresh branch for world_model_snapshot, but this tool reads operational state and has no explicit observation-permission gate. The configured server points to a dirty detached worktree; two MCP-like processes were observed but their loaded-source/session identity is unproven; this ChatGPT session lacks IABV MCP tools.
+
+NEXT: CODEX, read-only inspection of those exact two processes, the already-known Codex server config, the exact configured worktree, and its differences in server.py/bootstrap.py/world_model_service.py from observed main d059f783a24d2166f40247f374164165fba15292. Also report whether the current Codex session actually exposes IABV tools. No MCP handshake/tool call, start/restart/reconnect, endpoint request or file mutation. Coordinator then adjudicates and seeks explicit human permission for one observation if attribution is sufficient.
+
+RQ21.200 remains a separate route; do not conflate its DLL consumer contract with MCP first use.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.200 CONSUMER DESIGN ACCEPTED; OWNER GATES FIRST
 
 Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
