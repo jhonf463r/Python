@@ -1,3 +1,21 @@
+## 2026-10-09 SYMBIOSIS TRANSFER — PASSIVE SOURCE ATTRIBUTION EXHAUSTED; OWNER GATE NEXT
+
+Canonical record: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
+
+Knowledge Delta:
+- The effective tool catalog in the current Codex session and the MCP process's parentage are observed at actor-report level, but no identified passive artifact authenticates the exact Python code loaded into the live server.
+- Current source hashes, configured `PYTHONPATH`, local worktree diffs and matching tool-description text are compatible evidence, not exact source-as-loaded proof.
+- A controlled new process would establish prospective provenance only; it cannot retroactively attest the old PID.
+
+Method Delta:
+- Accept `NO_PASSIVE_PROOF_IDENTIFIED` when the searched/known passive artifacts do not close code-as-loaded.
+- Prefer a source-reviewed prospective attribution plan over live process attach/dump/injection absent a specific owner need.
+- Inventory AppBootstrap, EnvironmentSelfAwareness/WorldModel scans, persistence, provider-health checks, client reconnect, isolation and rollback before any prospective startup. Do not start yet.
+- Keep any eventual `world_model_snapshot(refresh=False, full=False)` disclosure behind separate explicit owner permission.
+
+Routing Delta:
+- Human Domain Owner decides whether to authorize a read-only source-level startup impact/isolation plan (recommended), or requests a separate proposal for invasive live-process inspection.
+- No MCP call, process intervention, restart/reconnect or snapshot disclosure is authorized.
 ## 2026-10-09 SYMBIOSIS TRANSFER — IABV MCP FIRST-USE BLOCKED BEFORE TOOL CALL
 
 Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
