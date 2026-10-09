@@ -1,3 +1,9 @@
+## 2026-10-09 RQ216 ADJUDICATION
+
+Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md
+
+RQ216 accepted as static design only. No code edit or runtime permission. Before implementation, Owner must choose approver authority, permission granularity, allowed roots/protected paths, baseline, isolated worktree, Git policy and verification phase. Global MCP readiness remains blocked; RQ13-111 and RQ21.200 remain separate.
+
 ## 2026-10-09 REGISTRATION — RQ216 DESIGN-ONLY SECURITY CONTRACT
 
 Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
