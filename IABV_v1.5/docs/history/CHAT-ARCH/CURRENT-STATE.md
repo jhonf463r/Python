@@ -1,3 +1,13 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21.200 CONSUMER DESIGN ACCEPTED; CONTRACT GATES OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-200-rq21-p1-consumer-contract-adjudication.md.
+
+Codex's design-only draft correctly proposes that v5 and the single protected LoadLibraryExW call run in the same fresh, short-lived, non-elevated PowerShell process; the outer launcher must not perform the load. This resolves the architecture direction from RQ21.199 but does not create or verify a consumer. Status: CONSUMER_DESIGN_ACCEPTED_WITH_BLOCKING_CONTRACT_GATES; NOT IMPLEMENTATION-READY.
+
+Before implementation, Human Domain Owner must adjudicate (1) thread impersonation/effective security context and (2) whether to accept the documented time-of-check/time-of-use race between DLL hash/signature verification and the loader mapping the path. Recommended conservative default for (1): require no thread impersonation and stop if absent-state cannot be proved; do not silently RevertToSelf and continue. The exact JSON keys/types and PowerShell stream acceptance policy must then be frozen against the reviewed v5 source, not guessed.
+
+NEXT: owner decisions → coordinator freezes source-derived JSON/stream contract → separate bounded implementation → source reconciliation/independent static challenge → artifact identity and fresh target-readiness review. RQ21.182 authorization remains conditional and unconsumed. No source implementation, compilation/runtime, token query, DLL/export operation or candidate launch. Same-process design does not remove DllMain/teardown side effects or prove containment.
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.199 CONSUMER NOT IMPLEMENTED; DESIGN CONTRACT NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
