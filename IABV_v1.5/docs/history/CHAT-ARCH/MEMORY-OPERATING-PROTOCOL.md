@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — RQ219 STATIC AUTHORITY DISCOVERY ONLY
+
+Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
+
+- The accepted first-tranche policy is explicit human Owner approval bound to operation, canonical resource and exact scope; all missing/unknown/stale/malformed/denied/exceptional/mismatched states block. No push, explicit Git file allowlist, preserve the existing dirty/detached worktree.
+- RQ219 permits read-only inspection only of the existing mutation handlers, governance callback, model and WorldModel gate producer plus direct imports/definitions needed to determine whether a trusted approval source/verifier already exists.
+- Do not equate observation permission, tool invocation, session identity alone, a Boolean or a log entry with human Owner approval without direct evidence.
+- Stop at broader authority/identity mechanisms and name the exact path/symbol; no broad search, API invention or source edit.
+- Exact workspace root/protected paths and immutable baseline remain undecided. No worktree creation/changes, tests/builds, runtime/MCP, process inspection, DB/secrets/snapshot, install/download or Git mutation. Overall readiness remains blocked.
+
 ## 2026-10-09 METHOD AMENDMENT — RQ218 OWNER POLICY PARTIAL / DO NOT EDIT YET
 
 Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
