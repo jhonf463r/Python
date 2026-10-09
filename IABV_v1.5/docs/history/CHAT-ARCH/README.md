@@ -1,3 +1,10 @@
+## 2026-10-09 ACTIVE ROUTE — RQ212 ADJUDICATED; NO FURTHER RUNTIME SCOPE
+
+Canonical authorization: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
+Canonical adjudication: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
+
+The static launcher/config and source-hash deliverables are accepted within scope, with actor-reported provenance. Uvicorn exact source/version and HTTP shutdown remain unresolved; the script/service/docs report inconsistent port defaults (8000 vs 8765). Live interpreter/transport are not established. No further RQ212 work should broaden into runtime/process inspection, installation, MCP use or mutation. Global readiness remains blocked; RQ21.200 separate.
+
 ## 2026-10-09 ACTIVE ROUTE — RQ212 STATIC LAUNCHER / UVICORN / HASH SUPPLEMENT
 
 Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
