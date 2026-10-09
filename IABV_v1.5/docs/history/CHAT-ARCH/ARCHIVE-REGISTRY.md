@@ -1,3 +1,12 @@
+## 2026-10-08 REGISTRATION — RQ21.196
+
+Canonical record: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md
+
+Summary: Codex reports IDENTITY_MATCH for exact v5 path using ReadAllBytes, size 17,199 bytes, SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA, and normalized-text comparison to the reviewed source. Accepted as actor-observed identity evidence; compilation/runtime remain unproven. Next: read-only inspection of actual runner/consumer and output handoff. If no true entrypoint is identified, stop; no substitute runner or arbitrary temp-path search. No protected operation authorized.
+
+Tags: RQ21 / P1 / v5 / artifact identity / SHA-256 / exact source match / consumer audit / output provenance / authorization
+
+
 ## 2026-10-08 REGISTRATION — RQ21.195
 
 Canonical record: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md
