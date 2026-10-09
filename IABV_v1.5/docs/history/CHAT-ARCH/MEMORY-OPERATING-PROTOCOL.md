@@ -1,3 +1,12 @@
+## 2026-10-09 METHOD AMENDMENT — READ-ONLY STARTUP IMPACT PLAN AUTHORIZED; NO LAUNCH
+
+- Human Domain Owner approved only a bounded read-only static startup-impact/isolation plan; this is not permission to start, stop, restart, reconnect, or invoke MCP.
+- Limit Codex to the known `server.py`, `bootstrap.py`, `world_model_service.py`, `docs/mcp-bridge.md`, and RQ13-108/109 records. Preserve all dirty/detached worktrees and report exact revision/status/hashes.
+- Classify each direct/transitive effect as demonstrated, conditional, or unresolved. If a transitive implementation lies outside the approved source set, mark it unresolved instead of expanding search scope.
+- Analyze construction, EnvironmentSelfAwareness/WorldModel scans, persistence, conditional provider checks, network/IPC, observation, transport/client association, isolation and abort conditions. Proposals only; no experiments, tests, compilation, process interaction or runtime calls.
+- A prospective controlled process can establish prospective provenance only; it does not prove what historical PID 16768 loaded.
+- Any eventual launch/reconnect requires fresh explicit authorization after coordinator review. Any eventual `world_model_snapshot(refresh=False, full=False)` disclosure requires its own separate explicit permission for operational-state exposure.
+
 ## 2026-10-09 METHOD AMENDMENT — NO PASSIVE PROOF OF MCP CODE-AS-LOADED
 
 - Accept `NO_PASSIVE_PROOF_IDENTIFIED` when already-identified passive evidence cannot authenticate the exact Python module/code loaded by the live MCP process.
