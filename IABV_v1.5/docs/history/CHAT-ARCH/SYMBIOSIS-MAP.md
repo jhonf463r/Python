@@ -1,3 +1,24 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — AUTHORITATIVE MEASUREMENT VS INDIRECT INFERENCE
+
+Knowledge Delta:
+- A code path can explain an UNKNOWN result without proving the underlying property of the prior runtime process.
+- For Windows integrity, a group-list search is an indirect detector; a direct TokenIntegrityLevel query is the proper measurement contract to evaluate.
+
+Method Delta:
+- Verify the exact diagnostic artifact first.
+- Separate detector-path diagnosis from the target's true runtime state.
+- Return distinct verified-nonmatching and measurement-failure outcomes.
+- Never infer runtime readiness from a proposed correction or let detector repair implicitly authorize the protected operation.
+
+Routing Delta:
+- Codex is fit for the exact Windows interop correction design because it owns the temporary artifact context.
+- Require an unexecuted, hash-verified replacement proposal first; then independently reconcile its contract and the Owner authorization boundary.
+
+Current edge:
+`reported UNKNOWN path → exact native token-query design → static verification → separate authorization adjudication`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — GUARDED-PROBE SENSOR FAILURE VS TARGET FAILURE
 
 Knowledge Delta:
