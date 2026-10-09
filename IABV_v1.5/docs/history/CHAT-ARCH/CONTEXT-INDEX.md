@@ -1,3 +1,10 @@
+## 2026-10-09 ROUTING UPDATE — RQ210 ADJUDICATED; FASTMCP LIFECYCLE EDGE REMAINS OPEN
+
+Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
+Adjudication: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md.
+
+Branch A is stopped because actual launcher interpreter/transport and exact Uvicorn lifecycle source/version are unresolved, despite an identified local `mcp 1.27.0` copy. Branch B concludes that the reported observation-permission gates do not guarantee universal human approval for self-update; absent/inapplicable gates may permit the governance callback to continue. Global readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. Most IABV source hashes were omitted from the report and were not independently measured by the coordinator. No runtime MCP/process/state access or source mutation. RQ21.200 is separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ207-S COMPLETE; ASK OWNER FOR EXACT DEEPER STATIC SCOPE
 
 Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
