@@ -1,3 +1,12 @@
+## 2026-10-08 REGISTRATION — RQ21.197
+
+Canonical record: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md
+
+Summary: Codex reports standalone v5 emits integrity JSON but does not load the DLL; the known loader diagnostic reportedly applies its own WindowsIdentity.Groups/medium_integrity check and does not consume v5 JSON. The authoritative double-gate consumer is unavailable in the inspected evidence. This is an integration/source-provenance gap, not a demonstrated v5 static defect. Next: owner/operator identifies the exact authoritative consumer path/repository ref; Codex then audits that source read-only. No runtime/DLL/export action authorized.
+
+Tags: RQ21 / P1 / consumer source unavailable / detector versus consumer / double gate / v5 / source provenance / read-only audit / authorization
+
+
 ## 2026-10-08 REGISTRATION — RQ21.196
 
 Canonical record: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md
