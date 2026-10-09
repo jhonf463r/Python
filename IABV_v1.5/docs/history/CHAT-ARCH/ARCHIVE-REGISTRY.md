@@ -1,3 +1,11 @@
+## 2026-10-08 REGISTRATION — RQ21.193
+
+Canonical record: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md
+
+Summary: Sonnet/Claude reports STATIC_REVIEW_PASS_WITH_REPAIRS for intended v4 logic. F8 confirms observed Win32 error 122 is discarded on invalid requiredLength branches; preserve it. Reviewer-input N1 reports fence lines absent from coordinator-pasted source; verify the exact saved artifact before deriving v5. Next: Codex verifies v4 path/size/SHA and prepares separate v5 with F8 fixed and F7 comment qualified. No compile/run or protected operation.
+
+Tags: RQ21 / P1 / v4 challenge / F8 / error preservation / source handoff / provenance / v5 / authorization
+
 ## 2026-10-08 REGISTRATION — RQ21.192
 
 Canonical record: CHAT-ARCH-2026-10-08-192-rq21-p1-v4-static-source-reconciliation.md
