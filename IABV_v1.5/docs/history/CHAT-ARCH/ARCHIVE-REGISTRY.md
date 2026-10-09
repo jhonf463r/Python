@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — RQ214 STATIC REMEDIATION PLAN ACCEPTED
+
+Canonical record: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md
+
+Summary: Accept RQ214 as a completed static remediation plan only. Its symbiosis synthesis connects conditional mutator authorization, transitive bootstrap effects, asymmetric path/Git controls, lifecycle/transport uncertainty, source/session provenance and data confidentiality. Global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. Before implementation, Owner must decide the exact baseline/worktree and approve mutation authorization semantics, fail-closed policy, file roots/protected paths and Git scope. Existing dirty/detached worktree must remain untouched. No runtime, tests/builds or code changes. RQ13-111 and RQ21.200 remain separate.
+
+Tags: IABV MCP / RQ214 / symbiosis / static remediation plan / authorization gates / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ212 STATIC SUPPLEMENT ADJUDICATED
 
 Canonical record: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md
