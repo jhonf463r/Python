@@ -1,3 +1,14 @@
+## 2026-10-08 — RQ21.199 CONSUMER IMPLEMENTATION GAP / DESIGN OPEN
+
+Canonical: CHAT-ARCH-2026-10-08-199-rq21-p1-consumer-not-implemented-adjudication.md.
+
+[OPERATOR-DECLARED] CONSUMER_NOT_IMPLEMENTED in the identified scope; no authoritative consumer source was provided.
+[CODEX RESULT] CONSUMER_SOURCE_UNAVAILABLE; no source-based audit occurred because there was no source object. This is a correct stop classification, not a pass/fail for consumer enforcement.
+[ACCEPTED SOURCE LEVEL] v5 inline source remains STATIC_REVIEW_PASS; Codex reports its saved artifact identity as matching expected size/hash and normalized source.
+[NOT PROVEN] Any consumer integration, compilation/runtime behavior, current target readiness, dynamic DLL loading or export resolution.
+[NEW DESIGN REQUIREMENT] The process whose token v5 measures must be causally bound to the process that performs the protected load. A detector result from a separate child does not establish the parent loader's token state.
+[NEXT] Codex drafts the missing consumer's bounded contract/design only. Do not implement until coordinator adjudicates; no compile/run/token/DLL/export/candidate activity.
+
 ## 2026-10-08 CONTINUITY CHECK — RQ21.198; CONSUMER IDENTITY STILL OPEN
 
 Canonical record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
