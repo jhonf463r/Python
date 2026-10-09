@@ -1,3 +1,11 @@
+## 2026-10-09 REGISTRATION — BOUNDED TRANSITIVE MCP AUDIT AUTHORIZED
+
+Canonical record: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md
+
+Summary: Owner authorized a bounded read-only audit of named direct dependencies and their immediate effectful helpers, with reconciliation against canonical memory/symbiosis records. Codex must return a source-anchored effect graph and metacognitive risk matrix; follow known call sites only and stop at further material dependencies outside scope. No runtime activity or mutations are authorized.
+
+Tags: IABV MCP / transitive effects / symbiosis / metacognition / bounded audit / no runtime
+
 ## 2026-10-09 REGISTRATION — MCP STARTUP PLAN BLOCKED BY TRANSITIVE EFFECTS
 
 Canonical record: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md
