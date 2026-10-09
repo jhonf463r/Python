@@ -1,3 +1,15 @@
+## 2026-10-09 METHOD AMENDMENT — RQ226 CONTINUITY / KNOWLEDGE-ACQUISITION AUDIT
+
+Canonical adjudication: [CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md](CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md).
+
+- Use the single canonical entry order in `README.md`: verify remote `main` SHA → README → top of `CURRENT-STATE.md` → objective-relevant `CONTEXT-INDEX.md) retrieval → this protocol → selected evidence records. This protocol must not prescribe a conflicting order.
+- Explicitly activate `UAAL-ROOT-001` and relevant lineage for global vision, architecture, universal semantics/generalization, cross-domain composition, learning, memory/continuity or protocol-design objectives; do not load the whole archive for a narrow task.
+- For supplied conversations, use the `CHAT / TRANSCRIPT INTAKE CONTRACT` below. Declare actual source extent, inspected coverage, omissions and completeness status; never report full reading/absorption from a partial extract.
+- Relevant prior experience must change an applicable task constraint, required observation, false-positive control, stop condition or acceptance criterion before prompt construction.
+- Persistence, retrieval, activation, decision impact and causal reuse remain separate evidence stages. Documentary harmonization does not prove operational reliability.
+- Existing canonical memory organs remain sufficient; no parallel memory or coordinator is justified. The technical route remains the top routing snapshot of `CURRENT-STATE.md`; RQ224 is not superseded by this method amendment.
+
+---
 ## 2026-10-09 METHOD AMENDMENT — RQ223 CONTRACT RECONCILED; RQ224 TRUST SOURCE NEXT
 
 Canonical: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).
