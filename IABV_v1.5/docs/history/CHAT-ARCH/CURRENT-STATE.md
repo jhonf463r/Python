@@ -9,7 +9,7 @@ Material repairs to carry forward:
 - F7: bound requiredLength before AllocHGlobal using a target/layout-backed maximum; reject anomalous lengths before allocation.
 - F2 is handled by a fresh one-shot PowerShell process and missing-output stop; F5/F6 remain runner evidence/readiness obligations. F3 is optional diagnostic clarity; F4 requires the consumer to gate on outcome and cleanup, not medium_integrity alone.
 
-NEXT ACTOR: CODEX — separate v4 detector-only candidate with F1 and F7 repairs, complete source/path/size/reported hash, no compile/run/token query/temp-file search/Git mutation/DLL load/export/runner preparation.
+NEXT ACTOR: CODEX — separate v4 detector-only candidate with F1 and F7 repairs, complete source/path/size/reported hash, no compile/run/token query/temp-file search/Git mutation/DLL load/export/runner preparation. Because these changes touch gate-relevant acquisition/cleanup and allocation logic, reconcile the exact v4 source/diff and obtain a fresh independent static challenge of that source before artifact/consumer/readiness gates.
 
 FIRST OPEN EDGE:
 minimal F1/F7 source repair → static reconcile → actual candidate byte provenance → inspect real consumer enforcement → target-bound readiness.

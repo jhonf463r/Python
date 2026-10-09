@@ -4,7 +4,7 @@ Canonical: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudicatio
 
 Sonnet/Claude's supplied report is accepted as STATIC_REVIEW_PASS_WITH_REPAIRS for inline v3 source only. No definite defect reported; source bytes, compilation, runtime and consumer enforcement remain unverified.
 
-NEXT: CODEX, produce a separate v4 detector-only candidate correcting unresolved acquisition/cleanup state (F1) and bounding requiredLength allocation (F7). Do not compile/run, query a token, search or mutate files/Git, load the DLL, resolve exports, or prepare a runner. Fresh one-shot process, runner-owned provenance, actual consumer enforcement and the owner authorization remain distinct gates.
+NEXT: CODEX, produce a separate v4 detector-only candidate correcting unresolved acquisition/cleanup state (F1) and bounding requiredLength allocation (F7). Do not compile/run, query a token, search or mutate files/Git, load the DLL, resolve exports, or prepare a runner. Since F1/F7 alter gate-relevant source paths, the complete v4 source must receive coordinator diff reconciliation and a new independent static challenge before artifact provenance, actual consumer enforcement, target readiness or the owner authorization are reconsidered.
 
 ## 2026-10-08 ROUTING UPDATE — RQ21 P1 V3 SOURCE CHALLENGE
 
