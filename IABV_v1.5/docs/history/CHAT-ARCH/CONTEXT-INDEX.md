@@ -1,3 +1,15 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 P0 EXPORT PRESENCE REPORTED; INDEPENDENT CHECK OPEN
+
+Canonical: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
+
+The current console transcript reports both exports in the native-path `processmodel.dll`, but uses the same hand-authored parser and lacks independently hashed collector provenance. Do not interpret this as API loadability/operational readiness or as closure of P0.
+
+FIRST OPEN EDGE: explicit token-integrity check + independent read-only PE export corroboration using an already-installed utility + hash of preserved output → independent reconciliation.
+
+NEXT ACTOR: local host operator for this static check only. No AI routing needed yet; no P1, candidate execution or Codex implementation.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.58 BOUNDED WINDOWS AUDIT / CHANNEL READINESS BLOCKER
 
 Canonical: `CHAT-ARCH-2026-10-08-177-rq21-58-focused-windows-substrate-audit-adjudication.md`.
