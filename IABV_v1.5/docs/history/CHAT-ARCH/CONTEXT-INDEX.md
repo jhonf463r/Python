@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — RQ21 V2 REVIEWER INPUT WAS INCOMPLETE
+
+Canonical: `CHAT-ARCH-2026-10-08-188-rq21-p1-v2-independent-review-source-handoff-stop.md`.
+
+Reviewer result `SOURCE_UNAVAILABLE_OR_INCOMPLETE` reflects missing source in the reviewer's prompt/local environment; it carries no code-specific finding. The complete v2 source is available in the coordinator conversation.
+
+NEXT: **SONNET/CLAUDE**, audit the full v2 source embedded inline in the same message. Do not depend on the Windows temp path or ask the user to repaste. Static-only; no compile/run/token query/DLL operation/Git mutation. Authorization for any later load remains separate.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — RQ21 P1 V2 STATIC REVIEW
 
 Canonical: `CHAT-ARCH-2026-10-08-187-rq21-p1-integrity-detector-v2-static-adjudication.md`.
