@@ -1,3 +1,12 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.196 ARTIFACT IDENTITY MATCH; CONSUMER AUDIT NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
+
+Codex reports the exact v5 artifact matches 17,199 bytes and SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA by ReadAllBytes, and that its text matches the reviewed source after newline normalization. Accepted as actor-observed identity evidence; no compilation/runtime proof.
+
+NEXT: read-only audit of the real runner/consumer and output handoff. Verify fresh one-shot process identity, strict freshness/output parsing, outcome AND cleanup gate, stage-aware failure semantics, and frozen host/DLL/flags/scope checks. If no real consumer entrypoint can be identified, stop with CONSUMER_SOURCE_UNAVAILABLE. No code/runtime/token/DLL/export/candidate activity.
+
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.195 V5 STATIC PASS; EXACT ARTIFACT AND CONSUMER NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
