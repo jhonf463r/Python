@@ -1,3 +1,9 @@
+## 2026-10-09 ROUTING UPDATE — RQ216 FIRST SECURITY-TRANCHE CONTRACT
+
+Canonical: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
+
+Owner authorized a design-only proposal for the first security tranche: mutation authorization bound to operation/resource/scope; fail-closed defaults; consistent protected-path/workspace checks; explicit Git file scope with no push in the first tranche; and unknown network state blocks network-required routes. Codex must ground current-state claims in already-known source and distinguish them from proposed contract fields. No edits, tests/builds, runtime, or worktree changes. Owner decisions must be surfaced explicitly. Global MCP readiness remains blocked; RQ13-111 and RQ21.200 stay separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ214 PLAN ACCEPTED; OWNER SEMANTIC DECISIONS NEXT
 
 Canonical adjudication: CHAT-ARCH-2026-10-09-215-rq214-adjudication-symbiosis-and-next-owner-gate.md.
