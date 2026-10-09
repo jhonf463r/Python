@@ -1,3 +1,17 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P0 STATIC EXPORT RESULT RECEIVED / INDEPENDENT VERIFICATION OPEN
+
+Canonical record: `CHAT-ARCH-2026-10-08-178-rq21-p0-static-export-observation-provisional.md`.
+
+The user-pasted P0 transcript reports `C:\\WINDOWS\\System32\\processmodel.dll` present on `MSI`, OS `10.0.26300.9550` x64, Authenticode `Valid`, and both experimental export names present. Reported file version is `10.0.26100.9549`; reported SHA-256 is `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`.
+
+**Status: reported static observation only; P0 is NOT yet independently verified/closed.** The transcript does not establish the collector's non-elevated integrity level, parser provenance, a hashed report artifact, or independent export-table corroboration. Secure Boot and test-signing are UNKNOWN. Do not elevate, load the DLL, invoke either API, or execute a candidate.
+
+**FIRST OPEN EDGE:** on the same reported host, establish current token integrity and use an already-installed independent static PE utility (prefer `dumpbin /exports`) to corroborate both names; preserve utility identity and a hashed output report. If unavailable, stop without installing tools. Then independently reconcile file identity/signature and adjudicate P0.
+
+NEXT ACTOR: current host operator for a bounded static corroboration only; no Codex implementation or Devin runtime assignment. RQ21.57 normative contract and RQ21.58 restrictions remain unchanged.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21.58 FEASIBILITY AUDIT ADJUDICATED / P0 CHANNEL NOT READY
 
 Canonical record:
