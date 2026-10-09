@@ -1,3 +1,15 @@
+## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 DETECTOR PATH IDENTIFIED; CORRECTION NOT EXECUTED
+
+Canonical: `CHAT-ARCH-2026-10-08-185-rq21-p1-integrity-sid-detector-cause-adjudication.md`.
+
+Codex reports the exact temporary script's SHA-256 matches the prior digest. Its static review identifies the cause path: `WindowsIdentity.GetCurrent().Groups` is searched for `S-1-16-*`; a missing match is converted to `UNKNOWN` and fails the MEDIUM SID guard. The script does not query `TokenIntegrityLevel` via `GetTokenInformation`.
+
+This explains how the diagnostic could emit UNKNOWN, but does **not** prove the prior process's real SID or why the collection lacked the label. No token query or DLL load occurred during the static review. The load-only experiment and both dynamic export checks remain unobserved.
+
+**NEXT: CODEX**, design/static preparation only for the smallest direct current-process-token `TokenIntegrityLevel` query and validated `TOKEN_MANDATORY_LABEL` SID parsing. Preserve error and UNKNOWN semantics. Any replacement must be a separate hash-verified temporary artifact outside the repo and remain unexecuted. No source changes or runtime experiment. After reviewing it, separately adjudicate whether the frozen Owner authorization covers any subsequent attempt or requires renewed authorization.
+
+---
+
 ## 2026-10-08 ACTIVE OVERLAY — RQ21 P1 STOPPED BEFORE LOAD; INTEGRITY DETECTOR OPEN
 
 Canonical: `CHAT-ARCH-2026-10-08-184-rq21-p1-integrity-guard-stop-and-detector-readiness.md`.
