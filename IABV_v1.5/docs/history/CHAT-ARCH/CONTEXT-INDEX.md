@@ -1,3 +1,13 @@
+## 2026-10-09 ROUTING UPDATE — RQ206 ACCEPTED; COMPLETE DIRECT ADAPTER / GOVERNANCE EDGES ONLY
+
+Canonical: CHAT-ARCH-2026-10-09-207-iabv-mcp-transitive-audit-adjudication-open-direct-edges.md.
+
+RQ206 is accepted as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. The source-level graph reports bootstrap scans, provider-health calls, possible process/window/network observations, local persistence and MCP self-update tools capable of mutation; runtime occurrence is not proven. RQ13-109's prior no-safe-boundary finding remains active.
+
+A crucial continuity distinction: local Codex worktree searches did not find current RQ projections, while these records exist in canonical remote `main`. Local absence is not canonical absence.
+
+NEXT: bounded completion of RQ206-authorized direct edges only: inspect the adapters actually bound to this ToolRegistry call path and their immediate availability helpers; verify source-level per-handler governance for self-update mutation paths; inspect directly related transport selection and shutdown/cleanup. Exact line anchors and hashes required. Stop at any further material dependency needing broader scope. No runtime operation or mutation. Future launch and snapshot disclosure remain separate owner decisions; RQ21.200 stays independent.
+
 ## 2026-10-09 ROUTING UPDATE — OWNER AUTHORIZED BOUNDED TRANSITIVE AUDIT WITH SYMBIOSIS
 
 Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
