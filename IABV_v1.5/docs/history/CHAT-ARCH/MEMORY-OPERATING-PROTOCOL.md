@@ -1,3 +1,11 @@
+## 2026-10-08 METHOD AMENDMENT — P0 OUTPUT MUST BE INDEPENDENTLY CORROBORATED (RQ21.58)
+
+A user-pasted static probe is an observation report, not automatically a closed evidence package. Keep `reported output`, `independently reproduced result`, and `canonical verification` distinct. When a hand-authored PE parser is the subject of the claim, corroborate its export result with a separate already-installed offline PE tool; record tool version/hash/signature, process integrity/elevation level, native path/architecture, target identity, raw output and output-artifact SHA-256. Do not install tools or elevate merely to fill missing fields; record UNKNOWN and stop if access would require elevation. A valid signature and file hash identify observations; neither alone proves the entire candidate substrate or seven-guarantee contract.
+
+For the current local P0 report, both export names are reported present but independent corroboration, parser provenance, token integrity and a hashed report artifact remain open. DLL loading, API invocation, candidate execution and implementation are not authorized by static symbol presence.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — RQ21.58 EXPERIMENTAL API PROBE READINESS
 
 Keep `DLL presence`, `export presence`, `API loadability`, `API operational behavior`, `containment`, `complete E observation`, and `seven-guarantee PASS` as separate evidence claims.
