@@ -1,3 +1,12 @@
+## 2026-10-09 METHOD AMENDMENT — EFFECTIVE MCP EXPOSURE DOES NOT CLOSE SOURCE IDENTITY
+
+- Record the effective tool catalog of the intended Codex session separately from config-on-disk. A visible tool catalog can establish exposure for that session without proving exact server code loaded.
+- Treat matching tool-description text and a modified working-tree source as corroborating evidence only, not as proof of the complete Python module/bytecode loaded into a live process.
+- Keep process parentage, configured worktree, process CWD/environment, module origin, exact loaded bytes, effective client exposure, and observation permission as distinct predicates.
+- If exact source-as-loaded cannot be proven from already-existing passive evidence, do not invoke the tool to test itself and do not restart/reconnect by default. Ask Codex for a bounded feasibility and transitive-side-effect inventory of minimum attribution interventions; do not perform those interventions before a separate owner authorization.
+- A visible `world_model_snapshot(refresh=False, full=False)` tool is not permission to disclose windows/focus/network/tool state. Its reviewed entrypoint lacks an explicit observation-permission gate; a later snapshot call requires its own precise, explicit owner permission.
+
+
 ## 2026-10-09 METHOD AMENDMENT — IABV MCP FIRST-USE ATTRIBUTION GATE
 
 - Distinguish four separate predicates: MCP server configured, OS process exists, exact source/module loaded, and tool is exposed in the intended client. Observation permission is a fifth independent predicate.
