@@ -1,3 +1,13 @@
+## 2026-10-09 METHOD AMENDMENT — TRANSITIVE MCP AUDIT / CANONICAL MEMORY VS LOCAL WORKTREE
+
+- Accept RQ206 as `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. Source-level paths connect bootstrap to EnvironmentSelfAwareness, WorldModel, provider health, adapters/perception, persistence/logging and MCP self-update registration, but this is not runtime evidence.
+- A local worktree search that fails to find RQ201–RQ206 or current projections does not supersede canonical records verified on GitHub `main`. State local source provenance and canonical memory provenance separately.
+- RQ13-109's known negative result remains relevant: normal AppBootstrap was already found not to guarantee avoidance of provider health checks while keeping the ordinary path. RQ206 corroborates but does not authorize those effects.
+- Continue only already-authorized immediate edges: adapters bound to the actual inspected ToolRegistry path, per-handler governance of self-update mutation handlers, transport selection and direct shutdown/cleanup. Capture line anchors/hashes. If a further material dependency lies beyond immediate helpers, name the exact path/symbol and stop.
+- Distinguish registration of write/patch/commit/push tools from invocation; prove governance branch coverage statically without calling tools.
+- Keep separate: source path vs loaded code; local worktree vs canonical main; source-wired effects vs observed runtime; environment→capability/selection causal learning vs mere persistence; MCP authorization vs RQ21.200.
+- No launch/reconnect, MCP calls, process interaction, refresh/health probes, operational snapshot, secret/database reads, tests, compilation or mutation. Future start and any snapshot disclosure remain independently permission-gated.
+
 ## 2026-10-09 METHOD AMENDMENT — BOUNDED TRANSITIVE AUDIT + SYMBIOSIS METACOGNITION
 
 - Owner authorized the next read-only audit to include only already-named direct effectful dependencies and immediate helpers plus reconciliation against named canonical memory/symbiosis records. This is not blanket repository-wide recursive permission.
