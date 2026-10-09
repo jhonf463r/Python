@@ -1,3 +1,11 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.194 V5 SOURCE RECONCILED; SONNET CHALLENGE NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
+
+The complete pasted v5 source contains F8 preservation of observed Win32 error 122 and the qualified F7 84-byte-bound comment. F1 behavior is retained. Saved v5 bytes/hash, compilation/runtime and consumer enforcement are unverified. Filename v5 still contains a self-consistent V4 class name; ask the reviewer to assess only concrete implications, not broaden scope automatically.
+
+NEXT: SONNET/CLAUDE, challenge complete v5 source inline, focused on F1/F7/F8, all nine audit areas and artifact/source provenance. Use safe non-nested source formatting. Static only: no compile/run/token query/temp search/file/Git mutation/DLL/export/runner work. Record 182 authorization remains conditional and unused.
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.193 V4 CHALLENGE ADJUDICATED; CODEX V5 NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
