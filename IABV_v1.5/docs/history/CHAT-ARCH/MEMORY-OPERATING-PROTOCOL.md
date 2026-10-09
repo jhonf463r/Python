@@ -1,3 +1,13 @@
+## 2026-10-08 METHOD AMENDMENT — FAIL-CLOSED IN-PROCESS TOKEN READINESS (`UNKNOWN`)
+
+When an experiment requires a security-token property from the executing child process, an observation from another PowerShell/session does not satisfy that gate. If its detector returns `UNKNOWN`, preserve a pre-operation stop; do not infer either that the target property is false or that the underlying operation failed.
+
+Next, inspect the exact detector implementation non-mutatingly and trace its API return/error handling, parsing and UNKNOWN branches. Verify the exact artifact bytes before attributing a cause. Do not execute the experiment, bypass the guard, or retry the protected operation until the detector cause, contract compatibility and authorization boundary are reconciled.
+
+For RQ21 P1, this leaves the `LoadLibraryExW` call and both symbol resolutions unobserved. A static script review may diagnose the detector; it does not prove the process token and does not itself authorize a loader attempt.
+
+---
+
 ## 2026-10-08 METHOD AMENDMENT — CANONICAL CONTRACT MISSING LOCALLY BUT PRESENT REMOTELY
 
 If an actor stops because a required frozen document is absent from its local worktree, separately verify the authoritative remote path before treating the contract itself as unavailable. Prefer a read-only remote GitHub read; if a temporary copy is needed, place it outside the repository and validate the Git blob SHA. Do not ask the user to copy files manually or mutate the worktree/Git refs unless the next edge explicitly requires it.
