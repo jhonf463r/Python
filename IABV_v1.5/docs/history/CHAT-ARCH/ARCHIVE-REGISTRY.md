@@ -1,3 +1,11 @@
+## 2026-10-08 REGISTRATION — RQ21.194
+
+Canonical record: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md
+
+Summary: v5's complete inline source appears to repair F8 by preserving observed error 122 on invalid-length branches and qualifies the F7 84-byte-bound comment; F1 is retained. Saved bytes/hash and runtime are not coordinator-verified. Next: Sonnet/Claude static challenge of full v5 source, with non-nested source formatting. Filename-v5 / class-V4 label is a self-consistent non-blocking traceability question. No protected operation authorized.
+
+Tags: RQ21 / P1 / v5 / F8 / error preservation / F7 / source provenance / independent static challenge / consumer gate / authorization
+
 ## 2026-10-08 REGISTRATION — RQ21.193
 
 Canonical record: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md
