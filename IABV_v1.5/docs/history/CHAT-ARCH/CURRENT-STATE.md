@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ219 ADJUDICATED; TRUSTED MUTATION AUTHORITY NOT FOUND IN SCOPE
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-220-rq219-adjudication-no-trusted-mutation-authority-in-scope.md.
+
+Accept `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE` for the bounded RQ219 discovery. The inspected mutation handlers consume generic route governance rather than a verifiable Human Domain Owner approval receipt bound to operation/canonical resource/exact scope. WorldModel gates are observation permissions; `HumanApprovalBroker` results do not by themselves establish authenticated Owner identity and a `pre_approver` can resolve without human presence. PR approval is a narrower workflow, not general mutation authorization. Do not claim there is no authentication anywhere in IABV: the broker UI `prompt_handler` registration and caller identity behind `approve(request_id, payload)` remain uninspected.
+
+NEXT OWNER GATE: consider a separate bounded read-only inspection of those exact UI wiring/caller identity paths; stop at any broader identity/authentication subsystem. Even if human presence is demonstrated, mutation-specific operation/resource/scope binding, freshness and receipt remain required by RQ218. The existing dirty/detached worktree remains untouched. Exact workspace root/protected-path allowlist and immutable baseline are also still Owner decisions.
+
+No edits, worktree creation/change, tests/builds/runtime, MCP/process operations, probes, DB/secrets/snapshot, install/download or Git mutation. Global status remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 stay separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ219 STATIC AUTHORITY DISCOVERY AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-219-authorization-mechanism-static-discovery.md.
