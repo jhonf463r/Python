@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21 P0 EXPORTS REPORTED PRESENT BY INDEPENDENT DUMPBIN; P1 NOT AUTHORIZED
+
+[REPORTED FACT] Codex reports matching target host `MSI` / Windows `10.0.26300.9550` x64 / MEDIUM integrity, matching DLL SHA-256 `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`, Authenticode `Valid`, and `dumpbin /EXPORTS` exit 0 with both exact names present.
+
+[REPORTED FACT] Tool version `14.50.35729.0`, SHA-256 `2B5C460E9A98D78F56F6DED4959F5B6F73001B71AEE4B52C5989C145C5B8AA78`, Authenticode `Valid`. Raw report path and reported SHA-256 `2730E67F45A2F2154F7203C05FC69308623F7BAAB4EF86D4E325BB4A57E9BFFD) are in the canonical record.
+
+[ADJUDICATION] P0 PASS for static file/export presence only. The coordinator has not directly read the local report bytes or recomputed its hash; preserve that evidence limitation. Codex reports that the DLL was not loaded and neither API invoked.
+
+[UNPROVEN] DLL load/initialization behavior, API call behavior, effective containment, complete effect-`E` observation, hidden-`X` custody, evidence integrity, quiescence, artifact/environment binding, and the full seven-guarantee runtime predicate.
+
+Current edge: frozen load-only feasibility contract + loader-side-effect assessment + readiness + explicit Owner authorization. P1 remains NOT AUTHORIZED. No API call, candidate launch or implementation.
+
+Source: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
+
+---
+
 ## 2026-10-08 — RQ21 P0 MEDIUM TOKEN VERIFIED IN USER TRANSCRIPT; INDEPENDENT READER UNAVAILABLE
 
 [REPORTED FACT] Latest console output reports host `MSI`, PowerShell `5.1.26100.9549`, `whoami` exit 0, integrity SID `S-1-16-8192` (`MEDIUM`), DLL hash `B684425DEB9013F1741BDFBB9CF1E3D2395C26996111D4C022495367FDFEEBCC`, and Authenticode `Valid`.
