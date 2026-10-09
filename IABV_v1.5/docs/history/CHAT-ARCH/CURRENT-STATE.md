@@ -1,3 +1,12 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ210 ADJUDICATED; GLOBAL MCP READINESS STILL BLOCKED
+
+Canonical authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
+Canonical adjudication: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md.
+
+RQ210 Branch A (FastMCP lifecycle) is stopped at an unresolved dependency: the report identifies a local `mcp 1.27.0` copy, but project dependency files do not pin it; actual launcher interpreter/transport and exact Uvicorn implementation remain unproven. Branch B (`WorldModelSnapshot.permission_gates`) is complete with findings within source scope: gates are derived from observation permission, and governance blocks only conditionally; an absent/inapplicable gate may not block self-update. The supplied report omitted per-file SHA-256 for most IABV source files, so those findings remain actor-reported and not independently hash-verified by the coordinator.
+
+OVERALL: `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; no isolation/readiness proof. No runtime MCP/process/snapshot/DB/secret operations, tests, compilation, installation or source mutation. RQ21.200 remains separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ207-S COMPLETE; DEEPER SCOPE DECISION REQUIRED
 
 Canonical: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md.
