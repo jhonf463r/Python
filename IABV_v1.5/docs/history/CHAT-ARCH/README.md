@@ -4,6 +4,13 @@ This directory is the canonical historical-memory layer for IABV. It preserves k
 
 ## OPERATIONAL MEMORY
 
+## 2026-10-08 ACTIVE RQ21 ROUTE — CODEX MAY TEST EXACT-TARGET ACCESS FOR P0
+
+Canonical: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
+
+The local user transcript now reports MEDIUM token integrity and rechecks the DLL hash/signature; `dumpbin.exe` is absent. Codex is a candidate for this narrow static inspection only if it proves access to the same `MSI` / build `10.0.26300.9550` host and MEDIUM token. If not, stop; don't repeat manual checks, install tools, edit source or load the DLL.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — P0 RETEST ABORTED BEFORE INDEPENDENT VERIFICATION
 
 Canonical: `CHAT-ARCH-2026-10-08-179-p0-integrity-check-script-failure-and-repair.md`.
