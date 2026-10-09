@@ -1,3 +1,23 @@
+## 2026-10-09 — RQ218 OWNER POLICY PARTIAL; IMPLEMENTATION NOT AUTHORIZED
+
+Canonical: CHAT-ARCH-2026-10-09-218-owner-policy-decision-first-security-tranche.md.
+
+[OWNER-ACCEPTED DESIGN DIRECTION]
+- Human Owner approval only for initial tranche.
+- Decision bound to each operation, canonical resource and exact scope.
+- Deny on missing, unknown, stale, malformed, explicitly denied, exceptional or nonmatching authorization.
+- Unknown network blocks a route requiring network, but network eligibility is independent of mutation authorization.
+- Explicit Git file allowlist, reject unrelated pre-staged/concurrent changes, and no push in tranche one.
+- Preserve the present dirty/detached worktree. Any future source-edit phase is separate from tests/build/runtime authorization.
+
+[BLOCKERS BEFORE ANY CODE EDIT]
+1. Identify or explicitly design/approve a trusted producer/verifier for the Owner approval and auditable decision receipt.
+2. Owner must freeze the exact canonical allowed workspace root and protected-path policy.
+3. Owner must choose an exact immutable implementation baseline; candidate `5b1d89022ee4cdc63c1f88e050f086b40a42875c` is only a recommendation, not a chosen baseline.
+4. Freeze exact files/edits and separate clean worktree choice in a fresh implementation authorization.
+
+No implementation or runtime is authorized. MCP readiness remains blocked; RQ13-111 and RQ21.200 stay separate.
+
 ## 2026-10-09 — RQ216 CONTRACT PROPOSAL ADJUDICATED; OWNER POLICY PENDING
 
 Canonical: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
