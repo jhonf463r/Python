@@ -1,3 +1,13 @@
+## 2026-10-08 ROUTING UPDATE — P0 EXPORT PRESENCE ACCEPTED; DYNAMIC LOAD NEEDS SEPARATE AUTHORIZATION
+
+Canonical: `CHAT-ARCH-2026-10-08-181-rq21-p0-codex-static-export-adjudication-and-p1-gate.md`.
+
+Codex reports a matching host/build/medium token, stable DLL identity, and a successful independent `dumpbin /EXPORTS` run showing both symbols. Accept P0 for static availability only. The raw temp report path/hash are recorded; assistant-side byte-level read-back has not been performed.
+
+FIRST OPEN EDGE: define/freeze a separate load-only experiment contract, assess module-initialization side effects, close readiness/evidence conditions, then obtain explicit Human Domain Owner authorization. P1 remains unauthorized; no API invocation, candidate execution, or implementation.
+
+---
+
 ## 2026-10-08 ROUTING UPDATE — CODEX CONDITIONAL FOR P0 STATIC EXPORT VERIFICATION
 
 Canonical: `CHAT-ARCH-2026-10-08-180-rq21-p0-codex-capability-routing.md`.
