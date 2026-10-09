@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — BOUNDED TRANSITIVE MCP AUDIT AUTHORIZED WITH SYMBIOSIS RECONCILIATION
+
+Canonical: CHAT-ARCH-2026-10-09-206-iabv-mcp-transitive-audit-symbiosis-metacognition-authorization.md.
+
+The Human Domain Owner explicitly authorized a read-only audit of the already-named direct startup dependencies and immediate effectful helpers, plus reconciliation against the canonical memory/symbiosis records. This follows RQ205, which is accepted as `STATIC_PLAN_BLOCKED_BY_UNRESOLVED_TRANSITIVE_EFFECTS`. No launch/reconnect or MCP invocation is authorized.
+
+Scope includes the exact implementations of EnvironmentSelfAwarenessService, ToolRegistry.refresh_card, UniversalPerceptionService.scan_tool_context, AppDatabase, ArtifactStorage, direct configuration/secrets-loading source (never read secrets), logging/tracing setup, and the relevant self-update/transport startup functions, following known imports/call sites only. Also reconcile RQ201–205, current memory projections, and known RQ13-108/109/111 records. Preserve the dirty detached worktree; stop when a further transitive dependency falls outside the approved scope and list the exact next edge needed.
+
+NEXT: CODEX — bounded source-level dependency/effect graph plus cross-cutting symbiosis risk matrix, data-flow/trust boundaries, revised isolation ranking, preflight/abort gates and unresolved exact edges. No MCP calls, process interaction, startup/reconnect, snapshots, tests, compilation, database/secret access, broad searches, or mutations. Coordinator adjudicates before a new owner decision. RQ21.200 remains separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — MCP STARTUP PLAN BLOCKED BY UNRESOLVED TRANSITIVE EFFECTS
 
 Canonical: CHAT-ARCH-2026-10-09-205-iabv-mcp-startup-plan-blocked-transitive-dependencies.md.
