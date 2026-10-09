@@ -1,3 +1,13 @@
+## 2026-10-09 ACTIVE OBJECTIVE — RQ216 CONTRACT ACCEPTED; OWNER POLICY DECISIONS PENDING
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-217-rq216-contract-adjudication-owner-policy-gate.md.
+
+Accept RQ216 as a source-grounded design contract proposal only. It correctly treats the observation gate as distinct from mutation authorization; proposes fail-closed per-operation/resource/scope approval; consistent protected-path/workspace validation; explicit Git file scope with no push in tranche one; and deny-on-unknown network state for network-required routes.
+
+Before any edits, the Owner must decide approver authority, operation/resource/scope granularity, exact allowed workspace root/protected paths, the exact immutable baseline and isolated worktree, and the phase boundary for tests/builds/runtime. Conservative recommendation: Owner-only explicit approval, deny absent/unknown/stale/malformed/mismatching permission, allowlisted files, no push, and source-edit-only in a new clean worktree while preserving the existing dirty/detached worktree. These are recommendations, not presumed approvals.
+
+No code edit, worktree creation/change, tests/builds, MCP/runtime, process inspection, DB/secrets/snapshot, package install/download or Git mutation is authorized. Global status remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. RQ13-111 and RQ21.200 stay separate.
+
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ216 STATIC FIRST-TRANCHE CONTRACT
 
 Canonical direction: CHAT-ARCH-2026-10-09-216-owner-direction-static-contract-first-security-tranche.md.
