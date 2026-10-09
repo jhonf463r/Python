@@ -1,3 +1,18 @@
+## 2026-10-09 SYMBIOSIS ROUTE — RQ212 STATIC PROVENANCE SUPPLEMENT
+
+Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
+
+Knowledge Delta:
+- RQ210 did not establish the interpreter/transport used by a target process or the exact Uvicorn shutdown implementation.
+- Most cited IABV source files in the RQ210 report lacked SHA-256, limiting independent source-byte attribution.
+- RQ212 authorizes only existing static launcher/config/dependency artifacts and hashes of local copies of already-inspected files. Configuration is not live-process attribution; do not substitute remote-main hashes for the reported dirty worktree.
+
+Method Delta:
+- Preserve the dirty/detached worktree and confirm identity/status first. If evidence or bytes are unavailable locally, report that gap without runtime inspection, installation, download, or mutation.
+
+Routing Delta:
+- Bounded supplement only. No MCP runtime, state disclosure, tests, builds or mutation. Global isolation/readiness remains blocked; RQ21.200 is separate.
+
 ## 2026-10-09 SYMBIOSIS UPDATE — RQ210 ADJUDICATED; CONDITIONAL AUTHORIZATION GATE CONFIRMED
 
 Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md.
