@@ -1,3 +1,12 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.197 CONSUMER SOURCE UNAVAILABLE; IDENTIFY AUTHORITATIVE RUNNER
+
+Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
+
+v5 static review and actor-reported artifact identity are accepted at their respective levels. Codex reports v5 is standalone (token detector + JSON) and does not call the loader. The known load diagnostic reportedly uses its own WindowsIdentity.Groups/medium_integrity check and does not consume v5 JSON. Thus the real consumer's enforcement of the double gate is not proven; classify CONSUMER_SOURCE_UNAVAILABLE for inspected evidence, not as a v5 source defect.
+
+NEXT: obtain the exact authoritative consumer/runner path or repo URL/commit and intended v5-to-loader call path through owner/operator provenance or known project artifacts; then Codex reviews that exact source read-only. Do not repeat broad searches, enumerate arbitrary temp paths or invent a runner. No runtime/token/DLL/export actions; record 182 authorization remains conditional and unconsumed.
+
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.196 ARTIFACT IDENTITY MATCH; CONSUMER AUDIT NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
