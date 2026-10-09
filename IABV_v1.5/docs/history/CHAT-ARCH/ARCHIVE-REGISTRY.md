@@ -1,3 +1,12 @@
+## 2026-10-08 REGISTRATION — RQ21.198 CONTINUITY RECONCILIATION
+
+Canonical record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md
+
+Summary: Cross-chat scan re-read current canonical projections and compared observed history against checkpoint 39289251f2bcfa8077b72cf9eae43a7aa8abdbff and pinned executable baseline 5b1d89022ee4cdc63c1f88e050f086b40a42875c. No new technical evidence supersedes RQ21.197. The first open edge remains exact owner/operator provenance for the authoritative consumer/runner and v5-to-loader call path; then Codex audits only that source read-only. No protected operation authorized.
+
+Tags: continuity / new-chat protocol / RQ21.197 / consumer source unavailable / actor-reported evidence / baseline reconciliation / routing / authorization boundary
+
+
 ## 2026-10-08 REGISTRATION — RQ21.197
 
 Canonical record: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md
