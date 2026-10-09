@@ -1,3 +1,15 @@
+## 2026-10-08 SYMBIOSIS TRANSFER — P1 CONTRACT LOCAL-AVAILABILITY BLOCKER RESOLVED AT REMOTE SOURCE
+
+Knowledge Delta: Codex reported the frozen contract absent from local `C:\\Python`, but remote GitHub read-back confirms it exists at the expected canonical path and blob SHA `7184f7822920ee9068a21ab75c3564b10e32ea83`. Codex performed no dynamic test.
+
+Method Delta: distinguish local checkout materialization from canonical remote existence; read/verify the exact remote document rather than asking the user to copy it. A prior stop means no execution, not API failure.
+
+Routing Delta: Codex remains next. Read the remote contract, verify it, then recheck preconditions in a fresh process and resume the already-authorized one-shot P1 probe only if all gates pass.
+
+Source: `CHAT-ARCH-2026-10-08-183-rq21-p1-contract-local-availability-reconciliation.md`.
+
+---
+
 ## 2026-10-08 SYMBIOSIS TRANSFER — P1 LOAD-ONLY PROBE OWNER-AUTHORIZED
 
 Knowledge Delta: P0 static presence of both exports is accepted; Human Domain Owner explicitly authorizes one separate load-only and symbol-resolution probe.
