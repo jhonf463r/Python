@@ -1,3 +1,21 @@
+## 2026-10-08 — RQ21.193 V4 INDEPENDENT CHALLENGE RECONCILIATION
+
+Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
+
+[REVIEW RESULT] User supplied Sonnet/Claude report: STATIC_REVIEW_PASS_WITH_REPAIRS; no definite detector-logic defect reported. Findings are qualified by a source-handoff discrepancy.
+
+[F8 CONFIRMED] Two TokenInformationLength branches discard the observed GetLastWin32Error()==122 by passing null for win32_error when requiredLength is <16 or >84. Outcome remains INTEGRITY_QUERY_FAILED; no false pass was demonstrated. Preserve 122 with the validation stage/detail.
+
+[N1 SOURCE-HANDOFF DISCREPANCY] Reviewer says two standalone triple-backtick lines were inside the here-string; they are absent from the v4 source pasted to the coordinator. This does not prove the saved artifact is corrupt. Codex must verify the exact reported v4 path/size/SHA and inspect whether those lines exist in that file. On identity mismatch, stop; do not search alternatives.
+
+[F1] Acquisition states and unresolved cleanup are fail-closed. A theoretical asynchronous interruption could leave a handle unclosed; do not close unconfirmed handles. No runtime event was demonstrated.
+
+[F7] Keep 84 as a conservative fail-closed ceiling, but qualify the comment: absence of trailing padding is not proven as a contract fact. Do not widen speculatively.
+
+[OTHER OPEN GATES] Fresh one-shot process, missing-output stop, PID/freshness binding, compilation/environment and consumer enforcement remain distinct and unproven.
+
+[NEXT EDGE] Codex verifies the exact artifact and creates separate v5 with F8 fixed and F7 comment qualified. No execution, token query, alternate-file search, repository change via Codex, DLL/export operation or runner preparation. Then challenge the exact v5 source with safe formatting.
+
 ## 2026-10-08 — RQ21.192 V4 SOURCE RECONCILIATION
 
 [INPUT] User supplied the complete v4 source and Codex-reported path/size/hash. Candidate path: C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v4.ps1; 16,998 bytes; SHA-256 DECC9BD4C030CB897A29EE1A474DC5F9828473EADF7CE36107758C385A8E2ADD. These identity details remain actor-reported from the coordinator's perspective.
