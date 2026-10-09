@@ -1,3 +1,9 @@
+## 2026-10-09 ROUTING UPDATE — RQ212 ADJUDICATED; LAUNCHER FINDINGS CLOSED STATICALLY
+
+Canonical adjudication: CHAT-ARCH-2026-10-09-213-rq212-adjudication-launcher-uvicorn-and-source-provenance.md.
+
+The static script review and local hash report are accepted within scope, with source byte provenance remaining actor-reported. The script supports interpreter/transport overrides and reports defaults of Miniconda Python and `streamable-http`; the port default differs between script (8000) and service/docs (8765). Uvicorn source/version was unavailable under the inspected default interpreter and remains unresolved. No evidence identifies any live process's actual interpreter/transport. Overall readiness remains blocked; no runtime action or mutation. RQ21.200 is separate.
+
 ## 2026-10-09 ROUTING UPDATE — RQ212 STATIC LAUNCHER / HASH SUPPLEMENT AUTHORIZED
 
 Canonical: CHAT-ARCH-2026-10-09-212-owner-authorization-static-launcher-uvicorn-and-source-hashes.md.
