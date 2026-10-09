@@ -1,3 +1,14 @@
+## 2026-10-08 — RQ21.197 CONSUMER SOURCE UNAVAILABLE; DOUBLE GATE UNPROVEN
+
+Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
+
+[REPORTED FINDING] Codex reports v5 is a standalone primary-token integrity detector that emits JSON and does not include LoadLibraryExW/GetProcAddress. The known loader diagnostic `rq21-p1-load-1791507015374-25122.ps1` reportedly checks WindowsIdentity.Groups/medium_integrity itself and does not consume v5 JSON.
+[ADJUDICATION] `CONSUMER_SOURCE_UNAVAILABLE` for the evidence inspected. The authoritative consumer linkage is unproven; this is not proof that no consumer exists anywhere or a demonstrated defect in v5's static source.
+[IDENTITY] v5 saved-artifact identity was reported IDENTITY_MATCH by Codex: 17,199 bytes; SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA; normalized source text reportedly matches reviewed inline source.
+[UNPROVEN] Compilation, execution/token query, actual consumer enforcement, current target readiness, DLL load/export resolution.
+[NEXT EDGE] Get the exact authoritative consumer/runner path or repository URL/commit and expected v5-to-loader call path via owner/operator provenance. Then perform a read-only audit of that exact source. Do not repeat broad searches, enumerate arbitrary temp paths, invent a runner or execute any code/DLL operation.
+
+
 ## 2026-10-08 — RQ21.196 V5 ARTIFACT IDENTITY MATCH; CONSUMER OPEN
 
 Canonical: CHAT-ARCH-2026-10-08-196-rq21-p1-v5-artifact-identity-verification.md.
