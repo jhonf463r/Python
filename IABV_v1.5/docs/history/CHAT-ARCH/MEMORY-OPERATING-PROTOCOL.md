@@ -1,5 +1,7 @@
 ## 2026-10-08 METHOD AMENDMENT — RQ21.191 REVIEW-TO-REPAIR RECONCILIATION
 
+Canonical record: CHAT-ARCH-2026-10-08-191-rq21-p1-v3-independent-challenge-adjudication.md.
+
 For independent static review of a native interop candidate:
 - Preserve the reviewer's classification as scoped to the complete source actually reviewed. Do not convert a static pass into byte, compiler, runtime or consumer evidence.
 - If acquisition begins but does not return a determinate status, represent ATTEMPT_IN_PROGRESS / unresolved acquisition distinctly. Do not report cleanup_clean=true merely because successful acquisition was not observed. Close only a confirmed-acquired non-null handle; unresolved ownership must fail or remain unknown.
