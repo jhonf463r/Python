@@ -1,3 +1,12 @@
+## 2026-10-08 ROUTING UPDATE — RQ21.195 V5 STATIC PASS; EXACT ARTIFACT AND CONSUMER NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-195-rq21-p1-v5-independent-static-challenge-adjudication.md.
+
+Independent report classifies the complete inline v5 source STATIC_REVIEW_PASS; coordinator accepts the result for inline source only. No repair is required. F1/F7/F8 are accepted; artifact bytes and compilation/runtime remain unverified. Error 122 is stage-sensitive, 64-bit layout is not proof of x64, and the candidate's V4 internal type label remains non-blocking. Actual runner predicate is still unverified.
+
+NEXT: Codex or a Windows-capable actor verifies exact v5 saved bytes/path/size/SHA and correspondence to reviewed source, stopping on missing/mismatch without alternate-path search or mutation. Then separately audit actual consumer/runner enforcement. No execution or protected operation.
+
+
 ## 2026-10-08 ROUTING UPDATE — RQ21.194 V5 SOURCE RECONCILED; SONNET CHALLENGE NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
