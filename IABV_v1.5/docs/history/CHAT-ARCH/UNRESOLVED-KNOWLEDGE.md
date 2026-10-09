@@ -1,3 +1,16 @@
+## 2026-10-09 — NO PASSIVE SOURCE-AS-LOADED PROOF; OWNER DECISION OPEN
+
+Canonical: CHAT-ARCH-2026-10-09-203-iabv-mcp-no-passive-source-proof-owner-decision.md.
+
+[CODEX REPORT ACCEPTED] `NO_PASSIVE_PROOF_IDENTIFIED`. No already-identified passive startup artifact contains a verifiable source/module fingerprint for live MCP PID 16768.
+
+[ACCEPTED ASSOCIATION EVIDENCE] PID 16768 was reported as a child of Codex PID 10600; the same Codex session's effective catalog exposes five IABV tools. The configured worktree is dirty/detached, `server.py` differs from local HEAD, and the visible tool description is compatible with the diff.
+
+[NOT PROVEN] Exact Python code/bytes loaded in PID 16768, effective startup CWD/environment and a complete PID-to-tool-transport/session binding. Current file hash, configured `PYTHONPATH`, parentage and matching description do not establish full loaded-source identity.
+
+[DECISION] Coordinator recommends no attach/dump/suspend/injection into the extant process merely to close provenance. Prefer evaluating prospective controlled attribution after a source-level impact/isolation plan; it cannot prove what the historical PID loaded. AppBootstrap can transitively reach EnvironmentSelfAwareness/WorldModel scans, local persistence and conditional provider health checks.
+
+[NEXT] Human Domain Owner decides whether to authorize a read-only source-level startup-impact/isolation plan (recommended) or request a separate live-process-inspection proposal. No start/reconnect, MCP call or snapshot disclosure is authorized. A future `world_model_snapshot(refresh=False, full=False)` read requires separate explicit permission.
 ## 2026-10-09 — FIRST IABV MCP USE: CLIENT / PROCESS ATTRIBUTION OPEN
 
 Canonical: CHAT-ARCH-2026-10-09-201-iabv-mcp-first-use-preflight-adjudication.md.
