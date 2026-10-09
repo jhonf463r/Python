@@ -1,3 +1,9 @@
+## 2026-10-08 ACTIVE RQ21 ROUTE — V5 SOURCE RECONCILED; SONNET CHALLENGE NEXT
+
+Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
+
+The complete pasted v5 source appears to repair F8 and qualify the F7 ceiling comment; F1 is retained. Codex-reported path/size/SHA remain actor-reported; no compile/runtime evidence. Next: Sonnet/Claude independently challenges the full v5 source using non-nested formatting. A V5 filename with a self-consistent internal V4 type name is recorded as a traceability question, not a demonstrated defect. Consumer enforcement/readiness remain unproven; record 182 authorization remains conditional and unused.
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — V4 CHALLENGE RECONCILED; CODEX V5 NEXT
 
 Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
