@@ -1,3 +1,19 @@
+## 2026-10-08 — RQ21.194 V5 SOURCE RECONCILIATION
+
+Canonical: CHAT-ARCH-2026-10-08-194-rq21-p1-v5-static-source-reconciliation.md.
+
+[INPUT] User supplied full v5 source and reports v4 input identity matched before deriving the candidate.
+
+[ACTOR-REPORTED V5 ARTIFACT] Path: C:\Users\faber\AppData\Local\Temp\rq21-p1-integrity-detector-candidate-v5.ps1; size 17,199 bytes; SHA-256 63916F2A1910301546CEFD7A6A8C25BA93F759A6A7B61981582EE0C535E56BDA, reportedly matching two methods. Coordinator has not independently read saved bytes or recomputed the hash.
+
+[SOURCE RECONCILIATION] F8 is visibly repaired: both invalid-length TokenInformationLength branches preserve the observed error 122 and provide distinct non-retry details. F7 comment now describes a derived defensive ceiling without claiming API-guaranteed absence of trailing padding. The supplied source has no visible stray fence lines inside the C# here-string. F1 is retained.
+
+[TRACEABILITY NOTE] The v5 filename still contains class name/invocation Rq21P1IntegrityDetectorV4. Declaration and invocation match each other, so this is not a source inconsistency; reviewer should judge whether the stale label is a non-blocking traceability risk under a fresh one-shot process.
+
+[UNPROVEN] Saved byte identity by coordinator read-back, compilation, runtime layout/token behavior, output freshness/PID binding, actual runner enforcement, DLL load and export resolution.
+
+[NEXT EDGE] Sonnet/Claude independent static challenge of the complete source inline using non-nested formatting, no compile/run/token query/temp search/file/Git mutation/DLL/export/runner work.
+
 ## 2026-10-08 — RQ21.193 V4 INDEPENDENT CHALLENGE RECONCILIATION
 
 Canonical: CHAT-ARCH-2026-10-08-193-rq21-p1-v4-independent-challenge-adjudication.md.
