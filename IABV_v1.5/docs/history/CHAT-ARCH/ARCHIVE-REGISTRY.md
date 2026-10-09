@@ -1,3 +1,12 @@
+## 2026-10-09 REGISTRATION — RQ210 ADJUDICATION / LIFECYCLE AND PERMISSION GATE RESULTS
+
+Authorization: CHAT-ARCH-2026-10-09-210-owner-authorization-fastmcp-lifecycle-worldmodel-permission-gates.md
+Canonical record: CHAT-ARCH-2026-10-09-211-rq210-adjudication-fastmcp-lifecycle-and-permission-gates.md
+
+Summary: Branch A stopped at unresolved actual launcher/interpreter/transport and exact Uvicorn lifecycle source/version. A local `mcp 1.27.0` copy is not proof of what a target process loads. Branch B is complete with findings: gates derive from observation permission and the reported governance check does not guarantee universal human approval for self-update; missing or inapplicable gates may not block. Most IABV per-file source hashes were omitted in the submitted report. Overall status remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; no runtime action or mutation. RQ21.200 remains separate.
+
+Tags: IABV MCP / RQ210 / FastMCP / Uvicorn / permission gates / conditional governance / static audit / no runtime
+
 ## 2026-10-09 REGISTRATION — RQ207-S SUPPLEMENT ACCEPTED; DEEPER AUTHORIZATION BOUNDARY
 
 Canonical record: CHAT-ARCH-2026-10-09-209-rq207-supplement-adjudication-and-next-scope-decision.md
