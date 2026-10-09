@@ -29,6 +29,8 @@ The purpose is to strengthen **human-machine mutual understanding** without coll
 
 The next participant should inherit the organized state of the collaboration, not merely the previous transcript.
 
+For any user-supplied chat or transcript, source completeness and inspected coverage must be declared using the `CHAT / TRANSCRIPT INTAKE CONTRACT` in `MEMORY-OPERATING-PROTOCOL.md`. A partial extract must not be described as a complete chat, and an actor's report of complete reading must remain a report unless the source artifact and coverage support it. This avoids duplicating the intake schema while making it part of the shared-field handoff.
+
 ## HUMAN CONTRIBUTION MUST REMAIN FIRST-CLASS
 
 The field should preserve, when materially relevant:
