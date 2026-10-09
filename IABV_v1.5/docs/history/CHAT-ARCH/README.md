@@ -1,3 +1,10 @@
+## 2026-10-08 ACTIVE CONTINUITY ROUTE — RQ21.198; RQ21.197 TECHNICAL CANON
+
+Canonical continuity record: CHAT-ARCH-2026-10-08-198-cross-chat-continuity-reconciliation-rq21-197.md.
+
+The new-chat reconciliation found no new source identity or runtime evidence. RQ21.197 remains the active technical decision: CONSUMER_SOURCE_UNAVAILABLE for inspected evidence. Human Domain Owner/operator must identify the exact authoritative consumer/runner path or repo URL+commit/ref and expected v5-to-loader handoff (or state that no consumer exists). Codex then audits that source read-only. Do not repeat generic searches, enumerate arbitrary temp paths, build a substitute runner or execute any protected operation. Historic RQ21.182 authorization remains conditional and unconsumed.
+
+
 ## 2026-10-08 ACTIVE RQ21 ROUTE — CONSUMER SOURCE UNAVAILABLE; IDENTIFY AUTHORITATIVE RUNNER
 
 Canonical: CHAT-ARCH-2026-10-08-197-rq21-p1-consumer-source-unavailable.md.
