@@ -9081,8 +9081,8 @@ class ControlCenterViewModel(QObject):
         # Browser profile path
         try:
             profile['browser_profile_path'] = str(
-                Path(self.config.workspace_root)
-                / 'data' / 'tool_teaching' / 'external_assistants'
+                Path(self.config.data_dir)
+                / 'tool_teaching' / 'external_assistants'
                 / f'{assistant_kind}_program_session' / 'browser_profile'
             )
         except Exception:
@@ -9144,7 +9144,7 @@ class ControlCenterViewModel(QObject):
                 if pkg is None and hasattr(pcs, 'latest_cache'):
                     pkg = pcs.latest_cache
                 if pkg is None:
-                    latest_path = Path(self.config.workspace_root) / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+                    latest_path = Path(self.config.data_dir) / 'evolution' / 'portable_context' / 'latest.json'
                     if latest_path.exists():
                         import json as _json
                         try:
