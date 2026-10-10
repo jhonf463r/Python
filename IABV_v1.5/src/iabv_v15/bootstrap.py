@@ -454,6 +454,9 @@ class AppBootstrap:
         *,
         _defer_services: bool = False,
     ) -> None:
+        self._iabv_i1_isolated_mode = (
+            os.environ.get('IABV_I1_ISOLATED_MODE', '').strip() == '1'
+        )
         # Startup timeline: anchored on the first call.  Marks 'init_start'
         # before any heavy work so even imports counted before this point
         # can be inferred from main.py.
@@ -467,8 +470,9 @@ class AppBootstrap:
         )
         self._tracer = get_runtime_tracer()
 
-        # Auto-cargar secretos ANTES de leer config (que consulta os.environ).
-        _auto_load_secrets()
+        # I1 isolated mode must not source the ordinary user-profile secrets file.
+        if not getattr(self, '_iabv_i1_isolated_mode', False):
+            _auto_load_secrets()
 
         self.config = load_app_config(workspace_root)
         self.theme = load_theme_config()
@@ -498,6 +502,9 @@ class AppBootstrap:
 
         self._services_wired = False
         self._defer_services = _defer_services
+        self.mcp_bridge_service = None
+        self.ui_bridge_server = None
+        self.ui_screenshot_provider = None
 
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
@@ -693,8 +700,13 @@ class AppBootstrap:
         # ``_run_deferred_post_window_setup`` instead.  Tests / MCP
         # subprocess can opt out via ``IABV_DEFER_TOOL_PROBE=0`` to
         # preserve legacy synchronous behavior.
-        self._tool_availability_logged = False
-        if os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0':
+        # I1 skips general probes: they can access the network, enumerate
+        # host processes, update tool records and queue package installations.
+        self._tool_availability_logged = getattr(self, '_iabv_i1_isolated_mode', False)
+        if (
+            not getattr(self, '_iabv_i1_isolated_mode', False)
+            and os.environ.get('IABV_DEFER_TOOL_PROBE', '1') == '0'
+        ):
             self._log_tool_availability()
             self._tool_availability_logged = True
         self._tracer.trace('phase_tool_registry_done')
@@ -704,7 +716,8 @@ class AppBootstrap:
             evolution_dir=self.config.evolution_dir,
             role_router=None,
             tool_registry=self.tool_registry,
-            bootstrap_scan=not _defer_scans,
+            auto_start=False if getattr(self, '_iabv_i1_isolated_mode', False) else None,
+            bootstrap_scan=not _defer_scans and not getattr(self, '_iabv_i1_isolated_mode', False),
         )
         # The MCP subprocess inherits the persisted world model snapshot from
         # the main UI process.  It doesn't need its own aggressive 18-second
@@ -721,7 +734,12 @@ class AppBootstrap:
             environment_self_awareness_service=self.environment_self_awareness_service,
             universal_perception_service=self.universal_perception_service,
             role_router=None,
-            bootstrap_scan=not _is_mcp_sub and not _defer_scans,
+            auto_start=False if getattr(self, '_iabv_i1_isolated_mode', False) else None,
+            bootstrap_scan=(
+                not _is_mcp_sub
+                and not _defer_scans
+                and not getattr(self, '_iabv_i1_isolated_mode', False)
+            ),
             scan_interval_seconds=300.0 if _is_mcp_sub else WorldModelService._DEFAULT_SCAN_INTERVAL,
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
@@ -1604,7 +1622,7 @@ class AppBootstrap:
         # services are wired.  The background threads (already started by
         # auto_start=True inside the constructors) will pick up the signal
         # and perform their first scan without blocking the GUI thread.
-        if _defer_scans:
+        if _defer_scans and not getattr(self, '_iabv_i1_isolated_mode', False):
             try:
                 self.environment_self_awareness_service.request_refresh(
                     reason='deferred_bootstrap', full=True,
@@ -1747,6 +1765,9 @@ class AppBootstrap:
 
         Idempotent: a second call is a no-op.
         """
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            self._timeline.mark('i1_isolated_deferred_setup_skipped')
+            return
         if self._tool_availability_logged:
             return
         self._tool_availability_logged = True
@@ -1813,6 +1834,8 @@ class AppBootstrap:
         reduces peak startup RSS by ~50-150 MB and shaves ~1-3 s off
         the visible startup time.
         """
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            return
         if getattr(self, '_metacognition_scan_started', False):
             return
         self._metacognition_scan_started = True
@@ -2242,6 +2265,25 @@ class AppBootstrap:
         idle timing. This method intentionally does not make route decisions;
         it only ensures the single user communication channel exists.
         """
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            # Build the real ControlCenterViewModel for the public Qt UI, but
+            # do not start the local HTTP/MCP bridge as a side effect.
+            ctx = getattr(self, '_qml_root_context', None)
+            if ctx is None:
+                return False
+            try:
+                self._ensure_vm_for_route('control')
+                vm = getattr(self, 'control_center_viewmodel', None)
+                ctx.setContextProperty('controlCenterViewModel', vm)
+                self._timeline.mark(
+                    'i1_isolated_public_ui_ready',
+                    control_viewmodel_ready=vm is not None,
+                )
+                return vm is not None
+            except Exception:
+                logger.exception('I1 isolated public UI VM construction failed')
+                return False
+
         if self._startup_chat_bridge_is_ready():
             self._mark_startup_chat_bridge_ready(source)
             return True
@@ -3184,7 +3226,7 @@ class AppBootstrap:
                 logger.debug('autonomy_startup_summary: skipped (%s)', exc)
 
     def _ensure_directories(self) -> None:
-        for path in (
+        paths = (
             self.config.data_dir,
             self.config.episodes_dir,
             self.config.screenshots_dir,
@@ -3198,10 +3240,16 @@ class AppBootstrap:
             self.config.models_dir,
             self.config.logs_dir,
             self.config.evolution_dir,
-            str(Path(self.config.workspace_root) / 'assets'),
-            str(Path(self.config.workspace_root) / 'docs'),
-        ):
+        )
+        for path in paths:
             Path(path).mkdir(parents=True, exist_ok=True)
+        # Legacy startup ensures these workspace folders exist. Do not create
+        # folders inside the source worktree during an isolated I1 attempt.
+        if not getattr(self, '_iabv_i1_isolated_mode', False):
+            for name in ('assets', 'docs'):
+                (Path(self.config.workspace_root) / name).mkdir(
+                    parents=True, exist_ok=True,
+                )
 
     @staticmethod
     def _yield_to_event_loop() -> None:
@@ -3306,48 +3354,55 @@ class AppBootstrap:
             self._timeline.mark('populate_ui_vm_mcp_side_effects')
         except Exception:
             pass
-        # --- MCP bridge ---
-        if getattr(self, 'mcp_bridge_service', None) is None:
-            try:
-                self.mcp_bridge_service = build_mcp_bridge_service(
-                    self,
-                    workspace_root=self.config.workspace_root,
-                )
-            except Exception:
-                logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
-                self.mcp_bridge_service = None
-            else:
-                bridge_ref = self.mcp_bridge_service
+        # I1 isolated mode keeps the public Qt UI but skips local servers and
+        # the screenshot provider.
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            self.mcp_bridge_service = None
+            self.ui_bridge_server = None
+            self.ui_screenshot_provider = None
+        else:
+            # --- MCP bridge ---
+            if getattr(self, 'mcp_bridge_service', None) is None:
+                try:
+                    self.mcp_bridge_service = build_mcp_bridge_service(
+                        self,
+                        workspace_root=self.config.workspace_root,
+                    )
+                except Exception:
+                    logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
+                    self.mcp_bridge_service = None
+                else:
+                    bridge_ref = self.mcp_bridge_service
 
-                def _autostart_bridge() -> None:
-                    try:
-                        bridge_ref.ensure_started()
-                    except Exception:
-                        logger.exception('Auto-arranque de MCPBridgeService fallo')
+                    def _autostart_bridge() -> None:
+                        try:
+                            bridge_ref.ensure_started()
+                        except Exception:
+                            logger.exception('Auto-arranque de MCPBridgeService fallo')
 
-                threading.Thread(
-                    target=_autostart_bridge,
-                    name='mcp-bridge-autostart',
-                    daemon=True,
-                ).start()
-        # --- UIBridgeService ---
-        if getattr(self, 'ui_bridge_server', None) is None:
-            try:
-                from iabv_v15.services.ui_bridge_service import (
-                    build_ui_bridge_server,
-                )
-                self.ui_bridge_server = build_ui_bridge_server()
-            except Exception:
-                logger.exception('No se pudo construir UIBridgeServer; bridge UI desactivado')
-                self.ui_bridge_server = None
-        # --- UIScreenshotProvider ---
-        if getattr(self, 'ui_screenshot_provider', None) is None:
-            try:
-                from iabv_v15.infra.ui import build_ui_screenshot_provider
-                self.ui_screenshot_provider = build_ui_screenshot_provider()
-            except Exception:
-                logger.exception('No se pudo construir ui_screenshot_provider; dejando None')
-                self.ui_screenshot_provider = None
+                    threading.Thread(
+                        target=_autostart_bridge,
+                        name='mcp-bridge-autostart',
+                        daemon=True,
+                    ).start()
+            # --- UIBridgeService ---
+            if getattr(self, 'ui_bridge_server', None) is None:
+                try:
+                    from iabv_v15.services.ui_bridge_service import (
+                        build_ui_bridge_server,
+                    )
+                    self.ui_bridge_server = build_ui_bridge_server()
+                except Exception:
+                    logger.exception('No se pudo construir UIBridgeServer; bridge UI desactivado')
+                    self.ui_bridge_server = None
+            # --- UIScreenshotProvider ---
+            if getattr(self, 'ui_screenshot_provider', None) is None:
+                try:
+                    from iabv_v15.infra.ui import build_ui_screenshot_provider
+                    self.ui_screenshot_provider = build_ui_screenshot_provider()
+                except Exception:
+                    logger.exception('No se pudo construir ui_screenshot_provider; dejando None')
+                    self.ui_screenshot_provider = None
         # --- ChatCapabilityIngestionService ---
         try:
             from iabv_v15.services.chat.capability_ingestion import (
@@ -3707,6 +3762,8 @@ class AppBootstrap:
         **Coalescing:** If a refresh thread is already in-flight, this
         method returns immediately without spawning another thread.
         """
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            return
         self._init_prebuild_snapshot_cache()
         if self._prebuild_snapshot_refresh_in_flight:
             return  # coalesce: already refreshing
@@ -3921,6 +3978,8 @@ class AppBootstrap:
         Navigation-triggered construction (``_ensure_vm_for_route``)
         is never paused — only the idle prebuild chain.
         """
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            return
         routes = list(self._ROUTE_TO_VM_ATTR.keys())
         self._prebuild_paused = False
         self._prebuild_paused_routes = []
@@ -4342,7 +4401,8 @@ class AppBootstrap:
                 # Start idle pre-build: after 15s, begin constructing
                 # Phase 3 VMs one-by-one with event loop yields so they
                 # are ready before the user navigates there.
-                QTimer.singleShot(15_000, self._build_all_lazy_vms)
+                if not getattr(self, '_iabv_i1_isolated_mode', False):
+                    QTimer.singleShot(15_000, self._build_all_lazy_vms)
 
             QTimer.singleShot(0, _populate_ui_critical)
         else:
@@ -5204,7 +5264,10 @@ class AppBootstrap:
                 except Exception:
                     pass
 
-            skip_mcp = os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
+            skip_mcp = (
+                getattr(self, '_iabv_i1_isolated_mode', False)
+                or os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
+            )
             mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
             if skip_mcp:
                 logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
@@ -5292,10 +5355,11 @@ class AppBootstrap:
                 except Exception:
                     pass
 
-            QTimer.singleShot(
-                self._startup_evolution_initial_delay_ms(),
-                self._schedule_startup_evolution,
-            )
+            if not getattr(self, '_iabv_i1_isolated_mode', False):
+                QTimer.singleShot(
+                    self._startup_evolution_initial_delay_ms(),
+                    self._schedule_startup_evolution,
+                )
 
             # Defer the heavy tool-availability probe (HTTP pings + pip
             # install of mcp_client).  The probe now runs in a background
@@ -5334,7 +5398,8 @@ class AppBootstrap:
                     self.ui_heartbeat_watchdog.tick,
                 )
                 self._heartbeat_timer.start()
-                self.ui_heartbeat_watchdog.start_sampler()
+                if not getattr(self, '_iabv_i1_isolated_mode', False):
+                    self.ui_heartbeat_watchdog.start_sampler()
                 self._timeline.mark('ui_heartbeat_watchdog_started')
             except Exception:
                 logger.debug('ui_heartbeat_watchdog: failed to start', exc_info=True)
