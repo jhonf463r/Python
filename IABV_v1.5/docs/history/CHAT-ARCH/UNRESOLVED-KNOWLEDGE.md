@@ -1,3 +1,20 @@
+## 2026-10-10 — CROSS-CHAT HANDOFF: RESOURCE PRESSURE, CLEANUP POLICY, RQ224 TRUST ANCHOR
+
+Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+**[LATEST OWNER-SUPPLIED LOCAL STATE]** C: free `4,965,724,160` bytes (~4.625 GiB); source-reported IABV critical threshold is `<=10 GiB`. The last proposed removal of four cache directories (~24.6 MB total) was rejected by execution policy before execution. No file was removed in that phase; no policy bypass was attempted.
+
+**[CLEANUP DONE IN EARLIER PHASE — ACTOR-REPORTED]** six clean worktrees were removed via normal non-force Git worktree removal; earlier whole-volume free space increased net by `3,673,419,776` bytes. Separate bounded cleaning reported DirectX shader-cache and Explorer-thumbnail deletion; logical bytes deleted did not match net volume delta. Do not count proposed/rejected deletions as actual.
+
+**[UNRESOLVED LOCAL STATE]** previous `config.worktree` query for `C:/temp/iabv_birth_gate_b429` exited 128 and was obscured before removal; previous config is no longer available. The untracked-file count difference in `C:/Python` remains unexplained. 96 worktrees reportedly remain; dirty/untracked/ignored worktrees and PR #464 are protected. Logical directory sizes overlap and are not a reclaimable-space sum.
+
+**[NEXT OPERATIONAL GATE]** determine the exact execution-policy rejection and a supported authorization/cleanup path, or use an authorized native Windows Storage surface. Then remove only high-confidence expendable files/artifacts, preserving Windows, IABV, Codex, browser sessions/credentials and unique work; measure actual volume free space. Do not bypass the policy, blindly clear `%TEMP%`, delete `.codex`/AppData, remove more whole worktrees without checks, or claim pressure resolved without crossing the threshold.
+
+**[PRODUCT OPEN EDGE]** M0-A lacks demonstrated end-to-end traversal. An attempted Codex-side UI interaction stopped before normal `sendChat()` because this session exposed no admissible UI control channel; IABV separately returned a disk-pressure refusal. M0-B inference remains unproven. Do not conflate channel or resource gates with a proven production defect.
+
+**[RQ224 OPEN]** initial Owner-enrollment trust anchor and replay-resistant stateful consumption source remain unresolved. Conversational design direction: threat model A; recovery design B with two independent factors and either factor sufficient to recover, while loss of both leaves `RECOVERY_UNAVAILABLE`. These are not source integration or implementation authority. RQ218/RQ223 gates remain in force.
+
+---
 ## 2026-10-09 — RQ224 TRUST SOURCE AND THREAT MODEL OWNER GATE
 
 Canonical: [CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md](CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md).

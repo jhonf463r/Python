@@ -1,3 +1,16 @@
+## 2026-10-10 CONTINUITY HANDOFF — DISK RESOURCE PRESSURE / MULTI-AI PRODUCT ROUTE
+
+Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+The product north star remains `HUMAN ↔ IABV ↔ capability-bearing AI/tools`. M0-A (explicit mediated Codex consultation) is not proven end-to-end: the supplied Codex report reached the UI-channel boundary without an admissible agent-side control surface, and IABV separately reported `resource_pressure_critical` when the Owner submitted a request. M0-B (objective-driven external-capability inference) remains unproven. Do not re-audit the whole external-consultation architecture or invent a new coordinator.
+
+Latest Owner-supplied local report: C: free space is 4,965,724,160 bytes (about 4.625 GiB), below the source threshold `<=10 GiB`. The last proposed cache deletion (about 24.6 MB) was rejected by execution policy before running; no files were deleted in that phase. Six clean worktrees were previously removed normally and reportedly yielded about 3.67 GB net at that earlier measurement. See the handoff record for exact paths, anomalies and provenance.
+
+**Immediate operational next:** identify the exact rejection and its sanctioned permission route, or use an authorized native Windows cleanup surface; then remove only verified expendable large artifacts and measure actual free space. Do not bypass execution policy, touch browser profiles/credentials, blindly delete worktrees, or claim pressure resolved without evidence.
+
+**Canonical technical route remains RQ224** for Owner trust source and replay-resistant initial enrollment/receipt; RQ226 is the continuity method, not a replacement route. Threat-model A and recovery design B are recorded as conversational design direction; the first trust anchor and implementation gates remain unresolved. Preserve the dirty worktree and protected PR #464.
+
+---
 ## 2026-10-09 ACTIVE ROUTE — RQ223 DESIGN RECONCILED; RQ224 TRUST-ANCHOR DESIGN NEXT
 
 Canonical record: [CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md](CHAT-ARCH-2026-10-09-223-rq223-mutation-authority-contract-design.md).

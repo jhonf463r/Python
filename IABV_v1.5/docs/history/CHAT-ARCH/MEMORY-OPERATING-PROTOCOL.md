@@ -1,3 +1,16 @@
+## 2026-10-10 METHOD AMENDMENT — HANDOFF CONTINUITY / STOP ANALYSIS-ONLY LOOPS
+
+Canonical operational/product handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+- Preserve the product target `HUMAN ↔ IABV ↔ capability-bearing AI/tools` and distinguish M0-A (explicit mediated handoff) from M0-B (objective-derived resource selection).
+- Do not infer that a static adapter, capture mode, ToolCard or composed call graph proves runtime traversal. Mark the exact first failed edge and what was/was not observed.
+- Do not keep issuing analysis-only prompts after sufficient evidence exists for a concrete bounded next action. Prefer: (a) authorized bounded operation with measured result, (b) exact policy/permission blocker, or (c) an actual unresolved Owner decision. Do not bypass a policy refusal by changing commands or channels.
+- For cleanup, classify by dependency and preservation requirements, not file extension/name alone. Owner authorized deleting items demonstrated unnecessary to Windows, IABV, Codex/development and authenticated Edge/Chrome/Opera/Firefox; profiles, sessions, credentials, unique work/evidence and protected PR #464 remain protected. Unknown files stay until classified.
+- Distinguish logical directory size from physical space reclaimed; use fresh whole-volume measurements. Report unexplained drift rather than attributing it to an action.
+- Preserve actor-reported local evidence as actor-reported unless independently verified. Do not infer that a denied deletion ran, that `resource_pressure_critical` cleared, or that a failed UI-channel attempt proves the production route is defective.
+- RQ224 is still the canonical technical route; resource-pressure recovery is an immediate operational workstream, not a security-route replacement. RQ226 entry order still applies.
+
+---
 ## 2026-10-09 METHOD AMENDMENT — RQ226 CONTINUITY / KNOWLEDGE-ACQUISITION AUDIT
 
 Canonical adjudication: [CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md](CHAT-ARCH-2026-10-09-226-rq226-continuity-symbiosis-audit-adjudication.md).

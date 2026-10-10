@@ -1,3 +1,18 @@
+## 2026-10-10 KNOWLEDGE / ROUTING DELTA — RESOURCE PRESSURE + MULTI-AI CONTINUITY
+
+Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+**Product invariant:** IABV is intended to become the user's primary interface and resource coordinator. External AIs are capability-bearing resources chosen by objective fit, availability, permission and evidence, not mandatory departments. Use RQ059, D016/RQ054, RQ148 and M0/RQ128 lineage.
+
+**Evidence-state invariant:** static handoff path ≠ runtime traversal; automatic capture design ≠ captured response; ingesting/persisting a result ≠ independent verification; stored knowledge ≠ later activation or causal reuse. M0-A and M0-B stay separate. The recent agent-side M0-A attempt stopped before `sendChat()` because no UI control surface was available in that session; IABV separately reported resource pressure. Neither is proof of an architectural defect.
+
+**Operational delta:** last supplied C: free space `4,965,724,160` bytes (~4.625 GiB), below source threshold `<=10 GiB`. A cache deletion request (~24.6 MB) was rejected before execution; no deletion occurred in that phase. Six prior clean worktree removals yielded an earlier measured volume delta of ~3.67 GB. There remain large, overlapping logical-size candidates and unresolved local inventory anomalies; no further blind worktree removal is warranted.
+
+**Method delta:** after policy-denied cleanup, diagnose the exact denial and use the sanctioned permission/native cleanup route; do not repeat the same operation or bypass the policy. Favor verified expendable artifacts, preserve browser auth/profile data and unique work, and re-measure the whole volume. No new coordinator/memory organ is needed.
+
+**Technical routing remains RQ224**: initial Owner trust anchor and replay-resistant consumption remain unresolved; RQ218/RQ223 gates stay active. This operational recovery note does not supersede the security route.
+
+---
 ## 2026-10-09 KNOWLEDGE / ROUTING DELTA — RQ224 TRUST SOURCE NOT FOUND IN BOUNDED SCOPE
 
 Canonical: `CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md`.

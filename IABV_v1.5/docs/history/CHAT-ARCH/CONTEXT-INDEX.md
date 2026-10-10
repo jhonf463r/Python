@@ -1,3 +1,16 @@
+## 2026-10-10 ROUTING UPDATE — AUTONOMY VISION / RESOURCE PRESSURE / RQ224 CONTINUITY
+
+Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+**Use this record before starting a new chat on IABV product autonomy or local cleanup.** The target is IABV as the primary human interface and coordinator of capability-bearing AIs, not a manual relay or a mandatory sequence of agents. Existing external-consultation code is statically composed per RQ128, but M0-A has no demonstrated complete runtime round trip; M0-B objective-driven actor selection is also unproven.
+
+Latest Owner-supplied local state: C: free `4,965,724,160` bytes (~4.625 GiB), below IABV's source-reported `<=10 GiB` critical threshold. The last cleanup deletion attempt (~24.6 MB of identified caches) was rejected before execution; no files were deleted in that phase. Six clean worktrees were removed in a previous phase; one pre-removal config query failed and the associated config is no longer recoverable. A prior untracked-file count discrepancy remains unresolved. Do not bypass the execution policy or repeat generic deletion attempts.
+
+**Immediate operational next:** establish the supported permission route for the rejected cleanup or use an authorized native Windows cleanup surface; target verified, high-confidence expendable large artifacts; keep Edge/Chrome/Opera/Firefox authenticated profiles, credentials, IABV/Codex state, unique evidence and PR #464 protected.
+
+**Technical next:** RQ224 remains open for the initial Owner trust anchor and anti-replay consumption source, with RQ218/RQ223 gates preserved. Do not treat conversation-derived model A/recovery direction B as implementation authorization. See the canonical handoff for chronology, paths, sizes, provenance and anomalies.
+
+---
 ## 2026-10-09 ROUTING UPDATE — RQ224 STATIC AUTHORITY AUDIT ADJUDICATED; OWNER GATE NEXT
 
 Canonical: [CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md](CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md).

@@ -1,3 +1,20 @@
+## 2026-10-10 HANDOFF — OPERATIONAL DISK BLOCKER; RQ224 TECHNICAL ROUTE RETAINED
+
+Canonical continuity record: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+**Immediate product/resource blocker (Owner-supplied Codex report; not independently remeasured here):** C: free space last measured at `4,965,724,160` bytes (`4.625 GiB`), while the inspected IABV source classifies `<=10 GiB` free as critical. The external consultation response supplied by the Owner reported `resource_pressure_critical` / `manual_handoff` and refused opening external tools. Approximately `5,771,694,080` additional bytes would be needed to exceed 10 GiB from that measurement. Do not claim the runtime gate has cleared without a fresh authorized measurement/observation.
+
+**Cleanup state:** six clean worktrees were previously removed through normal `git worktree remove` (not force); that operation had a reported net C: increase of `3,673,419,776` bytes at that time. Later reported space returned to approximately 4.625 GiB. No files were deleted in the latest cleanup phase: the proposed deletion of four cache paths (~24.6 MB) was rejected by the execution policy before execution. Do not repeat the same rejected deletion or change channels to bypass the policy. Identify the exact rejection/sanctioned permission or use a normal authorized Windows Storage cleanup surface; prioritize verified, high-confidence large artifacts. Latest report preserves browser profiles, credentials, IABV source, Codex state and PR #464.
+
+**Important local-history anomalies:** prior `config.worktree` query for `C:/temp/iabv_birth_gate_b429` exited 128 with an error hidden before the worktree was removed; the configuration is now unavailable, so absence of unique configuration cannot be claimed. The reported 19-entry untracked discrepancy in `C:/Python` remains unreconciled; later observations 131,960 / 131,964 and an inventory at a different HEAD do not resolve it. Do not delete further worktrees without individual status, ignored/untracked content, unique-commit, active-task and PR-protection checks.
+
+**Product track:** M0-A remains unproven end-to-end. One Codex agent session lacked a demonstrated native UI-control channel to use IABV's normal `ControlCenterViewModel.sendChat()` surface; separately, IABV reported its own disk-pressure gate blocked an external consultation. These are separate conditions, not proof of a production defect. No text was sent and no provider delivery/capture/ingestion was observed in that agent-side attempt. M0-B actor inference also remains unproven.
+
+**Technical route not superseded:** RQ224 remains the canonical security frontier. Model A (trust process/code/verifier integrity) and recovery direction B (two independent factors, either sufficient, loss of both blocks mutations) are conversational design directions now captured for continuity, not implementation authorization. The initial Owner-enrollment trust anchor and replay-resistant consumption source remain unresolved. RQ218 workspace/path/baseline/edit-scope/clean-worktree/verification gates and RQ223 exact single-use mutation receipt remain blockers. Overall readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+No implementation, tests/build/runtime, provider execution or mutation of protected code is authorized by this continuity record. See the linked record for provenance and the exact next actions.
+
+---
 ## 2026-10-09 ACTIVE OBJECTIVE — RQ224 STATIC AUTHORITY AUDIT ADJUDICATED; OWNER GATE NEXT
 
 Canonical adjudication: [CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md](CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md).
