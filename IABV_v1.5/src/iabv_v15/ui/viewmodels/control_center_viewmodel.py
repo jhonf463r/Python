@@ -149,10 +149,10 @@ class ControlCenterViewModel(QObject):
         chat_message_repository: Any | None = None,
         system_identity_registry: SystemIdentityRegistry | None = None,
         defer_initial_refresh: bool = False,
-        suppress_startup_activity: bool = False,
+        iabv_i1_isolated_mode: bool = False,
     ) -> None:
         super().__init__()
-        self._suppress_startup_activity = bool(suppress_startup_activity)
+        self._iabv_i1_isolated_mode = bool(iabv_i1_isolated_mode)
         self.config = config
         self.episode_repository = episode_repository
         self.knowledge_repository = knowledge_repository
@@ -314,7 +314,7 @@ class ControlCenterViewModel(QObject):
         # runs on _bg_pool via _deferred_initial_refresh.  Only
         # lightweight signal connections happen on main thread via
         # _deferred_heavy_init.
-        if self._suppress_startup_activity:
+        if self._iabv_i1_isolated_mode:
             # The isolated I1 startup exposes the real public UI without
             # background repository refreshes, provider probes or app discovery.
             self._busy_label = (
@@ -326,7 +326,7 @@ class ControlCenterViewModel(QObject):
                 nonblocking=True,
             )
         QTimer.singleShot(0, self._deferred_heavy_init)
-        if not self._suppress_startup_activity:
+        if not self._iabv_i1_isolated_mode:
             QTimer.singleShot(250, self._deferred_initial_refresh)
             QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
 
@@ -9020,12 +9020,12 @@ class ControlCenterViewModel(QObject):
             'assistant_kind': assistant_kind,
             'assistant_title': title,
             'session_modes': list(self._WEB_SKILL_SESSION_MODES),
-            'active_session_mode': 'unknown',
+            'active_session_mode': 'isolated_profile' if self._iabv_i1_isolated_mode else 'unknown',
             'browser_profile_path': '',
-            'cdp_status': 'unknown',
+            'cdp_status': 'disabled_in_i1_isolated_mode' if self._iabv_i1_isolated_mode else 'unknown',
             'window_status': 'unknown',
             'auth_status': 'unknown',
-            'capture_modes': ['manual_pasteback'],
+            'capture_modes': ['dom_capture', 'browser_dom'] if self._iabv_i1_isolated_mode else ['manual_pasteback'],
             'last_scan_ts': 0.0,
             'last_block_reason': '',
             'action_grammar': [
@@ -9051,7 +9051,9 @@ class ControlCenterViewModel(QObject):
             pass
         # Enrich from CDP probe
         try:
-            if hasattr(self, '_detect_cdp_available'):
+            # Isolated I1 must not probe or select the shared/user Chrome CDP
+            # endpoint. The actual consultation uses its data-root-owned profile.
+            if not self._iabv_i1_isolated_mode and hasattr(self, '_detect_cdp_available'):
                 cdp_result = self._detect_cdp_available()
                 if isinstance(cdp_result, dict):
                     profile['cdp_status'] = 'available' if cdp_result.get('available') else 'unavailable'
