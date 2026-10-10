@@ -11,7 +11,7 @@ def main() -> int:
     # I1 isolation is opt-in. A failure in this mode must not write a crash
     # log to the repository or the ordinary user profile.
     isolated_mode = os.environ.get("IABV_I1_ISOLATED_MODE", "").strip() == "1"
-    workspace_root = os.environ.get("IABV_WORKSPACE_ROOT") or None
+    workspace_root = (os.environ.get("IABV_WORKSPACE_ROOT") or None) if isolated_mode else None
     try:
         from iabv_v15.bootstrap import AppBootstrap
         return AppBootstrap(
