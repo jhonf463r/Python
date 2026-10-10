@@ -649,7 +649,7 @@ class AppBootstrap:
                 # a duplicar el valor si ya lo tiene cargado bajo otro nombre.
                 # Si nada esta disponible, ``is_available`` devuelve False y
                 # ``run_self_audit`` reporta ``devin_api [missing]``.
-                api_key=_resolve_devin_api_key(os.environ),
+                api_key='' if getattr(self, '_iabv_i1_isolated_mode', False) else _resolve_devin_api_key(os.environ),
                 # DEVIN_ORG_ID ya no es requerido por v1; se mantiene para compat.
                 org_id=os.environ.get('DEVIN_ORG_ID', ''),
             ),
@@ -664,7 +664,7 @@ class AppBootstrap:
                 # el token este disponible en el entorno. El orden preserva
                 # la intencion original: el scope dedicado a IABV gana si
                 # existe; si no, se cae al global.
-                token=_resolve_github_token(os.environ),
+                token='' if getattr(self, '_iabv_i1_isolated_mode', False) else _resolve_github_token(os.environ),
                 # repo scoped: evita que un token amplio haga cosas en
                 # repos no deseados; default al propio repo del proyecto.
                 repo=os.environ.get('GITHUB_REPO', 'jhonf463r/Python'),
@@ -5268,7 +5268,7 @@ class AppBootstrap:
                 getattr(self, '_iabv_i1_isolated_mode', False)
                 or os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
             )
-            mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
+            mcp_port = 8000 if getattr(self, '_iabv_i1_isolated_mode', False) else int(os.environ.get('FASTMCP_PORT', '8000'))
             if skip_mcp:
                 logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
             elif not self._is_mcp_port_in_use(mcp_port):
