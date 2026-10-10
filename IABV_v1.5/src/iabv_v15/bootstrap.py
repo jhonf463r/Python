@@ -878,7 +878,11 @@ class AppBootstrap:
         self.engineering_review_service: EngineeringReviewService | None = None
         self.role_router: LocalRoleRouter | None = None
 
-        self.account_approval_ledger = AccountApprovalLedger()
+        self.account_approval_ledger = (
+            AccountApprovalLedger(data_root=self.config.data_dir)
+            if getattr(self, '_iabv_i1_isolated_mode', False)
+            else AccountApprovalLedger()
+        )
         self.role_router = LocalRoleRouter(
             workspace_root=self.config.workspace_root,
             general_provider=self.general_provider,
