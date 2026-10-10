@@ -817,7 +817,51 @@ class UIExecutionRunner:
         reingest_only: bool = False,
     ) -> dict[str, Any]:
         started = time.perf_counter()
-        profile_dir = Path(browser_profile_dir) if browser_profile_dir else (self.workspace_root / 'data' / 'tool_teaching' / 'external_assistants' / 'web_program_session' / 'browser_profile')
+        isolated_i1 = os.environ.get('IABV_I1_ISOLATED_MODE', '').strip() == '1'
+        if isolated_i1:
+            raw_data_root = os.environ.get('IABV_I1_DATA_ROOT', '').strip()
+            if not raw_data_root or not Path(raw_data_root).expanduser().is_absolute():
+                return {
+                    'launched': False, 'focused': False, 'focused_title': '',
+                    'prompt_pasted': False, 'response_captured': False,
+                    'captured_text': '', 'captured_excerpt': '',
+                    'capture_source': 'browser_dom',
+                    'error_message': 'isolated_data_root_missing',
+                    'browser_profile_dir': '',
+                    'execution_ms': int((time.perf_counter() - started) * 1000),
+                    'metadata': {'background_capture_mode': 'browser_dom'},
+                }
+            if not browser_profile_dir:
+                return {
+                    'launched': False, 'focused': False, 'focused_title': '',
+                    'prompt_pasted': False, 'response_captured': False,
+                    'captured_text': '', 'captured_excerpt': '',
+                    'capture_source': 'browser_dom',
+                    'error_message': 'isolated_browser_profile_missing',
+                    'browser_profile_dir': '',
+                    'execution_ms': int((time.perf_counter() - started) * 1000),
+                    'metadata': {'background_capture_mode': 'browser_dom'},
+                }
+            data_root = Path(raw_data_root).expanduser().resolve(strict=False)
+            profile_dir = Path(browser_profile_dir).expanduser().resolve(strict=False)
+            try:
+                profile_dir.relative_to(data_root)
+            except ValueError:
+                return {
+                    'launched': False, 'focused': False, 'focused_title': '',
+                    'prompt_pasted': False, 'response_captured': False,
+                    'captured_text': '', 'captured_excerpt': '',
+                    'capture_source': 'browser_dom',
+                    'error_message': 'isolated_browser_profile_outside_data_root',
+                    'browser_profile_dir': str(profile_dir),
+                    'execution_ms': int((time.perf_counter() - started) * 1000),
+                    'metadata': {'background_capture_mode': 'browser_dom'},
+                }
+        else:
+            profile_dir = Path(browser_profile_dir) if browser_profile_dir else (
+                self.workspace_root / 'data' / 'tool_teaching' / 'external_assistants'
+                / 'web_program_session' / 'browser_profile'
+            )
         profile_dir.mkdir(parents=True, exist_ok=True)
         if browser_sync_playwright is None:
             return {
@@ -834,7 +878,7 @@ class UIExecutionRunner:
                 'execution_ms': int((time.perf_counter() - started) * 1000),
                 'metadata': {'background_capture_mode': 'browser_dom'},
             }
-        if os.environ.get('IABV_PREFER_CDP_SESSION') == '1':
+        if os.environ.get('IABV_PREFER_CDP_SESSION') == '1' and not isolated_i1:
             return self._capture_browser_dom_response_via_shared_cdp(
                 launch_target=launch_target,
                 prompt_text=prompt_text,
