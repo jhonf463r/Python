@@ -1,3 +1,12 @@
+## 2026-10-10 ROUTING / EVIDENCE DELTA — CLEANUP DENIAL
+
+Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+New evidence state: the last attempted deletion was blocked at process creation by execution policy (`CreateProcess ... blocked by policy`; approval `never` per actor report). No deletion was executed. The candidate set was approximately 24.6 MB, materially smaller than the ~5.37 GiB gap to IABV's source-reported threshold. Do not treat a proposed removal as an effect. The next meaningful action is to obtain a supported user-controlled approval route or operate native Windows Storage cleanup, then target high-confidence large artifacts and measure the volume. No bypass, no browser-profile/credential deletion, no blind worktree removal.
+
+RQ224 remains the canonical technical frontier, while disk resource recovery is the immediate operational blocker. Neither supersedes the other.
+
+---
 ## 2026-10-10 KNOWLEDGE / ROUTING DELTA — RESOURCE PRESSURE + MULTI-AI CONTINUITY
 
 Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).

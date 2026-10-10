@@ -1,3 +1,10 @@
+## 2026-10-10 UPDATE — CLEANUP EXECUTION POLICY IS THE CURRENT OPERATIONAL STOP
+
+Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+The latest Codex report says the cache deletion was rejected before PowerShell creation with `CreateProcess ... Rejected ... blocked by policy`; the active approval policy is reported as `never`, and the session has no supported authorization route. No files were deleted. C: remains at the last supplied measurement of `4,965,724,160` bytes free (~4.625 GiB), below the source-reported `<=10 GiB` critical threshold. Do not retry the same deletion, switch channels to bypass policy, or claim reclaimed space. Next: use a permitted user-controlled approval/configuration path if available, or native Windows Storage cleanup; target high-confidence large artifacts and remeasure.
+
+---
 ## 2026-10-10 CONTINUITY HANDOFF — DISK RESOURCE PRESSURE / MULTI-AI PRODUCT ROUTE
 
 Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).

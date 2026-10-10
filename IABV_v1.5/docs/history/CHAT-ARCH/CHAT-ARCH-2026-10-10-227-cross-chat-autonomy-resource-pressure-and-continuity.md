@@ -159,3 +159,18 @@ Technical next route remains RQ224 trust-anchor adjudication. Keep those two lan
 This is a documentation-only record based on the pinned repository sources and the Owner-supplied chat/Codex reports. It does not prove local disk state after the supplied measurement, does not independently validate local deletion logs, does not prove an M0-A runtime round trip, and does not implement or close RQ224. No local IABV run, test, build, provider call or protected-code change occurred in this record.
 
 END OF RECORD
+## 8. Latest execution-policy finding — cleanup request rejected before process creation
+
+**Latest Owner-supplied Codex report (about 2026-10-10 13:45–13:46 Bogotá time):** the attempted cache-deletion request was rejected with `CreateProcess ... Rejected ... blocked by policy` before PowerShell was created. The reported active execution-approval policy is `never`. The affected candidate set was the recursive deletion of files under:
+- `C:/Users/faber/AppData/Local/NVIDIA/DXCache`
+- `C:/Users/faber/AppData/Local/NVIDIA/GLCache`
+- `C:/Users/faber/AppData/Local/cache`
+- `C:/Users/faber/AppData/Local/uv/cache`
+
+The report states that no deletion occurred. The exact policy rule beyond `blocked by policy` was not surfaced. The execution surface described an elevated route, but the session's active instructions did not permit requesting elevation, and Codex reported no supported in-session authorization mechanism. It stopped without trying another command/tool/channel. Do not bypass this policy or repeatedly submit the same deletion request as if more prompt detail grants permission.
+
+**Latest space measurement is unchanged from the preceding report:** `4,965,724,160` bytes free (~4.625 GiB), below the source-reported critical condition `<=10 GiB`. The candidate cache group totals only about `24,597,103` bytes and would recover far less than the roughly `5,771,694,080` bytes needed to exceed 10 GiB from that measurement. No space recovery or success may be attributed to the rejected operation.
+
+**Next admissible action:** obtain the necessary execution capability through the documented user-controlled Codex configuration/approval interface, if the product/organization policy permits it, or use Windows' normal user-operated Storage/cleanup UI. If neither route is available, stop and state the required user intervention. Do not seek a policy bypass. After an admitted operation, prioritize large, high-confidence expendable artifacts and preserve authenticated browser profiles, credential stores, IABV/Codex state, unique evidence, and PR #464. Measure whole-volume free space before/after.
+
+**Method correction:** distinguish (a) a file candidate being classified as disposable, (b) an operation being requested, (c) the platform approving process creation, (d) the operation actually executing, and (e) observed space reclaimed. A blocked process creation proves only (b) and the denial, not (d) or (e).

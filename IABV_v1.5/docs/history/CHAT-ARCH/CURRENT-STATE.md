@@ -1,3 +1,10 @@
+## 2026-10-10 UPDATE — CLEANUP EXECUTION DENIED BEFORE PROCESS CREATION
+
+Canonical details: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md#latest-execution-policy-finding--cleanup-request-rejected-before-process-creation).
+
+Latest Owner-supplied Codex report: CreateProcess was rejected with `blocked by policy` before PowerShell creation; active execution approval is reported as `never`; no supported in-session approval mechanism was available under the active instructions. No deletion occurred. Proposed cache paths were NVIDIA DXCache/GLCache, Local cache and uv cache (~24.6 MB total), too small to close the storage gap. Latest C: measure remains `4,965,724,160` bytes free (~4.625 GiB), below the source-reported `<=10 GiB` gate. Do not bypass policy or repeat the same request. Next permitted route: user-controlled approval/configuration if available, or Windows Storage cleanup UI; then perform only justified cleanup and measure actual volume change.
+
+---
 ## 2026-10-10 HANDOFF — OPERATIONAL DISK BLOCKER; RQ224 TECHNICAL ROUTE RETAINED
 
 Canonical continuity record: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).

@@ -1,3 +1,13 @@
+## 2026-10-10 METHOD UPDATE — RESPECT PRE-PROCESS EXECUTION DENIAL
+
+Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+- A `CreateProcess ... Rejected ... blocked by policy` result means the process did not start; do not attribute a deletion or disk-space recovery to it.
+- When the reported approval policy is `never` and no supported in-session authorization route exists, do not repeat the same action or switch commands/channels to evade policy. State the exact needed intervention: a permitted user-controlled approval/configuration route, or a normal authorized Windows cleanup surface.
+- Separate candidate identification, request, approval, process creation, actual execution and measured outcome.
+- Prioritize candidates by net physical reclaimable space and evidence of disposability; a 24.6 MB cache group cannot close a ~5.37 GiB gap. Avoid analysis-only loops, but never invent success or force deletion after rejection.
+
+---
 ## 2026-10-10 METHOD AMENDMENT — HANDOFF CONTINUITY / STOP ANALYSIS-ONLY LOOPS
 
 Canonical operational/product handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).

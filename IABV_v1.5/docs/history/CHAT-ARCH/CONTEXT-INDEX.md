@@ -1,3 +1,10 @@
+## 2026-10-10 ROUTING UPDATE — EXECUTION POLICY DENIES DISK CLEANUP
+
+Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+Current cleanup stop is explicit: `CreateProcess ... Rejected ... blocked by policy` before PowerShell starts; active approval policy is reported as `never`. No deletion was performed in the latest phase. Do not bypass the policy. Find a supported user-controlled authorization route or use the normal Windows Storage cleanup UI. C: last reported at 4.625 GiB free; source threshold is `<=10 GiB`. Previously removed six clean worktrees, but latest cache request was denied. Preserve browsers/sessions, IABV/Codex and PR #464; see handoff for the cleanup history, worktree anomalies and exact figures.
+
+---
 ## 2026-10-10 ROUTING UPDATE — AUTONOMY VISION / RESOURCE PRESSURE / RQ224 CONTINUITY
 
 Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).

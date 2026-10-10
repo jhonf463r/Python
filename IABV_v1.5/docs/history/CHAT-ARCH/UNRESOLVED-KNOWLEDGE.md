@@ -1,3 +1,14 @@
+## 2026-10-10 UPDATE — EXECUTION APPROVAL ROUTE UNAVAILABLE FOR CLEANUP
+
+Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
+
+**[LATEST REPORTED DENIAL]** `CreateProcess ... Rejected ... blocked by policy` occurred before PowerShell creation. Active approval policy reported as `never`; no supported in-session authorization mechanism was available under active instructions. No files were deleted.
+
+**[CANDIDATE SCOPE]** four cache paths (NVIDIA DXCache, NVIDIA GLCache, Local cache, uv cache), approximately 24,597,103 bytes; too small to close the gap. Latest C: measurement unchanged at `4,965,724,160` bytes free (~4.625 GiB), below source-reported `<=10 GiB` threshold.
+
+**[NEXT GATE]** discover/use only a documented user-controlled approval/configuration mechanism if permitted by the environment, or use native Windows Storage cleanup through a normal authorized user path. Do not bypass policy or attribute effects to a rejected request. Re-measure actual free space afterward.
+
+---
 ## 2026-10-10 — CROSS-CHAT HANDOFF: RESOURCE PRESSURE, CLEANUP POLICY, RQ224 TRUST ANCHOR
 
 Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
