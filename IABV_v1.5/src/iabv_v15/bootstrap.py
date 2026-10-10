@@ -849,6 +849,7 @@ class AppBootstrap:
             rollback_manager=self.tool_rollback_manager,
             adapters=self.tool_adapters,
             workspace_root=self.config.workspace_root,
+            data_root=self.config.data_dir,
             interaction_learning_service=self.interaction_learning_service,
             mode_selector=self.interaction_mode_selector,
             experiment_lab=self.experiment_lab,
