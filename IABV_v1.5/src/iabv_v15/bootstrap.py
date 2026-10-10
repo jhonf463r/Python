@@ -752,7 +752,9 @@ class AppBootstrap:
         self.algorithm_benchmark_registry = AlgorithmBenchmarkRegistry()
         self.decision_scoring_engine = DecisionScoringEngine()
         self.adaptive_weight_layer = AdaptiveWeightLayer(
-            persistence_path=str(Path(self.config.workspace_root) / 'data' / 'evolution' / 'adaptive_weights' / 'metacognitive_adjustments.json'),
+            # config.data_dir equals workspace_root/data in normal mode and is
+            # the dedicated IABV_I1_DATA_ROOT in isolated mode.
+            persistence_path=str(Path(self.config.data_dir) / 'evolution' / 'adaptive_weights' / 'metacognitive_adjustments.json'),
         )
         self.lab_strategy_selector = StrategySelector(adaptive_weight_layer=self.adaptive_weight_layer)
         # PCS v1 dependencies are created before ToolTeachService so external
@@ -897,9 +899,17 @@ class AppBootstrap:
             account_approval_ledger=self.account_approval_ledger,
         )
         self.environment_self_awareness_service.role_router = self.role_router
-        self.environment_self_awareness_service.request_refresh(reason='role_router_ready', full=False)
         self.world_model_service.role_router = self.role_router
-        self.world_model_service.request_refresh(reason='role_router_ready', full=False)
+        # Constructors are configured not to scan in isolated I1 mode. Keep
+        # this explicit post-wiring refresh behind the same guard: when no
+        # worker thread exists, request_refresh() performs scan_now() inline.
+        if not getattr(self, '_iabv_i1_isolated_mode', False):
+            self.environment_self_awareness_service.request_refresh(
+                reason='role_router_ready', full=False,
+            )
+            self.world_model_service.request_refresh(
+                reason='role_router_ready', full=False,
+            )
         from iabv_v15.services.evolution.perception_cross_validator import PerceptionCrossValidator
         self.perception_cross_validator = PerceptionCrossValidator(
             world_model_service=self.world_model_service,
@@ -927,7 +937,10 @@ class AppBootstrap:
         # ``OperationalSelfExaminationService`` pueda emitir findings
         # proactivos antes de que el usuario note el 401. Es un ledger
         # append-only read-only sobre el sistema vivo: no dispara nada.
-        self.token_rotation_ledger = TokenRotationLedger(self.config.workspace_root)
+        self.token_rotation_ledger = TokenRotationLedger(
+            self.config.workspace_root,
+            data_root=self.config.data_dir,
+        )
         self.operational_self_examination_service = OperationalSelfExaminationService(
             workspace_root=self.config.workspace_root,
             storage=self.evolution_storage,
@@ -3527,6 +3540,7 @@ class AppBootstrap:
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             chat_message_repository=self.chat_message_repository,
             defer_initial_refresh=True,
+            suppress_startup_activity=getattr(self, '_iabv_i1_isolated_mode', False),
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
         self.control_center_viewmodel.decision_audit_trail = self.decision_audit_trail
