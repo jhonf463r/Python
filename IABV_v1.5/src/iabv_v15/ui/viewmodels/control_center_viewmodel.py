@@ -149,8 +149,10 @@ class ControlCenterViewModel(QObject):
         chat_message_repository: Any | None = None,
         system_identity_registry: SystemIdentityRegistry | None = None,
         defer_initial_refresh: bool = False,
+        suppress_startup_activity: bool = False,
     ) -> None:
         super().__init__()
+        self._suppress_startup_activity = bool(suppress_startup_activity)
         self.config = config
         self.episode_repository = episode_repository
         self.knowledge_repository = knowledge_repository
@@ -312,14 +314,21 @@ class ControlCenterViewModel(QObject):
         # runs on _bg_pool via _deferred_initial_refresh.  Only
         # lightweight signal connections happen on main thread via
         # _deferred_heavy_init.
-        if not self._working and not self._adaptive_session_id:
+        if self._suppress_startup_activity:
+            # The isolated I1 startup exposes the real public UI without
+            # background repository refreshes, provider probes or app discovery.
+            self._busy_label = (
+                'Arranque aislado: carga inicial y comprobaciones automáticas aplazadas.'
+            )
+        elif not self._working and not self._adaptive_session_id:
             self._busy_label = self._startup_readiness_text(
                 validating_local_stack=True,
                 nonblocking=True,
             )
         QTimer.singleShot(0, self._deferred_heavy_init)
-        QTimer.singleShot(250, self._deferred_initial_refresh)
-        QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
+        if not self._suppress_startup_activity:
+            QTimer.singleShot(250, self._deferred_initial_refresh)
+            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
 
     def _deferred_heavy_init(self) -> None:
         """Attach lightweight listeners that need main-thread affinity.
