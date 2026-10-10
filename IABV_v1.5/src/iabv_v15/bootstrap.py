@@ -4920,6 +4920,8 @@ class AppBootstrap:
         and logs results.  Does NOT block the UI — runs in a daemon thread
         after a 5-second delay to let the UI load first.
         """
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            return
         metacog = getattr(self, 'metacognition_evolution', None)
         api_discovery = getattr(self, 'api_key_discovery_service', None)
         if metacog is None and api_discovery is None:
@@ -5149,6 +5151,10 @@ class AppBootstrap:
         that log and surfaces any warnings or errors as OSES findings so the
         program can self-examine its own startup process.
         """
+        # The I1 isolated run has no ordinary launcher transcript and must not
+        # inspect workspace-root/data/logs from a prior, non-isolated run.
+        if getattr(self, '_iabv_i1_isolated_mode', False):
+            return
         log_path = Path(self.config.workspace_root) / 'data' / 'logs' / 'startup_console.log'
         if not log_path.exists():
             return
