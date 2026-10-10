@@ -3545,7 +3545,7 @@ class AppBootstrap:
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             chat_message_repository=self.chat_message_repository,
             defer_initial_refresh=True,
-            suppress_startup_activity=getattr(self, '_iabv_i1_isolated_mode', False),
+            iabv_i1_isolated_mode=getattr(self, '_iabv_i1_isolated_mode', False),
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service
         self.control_center_viewmodel.decision_audit_trail = self.decision_audit_trail
