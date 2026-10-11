@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import copy
 from pathlib import Path
 
 import pytest
@@ -155,6 +156,241 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
         assert recapture_parameters['site_id'] == source_task.site_id
         assert recapture_parameters['diagnostic_category'] == source_task.metadata['diagnostic_category']
         assert recapture_parameters['incident_kind'] == source_task.metadata['incident_kind']
+
+        # Missing and explicitly empty identity values are both rejected for
+        # required fields. The persisted pair is restored after each fixture.
+        original_task, original_result = source_task, source_result
+
+        def persist_pair(task, result) -> None:
+            bootstrap.tool_record_repository.save_task(task)
+            bootstrap.tool_record_repository.save_result(result)
+
+        def pair_with_consultation_field(field: str, value: object, *, present: bool):
+            task_meta = copy.deepcopy(dict(original_task.metadata or {}))
+            task_goal = dict(task_meta.get('goal_parameters') or {})
+            task_consult = dict(task_meta['autonomous_consultation'])
+            result_meta = copy.deepcopy(dict(original_result.metadata or {}))
+            result_consult = dict(result_meta['autonomous_consultation'])
+            execution_meta = dict(original_result.execution_state.metadata or {})
+            for container in (task_goal, task_meta, task_consult, result_consult, execution_meta):
+                if present:
+                    container[field] = value
+                else:
+                    container.pop(field, None)
+            if field == 'session_profile_dir':
+                if present:
+                    execution_meta['browser_profile_dir'] = value
+                else:
+                    execution_meta.pop('browser_profile_dir', None)
+            task_meta['goal_parameters'] = task_goal
+            task_meta['autonomous_consultation'] = task_consult
+            result_meta['autonomous_consultation'] = result_consult
+            task_copy = original_task.model_copy(update={'metadata': task_meta})
+            execution_state = original_result.execution_state.model_copy(update={'metadata': execution_meta})
+            result_copy = original_result.model_copy(update={
+                'metadata': result_meta,
+                'execution_state': execution_state,
+            })
+            return task_copy, result_copy, task_consult
+
+        for field in ('session_profile_dir', 'response_capture_mode'):
+            for present, explicit_value in ((False, None), (True, '')):
+                task_copy, result_copy, consultation_copy = pair_with_consultation_field(
+                    field, explicit_value, present=present
+                )
+                persist_pair(task_copy, result_copy)
+                recapture_calls.clear()
+                rejected = bootstrap.autonomous_evolution_service.reingest_existing_session(
+                    existing_consultation=consultation_copy,
+                    adaptive_payload=payload,
+                    user_goal='Diagnosticar el flujo local',
+                    source='offline_test',
+                )
+                assert rejected['pre_capture_ingested'] is False
+                assert rejected['reason'] == f'recapture_identity_incomplete:{field}'
+                assert recapture_calls == []
+                persist_pair(original_task, original_result)
+
+        # The execution state is the observed value, the paired consultation
+        # is its persisted snapshot, and disagreements fail before recapture.
+        conflict_meta = copy.deepcopy(dict(original_result.execution_state.metadata or {}))
+        conflict_meta['session_profile_dir'] = f"{persisted_consultation['session_profile_dir']}\\different"
+        conflict_state = original_result.execution_state.model_copy(update={'metadata': conflict_meta})
+        conflict_result = original_result.model_copy(update={'execution_state': conflict_state})
+        persist_pair(original_task, conflict_result)
+        recapture_calls.clear()
+        conflict = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=persisted_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert conflict['reason'] == 'recapture_identity_conflict:session_profile_dir'
+        assert recapture_calls == []
+        persist_pair(original_task, original_result)
+
+        # Historical fixture: the paired nested consultation shape persisted
+        # symmetrically by plan_or_execute since 1968b640c remains; later flat
+        # task/result execution mirrors are absent. The required isolation
+        # policy remains in the original goal_parameters contract.
+        legacy_task_meta = copy.deepcopy(dict(original_task.metadata or {}))
+        legacy_goal = dict(legacy_task_meta.get('goal_parameters') or {})
+        for field in (
+            'response_capture_mode', 'session_profile_dir', 'session_scope', 'session_label',
+            'thread_key', 'thread_title', 'site_id', 'diagnostic_category', 'incident_kind',
+            'isolated_session_required', 'actual_assistant_kind',
+        ):
+            legacy_task_meta.pop(field, None)
+            if field != 'isolated_session_required':
+                legacy_goal.pop(field, None)
+        legacy_task_meta['goal_parameters'] = legacy_goal
+        legacy_result_meta = copy.deepcopy(dict(original_result.metadata or {}))
+        legacy_execution = dict(original_result.execution_state.metadata or {})
+        for field in (
+            'response_capture_mode', 'session_profile_dir', 'browser_profile_dir', 'session_scope',
+            'session_label', 'thread_key', 'thread_title', 'isolated_session', 'assistant_kind',
+        ):
+            legacy_execution.pop(field, None)
+        legacy_task = original_task.model_copy(update={'metadata': legacy_task_meta})
+        legacy_result = original_result.model_copy(update={
+            'execution_state': original_result.execution_state.model_copy(update={'metadata': legacy_execution}),
+            'metadata': legacy_result_meta,
+        })
+        persist_pair(legacy_task, legacy_result)
+        recapture_calls.clear()
+        legacy_consultation = dict(legacy_task_meta['autonomous_consultation'])
+        legacy_resulting = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=legacy_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert legacy_resulting['pre_capture_ingested'] is False
+        assert len(recapture_calls) == 1, legacy_resulting
+        assert recapture_calls[0]['goal_parameters']['session_profile_dir'] == persisted_consultation['session_profile_dir']
+        assert recapture_calls[0]['goal_parameters']['response_capture_mode'] == persisted_consultation['response_capture_mode']
+
+        # The same historical nested shape is incompatible when a required
+        # identity field is absent from both members of the persisted pair.
+        incomplete_legacy_consultation = {
+            key: value for key, value in legacy_consultation.items() if key != 'session_profile_dir'
+        }
+        incomplete_task_meta = {
+            **legacy_task_meta,
+            'autonomous_consultation': incomplete_legacy_consultation,
+        }
+        incomplete_result_meta = {
+            **legacy_result_meta,
+            'autonomous_consultation': incomplete_legacy_consultation,
+        }
+        persist_pair(
+            legacy_task.model_copy(update={'metadata': incomplete_task_meta}),
+            legacy_result.model_copy(update={'metadata': incomplete_result_meta}),
+        )
+        recapture_calls.clear()
+        incomplete_legacy = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=incomplete_legacy_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert incomplete_legacy['reason'] == 'recapture_identity_incomplete:session_profile_dir'
+        assert recapture_calls == []
+        persist_pair(original_task, original_result)
+
+        # Optional category context preserves unknown versus explicitly blank:
+        # an unpersisted caller value cannot be treated as recorded identity.
+        unknown_category_task_meta = copy.deepcopy(dict(original_task.metadata or {}))
+        unknown_category_goal = dict(unknown_category_task_meta.get('goal_parameters') or {})
+        unknown_category_task_meta.pop('diagnostic_category', None)
+        unknown_category_goal.pop('diagnostic_category', None)
+        unknown_category_task_meta['goal_parameters'] = unknown_category_goal
+        unknown_category_task = original_task.model_copy(update={'metadata': unknown_category_task_meta})
+        persist_pair(unknown_category_task, original_result)
+        recapture_calls.clear()
+        unknown_category = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation={**persisted_consultation, 'diagnostic_category': ''},
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert unknown_category['reason'] == 'recapture_identity_mismatch:diagnostic_category'
+        assert recapture_calls == []
+        persist_pair(original_task, original_result)
+
+        blank_category_task_meta = copy.deepcopy(dict(original_task.metadata or {}))
+        blank_category_goal = dict(blank_category_task_meta.get('goal_parameters') or {})
+        blank_category_task_meta['diagnostic_category'] = ''
+        blank_category_goal['diagnostic_category'] = ''
+        blank_category_task_meta['goal_parameters'] = blank_category_goal
+        blank_category_task = original_task.model_copy(update={'metadata': blank_category_task_meta})
+        persist_pair(blank_category_task, original_result)
+        recapture_calls.clear()
+        explicit_blank_category = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation={**persisted_consultation, 'diagnostic_category': ''},
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert explicit_blank_category['pre_capture_ingested'] is False
+        assert len(recapture_calls) == 1
+        assert recapture_calls[0]['diagnostic_category'] == ''
+        persist_pair(original_task, original_result)
+
+        # Observed isolation is not the configured requirement: failure to
+        # satisfy required=True blocks, while observed=True with required=False
+        # remains safe and preserves the false requirement passed to recapture.
+        required_goal = dict(original_task.metadata['goal_parameters'])
+        required_goal['isolated_session_required'] = True
+        required_metadata = {**dict(original_task.metadata), 'isolated_session_required': True, 'goal_parameters': required_goal}
+        persist_pair(
+            original_task.model_copy(update={'metadata': required_metadata}),
+            original_result.model_copy(update={
+                'execution_state': original_result.execution_state.model_copy(update={
+                    'metadata': {**dict(original_result.execution_state.metadata), 'isolated_session_required': True},
+                }),
+            }),
+        )
+        recapture_calls.clear()
+        isolation_failure = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=persisted_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert isolation_failure['reason'] == 'recapture_isolation_not_satisfied'
+        assert recapture_calls == []
+        persist_pair(original_task, original_result)
+
+        observed_meta = dict(original_result.execution_state.metadata or {})
+        observed_meta['isolated_session'] = True
+        observed_consultation = {**persisted_consultation, 'isolated_session': True}
+        observed_task_meta = {
+            **dict(original_task.metadata),
+            'autonomous_consultation': observed_consultation,
+        }
+        observed_result_meta = {
+            **dict(original_result.metadata),
+            'autonomous_consultation': observed_consultation,
+        }
+        persist_pair(
+            original_task.model_copy(update={'metadata': observed_task_meta}),
+            original_result.model_copy(update={
+                'metadata': observed_result_meta,
+                'execution_state': original_result.execution_state.model_copy(update={'metadata': observed_meta}),
+            }),
+        )
+        recapture_calls.clear()
+        observed_extra_isolation = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=observed_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert observed_extra_isolation['pre_capture_ingested'] is False
+        assert len(recapture_calls) == 1
+        assert recapture_calls[0]['goal_parameters']['isolated_session_required'] is False
+        persist_pair(original_task, original_result)
 
         followup_id = ingested['followup_task_id']
         assert ingested['followup_queue_status'] == 'queued'

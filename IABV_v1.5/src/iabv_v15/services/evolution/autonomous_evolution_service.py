@@ -308,72 +308,163 @@ class AutonomousEvolutionService:
         goal_parameters = dict(task_metadata.get('goal_parameters') or {})
         canonical_consultation = dict(task_metadata.get('autonomous_consultation') or {})
 
-        def persisted_value(*candidates: tuple[dict[str, Any], str]) -> tuple[bool, Any]:
-            empty_value_found = False
-            for source_metadata, key in candidates:
-                if key in source_metadata:
-                    value = source_metadata[key]
-                    if value is not None and value != '':
-                        return True, value
-                    empty_value_found = True
-            return (True, '') if empty_value_found else (False, None)
+        missing = object()
 
-        recapture_fields = {
-            'response_capture_mode': persisted_value(
-                (result_execution, 'response_capture_mode'),
-                (task_metadata, 'response_capture_mode'),
-                (goal_parameters, 'response_capture_mode'),
+        def candidate(source: str, metadata: dict[str, Any], key: str) -> tuple[str, Any]:
+            return source, metadata[key] if key in metadata else missing
+
+        def resolve_persisted_field(
+            field: str,
+            candidates: tuple[tuple[str, Any], ...],
+            *,
+            required: bool = False,
+            value_kind: str = 'string',
+        ) -> tuple[str, Any]:
+            """Resolve persisted identity without collapsing unknown into empty.
+
+            Candidate order is the per-field authority order. Every persisted
+            copy that is present must agree; an explicit blank is different
+            from an absent key and cannot satisfy a required identity field.
+            """
+            present = [(source, value) for source, value in candidates if value is not missing]
+            if not present:
+                return ('unknown', None) if not required else ('error', f'recapture_identity_incomplete:{field}')
+
+            def normalize(value: Any) -> tuple[str, Any]:
+                if value is None or (isinstance(value, str) and not value.strip()):
+                    return 'empty', None
+                if value_kind == 'bool':
+                    if type(value) is not bool:
+                        return 'invalid', type(value).__name__
+                    return 'value', value
+                if value_kind == 'string':
+                    if not isinstance(value, str):
+                        return 'invalid', type(value).__name__
+                    normalized = value.lower() if field in {'response_capture_mode', 'assistant_kind'} else value
+                    return 'value', normalized
+                return 'value', value
+
+            normalized_values = [(source, value, normalize(value)) for source, value in present]
+            distinct = {item[2] for item in normalized_values}
+            if len(distinct) != 1:
+                return 'error', f'recapture_identity_conflict:{field}'
+            state, _normalized = normalized_values[0][2]
+            if state == 'invalid':
+                return 'error', f'recapture_identity_invalid:{field}'
+            if required and state != 'value':
+                return 'error', f'recapture_identity_incomplete:{field}'
+            # Keep the first persisted representation, including an explicit
+            # None/empty value for optional fields; never take it from caller.
+            return state, present[0][1]
+
+        field_candidates = {
+            # The nested consultation is an agreed snapshot duplicated on the
+            # persisted task/result pair. Result execution metadata is the
+            # observed capture state; task metadata/goal_parameters are the
+            # requested state. All copies must agree before recapture.
+            'response_capture_mode': (
+                candidate('paired_consultation', canonical_consultation, 'response_capture_mode'),
+                candidate('result_execution', result_execution, 'response_capture_mode'),
+                candidate('task_metadata', task_metadata, 'response_capture_mode'),
+                candidate('task_goal_parameters', goal_parameters, 'response_capture_mode'),
             ),
-            'session_label': persisted_value(
-                (result_execution, 'session_label'),
-                (task_metadata, 'session_label'),
-                (goal_parameters, 'session_label'),
+            'session_profile_dir': (
+                candidate('paired_consultation', canonical_consultation, 'session_profile_dir'),
+                candidate('result_execution', result_execution, 'session_profile_dir'),
+                candidate('result_execution_alias', result_execution, 'browser_profile_dir'),
+                candidate('task_metadata', task_metadata, 'session_profile_dir'),
+                candidate('task_goal_parameters', goal_parameters, 'session_profile_dir'),
             ),
-            'session_profile_dir': persisted_value(
-                (result_execution, 'session_profile_dir'),
-                (result_execution, 'browser_profile_dir'),
-                (task_metadata, 'session_profile_dir'),
-                (goal_parameters, 'session_profile_dir'),
+            'session_scope': (
+                candidate('paired_consultation', canonical_consultation, 'session_scope'),
+                candidate('result_execution', result_execution, 'session_scope'),
+                candidate('task_metadata', task_metadata, 'session_scope'),
+                candidate('task_goal_parameters', goal_parameters, 'session_scope'),
             ),
-            'thread_title': persisted_value(
-                (result_execution, 'thread_title'),
-                (task_metadata, 'thread_title'),
-                (goal_parameters, 'thread_title'),
+            'session_label': (
+                candidate('paired_consultation', canonical_consultation, 'session_label'),
+                candidate('result_execution', result_execution, 'session_label'),
+                candidate('task_metadata', task_metadata, 'session_label'),
+                candidate('task_goal_parameters', goal_parameters, 'session_label'),
             ),
-            'thread_key': persisted_value(
-                (result_execution, 'thread_key'),
-                (task_metadata, 'thread_key'),
-                (goal_parameters, 'thread_key'),
+            'thread_key': (
+                candidate('paired_consultation', canonical_consultation, 'thread_key'),
+                candidate('result_execution', result_execution, 'thread_key'),
+                candidate('task_metadata', task_metadata, 'thread_key'),
+                candidate('task_goal_parameters', goal_parameters, 'thread_key'),
             ),
-            'session_scope': persisted_value(
-                (result_execution, 'session_scope'),
-                (task_metadata, 'session_scope'),
-                (goal_parameters, 'session_scope'),
+            'thread_title': (
+                candidate('paired_consultation', canonical_consultation, 'thread_title'),
+                candidate('result_execution', result_execution, 'thread_title'),
+                candidate('task_metadata', task_metadata, 'thread_title'),
+                candidate('task_goal_parameters', goal_parameters, 'thread_title'),
             ),
-            'isolated_session_required': persisted_value(
-                (result_execution, 'isolated_session_required'),
-                (task_metadata, 'isolated_session_required'),
-                (goal_parameters, 'isolated_session_required'),
+            # A missing site is valid when the persisted ToolTask has no site;
+            # site is contextual routing, not a session identifier.
+            'site_id': (
+                ('tool_task.site_id', source_task.site_id),
+                candidate('paired_consultation', canonical_consultation, 'site_id'),
+                candidate('task_metadata', task_metadata, 'site_id'),
+                candidate('task_goal_parameters', goal_parameters, 'site_id'),
             ),
-            'site_id': (source_task.site_id is not None, source_task.site_id) if source_task.site_id is not None else persisted_value(
-                (task_metadata, 'site_id'),
-                (goal_parameters, 'site_id'),
+            # This is requested policy, not the observed isolation result.
+            'isolated_session_required': (
+                candidate('task_goal_parameters', goal_parameters, 'isolated_session_required'),
+                candidate('task_metadata', task_metadata, 'isolated_session_required'),
+                candidate('result_execution', result_execution, 'isolated_session_required'),
             ),
-            'diagnostic_category': persisted_value(
-                (task_metadata, 'diagnostic_category'),
-                (goal_parameters, 'diagnostic_category'),
+            # These two fields are optional context; absence means unknown,
+            # explicit blank means recorded as empty, and both result in no
+            # extra category/incident context being sent to recapture.
+            'diagnostic_category': (
+                candidate('task_goal_parameters', goal_parameters, 'diagnostic_category'),
+                candidate('task_metadata', task_metadata, 'diagnostic_category'),
             ),
-            'incident_kind': persisted_value(
-                (task_metadata, 'incident_kind'),
-                (goal_parameters, 'incident_kind'),
+            'incident_kind': (
+                candidate('task_goal_parameters', goal_parameters, 'incident_kind'),
+                candidate('task_metadata', task_metadata, 'incident_kind'),
+            ),
+            'assistant_kind': (
+                candidate('paired_consultation', canonical_consultation, 'actual_assistant_kind'),
+                candidate('paired_consultation_alias', canonical_consultation, 'assistant_kind'),
+                candidate('result_execution', result_execution, 'assistant_kind'),
+                candidate('task_metadata', task_metadata, 'actual_assistant_kind'),
             ),
         }
-        missing_identity = [name for name, (found, _) in recapture_fields.items() if not found]
-        if missing_identity:
-            return {
-                'pre_capture_ingested': False,
-                'reason': 'recapture_identity_incomplete:' + ','.join(missing_identity),
-            }
+        required_fields = {
+            'response_capture_mode', 'session_profile_dir', 'session_scope',
+            'isolated_session_required', 'assistant_kind',
+        }
+        resolved: dict[str, tuple[str, Any]] = {}
+        for field, candidates in field_candidates.items():
+            state, value = resolve_persisted_field(
+                field,
+                candidates,
+                required=field in required_fields,
+                value_kind='bool' if field == 'isolated_session_required' else 'string',
+            )
+            if state == 'error':
+                return {'pre_capture_ingested': False, 'reason': value}
+            resolved[field] = (state, value)
+
+        observed_isolation = resolve_persisted_field(
+            'isolated_session',
+            (
+                candidate('result_execution', result_execution, 'isolated_session'),
+                candidate('paired_consultation', canonical_consultation, 'isolated_session'),
+            ),
+            value_kind='bool',
+        )
+        if observed_isolation[0] == 'error':
+            return {'pre_capture_ingested': False, 'reason': observed_isolation[1]}
+        isolation_required = resolved['isolated_session_required'][1]
+        if isolation_required is True and observed_isolation != ('value', True):
+            return {'pre_capture_ingested': False, 'reason': 'recapture_isolation_not_satisfied'}
+
+        # Labels and titles are descriptive, so a persisted blank is valid.
+        # A program-chat recapture still needs its non-empty thread key.
+        if resolved['session_scope'][1] == 'program_chat' and resolved['thread_key'][0] != 'value':
+            return {'pre_capture_ingested': False, 'reason': 'recapture_identity_incomplete:thread_key'}
 
         caller_fields = {
             'response_capture_mode': 'response_capture_mode',
@@ -388,28 +479,35 @@ class AutonomousEvolutionService:
         }
         for caller_key, canonical_key in caller_fields.items():
             if caller_key in existing_consultation:
-                canonical_value = recapture_fields[canonical_key][1]
-                if str(existing_consultation.get(caller_key) or '') != str(canonical_value or ''):
+                canonical_state, canonical_value = resolved[canonical_key]
+                caller_state, caller_value = ('empty', None) if existing_consultation[caller_key] is None or (
+                    isinstance(existing_consultation[caller_key], str)
+                    and not existing_consultation[caller_key].strip()
+                ) else ('value', existing_consultation[caller_key])
+                if canonical_state == 'unknown':
                     return {
                         'pre_capture_ingested': False,
                         'reason': f'recapture_identity_mismatch:{caller_key}',
                     }
-        if 'isolated_session' in existing_consultation and bool(existing_consultation.get('isolated_session')) != bool(
-            recapture_fields['isolated_session_required'][1]
-        ):
-            return {'pre_capture_ingested': False, 'reason': 'recapture_identity_mismatch:isolated_session'}
-        if 'isolated_session_required' in existing_consultation and bool(
-            existing_consultation.get('isolated_session_required')
-        ) != bool(recapture_fields['isolated_session_required'][1]):
-            return {'pre_capture_ingested': False, 'reason': 'recapture_identity_mismatch:isolated_session_required'}
+                canonical_comparison = (
+                    'empty', None
+                ) if canonical_state == 'empty' else (canonical_state, canonical_value)
+                if canonical_comparison != (caller_state, caller_value):
+                    return {
+                        'pre_capture_ingested': False,
+                        'reason': f'recapture_identity_mismatch:{caller_key}',
+                    }
+        if 'isolated_session' in existing_consultation:
+            caller_observed = existing_consultation['isolated_session']
+            if observed_isolation[0] == 'unknown' or caller_observed is not observed_isolation[1]:
+                return {'pre_capture_ingested': False, 'reason': 'recapture_identity_mismatch:isolated_session'}
+        if 'isolated_session_required' in existing_consultation:
+            if existing_consultation['isolated_session_required'] is not isolation_required:
+                return {'pre_capture_ingested': False, 'reason': 'recapture_identity_mismatch:isolated_session_required'}
 
         tool_id = source_task.tool_id
-        assistant_kind = str(
-            canonical_consultation.get('actual_assistant_kind')
-            or canonical_consultation.get('assistant_kind')
-            or ''
-        ).strip().lower()
-        if not tool_id or not assistant_kind:
+        assistant_kind = str(resolved['assistant_kind'][1]).strip().lower()
+        if not tool_id:
             return {'pre_capture_ingested': False, 'reason': 'no_tool_or_assistant'}
         
         # FAIL-CLOSED: Devin no soporta reingesta de sesión existente
@@ -422,25 +520,25 @@ class AutonomousEvolutionService:
             'reingest_existing_response': True,
             'tool_id': tool_id,
             'assistant_kind': assistant_kind,
-            'response_capture_mode': recapture_fields['response_capture_mode'][1],
-            'session_scope': recapture_fields['session_scope'][1],
-            'session_label': recapture_fields['session_label'][1],
-            'session_profile_dir': recapture_fields['session_profile_dir'][1],
-            'thread_key': recapture_fields['thread_key'][1],
-            'thread_title': recapture_fields['thread_title'][1],
-            'isolated_session_required': bool(recapture_fields['isolated_session_required'][1]),
-            'diagnostic_category': recapture_fields['diagnostic_category'][1],
-            'incident_kind': recapture_fields['incident_kind'][1],
-            'site_id': recapture_fields['site_id'][1],
+            'response_capture_mode': resolved['response_capture_mode'][1],
+            'session_scope': resolved['session_scope'][1],
+            'session_label': resolved['session_label'][1] or '',
+            'session_profile_dir': resolved['session_profile_dir'][1],
+            'thread_key': resolved['thread_key'][1] or '',
+            'thread_title': resolved['thread_title'][1] or '',
+            'isolated_session_required': isolation_required,
+            'diagnostic_category': resolved['diagnostic_category'][1] or '',
+            'incident_kind': resolved['incident_kind'][1] or '',
+            'site_id': resolved['site_id'][1],
         }
         try:
             task, result, _preview = self.tool_teach_service.execute_external_consultation(
                 user_goal=user_goal,
                 assistant_preference=assistant_kind,
                 context_pack='',
-                site_id=str(recapture_fields['site_id'][1] or '') or None,
-                diagnostic_category=str(recapture_fields['diagnostic_category'][1] or ''),
-                incident_kind=str(recapture_fields['incident_kind'][1] or ''),
+                site_id=str(resolved['site_id'][1] or '') or None,
+                diagnostic_category=str(resolved['diagnostic_category'][1] or ''),
+                incident_kind=str(resolved['incident_kind'][1] or ''),
                 launch_dry_run=False,
                 allow_local_automatic_consultation=False,
                 goal_parameters=goal_parameters,
