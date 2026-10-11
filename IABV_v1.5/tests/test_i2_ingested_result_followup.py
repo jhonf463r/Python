@@ -10,6 +10,8 @@ from iabv_v15.bootstrap import AppBootstrap
 from iabv_v15.domain.models import InferenceRequest, PendingTaskStatus
 from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
 from iabv_v15.services.security.system_principal_provider import SystemPrincipal
+from iabv_v15.services.evolution.autonomy_cycle_service import AutonomyCycleService
+from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
 
 from test_adaptive_task_orchestrator import _orchestrator
 
@@ -658,12 +660,97 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
         assert crossed['status'] == 'identity_mismatch'
         assert cycle.queue.get(followup_id) is not None
 
-        # The actual next orchestrator evaluation reads the same persisted queue
-        # through AutonomyCycleService and receives the original source IDs.
+        # Contrafactual offline: two fresh orchestrators with equivalent empty
+        # service state; only the treatment reads the persisted eligible queue
+        # item created through the real ingestion/adoption path above.
+        control, _control_episodes = _orchestrator(tmp_path / 'causal_control')
+        control.autonomy_cycle_service = AutonomyCycleService(
+            PlatformPendingQueue(tmp_path / 'causal_control_evolution')
+        )
         downstream, _episodes = _orchestrator(tmp_path / 'consumer')
         downstream.autonomy_cycle_service = cycle
-        _route, _result, session = downstream.handle_request(
-            InferenceRequest(user_goal='Preparar el siguiente paso del diagnostico', auto_route=True)
+        base_request = InferenceRequest(
+            user_goal='Preparar el siguiente paso del diagnostico',
+            auto_route=True,
+        )
+        control_route, control_result, control_session = control.handle_request(
+            base_request.model_copy(deep=True)
+        )
+        treatment_route, treatment_result, session = downstream.handle_request(
+            base_request.model_copy(deep=True)
+        )
+
+        def without_generated_identity(value):
+            generated_keys = {
+                'approval_id', 'candidate_id', 'context_id', 'decision_context_id',
+                'evidence_refs', 'goal_context_id', 'intent_id', 'playbook_id',
+                'last_updated', 'request_id', 'session_id', 'step_id',
+                'updated_at_utc', 'created_at_utc',
+            }
+            if isinstance(value, dict):
+                return {
+                    key: without_generated_identity(item)
+                    for key, item in value.items()
+                    if key not in generated_keys
+                }
+            if isinstance(value, list):
+                return [without_generated_identity(item) for item in value]
+            return value
+
+        def operational_projection(route, result, evaluated_session):
+            decision_context = evaluated_session.metadata['decision_context']
+            perception_decision = evaluated_session.metadata['perception_snapshot'][
+                'decision_context'
+            ]
+            decision_context_for_comparison = copy.deepcopy(decision_context)
+            decision_context_for_comparison.pop('decision_context_id', None)
+            decision_context_for_comparison.pop('evidence_refs', None)
+            decision_context_metadata = dict(decision_context_for_comparison.get('metadata') or {})
+            decision_context_metadata.pop('external_followup_evidence', None)
+            decision_context_for_comparison['metadata'] = decision_context_metadata
+            return without_generated_identity({
+                'intent': evaluated_session.intent.model_dump(mode='json'),
+                'initial_route_decision': perception_decision['route_decision'],
+                'capabilities': [item.model_dump(mode='json') for item in evaluated_session.capability_readiness],
+                'strategy_pack': result.chosen_pack,
+                'strategy_candidates': result.strategy_candidates,
+                'playbook': result.playbook,
+                'proposed_actions': list(evaluated_session.outcome.next_actions),
+                'decision_context': decision_context_for_comparison,
+                'final_route': route.model_dump(mode='json'),
+            })
+
+        # This comparison deliberately excludes evidence trace fields: those
+        # are asserted separately to distinguish transport from decision use.
+        control_projection = operational_projection(control_route, control_result, control_session)
+        treatment_projection = operational_projection(treatment_route, treatment_result, session)
+
+        def first_difference(left, right, path='decision'):
+            if isinstance(left, dict) and isinstance(right, dict):
+                if left.keys() != right.keys():
+                    return path, sorted(left.keys()), sorted(right.keys())
+                for key in left:
+                    difference = first_difference(left[key], right[key], f'{path}.{key}')
+                    if difference is not None:
+                        return difference
+            elif isinstance(left, list) and isinstance(right, list):
+                if len(left) != len(right):
+                    return path, f'len={len(left)}', f'len={len(right)}'
+                for index, (left_item, right_item) in enumerate(zip(left, right)):
+                    difference = first_difference(left_item, right_item, f'{path}[{index}]')
+                    if difference is not None:
+                        return difference
+            elif left != right:
+                return path, left, right
+            return None
+
+        assert control_projection == treatment_projection, (
+            f'contrafactual operacional distinto: '
+            f'{first_difference(control_projection, treatment_projection)!r}'
+        )
+        assert not control_session.context.metadata.get('external_followup_evidence')
+        assert not control_session.metadata['decision_context']['metadata'].get(
+            'external_followup_evidence'
         )
         evidence = session.context.metadata['external_followup_evidence']
         assert evidence[0]['id'] == followup_id
@@ -674,6 +761,7 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
         assert session.metadata['task_packet']['external_followup_evidence'][0]['metadata']['proposal_only'] is True
         assert session.metadata['decision_context']['metadata']['external_followup_evidence'][0]['id'] == followup_id
         assert session.metadata['decision_context']['metadata']['external_followup_evidence'][0]['metadata']['proposal_only'] is True
+        assert session.evidence_refs != control_session.evidence_refs
 
         # A terminal lifecycle is preserved by exact-source reingestion.
         completed = cycle.queue.mark_status(followup_id, PendingTaskStatus.COMPLETED)
