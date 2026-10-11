@@ -1,3 +1,19 @@
+## 2026-10-11 OWNER DECISION — RQ224 MODEL A ACCEPTED; RETROACTIVE ATTRIBUTION UNAVAILABLE
+
+Canonical owner-decision evidence: [I2/RQ224 trace, comment 6105529777](https://github.com/jhonf463r/Python/issues/459#issuecomment-6105529777).
+
+The Owner explicitly accepted **Model A for the first supervised IABV MCP prototype**: the design may trust the integrity of the process and its code within the stated prototype threat model. It does **not** claim resilience to a compromised process/verifier and does not close RQ224.
+
+Latest Codex preflight outcome: `RETROACTIVE_SOURCE_ATTRIBUTION_UNAVAILABLE`. The known log locations and the already-identified `startup_timeline` directory were reported absent. There is no contemporary record connecting the Codex session, MCP entry, PID, imported module path and startup module hash. Close the historical search; do not repeat it or infer old loaded bytes from command line, configuration, HEAD or timestamps.
+
+**NEXT ROUTE — CODEX, READ-ONLY, SOURCE-GROUNDED PLAN:** identify the existing MCP launcher/startup boundary and propose the smallest prospective launch-attestation change. Specify which values can actually be acquired (session/entry correlation only if exposed by the host; PID/parent; executable and non-secret arguments; effective module path; startup hash/reference for the known module(s); UTC time; launch correlation ID), how the record avoids secrets, and what the mechanism cannot prove. Do not execute tools, call MCP, start/restart/reconnect processes, inspect new arbitrary paths, modify files or run tests in this planning task. Do not repeat broad historical-log search.
+
+**IMPLEMENTATION IS NOT YET AUTHORIZED.** Model A resolves only the threat-model choice. RQ218's exact clean worktree/root, immutable implementation baseline and allowed/protected path scope remain unfrozen; preserve the reported dirty/detached worktree at `e46d8304167708bed0764d3bf2be8fd6643e8944`. Any subsequent source-edit-only tranche must receive those exact scope choices before editing. Runtime/tests/MCP startup or calls require their own later authorization. The first observation must be explicitly authorized and limited to a known, attributed, read-only action. Model A also does not replace operation/resource/scope-bound Owner authorization for mutations under RQ223/RQ224.
+
+This entry supersedes older instructions to choose between threat Models A and B, for the first supervised prototype only. It does not supersede the separate implementation, observation and mutation-authorization gates below.
+
+---
+
 ## 2026-10-10 UPDATE — CLEANUP EXECUTION DENIED BEFORE PROCESS CREATION
 
 Canonical details: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md#latest-execution-policy-finding--cleanup-request-rejected-before-process-creation).
