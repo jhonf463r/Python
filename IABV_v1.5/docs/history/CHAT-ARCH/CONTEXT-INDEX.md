@@ -1,3 +1,10 @@
+## 2026-10-10 RQ224 — OWNER IDENTITY TRUST OPTIONS
+
+Canonical: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
+
+Use when deciding how a local Human Domain Owner is authenticated for IABV privileged mutations. Current authorized source scope did not establish that identity source; the record compares 0/A/B/C/D without selecting technology. Any chosen option must still bind principal, exact operation/resource/scope, approved delta, validity and unique-use identity, and be checked before the first side effect. No source edit/runtime permission; RQ218 and RQ223 gates remain. Preserve the dirty/detached worktree.
+
+---
 ## 2026-10-10 ROUTING UPDATE — EXECUTION POLICY DENIES DISK CLEANUP
 
 Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
