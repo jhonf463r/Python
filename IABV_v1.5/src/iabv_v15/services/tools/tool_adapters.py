@@ -666,6 +666,11 @@ class ToolAdapter:
                     'prompt_preview': prompt_preview,
                     'response_captured': True,
                     'direct_response': True,
+                    'response_provenance': (
+                        'offline_test'
+                        if bool(card.metadata.get('offline_test_fixture'))
+                        else 'direct_tool_result'
+                    ),
                     'launched': False,
                     'session_scope': session_scope,
                     'session_label': session_label,

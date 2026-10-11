@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import hashlib
 import re
 from datetime import datetime, timezone
 from typing import Any
@@ -73,6 +74,7 @@ class AutonomousEvolutionService:
         self.credential_broker = None
         self.environment_bootstrap_service = None
         self.provider_health_router = None
+        self.autonomy_cycle_service = None
 
     def plan_or_execute(self, *, adaptive_payload: dict[str, Any], user_goal: str, source: str, decision_context: DecisionContext | dict[str, Any] | None = None) -> dict[str, Any]:
         payload = dict(adaptive_payload or {})
@@ -344,7 +346,28 @@ class AutonomousEvolutionService:
 
         payload = dict(adaptive_payload or {})
         metadata = dict(payload.get('metadata') or {})
-        metadata['autonomous_evolution'] = dict(existing_consultation)
+        # Reingestion is backed by the ToolTask/ToolResult created by this
+        # capture attempt, never by the older task whose session was reopened.
+        reingested_consultation = {
+            **dict(existing_consultation),
+            'task_id': task.task_id,
+            'result_id': result.result_id,
+        }
+        repository = self.tool_teach_service.memory.repository
+        repository.save_task(task.model_copy(update={
+            'metadata': {
+                **dict(task.metadata or {}),
+                'consultation_scope': 'external_assistant',
+                'autonomous_consultation': reingested_consultation,
+            }
+        }))
+        repository.save_result(result.model_copy(update={
+            'metadata': {
+                **dict(result.metadata or {}),
+                'autonomous_consultation': reingested_consultation,
+            }
+        }))
+        metadata['autonomous_evolution'] = reingested_consultation
         payload['metadata'] = metadata
         if existing_consultation.get('pending_issue_id'):
             payload['pending_issue_id'] = existing_consultation['pending_issue_id']
@@ -763,6 +786,61 @@ class AutonomousEvolutionService:
         )
         parsed['response_validation'] = response_validation
         parsed['adoption_plan'] = adoption_plan
+        repository = self.tool_teach_service.memory.repository
+        task, result = self._resolve_consultation_records(consultation)
+        if (
+            str(consultation.get('task_id') or '').strip()
+            and str(consultation.get('result_id') or '').strip()
+            and (task is None or result is None or result.task_id != task.task_id)
+        ):
+            return {
+                'status': 'identity_mismatch',
+                'task_id': str(consultation.get('task_id') or ''),
+                'result_id': str(consultation.get('result_id') or ''),
+                'response_ingested': False,
+                'next_action': 'stop_and_wait_user',
+                'detail': 'La tarea y el resultado persistidos no coinciden con la consulta original.',
+            }
+        if task is not None and result is not None:
+            task_consultation = dict(task.metadata.get('autonomous_consultation') or {})
+            result_consultation = dict(result.metadata.get('autonomous_consultation') or {})
+            original_query = consultation.get('query')
+            if not (
+                task.metadata.get('consultation_scope') == 'external_assistant'
+                and result.task_id == task.task_id
+                and task_consultation.get('task_id') == task.task_id
+                and task_consultation.get('result_id') == result.result_id
+                and result_consultation.get('task_id') == task.task_id
+                and result_consultation.get('result_id') == result.result_id
+                and isinstance(original_query, dict)
+                and original_query == task_consultation.get('query')
+                and original_query == result_consultation.get('query')
+            ):
+                return {
+                    'status': 'identity_mismatch',
+                    'task_id': task.task_id,
+                    'result_id': result.result_id,
+                    'response_ingested': False,
+                    'next_action': 'stop_and_wait_user',
+                    'detail': 'La consulta original no coincide con los registros persistidos de la tarea y resultado.',
+                }
+            captured_output = str(result.output_text or '').strip()
+            capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or '').strip().lower()
+            if (
+                result.success
+                and captured_output
+                and capture_mode != 'manual_pasteback'
+                and hashlib.sha256(captured_output.encode('utf-8')).digest()
+                != hashlib.sha256(response.encode('utf-8')).digest()
+            ):
+                return {
+                    'status': 'identity_mismatch',
+                    'task_id': task.task_id,
+                    'result_id': result.result_id,
+                    'response_ingested': False,
+                    'next_action': 'stop_and_wait_user',
+                    'detail': 'La respuesta no coincide con la salida capturada y persistida del resultado.',
+                }
         pending_issue = self._ensure_pending_issue(
             payload=payload,
             user_goal=user_goal,
@@ -778,10 +856,20 @@ class AutonomousEvolutionService:
                 source=source,
                 payload=payload,
             )
-        repository = self.tool_teach_service.memory.repository
-        task, result = self._resolve_consultation_records(consultation)
         timestamp = datetime.now(timezone.utc).isoformat()
         ingestion_status = 'ingested' if str(response_validation.get('status') or '') != 'insufficient' and parsed['useful'] else 'captured'
+        capture_metadata = dict(result.execution_state.metadata or {}) if result is not None else {}
+        response_provenance = str(
+            capture_metadata.get('response_provenance')
+            or (
+                capture_metadata.get('capture_source')
+                if capture_metadata.get('response_captured')
+                and not capture_metadata.get('capture_unverified')
+                and str(capture_metadata.get('thread_verification') or '').lower() != 'wrong_thread'
+                else ''
+            )
+            or ('manual_user_input' if str(capture_metadata.get('response_capture_mode') or '').lower() == 'manual_pasteback' else '')
+        )
         response_metadata = {
             **consultation,
             'status': ingestion_status,
@@ -789,6 +877,7 @@ class AutonomousEvolutionService:
             'requested_assistant_kind': str(consultation.get('requested_assistant_kind') or assistant_kind),
             'actual_assistant_kind': assistant_kind,
             'response_source': source,
+            'response_provenance': response_provenance,
             'response_summary': parsed['summary'],
             'response_probable_cause': parsed['probable_cause'],
             'response_recommended_change': parsed['recommended_change'],
@@ -797,6 +886,7 @@ class AutonomousEvolutionService:
             'response_confidence': parsed['confidence'],
             'response_useful': parsed['useful'],
             'response_excerpt': response[:1500],
+            'response_digest': hashlib.sha256(response.encode('utf-8')).hexdigest(),
             'response_file_scope': list(parsed['file_scope']),
             'response_tests': list(parsed['suggested_tests']),
             'response_signals': list(parsed['signals']),
@@ -885,10 +975,11 @@ class AutonomousEvolutionService:
                         'external_consult_response': {
                             'summary': parsed['summary'],
                             'recommended_change': parsed['recommended_change'],
-                            'next_action': str(adoption_plan.get('next_action') or parsed['next_action']),
-                            'confidence': parsed['confidence'],
-                            'useful': parsed['useful'],
-                            'validation': dict(response_validation),
+                        'next_action': str(adoption_plan.get('next_action') or parsed['next_action']),
+                        'confidence': parsed['confidence'],
+                        'useful': parsed['useful'],
+                        'response_digest': response_metadata['response_digest'],
+                        'validation': dict(response_validation),
                             'adoption_plan': dict(adoption_plan),
                         },
                     },
@@ -913,6 +1004,11 @@ class AutonomousEvolutionService:
                 'trace_id': str((response_metadata.get('ia_trace_entry') or {}).get('trace_id') or ''),
             },
         )
+        followup = self._enqueue_ingested_followup(
+            task_id=task.task_id if task is not None else str(consultation.get('task_id') or ''),
+            result_id=result.result_id if result is not None else str(consultation.get('result_id') or ''),
+            response_metadata=response_metadata,
+        )
         return {
             **response_metadata,
             'next_action': str(adoption_plan.get('next_action') or parsed['next_action']),
@@ -926,7 +1022,117 @@ class AutonomousEvolutionService:
             'detail': parsed['detail'],
             'task_id': task.task_id if task is not None else str(consultation.get('task_id') or ''),
             'result_id': result.result_id if result is not None else str(consultation.get('result_id') or ''),
+            **followup,
         }
+
+    def _enqueue_ingested_followup(
+        self,
+        *,
+        task_id: str,
+        result_id: str,
+        response_metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Persist a guarded queue item only from matching ingested records."""
+        cycle = self.autonomy_cycle_service
+        repository = self.tool_teach_service.memory.repository
+        if cycle is None:
+            return {'followup_queue_status': 'unavailable'}
+        if (
+            response_metadata.get('status') != 'ingested'
+            or not response_metadata.get('response_ingested')
+            or not response_metadata.get('response_useful')
+            or not response_metadata.get('response_source')
+            or not response_metadata.get('response_provenance')
+            or str((response_metadata.get('response_validation') or {}).get('status') or '') == 'insufficient'
+        ):
+            return {'followup_queue_status': 'ineligible'}
+        task = repository.get_task(task_id) if task_id else None
+        result = next(
+            (item for item in repository.list_results(task_id=task_id, limit=50) if item.result_id == result_id),
+            None,
+        ) if result_id else None
+        if task is None or result is None or result.task_id != task.task_id or task.task_id != task_id:
+            return {'followup_queue_status': 'identity_mismatch'}
+        task_consultation = dict(task.metadata.get('autonomous_consultation') or {})
+        result_consultation = dict(result.metadata.get('autonomous_consultation') or {})
+        external_response = dict(result.metadata.get('external_consult_response') or {})
+        expected_digest = str(response_metadata.get('response_digest') or '')
+        if not (
+            task_consultation.get('task_id') == task_id
+            and task_consultation.get('result_id') == result_id
+            and result_consultation.get('task_id') == task_id
+            and result_consultation.get('result_id') == result_id
+            and task_consultation.get('response_ingested') is True
+            and result_consultation.get('response_ingested') is True
+            and result_consultation.get('response_digest') == expected_digest
+            and external_response.get('useful') is True
+            and external_response.get('response_digest') == expected_digest
+            and external_response.get('validation') == response_metadata.get('response_validation')
+            and external_response.get('adoption_plan') == response_metadata.get('adoption_plan')
+            and result.success
+            and not bool(result.execution_state.metadata.get('capture_unverified'))
+            and str(result.execution_state.metadata.get('thread_verification') or '').strip().lower() != 'wrong_thread'
+            and not bool(result.execution_state.metadata.get('response_capture_pending'))
+        ):
+            return {'followup_queue_status': 'persisted_evidence_ineligible'}
+
+        adoption = dict(response_metadata.get('adoption_plan') or {})
+        next_action = str(adoption.get('next_action') or '').strip()
+        if not next_action or str(adoption.get('status') or '') == 'insufficient':
+            return {'followup_queue_status': 'ineligible'}
+        from iabv_v15.domain.models import PlatformPendingTask, PendingTaskStatus
+        from iabv_v15.services.evolution.platform_pending_queue import CATEGORY_INVESTIGATION
+
+        identity = hashlib.sha256(f'{task_id}:{result_id}'.encode('utf-8')).hexdigest()[:24]
+        followup_id = f'external_consultation_followup_{identity}'
+        trace = dict(response_metadata.get('ia_trace_entry') or {})
+        evidence_refs = [
+            str(item) for item in (response_metadata.get('evidence_refs') or [])
+            if str(item).strip()
+        ][:8]
+        metadata = {
+            'contract_version': 'external_consultation_followup/v1',
+            'source_task_id': task_id,
+            'source_result_id': result_id,
+            'source_pending_issue_id': str(response_metadata.get('pending_issue_id') or ''),
+            'assistant_kind': str(response_metadata.get('assistant_kind') or ''),
+            'response_source': str(response_metadata.get('response_source') or ''),
+            'response_provenance': str(response_metadata.get('response_provenance') or ''),
+            'response_kind': str(response_metadata.get('response_kind') or ''),
+            'validation_status': str((response_metadata.get('response_validation') or {}).get('status') or ''),
+            'execution_lane': str(adoption.get('execution_lane') or ''),
+            'adoption_status': str(adoption.get('status') or ''),
+            'sandbox_required': bool(adoption.get('sandbox_required')),
+            'rollback_ready': bool(adoption.get('rollback_ready')),
+            'requires_human_approval': bool(adoption.get('requires_human_approval')),
+            'validation_steps': list(adoption.get('validation_steps') or [])[:4],
+            'evidence_refs': evidence_refs,
+            'trace_id': str(trace.get('trace_id') or ''),
+            'response_ingested_at_utc': str(response_metadata.get('response_ingested_at_utc') or ''),
+            'proposal_only': True,
+        }
+        try:
+            cycle.queue.upsert(PlatformPendingTask(
+                id=followup_id,
+                title=f"Consulta {response_metadata.get('response_kind') or 'externa'}: {next_action}",
+                description=str(response_metadata.get('outcome_summary') or response_metadata.get('response_summary') or '')[:240],
+                reason=str(adoption.get('human_help') or response_metadata.get('response_validation', {}).get('rationale') or '')[:240],
+                priority='medium',
+                next_action=next_action,
+                status=PendingTaskStatus.PENDING,
+                category=CATEGORY_INVESTIGATION,
+                metadata=metadata,
+            ))
+        except Exception as exc:
+            self.tool_teach_service.memory.audit_event(
+                tool_id=str(task.tool_id or 'external_assistant'),
+                task_id=task_id,
+                action_type='external_followup_queue',
+                state='persist_failed',
+                payload={'source_result_id': result_id, 'error': type(exc).__name__},
+            )
+            return {'followup_queue_status': 'persist_failed', 'followup_queue_error': type(exc).__name__}
+        return {'followup_queue_status': 'queued', 'followup_task_id': followup_id}
 
     def _assess(self, *, payload: dict[str, Any], user_goal: str) -> dict[str, Any]:
         diagnosis = dict(payload.get('probe_diagnosis') or {})
@@ -1125,17 +1331,14 @@ class AutonomousEvolutionService:
         result = None
         task_id = str(consultation.get('task_id') or '').strip()
         result_id = str(consultation.get('result_id') or '').strip()
-        if task_id:
-            task = repository.get_task(task_id)
+        if not task_id or not result_id:
+            return None, None
+        task = repository.get_task(task_id)
         if task is not None:
-            results = repository.list_results(task_id=task.task_id, limit=5)
-            if result_id:
-                result = next((item for item in results if item.result_id == result_id), None)
-            if result is None and results:
-                result = results[0]
-        elif result_id:
-            results = repository.list_results(limit=50)
+            results = repository.list_results(task_id=task.task_id, limit=50)
             result = next((item for item in results if item.result_id == result_id), None)
+        if result is not None and result.task_id != task_id:
+            return task, None
         return task, result
 
     def _parse_external_response(
@@ -1804,13 +2007,6 @@ class AutonomousEvolutionService:
         if teachings and isinstance(teachings[0], dict):
             return str(teachings[0].get('episode_id') or '').strip()
         return ''
-
-
-
-
-
-
-
 
 
 

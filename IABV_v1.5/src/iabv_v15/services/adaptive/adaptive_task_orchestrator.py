@@ -1486,6 +1486,36 @@ class AdaptiveTaskOrchestrator:
         self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         context = perception.task_context
 
+        # Read persisted autonomy work before the planner/governance path so
+        # ingested external follow-ups become evidence in this evaluation,
+        # rather than UI-only resume metadata attached after the decision.
+        resume_context = self._load_resume_context()
+        pending_followups = [
+            dict(item)
+            for item in (resume_context.get('actionable_tasks') or [])
+            if dict(item.get('metadata') or {}).get('contract_version')
+            == 'external_consultation_followup/v1'
+        ]
+        if pending_followups:
+            context_meta = dict(context.metadata or {})
+            context_meta['external_followup_evidence'] = pending_followups[:8]
+            context.metadata = context_meta
+            context.evidence_summary = list(context.evidence_summary or []) + [
+                'Trabajo pendiente derivado de consulta externa ingerida: '
+                + '; '.join(
+                    f"{item.get('next_action', '')} [source_task_id="
+                    f"{dict(item.get('metadata') or {}).get('source_task_id', '')}; "
+                    f"source_result_id={dict(item.get('metadata') or {}).get('source_result_id', '')}]"
+                    for item in pending_followups[:4]
+                )
+            ]
+            perception_metadata = dict(perception.metadata or {})
+            perception_metadata['external_followup_evidence'] = pending_followups[:8]
+            perception.metadata = perception_metadata
+            decision_metadata = dict(perception.decision_context.metadata or {})
+            decision_metadata['external_followup_evidence'] = pending_followups[:8]
+            perception.decision_context.metadata = decision_metadata
+
         # A: Stimulus awareness — evaluar presión de recursos ANTES de
         # decidir la profundidad de procesamiento. Bajo presión CRITICAL
         # se omiten operaciones costosas (comparación paralela, deep
@@ -1676,11 +1706,12 @@ class AdaptiveTaskOrchestrator:
             )
 
         if not session.metadata.get('_resume_loaded'):
-            _resume = self._load_resume_context()
-            if _resume.get('resume_hints'):
+            _resume = resume_context
+            if _resume.get('resume_hints') or pending_followups:
                 session.metadata['resume_context'] = _resume
-                session.metadata['has_resume_hints'] = True
-                session.metadata['resume_hint_count'] = len(_resume['resume_hints'])
+                session.metadata['has_resume_hints'] = bool(_resume.get('resume_hints'))
+                session.metadata['resume_hint_count'] = len(_resume.get('resume_hints') or [])
+                session.metadata['has_pending_external_followups'] = bool(pending_followups)
             session.metadata['_resume_loaded'] = True
 
         session.metadata['task_packet'] = self._build_task_packet(
@@ -3041,6 +3072,9 @@ class AdaptiveTaskOrchestrator:
                 'environment_risk_signals': [item.model_dump(mode='json') for item in environment_self_model.risk_signals],
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'external_followup_evidence': list(
+                    session.context.metadata.get('external_followup_evidence') or []
+                )[:8],
             },
         )
 
@@ -3695,6 +3729,7 @@ class AdaptiveTaskOrchestrator:
             'unresolved': list(getattr(perception, 'unresolved_fields', []) or []) if perception is not None else [],
             'resume_context': dict(session.metadata.get('resume_context') or {}),
             'has_resume_hints': bool(session.metadata.get('has_resume_hints', False)),
+            'external_followup_evidence': list(dc_meta.get('external_followup_evidence') or [])[:8],
             'tool_selection_summary': _build_tool_selection_summary(
                 worker_gate=worker_gate,
                 gate_ran=gate_ran,
@@ -4185,7 +4220,6 @@ class AdaptiveTaskOrchestrator:
             TaskRole.VISUAL: ReportKind.VISUAL_ANALYSIS,
         }
         return mapping.get(role, ReportKind.CHAT)
-
 
 
 

@@ -1489,6 +1489,11 @@ class AppBootstrap:
             incident_packet_service=self.incident_packet_service,
             pending_issue_repository=self.pending_issue_repository,
         )
+        # Reuse the already constructed autonomy cycle as the persistent
+        # channel for guarded follow-up work derived from ingested answers.
+        self.autonomous_evolution_service.autonomy_cycle_service = (
+            self.autonomy_cycle_service
+        )
 
         # --- Task A: backend services para dialogos UI (Task B) ---
         # Los 4 servicios no deciden rutas ni tocan ViewModels; solo median
@@ -5472,7 +5477,6 @@ class AppBootstrap:
                     except Exception:
                         pass
                     setattr(self, handle_name, None)
-
 
 
 

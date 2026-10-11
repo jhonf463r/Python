@@ -291,9 +291,36 @@ class AutonomyCycleService:
                 {
                     'id': t.id,
                     'title': t.title,
+                    'description': t.description,
+                    'reason': t.reason,
                     'priority': t.priority,
                     'next_action': t.next_action,
                     'category': t.category,
+                    # Keep the evidence needed by the next orchestration
+                    # decision, while excluding arbitrary task metadata.
+                    'metadata': {
+                        key: t.metadata[key]
+                        for key in (
+                            'contract_version',
+                            'source_task_id',
+                            'source_result_id',
+                            'source_pending_issue_id',
+                            'assistant_kind',
+                            'response_source',
+                            'response_provenance',
+                            'response_kind',
+                            'validation_status',
+                            'execution_lane',
+                            'adoption_status',
+                            'sandbox_required',
+                            'rollback_ready',
+                            'requires_human_approval',
+                            'validation_steps',
+                            'evidence_refs',
+                            'trace_id',
+                        )
+                        if key in t.metadata
+                    },
                 }
                 for t in actionable
             ],
