@@ -1,3 +1,17 @@
+## 2026-10-10 RQ224 DESIGN ROUTE — OWNER IDENTITY TRUST OPTIONS READY FOR SELECTION
+
+Canonical design record: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
+
+The Owner approved preparation of alternatives only. The record compares Option 0 (no automated mutation authority), A (enrolled Windows principal + explicit intent-bound confirmation), B (fresh OS-mediated presence verification), C (external identity assertion bound to immutable intent), and D (independent trust boundary / Model B). No option is selected by this writeback.
+
+Source findings remain bounded to remote main at `fcc76be07d9b5845dc7ea95a610eec9deab17e3d`: the authorized `services/security/` and `ui/` scope did not demonstrate an authenticated Owner principal; `SystemIdentityRegistry` is subsystem metadata; account-choice approval is not Owner identity; the HumanApprovalBroker/UI path is not a demonstrated authenticated receipt route.
+
+The required contract remains RQ223 `A=(P,O,R,S,D,T,N)`, verified and consumed before the first effect. RQ218 root/protected paths, immutable baseline, explicit file allowlist and clean isolated worktree remain unresolved. Model A applies only to the supervised prototype; it does not establish protection against process compromise. No implementation, tests/build, runtime, process action, MCP call/start/reconnect or snapshot disclosure is authorized. Preserve dirty/detached worktree `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+
+The launch provenance plan also remains unimplemented; a post-`AppBootstrap` receipt cannot attest earlier startup effects. RQ224 stays open and global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+---
+
 ## 2026-10-11 SEQUENCING CORRECTION — RQ219/RQ220 ALREADY CLOSED IN SCOPE; SEPARATE RQ224 OWNER GATE
 
 Canonical correction and scope boundary: [I2 issue #459 comment 6105573273](https://github.com/jhonf463r/Python/issues/459#issuecomment-6105573273).
