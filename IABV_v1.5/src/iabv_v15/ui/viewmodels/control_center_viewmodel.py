@@ -84,6 +84,7 @@ class ControlCenterViewModel(QObject):
     dataChanged = Signal()
     taskResolved = Signal(str, object)
     taskFailed = Signal(str, str)
+    humanApprovalPromptReceived = Signal(dict)
 
     # Señales evolutivas para diálogos UI (Task B)
     credentialPromptRequested = Signal(dict)  # {domain, reason, username_hint}
@@ -148,6 +149,7 @@ class ControlCenterViewModel(QObject):
         chat_capability_ingestion_service: Any | None = None,
         chat_message_repository: Any | None = None,
         system_identity_registry: SystemIdentityRegistry | None = None,
+        human_approval_broker: Any | None = None,
         defer_initial_refresh: bool = False,
         iabv_i1_isolated_mode: bool = False,
     ) -> None:
@@ -198,6 +200,12 @@ class ControlCenterViewModel(QObject):
         self.chat_capability_ingestion_service = chat_capability_ingestion_service
         self.chat_message_repository = chat_message_repository
         self.system_identity_registry = system_identity_registry or SystemIdentityRegistry()
+        self.human_approval_broker = human_approval_broker
+        self._human_approval_queue: list[dict[str, Any]] = []
+        self._active_human_approval_id = ''
+        self.humanApprovalPromptReceived.connect(self._queue_human_approval_prompt)
+        if self.human_approval_broker is not None:
+            self.human_approval_broker.set_prompt_handler(self.humanApprovalPromptReceived.emit)
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
         self._last_reasoning_path: str = ''
@@ -10429,6 +10437,9 @@ class ControlCenterViewModel(QObject):
     def get_can_approve_observation(self) -> bool:
         return self._adaptive_action_buttons.get('approve_observation', False) and not self._working
 
+    def get_can_approve_external_action(self) -> bool:
+        return bool(self._active_human_approval_id and self.human_approval_broker is not None)
+
     def get_can_simulate(self) -> bool:
         return self._adaptive_action_buttons['simulate'] and not self._working
 
@@ -10670,8 +10681,64 @@ class ControlCenterViewModel(QObject):
 
     @Slot()
     def dismissApprovalDialog(self) -> None:
+        if self._active_human_approval_id:
+            self._resolve_human_approval(approved=False)
+            return
         self._approval_dialog_visible = False
         self.dataChanged.emit()
+
+    @Slot(dict)
+    def _queue_human_approval_prompt(self, payload: dict[str, Any]) -> None:
+        request_id = str(payload.get('id') or '')
+        if str(payload.get('kind') or '') != 'external_call_authorization':
+            return
+        if not request_id or request_id == self._active_human_approval_id:
+            return
+        if any(str(item.get('id') or '') == request_id for item in self._human_approval_queue):
+            return
+        self._human_approval_queue.append(dict(payload))
+        self._show_next_human_approval()
+
+    def _show_next_human_approval(self) -> None:
+        if self._active_human_approval_id or not self._human_approval_queue:
+            return
+        payload = self._human_approval_queue.pop(0)
+        self._active_human_approval_id = str(payload.get('id') or '')
+        scope = dict(payload.get('scope') or {})
+        scope_text = '\n'.join(f'{key}: {value}' for key, value in sorted(scope.items()))
+        self._approval_dialog_title = 'Autorización humana requerida'
+        self._approval_dialog_text = '\n\n'.join(
+            part for part in [str(payload.get('reason') or ''), scope_text] if part
+        )
+        self._approval_dialog_visible = bool(self._active_human_approval_id)
+        self.dataChanged.emit()
+
+    def _resolve_human_approval(self, *, approved: bool) -> bool:
+        request_id = self._active_human_approval_id
+        broker = self.human_approval_broker
+        if not request_id or broker is None:
+            return False
+        pending = any(str(item.get('id') or '') == request_id for item in broker.pending_requests())
+        if not pending:
+            resolved = False
+        elif approved:
+            from iabv_v15.services.security.human_approval_broker import LOCAL_HUMAN_APPROVER_ID
+            resolved = bool(broker.approve(request_id, payload={'approved_by': LOCAL_HUMAN_APPROVER_ID}))
+        else:
+            resolved = bool(broker.reject(request_id))
+        self._active_human_approval_id = ''
+        self._approval_dialog_visible = False
+        self._show_next_human_approval()
+        self.dataChanged.emit()
+        return resolved
+
+    @Slot()
+    def approvePendingHumanAction(self) -> bool:
+        return self._resolve_human_approval(approved=True)
+
+    @Slot()
+    def rejectPendingHumanAction(self) -> bool:
+        return self._resolve_human_approval(approved=False)
 
     def _navigate_to(self, route_key: str) -> None:
         if self.navigation_controller is not None and hasattr(self.navigation_controller, 'navigate'):
@@ -11127,7 +11194,6 @@ class ControlCenterViewModel(QObject):
             site_id=site_id,
             diagnostic_category=diagnostic_category,
             incident_kind=incident_kind,
-            approved=True,
             launch_dry_run=False,
         )
         launch_mode = str(result.execution_state.metadata.get('launch_mode') or tool_card.get('metadata', {}).get('launch_mode') or '')
@@ -14865,6 +14931,7 @@ class ControlCenterViewModel(QObject):
     canApproveStrategy = Property(bool, get_can_approve_strategy, notify=dataChanged)
     canApproveNextPhase = Property(bool, get_can_approve_next_phase, notify=dataChanged)
     canApproveObservation = Property(bool, get_can_approve_observation, notify=dataChanged)
+    canApproveExternalAction = Property(bool, get_can_approve_external_action, notify=dataChanged)
     canSimulate = Property(bool, get_can_simulate, notify=dataChanged)
     canExecute = Property(bool, get_can_execute, notify=dataChanged)
     canAbort = Property(bool, get_can_abort, notify=dataChanged)

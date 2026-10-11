@@ -1878,6 +1878,7 @@ class DevinApiToolAdapter:
         self,
         task: ToolTask,
         prompt: str,
+        adapter_key: str,
     ) -> bool:
         """Verifica que existe una autorización externa válida para esta ejecución.
 
@@ -1903,7 +1904,7 @@ class DevinApiToolAdapter:
             if not auth.validate_binding(
                 task_id=task.task_id,
                 tool_id=task.tool_id,
-                adapter_key=auth.adapter_key,
+                adapter_key=adapter_key,
                 prompt_digest=prompt_digest,
             ):
                 return False
@@ -1959,7 +1960,7 @@ class DevinApiToolAdapter:
         
         # sandbox=False: ejecución real permitida (sujeto a governance/approval)
         # P0-B Trust Root: requiere autorización externa válida
-        if not self._check_external_authorization(task, task.objective):
+        if not self._check_external_authorization(task, task.objective, card.adapter_key):
             return {
                 'success': False,
                 'output_text': '',

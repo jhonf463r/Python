@@ -227,6 +227,15 @@ class AppDatabase:
                     updated_at_utc TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS external_action_authorizations (
+                    authorization_id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL,
+                    nonce TEXT NOT NULL UNIQUE,
+                    status TEXT NOT NULL,
+                    expires_at_utc TEXT NOT NULL,
+                    payload_json TEXT NOT NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS tool_results (
                     result_id TEXT PRIMARY KEY,
                     task_id TEXT NOT NULL,

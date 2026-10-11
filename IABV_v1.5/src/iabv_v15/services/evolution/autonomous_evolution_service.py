@@ -325,7 +325,6 @@ class AutonomousEvolutionService:
                 site_id=str(existing_consultation.get('site_id') or '') or None,
                 diagnostic_category=str(existing_consultation.get('diagnostic_category') or ''),
                 incident_kind=str(existing_consultation.get('incident_kind') or ''),
-                approved=True,
                 launch_dry_run=False,
                 allow_local_automatic_consultation=False,
                 goal_parameters=goal_parameters,

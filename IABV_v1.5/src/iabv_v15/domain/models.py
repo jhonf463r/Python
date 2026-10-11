@@ -3272,6 +3272,8 @@ class ExternalActionAuthorization(BaseModel):
             return False
         if self.expires_at and self.expires_at < utc_now():
             return False
+        if not self.approved_by.strip() or not self.nonce.strip():
+            return False
         return True
 
     def validate_binding(
@@ -3291,7 +3293,7 @@ class ExternalActionAuthorization(BaseModel):
 
     def consume(self) -> None:
         """Marca la autorización como consumida (single-use)."""
-        if self.status == ExternalActionAuthorizationStatus.CONSUMED:
-            raise ValueError("Authorization already consumed")
+        if not self.is_valid():
+            raise ValueError("Authorization is invalid, expired, or already consumed")
         self.status = ExternalActionAuthorizationStatus.CONSUMED
         self.consumed_at = utc_now()
