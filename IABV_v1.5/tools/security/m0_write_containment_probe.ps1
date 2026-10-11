@@ -71,7 +71,9 @@ if ($tokenName -notmatch '(^|\\)WDAGUtilityAccount$') {
         operation = 'sandbox_principal_precondition'
         status = 'INCONCLUSIVE'
         evidence = 'Token identity is not the Windows Sandbox default WDAGUtilityAccount; no fixture/state path was accessed.'
-        token_name = $tokenName
+        output_channel = 'stdout_only'
+        report_persisted = $false
+        shared_paths_accessed = $false
     } | ConvertTo-Json -Depth 4
     exit 2
 }
@@ -210,7 +212,21 @@ try {
     }
     $json = $report | ConvertTo-Json -Depth 7
     [System.IO.File]::WriteAllText($reportPath, $json, [System.Text.UTF8Encoding]::new($false))
-    [pscustomobject]@{ overall = $report.overall; report_path = $reportPath; result_count = $script:Results.Count } | ConvertTo-Json -Depth 3
+    $persistedJson = [System.IO.File]::ReadAllText($reportPath)
+    if ($persistedJson -cne $json) { throw 'Persisted report read-back did not exactly match the report written.' }
+    $persistedReport = $persistedJson | ConvertFrom-Json
+    if ($persistedReport.schema -cne 'm0-write-containment-probe/v1' -or
+        $persistedReport.overall -cne $report.overall -or
+        @($persistedReport.results).Count -ne $script:Results.Count) {
+        throw 'Persisted report read-back failed schema or result-count verification.'
+    }
+    [pscustomobject]@{
+        overall = $report.overall
+        report_path = $reportPath
+        result_count = $script:Results.Count
+        output_channel = 'stdout_summary'
+        report_persisted = $true
+    } | ConvertTo-Json -Depth 3
     if ($report.overall -eq 'PASS') { exit 0 }
     if ($report.overall -eq 'FAIL') { exit 1 }
     exit 2
@@ -220,6 +236,10 @@ try {
         operation = 'precondition_or_report'
         status = 'INCONCLUSIVE'
         evidence = 'Precondition or report operation failed; do not interpret missing evidence as a pass.'
+        output_channel = 'stdout_only'
+        report_persisted = $false
+        shared_paths_accessed = $true
+        partial_results = @($script:Results)
         exception_type = $_.Exception.GetType().FullName
         hresult = '0x{0:X8}' -f [uint32]($_.Exception.HResult -band 0xffffffffL)
         message = ([string]$_.Exception.Message -replace '[\r\n]+', ' ').Trim()

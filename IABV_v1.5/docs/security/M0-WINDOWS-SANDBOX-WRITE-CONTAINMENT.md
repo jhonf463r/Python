@@ -24,7 +24,51 @@ The fixture must be a sanitized disposable copy of the IABV_v1.5 checkout subtre
 2. M0-DELETE-CANARY.txt with exactly M0_DELETE_CANARY_V1
 3. tools\security\m0_write_containment_probe.ps1
 
-Create both canaries before mapping. Confirm M0-DELETE-CANARY.txt does not have a host-side Read-only attribute; the denial should come from the read-only mapped-folder setting. Do not put real project data or secrets in the fixture. The state folder must be different and empty, with no symlink/junction to another location.
+Create both canaries before mapping. They must have ordinary inherited permissions from the fixture directory. Do not set a Read-only attribute or restrictive/custom ACL on either canary or the fixture to manufacture a denial. Do not put real project data or secrets in the fixture. The state folder must be different and empty, with no symlink/junction to another location.
+
+### Required host write preflight
+
+Before opening Sandbox, the administrator must run a host-side preflight using the same host identity (and non-elevated context) that will open Sandbox. Use only the disposable fixture directory; do not touch the checkout, state folder, ACLs, privileges, or global configuration. The check must prove create, read, modify, and delete access and restore both canaries exactly. An unset `Read-only` file attribute alone is not evidence that host writes work.
+
+For example, in a PowerShell session under that identity, substitute the exact disposable fixture path below. This snippet operates only on the two named canaries and one uniquely named temporary file; it does not use recursive deletion:
+
+```powershell
+$fixture = 'C:\path\to\disposable\fixture'
+$readPath = Join-Path $fixture 'M0-READ-CANARY.txt'
+$deletePath = Join-Path $fixture 'M0-DELETE-CANARY.txt'
+$probePath = Join-Path $fixture ('M0-HOST-PREFLIGHT-' + [guid]::NewGuid().ToString('N') + '.tmp')
+$readExpected = 'M0_READ_CANARY_V1'
+$deleteExpected = 'M0_DELETE_CANARY_V1'
+$ok = $false
+try {
+    if ([IO.File]::ReadAllText($readPath) -cne $readExpected -or
+        [IO.File]::ReadAllText($deletePath) -cne $deleteExpected) {
+        throw 'Initial canary contents are not exact; stop.'
+    }
+    [IO.File]::WriteAllText($probePath, 'M0_HOST_CREATE_V1')
+    if ([IO.File]::ReadAllText($probePath) -cne 'M0_HOST_CREATE_V1') { throw 'Create/read check failed.' }
+    [IO.File]::WriteAllText($readPath, 'M0_HOST_MODIFY_V1')
+    if ([IO.File]::ReadAllText($readPath) -cne 'M0_HOST_MODIFY_V1') { throw 'Modify check failed.' }
+    [IO.File]::Delete($probePath)
+    if ([IO.File]::Exists($probePath)) { throw 'Delete check failed.' }
+    [IO.File]::Delete($deletePath)
+    if ([IO.File]::Exists($deletePath)) { throw 'Canary delete check failed.' }
+    [IO.File]::WriteAllText($readPath, $readExpected)
+    [IO.File]::WriteAllText($deletePath, $deleteExpected)
+    $ok = $true
+} finally {
+    # Best-effort restoration is explicit and non-recursive. A failure is a hard stop.
+    if ([IO.File]::Exists($probePath)) { [IO.File]::Delete($probePath) }
+    if ([IO.File]::ReadAllText($readPath) -cne $readExpected) { [IO.File]::WriteAllText($readPath, $readExpected) }
+    if (-not [IO.File]::Exists($deletePath)) { [IO.File]::WriteAllText($deletePath, $deleteExpected) }
+    if ([IO.File]::ReadAllText($readPath) -cne $readExpected -or
+        [IO.File]::ReadAllText($deletePath) -cne $deleteExpected -or
+        [IO.File]::Exists($probePath)) { throw 'Could not restore and verify exact canary state; stop.' }
+}
+if (-not $ok) { throw 'Host write preflight did not complete; stop.' }
+```
+
+The administrator must retain a record that all four operations succeeded and both exact canary contents were restored and verified. If any operation, restoration, or verification fails, stop and do not open Sandbox. The Sandbox result may be attributed to the read-only mapping only after this host preflight succeeds.
 
 Windows Sandbox is supported by Microsoft on Windows Pro, Enterprise, Pro Education/SE, and Education editions, not Home. It requires the Windows Sandbox feature and hardware virtualization. Have the administrator confirm availability through the supported Windows UI. This kit does not run elevated feature queries or enable Windows features.
 
@@ -48,7 +92,7 @@ Microsoft documents .wsb XML configuration, absolute existing host paths, ReadOn
 
    powershell.exe -NoProfile -File C:\M0Fixture\tools\security\m0_write_containment_probe.ps1 -FixtureRoot C:\M0Fixture -StateRoot C:\M0State
 
-4. The helper writes a JSON report in C:\M0State. Review and preserve that report. Do not include credentials or unrelated host files.
+4. On its normal path, the helper writes a JSON report in C:\M0State, reads it back, and emits a stdout summary confirming `report_persisted=true`. Preserve the report and that summary. If a precondition fails before the report can be written (including an identity mismatch), or report read-back cannot be verified, the helper emits JSON only on stdout; that console JSON is not a persisted report. Preserve such output as a screenshot captured by the administrator's approved host-side evidence process into its already authorized evidence location; do not enable clipboard/drive redirection, shell redirection, or additional shared folders just to capture it. If it cannot be preserved and matched to a persisted report, classify the result INCONCLUSIVE. The identity-mismatch path stops before the helper accesses either shared folder.
 5. Preserve the completed WSB configuration with host paths redacted to safe labels, the report, Sandbox/Windows version and edition, and safe temporary path identities. Record that networking was disabled and no Codex/IABV process was started.
 6. Close Sandbox and confirm its disposable guest state is discarded. Retain the report outside the Sandbox state folder if needed. Remove only the two explicitly created temporary host folders after review using the administrator's normal file-management process; do not use recursive cleanup commands from this kit.
 
@@ -56,9 +100,9 @@ Microsoft documents .wsb XML configuration, absolute existing host paths, ReadOn
 
 The report records read, create, modify, delete, state write, state read, state cleanup, and an overall result.
 
-- PASS: the read returned the expected fixture canary; each negative operation raised an identifiable Windows access-denied error (ERROR_ACCESS_DENIED, code 5 / 0x80070005) and its postcondition remained intact; state write/read/explicit cleanup succeeded.
-- FAIL: a forbidden fixture operation unexpectedly succeeded, a fixture postcondition changed, or an expected read/state operation returned wrong content.
-- INCONCLUSIVE: a precondition failed, the exception was not identifiable as OS access denied, or the helper could not verify a postcondition/report.
+- PASS: the host write preflight succeeded; the read returned the expected fixture canary; each negative operation raised identifiable Windows access denied (ERROR_ACCESS_DENIED, code 5 / 0x80070005) and its postcondition remained intact; state write/read/explicit cleanup succeeded; and the persisted report was read back and verified.
+- FAIL: a prohibited fixture operation unexpectedly succeeded or a required postcondition was violated (including changed/missing canary contents).
+- INCONCLUSIVE: a precondition was missing, denial could not be identified as OS access denied, or verifiable persisted evidence is missing. A setup error or absent report is never a PASS.
 
 Only an all-PASS report is evidence that this Sandbox configuration enforced the requested operations against the mounted disposable fixture. A failure means stop and inspect the mount/configuration; do not proceed to Codex. Inconclusive is not evidence of containment or its absence.
 
