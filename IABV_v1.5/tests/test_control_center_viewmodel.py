@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from iabv_v15.bootstrap import AppBootstrap
 from iabv_v15.domain.models import AutonomousValidationSnapshot, EnvironmentSelfModel, EvaluationRoute, ExecutionState, ExperimentDomain, ExperimentMetric, ExperimentRecommendation, ExperimentRun, NetworkStatusSnapshot, ObjectiveNode, ObjectiveNodeKind, ObjectiveStatus, ObservationPermissionGate, SandboxExperiment, SelfExaminationFinding, SelfExaminationSnapshot, TaskRole, ToolLiveStatus, WindowObservation, WorldModelSnapshot
+from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
 
 def _make_bootstrap(name: str) -> AppBootstrap:
     workspace = Path.cwd() / 'data' / f'{name}_{uuid4().hex}'
@@ -26,6 +27,20 @@ def _cleanup_bootstrap(bootstrap: AppBootstrap) -> None:
         stop()
     if workspace is not None:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_closing_control_center_approval_dialog_rejects_active_request() -> None:
+    calls: list[bool] = []
+    viewmodel = SimpleNamespace(
+        _active_human_approval_id='pending-external-approval',
+        _resolve_human_approval=lambda *, approved: calls.append(approved),
+        _approval_dialog_visible=True,
+    )
+    qml_path = Path(__file__).resolve().parents[1] / 'src' / 'iabv_v15' / 'ui' / 'qml' / 'pages' / 'ControlCenterPage.qml'
+
+    assert 'onClosed: if (controlCenterViewModel) controlCenterViewModel.dismissApprovalDialog()' in qml_path.read_text(encoding='utf-8')
+    ControlCenterViewModel.dismissApprovalDialog(viewmodel)
+    assert calls == [False]
 
 
 def _drain_ui(viewmodel, *, timeout_seconds: float = 12.0) -> None:

@@ -27,7 +27,18 @@ from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
 from iabv_v15.services.tools.tool_sandbox import ToolSandbox
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 from iabv_v15.services.tools.tool_validator import ToolValidator
-from iabv_v15.services.security.human_approval_broker import ApprovalResult, LOCAL_HUMAN_APPROVER_ID
+from iabv_v15.services.security.human_approval_broker import ApprovalResult, HumanApprovalBroker
+from iabv_v15.services.security.system_principal_provider import SystemPrincipal
+
+TEST_APPROVER_SID = 'S-1-5-21-1000-2000-3000-1001'
+
+
+class _FixedPrincipalProvider:
+    def __init__(self, principal: SystemPrincipal | None) -> None:
+        self.principal = principal
+
+    def get_principal(self) -> SystemPrincipal | None:
+        return self.principal
 
 
 class FakeToolAdapter:
@@ -193,19 +204,22 @@ class _RecordingExternalAdapter(FakeToolAdapter):
 
 
 class _ApprovalBrokerFixture:
-    def __init__(self, *, approved_by: str = LOCAL_HUMAN_APPROVER_ID, auto_resolved: bool = False) -> None:
-        self.approved_by = approved_by
-        self.auto_resolved = auto_resolved
+    def __init__(self, *, principal: SystemPrincipal | None = None) -> None:
+        principal = principal or SystemPrincipal(sid=TEST_APPROVER_SID, session_id=4)
+        self.broker = HumanApprovalBroker(principal_provider=_FixedPrincipalProvider(principal))
         self.scope: dict[str, str] = {}
+        self.broker.register_prompt_handler(self._approve_active_dialog)
+
+    def _approve_active_dialog(self, prompt: dict[str, Any]) -> None:
+        self.scope = dict(prompt.get('scope') or {})
+        request_id = str(prompt.get('id') or '')
+        self.broker.approve_external_from_control_center(
+            request_id,
+            active_dialog_request_id=request_id,
+        )
 
     def request(self, *, kind: str, reason: str, scope: dict[str, str], timeout_s: float) -> ApprovalResult:
-        self.scope = dict(scope)
-        return ApprovalResult(
-            request_id='test-human-request-1',
-            approved=True,
-            auto_resolved=self.auto_resolved,
-            payload={'approved_by': self.approved_by},
-        )
+        return self.broker.request(kind=kind, reason=reason, scope=scope, timeout_s=timeout_s)
 
 
 def _external_task(task_id: str = 'external-task-1', *, metadata: dict[str, Any] | None = None) -> ToolTask:
@@ -243,7 +257,7 @@ def _stored_external_authorization(service: ToolTeachService, task: ToolTask, ca
         status=ExternalActionAuthorizationStatus.VALIDATED,
         issued_at=datetime.now(timezone.utc),
         expires_at=expires_at,
-        approved_by=LOCAL_HUMAN_APPROVER_ID,
+        approved_by=TEST_APPROVER_SID,
         reason='test fixture for authorization binding only',
     )
 
@@ -276,7 +290,9 @@ def test_external_task_requires_broker_authorization_and_resumes_same_task_once(
         assert stored is not None
         assert stored.approval_decision == ApprovalDecision.APPROVED
         assert stored.metadata['external_authorization_status'] == ExternalActionAuthorizationStatus.CONSUMED.value
-        assert resumed.execution_state.metadata['external_authorization_approved_by'] == LOCAL_HUMAN_APPROVER_ID
+        assert resumed.execution_state.metadata['external_authorization_approved_by'] == TEST_APPROVER_SID
+        assert resumed.execution_state.metadata['external_authorization_approver_session_id'] == 4
+        assert resumed.execution_state.metadata['external_authorization_approval_source'] == 'control_center_dialog'
 
         replay = service.execute_task(task, approved=True)
         assert replay.execution_state.state == 'authorization_rejected'
@@ -320,7 +336,7 @@ def test_external_task_rejects_session_approval_cross_task_and_expired_authoriza
         assert expired_result.execution_state.state == 'authorization_rejected'
         assert adapter.real_task_ids == []
 
-        invalid_broker = _ApprovalBrokerFixture(approved_by='wrong-principal')
+        invalid_broker = _ApprovalBrokerFixture(principal=SystemPrincipal(sid='S-1-5-21-0', session_id=0))
         service.human_approval_broker = invalid_broker
         invalid = service.execute_task(_external_task('invalid-principal-task'))
         assert invalid.execution_state.state == 'authorization_rejected'
