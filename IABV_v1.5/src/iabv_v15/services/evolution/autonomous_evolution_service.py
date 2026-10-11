@@ -399,14 +399,6 @@ class AutonomousEvolutionService:
                 candidate('task_metadata', task_metadata, 'thread_title'),
                 candidate('task_goal_parameters', goal_parameters, 'thread_title'),
             ),
-            # A missing site is valid when the persisted ToolTask has no site;
-            # site is contextual routing, not a session identifier.
-            'site_id': (
-                ('tool_task.site_id', source_task.site_id),
-                candidate('paired_consultation', canonical_consultation, 'site_id'),
-                candidate('task_metadata', task_metadata, 'site_id'),
-                candidate('task_goal_parameters', goal_parameters, 'site_id'),
-            ),
             # This is requested policy, not the observed isolation result.
             'isolated_session_required': (
                 candidate('task_goal_parameters', goal_parameters, 'isolated_session_required'),
@@ -431,6 +423,40 @@ class AutonomousEvolutionService:
                 candidate('task_metadata', task_metadata, 'actual_assistant_kind'),
             ),
         }
+
+        # site_id is optional context, unlike session identity. ToolTask.site_id=None
+        # means that this source did not bind a site; it must not veto a non-empty
+        # site persisted in another authorized copy. Empty values also do not
+        # identify a site. Two distinct non-empty persisted IDs are ambiguous.
+        site_candidates = (
+            ('tool_task.site_id', source_task.site_id if source_task.site_id is not None else missing),
+            candidate('paired_consultation', canonical_consultation, 'site_id'),
+            candidate('task_metadata', task_metadata, 'site_id'),
+            candidate('task_goal_parameters', goal_parameters, 'site_id'),
+        )
+        persisted_site_ids: list[tuple[str, str]] = []
+        site_was_explicitly_empty = False
+        for source, value in site_candidates:
+            if value is missing:
+                continue
+            if value is None:
+                site_was_explicitly_empty = True
+                continue
+            if not isinstance(value, str):
+                return {'pre_capture_ingested': False, 'reason': 'recapture_identity_invalid:site_id'}
+            normalized_site_id = value.strip()
+            if normalized_site_id:
+                persisted_site_ids.append((source, normalized_site_id))
+            else:
+                site_was_explicitly_empty = True
+        distinct_site_ids = {value for _source, value in persisted_site_ids}
+        if len(distinct_site_ids) > 1:
+            return {'pre_capture_ingested': False, 'reason': 'recapture_identity_conflict:site_id'}
+        if persisted_site_ids:
+            resolved_site = ('value', persisted_site_ids[0][1])
+        else:
+            resolved_site = ('empty', None) if site_was_explicitly_empty else ('unknown', None)
+
         required_fields = {
             'response_capture_mode', 'session_profile_dir', 'session_scope',
             'isolated_session_required', 'assistant_kind',
@@ -446,6 +472,7 @@ class AutonomousEvolutionService:
             if state == 'error':
                 return {'pre_capture_ingested': False, 'reason': value}
             resolved[field] = (state, value)
+        resolved['site_id'] = resolved_site
 
         observed_isolation = resolve_persisted_field(
             'isolated_session',

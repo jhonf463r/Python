@@ -165,6 +165,109 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
             bootstrap.tool_record_repository.save_task(task)
             bootstrap.tool_record_repository.save_result(result)
 
+        # ToolTask.site_id=None is absence at that source, so an authorized
+        # persisted goal_parameters.site_id remains usable for this recapture.
+        persisted_site_id = str(original_task.metadata['goal_parameters'].get('site_id') or '').strip()
+        assert persisted_site_id
+        no_model_site_task = original_task.model_copy(update={'site_id': None})
+        persist_pair(no_model_site_task, original_result)
+        recapture_calls.clear()
+        task_site_fallback = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=persisted_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert task_site_fallback['pre_capture_ingested'] is False
+        assert len(recapture_calls) == 1
+        assert recapture_calls[0]['site_id'] == persisted_site_id
+        assert recapture_calls[0]['goal_parameters']['site_id'] == persisted_site_id
+        persist_pair(original_task, original_result)
+
+        def pair_without_site(*, empty_values: bool = False):
+            task_meta = copy.deepcopy(dict(original_task.metadata or {}))
+            task_goal = dict(task_meta.get('goal_parameters') or {})
+            task_consult = dict(task_meta['autonomous_consultation'])
+            result_meta = copy.deepcopy(dict(original_result.metadata or {}))
+            result_consult = dict(result_meta['autonomous_consultation'])
+            for container in (task_meta, task_goal, task_consult, result_consult):
+                if empty_values:
+                    container['site_id'] = ''
+                else:
+                    container.pop('site_id', None)
+            task_meta['goal_parameters'] = task_goal
+            task_meta['autonomous_consultation'] = task_consult
+            result_meta['autonomous_consultation'] = result_consult
+            return (
+                original_task.model_copy(update={'site_id': None, 'metadata': task_meta}),
+                original_result.model_copy(update={'metadata': result_meta}),
+                task_consult,
+            )
+
+        # With every authorized source absent, or explicitly empty, no site is
+        # invented and the optional executor argument remains None.
+        for empty_values in (False, True):
+            site_free_task, site_free_result, site_free_consultation = pair_without_site(
+                empty_values=empty_values
+            )
+            persist_pair(site_free_task, site_free_result)
+            recapture_calls.clear()
+            no_site = bootstrap.autonomous_evolution_service.reingest_existing_session(
+                existing_consultation=site_free_consultation,
+                adaptive_payload=payload,
+                user_goal='Diagnosticar el flujo local',
+                source='offline_test',
+            )
+            assert no_site['pre_capture_ingested'] is False
+            assert len(recapture_calls) == 1
+            assert recapture_calls[0]['site_id'] is None
+            assert recapture_calls[0]['goal_parameters']['site_id'] is None
+            persist_pair(original_task, original_result)
+
+        # Two non-empty persisted identifiers are an ambiguity, while a site
+        # supplied solely by the caller has no authority to fill a blank.
+        conflict_task_meta = copy.deepcopy(dict(original_task.metadata or {}))
+        conflict_goal = dict(conflict_task_meta.get('goal_parameters') or {})
+        conflict_goal['site_id'] = 'persisted-site-beta'
+        conflict_task_meta['goal_parameters'] = conflict_goal
+        conflict_task_meta.pop('site_id', None)
+        conflict_consultation = dict(conflict_task_meta['autonomous_consultation'])
+        conflict_consultation.pop('site_id', None)
+        conflict_task_meta['autonomous_consultation'] = conflict_consultation
+        conflict_result_meta = copy.deepcopy(dict(original_result.metadata or {}))
+        conflict_result_consultation = dict(conflict_result_meta['autonomous_consultation'])
+        conflict_result_consultation.pop('site_id', None)
+        conflict_result_meta['autonomous_consultation'] = conflict_result_consultation
+        conflict_site_task = original_task.model_copy(update={
+            'site_id': 'persisted-site-alpha',
+            'metadata': conflict_task_meta,
+        })
+        conflict_site_result = original_result.model_copy(update={'metadata': conflict_result_meta})
+        persist_pair(conflict_site_task, conflict_site_result)
+        recapture_calls.clear()
+        site_conflict = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=conflict_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert site_conflict['reason'] == 'recapture_identity_conflict:site_id'
+        assert recapture_calls == []
+        persist_pair(original_task, original_result)
+
+        site_free_task, site_free_result, site_free_consultation = pair_without_site()
+        persist_pair(site_free_task, site_free_result)
+        recapture_calls.clear()
+        caller_only_site = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation={**site_free_consultation, 'site_id': 'caller-only-site'},
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert caller_only_site['reason'] == 'recapture_identity_mismatch:site_id'
+        assert recapture_calls == []
+        persist_pair(original_task, original_result)
+
         def pair_with_consultation_field(field: str, value: object, *, present: bool):
             task_meta = copy.deepcopy(dict(original_task.metadata or {}))
             task_goal = dict(task_meta.get('goal_parameters') or {})
