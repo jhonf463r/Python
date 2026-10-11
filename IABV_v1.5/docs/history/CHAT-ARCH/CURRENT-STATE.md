@@ -1,3 +1,15 @@
+## 2026-10-11 CODEX PLAN REVIEW — PROVENANCE PLAN GROUNDED; RQ218 STILL BLOCKS IMPLEMENTATION
+
+Codex's supplied read-only plan is classified `PLAN_SOURCE_GROUNDED_PENDING_RQ218_FREEZE`. Coordinator review and limits: [I2 issue #459 comment 6105568860](https://github.com/jhonf463r/Python/issues/459#issuecomment-6105568860).
+
+Accepted source-grounded distinctions: hash of a source file on disk is not proof of the exact bytes already loaded; the Codex MCP-entry label and MCP session ID must remain absent unless source/client evidence establishes they are transmitted; logs must use an explicit allowlist and omit secrets, arbitrary environment values and snapshot contents. Proposed source surface is `IABV_v1.5/src/iabv_v15/infra/mcp/server.py`; any `config.toml` change and JSONL destination remain conditional, not authorized.
+
+**Design correction:** Codex proposed writing the record after `AppBootstrap` construction, but RQ201 reports that bootstrap/startup may schedule observations, persist local state and conditionally reach provider health. A post-bootstrap receipt cannot attest provenance before those side effects. A subsequent static design must either identify an existing safe recording destination usable before bootstrap without initializing IABV services, or explicitly label the receipt post-bootstrap and refrain from claiming it attests the startup boundary. No implementation yet.
+
+**Next allowed step under RQ218:** a bounded, read-only static discovery of any existing trusted Owner approval/identity producer/verifier in the already known mutator/gate/model files and necessary direct call sites. This is not a code-edit task. Exact canonical allowed root/protected paths, immutable baseline, exact edit allowlist and clean isolated worktree remain owner gates. Preserve the dirty/detached worktree at `e46d8304167708bed0764d3bf2be8fd6643e8944`. No source edits, worktree creation, tests/builds, runtime, process operation, MCP startup/reconnect/tool call or snapshot disclosure is authorized by the plan or by Model A.
+
+---
+
 ## 2026-10-11 OWNER DECISION — RQ224 MODEL A ACCEPTED; RETROACTIVE ATTRIBUTION UNAVAILABLE
 
 Canonical owner-decision evidence: [I2/RQ224 trace, comment 6105529777](https://github.com/jhonf463r/Python/issues/459#issuecomment-6105529777).
