@@ -1,3 +1,15 @@
+## 2026-10-11 SEQUENCING CORRECTION — RQ219/RQ220 ALREADY CLOSED IN SCOPE; SEPARATE RQ224 OWNER GATE
+
+Canonical correction and scope boundary: [I2 issue #459 comment 6105573273](https://github.com/jhonf463r/Python/issues/459#issuecomment-6105573273).
+
+RQ219/RQ220 already completed bounded source discovery and were adjudicated `NO_EXISTING_TRUSTED_AUTHORITY_FOUND_IN_SCOPE`. Do **not** repeat generic searches or re-open those inspected paths. RQ224 §6 asks the Owner to decide whether to authorize a distinct, bounded, read-only examination of identity/authority sources outside that scope. Acceptance of Model A does not itself authorize that additional inspection. If later authorized, follow only directly related definitions/imports/call sites needed to identify the Human Domain Owner principal and caller identity behind the approval entrypoint; stop at a broader identity/auth subsystem, and report exact source evidence without inventing a trust source.
+
+The prior plan-review entry's phrase “Next allowed step under RQ218” must be read with this sequencing correction: implementation is still blocked by RQ218's workspace root/protected-path, immutable baseline, exact edit scope and clean worktree gates, as well as RQ223's trusted mutation-authority receipt contract. Do not issue a source-edit task merely because the launch-provenance plan is grounded.
+
+The launch plan also has an unresolved timing issue: emitting the record after `AppBootstrap` cannot attest any startup side effects that may have happened during its construction. Static planning must not claim pre-startup attribution unless the record can actually be produced before those effects without initializing IABV services; otherwise call it post-bootstrap diagnostic evidence only. No implementation is authorized.
+
+---
+
 ## 2026-10-11 CODEX PLAN REVIEW — PROVENANCE PLAN GROUNDED; RQ218 STILL BLOCKS IMPLEMENTATION
 
 Codex's supplied read-only plan is classified `PLAN_SOURCE_GROUNDED_PENDING_RQ218_FREEZE`. Coordinator review and limits: [I2 issue #459 comment 6105568860](https://github.com/jhonf463r/Python/issues/459#issuecomment-6105568860).
