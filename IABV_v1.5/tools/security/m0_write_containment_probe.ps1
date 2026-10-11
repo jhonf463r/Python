@@ -227,4 +227,3 @@ try {
     $failure | ConvertTo-Json -Depth 4 | Write-Output
     exit 2
 }
-
