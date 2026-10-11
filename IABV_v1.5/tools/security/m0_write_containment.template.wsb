@@ -1,0 +1,23 @@
+<Configuration>
+  <vGPU>Disable</vGPU>
+  <Networking>Disable</Networking>
+  <AudioInput>Disable</AudioInput>
+  <VideoInput>Disable</VideoInput>
+  <PrinterRedirection>Disable</PrinterRedirection>
+  <ClipboardRedirection>Disable</ClipboardRedirection>
+  <ProtectedClient>Enable</ProtectedClient>
+  <MappedFolders>
+    <MappedFolder>
+      <!-- Replace with an absolute, existing, sanitized disposable fixture path. Never use C:\Python or a profile. -->
+      <HostFolder>__REPLACE_WITH_FULL_PATH_TO_DISPOSABLE_FIXTURE__</HostFolder>
+      <SandboxFolder>C:\M0Fixture</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <!-- Replace with a different absolute, existing, empty temporary state folder. -->
+      <HostFolder>__REPLACE_WITH_FULL_PATH_TO_EMPTY_STATE_FOLDER__</HostFolder>
+      <SandboxFolder>C:\M0State</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+</Configuration>
