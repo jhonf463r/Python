@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -184,6 +186,52 @@ class TestPlatformPendingQueue:
         task = queue.get(first_id)
         assert task is not None
         assert task.status == PendingTaskStatus.COMPLETED
+
+    def test_concurrent_readers_and_writers_share_task_file_lock(self, tmp_path: Path):
+        evolution_dir = tmp_path / 'shared-evolution'
+        writer_queue = PlatformPendingQueue(evolution_dir)
+        reader_queue = PlatformPendingQueue(evolution_dir)
+        item_count = 80
+        start = threading.Barrier(4)
+        state_lock = threading.Lock()
+        written: set[str] = set()
+        expected_status: dict[str, PendingTaskStatus] = {}
+
+        def writer() -> None:
+            start.wait()
+            for index in range(item_count):
+                task_id = f'concurrent-{index:03d}'
+                status = PendingTaskStatus.COMPLETED if index % 3 == 0 else PendingTaskStatus.PENDING
+                writer_queue.upsert(PlatformPendingTask(
+                    id=task_id,
+                    title=f'Concurrent task {index}',
+                    status=status,
+                    metadata={'sequence': index},
+                ))
+                with state_lock:
+                    expected_status[task_id] = status
+                    written.add(task_id)
+
+        def reader() -> None:
+            start.wait()
+            for _ in range(item_count * 2):
+                observed = reader_queue.list_all()
+                observed_ids = {task.id for task in observed}
+                with state_lock:
+                    assert written.issubset(observed_ids)
+                assert all(task.metadata.get('sequence') == int(task.id.rsplit('-', 1)[1]) for task in observed)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = [pool.submit(writer)] + [pool.submit(reader) for _ in range(3)]
+            for future in futures:
+                future.result()
+
+        final_items = reader_queue.list_all()
+        assert len(final_items) == item_count
+        assert {task.id for task in final_items} == set(expected_status)
+        for task in final_items:
+            assert task.status == expected_status[task.id]
+            assert reader_queue.get(task.id) == task
 
 
 class TestResumeHints:

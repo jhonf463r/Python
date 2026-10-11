@@ -303,8 +303,112 @@ class AutonomousEvolutionService:
         )
         if identity_error:
             return {'pre_capture_ingested': False, 'reason': identity_error}
-        tool_id = str(existing_consultation.get('selected_tool_id') or '').strip()
-        assistant_kind = str(existing_consultation.get('assistant_kind') or '').strip().lower()
+        task_metadata = dict(source_task.metadata or {})
+        result_execution = dict(source_result.execution_state.metadata or {})
+        goal_parameters = dict(task_metadata.get('goal_parameters') or {})
+        canonical_consultation = dict(task_metadata.get('autonomous_consultation') or {})
+
+        def persisted_value(*candidates: tuple[dict[str, Any], str]) -> tuple[bool, Any]:
+            empty_value_found = False
+            for source_metadata, key in candidates:
+                if key in source_metadata:
+                    value = source_metadata[key]
+                    if value is not None and value != '':
+                        return True, value
+                    empty_value_found = True
+            return (True, '') if empty_value_found else (False, None)
+
+        recapture_fields = {
+            'response_capture_mode': persisted_value(
+                (result_execution, 'response_capture_mode'),
+                (task_metadata, 'response_capture_mode'),
+                (goal_parameters, 'response_capture_mode'),
+            ),
+            'session_label': persisted_value(
+                (result_execution, 'session_label'),
+                (task_metadata, 'session_label'),
+                (goal_parameters, 'session_label'),
+            ),
+            'session_profile_dir': persisted_value(
+                (result_execution, 'session_profile_dir'),
+                (result_execution, 'browser_profile_dir'),
+                (task_metadata, 'session_profile_dir'),
+                (goal_parameters, 'session_profile_dir'),
+            ),
+            'thread_title': persisted_value(
+                (result_execution, 'thread_title'),
+                (task_metadata, 'thread_title'),
+                (goal_parameters, 'thread_title'),
+            ),
+            'thread_key': persisted_value(
+                (result_execution, 'thread_key'),
+                (task_metadata, 'thread_key'),
+                (goal_parameters, 'thread_key'),
+            ),
+            'session_scope': persisted_value(
+                (result_execution, 'session_scope'),
+                (task_metadata, 'session_scope'),
+                (goal_parameters, 'session_scope'),
+            ),
+            'isolated_session_required': persisted_value(
+                (result_execution, 'isolated_session_required'),
+                (task_metadata, 'isolated_session_required'),
+                (goal_parameters, 'isolated_session_required'),
+            ),
+            'site_id': (source_task.site_id is not None, source_task.site_id) if source_task.site_id is not None else persisted_value(
+                (task_metadata, 'site_id'),
+                (goal_parameters, 'site_id'),
+            ),
+            'diagnostic_category': persisted_value(
+                (task_metadata, 'diagnostic_category'),
+                (goal_parameters, 'diagnostic_category'),
+            ),
+            'incident_kind': persisted_value(
+                (task_metadata, 'incident_kind'),
+                (goal_parameters, 'incident_kind'),
+            ),
+        }
+        missing_identity = [name for name, (found, _) in recapture_fields.items() if not found]
+        if missing_identity:
+            return {
+                'pre_capture_ingested': False,
+                'reason': 'recapture_identity_incomplete:' + ','.join(missing_identity),
+            }
+
+        caller_fields = {
+            'response_capture_mode': 'response_capture_mode',
+            'session_label': 'session_label',
+            'session_profile_dir': 'session_profile_dir',
+            'thread_title': 'thread_title',
+            'thread_key': 'thread_key',
+            'session_scope': 'session_scope',
+            'site_id': 'site_id',
+            'diagnostic_category': 'diagnostic_category',
+            'incident_kind': 'incident_kind',
+        }
+        for caller_key, canonical_key in caller_fields.items():
+            if caller_key in existing_consultation:
+                canonical_value = recapture_fields[canonical_key][1]
+                if str(existing_consultation.get(caller_key) or '') != str(canonical_value or ''):
+                    return {
+                        'pre_capture_ingested': False,
+                        'reason': f'recapture_identity_mismatch:{caller_key}',
+                    }
+        if 'isolated_session' in existing_consultation and bool(existing_consultation.get('isolated_session')) != bool(
+            recapture_fields['isolated_session_required'][1]
+        ):
+            return {'pre_capture_ingested': False, 'reason': 'recapture_identity_mismatch:isolated_session'}
+        if 'isolated_session_required' in existing_consultation and bool(
+            existing_consultation.get('isolated_session_required')
+        ) != bool(recapture_fields['isolated_session_required'][1]):
+            return {'pre_capture_ingested': False, 'reason': 'recapture_identity_mismatch:isolated_session_required'}
+
+        tool_id = source_task.tool_id
+        assistant_kind = str(
+            canonical_consultation.get('actual_assistant_kind')
+            or canonical_consultation.get('assistant_kind')
+            or ''
+        ).strip().lower()
         if not tool_id or not assistant_kind:
             return {'pre_capture_ingested': False, 'reason': 'no_tool_or_assistant'}
         
@@ -318,22 +422,25 @@ class AutonomousEvolutionService:
             'reingest_existing_response': True,
             'tool_id': tool_id,
             'assistant_kind': assistant_kind,
-            'response_capture_mode': str(existing_consultation.get('response_capture_mode') or ''),
-            'session_scope': str(existing_consultation.get('session_scope') or ''),
-            'session_label': str(existing_consultation.get('session_label') or ''),
-            'session_profile_dir': str(existing_consultation.get('session_profile_dir') or ''),
-            'thread_key': str(existing_consultation.get('thread_key') or ''),
-            'thread_title': str(existing_consultation.get('thread_title') or ''),
-            'isolated_session_required': bool(existing_consultation.get('isolated_session')),
+            'response_capture_mode': recapture_fields['response_capture_mode'][1],
+            'session_scope': recapture_fields['session_scope'][1],
+            'session_label': recapture_fields['session_label'][1],
+            'session_profile_dir': recapture_fields['session_profile_dir'][1],
+            'thread_key': recapture_fields['thread_key'][1],
+            'thread_title': recapture_fields['thread_title'][1],
+            'isolated_session_required': bool(recapture_fields['isolated_session_required'][1]),
+            'diagnostic_category': recapture_fields['diagnostic_category'][1],
+            'incident_kind': recapture_fields['incident_kind'][1],
+            'site_id': recapture_fields['site_id'][1],
         }
         try:
             task, result, _preview = self.tool_teach_service.execute_external_consultation(
                 user_goal=user_goal,
                 assistant_preference=assistant_kind,
                 context_pack='',
-                site_id=str(existing_consultation.get('site_id') or '') or None,
-                diagnostic_category=str(existing_consultation.get('diagnostic_category') or ''),
-                incident_kind=str(existing_consultation.get('incident_kind') or ''),
+                site_id=str(recapture_fields['site_id'][1] or '') or None,
+                diagnostic_category=str(recapture_fields['diagnostic_category'][1] or ''),
+                incident_kind=str(recapture_fields['incident_kind'][1] or ''),
                 launch_dry_run=False,
                 allow_local_automatic_consultation=False,
                 goal_parameters=goal_parameters,

@@ -45,7 +45,11 @@ _TASK_IO_LOCK = threading.RLock()
 
 
 class PlatformPendingQueue:
-    """Persistent FIFO queue for platform-level pending tasks."""
+    """Persistent FIFO queue with in-process synchronized task-file access.
+
+    The shared lock coordinates queue instances in this Python process. It
+    does not coordinate independent processes that write to the same folder.
+    """
 
     def __init__(self, evolution_dir: str | Path) -> None:
         self._dir = Path(evolution_dir).resolve() / 'platform_pending'
@@ -99,15 +103,16 @@ class PlatformPendingQueue:
 
     def list_all(self) -> list[PlatformPendingTask]:
         """Return all pending tasks sorted by priority (critical > high > medium > low)."""
-        tasks: list[PlatformPendingTask] = []
-        for path in sorted(self._dir.glob('task_*.json')):
-            try:
-                tasks.append(PlatformPendingTask.model_validate_json(path.read_text(encoding='utf-8')))
-            except Exception:
-                continue
-        priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
-        tasks.sort(key=lambda t: priority_order.get(t.priority, 99))
-        return tasks
+        with self._task_lock:
+            tasks: list[PlatformPendingTask] = []
+            for path in sorted(self._dir.glob('task_*.json')):
+                try:
+                    tasks.append(PlatformPendingTask.model_validate_json(path.read_text(encoding='utf-8')))
+                except Exception:
+                    continue
+            priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+            tasks.sort(key=lambda t: priority_order.get(t.priority, 99))
+            return tasks
 
     # Alias for consistent external naming (the prompt and MCP tools
     # refer to ``list_tasks``).

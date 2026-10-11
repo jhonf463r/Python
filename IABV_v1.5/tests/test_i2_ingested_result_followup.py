@@ -42,6 +42,7 @@ class _OfflinePrincipalProvider:
 )
 def test_ingested_external_result_creates_and_feeds_guarded_followup(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     response: str,
     expected_action: str,
     expected_lane: str,
@@ -106,6 +107,54 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
         assert source_result.metadata['external_consult_response']['response_digest'] == hashlib.sha256(
             response.encode('utf-8')
         ).hexdigest()
+
+        # Recapture parameters come from the persisted task/result identity.
+        persisted_consultation = dict(source_task.metadata['autonomous_consultation'])
+        recapture_calls = []
+
+        def fake_recapture(**kwargs):
+            recapture_calls.append(kwargs)
+            execution_state = source_result.execution_state.model_copy(update={
+                'metadata': {**source_result.execution_state.metadata, 'response_captured': False},
+            })
+            return source_task, source_result.model_copy(update={
+                'output_text': '',
+                'execution_state': execution_state,
+            }), None
+
+        monkeypatch.setattr(bootstrap.tool_teach_service, 'execute_external_consultation', fake_recapture)
+        altered_values = {
+            'session_profile_dir': f"{persisted_consultation['session_profile_dir']}\\caller-changed",
+            'session_label': f"{persisted_consultation['session_label']} caller-changed",
+            'response_capture_mode': 'manual_pasteback',
+        }
+        for field, altered_value in altered_values.items():
+            rejected_recapture = bootstrap.autonomous_evolution_service.reingest_existing_session(
+                existing_consultation={**persisted_consultation, field: altered_value},
+                adaptive_payload=payload,
+                user_goal='Diagnosticar el flujo local',
+                source='offline_test',
+            )
+            assert rejected_recapture['pre_capture_ingested'] is False
+            assert rejected_recapture['reason'] == f'recapture_identity_mismatch:{field}'
+            assert recapture_calls == []
+
+        valid_recapture = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=persisted_consultation,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert valid_recapture['pre_capture_ingested'] is False
+        assert len(recapture_calls) == 1
+        recapture_parameters = recapture_calls[0]['goal_parameters']
+        assert recapture_parameters['response_capture_mode'] == source_task.metadata['response_capture_mode']
+        assert recapture_parameters['session_label'] == source_task.metadata['session_label']
+        assert recapture_parameters['session_profile_dir'] == source_task.metadata['session_profile_dir']
+        assert recapture_parameters['thread_title'] == source_task.metadata['thread_title']
+        assert recapture_parameters['site_id'] == source_task.site_id
+        assert recapture_parameters['diagnostic_category'] == source_task.metadata['diagnostic_category']
+        assert recapture_parameters['incident_kind'] == source_task.metadata['incident_kind']
 
         followup_id = ingested['followup_task_id']
         assert ingested['followup_queue_status'] == 'queued'
