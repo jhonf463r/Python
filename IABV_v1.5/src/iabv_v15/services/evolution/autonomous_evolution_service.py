@@ -516,6 +516,12 @@ class AutonomousEvolutionService:
                         'pre_capture_ingested': False,
                         'reason': f'recapture_identity_mismatch:{caller_key}',
                     }
+                # site_id is optional. A blank caller snapshot does not
+                # contradict a unique non-empty ID resolved from persisted
+                # authorized sources; retain that persisted value. Caller
+                # supplied non-empty IDs still have to match the resolution.
+                if canonical_key == 'site_id' and canonical_state == 'value' and caller_state == 'empty':
+                    continue
                 canonical_comparison = (
                     'empty', None
                 ) if canonical_state == 'empty' else (canonical_state, canonical_value)

@@ -184,6 +184,39 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
         assert recapture_calls[0]['goal_parameters']['site_id'] == persisted_site_id
         persist_pair(original_task, original_result)
 
+        # A blank paired snapshot is not a site identity contradiction when
+        # goal_parameters carries the sole authorized non-empty persisted ID.
+        blank_snapshot_task_meta = copy.deepcopy(dict(original_task.metadata or {}))
+        blank_snapshot_goal = dict(blank_snapshot_task_meta.get('goal_parameters') or {})
+        blank_snapshot_goal['site_id'] = 'site-alpha'
+        blank_snapshot_task_meta['goal_parameters'] = blank_snapshot_goal
+        blank_snapshot_task_meta.pop('site_id', None)
+        blank_snapshot_task_consult = dict(blank_snapshot_task_meta['autonomous_consultation'])
+        blank_snapshot_task_consult['site_id'] = ''
+        blank_snapshot_task_meta['autonomous_consultation'] = blank_snapshot_task_consult
+        blank_snapshot_result_meta = copy.deepcopy(dict(original_result.metadata or {}))
+        blank_snapshot_result_consult = dict(blank_snapshot_result_meta['autonomous_consultation'])
+        blank_snapshot_result_consult['site_id'] = ''
+        blank_snapshot_result_meta['autonomous_consultation'] = blank_snapshot_result_consult
+        blank_snapshot_task = original_task.model_copy(update={
+            'site_id': None,
+            'metadata': blank_snapshot_task_meta,
+        })
+        blank_snapshot_result = original_result.model_copy(update={'metadata': blank_snapshot_result_meta})
+        persist_pair(blank_snapshot_task, blank_snapshot_result)
+        recapture_calls.clear()
+        blank_snapshot_recapture = bootstrap.autonomous_evolution_service.reingest_existing_session(
+            existing_consultation=blank_snapshot_task_consult,
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            source='offline_test',
+        )
+        assert blank_snapshot_recapture['pre_capture_ingested'] is False
+        assert len(recapture_calls) == 1
+        assert recapture_calls[0]['site_id'] == 'site-alpha'
+        assert recapture_calls[0]['goal_parameters']['site_id'] == 'site-alpha'
+        persist_pair(original_task, original_result)
+
         def pair_without_site(*, empty_values: bool = False):
             task_meta = copy.deepcopy(dict(original_task.metadata or {}))
             task_goal = dict(task_meta.get('goal_parameters') or {})
