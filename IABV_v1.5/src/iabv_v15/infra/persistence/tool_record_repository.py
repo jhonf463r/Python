@@ -1,11 +1,12 @@
 ﻿from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask
+from iabv_v15.domain.models import ExternalActionAuthorization, ExternalActionAuthorizationStatus, InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
@@ -131,6 +132,87 @@ class ToolRecordRepository:
         if row is None:
             return None
         return self._load_task_safe(row['task_id'], row['path'])
+
+    def save_external_action_authorization(self, authorization: ExternalActionAuthorization) -> None:
+        """Persist one task-bound authorization before it can be consumed."""
+        if authorization.status != ExternalActionAuthorizationStatus.VALIDATED:
+            raise ValueError('only validated external authorizations may be issued')
+        expires_at = authorization.expires_at.isoformat() if authorization.expires_at else ''
+        self.db.execute(
+            """INSERT INTO external_action_authorizations
+               (authorization_id, task_id, nonce, status, expires_at_utc, payload_json)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                authorization.authorization_id,
+                authorization.task_id,
+                authorization.nonce,
+                authorization.status.value,
+                expires_at,
+                json.dumps(authorization.model_dump(mode='json'), ensure_ascii=False),
+            ),
+        )
+
+    def consume_external_action_authorization(
+        self,
+        *,
+        authorization_id: str,
+        task_id: str,
+        tool_id: str,
+        adapter_key: str,
+        assistant_kind: str,
+        endpoint: str,
+        action: str,
+        prompt_digest: str,
+    ) -> ExternalActionAuthorization | None:
+        """Atomically validate bindings and claim a single-use authorization."""
+        now = datetime.now(timezone.utc)
+        with self.db.connect() as conn:
+            conn.execute('BEGIN IMMEDIATE')
+            row = conn.execute(
+                'SELECT payload_json, status, task_id FROM external_action_authorizations WHERE authorization_id = ?',
+                (authorization_id,),
+            ).fetchone()
+            if row is None or row['status'] != ExternalActionAuthorizationStatus.VALIDATED.value or row['task_id'] != task_id:
+                return None
+            try:
+                authorization = ExternalActionAuthorization.model_validate(json.loads(row['payload_json']))
+            except Exception:
+                return None
+            if (
+                not authorization.is_valid()
+                or not authorization.approved_by.strip()
+                or authorization.assistant_kind != assistant_kind
+                or authorization.endpoint != endpoint
+                or authorization.action != action
+                or not authorization.validate_binding(
+                    task_id=task_id,
+                    tool_id=tool_id,
+                    adapter_key=adapter_key,
+                    prompt_digest=prompt_digest,
+                )
+            ):
+                return None
+            authorization.consume()
+            expires_at = authorization.expires_at.isoformat() if authorization.expires_at else ''
+            cursor = conn.execute(
+                """UPDATE external_action_authorizations
+                   SET status = ?, expires_at_utc = ?, payload_json = ?
+                   WHERE authorization_id = ? AND task_id = ? AND nonce = ? AND status = ?
+                     AND (expires_at_utc = '' OR expires_at_utc > ?)""",
+                (
+                    ExternalActionAuthorizationStatus.CONSUMED.value,
+                    expires_at,
+                    json.dumps(authorization.model_dump(mode='json'), ensure_ascii=False),
+                    authorization_id,
+                    task_id,
+                    authorization.nonce,
+                    ExternalActionAuthorizationStatus.VALIDATED.value,
+                    now.isoformat(),
+                ),
+            )
+            if cursor.rowcount != 1:
+                return None
+            return authorization
 
     def save_result(self, result: ToolResult) -> ToolResult:
         relative_path = f"results/{result.result_id}.json"

@@ -1121,6 +1121,9 @@ class AppBootstrap:
             broker=self.human_approval_broker,
             memory=self.approval_memory,
         )
+        # The existing tool executor owns the ToolTask continuation; the
+        # broker only obtains the explicit human decision for that task.
+        self.tool_teach_service.human_approval_broker = self.human_approval_broker
         # F1.1: captura de snapshots UI de IABV persistida con retention.
         # No es otro cerebro ni orquestador; solo evidencia visual para
         # que ExecutionDossier / briefings / revision humana puedan citar.
@@ -3471,6 +3474,7 @@ class AppBootstrap:
             self_audit_service=self.self_audit_service,
             chat_capability_ingestion_service=self.chat_capability_ingestion_service,
             chat_message_repository=self.chat_message_repository,
+            human_approval_broker=self.human_approval_broker,
             defer_initial_refresh=True,
         )
         self.control_center_viewmodel.resource_metacognition_service = self.resource_metacognition_service

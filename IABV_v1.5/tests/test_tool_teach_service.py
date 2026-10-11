@@ -5,7 +5,9 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from iabv_v15.domain.models import EvaluationRoute, ExecutionState, ExperimentDomain, ExperimentRecommendation, InferenceRequest, InteractionMode, ModeSelectionDecision, TaskRole, ToolAction, ToolActionType, ToolCard, ToolResult, ToolTask, ToolType, ToolValidationStatus
+from datetime import datetime, timedelta, timezone
+
+from iabv_v15.domain.models import ApprovalDecision, EvaluationRoute, ExecutionState, ExperimentDomain, ExperimentRecommendation, ExternalActionAuthorization, ExternalActionAuthorizationStatus, InferenceRequest, InteractionMode, ModeSelectionDecision, TaskRole, ToolAction, ToolActionType, ToolCard, ToolResult, ToolTask, ToolType, ToolValidationStatus
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.infra.persistence.storage import ArtifactStorage
@@ -25,6 +27,7 @@ from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
 from iabv_v15.services.tools.tool_sandbox import ToolSandbox
 from iabv_v15.services.tools.tool_teach_service import ToolTeachService
 from iabv_v15.services.tools.tool_validator import ToolValidator
+from iabv_v15.services.security.human_approval_broker import ApprovalResult, LOCAL_HUMAN_APPROVER_ID
 
 
 class FakeToolAdapter:
@@ -178,6 +181,154 @@ def test_tool_teach_service_requires_approval_for_code_editing() -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+class _RecordingExternalAdapter(FakeToolAdapter):
+    def __init__(self) -> None:
+        super().__init__(ToolType.CUSTOM)
+        self.real_task_ids: list[str] = []
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        if not sandbox:
+            self.real_task_ids.append(task.task_id)
+        return super().run(card, task, sandbox=sandbox)
+
+
+class _ApprovalBrokerFixture:
+    def __init__(self, *, approved_by: str = LOCAL_HUMAN_APPROVER_ID, auto_resolved: bool = False) -> None:
+        self.approved_by = approved_by
+        self.auto_resolved = auto_resolved
+        self.scope: dict[str, str] = {}
+
+    def request(self, *, kind: str, reason: str, scope: dict[str, str], timeout_s: float) -> ApprovalResult:
+        self.scope = dict(scope)
+        return ApprovalResult(
+            request_id='test-human-request-1',
+            approved=True,
+            auto_resolved=self.auto_resolved,
+            payload={'approved_by': self.approved_by},
+        )
+
+
+def _external_task(task_id: str = 'external-task-1', *, metadata: dict[str, Any] | None = None) -> ToolTask:
+    return ToolTask(
+        task_id=task_id,
+        tool_id='codex_installed',
+        title='Consulta técnica de solo lectura',
+        objective='Revisa el comportamiento solicitado',
+        requested_by_role=TaskRole.TOOL_USE,
+        execution_scope='read_only',
+        approval_decision=ApprovalDecision.PENDING,
+        actions=[ToolAction(action_type=ToolActionType.LLM_QUERY, label='Consulta Codex', value='prompt-context')],
+        metadata={'consultation_scope': 'external_assistant', 'assistant_kind': 'codex', **(metadata or {})},
+    )
+
+
+def _register_external_card(repository: ToolRecordRepository) -> ToolCard:
+    card = ToolCard(
+        tool_id='codex_installed',
+        title='Codex local',
+        tool_type=ToolType.CUSTOM,
+        adapter_key='external_assistant',
+        available=True,
+        requires_human_approval=True,
+        metadata={'assistant_kind': 'codex', 'session_scope': 'isolated_codex_session'},
+    )
+    repository.save_card(card)
+    return card
+
+
+def _stored_external_authorization(service: ToolTeachService, task: ToolTask, card: ToolCard, *, expires_at: datetime) -> ExternalActionAuthorization:
+    binding = service._external_authorization_binding(task, card)
+    return ExternalActionAuthorization(
+        **binding,
+        status=ExternalActionAuthorizationStatus.VALIDATED,
+        issued_at=datetime.now(timezone.utc),
+        expires_at=expires_at,
+        approved_by=LOCAL_HUMAN_APPROVER_ID,
+        reason='test fixture for authorization binding only',
+    )
+
+
+def test_external_task_requires_broker_authorization_and_resumes_same_task_once() -> None:
+    root = _workspace('external_task_authorization')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        adapter = _RecordingExternalAdapter()
+        service, repository = _service(root, external_adapter=adapter)  # type: ignore[arg-type]
+        card = _register_external_card(repository)
+        task = _external_task()
+
+        without_broker = service.execute_task(task, approved=True)
+        assert without_broker.execution_state.state == 'waiting_approval'
+        assert adapter.real_task_ids == []
+
+        broker = _ApprovalBrokerFixture()
+        service.human_approval_broker = broker
+        resumed = service.execute_task(task, approved=True)
+
+        assert resumed.success is True
+        assert resumed.task_id == task.task_id
+        assert adapter.real_task_ids == [task.task_id]
+        assert broker.scope['task_id'] == task.task_id
+        assert broker.scope['tool_id'] == card.tool_id
+        assert broker.scope['execution_scope'] == task.execution_scope
+        stored = repository.get_task(task.task_id)
+        assert stored is not None
+        assert stored.approval_decision == ApprovalDecision.APPROVED
+        assert stored.metadata['external_authorization_status'] == ExternalActionAuthorizationStatus.CONSUMED.value
+        assert resumed.execution_state.metadata['external_authorization_approved_by'] == LOCAL_HUMAN_APPROVER_ID
+
+        replay = service.execute_task(task, approved=True)
+        assert replay.execution_state.state == 'authorization_rejected'
+        assert replay.success is False
+        assert adapter.real_task_ids == [task.task_id]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_external_task_rejects_session_approval_cross_task_and_expired_authorizations() -> None:
+    root = _workspace('external_task_authorization_rejects')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        adapter = _RecordingExternalAdapter()
+        service, repository = _service(root, external_adapter=adapter)  # type: ignore[arg-type]
+        card = _register_external_card(repository)
+
+        session_approved = _external_task('session-approved-task')
+        session_approved = session_approved.model_copy(update={'approval_decision': ApprovalDecision.APPROVED, 'session_id': 'unrelated-session'})
+        result = service.execute_task(session_approved, approved=True)
+        assert result.execution_state.state == 'waiting_approval'
+        assert adapter.real_task_ids == []
+
+        first = _external_task('auth-owner-task')
+        cross_task = _external_task('cross-task', metadata={'external_authorization_id': 'cross-auth-id'})
+        cross_auth = _stored_external_authorization(service, first, card, expires_at=datetime.now(timezone.utc) + timedelta(minutes=2)).model_copy(
+            update={'authorization_id': 'cross-auth-id'}
+        )
+        repository.save_external_action_authorization(cross_auth)
+        cross_result = service.execute_task(cross_task)
+        assert cross_result.execution_state.state == 'authorization_rejected'
+        assert adapter.real_task_ids == []
+
+        expired = _external_task('expired-task', metadata={'external_authorization_id': 'expired-auth-id'})
+        expired_auth = _stored_external_authorization(service, expired, card, expires_at=datetime.now(timezone.utc) - timedelta(seconds=1)).model_copy(
+            update={'authorization_id': 'expired-auth-id'}
+        )
+        repository.save_external_action_authorization(expired_auth)
+        expired_result = service.execute_task(expired)
+        assert expired_result.execution_state.state == 'authorization_rejected'
+        assert adapter.real_task_ids == []
+
+        invalid_broker = _ApprovalBrokerFixture(approved_by='wrong-principal')
+        service.human_approval_broker = invalid_broker
+        invalid = service.execute_task(_external_task('invalid-principal-task'))
+        assert invalid.execution_state.state == 'authorization_rejected'
+        assert adapter.real_task_ids == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_tool_teach_service_attempts_basic_rollback_on_failed_write() -> None:
     root = _workspace('tool_teach_service_rollback')
     shutil.rmtree(root, ignore_errors=True)
@@ -316,6 +467,7 @@ def test_tool_teach_service_external_consultation_prefers_codex_for_bridge_lag()
     root.mkdir(parents=True, exist_ok=True)
     try:
         service, repository = _service(root)
+        service.human_approval_broker = _ApprovalBrokerFixture()
         fake_codex = root / 'fake_codex.exe'
         fake_codex.write_text('stub', encoding='utf-8')
         codex = repository.get_card('codex_installed')
@@ -374,6 +526,7 @@ def test_tool_teach_service_external_consultation_supports_direct_text_capture()
     root.mkdir(parents=True, exist_ok=True)
     try:
         service, repository = _service(root)
+        service.human_approval_broker = _ApprovalBrokerFixture()
         codex = repository.get_card('codex_installed')
         assert codex is not None
         repository.save_card(
@@ -683,6 +836,7 @@ def test_tool_teach_service_external_consultation_supports_claude_preference() -
     root.mkdir(parents=True, exist_ok=True)
     try:
         service, repository = _service(root)
+        service.human_approval_broker = _ApprovalBrokerFixture()
         fake_claude = root / 'fake_claude.exe'
         fake_claude.write_text('stub', encoding='utf-8')
         claude = repository.get_card('claude_installed')
@@ -805,6 +959,7 @@ def test_tool_teach_service_external_consultation_rejects_unverified_codex_clipb
             root,
             external_adapter=ExternalAssistantToolAdapter(runner_factory=lambda workspace_root: _Runner(workspace_root)),
         )
+        service.human_approval_broker = _ApprovalBrokerFixture()
         fake_codex = root / 'fake_codex.exe'
         fake_codex.write_text('stub', encoding='utf-8')
         codex = repository.get_card('codex_installed')
@@ -879,6 +1034,7 @@ def test_tool_teach_service_rejects_unverified_codex_rollout_capture_as_wrong_th
             root,
             external_adapter=ExternalAssistantToolAdapter(runner_factory=lambda workspace_root: _Runner(workspace_root)),
         )
+        service.human_approval_broker = _ApprovalBrokerFixture()
         fake_codex = root / 'fake_codex.exe'
         fake_codex.write_text('stub', encoding='utf-8')
         codex = repository.get_card('codex_installed')
@@ -994,6 +1150,7 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
     root.mkdir(parents=True, exist_ok=True)
     try:
         service, repository = _service(root)
+        service.human_approval_broker = _ApprovalBrokerFixture()
         chatgpt_desktop = repository.get_card('chatgpt_installed')
         assert chatgpt_desktop is not None
         repository.save_card(

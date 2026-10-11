@@ -37,6 +37,7 @@ Item {
     property bool canExecuteValue: controlCenterViewModel ? controlCenterViewModel.canExecute : false
     property bool canAbortValue: controlCenterViewModel ? controlCenterViewModel.canAbort : false
     property bool canApproveObservationValue: controlCenterViewModel ? controlCenterViewModel.canApproveObservation : false
+    property bool canApproveExternalActionValue: controlCenterViewModel ? controlCenterViewModel.canApproveExternalAction : false
     property bool approvalDialogVisibleValue: controlCenterViewModel ? controlCenterViewModel.approvalDialogVisible : false
     property bool liveDockExpanded: true
     property string routingModeLabelValue: controlCenterViewModel ? controlCenterViewModel.routingModeLabel : "Modo automatico"
@@ -151,6 +152,8 @@ Item {
                 AppButton { visible: canSimulateValue; text: "Simular"; enabled: canSimulateValue; onClicked: { if (controlCenterViewModel) controlCenterViewModel.simulateAdaptive(); approvalPopup.close(); } }
                 AppButton { visible: canExecuteValue; text: "Ejecutar ahora"; enabled: canExecuteValue; accent: true; onClicked: { if (controlCenterViewModel) controlCenterViewModel.executeAdaptive(); approvalPopup.close(); } }
                 AppButton { visible: canAbortValue; text: "Abortar"; enabled: canAbortValue; onClicked: { if (controlCenterViewModel) controlCenterViewModel.abortAdaptive(); approvalPopup.close(); } }
+                AppButton { visible: canApproveExternalActionValue; text: "Autorizar esta accion"; enabled: canApproveExternalActionValue; accent: true; onClicked: if (controlCenterViewModel) controlCenterViewModel.approvePendingHumanAction() }
+                AppButton { visible: canApproveExternalActionValue; text: "Rechazar"; enabled: canApproveExternalActionValue; onClicked: if (controlCenterViewModel) controlCenterViewModel.rejectPendingHumanAction() }
                 AppButton { text: "Cerrar aviso"; onClicked: approvalPopup.close() }
             }
         }

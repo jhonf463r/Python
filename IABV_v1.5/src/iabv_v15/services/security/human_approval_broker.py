@@ -66,6 +66,7 @@ class _UIScreenshotCapturer(Protocol):
 KIND_LOGIN_REQUIRED = "login_required"
 KIND_CREDENTIAL_REQUEST = "credential_request"
 KIND_EXTERNAL_CALL_AUTHORIZATION = "external_call_authorization"
+LOCAL_HUMAN_APPROVER_ID = "local_interactive_control_center_user"
 KIND_PERCEPTION_MISMATCH = "perception_mismatch_confirmation"
 KIND_DESTRUCTIVE_ACTION = "destructive_action"
 KIND_MERGE_PR = "merge_pr"

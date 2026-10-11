@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import inspect
+import hashlib
+import json
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from iabv_v15.domain.models import (
     AssistantConfigurationSnapshot,
     ApprovalDecision,
+    ExternalActionAuthorization,
+    ExternalActionAuthorizationStatus,
     ExecutionState,
     ExternalStateFlag,
     EvaluationRoute,
@@ -44,6 +48,7 @@ from iabv_v15.services.tools.tool_registry import ToolRegistry
 from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
 from iabv_v15.services.tools.tool_sandbox import ToolSandbox
 from iabv_v15.services.tools.tool_validator import ToolValidator
+from iabv_v15.services.security.human_approval_broker import LOCAL_HUMAN_APPROVER_ID
 
 
 class ToolTeachService:
@@ -65,6 +70,7 @@ class ToolTeachService:
         experiment_lab: ExperimentLab | None = None,
         live_audit_supervisor: LiveAuditSupervisor | None = None,
         synaptic_router: Any | None = None,
+        human_approval_broker: Any | None = None,
     ) -> None:
         self.registry = registry
         self.memory = memory
@@ -79,6 +85,7 @@ class ToolTeachService:
         self.experiment_lab = experiment_lab
         self.live_audit_supervisor = live_audit_supervisor
         self.synaptic_router = synaptic_router
+        self.human_approval_broker = human_approval_broker
 
     def _assistant_configuration_snapshot(
         self,
@@ -724,7 +731,7 @@ class ToolTeachService:
         site_id: str | None = None,
         diagnostic_category: str = '',
         incident_kind: str = '',
-        approved: bool = True,
+        approved: bool = False,
         launch_dry_run: bool = False,
         allow_local_automatic_consultation: bool = False,
         goal_parameters: dict[str, Any] | None = None,
@@ -742,11 +749,16 @@ class ToolTeachService:
         )
         preview = self.preview_request(request)
         task = self.build_task_from_request(request)
+        # `approved` is retained for source compatibility only. External
+        # assistant tasks require a broker-issued, task-bound authorization.
         result = self.execute_task(task, approved=approved, launch_dry_run=launch_dry_run)
         stored_task = self.memory.repository.get_task(task.task_id) or task
         return stored_task, result, preview
 
     def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
+        persisted_task = self.memory.repository.get_task(task.task_id)
+        if persisted_task is not None:
+            task = persisted_task
         card = self.registry.pick_card_for_task(
             task,
             preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
@@ -815,14 +827,74 @@ class ToolTeachService:
             }
         )
         task = self.approval_policy.evaluate(card=card, task=task)
-        if approved and task.approval_decision == ApprovalDecision.PENDING:
+        external_task = (
+            card.adapter_key == 'external_assistant'
+            or str(task.metadata.get('consultation_scope') or '') == 'external_assistant'
+        )
+        approval_required = bool(task.metadata.get('approval_required')) or external_task
+        if external_task:
+            task = task.model_copy(update={'metadata': {**dict(task.metadata or {}), 'approval_required': True}})
+        if approved and not external_task and task.approval_decision == ApprovalDecision.PENDING:
             task = task.model_copy(update={'approval_decision': ApprovalDecision.APPROVED})
         self.memory.remember_task(task)
         sandbox_result = self.sandbox.run(card=card, task=task, adapter=adapter)
         sandbox_result = self.memory.remember_result(card, task, sandbox_result)
-        approval_required = bool(task.metadata.get('approval_required'))
         if not sandbox_result.success:
             return sandbox_result
+        if external_task:
+            authorization_id = str(task.metadata.get('external_authorization_id') or '')
+            if authorization_id:
+                authorization, auth_error = self._consume_task_authorization(task, card, authorization_id)
+            elif self.human_approval_broker is not None:
+                authorization, auth_error = self._request_task_authorization(task, card)
+                if authorization is not None:
+                    try:
+                        self.memory.repository.save_external_action_authorization(authorization)
+                        task = task.model_copy(update={'metadata': {
+                            **dict(task.metadata or {}),
+                            'external_authorization_id': authorization.authorization_id,
+                            'external_authorization_status': ExternalActionAuthorizationStatus.VALIDATED.value,
+                            'external_authorization_approved_by': authorization.approved_by,
+                            'external_approval_request_id': str(authorization.metadata.get('request_id') or ''),
+                        }})
+                        self.memory.remember_task(task)
+                        authorization, auth_error = self._consume_task_authorization(task, card, authorization.authorization_id)
+                    except Exception as exc:
+                        authorization, auth_error = None, f'authorization_persistence_failed:{type(exc).__name__}'
+            else:
+                authorization, auth_error = None, 'human_approval_broker_unavailable'
+            if authorization is None:
+                state = 'waiting_approval' if auth_error in {'approval_pending', 'human_approval_broker_unavailable'} else 'authorization_rejected'
+                blocked = sandbox_result.model_copy(update={
+                    'success': False,
+                    'validation_status': ToolValidationStatus.BLOCKED,
+                    'execution_state': sandbox_result.execution_state.model_copy(update={
+                        'state': state,
+                        'detail': auth_error,
+                        'approval_decision': ApprovalDecision.PENDING,
+                        'metadata': {**dict(sandbox_result.execution_state.metadata or {}), 'authorization_error': auth_error},
+                    }),
+                    'error_message': auth_error,
+                })
+                self.memory.repository.save_result(blocked)
+                self.memory.audit_event(
+                    tool_id=card.tool_id, task_id=task.task_id,
+                    action_type='approval_gate', state=state,
+                    payload={'reason': auth_error, 'authorization_id': authorization_id},
+                )
+                return blocked
+            task = task.model_copy(update={
+                'approval_decision': ApprovalDecision.APPROVED,
+                'metadata': {
+                    **dict(task.metadata or {}),
+                    'external_authorization_status': ExternalActionAuthorizationStatus.CONSUMED.value,
+                    'external_authorization_consumed_at': authorization.consumed_at.isoformat() if authorization.consumed_at else '',
+                    'external_authorization_approved_by': authorization.approved_by,
+                },
+            })
+            self.memory.remember_task(task)
+        elif approval_required and approved and task.approval_decision == ApprovalDecision.PENDING:
+            task = task.model_copy(update={'approval_decision': ApprovalDecision.APPROVED})
         if approval_required and task.approval_decision not in {ApprovalDecision.APPROVED, ApprovalDecision.SKIPPED}:
             waiting = sandbox_result.model_copy(
                 update={
@@ -842,6 +914,7 @@ class ToolTeachService:
                 state='waiting_approval',
                 payload={'approval_decision': task.approval_decision.value, 'tool_id': card.tool_id},
             )
+            self.memory.repository.save_result(waiting)
             if self.live_audit_supervisor is not None:
                 waiting = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=waiting)
                 self.memory.repository.save_result(waiting)
@@ -853,6 +926,13 @@ class ToolTeachService:
         sandbox_mode = launch_dry_run
         payload = adapter.run(card, task, sandbox=sandbox_mode)
         payload_metadata = dict(payload.get('metadata') or {})
+        if external_task:
+            payload_metadata.update({
+                'external_authorization_id': str(task.metadata.get('external_authorization_id') or ''),
+                'external_authorization_status': str(task.metadata.get('external_authorization_status') or ''),
+                'external_authorization_approved_by': str(task.metadata.get('external_authorization_approved_by') or ''),
+                'external_approval_request_id': str(task.metadata.get('external_approval_request_id') or ''),
+            })
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
         execution_detail = str(payload.get('error_message') or 'Fallo en la herramienta.') if not payload.get('success') else str(
@@ -929,6 +1009,99 @@ class ToolTeachService:
             result = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=result)
             self.memory.repository.save_result(result)
         return result
+
+    def _external_authorization_binding(self, task: ToolTask, card: Any) -> dict[str, str]:
+        actions = [action.model_dump(mode='json') for action in task.actions]
+        action_scope = json.dumps(
+            {'execution_scope': task.execution_scope, 'actions': actions},
+            sort_keys=True,
+            ensure_ascii=False,
+        )
+        endpoint = str(
+            card.metadata.get('endpoint')
+            or card.metadata.get('session_scope')
+            or card.metadata.get('launch_mode')
+            or card.adapter_key
+        )
+        assistant_kind = str(card.metadata.get('assistant_kind') or task.metadata.get('assistant_kind') or '')
+        return {
+            'task_id': task.task_id,
+            'tool_id': card.tool_id,
+            'adapter_key': card.adapter_key,
+            'assistant_kind': assistant_kind,
+            'endpoint': endpoint,
+            'action': hashlib.sha256(action_scope.encode('utf-8')).hexdigest(),
+            'prompt_digest': hashlib.sha256(str(task.objective).encode('utf-8')).hexdigest(),
+        }
+
+    def _request_task_authorization(self, task: ToolTask, card: Any) -> tuple[ExternalActionAuthorization | None, str]:
+        broker = self.human_approval_broker
+        if broker is None:
+            return None, 'human_approval_broker_unavailable'
+        binding = self._external_authorization_binding(task, card)
+        request_scope = dict(binding)
+        request_scope['execution_scope'] = str(task.execution_scope)
+        request_scope['operation'] = ', '.join(
+            f'{action.action_type.value}:{action.label}' for action in task.actions
+        ) or 'external_assistant_consultation'
+        reason = (
+            f"Autorizar consulta externa para la tarea {task.task_id}. "
+            f"Herramienta: {card.tool_id}; asistente: {binding['assistant_kind']}; "
+            f"alcance: {task.execution_scope}. Objetivo: {task.objective}"
+        )
+        try:
+            result = broker.request(
+                kind='external_call_authorization',
+                reason=reason,
+                scope=request_scope,
+                timeout_s=120.0,
+            )
+        except Exception as exc:
+            return None, f'approval_request_failed:{type(exc).__name__}'
+        if not result.approved:
+            if result.timed_out:
+                return None, 'approval_timed_out'
+            if result.cancelled:
+                return None, 'approval_cancelled'
+            return None, 'approval_rejected'
+        if result.auto_resolved:
+            return None, 'non_human_approval_rejected'
+        payload = dict(result.payload or {})
+        approved_by = str(payload.get('approved_by') or '').strip()
+        if result.request_id == '' or not approved_by or approved_by != LOCAL_HUMAN_APPROVER_ID:
+            return None, 'human_approver_identity_missing_or_invalid'
+        now = datetime.now(timezone.utc)
+        authorization = ExternalActionAuthorization(
+            **binding,
+            status=ExternalActionAuthorizationStatus.VALIDATED,
+            issued_at=now,
+            expires_at=now + timedelta(minutes=2),
+            approved_by=approved_by,
+            reason='Aprobación explícita en Control Center para esta ToolTask.',
+            metadata={'request_id': result.request_id, 'authority_source': 'control_center_human_approval'},
+        )
+        return authorization, ''
+
+    def _consume_task_authorization(
+        self,
+        task: ToolTask,
+        card: Any,
+        authorization_id: str,
+    ) -> tuple[ExternalActionAuthorization | None, str]:
+        binding = self._external_authorization_binding(task, card)
+        authorization = self.memory.repository.consume_external_action_authorization(
+            authorization_id=authorization_id,
+            task_id=binding['task_id'],
+            tool_id=binding['tool_id'],
+            adapter_key=binding['adapter_key'],
+            assistant_kind=binding['assistant_kind'],
+            endpoint=binding['endpoint'],
+            action=binding['action'],
+            prompt_digest=binding['prompt_digest'],
+        )
+        if authorization is None:
+            return None, 'external_authorization_invalid_expired_or_reused'
+        return authorization, ''
 
     def _build_actions(self, request: InferenceRequest, tool_id: str, reusable_pattern: InteractionPattern | None = None) -> list[ToolAction]:
         goal_parameters = request.goal_parameters or {}
