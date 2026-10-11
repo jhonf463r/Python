@@ -1294,7 +1294,7 @@ class ToolAdapter:
         assistant_kind = str(task.metadata.get('assistant_kind') or card.metadata.get('assistant_kind') or '').strip().lower()
         background_capture_mode = str(task.metadata.get('background_capture_mode') or card.metadata.get('background_capture_mode') or '').strip().lower()
         if assistant_kind == 'codex' and background_capture_mode == 'codex_rollout':
-            codex_home = self._isolated_codex_home(workspace_root)
+            codex_home = self._codex_home_for_task(task=task, workspace_root=workspace_root)
             return str(codex_home / 'state_5.sqlite'), str(codex_home / 'sessions')
         return (
             str(task.metadata.get('session_state_path') or card.metadata.get('session_state_path') or ''),
@@ -1312,9 +1312,25 @@ class ToolAdapter:
         assistant_kind = str(task.metadata.get('assistant_kind') or card.metadata.get('assistant_kind') or '').strip().lower()
         background_capture_mode = str(task.metadata.get('background_capture_mode') or card.metadata.get('background_capture_mode') or '').strip().lower()
         if assistant_kind == 'codex' and background_capture_mode == 'codex_rollout':
-            codex_home = self._isolated_codex_home(workspace_root)
+            codex_home = self._codex_home_for_task(task=task, workspace_root=workspace_root)
             return {'CODEX_HOME': str(codex_home)}
         return {}
+
+    def _codex_home_for_task(self, *, task: ToolTask, workspace_root: str) -> Path:
+        if os.environ.get('IABV_I1_ISOLATED_MODE', '').strip() == '1':
+            raw_data_root = os.environ.get('IABV_I1_DATA_ROOT', '').strip()
+            raw_profile = str(task.metadata.get('session_profile_dir') or '').strip()
+            if not raw_data_root or not raw_profile:
+                raise RuntimeError('isolated_codex_home_missing')
+            data_root = Path(raw_data_root).expanduser().resolve(strict=False)
+            codex_home = Path(raw_profile).expanduser().resolve(strict=False)
+            try:
+                codex_home.relative_to(data_root)
+            except ValueError as exc:
+                raise RuntimeError('isolated_codex_home_outside_data_root') from exc
+            (codex_home / 'sessions').mkdir(parents=True, exist_ok=True)
+            return codex_home
+        return self._isolated_codex_home(workspace_root)
 
     def _isolated_codex_home(self, workspace_root: str) -> Path:
         codex_home = Path(workspace_root) / 'data' / 'tool_teaching' / 'external_assistants' / 'codex_home'

@@ -205,7 +205,7 @@ class ControlCenterViewModel(QObject):
         self._active_human_approval_id = ''
         self.humanApprovalPromptReceived.connect(self._queue_human_approval_prompt)
         if self.human_approval_broker is not None:
-            self.human_approval_broker.set_prompt_handler(self.humanApprovalPromptReceived.emit)
+            self.human_approval_broker.register_prompt_handler(self.humanApprovalPromptReceived.emit)
         self._chat_session_id = _generate_chat_session_id()
         self._pending_capability_notice: list[str] = []
         self._last_reasoning_path: str = ''

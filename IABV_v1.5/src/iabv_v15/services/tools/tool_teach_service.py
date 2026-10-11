@@ -2091,7 +2091,7 @@ class ToolTeachService:
                 return None
             return ToolAction(action_type=ToolActionType.EXTRACT_TEXT, label='Extraccion reutilizada', target=target, metadata={'reused_from_pattern': True})
         if operation == ToolActionType.SCREENSHOT.value:
-            path = target or str(self.data_root / 'tool_teaching' / 'playwright_reused.png)
+            path = target or str(self.data_root / 'tool_teaching' / 'playwright_reused.png')
             return ToolAction(action_type=ToolActionType.SCREENSHOT, label='Captura reutilizada', target=path, parameters={'path': path}, metadata={'reused_from_pattern': True})
         if operation == ToolActionType.VERIFY_STATE.value:
             return ToolAction(action_type=ToolActionType.VERIFY_STATE, label='Verificacion reutilizada', target=target, metadata={'reused_from_pattern': True})

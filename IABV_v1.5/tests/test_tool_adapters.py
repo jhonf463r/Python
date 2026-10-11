@@ -334,6 +334,52 @@ def test_external_assistant_adapter_uses_isolated_codex_home_for_rollout_capture
     assert captured_kwargs['launch_env']['CODEX_HOME'] == str(expected_home)
 
 
+def test_external_assistant_adapter_keeps_codex_rollout_paths_under_i1_data_root(monkeypatch, tmp_path: Path) -> None:
+    from iabv_v15.domain.models import ToolTask
+
+    data_root = tmp_path / 'isolated-data'
+    repository_root = tmp_path / 'checkout'
+    profile = data_root / 'tool_teaching' / 'external_assistants' / 'codex_home'
+    monkeypatch.setenv('IABV_I1_ISOLATED_MODE', '1')
+    monkeypatch.setenv('IABV_I1_DATA_ROOT', str(data_root))
+    adapter = ExternalAssistantToolAdapter()
+    card = ToolCard(
+        tool_id='codex_installed',
+        title='Codex instalado',
+        tool_type=ToolType.CUSTOM,
+        adapter_key='external_assistant',
+        metadata={'assistant_kind': 'codex', 'background_capture_mode': 'codex_rollout'},
+    )
+    task = ToolTask(
+        tool_id='codex_installed',
+        title='Consulta',
+        objective='Inspección de solo lectura',
+        metadata={
+            'assistant_kind': 'codex',
+            'background_capture_mode': 'codex_rollout',
+            'workspace_root': str(repository_root),
+            'session_profile_dir': str(profile),
+        },
+    )
+
+    state_path, sessions_path = adapter._session_capture_paths(card=card, task=task, workspace_root=str(repository_root))
+    launch_env = adapter._launch_env(card=card, task=task, workspace_root=str(repository_root))
+
+    assert state_path == str(profile / 'state_5.sqlite')
+    assert sessions_path == str(profile / 'sessions')
+    assert launch_env['CODEX_HOME'] == str(profile)
+    assert str(repository_root) not in state_path
+    assert str(repository_root) not in launch_env['CODEX_HOME']
+
+    escaping_task = task.model_copy(update={'metadata': {**task.metadata, 'session_profile_dir': str(repository_root / 'data' / 'codex_home')}})
+    try:
+        adapter._launch_env(card=card, task=escaping_task, workspace_root=str(repository_root))
+    except RuntimeError as exc:
+        assert str(exc) == 'isolated_codex_home_outside_data_root'
+    else:
+        raise AssertionError('isolated Codex profile outside data root must fail closed')
+
+
 def test_external_assistant_adapter_keeps_codex_rollout_pending_without_forcing_manual_pasteback() -> None:
     root = _workspace('external_assistant_codex_pending')
     exe = root / 'Codex.exe'
