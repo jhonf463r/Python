@@ -1,3 +1,12 @@
+## 2026-10-10 REGISTRATION — RQ224 OWNER IDENTITY TRUST OPTIONS
+
+Canonical record: `CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md`.
+
+Summary: Design-only comparison of fallback no-automation, enrolled Windows principal plus exact intent confirmation, fresh OS-mediated presence authentication, external identity assertion, and an independently enforced trust boundary. The Owner has not selected an option. The static source inspection remains bounded and found no current Owner identity source in the authorized directories; do not infer global absence. Model A is scoped to the first supervised prototype and no implementation/runtime is authorized. RQ218 root/path/baseline/clean-worktree gates and RQ223 mutation-bound receipt contract remain blockers.
+
+Tags: IABV / RQ224 / owner identity / trust source / design options / Model A / no implementation
+
+---
 ## 2026-10-09 REGISTRATION — RQ224 STATIC TRUST-SOURCE AUDIT ADJUDICATED
 
 Canonical record: `CHAT-ARCH-2026-10-09-224-rq224-static-trust-source-adjudication-and-owner-gate.md`.
