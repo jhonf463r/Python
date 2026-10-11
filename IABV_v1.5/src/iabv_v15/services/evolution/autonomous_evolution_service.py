@@ -296,6 +296,13 @@ class AutonomousEvolutionService:
         ``pre_capture_ingested=False`` para que el llamador siga con el
         reintento normal.
         """
+        # Do not relaunch a capture from caller supplied session metadata alone.
+        # The consultation must still resolve to its original persisted pair.
+        source_task, source_result, identity_error = self._resolve_consultation_records(
+            existing_consultation
+        )
+        if identity_error:
+            return {'pre_capture_ingested': False, 'reason': identity_error}
         tool_id = str(existing_consultation.get('selected_tool_id') or '').strip()
         assistant_kind = str(existing_consultation.get('assistant_kind') or '').strip().lower()
         if not tool_id or not assistant_kind:
@@ -766,6 +773,19 @@ class AutonomousEvolutionService:
                 'next_action': 'stop_and_wait_user',
                 'detail': 'No encontre una consulta externa activa para asociar esta respuesta.',
             }
+        task, result, identity_error = self._resolve_consultation_records(
+            consultation, response=response
+        )
+        if identity_error:
+            return {
+                'status': 'identity_mismatch',
+                'task_id': str(consultation.get('task_id') or ''),
+                'result_id': str(consultation.get('result_id') or ''),
+                'response_ingested': False,
+                'identity_error': identity_error,
+                'next_action': 'stop_and_wait_user',
+                'detail': 'La consulta no coincide con un par de tarea y resultado persistido.',
+            }
         assistant_kind = self._assistant_kind_for_response(consultation=consultation, response=response)
         parsed = self._parse_external_response(
             response=response,
@@ -787,60 +807,6 @@ class AutonomousEvolutionService:
         parsed['response_validation'] = response_validation
         parsed['adoption_plan'] = adoption_plan
         repository = self.tool_teach_service.memory.repository
-        task, result = self._resolve_consultation_records(consultation)
-        if (
-            str(consultation.get('task_id') or '').strip()
-            and str(consultation.get('result_id') or '').strip()
-            and (task is None or result is None or result.task_id != task.task_id)
-        ):
-            return {
-                'status': 'identity_mismatch',
-                'task_id': str(consultation.get('task_id') or ''),
-                'result_id': str(consultation.get('result_id') or ''),
-                'response_ingested': False,
-                'next_action': 'stop_and_wait_user',
-                'detail': 'La tarea y el resultado persistidos no coinciden con la consulta original.',
-            }
-        if task is not None and result is not None:
-            task_consultation = dict(task.metadata.get('autonomous_consultation') or {})
-            result_consultation = dict(result.metadata.get('autonomous_consultation') or {})
-            original_query = consultation.get('query')
-            if not (
-                task.metadata.get('consultation_scope') == 'external_assistant'
-                and result.task_id == task.task_id
-                and task_consultation.get('task_id') == task.task_id
-                and task_consultation.get('result_id') == result.result_id
-                and result_consultation.get('task_id') == task.task_id
-                and result_consultation.get('result_id') == result.result_id
-                and isinstance(original_query, dict)
-                and original_query == task_consultation.get('query')
-                and original_query == result_consultation.get('query')
-            ):
-                return {
-                    'status': 'identity_mismatch',
-                    'task_id': task.task_id,
-                    'result_id': result.result_id,
-                    'response_ingested': False,
-                    'next_action': 'stop_and_wait_user',
-                    'detail': 'La consulta original no coincide con los registros persistidos de la tarea y resultado.',
-                }
-            captured_output = str(result.output_text or '').strip()
-            capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or '').strip().lower()
-            if (
-                result.success
-                and captured_output
-                and capture_mode != 'manual_pasteback'
-                and hashlib.sha256(captured_output.encode('utf-8')).digest()
-                != hashlib.sha256(response.encode('utf-8')).digest()
-            ):
-                return {
-                    'status': 'identity_mismatch',
-                    'task_id': task.task_id,
-                    'result_id': result.result_id,
-                    'response_ingested': False,
-                    'next_action': 'stop_and_wait_user',
-                    'detail': 'La respuesta no coincide con la salida capturada y persistida del resultado.',
-                }
         pending_issue = self._ensure_pending_issue(
             payload=payload,
             user_goal=user_goal,
@@ -1085,6 +1051,32 @@ class AutonomousEvolutionService:
 
         identity = hashlib.sha256(f'{task_id}:{result_id}'.encode('utf-8')).hexdigest()[:24]
         followup_id = f'external_consultation_followup_{identity}'
+
+        def same_source(existing_task) -> bool:
+            existing_metadata = dict(existing_task.metadata or {})
+            return (
+                existing_metadata.get('contract_version') == 'external_consultation_followup/v1'
+                and existing_metadata.get('source_task_id') == task_id
+                and existing_metadata.get('source_result_id') == result_id
+                and (
+                    not existing_metadata.get('source_response_digest')
+                    or existing_metadata.get('source_response_digest')
+                    == response_metadata.get('response_digest')
+                )
+            )
+
+        existing = cycle.queue.get(followup_id)
+        if existing is not None:
+            if not same_source(existing):
+                self.tool_teach_service.memory.audit_event(
+                    tool_id=str(task.tool_id or 'external_assistant'),
+                    task_id=task_id,
+                    action_type='external_followup_queue',
+                    state='identity_conflict',
+                    payload={'source_result_id': result_id, 'followup_task_id': followup_id},
+                )
+                return {'followup_queue_status': 'identity_conflict', 'followup_task_id': followup_id}
+            return {'followup_queue_status': 'already_exists', 'followup_task_id': followup_id}
         trace = dict(response_metadata.get('ia_trace_entry') or {})
         evidence_refs = [
             str(item) for item in (response_metadata.get('evidence_refs') or [])
@@ -1094,6 +1086,7 @@ class AutonomousEvolutionService:
             'contract_version': 'external_consultation_followup/v1',
             'source_task_id': task_id,
             'source_result_id': result_id,
+            'source_response_digest': str(response_metadata.get('response_digest') or ''),
             'source_pending_issue_id': str(response_metadata.get('pending_issue_id') or ''),
             'assistant_kind': str(response_metadata.get('assistant_kind') or ''),
             'response_source': str(response_metadata.get('response_source') or ''),
@@ -1112,7 +1105,7 @@ class AutonomousEvolutionService:
             'proposal_only': True,
         }
         try:
-            cycle.queue.upsert(PlatformPendingTask(
+            persisted, inserted = cycle.queue.insert_if_absent(PlatformPendingTask(
                 id=followup_id,
                 title=f"Consulta {response_metadata.get('response_kind') or 'externa'}: {next_action}",
                 description=str(response_metadata.get('outcome_summary') or response_metadata.get('response_summary') or '')[:240],
@@ -1123,6 +1116,17 @@ class AutonomousEvolutionService:
                 category=CATEGORY_INVESTIGATION,
                 metadata=metadata,
             ))
+            if not inserted:
+                if persisted is None or not same_source(persisted):
+                    self.tool_teach_service.memory.audit_event(
+                        tool_id=str(task.tool_id or 'external_assistant'),
+                        task_id=task_id,
+                        action_type='external_followup_queue',
+                        state='identity_conflict',
+                        payload={'source_result_id': result_id, 'followup_task_id': followup_id},
+                    )
+                    return {'followup_queue_status': 'identity_conflict', 'followup_task_id': followup_id}
+                return {'followup_queue_status': 'already_exists', 'followup_task_id': followup_id}
         except Exception as exc:
             self.tool_teach_service.memory.audit_event(
                 tool_id=str(task.tool_id or 'external_assistant'),
@@ -1325,21 +1329,73 @@ class AutonomousEvolutionService:
             return 'codex'
         return 'codex'
 
-    def _resolve_consultation_records(self, consultation: dict[str, Any]):
+    def _resolve_consultation_records(
+        self, consultation: dict[str, Any], *, response: str | None = None
+    ):
         repository = self.tool_teach_service.memory.repository
         task = None
         result = None
         task_id = str(consultation.get('task_id') or '').strip()
         result_id = str(consultation.get('result_id') or '').strip()
-        if not task_id or not result_id:
-            return None, None
+        if not task_id:
+            return None, None, 'missing_task_id'
+        if not result_id:
+            return None, None, 'missing_result_id'
         task = repository.get_task(task_id)
-        if task is not None:
-            results = repository.list_results(task_id=task.task_id, limit=50)
-            result = next((item for item in results if item.result_id == result_id), None)
-        if result is not None and result.task_id != task_id:
-            return task, None
-        return task, result
+        if task is None:
+            return None, None, 'source_task_not_found'
+        results = repository.list_results(task_id=task.task_id, limit=1000)
+        result = next((item for item in results if item.result_id == result_id), None)
+        if result is None:
+            return task, None, 'source_result_not_found_for_task'
+        if result.task_id != task_id or task.task_id != task_id:
+            return task, result, 'crossed_task_result'
+        task_consultation = dict(task.metadata.get('autonomous_consultation') or {})
+        result_consultation = dict(result.metadata.get('autonomous_consultation') or {})
+        query = consultation.get('query')
+        identity_fields = (
+            'task_id', 'result_id', 'query', 'assistant_kind',
+            'requested_assistant_kind', 'actual_assistant_kind',
+            'selected_tool_id', 'thread_key', 'session_scope',
+        )
+        if not (
+            task.metadata.get('consultation_scope') == 'external_assistant'
+            and task.tool_id == result.tool_id
+            and task.tool_id == consultation.get('selected_tool_id')
+            and task_consultation == result_consultation
+            and task_consultation.get('task_id') == task_id
+            and task_consultation.get('result_id') == result_id
+            and result_consultation.get('task_id') == task_id
+            and result_consultation.get('result_id') == result_id
+            and isinstance(query, dict)
+            and query == task_consultation.get('query')
+            and query == result_consultation.get('query')
+            and all(
+                consultation.get(key) == task_consultation.get(key)
+                for key in identity_fields
+            )
+        ):
+            return task, result, 'consultation_metadata_mismatch'
+        consultation_digest = str(consultation.get('response_digest') or '')
+        persisted_digest = str(
+            dict(result.metadata.get('external_consult_response') or {}).get('response_digest') or ''
+        )
+        if consultation_digest and persisted_digest and consultation_digest != persisted_digest:
+            return task, result, 'persisted_response_digest_mismatch'
+        if response is not None:
+            captured_output = str(result.output_text or '').strip()
+            capture_mode = str(result.execution_state.metadata.get('response_capture_mode') or '').strip().lower()
+            if (
+                result.success
+                and captured_output
+                and capture_mode != 'manual_pasteback'
+                and hashlib.sha256(captured_output.encode('utf-8')).digest()
+                != hashlib.sha256(response.encode('utf-8')).digest()
+            ):
+                return task, result, 'captured_response_mismatch'
+            if persisted_digest and hashlib.sha256(response.encode('utf-8')).hexdigest() != persisted_digest:
+                return task, result, 'persisted_response_digest_mismatch'
+        return task, result, ''
 
     def _parse_external_response(
         self,
@@ -2007,7 +2063,3 @@ class AutonomousEvolutionService:
         if teachings and isinstance(teachings[0], dict):
             return str(teachings[0].get('episode_id') or '').strip()
         return ''
-
-
-
-

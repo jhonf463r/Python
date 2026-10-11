@@ -14360,7 +14360,7 @@ class ControlCenterViewModel(QObject):
                 response_text=response_text,
                 source=source,
             )
-        if bridge.get('status') in {'empty', 'missing_context'}:
+        if bridge.get('status') in {'empty', 'missing_context', 'identity_mismatch'}:
             self._busy_label = str(bridge.get('detail') or 'No pude asociar la respuesta externa.')
             self._append_message('assistant', 'Autonomia', str(bridge.get('detail') or 'No pude asociar la respuesta externa.'), f"estado {bridge.get('status')}")
             self._clear_autonomy_activity_override()
@@ -15147,7 +15147,6 @@ class ControlCenterViewModel(QObject):
         get_last_self_audit_summary,
         notify=dataChanged,
     )
-
 
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from iabv_v15.bootstrap import AppBootstrap
-from iabv_v15.domain.models import InferenceRequest
+from iabv_v15.domain.models import InferenceRequest, PendingTaskStatus
 from iabv_v15.services.security.human_approval_broker import HumanApprovalBroker
 from iabv_v15.services.security.system_principal_provider import SystemPrincipal
 
@@ -114,6 +114,8 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
             item['id'] == followup_id
             for item in cycle.startup_summary()['actionable_tasks']
         )
+        startup_item = next(item for item in cycle.startup_summary()['actionable_tasks'] if item['id'] == followup_id)
+        assert startup_item['metadata']['proposal_only'] is True
         queued = cycle.queue.get(followup_id)
         assert queued is not None
         assert queued.next_action == expected_action
@@ -158,6 +160,69 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
         assert repeated['followup_task_id'] == followup_id
         assert len([item for item in cycle.queue.list_actionable() if item.id == followup_id]) == 1
 
+        before_task = bootstrap.tool_record_repository.get_task(source_task_id).model_dump(mode='json')
+        before_result = next(
+            item for item in bootstrap.tool_record_repository.list_results(task_id=source_task_id, limit=20)
+            if item.result_id == source_result_id
+        ).model_dump(mode='json')
+        before_issues = [item.model_dump(mode='json') for item in bootstrap.pending_issue_repository.list_recent(limit=100)]
+        malformed_cases = [
+            ({key: value for key, value in ingested.items() if key != 'task_id'}, 'missing_task_id'),
+            ({key: value for key, value in ingested.items() if key != 'result_id'}, 'missing_result_id'),
+            ({**ingested, 'task_id': 'unknown-task-id'}, 'source_task_not_found'),
+            ({**ingested, 'result_id': 'crossed-result-id'}, 'source_result_not_found_for_task'),
+            ({**ingested, 'selected_tool_id': 'different-tool'}, 'consultation_metadata_mismatch'),
+        ]
+        for consultation, expected_error in malformed_cases:
+            rejected = bootstrap.autonomous_evolution_service.ingest_consult_response(
+                adaptive_payload={'metadata': {'autonomous_evolution': consultation}},
+                user_goal='Diagnosticar el flujo local',
+                response_text=response,
+                source='offline_test',
+            )
+            assert rejected['status'] == 'identity_mismatch'
+            assert rejected['identity_error'] == expected_error
+            assert bootstrap.tool_record_repository.get_task(source_task_id).model_dump(mode='json') == before_task
+            after_result = next(
+                item for item in bootstrap.tool_record_repository.list_results(task_id=source_task_id, limit=20)
+                if item.result_id == source_result_id
+            )
+            assert after_result.model_dump(mode='json') == before_result
+            assert [item.model_dump(mode='json') for item in bootstrap.pending_issue_repository.list_recent(limit=100)] == before_issues
+            assert cycle.queue.get(followup_id).status == PendingTaskStatus.PENDING
+
+        # A real result from another task cannot be crossed into this consultation.
+        from uuid import uuid4
+        other_task_id, other_result_id = str(uuid4()), str(uuid4())
+        other_consultation = dict(source_task.metadata['autonomous_consultation'])
+        other_consultation.update({'task_id': other_task_id, 'result_id': other_result_id})
+        other_task = source_task.model_copy(update={
+            'task_id': other_task_id,
+            'metadata': {**source_task.metadata, 'autonomous_consultation': other_consultation},
+        })
+        source_result_copy = next(
+            item for item in bootstrap.tool_record_repository.list_results(task_id=source_task_id, limit=20)
+            if item.result_id == source_result_id
+        )
+        other_result = source_result_copy.model_copy(update={
+            'task_id': other_task_id,
+            'result_id': other_result_id,
+            'metadata': {**source_result_copy.metadata, 'autonomous_consultation': other_consultation},
+        })
+        bootstrap.tool_record_repository.save_task(other_task)
+        bootstrap.tool_record_repository.save_result(other_result)
+        crossed_pair = {**ingested, 'result_id': other_result_id}
+        rejected_crossed_pair = bootstrap.autonomous_evolution_service.ingest_consult_response(
+            adaptive_payload={'metadata': {'autonomous_evolution': crossed_pair}},
+            user_goal='Diagnosticar el flujo local',
+            response_text=response,
+            source='offline_test',
+        )
+        assert rejected_crossed_pair['status'] == 'identity_mismatch'
+        assert rejected_crossed_pair['identity_error'] == 'source_result_not_found_for_task'
+        assert bootstrap.tool_record_repository.get_task(source_task_id).model_dump(mode='json') == before_task
+        assert [item.model_dump(mode='json') for item in bootstrap.pending_issue_repository.list_recent(limit=100)] == before_issues
+
         # A crossed result ID is rejected before changing the persisted source records.
         crossed_payload = {'metadata': {'autonomous_evolution': {
             **dict(ingested),
@@ -183,8 +248,37 @@ def test_ingested_external_result_creates_and_feeds_guarded_followup(
         assert evidence[0]['id'] == followup_id
         assert evidence[0]['metadata']['source_task_id'] == source_task_id
         assert evidence[0]['metadata']['source_result_id'] == source_result_id
+        assert evidence[0]['metadata']['proposal_only'] is True
         assert session.metadata['task_packet']['external_followup_evidence'][0]['id'] == followup_id
+        assert session.metadata['task_packet']['external_followup_evidence'][0]['metadata']['proposal_only'] is True
         assert session.metadata['decision_context']['metadata']['external_followup_evidence'][0]['id'] == followup_id
+        assert session.metadata['decision_context']['metadata']['external_followup_evidence'][0]['metadata']['proposal_only'] is True
+
+        # A terminal lifecycle is preserved by exact-source reingestion.
+        completed = cycle.queue.mark_status(followup_id, PendingTaskStatus.COMPLETED)
+        assert completed is not None and completed.status == PendingTaskStatus.COMPLETED
+        repeated_terminal = bootstrap.autonomous_evolution_service.ingest_consult_response(
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            response_text=response,
+            source='offline_test',
+        )
+        assert repeated_terminal['followup_queue_status'] == 'already_exists'
+        assert cycle.queue.get(followup_id).status == PendingTaskStatus.COMPLETED
+        assert len([item for item in cycle.queue.list_all() if item.id == followup_id]) == 1
+
+        conflicting_metadata = {**cycle.queue.get(followup_id).metadata, 'source_result_id': 'foreign-result'}
+        cycle.queue.upsert(cycle.queue.get(followup_id).model_copy(update={'metadata': conflicting_metadata}))
+        rejected_conflict = bootstrap.autonomous_evolution_service.ingest_consult_response(
+            adaptive_payload=payload,
+            user_goal='Diagnosticar el flujo local',
+            response_text=response,
+            source='offline_test',
+        )
+        assert rejected_conflict['followup_queue_status'] == 'identity_conflict'
+        retained_conflict = cycle.queue.get(followup_id)
+        assert retained_conflict.status == PendingTaskStatus.COMPLETED
+        assert retained_conflict.metadata['source_result_id'] == 'foreign-result'
     finally:
         bootstrap.autonomy_cycle_service = None
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,11 @@ CATEGORY_CAPABILITY_DISCOVERY = 'capability_discovery'
 CATEGORY_WINDOWS_NATIVE = 'windows_native'
 CATEGORY_INVESTIGATION = 'investigation'
 
+# The queue is file-backed and may be instantiated more than once in a
+# process for the same workspace. Share a process lock so read/insert/status
+# transitions cannot race between those instances.
+_TASK_IO_LOCK = threading.RLock()
+
 
 class PlatformPendingQueue:
     """Persistent FIFO queue for platform-level pending tasks."""
@@ -46,6 +52,7 @@ class PlatformPendingQueue:
         self._dir.mkdir(parents=True, exist_ok=True)
         self._resume_dir = self._dir / 'resume_hints'
         self._resume_dir.mkdir(parents=True, exist_ok=True)
+        self._task_lock = _TASK_IO_LOCK
 
     # ------------------------------------------------------------------
     # Pending tasks
@@ -53,22 +60,42 @@ class PlatformPendingQueue:
 
     def upsert(self, task: PlatformPendingTask) -> PlatformPendingTask:
         """Insert or update a pending task.  Returns the persisted copy."""
-        task = task.model_copy(update={'updated_at': utc_now()})
-        path = self._task_path(task.id)
-        path.write_text(
-            task.model_dump_json(indent=2),
-            encoding='utf-8',
-        )
-        return task
+        with self._task_lock:
+            task = task.model_copy(update={'updated_at': utc_now()})
+            path = self._task_path(task.id)
+            path.write_text(
+                task.model_dump_json(indent=2),
+                encoding='utf-8',
+            )
+            return task
+
+    def insert_if_absent(self, task: PlatformPendingTask) -> tuple[PlatformPendingTask | None, bool]:
+        """Insert a task only if its stable ID is still absent in this process.
+
+        Returns ``(task, True)`` for a new insert and ``(existing, False)``
+        when another caller already persisted the ID. An unreadable existing
+        record is returned as ``(None, False)`` and is never overwritten.
+        """
+        with self._task_lock:
+            existing = self.get(task.id)
+            if existing is not None:
+                return existing, False
+            path = self._task_path(task.id)
+            if path.exists():
+                return None, False
+            task = task.model_copy(update={'updated_at': utc_now()})
+            path.write_text(task.model_dump_json(indent=2), encoding='utf-8')
+            return task, True
 
     def get(self, task_id: str) -> PlatformPendingTask | None:
-        path = self._task_path(task_id)
-        if not path.exists():
-            return None
-        try:
-            return PlatformPendingTask.model_validate_json(path.read_text(encoding='utf-8'))
-        except Exception:
-            return None
+        with self._task_lock:
+            path = self._task_path(task_id)
+            if not path.exists():
+                return None
+            try:
+                return PlatformPendingTask.model_validate_json(path.read_text(encoding='utf-8'))
+            except Exception:
+                return None
 
     def list_all(self) -> list[PlatformPendingTask]:
         """Return all pending tasks sorted by priority (critical > high > medium > low)."""
@@ -97,11 +124,12 @@ class PlatformPendingQueue:
         return [t for t in self.list_all() if t.status == PendingTaskStatus.BLOCKED]
 
     def mark_status(self, task_id: str, status: PendingTaskStatus) -> PlatformPendingTask | None:
-        task = self.get(task_id)
-        if task is None:
-            return None
-        task = task.model_copy(update={'status': status, 'updated_at': utc_now()})
-        return self.upsert(task)
+        with self._task_lock:
+            task = self.get(task_id)
+            if task is None:
+                return None
+            task = task.model_copy(update={'status': status, 'updated_at': utc_now()})
+            return self.upsert(task)
 
     def summary(self) -> dict[str, Any]:
         """Return a machine-readable summary of the queue state."""

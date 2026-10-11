@@ -318,6 +318,7 @@ class AutonomyCycleService:
                             'validation_steps',
                             'evidence_refs',
                             'trace_id',
+                            'proposal_only',
                         )
                         if key in t.metadata
                     },
