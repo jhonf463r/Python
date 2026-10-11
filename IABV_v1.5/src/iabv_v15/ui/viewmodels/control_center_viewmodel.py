@@ -10722,8 +10722,10 @@ class ControlCenterViewModel(QObject):
         if not pending:
             resolved = False
         elif approved:
-            from iabv_v15.services.security.human_approval_broker import LOCAL_HUMAN_APPROVER_ID
-            resolved = bool(broker.approve(request_id, payload={'approved_by': LOCAL_HUMAN_APPROVER_ID}))
+            resolved = bool(broker.approve_external_from_control_center(
+                request_id,
+                active_dialog_request_id=self._active_human_approval_id,
+            ))
         else:
             resolved = bool(broker.reject(request_id))
         self._active_human_approval_id = ''

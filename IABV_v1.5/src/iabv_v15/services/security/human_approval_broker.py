@@ -39,6 +39,12 @@ from concurrent.futures import Future, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from typing import Callable, Mapping, Optional, Protocol
 
+from iabv_v15.services.security.system_principal_provider import (
+    SystemPrincipal,
+    SystemPrincipalProvider,
+    WindowsProcessPrincipalProvider,
+)
+
 
 PromptHandler = Callable[[dict], None]
 PreApprover = Callable[["ApprovalRequest"], Optional["ApprovalResult"]]
@@ -66,7 +72,6 @@ class _UIScreenshotCapturer(Protocol):
 KIND_LOGIN_REQUIRED = "login_required"
 KIND_CREDENTIAL_REQUEST = "credential_request"
 KIND_EXTERNAL_CALL_AUTHORIZATION = "external_call_authorization"
-LOCAL_HUMAN_APPROVER_ID = "local_interactive_control_center_user"
 KIND_PERCEPTION_MISMATCH = "perception_mismatch_confirmation"
 KIND_DESTRUCTIVE_ACTION = "destructive_action"
 KIND_MERGE_PR = "merge_pr"
@@ -110,6 +115,11 @@ class ApprovalResult:
     auto_resolved: bool = False
     payload_keys: tuple[str, ...] = ()
     payload: Optional[Mapping[str, str]] = None
+    approval_source: str = ""
+    dialog_request_id: str = ""
+    approver_principal: SystemPrincipal | None = None
+    approved_at_epoch: float | None = None
+    principal_unavailable: bool = False
 
     def is_resolved(self) -> bool:
         return self.approved or self.rejected or self.timed_out or self.cancelled
@@ -128,6 +138,7 @@ class HumanApprovalBroker:
         self,
         *,
         clock: Callable[[], float] | None = None,
+        principal_provider: SystemPrincipalProvider | None = None,
     ) -> None:
         self._prompt_handler: Optional[PromptHandler] = None
         self._pre_approver: Optional[PreApprover] = None
@@ -136,6 +147,7 @@ class HumanApprovalBroker:
         self._pending: dict[str, _PendingEntry] = {}
         self._clock = clock or time.time
         self._ui_screenshot_capturer: Optional[_UIScreenshotCapturer] = None
+        self._principal_provider = principal_provider or WindowsProcessPrincipalProvider()
 
     # ---- wiring ------------------------------------------------------
 
@@ -216,10 +228,11 @@ class HumanApprovalBroker:
             requested_at_epoch=self._clock(),
         )
 
-        # 1) Pre-approver (ApprovalMemory) puede resolver sin prompt.
+        # External authorization always needs a fresh Control Center event;
+        # learned/pre-approved decisions must never resolve it.
         with self._lock:
             pre = self._pre_approver
-        if pre is not None:
+        if pre is not None and kind != KIND_EXTERNAL_CALL_AUTHORIZATION:
             pre_result = pre(request)
             if pre_result is not None:
                 self._dispatch_post_resolve(request, pre_result)
@@ -274,44 +287,94 @@ class HumanApprovalBroker:
     ) -> bool:
         """La UI llama esto cuando el usuario aprueba la solicitud."""
         with self._lock:
+            entry = self._pending.get(request_id)
+            if entry is not None and entry.request.kind == KIND_EXTERNAL_CALL_AUTHORIZATION:
+                # Payloads supplied to this general-purpose API are not identity evidence.
+                return False
             entry = self._pending.pop(request_id, None)
-        if entry is None or entry.future.done():
+            if entry is None or entry.future.done():
+                return False
+            result = self._build_result(
+                entry.request,
+                approved=True,
+                payload=payload,
+            )
+            entry.future.set_result(result)
+            return True
+
+    def approve_external_from_control_center(
+        self,
+        request_id: str,
+        *,
+        active_dialog_request_id: str,
+    ) -> bool:
+        """Resolve only the active external-approval dialog using OS identity."""
+        if not request_id or request_id != active_dialog_request_id:
             return False
-        result = self._build_result(
-            entry.request,
-            approved=True,
-            payload=payload,
-        )
-        entry.future.set_result(result)
-        return True
+        with self._lock:
+            entry = self._pending.get(request_id)
+            if (
+                entry is None
+                or entry.future.done()
+                or entry.request.kind != KIND_EXTERNAL_CALL_AUTHORIZATION
+            ):
+                return False
+        try:
+            principal = self._principal_provider.get_principal()
+        except Exception:
+            principal = None
+        if principal is None or not principal.is_valid():
+            result = ApprovalResult(
+                request_id=request_id,
+                approved=False,
+                rejected=True,
+                dialog_request_id=active_dialog_request_id,
+                approval_source="control_center_dialog",
+                principal_unavailable=True,
+            )
+        else:
+            result = ApprovalResult(
+                request_id=request_id,
+                approved=True,
+                dialog_request_id=active_dialog_request_id,
+                approval_source="control_center_dialog",
+                approver_principal=principal,
+                approved_at_epoch=self._clock(),
+            )
+        with self._lock:
+            if self._pending.get(request_id) is not entry or entry.future.done():
+                return False
+            self._pending.pop(request_id, None)
+            entry.future.set_result(result)
+            return True
 
     def reject(self, request_id: str) -> bool:
         """La UI llama esto cuando el usuario rechaza la solicitud."""
         with self._lock:
             entry = self._pending.pop(request_id, None)
-        if entry is None or entry.future.done():
-            return False
-        result = ApprovalResult(
-            request_id=request_id,
-            approved=False,
-            rejected=True,
-        )
-        entry.future.set_result(result)
-        return True
+            if entry is None or entry.future.done():
+                return False
+            result = ApprovalResult(
+                request_id=request_id,
+                approved=False,
+                rejected=True,
+            )
+            entry.future.set_result(result)
+            return True
 
     def cancel(self, request_id: str) -> bool:
         """Cancelacion programatica (ej. el caller ya no necesita la aprobacion)."""
         with self._lock:
             entry = self._pending.pop(request_id, None)
-        if entry is None or entry.future.done():
-            return False
-        result = ApprovalResult(
-            request_id=request_id,
-            approved=False,
-            cancelled=True,
-        )
-        entry.future.set_result(result)
-        return True
+            if entry is None or entry.future.done():
+                return False
+            result = ApprovalResult(
+                request_id=request_id,
+                approved=False,
+                cancelled=True,
+            )
+            entry.future.set_result(result)
+            return True
 
     def pending_requests(self) -> list[dict]:
         """Describe las solicitudes pendientes sin exponer payload sensible.

@@ -48,7 +48,6 @@ from iabv_v15.services.tools.tool_registry import ToolRegistry
 from iabv_v15.services.tools.tool_rollback_manager import ToolRollbackManager
 from iabv_v15.services.tools.tool_sandbox import ToolSandbox
 from iabv_v15.services.tools.tool_validator import ToolValidator
-from iabv_v15.services.security.human_approval_broker import LOCAL_HUMAN_APPROVER_ID
 
 
 class ToolTeachService:
@@ -860,6 +859,9 @@ class ToolTeachService:
                             'external_authorization_status': ExternalActionAuthorizationStatus.VALIDATED.value,
                             'external_authorization_approved_by': authorization.approved_by,
                             'external_approval_request_id': str(authorization.metadata.get('request_id') or ''),
+                            'external_authorization_approved_at': str(authorization.metadata.get('approved_at_utc') or ''),
+                            'external_authorization_approver_session_id': authorization.metadata.get('approver_session_id'),
+                            'external_authorization_approval_source': str(authorization.metadata.get('approval_source') or ''),
                         }})
                         self.memory.remember_task(task)
                         authorization, auth_error = self._consume_task_authorization(task, card, authorization.authorization_id)
@@ -894,6 +896,9 @@ class ToolTeachService:
                     'external_authorization_status': ExternalActionAuthorizationStatus.CONSUMED.value,
                     'external_authorization_consumed_at': authorization.consumed_at.isoformat() if authorization.consumed_at else '',
                     'external_authorization_approved_by': authorization.approved_by,
+                    'external_authorization_approver_session_id': authorization.metadata.get('approver_session_id'),
+                    'external_authorization_approved_at': str(authorization.metadata.get('approved_at_utc') or ''),
+                    'external_authorization_approval_source': str(authorization.metadata.get('approval_source') or ''),
                 },
             })
             self.memory.remember_task(task)
@@ -936,6 +941,9 @@ class ToolTeachService:
                 'external_authorization_status': str(task.metadata.get('external_authorization_status') or ''),
                 'external_authorization_approved_by': str(task.metadata.get('external_authorization_approved_by') or ''),
                 'external_approval_request_id': str(task.metadata.get('external_approval_request_id') or ''),
+                'external_authorization_approver_session_id': task.metadata.get('external_authorization_approver_session_id'),
+                'external_authorization_approved_at': str(task.metadata.get('external_authorization_approved_at') or ''),
+                'external_authorization_approval_source': str(task.metadata.get('external_authorization_approval_source') or ''),
             })
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
@@ -1063,6 +1071,8 @@ class ToolTeachService:
         except Exception as exc:
             return None, f'approval_request_failed:{type(exc).__name__}'
         if not result.approved:
+            if result.principal_unavailable:
+                return None, 'system_approver_principal_unavailable'
             if result.timed_out:
                 return None, 'approval_timed_out'
             if result.cancelled:
@@ -1070,19 +1080,33 @@ class ToolTeachService:
             return None, 'approval_rejected'
         if result.auto_resolved:
             return None, 'non_human_approval_rejected'
-        payload = dict(result.payload or {})
-        approved_by = str(payload.get('approved_by') or '').strip()
-        if result.request_id == '' or not approved_by or approved_by != LOCAL_HUMAN_APPROVER_ID:
+        principal = result.approver_principal
+        if (
+            result.request_id == ''
+            or result.dialog_request_id != result.request_id
+            or result.approval_source != 'control_center_dialog'
+            or principal is None
+            or not principal.is_valid()
+            or result.approved_at_epoch is None
+        ):
             return None, 'human_approver_identity_missing_or_invalid'
-        now = datetime.now(timezone.utc)
+        approved_by = principal.sid
+        approved_at = datetime.fromtimestamp(result.approved_at_epoch, timezone.utc)
         authorization = ExternalActionAuthorization(
             **binding,
             status=ExternalActionAuthorizationStatus.VALIDATED,
-            issued_at=now,
-            expires_at=now + timedelta(minutes=2),
+            issued_at=approved_at,
+            expires_at=approved_at + timedelta(minutes=2),
             approved_by=approved_by,
             reason='Aprobación explícita en Control Center para esta ToolTask.',
-            metadata={'request_id': result.request_id, 'authority_source': 'control_center_human_approval'},
+            metadata={
+                'request_id': result.request_id,
+                'approval_source': result.approval_source,
+                'approved_at_utc': approved_at.isoformat(),
+                'approver_sid': principal.sid,
+                'approver_session_id': principal.session_id,
+                'approver_source': principal.source,
+            },
         )
         return authorization, ''
 

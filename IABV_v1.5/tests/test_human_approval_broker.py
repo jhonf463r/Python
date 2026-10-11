@@ -11,10 +11,20 @@ from iabv_v15.services.security.human_approval_broker import (
     ApprovalResult,
     HumanApprovalBroker,
     KIND_CREDENTIAL_REQUEST,
+    KIND_EXTERNAL_CALL_AUTHORIZATION,
     KIND_LOGIN_REQUIRED,
     KIND_MERGE_PR,
     KIND_PERCEPTION_MISMATCH,
 )
+from iabv_v15.services.security.system_principal_provider import SystemPrincipal
+
+
+class _StaticPrincipalProvider:
+    def __init__(self, principal: SystemPrincipal | None) -> None:
+        self.principal = principal
+
+    def get_principal(self) -> SystemPrincipal | None:
+        return self.principal
 
 
 def _start_approve_later(
@@ -124,6 +134,107 @@ def test_request_times_out_when_no_response():
     # Tras timeout, no queda residuo en el mapa interno.
     assert broker.pending_count() == 0
     assert broker.pending_requests() == []
+
+
+def test_external_approval_requires_active_dialog_and_broker_derived_principal():
+    principal = SystemPrincipal(sid='S-1-5-21-1000-2000-3000-1001', session_id=4)
+    broker = HumanApprovalBroker(principal_provider=_StaticPrincipalProvider(principal))
+    pre_approver_calls: list[str] = []
+    caller_forgery: list[bool] = []
+    cross_dialog: list[bool] = []
+    request_ids: list[str] = []
+
+    def auto_approve(request: ApprovalRequest) -> ApprovalResult:
+        pre_approver_calls.append(request.request_id)
+        return ApprovalResult(request_id=request.request_id, approved=True, auto_resolved=True)
+
+    def active_control_center_dialog(prompt: dict) -> None:
+        request_id = str(prompt['id'])
+        request_ids.append(request_id)
+        caller_forgery.append(broker.approve(request_id, payload={'approved_by': principal.sid}))
+        cross_dialog.append(broker.approve_external_from_control_center(
+            request_id, active_dialog_request_id='another-request'
+        ))
+        assert broker.pending_count() == 1
+        assert broker.approve_external_from_control_center(
+            request_id, active_dialog_request_id=request_id
+        ) is True
+
+    broker.set_pre_approver(auto_approve)
+    broker.register_prompt_handler(active_control_center_dialog)
+    result = broker.request(
+        kind=KIND_EXTERNAL_CALL_AUTHORIZATION,
+        reason='Authorize one task',
+        scope={'task_id': 'task-1'},
+        timeout_s=0.2,
+    )
+
+    assert pre_approver_calls == []
+    assert caller_forgery == [False]
+    assert cross_dialog == [False]
+    assert result.approved is True
+    assert result.payload is None
+    assert result.approval_source == 'control_center_dialog'
+    assert result.request_id == result.dialog_request_id == request_ids[0]
+    assert result.approver_principal == principal
+    assert result.approved_at_epoch is not None
+    assert broker.approve_external_from_control_center(
+        request_ids[0], active_dialog_request_id=request_ids[0]
+    ) is False
+
+
+def test_external_approval_fails_closed_without_principal_and_on_rejection_or_timeout():
+    missing = HumanApprovalBroker(principal_provider=_StaticPrincipalProvider(None))
+    missing.register_prompt_handler(lambda prompt: missing.approve_external_from_control_center(
+        prompt['id'], active_dialog_request_id=prompt['id']
+    ))
+    missing_result = missing.request(
+        kind=KIND_EXTERNAL_CALL_AUTHORIZATION,
+        reason='Missing system identity',
+        timeout_s=0.2,
+    )
+    assert missing_result.approved is False
+    assert missing_result.rejected is True
+    assert missing_result.principal_unavailable is True
+    assert missing_result.approver_principal is None
+
+    rejected = HumanApprovalBroker(principal_provider=_StaticPrincipalProvider(None))
+    rejected.register_prompt_handler(lambda prompt: rejected.reject(prompt['id']))
+    rejected_result = rejected.request(
+        kind=KIND_EXTERNAL_CALL_AUTHORIZATION,
+        reason='User closed/rejected dialog',
+        timeout_s=0.2,
+    )
+    assert rejected_result.rejected is True
+    assert rejected_result.approved is False
+
+    cancelled = HumanApprovalBroker(principal_provider=_StaticPrincipalProvider(None))
+    cancelled.register_prompt_handler(lambda _prompt: None)
+    cancelled_results: list[ApprovalResult] = []
+    cancel_thread = threading.Thread(target=lambda: cancelled_results.append(cancelled.request(
+        kind=KIND_EXTERNAL_CALL_AUTHORIZATION,
+        reason='Programmatic cancellation',
+        timeout_s=1.0,
+    )), daemon=True)
+    cancel_thread.start()
+    deadline = time.monotonic() + 2.0
+    while not cancelled.pending_requests() and time.monotonic() < deadline:
+        time.sleep(0.001)
+    pending_id = cancelled.pending_requests()[0]['id']
+    assert cancelled.cancel(pending_id) is True
+    cancel_thread.join(timeout=1.0)
+    assert cancelled.pending_count() == 0
+    assert cancelled_results[0].cancelled is True
+
+    timed_out = HumanApprovalBroker(principal_provider=_StaticPrincipalProvider(None))
+    timed_out.register_prompt_handler(lambda prompt: None)
+    timeout_result = timed_out.request(
+        kind=KIND_EXTERNAL_CALL_AUTHORIZATION,
+        reason='No human response',
+        timeout_s=0.01,
+    )
+    assert timeout_result.timed_out is True
+    assert timeout_result.approved is False
 
 
 def test_pre_approver_bypasses_prompt():

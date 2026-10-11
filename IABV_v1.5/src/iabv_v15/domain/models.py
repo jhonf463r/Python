@@ -3256,7 +3256,7 @@ class ExternalActionAuthorization(BaseModel):
     issued_at: datetime = Field(default_factory=utc_now)
     expires_at: datetime | None = None
     consumed_at: datetime | None = None
-    approved_by: str = ""  # email o identificador de la autoridad
+    approved_by: str = ""  # SID del principal Windows que aprobó desde el diálogo activo
     reason: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
 
