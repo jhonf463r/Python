@@ -1,3 +1,10 @@
+## 2026-10-10 ACTIVE ROUTE — RQ224 OWNER IDENTITY TRUST OPTIONS
+
+Canonical design record: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
+
+The bounded, authorized review of `src/iabv_v15/services/security/` and `src/iabv_v15/ui/` did not find a demonstrable authenticated Human Domain Owner source or an authenticated return to `HumanApprovalBroker.approve()`. Do not repeat RQ219/RQ220 or claim global absence of authentication. Owner-authorized next deliverable is a comparative design with Options 0/A/B/C/D; selection remains with the Owner. No implementation/runtime/MCP authority is conveyed. RQ218 and RQ223 gates remain open.
+
+---
 ## 2026-10-10 UPDATE — CLEANUP EXECUTION POLICY IS THE CURRENT OPERATIONAL STOP
 
 Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
