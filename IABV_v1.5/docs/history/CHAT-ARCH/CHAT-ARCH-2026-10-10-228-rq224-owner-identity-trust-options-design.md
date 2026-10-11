@@ -1,3 +1,15 @@
+## 2026-10-11 OWNER DESIGN DECISION — OPTION A SELECTED
+
+**Owner decision:** Option A — enrolled Windows account/principal plus explicit, intent-bound confirmation. Additional conditions: none stated.
+
+**Authority scope:** design direction only. This is not authorization to implement, create or alter worktrees, modify source/configuration, run tests/builds, inspect/operate local processes, start/reconnect/use MCP, or disclose operational snapshots. Do not infer any such permission from this selection.
+
+**Next design refinement:** define enrollment and verification requirements for the Windows principal (including the stable principal identifier and how enrollment is protected), exact UI confirmation content, the RQ223 receipt fields and integrity/expiry/single-use semantics, and the pre-effect verifier/consumer. Explicitly account for shared accounts, unlocked sessions, account switching, stale/replayed receipts and trusted-process compromise. A Windows SID or UI click alone is not an authorization receipt.
+
+**Still unresolved:** the authorized source review did not establish that Option A already exists. RQ218 canonical root/protected paths, immutable baseline, exact allowlist and clean isolated worktree gates remain open. Preserve the dirty/detached worktree `e46d8304167708bed0764d3bf2be8fd6643e8944`. RQ224 remains open; global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+---
+
 # CHAT-ARCH-2026-10-10-228 — RQ224 Owner-Identity Trust Options (Design Only)
 
 ## STATUS / AUTHORITY BOUNDARY
