@@ -1,3 +1,20 @@
+## 2026-10-13 OPEN EDGE — TASK ID REPAIR REPORTED PASS; AUTH / PREFLIGHT / PRE-EFFECT TOOL POLICY UNRESOLVED
+
+Canonical adjudication: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
+
+The Owner reports the initial task-ID regeneration defect fixed for `codex_app_server` and `codex_installed`, with validation before authorization consumption/external call plus a ToolTeachService guard. The final focused synthetic run reportedly passed 32 tests; no independent rerun or live query occurred here. This closes only the reported synthetic identity edge, not M0-A end-to-end.
+
+Still unresolved:
+- Which precise auth mode is used, and which `CODEX_HOME` it selects, without credential inspection or extra spend?
+- Does normal dispatch apply all required App Server preflight/readiness checks?
+- What enforces no unwanted tool effects before execution for a text-only consultation?
+- Does a real terminal response preserve task/thread/turn IDs and reach the existing consumer for observed evaluation?
+- What separately authorized conditions would permit a real round-trip without extra cost?
+
+Next action: bounded read-only source audit of existing App Server auth/home, preflight, direct tool-policy call sites and consumer handoff. No runtime, credential contents, process/UI/CDP, network, new code edit, API setup or spend. Preserve the dirty worktree.
+
+---
+
 ## 2026-10-13 OPEN CODE EDGE — CODEX TASK ID NOT PRESERVED PRE-DISPATCH
 
 Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
