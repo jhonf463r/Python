@@ -1,3 +1,13 @@
+## Current Codex route refinement (2026-10-13; entry 244)
+
+Read [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md) and the blocked-current-adapter report in entry 243.
+
+Official Codex docs describe native Windows sandbox implementations that enforce filesystem/network permissions for agent-spawned commands; `workspace-write` supports controlled coding within an approved workspace. Check this before designing a new executor. Do not assume it applies to the local CLI/App Server: the supplied audit says IABV expects userAgent 0.120.0 and resolves a binary dynamically, and effective sandbox/config/tool surface remain unproven.
+
+Next edge: `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`. Source-only review of the existing adapter, exact sandboxPolicy/root/cwd, direct non-secret sandbox config, MCP/app/browser availability before effects and candidate-diff capture. If existing sandbox cannot be shown compatible without installation/setup/spend, keep blocked and design a distinct boundary. Preserve the dirty worktree; no runtime, tests, code/config edits, credentials, OAuth/API setup, installation, spend, commit/push or promotion in this stage.
+
+---
+
 ## Current Codex development route overlay (2026-10-13; entry 243)
 
 Read [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md) after the required new-chat remote-state reconstruction.
