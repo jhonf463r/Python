@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — APP SERVER EFFECTIVE TOOL SURFACE NOT VERIFIED
+
+Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
+
+The Owner reports task identity is integrated in normal SafeUI source, but the App Server path remains blocked. The normal dispatch does not call adapter `preflight()`; requested restricted read-only execution and post-receipt rejection of server requests/events do not establish which tools may run before IABV intervenes. Current upstream protocol sources are not proven to match the local CLI version; the reviewed turn-start schema contains plugin-selection and sandbox/approval fields, not a general no-tools option.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Read-only identify the exact target protocol and whether it provides a server-enforced no-tools mode covering built-in, MCP and app/plugin capabilities. No runtime, credentials, tests, source edits or spending.
+
+---
+
 ## 2026-10-13 FIRST EDGE UPDATE — TASK ID REPAIR REPORTED PASS; RESUME APP SERVER SOURCE GATES
 
 Canonical: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
