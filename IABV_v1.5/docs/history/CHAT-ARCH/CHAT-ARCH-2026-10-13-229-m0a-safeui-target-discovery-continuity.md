@@ -137,4 +137,13 @@ Priority for the next chat:
 4. Do not send the canary unless target identity is established and separate SafeUI approval authorizes the exact single dispatch.
 5. Preserve the dirty local worktree; do not claim M0-A end-to-end success or causal learning until the complete evidence chain exists.
 
+
+## 11. Documentary writeback audit trail
+
+- Verified intake baseline: `main @ 9615031d9c5c4b5c10ad0e6287c22e507ccd81b9`.
+- First writeback commit: [`1bf75e1fa2ca36f28a13326d4844cad7b5724bab`](https://github.com/jhonf463r/Python/commit/1bf75e1fa2ca36f28a13326d4844cad7b5724bab). Its post-commit verification revealed a path-construction error: six projection files and the RQ228 file were written under repository-root paths rather than their canonical `IABV_v1.5/docs/history/CHAT-ARCH/` paths. The expected canonical projections had not changed. This was a documentation-path error; no source/runtime mutation was performed.
+- Corrective fast-forward commit: [`2e8a07b1c51982c61e39abf03669b14e3247d012`](https://github.com/jhonf463r/Python/commit/2e8a07b1c51982c61e39abf03669b14e3247d012). The intended projection content was moved to the canonical paths; the temporary root entries, absent at the verified intake baseline, were removed. No force-push was used.
+- Post-correction verification on `main @ 2e8a07b1c51982c61e39abf03669b14e3247d012` confirmed the M0-A continuity record and all seven projection/decision files at canonical paths, with current routing text. Each of the seven temporary root paths now returns `404`.
+- The two commits remain in history to preserve an honest audit trail. The effective canonical state is the corrected second commit, not the intermediate path-error commit.
+
 **This record is documentary writeback only. It does not change source code, configuration, runtime or authorization state.**
