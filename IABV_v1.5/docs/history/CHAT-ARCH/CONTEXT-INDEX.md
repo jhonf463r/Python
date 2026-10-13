@@ -1,3 +1,14 @@
+## Latest route record — Entry 252
+
+- Record: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md)
+- Classification: `CODEX_EXEC_V0120_POLICY_RULES_CAN_BYPASS_SANDBOX_SOURCE_CONFIRMED_LOCAL_RULESET_UNPROVEN`.
+- Version-matched source finding: explicit execpolicy `Allow` rules can set `bypass_sandbox=true`; orchestrator then selects `SandboxType::None`. Policy rules are loaded from all applicable `rules/*.rules` directories across config layers.
+- Consequence: entry 251's permission profile is insufficient unless the effective ruleset is shown to contain no matching explicit Allow rule or an independent outer OS boundary remains enforced through the bypass.
+- First open edge: `CODEX_EXEC_V0120_EFFECTIVE_EXEC_POLICY_RULESET_UNVERIFIED`.
+- No runtime, local rule file inspection, source change or owner approval is implied. Keep C/block until resolved.
+
+---
+
 ## Latest route record — Entry 251
 
 - Record: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md)
